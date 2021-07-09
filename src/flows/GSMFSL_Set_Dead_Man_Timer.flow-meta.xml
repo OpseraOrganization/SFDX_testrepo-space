@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <assignments>
+        <name>Assign_Dead_Man_Timer</name>
+        <label>Assign Dead Man Timer</label>
+        <locationX>900</locationX>
+        <locationY>215</locationY>
+        <assignmentItems>
+            <assignToReference>Dead_Man_Timer</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Dead_Man_Switch_Timer_Length</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>Dead_Man_Timer_Last_Checkin</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.CurrentDateTime</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <decisions>
+        <name>Time_Has_Value</name>
+        <label>Time Has Value?</label>
+        <locationX>483</locationX>
+        <locationY>217</locationY>
+        <defaultConnectorLabel>No</defaultConnectorLabel>
+        <rules>
+            <name>Yes_Timer_Value</name>
+            <conditionLogic>(1 AND 2) OR 3</conditionLogic>
+            <conditions>
+                <leftValueReference>Dead_Man_Default_Timer</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>Dead_Man_Default_Timer</leftValueReference>
+                <operator>NotEqualTo</operator>
+                <rightValue>
+                    <numberValue>0.0</numberValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>forceEntry</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Set_Dead_Man_Timer</targetReference>
+            </connector>
+            <label>Yes</label>
+        </rules>
+    </decisions>
+    <description>A sub flow, so that the FSP can set the Dead man Switch time for an SA</description>
+    <interviewLabel>GSMFSL Set Dead Man Timer {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>GSMFSL_Set_Dead_Man_Timer</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>FREE_FORM_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>FieldServiceMobile</processType>
+    <screens>
+        <name>Set_Dead_Man_Timer</name>
+        <label>Set Dead Man Timer</label>
+        <locationX>743</locationX>
+        <locationY>215</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <connector>
+            <targetReference>Assign_Dead_Man_Timer</targetReference>
+        </connector>
+        <fields>
+            <name>Message</name>
+            <fieldText>&lt;p&gt;This location requires you to set a &quot;Dead Man Switch&quot;, to ensure your safety.  You will be required to check in after you have been on this job for the set amount of hours.  If you check out, no check in will be required.&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&lt;p&gt;Please enter the appropriate amount of time below (in hours)&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>Dead_Man_Switch_Timer_Length</name>
+            <dataType>Number</dataType>
+            <defaultValue>
+                <elementReference>Dead_Man_Default_Timer</elementReference>
+            </defaultValue>
+            <fieldText>Dead Man Switch Timer Length</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>true</isRequired>
+            <scale>0</scale>
+            <validationRule>
+                <errorMessage>&lt;p&gt;&lt;span style=&quot;background-color: rgb(255, 255, 255); color: rgb(62, 62, 60);&quot;&gt;The value must be greater than 0 and cannot be less than the Location&apos;s default value of&amp;nbsp;{!Dead_Man_Default_Timer}&lt;/span&gt;&lt;/p&gt;</errorMessage>
+                <formulaExpression>AND(          NOT(ISBLANK({!Dead_Man_Switch_Timer_Length})),
+          {!Dead_Man_Switch_Timer_Length} &gt; 0,
+          {!Dead_Man_Switch_Timer_Length}  &gt;= {!Dead_Man_Default_Timer}
+)</formulaExpression>
+            </validationRule>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>false</showHeader>
+    </screens>
+    <start>
+        <locationX>50</locationX>
+        <locationY>50</locationY>
+        <connector>
+            <targetReference>Time_Has_Value</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>Dead_Man_Default_Timer</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <scale>1</scale>
+    </variables>
+    <variables>
+        <name>Dead_Man_Timer</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+        <scale>1</scale>
+    </variables>
+    <variables>
+        <name>Dead_Man_Timer_Last_Checkin</name>
+        <dataType>DateTime</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <description>This flag ensures that the user will be presented with the timer entry screen, regardless of current SA Timer values.</description>
+        <name>forceEntry</name>
+        <dataType>Boolean</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>
