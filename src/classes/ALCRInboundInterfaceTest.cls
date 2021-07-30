@@ -2,7 +2,7 @@
  * Class Name : ALCRInboundInterfaceTest 
  * Created Date: 17 Jan 2017
  * Created By : Accenture
- * Description : This is the test class to cover ALCRInboundInterface
+ * Description : This is the test class to cover ALCRInboundInterface_test
  *****************************************/
 @isTest 
 private class ALCRInboundInterfaceTest{
