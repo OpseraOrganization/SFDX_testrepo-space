@@ -1,8 +1,8 @@
 /***************************************************************
- Class Name:ALCRInboundInterface changes to test webhook notification
+ Class Name:ALCRInboundInterface
  Author: Accenture
- Purpose: WSDL class for creating/Updating accounts from ALCR interface.
-Changes to test upload functionality
+ Purpose: WSDL class for create/Update accounts from ALCR interface.
+
 ****************************************************************/
 global class ALCRInboundInterface{
 /***************************************************************
@@ -17,7 +17,7 @@ Requirement: Sales Process 633
 		webservice Integer errorCode;
 	}
 /***************************************************************
- Class Name:AccountWrap
+ Class Name:AccountWrap class
  Author: Accenture
  Purpose: Account Wrapper class to get required accocunt info from ALCR (Through EIA interface).
 ****************************************************************/
