@@ -1,7 +1,7 @@
 /****************************************
 * Name : Batch_EDPSuppliersToAccount
 * Author : Raj Dubey
-* Description : This class is for loading data from Suppliers to Account 
+* Description : This class is for loading data from Suppliers to Account_test 
 * ReqNo : 
 ****************************************/
 global class Batch_EDPSuppliersToAccount implements Database.Batchable<sObject>,Database.Stateful,Schedulable 

@@ -2,7 +2,7 @@
 @Name: APTSCU_ApprovalActionsController
 @Author:  Jigar Naik
 @CreateDate: 21 Feb 2016
-@Description: Controller class for custom approval actions page.
+@Description: Controller class for custom approval actions page_test.
 ******************************************************************/
 public with sharing class APTSCU_ApprovalActionsController{
 	public String sObjectType {get; set;}
