@@ -1,0 +1,397 @@
+<!--
+@name       NF_FacilitatorNotification
+@author     Jamal Rida 
+@since      Dec 21, 2016
+@desc       This Page is used to send a notification to the appropriate Facilitator (It's called from the "Notify G3 Facilitator" button on the Opportunity)
+@history    
+-->
+<apex:page controller="NF_FacilitatorNotificationCtrl_Clone"  docType="html-5.0" standardStylesheets="true" action="{!init}"  showHeader="true" sidebar="true">
+    <!-- Required CSS/JS -->
+    <apex:stylesheet value="/resource/NF_SLDS_Spring/assets/styles/salesforce-lightning-design-system-ltng.css"/>
+    <style>
+        .msgIcon {
+        display: none!important
+        }
+        .customMessage * {
+        color: #fff!important
+        }
+        .customMessage {
+        margin: 5px 0!important;
+        max-width: 1280px;
+        opacity: 1!important;
+        width: 100%;
+        font-size: 12px;
+        border: 0px;
+        padding-left: 10px;
+        }
+        .message {
+        opacity: .1
+        }
+        /*Fix css issue on safari*/
+        /*By Yi Shao*/
+        html{
+        height: 100% !important
+        }
+        .NF_Scope:not(html), .NF_Scope body {
+        font-size: 10px;
+        }
+        .NF_Scope .slds-form-element__label {
+        font-size: 10px;
+        }
+        .bPageBlock {
+        border: none !important;
+        background-color: white !important;
+        margin:0 !important;
+        }
+        .bPageBlock .detailList textarea {
+        width: 100%;
+        height: 35px;
+        resize: unset;
+        overflow: none;
+        font-family: "Salesforce Sans", Arial, sans-serif;
+        }
+        .pbBody {
+        margin: 0px;
+        }
+        .apexp .bPageBlock.apexDefaultPageBlock .pbBody {
+        margin: 0px;
+        }
+        
+        .bPageBlock .detailList .labelCol {
+        width: 10% !important;
+        font-size:10px;
+        }
+        
+        .NF_Scope button, .NF_Scope select {
+        font-family: "Salesforce Sans", Arial, sans-serif;
+        }
+        .NF_Scope button, .NF_Scope input {
+        font-family: "Salesforce Sans", Arial, sans-serif;
+        }
+        
+        .cke_contents cke_reset {
+        width: 100% !important;
+        max-height: 50px !important;
+        resize: unset !important;
+        }
+        .body p {
+        margin: 0 !important;
+        }
+        <!--.cke_top.cke_reset_all {
+visibility: hidden;
+display: none;
+}-->
+        .minimum-padding {
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+        }
+        .datePicker {
+        z-index: 999999;
+        }
+        
+        .helpText {
+        z-index: 999999;
+        }
+        .NF_Scope .slds-modal__container {
+        margin: 0 auto;
+        width: 80%;
+        max-width: 100rem;
+        min-width: 40rem;
+        height:fit-content;
+        }
+        
+        
+        .data2Col {
+        font-size:10px;
+        }
+        .message .messageText{
+        font-size:10px;
+        }
+        .NF_Scope .slds-button {
+        font-size:10px;
+        }
+        .transform {
+        transform: scale(0.8);
+        transform-origin: 0% 0%;
+        }
+        .cke_editable
+        {
+        font-size: 10px !important;
+        line-height: 1.3 !important;
+        word-wrap: break-word !important;
+        }
+        .body.cke_editable cke_editable_themed cke_contents_ltr cke_show_borders {
+        font-family: "Salesforce Sans", Arial, sans-serif !important;
+        font-size: 10px !important;
+        }
+        .NF_Scope .slds-modal__content {
+        overflow-y: auto !important; 
+        }
+        
+        .cke_contents{
+        height:100px !important;
+        }
+        
+        .slds-notify--toast {
+        min-width: 100% !important;
+        }
+        
+        .dataCol input{
+        min-width: 200px !important;
+        }
+        .dataCol select{
+        min-width: 200px !important;
+        }
+    </style>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script> Commented By Abhipsha - 29/10/2020 - Ticket #00606403-->
+<apex:includeScript value="{!URLFOR($Resource.ValueDeliveryApproachV1, 'plugins/jquery/jquery-2.1.0.min.js')}"/>
+    <script> 
+    $(document).ready(function(){
+    overridePageMessages();
+    var rows = $(".detailList > tbody > tr") ;
+    for(let k = 0; k < rows.length; k++){
+        rows[k].style= "border-bottom: 1px solid #ececec;";
+    }
+    $('div.slds-modal.slds-fade-in-open.slds-modal--prompt')[0].style = 'overflow-y:auto;';
+    $('html')[0].style = 'overflow-y:hidden;';
+    var isBigCase = '{!isBigCase}';
+    if(isBigCase === "false"){
+        $('table.detailList').find('input')[0].style = 'width:80px;';
+    }
+    
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            console.log(mutation)
+            if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                // element added to DOM
+                var helpTextElement = null;
+                for (let i = 0; i <  mutation.addedNodes.length; i++) {
+                    if(mutation.addedNodes[i].classList.contains('helpText')){
+                        helpTextElement = mutation.addedNodes[i];
+                        var scroll = $("div.slds-modal.slds-fade-in-open.slds-modal--prompt") != null ? $("div.slds-modal.slds-fade-in-open.slds-modal--prompt").scrollTop() : 0;
+                        helpTextElement.style.top = $("span.helpButtonOn")[0].offsetParent.offsetTop + $("span.helpButtonOn")[0].offsetHeight + $("span.helpButtonOn")[0].offsetTop + 8 - scroll + "px";
+                    }
+                    if(mutation.addedNodes[i].nodeName === 'DIV' && mutation.addedNodes[i].getAttribute('id').includes('Customer_Request')){
+                        $('div.cke_contents.cke_reset')[0].style = 'height:50px;';
+                    } 
+                    if(mutation.addedNodes[i].nodeName === 'IFRAME' && mutation.addedNodes[i].getAttribute('title').includes('Customer_Request')){
+                        mutation.addedNodes[i].contentDocument.children[0].lastElementChild.style = "font-size:10px;padding:5px;font-family: 'Salesforce Sans', Arial, sans-serif;";
+                        mutation.addedNodes[i].contentDocument.addEventListener("DOMContentLoaded", function(event) {
+                            console.log("DOM fully loaded and parsed");
+                            this.children[0].lastElementChild.style = "font-size:10px;padding:5px;font-family: 'Salesforce Sans', Arial, sans-serif;";
+                        });
+                    } 
+                }
+            }
+        });
+    });
+    
+    var config = {
+        attributes: true,
+        childList: true,
+        characterData: true,
+        subtree: true
+    };
+    
+    observer.observe(document.body, config);  
+});
+
+function overridePageMessages(){    
+    var textureEffect = '';
+    //Uncomment below line for texture effect on page messages
+    //textureEffect = 'slds-theme--alert-texture';
+    $('.warningM3').addClass('slds-notify slds-notify--toast slds-theme--warning customMessage '+textureEffect);          
+    $('.confirmM3').addClass('slds-notify slds-notify--alert slds-theme--success  customMessage '+textureEffect);    
+    $('.errorM3').addClass('slds-notify slds-notify--alert slds-theme--error customMessage '+textureEffect);                  
+    $('.infoM3').addClass('slds-notify slds-notify--toast customMessage '+textureEffect);    
+    $('.errorM3').removeClass('errorM3'); 
+    $('.confirmM3').removeClass('confirmM3'); 
+    $('.infoM3').removeClass('infoM3');   
+    $('.warningM3').removeClass('warningM3');  
+}
+function showSpinner(){
+    $("#spinner").css("visibility", "visible");
+    return true;
+}   
+
+function openWtD(){
+    setInterval(function(){ 
+        validateG3PreparedJS();
+        console.log('checking for G3 preparation information....');
+    }, 20000);
+    $('.infoM3').addClass('slds-notify slds-notify--toast customMessage');
+    var url = '{!currentOpp.Risk_Assessment__c}';
+    window.open(url,'_blank');
+    return false;
+}
+
+function checkRequired(){
+	var rows = $( "input[required='required']" ) ;
+    for(let k = 0; k < rows.length; k++){
+        if(rows[k].value === "" || rows[k].value === null){
+        	return false;    
+        }
+    }
+    return showSpinner();
+}
+
+</script>
+
+
+
+<!-- html -->
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        
+        <!-- The Form -->
+        <apex:form id="myForm">
+            <apex:actionFunction action="{!validateG3Prepared}" name="validateG3PreparedJS" reRender="g3prepared"  > </apex:actionFunction>
+            
+            <!-- custom scoping class --> 
+            <div class="NF_Scope">
+                
+                <div class="slds">
+                    <div id="spinner" style="visibility:hidden">
+                        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 9999999; background-color: black;">
+                            &nbsp;
+                        </div>
+                        <div style="position: absolute; left: 50%; top: 50%; bottom: 0; right: 0; z-index: 9999999; margin: -23px 0 0 -65px;">
+                            <div style="display: inline-block; padding: 2px; background-color: #fff; width: 130px; height:45px; text-align: center;">
+                                <img src="/img/loading.gif" style="margin: 8px;" />
+                                <span style="display: inline-block; padding: 10px 0px;">Please Wait...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Error/Info Message Panel -->
+                    <apex:outputPanel >
+                        <div  role="alertdialog" tabindex="-1" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" class="slds-modal slds-fade-in-open slds-modal--prompt">
+                            <div class="slds-modal__container">
+                                
+                                <div class="slds-modal__content slds-p-around--medium">
+                                    <apex:pageMessages id="msgs"  />                                    
+                                    <apex:outputPanel rendered="{!showMandatoryInfo}" >                                       
+                                        <apex:pageBlock mode="inlineEdit"  >
+                                            <apex:pageBlockSection columns="2" showHeader="false"  rendered="{!isBigCase}"   >
+                                                <apex:inputField value="{!currentOpp.G4_Planned_Date__c}"   /> 
+                                                <apex:inputField value="{!currentOpp.Probability}"  />  
+                                                <apex:inputField value="{!currentOpp.Customer_Request__c}"  /> 
+                                                <apex:inputField value="{!currentOpp.High_level_Solution_Installed_base__c }"  />
+                                                <apex:inputField value="{!currentOpp.Selection_Criteria_Ability_to_influence__c}"  />
+                                                <apex:inputField value="{!currentOpp.StrategicContextCompetitiveSituation__c}"  /> 
+                                                <apex:inputField value="{!currentOpp.Type_of_Request__c 	}"  /> 
+                                                <apex:inputField value="{!currentOpp.Solution_Scope_Installed_base__c}"  />
+                                                <apex:inputField value="{!currentOpp.Target_Price_Budget__c}"  /> 
+                                                <apex:inputField value="{!currentOpp.Commercial_strategy__c}"  /> 
+                                            </apex:pageBlockSection>
+                                            
+                                            <apex:pageBlockSection columns="2" showHeader="false"  rendered="{!NOT(isBigCase)}" >
+                                                <apex:repeat value="{!$ObjectType.Opportunity.fieldsets.G3_Facilitator_Mand_Params_Small_Cases}" var="opptyField" >
+                                                    <apex:inputField value="{!currentOpp[opptyField]}" />                                     
+                                                </apex:repeat>
+                                            </apex:pageBlockSection>
+                                        </apex:pageBlock>
+                                        <apex:pageBlock mode="detail" >
+                                            <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                                                <tbody>
+                                                    <tr style="border-bottom: 1px solid rgb(236, 236, 236);">
+                                                        <th class="labelCol vfLabelColTextWrap  first  last " style="width:5% !important;">
+                                                            Risk Assessment Completed
+                                                        </th>
+                                                        <td class="dataCol  first  last " style="width:3% !important;">
+                                                            <apex:outputField value="{!currentOpp.G3_Prepared__c}" label="Risk Assessment Completed" id="g3prepared" />
+                                                        </td>
+                                                        <td class="dataCol  first  last " >
+                                                            <apex:commandButton value="Go to G3 Risk Assessment" onclick="openWtD();"  styleClass="slds-button slds-button--neutral"  reRender="g3prepared" rendered="{!IF(currentOpp.Risk_Assessment__c!=null,true,false)}" />
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                                
+                                            </table>
+                                        </apex:pageBlock>
+                                    </apex:outputPanel>
+                                    
+                                    <apex:outputpanel rendered="{!IF(AND(NOT(currentOpp.NF_Facilitator_Notified__c),facilitatorFound), true, false)}">
+                                        <div/>
+                                        <apex:outputpanel rendered="{!IF(currentOpp.Queue_Name__c != null, True, false)}">
+                                            <table style="width:100%">
+                                                <tr>
+                                                    <th class="labelCol" style="width:10%;padding:10px;">
+                                                        <apex:outputLabel value="Queue Name" for="queueName" />
+                                                    </th>
+                                                    <td class="data2Col" style="font-family: 'Salesforce Sans', Arial, sans-serif;">
+                                                        <apex:outputLabel value="{!currentOpp.Queue_Name__c}" id="queueName" />
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </apex:outputpanel>
+                                        <apex:outputpanel rendered="{!IF(facilitatorName != null , True, false)}">
+                                            <table style="width:100%">
+                                                <tr>
+                                                    <th class="labelCol" style="width:15%;padding:10px;">
+                                                        <apex:outputLabel value="G3 Facilitator" for="facilitatorName" />
+                                                    </th>
+                                                    <td class="data2Col" style="font-family: 'Salesforce Sans', Arial, sans-serif;">
+                                                        <apex:outputText value="{!facilitatorName}" id="facilitatorName" />
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="labelCol" style="width:15%;padding:10px;">
+                                                        <apex:outputLabel value="Role Code" for="roleCode" />
+                                                    </th>
+                                                    <td class="data2Col" style="font-family: 'Salesforce Sans', Arial, sans-serif;">
+                                                        <apex:outputText value="{!selectedRole}" id="roleCode" />
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="labelCol" style="width:15%;padding:10px;">
+                                                        <apex:outputLabel value="Organisation" for="org" />
+                                                    </th>
+                                                    <td class="data2Col" style="font-family: 'Salesforce Sans', Arial, sans-serif;">
+                                                        <apex:outputText value="{!organization}" id="org" />
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="labelCol" style="width:15%;padding:10px;">
+                                                        <apex:outputLabel value="Delegate 1" for="del1" />
+                                                    </th>
+                                                    <td class="data2Col" style="font-family: 'Salesforce Sans', Arial, sans-serif;">
+                                                        <apex:outputText value="{!delegate1}" id="del1" />
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="labelCol" style="width:15%;padding:10px;">
+                                                        <apex:outputLabel value="Delegate 2" for="del2" />
+                                                    </th>
+                                                    <td class="data2Col" style="font-family: 'Salesforce Sans', Arial, sans-serif;">
+                                                        <apex:outputText value="{!delegate2}" id="del2" />
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="labelCol" style="width:15%;padding:10px;">
+                                                        <apex:outputLabel value="Delegate 3" for="del3" />
+                                                    </th>
+                                                    <td class="data2Col" style="font-family: 'Salesforce Sans', Arial, sans-serif;">
+                                                        <apex:outputText value="{!delegate3}" id="del3" />
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </apex:outputpanel>
+                                    </apex:outputpanel>
+                                    
+                                </div>
+                                
+                                <div class="slds-modal__footer slds-theme--default"  >
+                                    <apex:commandButton value="Notify G3 Facilitator"  action="{!confirmG3Facilitator}" styleClass="slds-button slds-button--brand" rendered="{!IF(AND(currentOpp.NF_Facilitator_Notified__c =False,facilitatorFound), True, False)}"   /> 
+                                    <apex:commandButton value="Proceed" onclick="checkRequired();"  action="{!proceed}" styleClass="slds-button slds-button--brand" rendered="{!showMandatoryInfo}"  />
+                                    <apex:commandButton value="Save and Back to Opportunity" onclick="checkRequired();" action="{!saveAndReturn}" styleClass="slds-button slds-button--brand" rendered="{!showMandatoryInfo}" />
+                                    <apex:commandButton value="Cancel and back to opportunity" onclick="showSpinner();" html-formnovalidate="formnovalidate" immediate="true" action="{!cancel}" styleClass="slds-button slds-button--brand"  />  
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-backdrop slds-backdrop--open"></div>
+                    </apex:outputPanel>
+                </div>
+            </div>
+        </apex:form>
+    </html>
+</apex:page>
