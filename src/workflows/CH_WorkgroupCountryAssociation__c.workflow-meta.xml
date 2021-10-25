@@ -10,14 +10,4 @@
         <protected>false</protected>
         <reevaluateOnChange>false</reevaluateOnChange>
     </fieldUpdates>
-    <rules>
-        <fullName>CH_CA_Save_CountryAssociation_For_Duplication_Check</fullName>
-        <actions>
-            <name>CH_CA_Save_CA_For_Duplicate_Check</name>
-            <type>FieldUpdate</type>
-        </actions>
-        <active>true</active>
-        <formula>true</formula>
-        <triggerType>onAllChanges</triggerType>
-    </rules>
 </Workflow>
