@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <alerts>
+        <fullName>Email_for_Partner_rebate_acceptance_Asia_Pacific_Japan</fullName>
+        <description>Email for Partner rebate acceptance Asia Pacific &amp; Japan</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_Asia_Pacific_Japan</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Partner_rebate_acceptance</template>
+    </alerts>
+    <alerts>
+        <fullName>Email_for_Partner_rebate_acceptance_China</fullName>
+        <description>Email for Partner rebate acceptance China</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_China</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Partner_rebate_acceptance</template>
+    </alerts>
+    <alerts>
+        <fullName>Email_for_Partner_rebate_acceptance_Europe</fullName>
+        <description>Email for Partner rebate acceptance Europe</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_Europe</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Partner_rebate_acceptance</template>
+    </alerts>
+    <alerts>
+        <fullName>Email_for_Partner_rebate_acceptance_India</fullName>
+        <description>Email for Partner rebate acceptance India</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_India</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Partner_rebate_acceptance</template>
+    </alerts>
+    <alerts>
+        <fullName>Email_for_Partner_rebate_acceptance_Latin_America</fullName>
+        <description>Email for Partner rebate acceptance Latin America</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_Latin_America</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Partner_rebate_acceptance</template>
+    </alerts>
+    <alerts>
+        <fullName>Email_for_Partner_rebate_acceptance_Middle_East_Africa</fullName>
+        <description>Email for Partner rebate acceptance Middle East &amp; Africa</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_EastnAfrica</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Partner_rebate_acceptance</template>
+    </alerts>
+    <alerts>
+        <fullName>Email_for_Partner_rebate_acceptance_North_America</fullName>
+        <description>Email for Partner rebate acceptance North America</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_NorthAmerica</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Partner_rebate_acceptance</template>
+    </alerts>
+    <alerts>
+        <fullName>Mail_to_finance_team_for_rebate_calculation_Africa</fullName>
+        <description>Mail to finance team for rebate calculation Africa</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_EastnAfrica</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Mail_to_FinanceTeam</template>
+    </alerts>
+    <alerts>
+        <fullName>Mail_to_finance_team_for_rebate_calculation_AsiaJapan</fullName>
+        <description>Mail to finance team for rebate calculation Asia Pacific &amp; Japan</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_Asia_Pacific_Japan</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Mail_to_FinanceTeam</template>
+    </alerts>
+    <alerts>
+        <fullName>Mail_to_finance_team_for_rebate_calculation_China</fullName>
+        <description>Mail to finance team for rebate calculation China</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_China</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Mail_to_FinanceTeam</template>
+    </alerts>
+    <alerts>
+        <fullName>Mail_to_finance_team_for_rebate_calculation_Europe</fullName>
+        <description>Mail to finance team for rebate calculation Europe</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_Europe</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Mail_to_FinanceTeam</template>
+    </alerts>
+    <alerts>
+        <fullName>Mail_to_finance_team_for_rebate_calculation_India</fullName>
+        <description>Mail to finance team for rebate calculation India</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_India</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Mail_to_FinanceTeam</template>
+    </alerts>
+    <alerts>
+        <fullName>Mail_to_finance_team_for_rebate_calculation_LA</fullName>
+        <description>Mail to finance team for rebate calculation LA</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_Latin_America</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Mail_to_FinanceTeam</template>
+    </alerts>
+    <alerts>
+        <fullName>Mail_to_finance_team_for_rebate_calculation_NA</fullName>
+        <description>Mail to finance team for rebate calculation NA</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Finance_Team_NorthAmerica</recipient>
+            <type>group</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/Mail_to_FinanceTeam</template>
+    </alerts>
+    <fieldUpdates>
+        <fullName>Update_Rebate_Status</fullName>
+        <field>Rebate_Form_Status__c</field>
+        <literalValue>Accepted - First Review</literalValue>
+        <name>Update Rebate Status</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <rules>
+        <fullName>updateRebateStatus</fullName>
+        <actions>
+            <name>Update_Rebate_Status</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <active>true</active>
+        <criteriaItems>
+            <field>Rebate_form__c.Rebate_Form_Status__c</field>
+            <operation>equals</operation>
+        </criteriaItems>
+        <triggerType>onCreateOnly</triggerType>
+    </rules>
+</Workflow>
