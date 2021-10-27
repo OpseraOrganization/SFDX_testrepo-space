@@ -1,0 +1,661 @@
+/* --------------------------------------------------------------------------------------------------------------------------------------------------------
+	Name:	BulkUploadCustomProducts_Controller
+	Description:	 Controller Class for Bulk Upload functionality for Custom Product in Cart .
+	Date	Version  Author			  Summary of Changes
+	-----------   ----------   -----------------	 ---------------------------------------------------------------------------------------
+	15 Apr 2021   1.0   Christie JJ				  ITCCPQ-925 - Pre-Aplha version.
+	---------------------------------------------------------------------------------------------------------------------------------------------------------- */
+public with sharing class BulkUploadCustomProducts_Controller {
+
+static List <Apttus_CPQApi.CPQ.SelectedProductDO> selectedProdDOList = new List <Apttus_CPQApi.CPQ.SelectedProductDO>();
+List <Apttus_Config2__ProductConfiguration__c> prodConfig = new List <Apttus_Config2__ProductConfiguration__c>();
+List <Apttus_Config2__LineItem__c> lineItem = new List <Apttus_Config2__LineItem__c>();
+List <Apttus_Config2__LineItem__c> updateLineItem = new List <Apttus_Config2__LineItem__c>();
+
+public static PS_ApttusCPQWebServiceCalls acpq = new PS_ApttusCPQWebServiceCalls();
+public static Apttus_Config2__ProductConfiguration__c prodConfigRecord;
+
+public static Boolean quoteWithMaintenance_SSP_SRS;
+public static Id proposalId;
+public static boolean isMaintQuote = FALSE;
+public static String productDataAsString;
+public static String[] csvFileLines;
+public static String proposalquoteType;
+public static String errorFlag='false';
+public static Boolean isNFMP = true;
+@AuraEnabled
+public static String getDocumentId () {
+
+	List<Document> templateDocument;
+	if(!test.isRunningTest()) {
+		templateDocument = [SELECT Id FROM Document where DeveloperName = 'Custom_Product_Upload_CSV_Template' LIMIT 1];
+	}
+	else {
+		templateDocument = [SELECT Id FROM Document where DeveloperName = 'Custom_Product_Upload_CSV_TemplateTest' LIMIT 1];
+	}
+	if(!templateDocument.isEmpty())
+		return templateDocument[0].Id;
+	return null;
+
+}
+
+
+@AuraEnabled
+public static String init (String configId,String filename,String filebody) {
+
+	system.debug('[+] configid = '+configId );
+	prodConfigRecord = [SELECT Id,Apttus_QPConfig__Proposald__r.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c,Apttus_QPConfig__Proposald__r.NokiaCPQ_Is_Maintenance_Quote__c,Apttus_QPConfig__Proposald__r.NokiaProductAccreditation__c,Quote_Type__c,NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c,NokiaCPQ_Portfolio_From_Quote__c,Apttus_QPConfig__Proposald__r.NokiaCPQ_LEO_Discount__c,Apttus_Config2__PriceListId__c,Apttus_QPConfig__Proposald__r.NokiaCPQ_Existing_IONMaint_Contract__c,Apttus_QPConfig__Proposald__r.NokiaCPQ_No_of_Years__c,Apttus_QPConfig__Proposald__c, Apttus_QPConfig__Proposald__r.Warranty_credit__c FROM Apttus_Config2__ProductConfiguration__c WHERE Id=: configId LIMIT 1][0];
+	proposalId = prodConfigRecord.Apttus_QPConfig__Proposald__c;
+	system.debug('proposalId' + proposalId);
+
+
+
+	proposalquoteType = prodConfigRecord.Quote_Type__c;
+	isMaintQuote = prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaCPQ_Is_Maintenance_Quote__c;
+	quoteWithMaintenance_SSP_SRS = prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c;
+	string warrantyCredit = prodConfigRecord.Apttus_QPConfig__Proposald__r.Warranty_credit__c;
+
+
+
+	// Base64 decode the file content payload
+	String decodedFileBody = EncodingUtil.base64Decode(filebody).toString();
+
+	// Start Parsing of CSV file data
+
+
+	//Fields to store value from csv file
+	String productName,prodCode,isnfm;
+	Double quantity,listPrice,maintY1,maintY2,sspRate,prodDiscount;
+	List<String> productNameList = new List<String>();
+	List<String> prodCodeList = new List<String>();
+	List<String> csvRecordData = new List<String>();
+	List<Double> quantityList = new List<Double>();
+	List<Double> listPriceList = new List<Double>();
+	List<Double> maintY1List = new List<Double>();
+	List<Double> maintY2List = new List<Double>();
+	List<Double> sspRateList = new List<Double>();
+	List<String> isnfmList = new List<String>();
+	List<Double> prodDiscountList = new List<Double>();
+
+
+	system.debug('[+] readCSVFile::::');
+	system.debug(filebody);
+	system.debug('configid = ');
+	system.debug(prodConfigRecord);
+	productDataAsString = decodedFileBody;
+	if (productDataAsString.contains(';')) {
+		productDataAsString = productDataAsString.replaceAll(';', ',');
+	}
+
+	csvFileLines = productDataAsString.split('\n');
+
+	system.debug('CsvFileLinesSize = ' + csvFileLines.size());
+	string errorMessageProductNames = '';
+	//ITCCPQ-1986 - START
+	Boolean isDirectQuoteWithoutMaint = proposalquoteType == 'Direct CPQ' && !quoteWithMaintenance_SSP_SRS;
+	//ITCCPQ-1986 - End
+	
+	for (Integer i = 1; i < csvFileLines.size(); i++) {
+		csvRecordData = csvFileLines[i].split(',');
+		system.debug('csvRecordData>>'+csvRecordData);
+		
+		if (!String.isBlank(csvRecordData[0]) && !String.isBlank(csvRecordData[1])) {
+
+
+		if(String.isBlank(csvRecordData[0]))
+			return 'Error~The Cell A'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+		if(String.isBlank(csvRecordData[1]))
+			return 'Error~The Cell B'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+		if(String.isBlank(csvRecordData[2]))
+			return 'Error~The Cell C'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+		if(String.isBlank(csvRecordData[3]))
+			return 'Error~The Cell D'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+		if(String.isBlank(csvRecordData[4])) {
+			if(proposalquoteType == 'Direct CPQ')
+	csvRecordData[4] = '0';
+			else
+	return 'Error~The Cell E'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+
+		}
+		if(String.isBlank(csvRecordData[5])) {
+			if(isDirectQuoteWithoutMaint)
+	csvRecordData[5] = '0';
+			else
+	return 'Error~The Cell F'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+		}
+		if(String.isBlank(csvRecordData[6])) {
+			if(isDirectQuoteWithoutMaint)
+	csvRecordData[6] = '0';
+			else
+	return 'Error~The Cell G'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+		}
+		if(String.isBlank(csvRecordData[7])) {
+			if(isDirectQuoteWithoutMaint)
+	csvRecordData[7] = '0';
+			else
+	return 'Error~The Cell H'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+		}
+
+		if(String.isBlank(csvRecordData[8])) {
+			if(isDirectQuoteWithoutMaint)
+	csvRecordData[8] = 'No';
+			else
+	return 'Error~The Cell I'+String.valueOf(i+1)+' in the uploaded csv file is empty!';
+		}
+
+		// Add Parsing Logic Here
+		productName = csvRecordData[0];
+		prodCode = csvRecordData[1];
+		try{
+			quantity = Double.valueOf(csvRecordData[2]);
+			listPrice = Double.valueOf(csvRecordData[3]);
+			prodDiscount = Double.valueOf(csvRecordData[4]);
+			maintY2 = Double.valueOf(csvRecordData[6]);
+			sspRate = Double.valueOf(csvRecordData[7]);
+			maintY1 = Double.valueOf(csvRecordData[5]);
+		}catch(Exception ex) {
+			ExceptionHandler.addException(ex,BulkUploadCustomProducts_Controller.class.getName(),'init');
+			errorMessageProductNames += productName + ',';
+			continue;
+		}
+		isnfm = csvRecordData[8].trim();
+		if(String.isNotBlank(isnfm) && (!isnfm.equalsIgnoreCase('yes') && !isnfm.equalsIgnoreCase('no'))) {
+			errorMessageProductNames += productName + ',';
+			continue;
+		}
+		system.debug('[+] productName = '+productName);
+		system.debug('[+] prodCode = '+prodCode);
+		system.debug('[+] quantity = '+quantity);
+		system.debug('[+] listPrice = '+listPrice);
+		system.debug('[+] maintY1 = '+maintY1);
+		system.debug('[+] maintY2 = '+maintY2);
+		system.debug('[+] sspRate = '+sspRate);
+		system.debug('[+] isnfm = '+isnfm);
+		system.debug('[+] prodDiscount = '+prodDiscount);
+
+
+		productNameList.add(productName);
+		prodCodeList.add(prodCode);
+		quantityList.add(quantity);
+		listPriceList.add(listPrice);
+		maintY1List.add(maintY1);
+		maintY2List.add(maintY2);
+		sspRateList.add(sspRate);
+		isnfmList.add(isnfm);
+		prodDiscountList.add(prodDiscount);
+
+
+
+		}
+	}
+	if(String.isNotBlank(errorMessageProductNames)) {
+		errorMessageProductNames = errorMessageProductNames.substring(0, errorMessageProductNames.length() - 1);
+		return 'Error~File Upload Failed: The following products contain invalid data: ' + errorMessageProductNames + '. Please correct the issues and re-upload the file.';
+	}
+	system.debug('[+] init Wrapper  getLineItemValue');
+	// Get Line Item Details in the Wrapper Object for Later Use
+	SearchProductWrapper vWrapper = new SearchProductWrapper();
+	vWrapper=getLineItemValue(prodConfigRecord,configId);
+	system.debug('[+] Done Wrapper  getLineItemValue');
+	//system.debug(vWrapper);
+
+	system.debug('[+] before  SelectedProductDO loop 288');
+	try {
+
+
+		// Add Line Item Data to Cart , using data from csv file
+		if (!productNameList.isEmpty()) {
+			system.debug('[+] inside  SelectedProductDO loop 294');
+			Integer i=0;
+
+			for (String pname:productNameList) {
+
+
+	// Initialize the Line Item Web API record, to be used for inserting into the cart.
+	Apttus_CPQApi.CPQ.SelectedProductDO SelectedProductDOInstance = new Apttus_CPQApi.CPQ.SelectedProductDO();
+
+
+
+	// Line Item Custom Fields to be used
+	List<String> customFields = new List<String>();
+	customFields.add('Custom_Product_Name__c');
+	customFields.add('Custom_Product_Code__c');
+	customFields.add('NokiaCPQAccreditationType__c');
+	customFields.add('Nokia_CPQ_Maint_Prod_Cat_Disc__c');
+	customFields.add('Nokia_Maint_Y1_Per__c');
+	customFields.add('Nokia_Maint_Y2_Per__c');
+	customFields.add('NokiaCPQ_Maint_Y1_List_Price__c');
+	customFields.add('NokiaCPQ_Maint_Yr1_Base_Price__c');
+	customFields.add('NokiaCPQ_Maint_Yr1_Extended_Price__c');
+	customFields.add('Nokia_Maint_Y1_Extended_List_Price__c');
+	customFields.add('NokiaCPQ_Maint_Yr2_List_Price__c');
+	customFields.add('NokiaCPQ_Maint_Yr2_Extended_Price__c');
+	customFields.add('NokiaCPQ_Maint_Yr2_Extended_List_Price__c');
+	customFields.add('NokiaCPQ_Maint_Yr2_Base_Price__c');
+	customFields.add('NokiaCPQ_IncotermNew__c');
+	customFields.add('is_Custom_Product__c');
+	customFields.add('NokiaCPQ_SSP_Rate__c');
+	customFields.add('Nokia_SSP_List_Price__c');
+	customFields.add('Nokia_SSP_Base_Price__c');
+	customFields.add('Nokia_SSP_Base_Extended_Price__c');
+	customFields.add('NokiaCPQ_SRS_Rate__c');
+	customFields.add('Nokia_SRS_List_Price__c');
+	customFields.add('Nokia_SRS_Base_Price__c');
+	customFields.add('Nokia_SRS_Base_Extended_Price__c');
+	customFields.add('Source__c');
+	customFields.add('CustomProductValue__c');
+	customFields.add('IsNFMP_Custom_Product__c');
+
+	//Added fix for ITCCPQ-1780 by Christie JJ
+	//Start
+	customFields.add('Apttus_Config2__ListPrice__c');
+	customFields.add('NokiaCPQ_Unitary_IRP__c');
+	customFields.add('NokiaCPQ_CNP_High__c');
+	customFields.add('NokiaCPQ_Light_Color__c');
+	customFields.add('NokiaCPQ_Alias__c');
+	//End
+
+
+	//  Assign Custom Fields to the SelectedProduct Instance record
+	SelectedProductDOInstance.CustomFields = customFields;
+
+	Apttus_Config2__LineItem__c customData = new Apttus_Config2__LineItem__c();
+
+	// Assign Values to Standard and Custom fields
+	SelectedProductDOInstance.ProductId = vWrapper.strProductID;
+	SelectedProductDOInstance.Quantity = quantityList[i];
+	CustomData.Custom_Product_Name__c = pname;
+	CustomData.Custom_Product_Code__c =  prodCodeList[i];
+	CustomData.Apttus_Config2__Description__c =  pname;
+	CustomData.Apttus_Config2__LineNumber__c = vWrapper.iLineNumber+1+i;
+	CustomData.Apttus_Config2__PrimaryLineNumber__c = vWrapper.iPrimaryLineNumber+1+i;
+	CustomData.Apttus_Config2__ItemSequence__c = vWrapper.iItemSequence+1+i;
+	CustomData.NokiaCPQAccreditationType__c = vWrapper.strPricingAccred;
+	CustomData.Apttus_Config2__ConfigurationId__c = configId;
+	CustomData.Apttus_Config2__LineType__c = 'Product/Service';
+	CustomData.Apttus_Config2__ListPrice__c =  listPriceList[i];
+	//ITCCPQ-1782 starts
+	CustomData.NokiaCPQ_SRS_Rate__c = 0;
+	CustomData.Nokia_SRS_List_Price__c = 0;
+	CustomData.Nokia_SRS_Base_Extended_Price__c = 0;
+	CustomData.Nokia_SRS_Base_Price__c = 0;
+	CustomData.Nokia_SSP_List_Price__c = 0;
+	CustomData.Nokia_SSP_Base_Price__c = 0;
+	CustomData.Nokia_SSP_Base_Extended_Price__c = 0;
+	//ITCCPQ-1782 ends
+	/*ITCCPQ-1987 Yashdeep*/
+	CustomData.Nokia_Maint_Y1_Per__c = 0;
+	CustomData.Nokia_Maint_Y2_Per__c = 0;
+
+
+	//Added condition for maintenance check here by christie
+	if(proposalquoteType != 'Direct CPQ' && isMaintQuote != true) { //ITCCPQ-464 Christie : Added AND condition for maintenance check
+		CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c = prodDiscountList[i];
+	}
+	//Added condition based on new additions for 464 by christie
+	if((proposalquoteType == 'Direct CPQ' || isMaintQuote == true)&&(prodDiscountList[i]!=null)) { //ITCCPQ-464 Christie : Added OR condition
+		errorFlag = 'true';
+	}
+
+	if(proposalquoteType == 'Direct CPQ') {
+		CustomData.NokiaCPQ_Unitary_IRP__c =  CustomData.Apttus_Config2__ListPrice__c;
+		CustomData.NokiaCPQ_CNP_High__c= CustomData.Apttus_Config2__ListPrice__c;
+		CustomData.NokiaCPQ_Alias__c = CustomData.Custom_Product_Name__c;
+		CustomData.NokiaCPQ_Light_Color__c = 'RED';
+
+		if(isnfmList[i].toLowerCase().contains('no') && quoteWithMaintenance_SSP_SRS==true) {//ITCEPP:789:Bibhu:Modified Code
+			CustomData.NokiaCPQ_SSP_Rate__c = sspRateList[i];
+		}else{
+			CustomData.NokiaCPQ_SRS_Rate__c = vWrapper.dSRSPercentage;//sspRateList[i];
+		}
+	}
+
+
+	if((quoteWithMaintenance_SSP_SRS==true && proposalquoteType == 'Direct CPQ')||(proposalquoteType == 'Indirect CPQ' &&/*ITCCPQ-1823*/ !(isMaintQuote && warrantyCredit != null && warrantyCredit.equalsIgnoreCase(Nokia_CPQ_Constants.Nokia_NO)) /*ITCCPQ-1823*/))//ITCEPP:789:Bibhu:Modified Code
+	{
+		CustomData.Nokia_Maint_Y1_Per__c = maintY1List[i];
+
+	}
+
+	if(CustomData.Nokia_Maint_Y1_Per__c!=null) {
+		CustomData.NokiaCPQ_Maint_Y1_List_Price__c = (CustomData.Apttus_Config2__ListPrice__c * CustomData.Nokia_Maint_Y1_Per__c) /100;
+		CustomData.NokiaCPQ_Maint_Yr1_Base_Price__c = CustomData.NokiaCPQ_Maint_Y1_List_Price__c;
+		CustomData.NokiaCPQ_Maint_Yr1_Extended_Price__c = ((CustomData.Apttus_Config2__ListPrice__c * SelectedProductDOInstance.Quantity)* CustomData.Nokia_Maint_Y1_Per__c) /100;
+		CustomData.Nokia_Maint_Y1_Extended_List_Price__c = CustomData.NokiaCPQ_Maint_Yr1_Extended_Price__c;
+	}
+
+	CustomData.Apttus_Config2__BasePriceMethod__c = 'Per Unit';
+
+	if(vWrapper.str1Year == '1' && proposalquoteType == 'Indirect CPQ')
+		CustomData.Nokia_Maint_Y2_Per__c = 0.0;
+	else if((quoteWithMaintenance_SSP_SRS==true && proposalquoteType == 'Direct CPQ')||(proposalquoteType == 'Indirect CPQ'))
+		CustomData.Nokia_Maint_Y2_Per__c = maintY2List[i];
+
+
+	if(CustomData.Nokia_Maint_Y2_Per__c!=null) {
+		CustomData.NokiaCPQ_Maint_Yr2_List_Price__c = (CustomData.Apttus_Config2__ListPrice__c * CustomData.Nokia_Maint_Y2_Per__c)/100;
+		CustomData.NokiaCPQ_Maint_Yr2_Extended_Price__c = ((CustomData.Apttus_Config2__ListPrice__c * SelectedProductDOInstance.Quantity) * CustomData.Nokia_Maint_Y2_Per__c)/100;
+		CustomData.NokiaCPQ_Maint_Yr2_Extended_List_Price__c = CustomData.NokiaCPQ_Maint_Yr2_Extended_Price__c;
+		CustomData.NokiaCPQ_Maint_Yr2_Base_Price__c = CustomData.NokiaCPQ_Maint_Yr2_List_Price__c;
+	}
+
+	if(CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c == null && vWrapper.strAccredDiscount==null)
+		CustomData.Apttus_Config2__BasePrice__c = CustomData.Apttus_Config2__ListPrice__c;
+	else if(CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c != null && vWrapper.strAccredDiscount==null)
+		CustomData.Apttus_Config2__BasePrice__c = CustomData.Apttus_Config2__ListPrice__c- (CustomData.Apttus_Config2__ListPrice__c * CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c)/100;
+	else if(CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c == null && vWrapper.strAccredDiscount!=null)
+		CustomData.Apttus_Config2__BasePrice__c = CustomData.Apttus_Config2__ListPrice__c - (CustomData.Apttus_Config2__ListPrice__c * vWrapper.strAccredDiscount)/100;
+	else
+	{
+		CustomData.Apttus_Config2__BasePrice__c = CustomData.Apttus_Config2__ListPrice__c - (CustomData.Apttus_Config2__ListPrice__c * vWrapper.strAccredDiscount)/100;
+		CustomData.Apttus_Config2__BasePrice__c = CustomData.Apttus_Config2__BasePrice__c - (CustomData.Apttus_Config2__BasePrice__c * CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c)/100;
+	}
+
+	if(vWrapper.iIncotermPercentage!=null)
+		CustomData.Apttus_Config2__BasePrice__c = CustomData.Apttus_Config2__BasePrice__c + (CustomData.Apttus_Config2__BasePrice__c * vWrapper.iIncotermPercentage)/100;
+
+
+	CustomData.Apttus_Config2__BasePriceOverride__c = CustomData.Apttus_Config2__BasePrice__c;
+	CustomData.NokiaCPQ_IncotermNew__c = vWrapper.iIncotermPercentage;
+	CustomData.Apttus_Config2__PriceListId__c = vWrapper.strGlobalPriceListID;
+	CustomData.Apttus_Config2__PriceListItemId__c = vWrapper.strGlobalPriceListItemID;
+	CustomData.Apttus_Config2__BaseExtendedPrice__c = CustomData.Apttus_Config2__BasePrice__c * SelectedProductDOInstance.Quantity;
+	CustomData.Apttus_Config2__ExtendedPrice__c = CustomData.Apttus_Config2__BasePrice__c * SelectedProductDOInstance.Quantity;
+	CustomData.Apttus_Config2__NetPrice__c = CustomData.Apttus_Config2__BasePrice__c * SelectedProductDOInstance.Quantity;
+	CustomData.Apttus_Config2__NetUnitPrice__c = CustomData.Apttus_Config2__BasePrice__c;
+	CustomData.Apttus_Config2__PriceUom__c ='Each';
+	CustomData.Apttus_Config2__Frequency__c = 'One Time';
+	CustomData.Apttus_Config2__Frequency__c = 'One Time';
+	CustomData.Apttus_Config2__PricingStatus__c = 'Pending';
+	CustomData.is_Custom_Product__c = true;
+	CustomData.Apttus_Config2__ConfigStatus__c = 'NA';
+	CustomData.Apttus_Config2__IsPrimaryLine__c = true;
+	CustomData.Apttus_Config2__ChargeType__c = 'Standard Price';
+
+
+	CustomData.IsNFMP_Custom_Product__c = false;/*ITCCPQ-1987 Yashdeep*/
+	if(isnfmList[i].toLowerCase( ).contains('no')) {
+		//SSP Field Population
+		system.debug('[+] NokiaCPQ_SSP_Rate__c = ' + sspRateList[i]);
+		CustomData.NokiaCPQ_SSP_Rate__c = sspRateList[i];
+		if(vWrapper.isLEO== true)
+			CustomData.Nokia_SSP_List_Price__c = 0.0;
+		else if((quoteWithMaintenance_SSP_SRS==true && proposalquoteType == 'Direct CPQ')||(proposalquoteType == 'Indirect CPQ')) //ITCEPP:789:Bibhu:Modified Code
+			CustomData.Nokia_SSP_List_Price__c =  (CustomData.Apttus_Config2__ListPrice__c * sspRateList[i])/100;
+
+		system.debug('[+] Nokia_SSP_List_Price__c = '+CustomData.Nokia_SSP_List_Price__c);
+		system.debug('[+] Nokia_CPQ_Maint_Prod_Cat_Disc__c = '+CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c);
+		if(CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c!=null && CustomData.Nokia_SSP_List_Price__c!=null)
+			CustomData.Nokia_SSP_Base_Price__c =  CustomData.Nokia_SSP_List_Price__c  - (CustomData.Nokia_SSP_List_Price__c * CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c) /100;
+		else if(CustomData.Nokia_SSP_List_Price__c!=null) {
+			CustomData.Nokia_SSP_Base_Price__c = CustomData.Nokia_SSP_List_Price__c;
+		}
+		CustomData.Nokia_SSP_Base_Extended_Price__c = CustomData.Nokia_SSP_Base_Price__c * SelectedProductDOInstance.Quantity;//ITCCPQ-1778
+	}
+
+	else if(isnfmList[i].toLowerCase().contains('yes') && /*ITCCPQ-1987 start Yashdeep*/ ((quoteWithMaintenance_SSP_SRS && proposalquoteType == 'Direct CPQ')||(proposalquoteType == 'Indirect CPQ')) /*ITCCPQ-1987 end Yashdeep*/) {
+		//SRS Field Population
+		CustomData.NokiaCPQ_SRS_Rate__c = vWrapper.dSRSPercentage;//sspRateList[i];
+
+		CustomData.Nokia_SRS_List_Price__c =  (CustomData.Apttus_Config2__ListPrice__c * vWrapper.dSRSPercentage);
+		CustomData.IsNFMP_Custom_Product__c = true;
+		system.debug('[+] snfmList[i].toLowerCase() - '+isnfmList[i].toLowerCase());
+		system.debug('[+]  CustomData.IsNFMP_Custom_Product__c = '+ CustomData.IsNFMP_Custom_Product__c);
+
+		if(CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c!=null && CustomData.Nokia_SRS_List_Price__c!=null)
+			CustomData.Nokia_SRS_Base_Price__c =  CustomData.Nokia_SRS_List_Price__c  - (CustomData.Nokia_SRS_List_Price__c * CustomData.Nokia_CPQ_Maint_Prod_Cat_Disc__c) /100;
+		else if(CustomData.Nokia_SRS_List_Price__c!=null) {
+			CustomData.Nokia_SRS_Base_Price__c = CustomData.Nokia_SRS_List_Price__c;
+		}
+		CustomData.Nokia_SRS_Base_Extended_Price__c = CustomData.Nokia_SRS_Base_Price__c * SelectedProductDOInstance.Quantity;//ITCCPQ-1778
+	}
+
+	CustomData.Apttus_Config2__NetUnitPrice__c = CustomData.Apttus_Config2__BasePrice__c;
+	CustomData.Apttus_Config2__ProductVersion__c = 1.0;
+	CustomData.Source__c ='Custom Product';
+	CustomData.CustomProductValue__c = CustomData.Apttus_Config2__ListPrice__c +';'+CustomData.Apttus_Config2__BasePrice__c +';'+ CustomData.Apttus_Config2__BasePriceOverride__c;
+
+	//  Assosciate Custom Field Values to the API record.
+	SelectedProductDOInstance.CustomData = customData;
+
+	selectedProdDOList.add(SelectedProductDOInstance);
+	++i;
+			}
+
+			system.debug('[+] after SelectedProductDO loop 433');
+		}
+
+
+	} catch (Exception e) {
+		system.debug('Upload product is failing');
+		system.debug(e.getMessage());
+		system.debug(e.getStackTraceString());
+		ExceptionHandler.addException(e,BulkUploadCustomProducts_Controller.class.getName(),'init');
+	}
+
+	// End Parsing of CSV file data
+
+
+	// Start product addition to cart using Web API
+
+	List < Integer > primaryLines = new List < Integer > ();
+	system.debug('[+] Before Loop addProductsfromfile 466');
+	if (!selectedProdDOList.isEmpty()) {
+		system.debug('[+] inside Loop addProductsfromfile 468');
+		Apttus_CPQApi.CPQ.AddMultiProductRequestDO lineItemRecords = new Apttus_CPQApi.CPQ.AddMultiProductRequestDO();
+		lineItemRecords.cartID = prodConfigRecord.Id;
+		lineItemRecords.SelectedProducts = selectedProdDOList;
+		system.debug('[+] assosciated selectedProdDOList to record 472');
+		Apttus_CPQApi.CPQWebService.addMultiProducts(lineItemRecords);
+		system.debug('[+] added lines to cart api 474');
+		if (isMaintQuote) {
+			Apttus_CPQApi.CPQWebService.associateConstraintRules(prodConfigRecord.Id, primaryLines);
+			Apttus_CPQApi.CPQWebService.applyConstraintRules(prodConfigRecord.Id, false);
+		}
+
+
+	}
+	system.debug('[+] ended addProductsfromfile 482');
+
+	// End product addition to cart using Web API
+
+
+	//Start Save Cart
+
+	system.debug('Save ..');
+	if (prodConfigRecord.Id != null) {
+		//Req 6383 Start
+		//List < Integer > primaryLines = new List < Integer > ();
+		system.debug('[+] before  associateConstraintRules 492');
+		if (!isMaintQuote) {
+			Apttus_CPQApi.CPQWebService.associateConstraintRules(prodConfigRecord.Id, primaryLines);
+			Apttus_CPQApi.CPQWebService.applyConstraintRules(prodConfigRecord.Id, false);
+		}
+		system.debug('[+] after  associateConstraintRules 492');
+		acpq.saveCart(prodConfigRecord.Id);
+		system.debug('[+] after  savecart 499');
+		//Req 6383 End
+
+		// For rules that are not marked as Check on Finalization
+		system.debug('[+] before updateMaintenanceLineItem 508');
+		//Req 6383 Start
+		if (isMaintQuote) {
+
+			acpq.updateMaintenanceLineItem(prodConfigRecord.Id);
+		}
+		system.debug('[+] after updateMaintenanceLineItem 514');
+		//Req 6383 End
+
+	}
+
+	//End Save Cart
+
+	return 'Success:'+errorFlag;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+public static SearchProductWrapper getLineItemValue(Apttus_Config2__ProductConfiguration__c prodConfigRecord,ID strConfigId) {
+
+	try {
+
+		SearchProductWrapper objwrapper = new SearchProductWrapper();
+		objwrapper = getDetailsProduct(objwrapper);
+
+		objwrapper.strGlobalPriceListItemID = createPriceLineItems(objwrapper.strProductID, prodConfigRecord.Apttus_Config2__PriceListId__c);
+		objwrapper.str1Year = prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaCPQ_No_of_Years__c;
+		objwrapper.strGlobalPriceListID = prodConfigRecord.Apttus_Config2__PriceListId__c;
+		objwrapper.strPortfolio = prodConfigRecord.NokiaCPQ_Portfolio_From_Quote__c;
+		objwrapper.dSRSPercentage =
+		[Select Portfolio__c, SSP_Visible__c, SRS_Visible__c, SRS_Percentage__c,
+		 Tier_Discount_Applicable__c, AccountLevel_Discount_Applicable__c, Multi_Year_Discount_Applicable__c
+		 From Nokia_CPQ_SSP_SRS_Default_Values__mdt where Portfolio__c = :prodConfigRecord.NokiaCPQ_Portfolio_From_Quote__c LIMIT 1].SRS_Percentage__c;
+
+		//defect 13889 Heema/13944
+		if (prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaCPQ_LEO_Discount__c == true && prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaCPQ_No_of_Years__c.equalsIgnoreCase(Nokia_CPQ_Constants.NOKIA_1YEAR)) {
+			objwrapper.dSRSPercentage = 0.0;
+			objwrapper.isLEO = true;
+		}
+
+		if (Nokia_CPQ_Constants.QUOTE_TYPE_INDIRECTCPQ.equalsIgnoreCase(prodConfigRecord.Quote_Type__c)) {
+
+			objwrapper.strPricingAccred = [select Pricing_Accreditation__c from Accreditation__c where id = :prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaProductAccreditation__c].Pricing_Accreditation__c;
+			objwrapper.iIncotermPercentage = [select NokiaCPQ_Incoterm_Percentage__c from Accreditation__c where id = :prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaProductAccreditation__c].NokiaCPQ_Incoterm_Percentage__c;
+			string strGPPversion = [select Partner_Program__c from Accreditation__c where id = :prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaProductAccreditation__c].Partner_Program__c;
+			system.debug('[+] strGPPversion = '+strGPPversion);
+			system.debug('[+] objwrapper.strPricingAccred ='+objwrapper.strPricingAccred);
+			system.debug('[+] Partner Program = '+strGPPversion);
+			//Added by RG for LOE check Start
+			if (prodConfigRecord.Apttus_QPConfig__Proposald__r.NokiaCPQ_LEO_Discount__c) {
+	string str = 'NokiaCPQ LEO Discount IPR NUA OPT ' + strGPPversion;
+	string strruleSetID = [select id, NokiaCPQ_Partner_Program__c from Apttus_Config2__PriceRuleset__c
+						   where NokiaCPQ_Partner_Program__c = :strGPPversion and
+															   NokiaCPQ_Cluster_Tiers__c = 'LEO' and name = :str].id;
+	objwrapper.strAccredDiscount = [select Apttus_Config2__AdjustmentAmount__c from Apttus_Config2__PriceRuleEntry__c where Apttus_Config2__Dimension1Value__c = :prodConfigRecord.NokiaCPQ_Portfolio_From_Quote__c and Apttus_Config2__PriceRuleId__r.Apttus_Config2__RulesetId__c = :strruleSetID].Apttus_Config2__AdjustmentAmount__c;
+	System.debug('strruleSetID>>>' + strruleSetID);
+	System.debug('objwrapper.strAccredDiscount>>>' + objwrapper.strAccredDiscount);
+			}
+			else {
+	//Added by RG for LOE check End
+	string strruleSetID = [select id, NokiaCPQ_Partner_Program__c from Apttus_Config2__PriceRuleset__c where NokiaCPQ_Partner_Program__c = :strGPPversion and name = 'NokiaCPQ Accreditation Level Discount GPP 3.0'].id;
+	system.debug('[+] strruleSetID = '+strruleSetID);
+	Apttus_Config2__PriceRuleEntry__c p = [select Apttus_Config2__AdjustmentAmount__c from Apttus_Config2__PriceRuleEntry__c
+										   where Apttus_Config2__Dimension1Value__c = :objwrapper.strPricingAccred and
+																					  Apttus_Config2__PriceRuleId__r.Apttus_Config2__RulesetId__c = :strruleSetID];
+	System.debug('[+] PriceRuleEntry id = '+p.Id);
+	System.debug('[+] PriceRuleEntry Apttus_Config2__AdjustmentAmount__c = '+p.Apttus_Config2__AdjustmentAmount__c);
+	objwrapper.strAccredDiscount = [select Apttus_Config2__AdjustmentAmount__c from Apttus_Config2__PriceRuleEntry__c
+									where Apttus_Config2__Dimension1Value__c = :objwrapper.strPricingAccred and
+																			   Apttus_Config2__PriceRuleId__r.Apttus_Config2__RulesetId__c = :strruleSetID].Apttus_Config2__AdjustmentAmount__c;
+
+			}
+		}
+
+		setLineItemsNumber(strConfigId, objwrapper);
+
+		return objwrapper;
+	}
+
+
+	catch(Exception e) {
+		system.debug(e.getStackTraceString());
+	}
+
+	return null;
+}
+
+
+// get the product detials to create line item
+public static SearchProductWrapper getDetailsProduct(SearchProductWrapper objWrapper) {
+	try
+	{
+		Product2 objProd = [select id, Name,ProductCode,Description,NokiaCPQ_Product_Discount_Category__c from product2 where ProductCode=:Nokia_CPQ_Constants.CUSTPROD001 LIMIT 1][0];
+
+
+		objwrapper.strProductID = objProd.id;
+		objwrapper.strProductCode = objProd.ProductCode;
+		objwrapper.strProductName = objProd.Name;
+		return objWrapper;
+
+	}
+	catch(Exception e) {
+		system.debug(e.getStackTraceString());
+	}
+	return null;
+
+}
+
+
+// will set the line item number values
+public static void setLineItemsNumber(ID idConfig,SearchProductWrapper objWrapper) {
+
+	objWrapper.isLEO= false;
+	Decimal iLineNumber = 0,iPrimaryNumber = 0, iItemSequence = 0;
+
+	try {
+
+		for( Apttus_Config2__LineItem__c objLineItem : [select id,Apttus_Config2__LineNumber__c,Apttus_Config2__PrimaryLineNumber__c,
+												  Apttus_Config2__ItemSequence__c from Apttus_Config2__LineItem__c where Apttus_Config2__ConfigurationId__c=:idConfig ])
+
+		{
+			if(iLineNumber < objLineItem.Apttus_Config2__LineNumber__c)
+	iLineNumber = objLineItem.Apttus_Config2__LineNumber__c;
+			if(iPrimaryNumber < objLineItem.Apttus_Config2__PrimaryLineNumber__c)
+	iPrimaryNumber = objLineItem.Apttus_Config2__PrimaryLineNumber__c;
+			if(iItemSequence < objLineItem.Apttus_Config2__ItemSequence__c)
+	iItemSequence = objLineItem.Apttus_Config2__ItemSequence__c;
+		}
+
+		objwrapper.iLineNumber = integer.valueof(iLineNumber);
+		objwrapper.iItemSequence = integer.valueof(iItemSequence);
+		objwrapper.iPrimaryLineNumber = integer.valueof(iPrimaryNumber);
+	}
+	catch(Exception e) {
+		system.debug(e.getStackTraceString());
+	}
+
+}
+
+
+// create Price list line item if no PLI is present.
+public static string createPriceLineItems(ID strProductId,ID idGlobalPl)
+{
+
+	try
+	{
+		Apttus_Config2__PriceListItem__c[] idExitingPli = [select id from Apttus_Config2__PriceListItem__c where Apttus_Config2__ProductId__c=:strProductId Limit 1];
+
+		if(idExitingPli.size() == 0)
+		{
+			Apttus_Config2__PriceListItem__c objPLI = new  Apttus_Config2__PriceListItem__c();
+			objPLI.Apttus_Config2__PriceType__c ='One Time';
+			objPLI.Apttus_Config2__PriceMethod__c = 'Per Unit';
+			objPLI.Apttus_Config2__ChargeType__c = 'Product Price';
+			objPLI.Apttus_Config2__ProductId__c = strProductId;
+			objPLI.Apttus_Config2__PriceListId__c = idGlobalPl;
+			objPLI.Apttus_Config2__Active__c= true;
+			insert objPLI;
+			return objPLI.id;
+		}
+		else
+			return idExitingPli[0].id;
+
+	}
+	catch(Exception e) {
+		system.debug(e.getStackTraceString());
+	}
+	return null;
+}
+
+}
