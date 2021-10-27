@@ -1,0 +1,525 @@
+<apex:page sideBar="false" standardStylesheets="false" docType="html-5.0" action="{!populateTargetAccountTouchData}" controller="LeanData.Reporting_BaseController" >
+    <style>
+        .taper-right {
+            width: 20px;
+            height: 0px;
+            border-color: #65d2bd transparent;
+            border-style: solid;
+            border-width: 0px 21px 50px 0px;
+            float: left;
+        }
+        
+        .taper-left {
+            width: 20px;
+            height: 0px;
+            border-color: #65d2bd transparent;
+            border-style: solid;
+            border-width: 0px 0px 50px 21px;
+            float: left;
+        }
+        
+        .taper-center {
+            width: 200px;
+            height: 50px;
+            line-height: 25px;
+            color: white;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 15px;
+            border-color: #65d2bd transparent;
+            border-style: solid;
+            background-color: #65d2bd transparent;
+            background-color: #65d2bd;
+            float: left;
+            text-align: center;
+            padding-top: 10px;
+        }
+        
+        .info-taper-left {
+            width: 25px;
+            height: 0px;
+            border-color: #f0f8ff transparent;
+            border-style: solid;
+            border-width: 50px 0px 0px 21px;
+            float: left;
+        }
+        
+        .info-taper-center {
+            width: 375px;
+            height: 50px;
+            color: #555555;
+            line-height: 25px;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 14px;
+            border-color: #f0f8ff transparent;
+            border-style: solid;
+            background-color: #f0f8ff transparent;
+            background-color: #f0f8ff;
+            float: left;
+            text-align: center;
+            padding-top: 10px;
+            padding-right: 40px;
+        }
+        
+        .funnel-row {
+            clear: both;
+            height: 77.5px;
+        }
+        
+        .funnel-row-header {
+            margin-left: 225px;
+            height: 30px;
+        }
+        
+        .funnel-row-header-c2 {
+            margin-left: 100px;
+        }
+        
+        .funnel-button {
+            margin-top: 7.5px;
+            float: left;
+            margin-left: 25px;
+            width: 185px;
+        }
+    </style>
+    <apex:composition template="LeanData__Reporting_Template">
+        <apex:define name="customHeaderContent">
+            <div class="customHeaderContent-right">
+                <apex:commandLink rerender="x" html-data-toggle="modal" html-data-target="#infoModal">
+                    <apex:image value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Info_Button_Icon.png')}" styleClass="customHeaderContent-right-information" />
+                </apex:commandLink>
+            </div>
+        </apex:define>
+        <apex:define name="mainContent">
+            <div class="dg_outer-wrapper">
+                <div class="dg_outer-wrapper-header">
+                    Campaigns for Target Accounts
+                </div>
+                <div class="dg_outer-wrapper-content">
+                    <div class="dg_large-option-wrapper">
+                        <div onClick="setGroupingCategory('By Campaign')" class="dg_large-option-button dg_large-option-button-campaign"> By Campaign </div>
+                        <div onClick="setGroupingCategory('By Type')" class="dg_large-option-button dg_large-option-button-type dg_large-option-button-active" style="margin-left:3px;"> By Type </div>
+                    </div>
+                    <div class="dg_inner-wrapper">
+                        <div class="dg_inner-wrapper-header">
+                            <div class="dg_styled-select dg_campaign-type-choice-div" style="float:left;display:inline-block;width:150px;margin: 7px 0px 0px 20px;">
+                                <apex:selectList value="{!campaignType}" size="1" multiselect="true" styleClass="bsmultiselect_ct dg_picklist dg_campaign-type-choice" onChange="targetAccountsReport.drawChart();targetAccountsReport.renderTable(); targetAccountsReport.sortTable();">
+                                    <apex:selectOptions value="{!campaignTypeOptions}" />
+                                </apex:selectList>
+                            </div>
+                            <span class="pipeline-sourced" /> Account Coverage
+                            <div class="dg_styled-select" style="float:right;display:inline-block;width:150px;margin: 7px 20px 0px 0px;">
+                                <select class="dg_picklist dg_time-frame-choice" onChange="buildReport();">
+                                    <option value="THIS_FISCAL_QUARTER">Quarter-To-Date</option>
+                                    <option value="THIS_FISCAL_YEAR">Year-To-Date</option>
+                                    <option value="LAST_FISCAL_QUARTER">Last Quarter</option>
+                                    <option selected="selected" value="LAST_FISCAL_YEAR">Last Year</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="dg_inner-wrapper-content">
+                            <div class="dg_axis-choices-div">
+                                <div class="dg_styled-select" style="display:inline-block;width:195px;margin-right:20px;">
+                                    <select class="dg_picklist dg_y-axis-choice" onChange="targetAccountsReport.drawChart();targetAccountsReport.renderTable(); targetAccountsReport.sortTable();">
+                                        <option selected="selected" value="onTarget">% On Target</option>
+                                    </select>
+                                </div>
+                                vs.
+                                <div class="dg_styled-select" style="display:inline-block;width:195px;margin-left:20px;">
+                                    <select class="dg_picklist dg_campaign-member-type-choice" onChange="targetAccountsReport.drawChart();targetAccountsReport.renderTable(); targetAccountsReport.sortTable();">
+                                        <option selected="selected" value="relevantCampaignMembers">Relevant Campaign Members</option>
+                                        <!--<option value="totalCampaignMembers">Total Campaign Members</option>-->
+                                    </select>
+                                </div>
+                                <select class="dg_picklist dg_x-axis-choice" style="visibility:hidden;">
+                                    <option selected="selected" value="numberOfCampaignMembers">Number of Campaign Members</option>
+                                </select>
+                            </div>
+                            <div class="dg_highchart" />
+                            <div class="dg_details-table-div pipeline-attribution-table-div" />
+                        </div>
+                        <!-- .dg_inner-wrapper-content -->
+                    </div>
+                    <!-- .dg_inner-wrapper -->
+                </div>
+            </div>
+            <div class="dg_inner-wrapper">
+                <div class="dg_inner-wrapper-header">
+                    Accounts without Opportunities
+                </div>
+                <div class="dg_inner-wrapper-content">
+                    <div class="funnel-row-header">
+                        <span class="funnel-row-header-c1">Marketing Touches</span>
+                        <span class="funnel-row-header-c2"># of Accounts</span>
+                    </div>
+                    <div class="funnel-row" style="margin-left: 227px;">
+                        <div title="Number of accounts with more than {!avgTouches} touch(es).">
+                            <div class="taper-left"/>
+                            <div class="taper-center" style="width: 91px;"> High </div>
+                            <div class="taper-right"/>
+                        </div>
+                        <div class="info-taper-left" style="width:62.5px"> </div>
+                        <div class="info-taper-center" style="width: 245px;">{!noAccountsWithHighNoMarketingTouches}</div>
+                        <div class="funnel-button main-button" onclick="window.open('/apex/Reporting_CreateSegment?objType=Account&category=High%20Touches','_blank');">Define Segment</div>
+                    </div>
+                    <div class="funnel-row" style="margin-left: 206.75px;">
+                        <div title="Number of accounts with less than {!avgTouches} touch(es).">
+                            <div class="taper-left"></div>
+                            <div class="taper-center" style="width: 132.5px;">Low</div>
+                            <div class="taper-right"></div>
+                        </div>
+                        <div class="info-taper-left" style="width:41.5px"> </div>
+                        <div class="info-taper-center" style="width: 245px;">{!noAccountsWithLowNoMarketingTouches}</div>
+                        <div class="funnel-button main-button" onclick="window.open('/apex/Reporting_CreateSegment?objType=Account&category=Low%20Touches','_blank');">Define Segment</div>
+                    </div>
+                    <div class="funnel-row" style="margin-left: 185.5px;">
+                        <div title="Number of accounts with no touches.">
+                            <div class="taper-left"></div>
+                            <div class="taper-center" style="width: 175px;">None</div>
+                            <div class="taper-right"></div>
+                        </div>
+                        <div class="info-taper-left" style="width:15px"> </div>
+                        <div class="info-taper-center" style="width: 245px;">{!noAccountsWithNoMarketingTouches}</div>
+                        <div class="funnel-button main-button" onclick="window.open('/apex/Reporting_CreateSegment?objType=Account&category=No%20Touches','_blank');">Define Segment</div>
+                    </div>
+                </div>
+                <!-- .dg_inner-wrapper-content -->
+            </div>
+            <!-- .dg_inner-wrapper -->
+            <div class="dg_inner-wrapper">
+                <div class="dg_inner-wrapper-header">
+                    Accounts with Recent Marketing Activity
+                </div>
+                <div class="dg_inner-wrapper-content">
+                    <div class="dg_details-table-div accounts-with-recent-activity-table-div" />
+                    <div class="funnel-button main-button" style="clear:both;margin-left:auto;margin-right:auto;float:none" onclick="window.open('/apex/Reporting_CreateSegment?objType=Account&category=Recent','_blank');">Define Segment</div>
+                </div>
+                <!-- .dg_inner-wrapper-content -->
+            </div>
+            <!-- .dg_inner-wrapper -->
+            
+            
+            <!-- Begin Tooltip -->
+            <div id="infoModal" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content" style="display: inline-block;background: #eeefef;border-radius: 0px; padding-left: 20px;">
+                        
+                        <apex:commandLink rerender="x" html-data-dismiss="modal" style="float:right;margin:5px 5px 0 0">
+                            <apex:image width="15px" height="15px" value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Close_Window_Icon.png')}"/>
+                        </apex:commandLink>
+                        
+                        <div class="dg_inner-wrapper" style="width:615px">
+                            <div class="dg_inner-wrapper-header">
+                                Tooltip | Target Accounts
+                            </div>
+                            
+                            <div class="dg_inner-wrapper-content" style="height:400px;overflow:auto">
+                            <p>On the Target Accounts page you see how good marketing is at penetrating target accounts. See your overall account coverage and how focused campaigns are at activating new accounts.</p>
+                            
+                            <h5>Campaigns for Target Accounts</h5>
+                            <br/>
+                                
+                            <h6> % on Target</h6>
+                            <p>Total percentage of a campaign’s touches created within target accounts.</p>
+
+                            <h6>First Touch (FT) Pipeline Attribution</h6>
+                            <p>First campaign with a relevant campaign member touch is attributed the total opportunity amount. *Only opportunities created in the specified timeframe are considered.</p>
+                            
+                            <h6>Multi Touch (MT) Pipeline Attribution</h6> 
+                            <p> The value of closed won bookings are distributed among all campaigns with a relevant campaign member touch. Distribution can be equal or using a custom weighting model.</p>
+                            
+                            <h6>Cost</h6> 
+                            <p>Actual Cost of campaigns as defined on SFDC Campaign. You can add an average cost per type in the Advanced Settings.</p>
+                            
+                                                        
+                            <h5>Accounts without Opportunities</h5>
+                            <br/>
+                                
+                            <h6>High Marketing Touches</h6>
+                            <p>The top 50% of accounts by number of relevant campaign touches.</p>
+                            
+                            <h6>Low Marketing Touches</h6>
+                            <p>The bottom 50% of accounts by number of relevant campaign touches.</p>
+                            
+                            <h6>No Marketing Touches</h6>
+                            <p>Target Accounts without any relevant campaign touches.</p> 
+                            
+                            
+                            <h5>Accounts with Recent Marketing Activity</h5>
+                            <p>List of most active target accounts with a relevant campaign member touch.</p>
+                            
+                            <h6># of Recent Touches</h6>
+                            <p>Total number of relevant campaign member touches in the specified timeframe.</p> 
+                            
+                            <h6># of Touches</h6>
+                            <p>Total number of marketing touches on an account.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End of Tooltip -->
+        </apex:define>
+    </apex:composition>
+    <script>
+        j$(document).ready(function() {
+            setPageTitle('Target Accounts');
+            setActiveNav('target-account-nav');
+            
+            j$('.bsmultiselect_ct').multiselect({
+                nonSelectedText: 'Campaign Type',
+                numberDisplayed: 1,
+                includeSelectAllOption: true,
+                nSelectedText: 'Campaign Type',
+                allSelectedText: 'All Types',
+                selectAllNumber: false,
+            });
+            
+            j$('.bsmultiselect_ct').multiselect('selectAll', false);
+            j$('.bsmultiselect_ct').multiselect('updateButtonText');
+            buildReport();
+        });
+
+
+        function buildReport() {
+            if (j$('.dg_large-option-button-campaign').hasClass('dg_large-option-button-active')) {
+                targetAccountsReport = new objWrapper('targetAccountsReport', 'Target Accounts By Campaign', j$(".pipeline-attribution-table-div"));
+            } else {
+                targetAccountsReport = new objWrapper('targetAccountsReport', 'Target Accounts By Type', j$(".pipeline-attribution-table-div"));
+            }
+
+            accountsWithRecentActivityReport = new objWrapper('accountsWithRecentActivityReport', 'Accounts with Recent Activity', j$(".accounts-with-recent-activity-table-div"), 50);
+        }
+        
+        objWrapper.prototype.queryTargetAccountsCampaignMetrics = function() {
+            // save report so that its accessible inside callback function.
+            var report = this;
+            report.typeResultsMap = {};
+            time_frame = j$('.dg_time-frame-choice').val();
+            campaign_type = j$('.dg_campaign-type-choice').val();
+            campaign_member_type = j$('.dg_campaign-member-type-choice').val();
+            console.log( 'Begin TA Metrics' );
+            if( campaign_member_type == 'relevantCampaignMembers' ){
+                totalMembersName = 'totalRelevantMembers';
+                targetMembersName = 'totalRelevantTargetMembers';
+            }
+            else{
+                totalMembersName = 'totalMembers';
+                targetMembersName = 'totalTargetMembers';
+            }
+            
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Reporting_BaseController.getTargetAccountCampaignMetrics}',
+                function(result, event) {
+                    if (event.type === 'exception') {
+                        console.log("exception");
+                        console.log(event);
+                    } else if (event.status) {
+                        console.log('Results: ');
+                        console.log( result );
+                        for (var i = 0; i < result.length; i++) {
+                            
+                            //console.log( result[i][ns+'Reporting_Campaign_Member_Totals__c'] );
+                            if( result[i][ns + 'Reporting_Campaign_Member_Totals__c'] != null ){
+                                var tempObj = JSON.parse( result[i][ns + 'Reporting_Campaign_Member_Totals__c'].replace(/&(l|g|quo)t;/g, 
+                                            function(a,b){
+                                                return {
+                                                    l  : '<',
+                                                    g  : '>',
+                                                    quo : '"'
+                                                }[b];
+                                            }));
+                                if( grouping_category == 'By Campaign' && campaign_type.indexOf( result[i].Type ) > -1 ){
+                                    console.log( tempObj );
+                                    console.log( time_frame );
+                                    if( tempObj[time_frame] != null ){
+                                        result[i].numberOfCampaignMembers = tempObj[time_frame][totalMembersName];
+                                        result[i].numOfTargetMembers = tempObj[time_frame][targetMembersName];
+                                        if( result[i].numberOfCampaignMembers != 0 ){
+                                            result[i].onTarget = roundToTwo(( result[i].numOfTargetMembers / result[i].numberOfCampaignMembers ) * 100);
+                                        }
+                                        else
+                                            result[i].onTarget = 0;
+                                        report.originalObjList.push(result[i]);
+                                    }
+                                }
+                                else{
+                                    if( tempObj[time_frame] != null ){
+                                        if( report.typeResultsMap[result[i].Type] == null ){
+                                            report.typeResultsMap[result[i].Type] = {};
+                                            report.typeResultsMap[result[i].Type].numberOfCampaignMembers = 0;
+                                            report.typeResultsMap[result[i].Type].numOfTargetMembers = 0;
+                                            report.typeResultsMap[result[i].Type].Type = result[i].Type;
+                                            report.typeResultsMap[result[i].Type].Name = result[i].Type;
+                                        }
+                                        report.typeResultsMap[result[i].Type].numberOfCampaignMembers += tempObj[time_frame][totalMembersName];
+                                        report.typeResultsMap[result[i].Type].numOfTargetMembers += tempObj[time_frame][targetMembersName];
+                                    }
+                                }
+                                
+                            }
+                        }
+                        
+                        //If by Campaign Type, add to the object list
+                        if( grouping_category == 'By Type' ){
+                            for (var campaignType in report.typeResultsMap) {
+                              if (report.typeResultsMap.hasOwnProperty(campaignType)) {
+                                  if( report.typeResultsMap[campaignType].numberOfCampaignMembers != 0 )
+                                     report.typeResultsMap[campaignType].onTarget = roundToTwo(( report.typeResultsMap[campaignType].numOfTargetMembers / report.typeResultsMap[campaignType].numberOfCampaignMembers ) * 100);
+                                  else
+                                    report.typeResultsMap[campaignType].onTarget = 0;
+                                  report.originalObjList.push(report.typeResultsMap[campaignType]);
+                              }
+                            }
+                        }
+                        
+                        console.log('CM Queried');
+                        console.log(report.originalObjList);
+                        report.drawChart();
+                        report.renderTable();
+                        report.sortTable();
+                    }
+                });
+        };     
+        
+        objWrapper.prototype.queryAccountsWithRecentActivity = function() {
+            var report = this;
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Reporting_BaseController.getAccountsWithRecentActivity}',
+                function(result, event) {
+                    if (event.type === 'exception') {
+                        console.log("exception");
+                        console.log(event);
+                    } else if (event.status) {
+
+                        for (var i = 0; i < result.length; i++) {
+                            report.objList.push(result[i]);
+                        }
+
+                        report.renderTable();
+                        report.sortTable();
+                    }
+                });
+        };
+
+        objWrapper.prototype.drawChart = function() {
+
+            this.setChartUnits();
+            console.log( 'Draw Chart, New Object List : ' );
+            console.log(this.objList);
+            j$('.dg_highchart').highcharts({
+                chart: {
+                    type: 'bubble',
+                    plotBorderWidth: 1,
+                    zoomType: 'xy'
+                },
+                colors: ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
+                    '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1'
+                ],
+                legend: {
+                    enabled: false
+                },
+
+                title: {
+                    text: '',
+                    style: {
+                        fontSize: '16px',
+                        fontColor: '#555555',
+                        fontFamily: 'Open Sans'
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                xAxis: {
+                    gridLineWidth: 0,
+                    title: {
+                        text: x_axis_label
+                    },
+                    labels: {
+                        format: x_axis_prefix + '{value}' + x_axis_scale + x_axis_suffix
+                    },
+                    lineWidth: 0,
+                    minorGridLineWidth: 0,
+                    lineColor: 'transparent',
+                    max: x_axis_max,
+                    min: x_axis_min
+                },
+
+                yAxis: {
+                    max: y_axis_max,
+                    min: y_axis_min,
+                    startOnTick: false,
+                    endOnTick: false,
+                    title: {
+                        text: y_axis_label
+                    },
+                    labels: {
+                        format: y_axis_prefix + '{value}' + y_axis_scale + y_axis_suffix
+                    },
+                    maxPadding: 0.2,
+                    gridLineWidth: 0,
+                    lineWidth: 0,
+                    minorGridLineWidth: 0,
+                    lineColor: 'transparent',
+                    max: y_axis_max,
+                    min: y_axis_min
+                },
+
+                tooltip: {
+                    useHTML: true,
+                    borderWidth: 0,
+                    style: {
+                        padding: 0
+                    },
+                    formatter:function(){
+                        return '<div class="dg_bubble-div">' + 
+                            '<div class="dg_bubble-header">' + formatFieldByType(this.point.Name, 'String') + '</div>' + 
+                            '<div class="dg_bubble-left-content">' + 
+                                'Campaign Type: ' + formatFieldByType(this.point.Type, 'String') +  
+                                '<br/>Number of Target Members: ' + formatFieldByType(this.point.numOfTargetMembers, 'Integer') +  
+                            '</div>' +
+                            '<div class="dg_bubble-right-content">' + 
+                                'On Target: ' + formatFieldByType(this.point.onTarget, 'Percentage') +
+                                '<br/>Number of Campaign Members: ' + formatFieldByType(this.point.numberOfCampaignMembers, 'Integer') + 
+                            '</div>' + 
+                        '</div>';
+                        
+                    },
+                    followPointer: false
+                },
+                exporting: {
+                    buttons: {
+                        contextButton: {
+                            enabled: false
+                        }
+                    }
+                },
+                plotOptions: {
+                    bubble: {
+                        minSize: 3,
+                        maxSize: 20
+                    },
+                    series: {
+                        dataLabels: {
+                            useHTML: true,
+                            enabled: true,
+                            align: "left",
+                            x: 14,
+                            format: '{point.Name}',
+                            style: {
+                                color: 'black',
+                                textShadow: false,
+                                fontWeight: 400,
+                                fontFamily: 'Open Sans',
+                                fontSize: '12.5px'
+                            }
+                        }
+                    }
+                },
+
+                series: [{
+                    data: targetAccountsReport.objList
+                }]
+            });
+        }
+    </script>
+</apex:page>

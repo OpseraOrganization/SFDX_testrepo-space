@@ -1,0 +1,451 @@
+<apex:page sideBar="false" standardStylesheets="false" docType="html-5.0" controller="LeanData.Reporting_CreateSegmentController" extensions="LeanData.Reporting_BaseController">
+    <style>
+        .segment-button {
+            border: 1px solid #1b527f;
+            background: #1b527f;
+            font-size: 14px;
+            height: 37.5px;
+            line-height: 37.5px;
+            color: white;
+            text-align: center;
+            border-radius: 3px;
+            width: 150px;
+            float: right;
+            cursor: pointer;
+        }
+        
+        .segment-button:hover {
+            opacity: .7;
+        }
+        
+        .filter-section {
+            width: 100%;
+            border-bottom: 1px solid var(--lt-grey-2);
+            padding: 0px 37.5px 10px 37.5px;
+            display: inline-block;
+        }
+        
+        .filter-button {
+            font-size: 11px;
+            color: #5e7178;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 17.5px;
+            width: max-content;
+        }
+        
+        .filter-button:hover {
+            opacity: .7;
+        }
+        
+        .filters {
+            font-size: 13px;
+            color: #5e7178;
+        }
+        
+        .data-section {
+            width: 100%;
+            padding: 22.5px 37.5px 17.5px 37.5px;
+        }
+        
+        .button-block {
+            width: 100%;
+            display: inline-block;
+        }
+        
+        .dg_floated-item {
+            margin-right: 45px !important;
+        }
+        
+        .bs .modal-content p {
+            text-align: left;
+            font-size: 13px;
+            line-height: 20px;
+            color: #5e7178;
+        }
+        
+        .bs .modal-content {
+            width: 700px;
+        }
+        
+        .bs .modal-body {
+            margin-left: 105px;
+            padding: 12.5px;
+        }
+        
+        .bs .modal-info {
+            padding: 0px 22.5px 22.5px 22.5px;
+        }
+        
+        .bs .segment-name-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555555;
+        }
+        
+        .bs .segment-name-input {
+            width: 300px;
+            height: 22px;
+            padding-left: 5px;
+            font-size: 11px;
+        }
+        
+        .bs .table-settings {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .bs .table-settings-selectAllLabel {
+            font-weight: 400;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-right: 22.5px;
+            font-size: 13px;
+            color: #5e7178;
+        }
+        
+        .bs .table-setting-search-input {
+            width: 135px;
+            height: 22px;
+            border: 1px solid var(--lt-grey-2);
+            padding-left: 10px;
+            padding-top: 6px;
+            font-size: 9px;
+            line-height: 9px;
+        }
+    </style>
+    <apex:composition template="LeanData__Reporting_Template">
+        <apex:define name="customHeaderContent">
+            <div class="customHeaderContent-right">
+                <apex:commandLink rerender="x" html-data-toggle="modal" html-data-target="#infoModal">
+                    <apex:image value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Info_Button_Icon.png')}" styleClass="customHeaderContent-right-information" />
+                </apex:commandLink>
+            </div>
+        </apex:define>
+        <apex:define name="mainContent">
+            <div class="dg_outer-wrapper">
+                <div class="dg_outer-wrapper-header" style="height: 71px ;padding-right: 37.5px;padding-top: 17.5px;">
+                    <div class="button-block">
+                        <apex:commandLink rerender="x" html-data-toggle="modal" html-data-target="#myModal">
+                            <div class="segment-button">Create Segment</div>
+                        </apex:commandLink>
+                    </div>
+                </div>
+                <div class="dg_outer-wrapper-content">
+                    <div class="filter-section">
+                        <div class="filter-button">
+                            <img class="icon-active" width="17" height="19" src="{!URLFOR($Resource.Reporting_Images, 'Filter_Selected_Icon.png')}" alt="Filter" />
+                            <img class="icon-inactive" width="17" height="19" style="display:none" src="{!URLFOR($Resource.Reporting_Images, 'Filter_Unselected_Icon.png')}" alt="Filter" /> &nbsp; Filter data by
+                        </div>
+                        <div class="filters">
+                            <apex:outputPanel rendered="{!objType == 'Opportunity'}">
+                                <div class="dg_floated-item">
+                                    <div class="dg_styled-select" style="width:190px">
+                                        <apex:selectList value="{!opportunityStageSelection}" html-filterName="StageName" styleClass="dg_picklist multiselect-opp-stage filter-picklist" multiselect="true" style="width: 180px !important;">
+                                            <apex:selectOptions value="{!opportunityStageFields}" />
+                                        </apex:selectList>
+                                    </div>
+                                </div>
+                                <div class="dg_floated-item">
+                                    <div class="dg_styled-select" style="width:270px">
+                                        <apex:selectList value="{!opportunityTypeSelection}" html-filterName="Type" styleClass="dg_picklist multiselect-opp-type filter-picklist" multiselect="true">
+                                            <apex:selectOptions value="{!opportunityTypeFields}" />
+                                        </apex:selectList>
+                                    </div>
+                                </div>
+                                
+                                
+                                <div class="dg_styled-select" style="float:right;display:inline-block;width:150px;margin: 7px 20px 0px 0px;">
+                                    <select class="dg_picklist dg_time-frame-choice" onchange="segmentReport.querySegmentMetrics();">
+                                        <option selected="true" disabled="true" value="None">Select Time Frame</option>
+                                        <option value="THIS_FISCAL_QUARTER">This Quarter</option>
+                                        <option value="NEXT_FISCAL_QUARTER">Next Quarter</option>
+                                        <option value="THIS_AND_NEXT_FISCAL_QUARTER">This and Next Quarter</option>
+                                        <option value="ALL_TIME">All Time</option>
+                                    </select>
+                                </div>
+                                
+                                <!--
+                                <div class="dg_floated-item" style="line-height: 32px;margin-right: 0px !important;">
+                                    Exclude opps with this campaign &nbsp;
+                                </div>
+                                <div class="dg_floated-item">
+                                    <div class="dg_styled-select" style="width:180px">
+                                        <select class="dg_picklist exclude-campaign-option">
+                                            <option selected="selected" value="-">N/A</option>
+                                            <option value="Dreamforce 2014">Dreamforce 2014</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                -->
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!objType == 'Account'}">
+                                <div class="dg_floated-item">
+                                    <div class="dg_styled-select">
+                                        <apex:selectList value="{!accountTypeSelection}" html-filterName="Type" styleClass="dg_picklist multiselect-acc-type filter-picklist" multiselect="true" style="width: 180px;">
+                                            <apex:selectOptions value="{!accountTypeFields}" />
+                                        </apex:selectList>
+                                    </div>
+                                </div>
+                                <!--
+                                <div class="dg_floated-item" style="line-height: 32px;margin-right: 0px !important;">
+                                    Exclude Accounts with this campaign &nbsp;
+                                </div> -->
+                                <div class="dg_floated-item">
+                                    <div class="dg_styled-select">
+                                        <select class="dg_picklist category-picklist" onchange="segmentReport.querySegmentMetrics();">
+                                            <option selected="selected" value="Recent">Recent</option>
+                                            <option value="No Touches">No Touches</option>
+                                            <option value="Low Touches">Low Touches</option>
+                                            <option value="High Touches">High Touches</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+                    </div>
+                    <div class="data-section">
+                        <div class="table-settings">
+                            <span class="table-settings-selectAllLabel" onclick="segmentReport.selectAllFilteredObj();">
+                                Select All
+                            </span>
+                            <span class="table-setting-search">
+                                <img width="16.5" height="17" src="{!URLFOR($Resource.Reporting_Images, 'Search_Icon.png')}" alt="Search" />
+                                <input placeholder="Search" class="table-setting-search-input" onkeyup="segmentReport.searchTerm=j$('.table-setting-search-input').val();segmentReport.pageNo=1;segmentReport.renderTable();" type="text"/>
+                            </span>
+                        </div>
+                        <div class="dg_details-table-div" style="margin:0px;" />
+                        <div class="button-block" style="margin-top:40px">
+                            <apex:commandLink rerender="x" html-data-toggle="modal" html-data-target="#myModal">
+                                <div class="segment-button">Create Segment</div>
+                            </apex:commandLink>
+                        </div>
+                    </div>
+                    
+                    <div id="myModal" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <!-- Modal content-->
+                            <div class="modal-content">
+                                <div class="modal-body">
+                                    <span class="segment-name-label"> Segment Name </span>
+                                    <input placeholder="Segment Name" class="segment-name-input" type="text" />
+                                </div>
+                                <div class="modal-footer">
+                                    <div class="modal-info">
+                                        <p>A segment is a temporary grouping of leads and contacts that can be used to run more sophisticated campaigns. Use LeanData to launch campaigns in your marketing automation, advertising platform, sales outreach tool and other layers of your technology stack. The segment is stored in a custom field named 'LeanData__LD_Segment__c'. </p>
+                                    </div>
+                                    <apex:commandLink rerender="x" onclick="segmentReport.saveSegment();" html-data-dismiss="modal">
+                                        <div class="segment-button">Create Segment</div>
+                                    </apex:commandLink>
+                                    <button class="segment-button" style="background: white;color:#555555;margin-right:12.5px" type="button" data-dismiss="modal">Cancel</button>
+                                    <div style="clear:both" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="successModal" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <!-- Modal content-->
+                            <div class="modal-content">
+                                <div class="modal-body">
+                                    <h4>Segment creation successful. </h4>
+                                </div>
+                                <div class="modal-footer">
+                                    <apex:commandLink rerender="x" html-data-dismiss="modal">
+                                        <div class="segment-button">OK</div>
+                                    </apex:commandLink>
+                                    <div style="clear:both" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <!-- Begin Tooltip -->
+            <div id="infoModal" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content" style="display: inline-block;background: #eeefef;border-radius: 0px;">
+                        
+                        <apex:commandLink rerender="x" html-data-dismiss="modal" style="float:right;margin:5px 5px 0 0">
+                            <apex:image width="20px" height="20px" value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Close_Window_Icon.png')}"/>
+                        </apex:commandLink>
+                        
+                        <div class="dg_inner-wrapper" style="width:615px">
+                            <div class="dg_inner-wrapper-header">
+                                Tooltip | Create Segment
+                            </div>
+                            
+                            <div class="dg_inner-wrapper-content" style="height:180px;overflow:auto">                           
+                            <p> 
+                            Use LeanData to launch campaigns in your marketing automation, advertising platform, sales outreach tool and other layers of your technology stack.
+                            </p>
+                            <p>A segment is a temporary grouping of leads and contacts that can be used to run sophisticated campaigns. You can access the segment in the custom field "LeanData__LD_Segment__c".
+
+                            </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End of Tooltip -->
+        </apex:define>
+    </apex:composition>
+    <script>
+        j$(document).ready(function() {
+            setPageTitle('Segment ' + '{!JSENCODE(objType)}');
+            if (location.search.split('objType=')[1].substring(0, 7) == 'Account') {
+                setActiveNav('target-account-nav','Segment');
+            } else {
+                setActiveNav('bookings-nav','Segment');
+            }
+
+            j$('.category-picklist').val('{! JSENCODE(category)}');
+            
+            j$('.dg_time-frame-choice').val('{! JSENCODE(timeframe)}');
+            j$('.multiselect-opp-stage').multiselect({
+                nonSelectedText: 'Opportunity Stage',
+                numberDisplayed: 1,
+                includeSelectAllOption: true,
+                nSelectedText: 'Opportunity Stages',
+                allSelectedText: 'Opportunity Stage - All',
+                selectAllNumber: false,
+
+                onDropdownHide: function(event) {
+                    segmentReport.querySegmentMetrics();
+                }
+            });
+
+            j$('.multiselect-opp-type').multiselect({
+                nonSelectedText: 'Opportunity Type',
+                numberDisplayed: 1,
+                includeSelectAllOption: true,
+                nSelectedText: 'Opportunity Types',
+                allSelectedText: 'Opportunity Types - All',
+                selectAllNumber: false,
+
+                onDropdownHide: function(event) {
+                    segmentReport.querySegmentMetrics();
+                }
+            });
+            
+            j$('.multiselect-opp-type').multiselect('selectAll', false);
+            j$('.multiselect-opp-type').multiselect('updateButtonText');
+
+            j$('.multiselect-acc-type').multiselect({
+                nonSelectedText: 'Account Type',
+                numberDisplayed: 1,
+                includeSelectAllOption: true,
+                nSelectedText: 'Account Types',
+                allSelectedText: 'Account Types - All',
+                selectAllNumber: false,
+                
+                onDropdownHide: function(event) {
+                    segmentReport.querySegmentMetrics();
+                }
+            });
+
+            j$('.multiselect-acc-type').multiselect('selectAll', false);
+            j$('.multiselect-acc-type').multiselect('updateButtonText');
+            
+            j$('.filter-button').click(function() {
+                if (j$('.filters').css('display') != 'none') {
+                    j$('.icon-inactive').css('display', '');
+                    j$('.icon-active').css('display', 'none');
+                } else {
+                    j$('.icon-inactive').css('display', 'none');
+                    j$('.icon-active').css('display', '');
+                }
+
+                j$('.filters').toggle(200);
+            });
+
+            if ('{!JSENCODE(objType)}' == 'Account') {
+                segmentReport = new objWrapper('segmentReport', 'Segment Account', j$(".dg_details-table-div"), 5, 1);
+            } else {
+                segmentReport = new objWrapper('segmentReport', 'Segment Opportunity', j$(".dg_details-table-div"), 5, 1);
+            }
+        });
+        var objType = '{!JSENCODE(objType)}';
+
+        objWrapper.prototype.querySegmentMetrics = function() {
+            // save report so that its accessible inside callback function.
+            var report = this;
+            var customFilter = '';
+            var opportunityStageSelection = [];
+            var opportunityTypeSelection = [];
+            var accountTypeSelection = [];
+            var selectedTimeframe = '';
+            var category = j$('.category-picklist').find(":selected").val() || '';
+
+            if( objType != 'Account' )
+                selectedTimeframe = j$('.dg_time-frame-choice').find(":selected").val();
+            
+            j$('.multiselect-opp-stage').next().find('li.active').find('input').each(function() {
+                opportunityStageSelection.push(j$(this).val())
+            });
+            j$('.multiselect-opp-type').next().find('li.active').find('input').each(function() {
+                opportunityTypeSelection.push(j$(this).val())
+            });
+            j$('.multiselect-acc-type').next().find('li.active').find('input').each(function() {
+                accountTypeSelection.push(j$(this).val())
+            });
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Reporting_CreateSegmentController.getObjectList}', objType, opportunityStageSelection, opportunityTypeSelection, accountTypeSelection, category, selectedTimeframe, customFilter,
+                function(result, event) {
+                    if (event.type === 'exception') {
+                        console.log("exception");
+                        console.log(event);
+                    } else if (event.status) {
+
+                        report.objList = [];
+                        for (var i = 0; i < result.length; i++) {
+                            result[i].isSelected = false;
+
+                            for (var z = 0; z < report.fieldWrapper.length; z++) {
+                                if (!result[i].hasOwnProperty(report.fieldWrapper[z].fieldName)) {
+                                    result[i][report.fieldWrapper[z].fieldName] = '';
+                                }
+                            }
+
+                            report.objList.push(result[i]);
+                        }
+
+                        console.log('CM Queried');
+                        console.log(report.objList);
+
+                        report.renderTable();
+                        report.sortTable();
+                    }
+                });
+        };
+
+        objWrapper.prototype.saveSegment = function() {
+            // save report so that its accessible inside callback function.
+            var report = this;
+
+            var accountIds = [];
+            for (var i = 0; i < this.objList.length; i++) {
+                if (this.objList[i].isSelected == true) {
+                    if (objType == 'Account') {
+                        accountIds.push(this.objList[i].Id);
+                    } else if (objType == 'Opportunity') {
+                        accountIds.push(this.objList[i].AccountId);
+                    }
+                }
+            }
+
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Reporting_CreateSegmentController.saveSegment}', accountIds, j$('.segment-name-input').val(),
+                function(result, event) {
+                    if (event.type === 'exception') {
+                        console.log("exception");
+                        console.log(event);
+                    } else if (event.status) {
+                        j$('#successModal').modal('show');
+                        //alert('Segment saved!');
+                    }
+                });
+        };
+    </script>
+</apex:page>
