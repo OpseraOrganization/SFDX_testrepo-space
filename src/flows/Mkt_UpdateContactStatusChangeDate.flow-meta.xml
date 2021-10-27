@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>49.0</apiVersion>
+    <assignments>
+        <name>Mkt_AssignContactStatusChangeDate</name>
+        <label>Assign Contact Status Change Date</label>
+        <locationX>414</locationX>
+        <locationY>506</locationY>
+        <assignmentItems>
+            <assignToReference>$Record.MKT_MarketingContactStatusChangeDate__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.CurrentDateTime</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+    <decisions>
+        <name>Mkt_CheckifContactStatusHasChanged</name>
+        <label>Check if Contact Status Has Changed</label>
+        <locationX>952</locationX>
+        <locationY>541</locationY>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>Contact_Status_Changed</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Mkt_GetOldContactRecord.Status__c</leftValueReference>
+                <operator>NotEqualTo</operator>
+                <rightValue>
+                    <elementReference>$Record.Status__c</elementReference>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Mkt_AssignContactStatusChangeDate</targetReference>
+            </connector>
+            <label>Contact Status Changed</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Mkt_NeworOldRecord</name>
+        <label>New or Old Record</label>
+        <locationX>776</locationX>
+        <locationY>301</locationY>
+        <defaultConnector>
+            <targetReference>Mkt_GetOldContactRecord</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Old Record</defaultConnectorLabel>
+        <rules>
+            <name>New_Record</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Id</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Mkt_AssignContactStatusChangeDate</targetReference>
+            </connector>
+            <label>New Record</label>
+        </rules>
+    </decisions>
+    <interviewLabel>Update Contact Status Change Date {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Update Contact Status Change Date</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>FREE_FORM_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordLookups>
+        <name>Mkt_GetOldContactRecord</name>
+        <label>Get Old Contact Record</label>
+        <locationX>952</locationX>
+        <locationY>421</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Mkt_CheckifContactStatusHasChanged</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Contact</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <start>
+        <locationX>650</locationX>
+        <locationY>48</locationY>
+        <connector>
+            <targetReference>Mkt_NeworOldRecord</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Marketing_Campaign__c</field>
+            <operator>IsNull</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <object>Contact</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordBeforeSave</triggerType>
+    </start>
+    <status>Active</status>
+</Flow>

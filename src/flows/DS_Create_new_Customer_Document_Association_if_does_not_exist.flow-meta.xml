@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>49.0</apiVersion>
+    <decisions>
+        <name>Is_CDA_available</name>
+        <label>Is CDA available?</label>
+        <locationX>317</locationX>
+        <locationY>56</locationY>
+        <defaultConnector>
+            <targetReference>Get_Customer_Document_record</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>CDA_record_not_found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Get_Customer_Document_Association_record</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Add_new_Customer_Document_Association</targetReference>
+            </connector>
+            <label>CDA record not found</label>
+        </rules>
+    </decisions>
+    <description>Create a new Customer Document Association based on input Quote Id and Customer Document Id if the record does not exist. Updates PO data on related CPO record if exists.</description>
+    <interviewLabel>DS Create new Customer Document Association if does not exist {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>DS Create new Customer Document Association if does not exist</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <name>Add_new_Customer_Document_Association</name>
+        <label>Add new Customer Document Association</label>
+        <locationX>443</locationX>
+        <locationY>130</locationY>
+        <connector>
+            <targetReference>Get_Customer_Document_record</targetReference>
+        </connector>
+        <inputAssignments>
+            <field>Customer_Document__c</field>
+            <value>
+                <elementReference>customerDocumentId</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Quote_Proposal__c</field>
+            <value>
+                <elementReference>quoteId</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Customer_Document_Junction__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <recordLookups>
+        <description>Find Customer Document Association Record based on input parameters (Quote Id, Customer Document Id)</description>
+        <name>Get_Customer_Document_Association_record</name>
+        <label>Get Customer Document Association record</label>
+        <locationX>208</locationX>
+        <locationY>115</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Is_CDA_available</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Customer_Document__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>customerDocumentId</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>Quote_Proposal__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>quoteId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Customer_Document_Junction__c</object>
+        <sortField>Id</sortField>
+        <sortOrder>Asc</sortOrder>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
+        <description>Fetches the Quote/Proposal record based on incoming Quote/Proposal Id</description>
+        <name>Get_Customer_Document_record</name>
+        <label>Get Customer Document record</label>
+        <locationX>579</locationX>
+        <locationY>62</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Update_PO_data_on_CPO</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>customerDocumentId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Customer_Document__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordUpdates>
+        <description>Updates PO Date, PO number and Nokia Customer Document Id on CPO record</description>
+        <name>Update_PO_data_on_CPO</name>
+        <label>Update PO data on CPO</label>
+        <locationX>732</locationX>
+        <locationY>128</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Apttus_QPConfig__ProposalId__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>quoteId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Apttus_Config2__PODate__c</field>
+            <value>
+                <elementReference>Get_Customer_Document_record.Customer_Document_Date__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Nokia_Customer_Document_ID__c</field>
+            <value>
+                <elementReference>Get_Customer_Document_record.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>PO_number__c</field>
+            <value>
+                <elementReference>Get_Customer_Document_record.Customer_Document_ID__c</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Apttus_Config2__CustomerPurchaseOrder__c</object>
+    </recordUpdates>
+    <runInMode>DefaultMode</runInMode>
+    <start>
+        <locationX>77</locationX>
+        <locationY>51</locationY>
+        <connector>
+            <targetReference>Get_Customer_Document_Association_record</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <textTemplates>
+        <name>Errormessage</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>&lt;p&gt;The association already exists&lt;/p&gt;</text>
+    </textTemplates>
+    <variables>
+        <name>customerDocumentAssociationId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <description>Customer Document Id</description>
+        <name>customerDocumentId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <description>Quote Id</description>
+        <name>quoteId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

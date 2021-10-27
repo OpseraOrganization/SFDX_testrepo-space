@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>CH_EmailAlert</name>
+        <label>Email Alert</label>
+        <locationX>140</locationX>
+        <locationY>401</locationY>
+        <actionName>emailSimple</actionName>
+        <actionType>emailSimple</actionType>
+        <connector>
+            <targetReference>CH_UpdateCRStart</targetReference>
+        </connector>
+        <inputParameters>
+            <name>emailBody</name>
+            <value>
+                <elementReference>CH_EmailBody</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>emailSubject</name>
+            <value>
+                <elementReference>CH_Subject</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>emailAddresses</name>
+            <value>
+                <elementReference>CH_EmailTo</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <apiVersion>49.0</apiVersion>
+    <decisions>
+        <name>CH_IsContactEmpty</name>
+        <label>Is Contact Empty</label>
+        <locationX>366</locationX>
+        <locationY>188</locationY>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_ContactEmpty</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>sObjectVariable.ContactId</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_ErroorMessage</targetReference>
+            </connector>
+            <label>Contact Empty</label>
+        </rules>
+        <rules>
+            <name>CH_ContactNotEmpty</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>sObjectVariable.ContactId</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_EmailScreen</targetReference>
+            </connector>
+            <label>Contact Not Empty</label>
+        </rules>
+    </decisions>
+    <interviewLabel>Send CR Request Email {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Send CR Request Email</label>
+    <processType>Flow</processType>
+    <recordLookups>
+        <name>CH_CurrentRecord</name>
+        <label>Current Record</label>
+        <locationX>363</locationX>
+        <locationY>60</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_IsContactEmpty</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <object>Case</object>
+        <outputReference>sObjectVariable</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>ContactEmail</queriedFields>
+        <queriedFields>ContactPhone</queriedFields>
+        <queriedFields>CH_Problem__c</queriedFields>
+        <queriedFields>CH_Product_Name__c</queriedFields>
+        <queriedFields>CH_ProductRelease__c</queriedFields>
+        <queriedFields>CH_ProductVariant__c</queriedFields>
+        <queriedFields>CH_ProblemStatement__c</queriedFields>
+        <queriedFields>ContactId</queriedFields>
+        <queriedFields>CH_ActionTaken__c</queriedFields>
+        <queriedFields>CH_CauseoftheIncident__c</queriedFields>
+        <queriedFields>CH_SummaryofAnalysis__c</queriedFields>
+        <queriedFields>CH_ListofContributingCauses__c</queriedFields>
+        <queriedFields>CH_ValidationofRootCause__c</queriedFields>
+        <queriedFields>CH_CorrectiveActions__c</queriedFields>
+        <queriedFields>CH_PreventiveActions__c</queriedFields>
+        <queriedFields>CH_DefectiveFix__c</queriedFields>
+        <queriedFields>CH_AssessedOutage__c</queriedFields>
+        <queriedFields>CH_Defect__c</queriedFields>
+        <queriedFields>CH_CRStart__c</queriedFields>
+        <queriedFields>CH_CRStatus__c</queriedFields>
+    </recordLookups>
+    <recordUpdates>
+        <name>CH_UpdateCRStart</name>
+        <label>Update CR Start</label>
+        <locationX>288</locationX>
+        <locationY>398</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>CH_CRStart__c</field>
+            <value>
+                <elementReference>$Flow.CurrentDate</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Case</object>
+    </recordUpdates>
+    <screens>
+        <name>CH_EmailScreen</name>
+        <label>Email Screen</label>
+        <locationX>141</locationX>
+        <locationY>296</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <connector>
+            <targetReference>CH_EmailAlert</targetReference>
+        </connector>
+        <fields>
+            <name>CH_EmailTo</name>
+            <dataType>String</dataType>
+            <fieldText>Email To</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>true</isRequired>
+            <validationRule>
+                <errorMessage>The value you entered doesn&apos;t meet the validation criteria for this input field.</errorMessage>
+                <formulaExpression>REGEX({!CH_EmailTo},&quot;[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}&quot;)</formulaExpression>
+            </validationRule>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>CH_ErroorMessage</name>
+        <label>Erroor Message</label>
+        <locationX>368</locationX>
+        <locationY>310</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <fields>
+            <name>Error</name>
+            <fieldText>Please fill the Contact field!</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <startElementReference>CH_CurrentRecord</startElementReference>
+    <status>Active</status>
+    <textTemplates>
+        <name>CH_EmailBody</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>Customer details :
+Name: {!sObjectVariable.Contact.FirstName} {!sObjectVariable.Contact.LastName}
+Email: {!sObjectVariable.ContactEmail}
+Phone: {!sObjectVariable.ContactPhone}
+
+Problem description :
+{!sObjectVariable.CH_Problem__c}
+
+Product details :
+{!sObjectVariable.CH_Product_Name__c}
+{!sObjectVariable.CH_ProductRelease__c}
+{!sObjectVariable.CH_ProductVariant__c}
+
+RCA :
+{!sObjectVariable.CH_ProblemStatement__c}
+{!sObjectVariable.CH_ActionTaken__c}
+{!sObjectVariable.CH_CauseoftheIncident__c}
+{!sObjectVariable.CH_SummaryofAnalysis__c}
+{!sObjectVariable.CH_ListofContributingCauses__c}
+{!sObjectVariable.CH_ValidationofRootCause__c}
+{!sObjectVariable.CH_CorrectiveActions__c}
+{!sObjectVariable.CH_PreventiveActions__c}
+{!sObjectVariable.CH_DefectiveFix__c}
+{!sObjectVariable.CH_AssessedOutage__c}
+{!sObjectVariable.CH_Defect__c}
+{!sObjectVariable.CH_CRStart__c}
+{!sObjectVariable.CH_CRStatus__c}</text>
+    </textTemplates>
+    <textTemplates>
+        <name>CH_Subject</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>CR Request</text>
+    </textTemplates>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>sObjectVariable</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+</Flow>

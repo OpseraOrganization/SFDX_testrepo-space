@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>CH_PostToIncident</name>
+        <label>Post To Incident</label>
+        <locationX>711</locationX>
+        <locationY>162</locationY>
+        <actionName>chatterPost</actionName>
+        <actionType>chatterPost</actionType>
+        <connector>
+            <targetReference>CH_Loop</targetReference>
+        </connector>
+        <inputParameters>
+            <name>subjectNameOrId</name>
+            <value>
+                <elementReference>LoopVariable.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>text</name>
+            <value>
+                <elementReference>CH_IncidentMessage</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <actionCalls>
+        <name>CH_PostToProblem</name>
+        <label>Post To Problem</label>
+        <locationX>406</locationX>
+        <locationY>296</locationY>
+        <actionName>chatterPost</actionName>
+        <actionType>chatterPost</actionType>
+        <connector>
+            <targetReference>CH_Change_Status_to_Root_Cause_Shared</targetReference>
+        </connector>
+        <inputParameters>
+            <name>subjectNameOrId</name>
+            <value>
+                <elementReference>CH_CurrentCaseSobject.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>text</name>
+            <value>
+                <elementReference>CH_PostToProblemMessage</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <apiVersion>49.0</apiVersion>
+    <decisions>
+        <name>CH_Status_Closed_check</name>
+        <label>Status Closed check</label>
+        <locationX>274</locationX>
+        <locationY>43</locationY>
+        <defaultConnector>
+            <targetReference>CH_RelatedIncidents</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_Is_Closed_Cancelled</name>
+            <conditionLogic>or</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.Status</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Closed</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.Status</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Cancelled</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_Show_Cancellation_Message</targetReference>
+            </connector>
+            <label>Is Closed/Cancelled?</label>
+        </rules>
+    </decisions>
+    <description>Update RCA Provided</description>
+    <interviewLabel>Update RCA Provided {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Update RCA Provided</label>
+    <loops>
+        <name>CH_Loop</name>
+        <label>Loop</label>
+        <locationX>405</locationX>
+        <locationY>160</locationY>
+        <assignNextValueToReference>LoopVariable</assignNextValueToReference>
+        <collectionReference>collectionvariable</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>CH_PostToIncident</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>CH_PostToProblem</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <processType>Flow</processType>
+    <recordLookups>
+        <name>CH_GetCurrentRecord</name>
+        <label>Get Current Record</label>
+        <locationX>83</locationX>
+        <locationY>43</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_Status_Closed_check</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <object>Case</object>
+        <outputReference>CH_CurrentCaseSobject</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>CH_Problem__c</queriedFields>
+        <queriedFields>Status</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>CH_RelatedIncidents</name>
+        <label>Related Incidents</label>
+        <locationX>82</locationX>
+        <locationY>163</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_Display_success_message</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>CH_Problem__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>CH_CurrentCaseSobject.Id</elementReference>
+            </value>
+        </filters>
+        <object>Case</object>
+        <outputReference>collectionvariable</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>OwnerId</queriedFields>
+    </recordLookups>
+    <recordUpdates>
+        <name>CH_Change_Status_to_Root_Cause_Shared</name>
+        <label>Change Status to Root Cause Shared</label>
+        <locationX>596</locationX>
+        <locationY>297</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>CH_CurrentCaseSobject.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Status</field>
+            <value>
+                <stringValue>Root Cause Shared</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Case</object>
+    </recordUpdates>
+    <screens>
+        <name>CH_Display_success_message</name>
+        <label>Display success message</label>
+        <locationX>249</locationX>
+        <locationY>164</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <connector>
+            <targetReference>CH_Loop</targetReference>
+        </connector>
+        <fields>
+            <name>CH_DisplayMsg</name>
+            <fieldText>Notification will be sent to the related incidents</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>CH_Show_Cancellation_Message</name>
+        <label>Show Cancellation Message</label>
+        <locationX>539</locationX>
+        <locationY>45</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <fields>
+            <name>CH_Cannotcancel</name>
+            <fieldText>Sorry! The Root Cause Cannot be shared if the problem is in closed or cancelled state.</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <startElementReference>CH_GetCurrentRecord</startElementReference>
+    <status>Active</status>
+    <textTemplates>
+        <description>Post to Incident Message</description>
+        <name>CH_IncidentMessage</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>Dear @[{!LoopVariable.OwnerId}] the RCA on the related Problem has been updated - please review</text>
+    </textTemplates>
+    <textTemplates>
+        <description>Post To Problem Message</description>
+        <name>CH_PostToProblemMessage</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>Related Incident owners have been notified of RCA update.</text>
+    </textTemplates>
+    <variables>
+        <description>SObject variable to store current case from lookup</description>
+        <name>CH_CurrentCaseSobject</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <name>collectionvariable</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <description>Loop variable to iterate through variables</description>
+        <name>LoopVariable</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+</Flow>
