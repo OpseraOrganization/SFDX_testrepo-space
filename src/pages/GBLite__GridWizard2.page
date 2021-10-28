@@ -1,0 +1,994 @@
+<apex:page controller="GBLite.GridWizardController" showHeader="{!showHeader}" title="{!lang.GW2Title}" action="{!init}"
+           sidebar="false" tabStyle="Grid_Wizard__tab">
+    <!--[if IE 8]>
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.gb_resources, 'ie8-styles.css')}"/>
+    <![endif]-->
+    <div
+        class="gbAppPage gbwPage gb{!lang.langCode} gw2{!IF(lightningStylesEnabled, ' gbLightning', '')} {!if(showHeader, '', 'inGrid')}">
+        <c:EmptyComponent rendered="{!errors.showErrorMessages}">
+            <div class="msgBox warningMsg gbwMsg">
+                <div class="gbIconAlert"></div>
+
+                <div class="rMessages">
+                    <apex:repeat value="{!errors.errorMessagesFromMap}" var="error">
+                        <div>{!error}</div>
+                    </apex:repeat>
+                    <apex:repeat value="{!errors.apexWarningMessages}" var="error">
+                        <div>
+                            <apex:outputText value="{!error.summary}" escape="{!error.detail != 'noescape'}"/>
+                        </div>
+                    </apex:repeat>
+                </div>
+            </div>
+        </c:EmptyComponent>
+
+        <c:EmptyComponent rendered="{!errors.showInfoMessages}">
+            <div class="msgBox infoMsg gbwMsg">
+                <div class="gbIconCheckmark"></div>
+
+                <apex:repeat value="{!errors.apexInfoMessages}" var="infoMsg">
+                    <div class="msgDetail">
+                        <apex:outputText value="{!infoMsg.summary}" escape="true"/>
+                    </div>
+                </apex:repeat>
+
+                <div class="messageTime">{!currentDateTime}</div>
+            </div>
+        </c:EmptyComponent>
+
+        <div class="msgBox warningMsg boxShadow" id="vldWarning">
+            <div class="closeX">{!lang.CloseWarningBoxLbl}&nbsp;&nbsp;<b>X</b></div>
+            <div class="msgBody"></div>
+        </div>
+
+        <div class="msgBox boxShadow loaderStatus" id="gridStatus">
+            <div class="msgBody">
+                <span class="icon-spinner"></span>
+                <span class="msgText"></span>
+            </div>
+        </div>
+
+        <apex:form styleClass="gbwForm" onsubmit="save()" rendered="{!pageIsValid}">
+            <div class="gbwSteps">
+                <span><apex:commandLink action="{!goToPage1}"
+                                        title="Jump to Step 1. Edits on the current page will not be saved."
+                                        value="{!lang.CreateGridLabel}"/></span>
+                <span>&nbsp;&gt;&nbsp;&nbsp;{!lang.SelectFieldsLabel}</span>
+                <span>&nbsp;&gt;&nbsp;&nbsp;<apex:commandLink action="{!goToPage3}"
+                                                              title="Jump to Step 3. Edits on the current page will not be saved."
+                                                              value="{!lang.DefineFiltersLabel}"/></span>
+            </div>
+            <apex:pageblock title="{!wrapper.gridConfig.SelectFieldsLbl}">
+
+                <apex:pageBlockButtons >
+                    <!-- do not change buttons to be on separate lines - this is done to avoid extra space between the buttons -->
+                    <apex:commandButton value="{!lang.SaveBtnLbl}" action="{!saveAndRefreshPage2}"
+                                        styleClass="saveBtn none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/>
+                    <input
+                        type="button" class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                        value="{!lang.SaveBtnLbl}" disabled="disabled"/>
+                    <apex:commandButton value="{!lang.NextBtnLabel}" action="{!saveAndNextPage2}"
+                                        rendered="{!gridHasValidObjects}"
+                                        styleClass="saveBtn none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                                        title="Save and go to the next step"/>
+                    <c:EmptyComponent rendered="{!gridHasValidObjects}"><input
+                        type="button" class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                        value="{!lang.NextBtnLabel}" disabled="disabled"/></c:EmptyComponent>
+                    <apex:commandButton value="{!lang.BackBtnLabel}" action="{!saveAndBackPage2}"
+                                        styleClass="saveBtn none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                                        title="Save and go to the previous step"/>
+                    <input
+                        type="button" class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                        value="{!lang.BackBtnLabel}" disabled="disabled"/>
+                    <apex:commandButton action="{!resetForm}" value="{!lang.RefreshBtnLbl}" immediate="true"
+                                        styleClass="none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/>
+                    <input
+                        type="button" class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                        value="{!lang.RefreshBtnLbl}" disabled="disabled"/>
+                    <apex:commandbutton action="{!goToManageActionsPage}" value="{!lang.ManageActionsLbl}"
+                                        styleClass="manageActionsBtn gbBtn none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                                        immediate="true" rendered="{!actionsEnabled}"/>
+                    <input
+                        type="button" class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                        value="{!lang.ManageActionsLbl}" disabled="disabled"/>
+                    <c:EmptyComponent rendered="{!hasSelectedFields && gridHasValidObjects}">
+                        <a href="#" class="launchGridLink" title="{!lang.LaunchGridTitle}">{!lang.LaunchGridLabel}</a>
+                    </c:EmptyComponent>
+                </apex:pageBlockButtons>
+
+                <apex:inputHidden id="selectedObjectDotFields" value="{!wrapper.javascriptSelectedValues}"/>
+                <script>var objectDotFieldsHidden = document.getElementById("{!$Component.selectedObjectDotFields}");</script>
+
+                <c:EmptyComponent rendered="{!showUpgradeMessage}">
+                    <div class="instr">
+                        <div class="upgradeMsg">
+                            <span class="checkmark">&nbsp;</span>
+                            Upgrade to <span class="upgradeApp">GridBuddy Unlimited</span> to manage up to 40 fields per
+                            object and grid.
+                            <a href="{!baseRelativeURLForVFManaged}UpgradeGridBuddy" target="_blank">Learn
+                                more &raquo;</a>
+                        </div>
+                        <br/>
+                    </div>
+                </c:EmptyComponent>
+
+                <div class="sectionHeader firstHeader">
+                    <h3><span class="ui-icon ui-icon-white ui-icon-triangle-1-s">&nbsp;</span>{!lang.selectFieldsLbl}
+                    </h3>
+                </div>
+                <div class="sectionContent selectFieldsOuterContainer">
+                    <div class="objectsContainer">
+                        <div class="objectsSectionHeading">
+                            <div class="number">1</div>
+                            <div class="headingText">{!lang.ChooseAnObjectLbl}</div>
+                            <div>{!lang.ChooseAnObjectDescLbl}</div>
+                        </div>
+                        <div class="searchContainer">
+                            <input class="searchBox" placeholder="Enter an object" type="text"/>
+                            <a class="clearSearch" href="#" onclick="return false;" title="Clear search">X</a>
+                            <span class="gbSearch"></span>
+                        </div>
+                        <div class="objectsContent">
+                            <h3 class="objectHeading first">{!lang.ParentOnlyLabel}</h3>
+                            <div class="parentObjectName"></div>
+                            <h3 class="objectHeading">{!lang.RelatedLabel}<span class="gbInfoIcon tooltip"
+                                                                                title="The objects listed in this section are directly related to the parent object of this grid."></span>
+                            </h3>
+                            <div class="relatedChildObjects"></div>
+                            <h3 class="objectHeading {!IF(NOT(objectCrossRefEnabled), 'none', '')}">
+                                {!lang.UnrelatedLabel}<span class="gbInfoIcon tooltip"
+                                                            title="The objects listed in this section are all objects that you have access to. They could be directly related to the parent object, or not. Selecting an object in this section will allow you to define a custom relationship between the object and the parent object of this grid."></span>
+                            </h3>
+                            <div class="allObjects {!IF(NOT(objectCrossRefEnabled), 'none', '')}"></div>
+                            <div class="noSearchResults none">
+                                <div>{!lang.PleaseEnterADifferentNameLabel}</div>
+                                <div>{!lang.NoObjectsWereFoundLabel}</div>
+                                <div class="showMeAllObjectsOrFields">{!lang.ShowMeAllObjectsLabel}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="fieldsContainer">
+                        <div class="fieldsSectionHeading">
+                            <div class="number">2</div>
+                            <div class="headingText">{!lang.ChooseFieldsLbl}</div>
+                            <div>{!lang.ChooseFieldsDescLbl}</div>
+                        </div>
+                        <div class="searchContainer">
+                            <input class="searchBox" placeholder="Enter a field" type="text"/>
+                            <a class="clearSearch" href="#" onclick="return false;" title="Clear search">X</a>
+                            <span class="gbSearch"></span>
+                        </div>
+                        <div class="showFieldAPINameLinkContainer cf">
+                            <a class="showFieldAPINameLink">
+                                <span class="showHideApiLink shown">{!lang.ShowFieldAPINamesLbl}</span>
+                            </a>
+                        </div>
+                        <div class="fieldsContent">
+                            <div class="selectedObject"></div>
+                            <div class="objectFields"></div>
+                            <div class="noSearchResults none">
+                                <div>{!lang.PleaseEnterADifferentNameLabel}</div>
+                                <div>{!lang.NoFieldsWereFoundLabel}</div>
+                                <div class="showMeAllObjectsOrFields">{!lang.ShowMeAllFieldsLabel}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="selectedFieldsContainer">
+                        <div class="selectedFieldsSectionHeading">
+                            <div class="number">3</div>
+                            <div class="headingText">{!lang.SelectedFieldsLbl}</div>
+                            <div>{!lang.SelectedFieldsDescLbl}</div>
+                        </div>
+                        <div class="showFieldAPINameLinkContainer cf">
+                            <a class="showFieldAPINameLink">
+                                <span class="showHideApiLink shown">Show field API names</span>
+                            </a>
+                        </div>
+                        <div class="selectedFieldsContent"></div>
+                    </div>
+                </div>
+
+                <c:EmptyComponent rendered="{!chartsEnabled}">
+                    <div id="chartSection" class="sectionHeader cb">
+                        <h3><span class="ui-icon ui-icon-white ui-icon-triangle-1-s">&nbsp;</span>{!lang.ConfigureChartLbl}
+                        </h3>
+                    </div>
+                    <div class="sectionContent chartConfigOptions">
+                        <div id="chartErrorMessage" class="msgBox warningMsg">
+                            <div class="gbIconAlert"></div>
+                            <div class="msgDetail"></div>
+                        </div>
+                        <div class="instr">
+                            <apex:outputText value="{!lang.ChartHelpText}" escape="false"/>
+                        </div>
+                        <div class="chartConfigContainer">
+                            <table id="chartsTable" cellpadding="0" cellspacing="5">
+                                <tr>
+                                    <td valign="top" class="masterTd">
+                                        <table border="0" cellpadding="4" cellspacing="0">
+                                            <tr id="charts" class="gradientHeader gbForm">
+                                                <td class="chart-title">Chart</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td valign="top" class="masterTd">
+                                        <table class="detailsTable" border="0" cellpadding="4" cellspacing="0">
+                                            <tr class="gradientHeader">
+                                                <td class="chart-title lastCol" colspan="2">Details</td>
+                                            </tr>
+                                            <tr id="noChartDataText">
+                                                <td><i>You have removed all configured charts. Press save to finalize the delete.</i></td>
+                                            </tr>
+                                            <tr class="hideIfNoData chartTopRow">
+                                                <td class="chartConfigLabel">
+                                                    <label>{!lang.ChartTitleLabel}<span class="star">*</span></label>
+                                                </td>
+                                                <td>
+                                                    <input id="chartTitleInput" type="text" maxlength="100"/>
+                                                </td>
+                                            </tr>
+                                            <tr class="hideIfNoData">
+                                                <td class="chartConfigLabel">
+                                                    <label class="chartTypeLbl">{!lang.ChartTypeLabel}<span class="star">*</span></label>
+                                                </td>
+                                                <td>
+                                                    <div class="chartTypeCon">
+                                                        <span id="line" class="chartButton" title="{!lang.LineChart}"></span>
+                                                        <span id="bar" class="chartButton" title="{!lang.BarChart}"></span>
+                                                        <span id="donut" class="chartButton" title="{!lang.DonutChart}"></span>
+                                                        <span id="tile" class="chartButton" title="{!lang.DataTileChart}"></span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr class="hideIfNoData">
+                                                <td class="chartConfigLabel">
+                                                    <label>{!lang.ChartSizeLabel}<span class="star">*</span></label>
+                                                </td>
+                                                <td>
+                                                    <select id="chartSizeSelect">
+                                                        <option value="0">--Select--</option>
+                                                        <option value="xs">Extra Small</option>
+                                                        <option value="s">Small</option>
+                                                        <option value="m">Medium</option>
+                                                        <option value="l">Large</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr class="hideIfNoData">
+                                                <td class="chartConfigLabel">
+                                                    <label class="chartConfigDropdowns showOnDefault">{!lang.ChartXAxisLabel}<span class="star">*</span>
+                                                    <span class="gbInfoIcon tooltip" title="A category field whose values will be appear on the horizontal axis."></span></label>
+                                                    <label class="chartConfigDropdowns showOnDonut">{!lang.ChartWedgesLabel}<span class="star">*</span>
+                                                    <span class="gbInfoIcon tooltip" title="A category field whose values will be appear as wedges."></span></label>
+                                                    <label class="chartConfigDropdowns showOnTile">{!lang.ChartFieldLabel}<span class="star">*</span>
+                                                    <span class="gbInfoIcon tooltip" title="Select a field to summarize."></span></label>
+                                                </td>
+                                                <td>
+                                                    <select id="chartXWedgeSelect" class="chartConfigDropdowns showOnDefault showOnDonut"></select>
+                                                    <select id="chartTileFieldSelect" class="chartConfigDropdowns showOnTile"></select>
+                                                </td>
+                                            </tr>
+                                            <tr class="hideIfNoData showOnTile summaryTypeRow">
+                                                <td class="chartConfigLabel">
+                                                    <label class="chartSummaryType showOnTile">{!lang.ChartSummaryTypeLabel}<span class="star">*</span></label>
+                                                </td>
+                                                <td>
+                                                    <select id="chartSummaryTypeSelect" class="chartSummaryType showOnTile">
+                                                    <option value="SUM">SUM</option>
+                                                    <option value="MIN">MIN</option>
+                                                    <option value="MAX">MAX</option>
+                                                    <option value="AVG">AVG</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tr class="hideIfNoData showOnDefault showOnDonut">
+                                                <td class="chartConfigLabel">
+                                                    <label class="chartConfigDropdowns showOnDefault">{!lang.ChartYAxisLabel}<span class="star">*</span>
+                                                        <span class="gbInfoIcon tooltip" title="A numeric field or record count whose values will appear on the vertical axis."></span>
+                                                    </label>
+                                                    <label class="chartConfigDropdowns showOnDonut">{!lang.ChartValuesLabel}<span class="star">*</span>
+                                                        <span class="gbInfoIcon tooltip" title="A numeric field or record count whose values will appear for the wedges."></span>
+                                                    </label>
+                                                </td>
+                                                <td>
+                                                    <select id="chartYValueSelect" class="chartConfigDropdowns showOnDefault showOnDonut"></select>
+                                                </td>
+                                            </tr>
+                                            <tr class="hideIfNoData showOnDefault">
+                                                <td class="chartConfigLabel">
+                                                    <label class="showOnDefault">{!lang.ChartGroupByLabel}
+                                                        <span class="gbInfoIcon tooltip" title="A secondary category field that will group the X-Axis values."></span>
+                                                    </label>
+                                                </td>
+                                                <td>
+                                                    <select id="chartGroupBySelect" class="showOnDefault"></select>
+                                                </td>
+                                            </tr>
+                                            <tr class="hideIfNoData chartLastRow">
+                                                <td class="chartConfigLabel">
+                                                    <label class="showOnDefault">{!lang.ChartShowLabelsLabel}
+                                                        <span class="gbInfoIcon tooltip" title="Display value labels automatically instead of on hover."></span>
+                                                    </label>
+                                                    <label class="showOnTile">{!lang.ChartDescriptionLabel}<span class="star">*</span>
+                                                        <span class="gbInfoIcon tooltip" title="Description text will appear below the field value in the data tile."></span>
+                                                    </label>
+                                                </td>
+                                                <td>
+                                                    <input id="chartShowLabelsInput" class="chk showOnDefault" type="checkbox"/>
+                                                    <input id="chartDescriptionInput" class="showOnTile" type="text" maxlength="100"/>
+                                                </td>
+                                            </tr>
+                                            <tr class="hideIfNoData chartLastRow">
+                                                <td class="chartConfigLabel showOnTile">
+                                                    <label>{!lang.ChartColorLabel}<span class="star">*</span></label>
+                                                </td>
+                                                <td class="showOnTile">
+                                                    <div id="chartColorSelect" class="colorPickerDiv">
+                                                        <div class="colorPickerRow">
+                                                            <div class="color-1" data-colorId="1"></div>
+                                                            <div class="color-2" data-colorId="2"></div>
+                                                            <div class="color-3" data-colorId="3"></div>
+                                                            <div class="color-4" data-colorId="4"></div>
+                                                            <div class="color-5" data-colorId="5"></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div class="cb chartButtons">
+                                    <!-- do not change buttons to be on separate lines - this is done to avoid extra space between the buttons -->
+                                    <apex:commandButton value="{!lang.SaveBtnLbl}" action="{!saveAndRefreshPage2}"
+                                                        styleClass="saveBtn none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/><input
+                                    type="button" value="{!lang.SaveBtnLbl}" disabled="disabled"
+                                    class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/><input
+                                    type="{!IF(enterpriseEditionEnabled, 'hidden', 'button')}" value="Add Chart" id="addChartButton"
+                                    class="gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/><input
+                                    type="button" value="Delete Chart" id="deleteChartButton"
+                                    class="gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/><input
+                                    type="button" value="Embed Chart" id="embedChartButton"
+                                    class="gbBtn chartEmbedBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/>
+                            </div>
+                        </div>
+                    </div>
+                </c:EmptyComponent> <!-- end charts section -->
+
+                <div class="cb"></div> <!-- clearfix -->
+
+                <div id="cfSection" class="sectionHeader cb">
+                    <h3><span class="ui-icon ui-icon-white ui-icon-triangle-1-s">&nbsp;</span>Conditional Formatting
+                    </h3>
+                </div>
+                <div class="sectionContent colorCodingContainer">
+                    <div id="colorCodingErrorMessage" class="msgBox warningMsg">
+                        <div class="gbIconAlert"></div>
+                        <div class="msgDetail"></div>
+                    </div>
+                    <div class="instr">Create conditional formatting rules to visualize data on the grid. <span
+                        class="gbInfoIcon tooltip"></span></div>
+                    <div>
+                        <table id="colorCodingTable" cellspacing="5" cellpadding="0">
+                            <tr>
+                                <td valign="top" class="masterTd">
+                                    <table border="0" cellpadding="4" cellspacing="0">
+                                        <tr id="rules" class="gradientHeader gbForm">
+                                            <td class="rule-title">Rule</td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td valign="top" class="masterTd">
+                                    <table class="detailsTable" border="0" cellpadding="4" cellspacing="0">
+                                        <tr class="gradientHeader">
+                                            <td class="rule-title lastCol" colspan="2">Details</td>
+                                        </tr>
+                                        <tr id="noDataText">
+                                            <td><i>You have removed all conditional formatting rules. Press save to
+                                                finalize the delete.</i></td>
+                                        </tr>
+                                        <tr class="hideIfNoData">
+                                            <td class="ruleName">
+                                                Rule name: <input id="colorCodeNameInput" type="text"/>
+                                            </td>
+                                        </tr>
+                                        <tr class="hideIfNoData">
+                                            <td>If&nbsp;
+                                                <select id="colorCodeGoverningField">
+                                                </select>
+                                                <div class="checkboxColorCoding">
+                                                    <label class="popupLabel colorCodeIsLabel"> is </label>
+                                                    <input id="colorCodeValueCheckbox" type="checkbox"/>
+                                                </div>
+                                                <div class="picklistColorCoding">
+                                                    <label class="loadingMessage">Loading picklist options...</label>
+                                                    <label class="popupLabel colorCodeIsLabel"> is </label>
+                                                    <select id="colorCodeValueSelect">
+                                                    </select>
+                                                </div>
+                                                <div class="inputColorCoding">
+                                                    <select class="colorCodeOperatorSelect" id="numericOperatorSelect">
+                                                        <option value="=">equals</option>
+                                                        <option value=">">greater than</option>
+                                                        <option value="<">less than</option>
+                                                        <option value=">=">greater or equal</option>
+                                                        <option value="<=">less or equal</option>
+                                                    </select>
+                                                    <select class="colorCodeOperatorSelect" id="stringOperatorSelect">
+                                                        <option value="=">equals</option>
+                                                        <option value="c">contains</option>
+                                                        <option value="!=">does not equal</option>
+                                                        <option value="!c">does not contain</option>
+                                                    </select>
+                                                    <input id="colorCodeValueInput" type="text"/>
+                                                    <span
+                                                        class="dateConditionalFormattingTooltip gbInfoIcon tooltip"></span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr class="hideIfNoData">
+                                            <td>
+                                                <span>Apply formatting to:</span>
+                                                <select id="colorCodeColoredField">
+                                                </select>
+                                                <span>&nbsp;&nbsp;or entire record:</span>
+                                                <input id="colorWholeRowChk" type="checkbox"/>
+                                            </td>
+                                        </tr>
+                                        <tr class="hideIfNoData indented">
+                                            <td>
+                                                <label class="popupLabel textFormattingLabel" for="rqrdChk">Background
+                                                    color:</label>
+                                                <div id="colorCodeColorSelect" class="colorPickerDiv">
+                                                    <div class="colorPickerRow">
+                                                        <div class="color-1" data-colorId="1"></div>
+                                                        <div class="color-2" data-colorId="2"></div>
+                                                        <div class="color-3" data-colorId="3"></div>
+                                                        <div class="color-4" data-colorId="4"></div>
+                                                        <div class="color-5" data-colorId="5"></div>
+                                                    </div>
+                                                    <div class="colorPickerRow">
+                                                        <div class="color-6" data-colorId="6"></div>
+                                                        <div class="color-7" data-colorId="7"></div>
+                                                        <div class="color-8" data-colorId="8"></div>
+                                                        <div class="color-9" data-colorId="9"></div>
+                                                        <div class="color-10" data-colorId="10"></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr class="hideIfNoData indented">
+                                            <td>
+                                                <label class="popupLabel textFormattingLabel" for="rqrdChk">Text
+                                                    color:</label>
+                                                <div id="colorCodeTextColorSelect" class="colorPickerDiv">
+                                                    <div class="colorPickerRow">
+                                                        <div class="color-1" data-colorId="1">a</div>
+                                                        <div class="color-2" data-colorId="2">a</div>
+                                                        <div class="color-3" data-colorId="3">a</div>
+                                                        <div class="color-4" data-colorId="4">a</div>
+                                                        <div class="color-5" data-colorId="5">a</div>
+                                                    </div>
+                                                    <div class="colorPickerRow">
+                                                        <div class="color-6" data-colorId="6">a</div>
+                                                        <div class="color-7" data-colorId="7">a</div>
+                                                        <div class="color-8" data-colorId="8">a</div>
+                                                        <div class="color-9" data-colorId="9">a</div>
+                                                        <div class="color-10" data-colorId="10">a</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr class="hideIfNoData indented textFormatting">
+                                            <td>
+                                                <label class="popupLabel textFormattingLabel" for="rqrdChk">Text
+                                                    formatting:</label>
+                                                <span class="formattingOption" id="colorCodingBold"></span>
+                                                <span class="formattingOption" id="colorCodingItalic"></span>
+                                                <span class="formattingOption" id="colorCodingUnderline"></span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        <div class="cb chartButtons">
+                            <!-- do not change buttons to be on separate lines - this is done to avoid extra space between the buttons -->
+                            <apex:commandButton value="{!lang.SaveBtnLbl}" action="{!saveAndRefreshPage2}"
+                                                styleClass="saveBtn none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/>
+                            <input
+                                type="button"
+                                class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                                value="{!lang.SaveBtnLbl}" disabled="disabled"/><input
+                            type="button" value="Add Rule" id="addRuleBtn"
+                            class="gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/><input
+                            type="button" value="Delete Rule" id="deleteRuleBtn"
+                            class="gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sectionHeader">
+                    <h3><span class="ui-icon ui-icon-white ui-icon-triangle-1-s">&nbsp;</span>{!lang.SelectActionsLbl}
+                    </h3>
+                </div>
+                <div class="sectionContent">
+                    <c:EmptyComponent rendered="{!actionsEnabled==false}">
+                        <div class="instr">
+                            <apex:outputText value="{!lang.actionsUpgradeText}" escape="false"/>
+                        </div>
+                    </c:EmptyComponent>
+                    <c:EmptyComponent rendered="{!actionsEnabled==true}">
+                        <div class="instr">
+                            <apex:outputText value="{!lang.CreateActionInstr}" escape="false">
+                                <apex:param value="{!URLFOR(manageActionsUrl)}"/>
+                            </apex:outputText>
+                        </div>
+
+                        <c:EmptyComponent rendered="{!IF(actionWrappers.size == 0, false, true)}">
+                            <table border="0" cellpadding="0" cellspacing="0" id="gbActions">
+                                <tr class="gradientHeader gbForm">
+                                    <td>&nbsp;</td>
+                                    <td title="{!lang.objectFieldHelp}">{!lang.objectLbl}<span
+                                        class="sortasc">&nbsp;</span></td>
+                                    <td title="{!lang.actionNameFieldHelp}">{!lang.actionNameLbl}</td>
+                                    <td title="{!lang.contentSourceFieldHelp}">{!lang.contentSourceLbl}</td>
+                                    <td title="{!lang.execBehaviorFieldHelp}">{!lang.executionBehaviorLbl}</td>
+                                    <td title="{!lang.actionTypeFieldHelp}">{!lang.actionTypeLbl}</td>
+                                    <td title="{!lang.descrFieldHelp}">{!lang.actionDescrLbl}</td>
+                                </tr>
+                                <apex:repeat value="{!actionWrappers}" var="act">
+                                    <tr id="{!act.meta.Id}">
+                                        <td>
+                                            <apex:inputCheckBox value="{!act.isSelected}"/>
+                                        </td>
+                                        <td>
+                                            <apex:outputText value="{!act.attrMap['objDisplName']}"/>
+                                        </td>
+                                        <td>
+                                            <apex:outputText value="{!act.attrMap['actionLabel']}"/>
+                                        </td>
+                                        <td>
+                                            <apex:outputText value="{!act.attrMap['contentSource']}"/>
+                                        </td>
+                                        <td>
+                                            <apex:outputText value="{!act.attrMap['displayBehavior']}"/>
+                                        </td>
+                                        <td>
+                                            <apex:outputText value="{!act.attrMap['actionType']}"/>
+                                        </td>
+                                        <td>
+                                            <apex:outputText value="{!act.attrMap['descr']}"/>
+                                        </td>
+                                    </tr>
+                                </apex:repeat>
+                            </table>
+                        </c:EmptyComponent>
+                    </c:EmptyComponent>
+                </div>
+
+            </apex:pageblock>
+
+            <apex:inputHidden value="{!objectSettingsJson}" id="crudSettingsJson"/>
+            <apex:inputHidden value="{!fieldPropsJson}" id="fieldPropsJson"/>
+            <apex:inputHidden value="{!adminFieldPropsJson}" id="adminFieldPropsJson"/>
+
+            <apex:actionFunction action="{!getNativeFieldProperties}" name="getNativeFieldProperties"
+                                 rerender="nativeFieldPropertiesPanel" immediate="true">
+                <apex:param name="nativeFieldObjectName" assignTo="{!nativeFieldObjectName}" value=""/>
+                <apex:param name="nativeFieldFieldName" assignTo="{!nativeFieldFieldName}" value=""/>
+                <apex:param name="newLiId" assignTo="{!newLiId}" value=""/>
+            </apex:actionFunction>
+
+            <apex:outputPanel id="nativeFieldPropertiesPanel">
+                <script type="text/javascript">
+                    var nativePropTempMap = [{!nativeFieldPropsJSON}];
+
+                    if (nativePropTempMap.length > 0) {
+                        GBFieldProps.addNativeFieldProperties('{!JSENCODE(nativeFieldObjectName)}', '{!JSENCODE(nativeFieldFieldName)}', nativePropTempMap[0]);
+                        GBFieldProps.showPropsWidget('{!JSENCODE(newLiId)}', true);
+                    }
+                </script>
+            </apex:outputPanel>
+
+            <!-- begin field properties widget -->
+            <div class="gbFieldPropPopup msgBox boxShadow" id="gbFieldPropPopup">
+                <div class="header">
+                    <span class="title">Field Properties</span>
+                </div>
+                <div id="fpBody">
+                    <span class="icon-spinner"></span>
+                    <div id="fpContent">
+                        <div id="propFieldLabel"></div>
+                        <div class="popupRow">
+                            <label class="popupLabel" for="fieldLabelInput">Label</label>
+                            <input id="fieldLabelInput" type="text" size="19" maxlength="40"
+                                   placeholder="Optionally rename"/>
+                        </div>
+                        <div class="popupRow">
+                            <label class="popupLabel" for="hideObjLabel">Hide object label<span class="gbInfoIcon tooltip"
+                                                                                      title="{!lang.hideObjectLabelTxt}"></span></label>
+                            <input id="hideObjLabel" class="hideObjLbl" type="checkbox"/>
+                        </div>
+                        <div class="popupRow">
+                            <label class="popupLabel" for="readOnlyChk">Read-only</label>
+                            <input id="readOnlyChk" class="rorqrd" type="checkbox"/>
+                            <input id="readOnlyRd" type="radio" name="prop"/>
+                        </div>
+                        <div class="popupRow">
+                            <label class="popupLabel" for="rqrdChk">Required</label>
+                            <input id="rqrdChk" class="rorqrd" type="checkbox"/>
+                            <input id="rqrdRd" type="radio" name="prop"/>
+                        </div>
+                        <div class="popupRow quickFilterRow">
+                            <label class="popupLabel" for="qFilter">Quick filter<span class="gbInfoIcon tooltip"
+                                                                                      title="{!lang.quickFiltersTooltipTxt}"></span></label>
+                            <input
+                                class="qfCheck {!IF(wrapper.gridConfig.fieldValues['Enable_User_Defined_Filtering'], '', 'none')}"
+                                id="qFilterChk" type="checkbox"/>
+                            <input
+                                class="qfCheck {!IF(wrapper.gridConfig.fieldValues['Enable_User_Defined_Filtering'], 'none', '')}"
+                                type="checkbox" disabled="true"/>
+                        </div>
+                        <div class="popupRow">
+                            <label class="popupLabel" for="colWidthInput">Column width</label>
+                            <input id="colWidthInput" type="text" size="3" maxlength="3"/>
+                            <span> pixels</span>
+                        </div>
+                        <div class="popupRow" title="{!lang.textAreaHeightTooltipTxt}">
+                            <label class="popupLabel" for="txtAreaHeightInput">{!lang.textAreaHeightLbl}</label>
+                            <input id="txtAreaHeightInput" type="text" size="3" maxlength="3"/>
+                            <span> pixels</span>
+                        </div>
+                        <div class="popupRow summaryTypeSelectRow">
+                            <label class="popupLabel" for="summaryTypeSelect">Summary Type</label>
+                            <select id="summaryTypeSelect">
+                                <option value="0">--Select--</option>
+                                <option value="SUM">SUM</option>
+                                <option value="MIN">MIN</option>
+                                <option value="MAX">MAX</option>
+                                <option value="AVG">AVG</option>
+                            </select>
+                        </div>
+                        <div class="fpButtons">
+                            <input type="button" value="{!lang.okBtnLbl}"
+                                   class="okPopupBtn gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/>
+                            <input type="button" value="{!lang.cancelBtnLbl}"
+                                   class="cancelPopupBtn gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"/>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="liId" value=""/>
+            </div>
+            <!-- end field properties widget -->
+
+            <!-- begin embed chart widget -->
+            <c:EmptyComponent rendered="{!chartsEnabled}">
+                <!-- TODO: langify all this text -->
+                <div id="embedChart" class="embedWidget msgBox boxShadow embedGridBox">
+                    <div class="header">
+                        <span class="title">Embed this chart</span>
+                        <span class="closeX">{!lang.CloseWarningBoxLbl}&nbsp;<b>X</b></span>
+                        <br clear="all"/>
+                    </div>
+                    <div id="embedBody">
+                        <apex:outputPanel id="embedMsgBlock">
+                            <c:EmptyComponent rendered="{!showEmbedMsg}">
+                                <div class="msgBox {!IF(embedError, 'warningMsg', 'infoMsg')}">
+                                    <div class="{!IF(embedError, 'gbIconAlert', 'gbIconCheckmark')}"></div>
+
+                                    <div class="msgBody">
+                                        <apex:outputText escape="false" value="{!embedMsg}"/>
+                                    </div>
+                                </div>
+                            </c:EmptyComponent>
+                        </apex:outputPanel>
+                        <div>Follow the steps below to create a Visualforce page with this chart that you can add to
+                            record detail page layouts.
+                        </div>
+                        <ol>
+                            <li>
+								<span class="embedListSection">Choose a chart type<span class="star">*</span>
+									<br/>
+									<span id="line" class="chartButton" title="{!lang.LineChart}"></span>
+									<span id="bar" class="chartButton" title="{!lang.BarChart}"></span>
+									<span id="donut" class="chartButton" title="{!lang.DonutChart}"></span>
+                                    <span id="tile" class="chartButton" title="{!lang.DataTileChart}"></span>
+									<div class="showOnDonut donutMessage">Note: if using the donut chart type for a
+                                        chart that is not originally configured as that type, the specified Group By
+                                        field will be disregarded due to the nature of donut charts.
+                                    </div>
+								</span>
+                                <br/>
+                            </li>
+                            <li>
+								<span class="embedListSection">Choose a chart size<span class="star">*</span>&nbsp;&nbsp;
+									<select id="embedChartSizeSelect">
+                                        <option value="0">--Default--</option>
+                                        <option value="xs">Extra Small</option>
+                                        <option value="s">Small</option>
+                                        <option value="m">Medium</option>
+                                        <option value="l">Large</option>
+                                    </select>
+								</span>
+                                <br/><br/>
+                            </li>
+                            <li>
+                                <span class="embedListSection">Click the <b>Create Page</b> button to create the Visualforce page automatically, or copy the code below to create it manually.</span>
+                            </li>
+                        </ol>
+						<pre>
+							<div id="embedVfText">
+                            </div>
+		                    <apex:inputHidden value="{!pageBodyForEmbedChart}" id="pageBodyForEmbedChart"/>
+						</pre>
+                    </div>
+                    <div id="embedBtns">
+                        <input type="button"
+                               class="gbBtn actionBtn embedCreate{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                               value="Create Page"/>
+                        <input type="button"
+                               class="gbBtn actionBtn embedCancel{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                               value="{!lang.CancelBtnLbl}"/>
+                        <input type="button" class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                               value="Create Page" disabled="disabled"/>
+                        <input type="button" class="gbBtnDisabled none{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                               value="Cancel" disabled="disabled"/>
+                        <apex:actionFunction action="{!createChartsVFpage}" name="createChartsVFpageAF"
+                                             reRender="embedMsgBlock" oncomplete="GBEmbedChart.completeEmbedRequest()">
+                        </apex:actionFunction>
+                        <apex:actionFunction action="{!checkEmbedStatusForChart}" name="checkEmbedStatusForChartAF"
+                                             reRender="embedMsgBlock" oncomplete="GBEmbedChart.completeEmbedRequest()">
+                        </apex:actionFunction>
+                    </div>
+                </div>
+            </c:EmptyComponent>
+            <!-- end embed chart widget -->
+
+            <!-- begin object-level permissions widget -->
+            <div id="objectLevelCRUD" class="embedWidget msgBox boxShadow embedGridBox">
+                <div class="header">
+                    <span class="title">Object Level Settings</span>
+                    <br clear="all"/>
+                </div>
+                <div id="objectLevelCRUDContainer">
+                    <div id="objectLevelCRUDBody" class="objectSettingsSection">
+                        <div>
+                            <span class="objText">Object:</span>
+                            <span class="crudObjLabel"></span>
+                        </div>
+                        <div class="crudConfigSection cf">
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.LabelLbl}
+                                </div>
+                                <apex:inputText size="25" style="margin-left: 2px;" html-placeholder="Optionally rename"
+                                                styleClass="objLabel"/>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.PluralLabelLbl}
+                                </div>
+                                <apex:inputText size="25" style="margin-left: 2px;" html-placeholder="Optionally rename"
+                                                styleClass="objLabelPlural"/>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.EditableLbl}
+                                </div>
+                                <apex:inputCheckbox styleClass="isEditableChkBx chk"/>
+                                <span class="gbHelpText">{!lang.EditableObjHelpTxt}</span>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.EnableCreatesLabel}
+                                </div>
+                                <apex:inputCheckbox styleClass="isCreateableChkBx chk"/>
+                                <span class="gbHelpText">{!lang.EnableCreatesObjHelpTxt}</span>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.EnableDeletesLbl}
+                                </div>
+                                <apex:inputCheckbox styleClass="isDeletableChkBx chk"/>
+                                <span class="gbHelpText">{!lang.EnableDeletesObjHelpTxt}</span>
+                            </div>
+                        </div>
+                        <div class="crudConfigSection cf flatViewSection none">
+                            <div class="flatViewOptionsTxt">{!lang.flatViewOptionsTxt}</div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.FlatViewLbl}
+                                </div>
+                                <apex:inputCheckbox styleClass="concatenatedFlatView chk"/>
+                                <span class="flatViewHelp gbHelpText">{!lang.FlatViewHelpTxt}</span>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="indentedConfigName">
+                                    {!lang.FlatViewCustomNameLbl}
+                                    <span class="gbInfoIcon tooltip"
+                                          title="{!lang.FlatViewCustomNameLblHelpText}"></span>
+                                </div>
+                                <apex:inputText size="18" style="margin-left: 2px;" html-placeholder="Optionally rename"
+                                                styleClass="concatViewColLabel"/>
+                            </div>
+                            <c:EmptyComponent rendered="{!NOT(enterpriseEditionEnabled)}">
+                                <div class="popupRow cb">
+                                    <div class="configName">
+                                        {!lang.denormalizedViewLbl}
+                                    </div>
+                                    <apex:inputCheckbox styleClass="denormalizedFlatView chk"/>
+                                    <div class="denormalizedViewHelp">
+                                        <span class="gbHelpText noneFloat">
+                                                {!lang.objectSettingsDenormalizedViewHelpTxt}
+                                        </span>
+                                        <span class="gbWarningText noneFloat">
+                                                {!lang.objectSettingsDenormalizedViewWarningTxt}
+                                        </span>
+                                    </div>
+                                </div>
+                            </c:EmptyComponent>
+                        </div>
+                    </div>
+                    <!-- Markup for denormalized view child objects -->
+                    <div id="childObjectLevelCRUDBody" class="objectSettingsSection none">
+                        <div>
+                            <span class="objText">Object:</span>
+                            <span class="crudObjLabel"></span>
+                        </div>
+                        <div class="crudConfigSection cf">
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.LabelLbl}
+                                </div>
+                                <apex:inputText size="25" style="margin-left: 2px;" html-placeholder="Optionally rename"
+                                                styleClass="objLabel"/>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.PluralLabelLbl}
+                                </div>
+                                <apex:inputText size="25" style="margin-left: 2px;" html-placeholder="Optionally rename"
+                                                styleClass="objLabelPlural"/>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.EditableLbl}
+                                </div>
+                                <apex:inputCheckbox styleClass="isEditableChkBx chk"/>
+                                <span class="gbHelpText">{!lang.EditableObjHelpTxt}</span>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.EnableCreatesLabel}
+                                </div>
+                                <apex:inputCheckbox styleClass="isCreateableChkBx chk"/>
+                                <span class="gbHelpText">{!lang.EnableCreatesObjHelpTxt}</span>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.EnableDeletesLbl}
+                                </div>
+                                <apex:inputCheckbox styleClass="isDeletableChkBx chk"/>
+                                <span class="gbHelpText">{!lang.EnableDeletesObjHelpTxt}</span>
+                            </div>
+                        </div>
+                        <div class="crudConfigSection cf flatViewSection none">
+                            <div class="flatViewOptionsTxt">{!lang.flatViewOptionsTxt}</div>
+                            <div class="popupRow cb">
+                                <div class="configName">
+                                    {!lang.FlatViewLbl}
+                                </div>
+                                <apex:inputCheckbox styleClass="concatenatedFlatView chk"/>
+                                <span class="flatViewHelp gbHelpText">{!lang.FlatViewHelpTxt}</span>
+                            </div>
+                            <div class="popupRow cb">
+                                <div class="indentedConfigName">
+                                    {!lang.FlatViewCustomNameLbl}
+                                    <span class="gbInfoIcon tooltip"
+                                          title="{!lang.FlatViewCustomNameLblHelpText}"></span>
+                                </div>
+                                <apex:inputText size="18" style="margin-left: 2px;" html-placeholder="Optionally rename"
+                                                styleClass="concatViewColLabel"/>
+                            </div>
+                            <c:EmptyComponent rendered="{!NOT(enterpriseEditionEnabled)}">
+                                <div class="popupRow cb">
+                                    <div class="configName">
+                                        {!lang.denormalizedViewLbl}
+                                    </div>
+                                    <apex:inputCheckbox styleClass="denormalizedFlatView chk"/>
+                                    <div class="denormalizedViewHelp">
+                                        <span class="gbHelpText noneFloat">
+                                                {!lang.objectSettingsDenormalizedViewHelpTxt}
+                                        </span>
+                                        <span class="gbWarningText noneFloat">
+                                                {!lang.objectSettingsDenormalizedViewWarningTxt}
+                                        </span>
+                                    </div>
+                                </div>
+                            </c:EmptyComponent>
+                        </div>
+                    </div>
+                </div>
+                <div id="objectLevelCRUDBtns">
+                    <input type="button"
+                           class="gbBtn actionBtn objectLevelCRUDOK{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                           value="{!lang.OKBtnLbl}"/>
+                    <input type="button"
+                           class="gbBtn actionBtn objectLevelCRUDCancel{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}"
+                           value="{!lang.CancelBtnLbl}"/>
+                </div>
+            </div>
+            <!-- end object-level permissions widget -->
+
+            <apex:inputHidden value="{!chartsJson}" id="chartsJson"/>
+			<apex:inputHidden value="{!gridParentObjectLabel}" id="parentObjectLabel"/>
+			<apex:inputHidden value="{!relationshipsJson}" id="relationships"/>
+			<apex:inputHidden value="{!colorCodingRulesJson}" id="colorCodingRulesJson"/>
+			<script>
+				var parentObjectLabelHidden = document.getElementById("{!$Component.parentObjectLabel}");
+			</script>
+		</apex:form>
+		
+		
+	
+		<c:LangJSComponent lang="{!lang}"/>
+		<!-- this must come before the js includes because the js references these vars -->
+		<script type="text/javascript">
+			var maxFieldsPerGrid = {!maxFieldsPerGrid},
+				maxFieldsPerObject = {!maxFieldsPerObject},
+				gridName = '{!JSENCODE(loadGridName)}',
+	    		nameSpacePrefix = '{!namespacePrefix}',
+	    		metaServiceDisabled = {!metaServiceDisabled},
+	    		hasSelectedFields = {!hasSelectedFields},
+	    		gridHasValidObjects = {!gridHasValidObjects},
+	    		objectCrossRefEnabled = {!objectCrossRefEnabled},
+	    		currentLocale = '{!localeForDate}',
+	    		orgId = '{!$Organization.Id}',
+	    		isTrackingDisabled = {!isTrackingDisabled},
+	            gridBuddyVersion = '{!gridBuddyVersion}',
+	            abbreviatedUserType = '{!abbreviatedUserType}',
+	            mpToken = '{!mpToken}',
+	            uiTheme = '{!$User.UITheme}',
+	            userId = '{!$User.Id}',
+	            userLanguage = '{!userLanguage}',
+	            gbEdition = '{!gridBuddyEditionName}',
+	            lightningStylesEnabled = {!lightningStylesEnabled};
+	    		
+	    	var gridIsEditable = {!wrapper.gridConfig.fieldValues['Is_Editable']},
+	    	    gridIsCreateable = {!wrapper.gridConfig.fieldValues['Is_Createable']},
+                gridIsDeletable = {!wrapper.gridConfig.fieldValues['Enable_Deletes']},
+                isUDFEnabled = {!wrapper.gridConfig.fieldValues['Enable_User_Defined_Filtering']};
+                hasAnyUserDefinedFilter = {!wrapper.gridConfig.hasAnyUserDefinedFilter};
+                hasAdminFiltersExceptDefault = {!wrapper.gridConfig.hasAdminFiltersExceptDefault};
+	    	
+		</script>
+		<!--  do not use includeScript for the jquery include, as this will add the javascript to the <head> tag and slow down the page load -->
+		<c:FileComponent JSFileNames="{!JSFileNames}" CSSFileNames="{!CSSFileNames}"/>
+	    
+		<c:ServiceCloudConsoleComponent inServiceCloudConsole="{!inConsole}"/>
+	    
+		<script type="text/javascript">
+			GBChartsConfig.enabled = {!chartsEnabled};
+			
+			var parentObjectName = '{!gridParentObjectName}',
+				parentObjectLabel = jq(parentObjectLabelHidden).val(),
+				childObjects = JSON.parse('{!JSENCODE(childObjectsAsFieldObjects)}'),
+				allObjects = JSON.parse('{!JSENCODE(allObjectsForUnrelatedList)}'),
+				lookupAjaxResponderPageURL = '{!lookupAjaxResponderPageURL}',
+				selectedFieldObjects = JSON.parse('{!JSENCODE(selectedFieldObjects)}'),
+				objectNameToPathToJunction = JSON.parse('{!JSENCODE(objectNameToPathToJunction)}'),
+				invalidObjects = JSON.parse('{!JSENCODE(invalidObjects)}'),
+				launchGridURL = '{!URLFOR(launchGridURL)}',
+				readOnlyObjects = JSON.parse('{!JSENCODE(readOnlyObjectsJSON)}'),
+                unsupportedCreateNewObjects = JSON.parse('{!JSENCODE(noCreateObjectsNotParentsJSON)}'),
+                unsupportedDeleteObjects = JSON.parse('{!JSENCODE(noDeleteObjectsJSON)}'),
+                unsupportedUnrelatedObjects = JSON.parse('{!JSENCODE(UnsupportedUnrelatedObjectsJSON)}'),
+                isGBUnlimited = !{!enterpriseEditionEnabled};
+		</script> 
+		
+		<div class="gbCopyright">{!lang.CopyrightTxt}</div>
+	</div>
+	<div id="gbOverlay">&nbsp;</div>
+</apex:page>
