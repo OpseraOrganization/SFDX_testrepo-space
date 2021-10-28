@@ -1,0 +1,257 @@
+<apex:page standardController="Account" showHeader="false" extensions="LeanData.OnDemandView" action="{!initializeIsAllowed}">
+    <c:accessCheck isAllowed="{!isAllowed}">
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__angela_app, 'styles.css')}"/> 
+    <c:style />
+        
+    <div class="view" >
+        <div class="pageLoading">
+            <c:loading />
+        </div>
+        
+        <div class="settingMessage" style="display: none;">
+            <p style="font-size:16px; color:Red; padding:15px">All LeanData View sections have been turned off. Have a Salesforce Admin fully enable View through the Section Settings of the LeanData Tab.</p>
+            <p style="font-size:16px; color:Red; padding-left:15px">LeanData --> Settings --> View --> Section Settings</p>
+        </div>
+        
+        <div class="timeoutMessage" style="display:none;">
+            <p style="font-size:16px; color:Red; padding:15px">There was a problem loading your Lead-to-Account View, please refresh the page to try again.</p>
+        </div>
+        
+        <div class="pageBody">
+            <div class="duplicateAccounts section-wrapper" >
+                <div class="wrapper">
+                    <div class="left" >
+                        <span class="table_title">
+                            <img class="leandata_logo" src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}"/>&nbsp;&nbsp;&nbsp;
+                            <h3>Potential Duplicate Accounts</h3>
+                         </span>
+                        <span class="duplicateAccountsCountContainer">
+                            <span>|</span> 
+                            <a href="#LINKTOA2BMUSTBEGENERATEDBACKENDANDSERVEDUP" target="_blank" class="customTarget action_link duplicateAccountsViewLink ld-green">
+                                See All 
+                                (Accounts:<span class="accountsCount"/>) »
+                            </a>
+                        </span>
+                    </div>
+                     <div class="right">                                                 
+                         <span><a href="#RELATEDLEADSSETTINGSLINKS" target="_blank" class="customTarget action_link duplicateAccountsViewSettingsLink ld-green">Account Settings</a>
+                         </span>                                                       
+                     </div>
+                </div>                
+                <div class="duplicateAccountsHeightDiv tableWrapper outer-panel" >
+                    <div class="inner-panel" >
+                        <div class="scroll-panel">
+                            <table class="list content_table_account floatingHeaderTable" border="0" cellpadding="0" cellspacing="0" style="table-layout:fixed;">
+                                <thead class="duplicateAccountsTableHead">
+                                </thead>
+                                <tbody class="duplicateAccountsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+            
+            <div class="matchedLeads section-wrapper" >
+                <div class="wrapper">
+                    <div class="left">
+                        <span class="table_title">
+                            <img class="leandata_logo" src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}"/>&nbsp;&nbsp;&nbsp;
+                            <h3>Matched Leads</h3>
+                         </span>
+                        <span class="matchedLeadsCountContainer">
+                            <span>|</span> 
+                            <a href="#LINKTOA2BMUSTBEGENERATEDBACKENDANDSERVEDUP" target="_blank" class="customTarget action_link matchedLeadsViewLink ld-green">
+                                See All 
+                                (Leads:<span class="leadsCount"/>) »
+                            </a>
+                            
+                            <span>|</span> 
+                            <span  class="mass_convert_link">
+                              <a href="#LINKTOA2BMUSTBEGENERATEDBACKENDANDSERVEDUP" target="_blank" class="customTarget action_link massConvertLink ld-green">
+                                Mass Convert »
+                              </a>
+                            
+                              <span>|</span> 
+                            </span>
+                            <a href="#LINKTOA2BMUSTBEGENERATEDBACKENDANDSERVEDUP" target="_blank" class="customTarget action_link leadActivityLink ld-green">
+                                See Lead Activity »
+                            </a>
+                            
+                        </span>
+                    </div>
+                    <div class="right" style="line-height:20px;">
+                        <span><a href="#RELATEDLEADSSETTINGSLINKS" target="_blank" class="customTarget action_link leadsViewSettingsLink ld-green">Lead Settings</a>
+                        </span>
+                    </div>
+                </div>
+                <div class="matchedLeadsHeightDiv tableWrapper outer-panel" >
+                    <div class="inner-panel" >
+                        <div class="scroll-panel">
+                            <table class="list content_table_lead floatingHeaderTable" border="0" cellpadding="0" cellspacing="0"  style="table-layout:fixed;">
+                                <thead class="matchedLeadsTableHead">
+                                </thead>
+                                <tbody class="matchedLeadsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>     
+        </div>
+        
+    </div>
+    <c:setTargetValue targetValue="{!targetValue}"/>
+        <c:matchedViewAssets view_type="Account" with_dupes="false" with_l2a_matches="false"/>
+        <script>
+            Visualforce.remoting.timeout = 120000; // Set timeout at page level
+            j$ = jQuery.noConflict();
+            // set viewJSResource variables 
+            objId = '{! JSENCODE((objId)) }';
+            pageType = 'Account';
+            startTime = Date.now();
+            j$('document').ready(function(){
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.OnDemandView.getNewViewObject}',
+                    '{! JSENCODE((objId)) }', 'Account', null,
+                    function(result, event) {buildView(result)}
+                    )
+            });
+        </script>
+    </c:accessCheck>
+    
+    <script>
+        function buildView(viewObject) {
+            if(viewObject == null){
+                j$('.pageLoading').hide();
+                j$('.pageBody').hide();
+                j$('.timeoutMessage').show();
+                return;
+            }
+            if(viewObject['accountMatches'].length>0)
+              ga_event('Account View with dupes');
+
+            if(viewObject['leadMatches'].length>0)
+              ga_event('Account View with l2a matches');
+            
+            initializePage(viewObject);
+                
+            // [ZH tbd] j$('.leandata_logo').attr('src', viewObject['logoURL']);
+
+            // var totalHeight = j$('.pageBody').height();
+            // if( '{!$User.UIThemeDisplayed}' == 'Theme4d' )
+            //     totalHeight = totalHeight-70;
+            var totalHeight = 350;
+            var heights = calculateHeights( totalHeight, "Account", {           
+              "accountMatches" :   viewObject["accountMatches"].length,
+              "isDuplicatesViewOn" : viewObject["isDuplicatesViewOn"],
+              "leadMatches" : viewObject["leadMatches"].length,
+              "isMatchedLeadsViewOn" : viewObject["isMatchedLeadsViewOn"]
+            });
+            
+            var dupesHeight = heights['accountDupeHeight'];
+            var matchedHeight = heights['accountMatchedHeight'];
+            
+            
+            j$('.duplicateAccounts').css('height',''+ dupesHeight + 'px' );
+            j$('.matchedLeads').css('height',''+ matchedHeight + 'px' );
+
+            var counter = 0;
+            if(dupesHeight == 0){
+               j$('.duplicateAccounts').hide();
+               counter++;
+            }
+
+            if(matchedHeight == 0){
+               j$('.matchedLeads').hide();
+               counter++;
+            }
+                           
+            if(counter ==2)
+               j$('.settingMessage').show();
+
+            if (viewObject["isMatchedLeadsViewOn"]) {
+                initializeSection('Lead', viewObject["leadCols"], viewObject["leadColsMap"], viewObject["leadMatches"]);
+                j$('.matchedLeadsTableHead').html(generateHeader());
+                j$('.matchedLeadsTableBody').html(generateSObjectRows());
+                j$('.leadsCount').html(viewObject["leadMatches"].length);
+                j$('.matchedLeadsViewLink').attr('href', jDecode(viewObject['matchedLeadsViewLink']));
+
+                if(viewObject['hasColumnSettingAccess'] || viewObject['enableAllowUserColumnCustomizations']) 
+                  j$('.leadsViewSettingsLink').attr('href', jDecode(viewObject['leadsViewSettingsLink']));
+                else
+                  j$('.leadsViewSettingsLink').hide();
+
+                if (viewObject["isAccountMassConvertAllowed"]) {
+                    j$('.massConvertLink').attr('href', jDecode(viewObject['massConvertLink']));
+                } else {
+                    j$('.mass_convert_link').hide();
+                }
+                j$('.leadActivityLink').attr('href', jDecode(viewObject['leadActivityLink']));
+                
+            } else {
+                j$('.matchedLeadsCountContainer').hide();
+                j$('.matchedLeadsViewLink').hide();
+                j$('.leadsViewSettingsLink').hide();
+            }
+            
+            if (viewObject["isDuplicatesViewOn"]) {
+                initializeSection('Account', viewObject["accountCols"], viewObject["accountColsMap"], viewObject["accountMatches"]);
+                var hasStatus = false;
+                j$('.duplicateAccountsTableHead').html(generateHeader(hasStatus));
+                j$('.duplicateAccountsTableBody').html(generateSObjectRows());
+                j$('.accountsCount').html(viewObject["accountMatches"].length);
+                j$('.duplicateAccountsViewLink').attr('href', jDecode(viewObject['duplicateAccountsViewLink']));
+                if(viewObject['hasColumnSettingAccess'] || viewObject['enableAllowUserColumnCustomizations'])
+                  j$('.duplicateAccountsViewSettingsLink').attr('href', jDecode(viewObject['duplicateAccountsViewSettingsLink']));
+                else
+                  j$('.duplicateAccountsViewSettingsLink').hide();
+            } else {
+                j$('.duplicateAccountsCountContainer').hide();
+                j$('.duplicateAccountsViewLink').hide();
+                j$('.duplicateAccountsViewSettingsLink').hide();
+            }
+            
+            
+            var selectedLists = j$('.inline_editable').get();
+            [].forEach.call(selectedLists, function(selectList){
+              var toJ = j$(selectList);
+              toJ.change(function(event){
+              var touchedSelectList = event.target;
+              var leadId = touchedSelectList.className.split(" ")[1];
+              var newStatus = touchedSelectList.options[touchedSelectList.selectedIndex].value;
+              changeLead(leadId, htmlDecode(newStatus));
+              })
+            })
+            function changeLead (leadId, newStatus) {
+              Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.OnDemandView.updateLeadStatus}',
+                leadId,
+                newStatus,
+                function (result, event) {}
+              )
+            }
+            
+            j$('.pageLoading').hide();
+            j$('.pageBody').show();
+                    
+
+            ga_timing('Account', Date.now() - startTime);       
+
+            setTarget();
+
+            var dataTableOptions = {"pagination" : false, "emptyTableText": "No records to display"};
+            if (viewObject["isDuplicatesViewOn"]) initializeDataTable(j$('.content_table_account'), 'account', dataTableOptions);
+            if (viewObject["isMatchedLeadsViewOn"]) initializeDataTable(j$('.content_table_lead'), 'lead', dataTableOptions);
+       
+            // Re-adjust table height after container is made
+            j$('.duplicateAccountsHeightDiv').css('height',''+ (dupesHeight - 35) + 'px' );
+            j$('.matchedLeadsHeightDiv').css('height',''+ (matchedHeight - 35) + 'px' );
+            // Override extra border added
+            j$('.pageBody th').css({'border-right': 'none'})
+        }
+    
+    </script>
+</apex:page>

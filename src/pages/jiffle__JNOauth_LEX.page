@@ -1,0 +1,331 @@
+<apex:page controller="jiffle.JNOauthController" showHeader="false" action="{!checkTokenRequest}" standardStylesheets="false" sidebar="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0">
+    <apex:pageMessages escape="false" />
+    <apex:include pageName="jiffle__JNGlobals"/>
+    <title>Jifflenow Mappings</title>
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" lang="en">
+        <apex:slds />
+        <link type="text/css" rel="stylesheet" href="https://www.lightningdesignsystem.com/assets/styles/slds.css"/>
+        <!-- REQUIRED SLDS WRAPPER -->
+        <div class="slds-scope">
+            <apex:form >
+                <!-- PAGE HEADER -->
+                <div class="slds-page-header">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-has-flexi-truncate">
+                            <div class="slds-media slds-no-space slds-grow">
+                                <div class="slds-media__figure">
+                                    <svg aria-hidden="true" class="slds-icon slds-icon-standard-contact slds-icon--small">
+                                        <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#database')}"></use>
+                                    </svg>
+                                </div>
+                                <div class="slds-media__body">
+                                    <p class="slds-text-title--caps slds-line-height--reset">Jifflenow Config</p>
+                                    <h6 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate" title="Mappings">Config Settings for Jifflenow</h6>
+                                </div>
+                            </div>
+                        </div> <!--END OF COL -->
+                        <div class="slds-col slds-no-flex slds-grid slds-align-top">
+                            <div class="slds-button-group" role="group">
+                                <apex:commandButton value="Configure" action="{!chgToedit}" rendered="{!disReadOnly=='Yes'}" styleclass="slds-button slds-button--neutral"/>
+                                <apex:commandButton value="Batch Configure" action="{!chgToeditBatch_LEX}" rendered="{!disReadOnly=='Yes' && batchReadOnly!=false && jnSettings.jiffle__Enable_pulling_Jifflenow_data__c}" styleclass="slds-button slds-button--neutral"/>
+                                <apex:commandButton value="Save & Authorize" action="{!initAuth}" rendered="{!disReadOnly=='No'}" styleclass="slds-button slds-button--neutral"/>
+                                <apex:commandButton value="Cancel" action="{!doCancel}" rendered="{!disReadOnly =='No'}" styleclass="slds-button slds-button--neutral" />        
+                                <apex:commandButton value="Save & Authorize" action="{!initBatchAuth}" rendered="{!batchReadOnly==false && disReadOnly=='NA'}" styleclass="slds-button slds-button--neutral" /> 
+                                <apex:commandButton value="Cancel" action="{!doCancelBatch}" rendered="{!batchReadOnly==false && disReadOnly=='NA'}" styleclass="slds-button slds-button--neutral" /> 
+                            </div>
+                        </div> <!--END OF COL -->
+                    </div> <!-- END OF GRID -->
+                </div> <!-- / PAGE HEADER -->
+
+                <!-- Display the Batch config in Read-only mode -->
+                <div class="slds-grid">
+                    <apex:outputPanel rendered="{!disReadOnly=='Yes'&& jnSettings.jiffle__JNClient_ID__c != null}">
+                    
+                        <div class="slds-col slds-size_12-of-12 slds-p-top--x-small">
+                            <div class="slds-box slds-box--x-small slds-text-align--left slds-m-around--x-small" style="border:3px solid #c4d5f2;background-color:#ffffff;">
+
+                                <!--<div class="slds-col"> -->
+                                    <h4 class="slds-section-title--divider">Jifflenow Configuration</h4> 
+                                <!--</div>-->
+                                <fieldset class="slds-form--compound">
+
+                                    <div class="form-element__group">
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-top--x-small slds-p-left--small">
+                                                <label class="slds-form-element__label">Client ID</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <span class="slds-form-element__static">{!jnSettings.jiffle__JNClient_ID__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">Client Secret</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <span class="slds-form-element__static">{!jnSettings.jiffle__JNClient_Secret__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">User ID</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <span class="slds-form-element__static slds-text-body--small">{!jnSettings.jiffle__JNUser_ID__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">SFDC Redirect URL</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <span class="slds-form-element__static">{!jnSettings.jiffle__JNRedirect_URL__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">API URL</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <span class="slds-form-element__static">{!jnSettings.jiffle__JNEndpoint_URL__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">Authorization URL</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <span class="slds-form-element__static">{!jnSettings.jiffle__JNoAuthEndpoint_URL__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div> <!--/END OF FORM ELEMENT GROUP -->
+                                </fieldset>
+
+                            </div> <!-- /END OF SLDS_BOX -->
+                        </div>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel rendered="{!batchReadOnly ==true && disReadOnly =='Yes' && jnSettings.jiffle__Enable_pulling_Jifflenow_data__c && jnBatchSettings.jiffle__JNClient_ID__c!= null}">
+                        <div class="slds-col slds-size_12-of-12 slds-p-top--x-small">
+                        <!-- Batch configure button group, same as regular config
+                        <apex:commandButton value="Save & Authorize" action="{!initBatchAuth}" rendered="{!batchReadOnly}"/> 
+                        <apex:commandButton value="Cancel" action="{!doCancel}" rendered="{!batchReadOnly}"/>-->
+                            <div class="slds-box slds-box--x-small slds-text-align--left slds-m-around--x-small" style="border:3px solid #c4d5f2;background-color:#ffffff;">
+                                <div class="slds-col">
+                                    <h4 class="slds-section-title--divider">Jifflenow Batch Configuration</h4> 
+                                </div>
+                                <fieldset class="slds-form--compound">
+                                    <div class="form-element__group">
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-top--x-small slds-p-left--small">
+                                                <label class="slds-form-element__label">Client ID</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <span class="slds-form-element__static">{!jnBatchSettings.jiffle__JNClient_ID__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">Client Secret</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <span class="slds-form-element__static">{!jnBatchSettings.jiffle__JNClient_Secret__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">User ID</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <span class="slds-form-element__static slds-text-body--small">{!jnBatchSettings.jiffle__JNUser_ID__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">SFDC Redirect URL</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <span class="slds-form-element__static">{!jnBatchSettings.jiffle__JNRedirect_URL__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">Notification eMail</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <span class="slds-form-element__static">-{!jnBatchSettings.jiffle__Notification_eMail__c}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">&nbsp;</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <span class="slds-form-element__static">&nbsp;</span>  
+                                                </div>  
+                                            </div>
+                                        </div>
+
+                                    </div> <!-- END OF FORM ELEMENT GROUP -->
+                                </fieldset>
+                            </div> <!-- END OF SLDS-BOX -->
+                        </div> <!-- END OF SLDS-COL -->
+                    </apex:outputPanel> 
+                </div><!-- End of SLDS Grid to display the COnfig and Batch Config settings -->
+                <apex:outputPanel rendered="{!disReadOnly=='No'}">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-size_4-of-6 slds-p-top--x-small">
+                            <div class="slds-box slds-box--x-small slds-text-align--left slds-m-around--x-small" style="border:3px solid #c4d5f2;background-color:#ffffff;">
+
+                                <!--<div class="slds-col"> -->
+                                    <h4 class="slds-section-title--divider">Jifflenow Configuration</h4> 
+                                <!--</div>-->
+                                <fieldset class="slds-form--compound">
+
+                                    <div class="form-element__group">
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-top--x-small slds-p-left--small">
+                                                <label class="slds-form-element__label">Client ID</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnSettings.jiffle__JNClient_ID__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">Client Secret</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnSettings.jiffle__JNClient_Secret__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">User ID</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnSettings.jiffle__JNUser_ID__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">SFDC Redirect URL</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnSettings.jiffle__JNRedirect_URL__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">API URL</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnSettings.jiffle__JNEndpoint_URL__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">Authorization URL</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnSettings.jiffle__JNoAuthEndpoint_URL__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div> <!--/END OF FORM ELEMENT GROUP -->
+                                </fieldset>
+
+                            </div> <!-- /END OF SLDS_BOX -->
+                        </div> <!-- /END OF SLDS-COL -->
+                        
+                        <div class="slds-col slds-size_2-of-6 slds-p-top--x-small"></div>
+                    </div> <!-- end of grid to display Config in edit mode -->
+                </apex:outputPanel>
+
+                <!-- Grid to display Batch Config in Edit Mode -->
+                <apex:outputPanel rendered="{!batchReadOnly==false && disReadOnly=='NA'}">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-size_4-of-6 slds-p-top--x-small">
+                        
+                            <div class="slds-box slds-box--x-small slds-text-align--left slds-m-around--x-small" style="border:3px solid #c4d5f2;background-color:#ffffff;">
+                                <div class="slds-col">
+                                    <h4 class="slds-section-title--divider">Jifflenow Batch Configuration</h4> 
+                                </div>
+                                <fieldset class="slds-form--compound">
+                                    <div class="form-element__group">
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-top--x-small slds-p-left--small">
+                                                <label class="slds-form-element__label">Client ID</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnBatchSettings.jiffle__JNClient_ID__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">Client Secret</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnBatchSettings.jiffle__JNClient_Secret__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">User ID</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnBatchSettings.jiffle__JNUser_ID__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">SFDC Redirect URL</label>
+                                                <div class="slds-form-element__control slds-border--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnBatchSettings.jiffle__JNRedirect_URL__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label">Notification eMail</label>
+                                                <div class="slds-form-element__control slds-has-divider--bottom">
+                                                    <apex:inputField styleClass="slds-input" value="{!jnBatchSettings.jiffle__Notification_eMail__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element__row">
+                                            <div class="slds-form-element slds-p-right--small slds-p-left--small">
+                                                <label class="slds-form-element__label"></label>
+                                                <div class="slds-form-element__control">
+                                                    <apex:inputHidden value="{!jnBatchSettings.jiffle__Notification_eMail__c}" />  
+                                                </div>  
+                                            </div>
+                                        </div>
+
+                                    </div> <!-- END OF FORM ELEMENT GROUP -->
+                                </fieldset>
+                            </div> <!-- END OF SLDS-BOX -->
+                        </div> <!-- END OF SLDS-COL -->
+                        <div class="slds-col slds-size_2-of-6 slds-p-top--x-small"></div>
+                    </div>
+                </apex:outputPanel>
+                    
+                <!-- end of grid to display Config in edit mode -->
+            </apex:form>
+        </div>
+    </html>
+</apex:page>

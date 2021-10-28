@@ -1,0 +1,126 @@
+<apex:page controller="LeanData.PartnerOAuthCallbackController" docType="html-5.0" sidebar="false" showHeader="false">
+  <style>
+    :root {
+      --med-grey-1: #B3B3B3;
+      --med-grey-2: #808080;
+      --dk-grey-1: #666666;
+      --dk-grey-2: #4D4D4D;
+      --ld-green: #2DB670;
+      --ld-red: #C1272D;
+      --white: #FFFFFF;
+    }
+    #message-wrapper {
+      padding: 20px;
+      border-radius: 10px;
+      background: var(--med-grey-2);
+      display: inline-block;
+      margin: 20px;
+      font-size: 15px;
+      text-align: center;
+      color: var(--white);
+    }
+    #message-wrapper.success {
+      background: var(--ld-green);
+    }
+    #message-wrapper.error {
+      background: var(--ld-red);
+      width: 600px;
+    }
+    #button-wrapper {
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px;
+      font-size: 15px;
+      cursor: pointer;
+      text-align: center;
+      vertical-align: top;
+      background-color: var(--dk-grey-1);
+      width: 150px;
+      text-decoration: none;
+    }
+    #button-wrapper:hover {
+      background-color: var(--med-grey-2) !important;
+    }
+    #back-link {
+      text-decoration: none;
+      color: var(--white);
+      display: block;
+      width: fit-content;
+    }
+  </style>
+  
+  <div id="message-wrapper">
+    <span id='status-message'>Authenticating...</span>
+  </div>
+
+  <a href="https://{!host}/apex/Dashboard#admin/partner_apps" id='back-link'>
+    <div id="button-wrapper" style="display:none;">
+      Back to LeanData
+    </div>
+  </a>
+
+  <script>
+    createRSS();
+
+    function createRSS() {
+      var binding = new XMLHttpRequest();
+      var request =
+        '<?xml version="1.0" encoding="utf-8"?>'+
+        '<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'+
+          '<env:Header>'+
+            '<urn:SessionHeader xmlns:urn="http://soap.sforce.com/2006/04/metadata">'+
+              '<urn:sessionId>{!$Api.Session_ID}</urn:sessionId>'+
+            '</urn:SessionHeader>'+
+          '</env:Header>'+
+          '<env:Body>'+
+            '<createMetadata xmlns="http://soap.sforce.com/2006/04/metadata">'+
+              '<metadata xsi:type="RemoteSiteSetting">'+
+                '<fullName>{!rssName}</fullName>'+
+                '<description>{!rssDescription}</description>'+
+                '<disableProtocolSecurity>false</disableProtocolSecurity>'+
+                '<isActive>true</isActive>'+
+                '<url>https://{!host}</url>'+
+              '</metadata>'+
+            '</createMetadata>'+
+          '</env:Body>'+
+        '</env:Envelope>';
+      binding.open('POST','https://{!host}/services/Soap/m/31.0');
+      binding.setRequestHeader('SOAPAction','""');
+      binding.setRequestHeader('Content-Type','text/xml');
+      binding.onreadystatechange=function() {
+        if(this.readyState == 4 && this.status == 200) {
+          var urlParams=getUrlVars();
+          Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.PartnerOAuthCallbackController.retrieveOAuthToken}',
+            urlParams['code'],
+            urlParams['type'],
+            function(result,event) {
+              if(result == 'success'){
+                document.getElementById('status-message').innerHTML = 'Success!';
+                document.getElementById('message-wrapper').classList.add('success');
+              } else {
+                document.getElementById('status-message').innerHTML = result||(event.message + ' Please contact LeanData at support@leandatainc.com for assistance.');
+                document.getElementById('message-wrapper').classList.add('error');
+              }
+              document.getElementById('button-wrapper').style.display = 'block';
+            }
+          );
+        } else {
+          document.getElementById('status-message').innerHTML = 'Please contact LeanData at support@leandatainc.com for assistance.';
+          document.getElementById('message-wrapper').classList.add('error');
+          document.getElementById('button-wrapper').style.display = 'block';
+        }
+      }
+      binding.send(request);
+    }
+
+    function getUrlVars() {
+      var vars = {};
+      var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi,function(m,key,value) {
+        vars[key] = value;
+      });
+      return vars;
+    }
+
+  </script>
+</apex:page>

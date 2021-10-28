@@ -1,0 +1,931 @@
+<apex:page controller="LeanData.AccountOpportunitiesReportController" standardStylesheets="false" sidebar="false" >
+
+<script type="text/javascript">
+    var __sfdcSessionId = '{!GETSESSIONID()}';
+</script>
+<script language="javascript" src="/soap/ajax/33.0/connection.js" type="text/javascript"/>
+<script>
+    j$ = jQuery.noConflict();
+    Visualforce.remoting.timeout = 120000; // Set timeout at page level
+    var ns;
+    var opportunityMap = {};
+    
+    try {
+        sforce.connection.query("SELECT Id FROM Log__c LIMIT 1");
+        ns = "";
+    } catch (e) {
+        ns = "LeanData__";
+    }
+    j$(document).ready(function() {
+        createReport();
+        
+        j$('.runReport').click(function(event) { 
+            createReport();
+        });
+        
+        j$('.filterButton').click(function(event) { 
+            j$('.filterButton').removeClass('filterButton-active');
+            j$( this ).addClass('filterButton-active');
+        });
+        
+        bindJS();
+    });
+    function createReport(){
+        rC = new ReportController();
+    }
+    var ReportController = function () {       
+        this.campaignOpportunities = [];
+        this.totalCampaignOpportunities = 0;
+        this.totalOpportunities = 0;
+        this.totalAccounts = 0;
+        this.SFDC_totalLeadsContacts = 0;
+        this.SFDC_averageLeadsContacts = 0; // Per Opportunity
+        this.LD_totalLeadsContacts = 0;
+        this.LD_averageLeadsContacts = 0; // Per Opportunity
+        this.totalLeads = 0;
+        this.totalContacts = 0;
+        this.averageCampaignMemberTouches = 0; // Per Opportunity
+        this.opportunities = {};
+        this.opportunityStageChart = {};
+        this.opportunityAmountChart = {};
+        this.opportunityTypeChart = {};
+        this.accountTypeChart = {};   
+        this.beginReport();
+    };
+    
+    ReportController.prototype.render = function () {    
+        this.averageCampaignMemberTouches = this.totalCampaignOpportunities / this.totalOpportunities;
+        j$('.oppCountDiv').html( formatNumbers( this.totalOpportunities ) );
+        j$('.accountCountDiv').html( formatNumbers( this.totalAccounts ) );
+        j$('.sfdc_total').html( formatNumbers( this.SFDC_totalLeadsContacts ) );
+        j$('.sfdc_average').html( formatNumbers( this.SFDC_averageLeadsContacts ) );
+        j$('.ld_total').html( formatNumbers( this.LD_totalLeadsContacts ) );
+        j$('.ld_average').html( formatNumbers( this.LD_averageLeadsContacts ) );
+        j$('.avgTouches').html( formatNumbers( this.averageCampaignMemberTouches ) );
+        drawCharts();
+        
+    }
+    
+    ReportController.prototype.setLeadContactFields = function () {
+        this.SFDC_totalLeadsContacts = this.totalContacts;
+        this.SFDC_averageLeadsContacts = this.SFDC_totalLeadsContacts / this.totalOpportunities;
+        this.LD_totalLeadsContacts = this.totalContacts + this.totalLeads;
+        this.LD_averageLeadsContacts = this.LD_totalLeadsContacts / this.totalOpportunities;
+    };
+    
+    ReportController.prototype.beginReport = function () {
+        reportStartTime = new Date().getTime();
+        j$('.loading').css("display", "block");
+        console.log( 'Begin Campaign Opportunity Query ' );
+        this.queryCampaignOpportunities();
+    };
+    
+    ReportController.prototype.queryCampaignOpportunities = function () {       
+        var campaignOppQueryString = "SELECT id, " + ns + "Opportunity__c, " + ns + "Lead__c," + ns + "Contact__c," + ns + "Account__c,"+ ns + "Campaign_Member_Attribution__c,"+ ns + "Weighted_Attribution__c FROM " + ns +"Campaign_Opportunity__c WHERE Id != null ";
+        
+        var currentDate = new Date();
+        console.log( j$('.startDate')[0] );
+        if( new Date(j$('.startDate')[0].value) == 'Invalid Date' ){
+            var startDate = toSFDate(new Date( currentDate.getFullYear() , 0, 1));
+                        console.log( ' Invalid ' );
+            j$('.startDate').val( "1/1/"+ currentDate.getFullYear());
+        }
+        else{
+            var startDate = toSFDate(new Date(j$('.startDate')[0].value));
+        }
+        if( new Date(j$('.endDate')[0].value) == 'Invalid Date' ){
+            var endDate = toSFDate(new Date( currentDate.getFullYear(), 11 , 31 ));
+            j$('.endDate').val( "12/31/"+ currentDate.getFullYear());
+        }
+        else{
+            var endDate = toSFDate(new Date(j$('.endDate')[0].value));
+        }
+        console.log( 'Begin Query Campaign Opportunities ') ;
+        this.startDate = startDate;
+        this.endDate = endDate;
+
+        if( j$('.oppCreatedButton').eq(0).hasClass( 'filterButton-active' ) ){
+            this.dateType = "Opportunity Created Date"
+        }
+        else{
+            this.dateType = "Opportunity Close Date"
+        }
+        
+        console.log( 'Date Type ' + this.dateType );
+        
+        if (this.dateType === "Opportunity Created Date") {
+            if (startDate) {
+                campaignOppQueryString += " AND DAY_ONLY( convertTimeZone( " + ns + "Opportunity__r.CreatedDate )) >= " + startDate;
+            }
+            if (endDate) {
+                campaignOppQueryString += " AND DAY_ONLY( convertTimeZone( " + ns +"Opportunity__r.CreatedDate )) <= " + endDate;
+            }
+        } else if (this.dateType === "Opportunity Close Date") {
+            if (startDate) {
+                campaignOppQueryString += " AND "+ ns +"Opportunity_Close_Date__c >= " + startDate;
+            }
+            if (endDate) {
+                campaignOppQueryString += " AND "+ ns +"Opportunity_Close_Date__c <= " + endDate;
+            }
+        }
+        
+        queriedCampaignOpportunities = [];
+        lastQueryId='';
+        console.log( ' Call Remote Build Object List ' );
+        remoteBuildObjectList(campaignOppQueryString);
+    };
+    
+    var lastQueryId = '';
+    var queriedCampaignOpportunities;
+    
+    function remoteBuildObjectList( campaignOppQueryString ){
+        var queryString = campaignOppQueryString ;
+        if( lastQueryId != '' )
+           queryString = campaignOppQueryString + " AND Id > \'" + lastQueryId+ "\' " ;
+        
+        queryString = queryString + " ORDER BY Id ASC LIMIT " + '{!minimumQuerySize}';
+        console.log( queryString );
+        
+        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.AccountOpportunitiesReportController.remoteQueryCampaignOpps}', queryString, '{!queryLimit}',
+          function(result, event) {
+            if(event.type === 'exception') {
+                console.log("exception");
+                console.log(event);
+            } else if (event.status) {
+                var tempCampaignOpps = result;
+                
+                for (var i = 0; i < tempCampaignOpps.length; i++) {
+                   queriedCampaignOpportunities.push( tempCampaignOpps[i] );
+                }
+                console.log(' Queried ' + tempCampaignOpps.length + ' Campaign Opportunities');
+              
+                if( tempCampaignOpps.length < '{!queryLimit}' ){
+                    console.log( ' Total Campaign Opportunities Queried : ' + queriedCampaignOpportunities.length );
+                    finishBuildObjectList( queriedCampaignOpportunities );
+                }
+                else{
+                    console.log( 'Query More' );
+                    lastQueryId = tempCampaignOpps[ tempCampaignOpps.length - 1 ].Id;
+                    remoteBuildObjectList( campaignOppQueryString );
+                }           
+            }
+         });
+    }
+    
+    function finishBuildObjectList(queriedCampaignOpps){
+        var queryEndTime = new Date().getTime();
+        var time = queryEndTime - reportStartTime;    
+        console.log('Query Time: ' + time);                       
+        console.log('Calling Build Opportunity Map');
+        rC.campaignOpportunities = queriedCampaignOpps;
+        rC.totalCampaignOpportunities = queriedCampaignOpps.length;     
+        lastOppQueryId = ''; 
+        var oppQueryBase = 'SELECT id,Name,Type,StageName,Amount,CreatedDate,CloseDate,Account.Type FROM Opportunity ';
+        buildOpportunityMap( oppQueryBase );  
+    }
+    
+    var lastOppQueryId;
+    function buildOpportunityMap( oppQueryBase ){      
+        if( opportunityMap.length ){ // Only make the map the first time
+            console.log('Calling Calculate Metrics');
+            rC.calculateMetrics( );
+        }
+        else{
+            //-----Create Opp List        
+            var oppQuery = oppQueryBase;
+            
+            if( lastOppQueryId != '' )
+                oppQuery = oppQuery + " WHERE Id > \'" + lastOppQueryId + "\' ";
+            
+            oppQuery = oppQuery + ' LIMIT ' + '{!queryLimit}';
+                
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.AccountOpportunitiesReportController.remoteQueryFunction}', oppQuery, 
+              function(result, event) {
+                if(event.type === 'exception') {
+                    console.log("exception");
+                    console.log(event);
+                } else if (event.status) {
+                    console.log( result );
+
+                    for (var i = 0; i < result.length; i++) {
+                        opportunityMap[ result[i].Id ] = result[i];
+                    }
+                    
+                    if( result.length < '{!queryLimit}' ){
+                        console.log('Finished Opp Map -' );
+                        console.log( opportunityMap );
+                        console.log('Calling Calculate Metrics');
+                        rC.calculateMetrics( );
+                    }
+                    else{
+                        console.log( ' Query More Opportunities ' );
+                        lastOppQueryId = result[result.length -1 ].Id;
+                        buildOpportunityMap( oppQueryBase );
+                    }
+                }
+             });
+
+        }
+    }
+    
+    ReportController.prototype.calculateMetrics = function () {
+        var usedOppIds = {};
+        var usedAccIds = {};
+        var usedContactIds = {};
+        var usedLeadIds = {};
+        
+        //Iterate Campaign Opportunities & Calculate Metrics
+        for (var i = 0; i < this.campaignOpportunities.length; i++) {
+            var campaignOpp = this.campaignOpportunities[i];
+            
+            if( campaignOpp[ns + "Contact__c"] ){
+                if( !usedContactIds[ campaignOpp[ns + "Contact__c"] ] ){
+                    usedContactIds[ campaignOpp[ns + "Contact__c"]] = true;
+                    this.totalContacts++;
+                }
+            }
+            else if( campaignOpp[ns + "Lead__c"] ){
+                if( !usedLeadIds[ campaignOpp[ns + "Lead__c"] ] ){
+                    usedLeadIds[ campaignOpp[ns + "Lead__c"] ] = true;
+                    this.totalLeads++;
+                }
+            }
+            
+            var currentOpportunity = opportunityMap[ campaignOpp[ns + "Opportunity__c"] ];
+            
+            if( !this.opportunities[ campaignOpp[ns + "Opportunity__c"] ] ){
+                this.opportunities[  campaignOpp[ns + "Opportunity__c"] ] = {};
+                this.opportunities[  campaignOpp[ns + "Opportunity__c"] ].Name = currentOpportunity.Name; 
+                this.opportunities[  campaignOpp[ns + "Opportunity__c"] ].StageName = currentOpportunity.StageName; 
+                this.opportunities[  campaignOpp[ns + "Opportunity__c"] ].Type = currentOpportunity.Type; 
+                this.opportunities[  campaignOpp[ns + "Opportunity__c"] ].Amount = currentOpportunity.Amount; 
+                initializeLeadContactCounts( this.opportunities[  campaignOpp[ns + "Opportunity__c"] ] );
+                this.totalOpportunities++;
+            }
+            
+            if( this.opportunities[ campaignOpp[ns + "Opportunity__c"] ] ){       
+                var rcOpportunity = this.opportunities[ campaignOpp[ns + "Opportunity__c"]] ;        
+                determineContactLeadCount( campaignOpp, rcOpportunity );
+            }
+            
+            if( !usedAccIds[ campaignOpp[ns + "Account__c"] ] ){
+                usedAccIds[campaignOpp[ns + "Account__c"]] = true;
+                this.totalAccounts++;
+            }
+            
+            //------- Build Charts w/ Segmentation
+            
+            //Opportunity Stage Chart
+            if( !this.opportunityStageChart[currentOpportunity.StageName] ){
+                this.opportunityStageChart[currentOpportunity.StageName] = {};
+                initializeOpportunityCounts( this.opportunityStageChart[currentOpportunity.StageName] );
+                initializeLeadContactCounts ( this.opportunityStageChart[currentOpportunity.StageName] );
+            }
+            
+            if( this.opportunityStageChart[currentOpportunity.StageName] ){
+                var currentOpportunityStageRow = this.opportunityStageChart[currentOpportunity.StageName];
+                determineOpportunityCount( campaignOpp, currentOpportunityStageRow );
+                determineContactLeadCount( campaignOpp, currentOpportunityStageRow );
+            }
+            
+            //Opportunity Type Chart
+            if( !this.opportunityTypeChart[currentOpportunity.Type] ){
+                this.opportunityTypeChart[currentOpportunity.Type] = {};
+                initializeOpportunityCounts( this.opportunityTypeChart[currentOpportunity.Type] );
+                initializeLeadContactCounts ( this.opportunityTypeChart[currentOpportunity.Type] );
+            }
+            
+            if( this.opportunityTypeChart[currentOpportunity.Type] ){
+                var currentOpportunityTypeRow = this.opportunityTypeChart[currentOpportunity.Type];
+                determineOpportunityCount( campaignOpp, currentOpportunityTypeRow );
+                determineContactLeadCount( campaignOpp, currentOpportunityTypeRow );
+            }
+            
+            //Account Type
+            if( !currentOpportunity.Account.Type ){
+                currentOpportunity.Account.Type = '';
+            }
+            if( !this.accountTypeChart[currentOpportunity.Account.Type] ){
+                this.accountTypeChart[currentOpportunity.Account.Type] = {};
+                initializeOpportunityCounts( this.accountTypeChart[currentOpportunity.Account.Type] );
+                initializeLeadContactCounts ( this.accountTypeChart[currentOpportunity.Account.Type] );
+            }
+            
+            if( this.accountTypeChart[currentOpportunity.Account.Type] ){
+                var currentaccountTypeRow = this.accountTypeChart[currentOpportunity.Account.Type];
+                determineOpportunityCount( campaignOpp, currentaccountTypeRow );
+                determineContactLeadCount( campaignOpp, currentaccountTypeRow );
+            }
+            
+        }
+        console.log( ' Report Controller ' );
+        console.log( rC );
+        console.log( 'Calling Finish Report' );
+        this.finishReport();
+    };
+    
+    ReportController.prototype.finishReport = function () {
+        this.setLeadContactFields();
+        j$('.loading').css("display", "none");
+        end = new Date().getTime();
+        time = end - reportStartTime;    
+        this.render();
+        console.log('Full Execute Time: ' + time);     
+    };
+    
+    function initializeLeadContactCounts( metricObject ){
+        metricObject.totalLeads = 0;
+        metricObject.usedLeadIds = {};
+        metricObject.totalContacts = 0;
+        metricObject.usedContactIds = {};
+        metricObject.totalTouches = 0;
+        metricObject.totalUniqueTouches = 0;
+    }
+    
+    function initializeOpportunityCounts( metricObject ){
+         metricObject.totalOpportunities = 0;
+         metricObject.usedOppIds = {};
+    }
+    
+    function determineContactLeadCount( campaignOpp, metricObject ){
+        metricObject.totalTouches++;
+        if( campaignOpp[ns + "Contact__c"] ){      
+            if( !metricObject.usedContactIds[ campaignOpp[ns + "Contact__c"] ] ){
+                metricObject.usedContactIds[ campaignOpp[ns + "Contact__c"]] = true;
+                metricObject.totalContacts++;
+                metricObject.totalUniqueTouches++;
+            }
+        }
+        else if( campaignOpp[ns + "Lead__c"] ){
+            if( !metricObject.usedLeadIds[ campaignOpp[ns + "Lead__c"] ] ){    
+                metricObject.usedLeadIds[ campaignOpp[ns + "Lead__c"]] = true;
+                metricObject.totalLeads++;
+                metricObject.totalUniqueTouches++;
+            }
+        }
+    }
+    
+    function determineOpportunityCount( campaignOpp, metricObject ){
+        if( !metricObject.usedOppIds[ campaignOpp[ns + "Opportunity__c"] ] ){
+            metricObject.usedOppIds[ campaignOpp[ns + "Opportunity__c"]] = true;
+            metricObject.totalOpportunities++;
+        }
+    }
+    
+    function toSFDate(dateObj) {     
+      if( dateObj == 'Invalid Date' )     
+          return null;       
+      var dateStr = dateObj.getUTCFullYear() +'-'+pad2(dateObj.getUTCMonth()+1)+'-'+pad2(dateObj.getUTCDate());
+      return dateStr;
+    }
+    
+    function pad2(number) {     
+         return (number < 10 ? '0' : '') + number      
+    }
+</script>
+
+<style>
+.noSidebarCell{
+    padding: 0;
+}
+.bs {
+    line-height:1;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    display: table;
+    width: 100%;
+}
+.reportingSideBar{
+    width: 400px;
+    background: #70797b;
+    height: 100%;
+    display: block;
+    display: table-cell;
+    font-size: 14px;    
+}
+.reportingContent{
+    width: 100%;
+    height: 500px;
+    display: table-cell;
+}
+.titleBar{
+    height: 114px;
+    width: 100%;
+    background: #1b527f;
+    padding: 20px;
+}
+.pageTitle{
+    font-family: 'Oswald';
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color:white;
+}
+.bs .sideMenuBar{
+    color: white;
+    width: 300px;
+    height: 40px;
+    line-height: 36px;
+    padding-left: 30px;
+    display:block;
+    cursor: pointer;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+.bs .sideMenuBar-active{
+    background: white;
+    color: #1b527f;
+    cursor: default !important;
+}
+.bs .sideMenuBar-active:hover{
+    background: white !important;
+    color: #1b527f !important;
+    cursor: arrow !important;
+}
+.bs .sideMenuBar:hover{
+    background: #828a8c;
+}
+.bs .divTable{
+    display: table;
+}
+.bs .divTableCell{
+    display: table-cell;
+    vertical-align: middle;
+}
+.bs .filterContainer{
+    margin-top: 10px;
+}
+.bs .filterButton{
+    width: 140px;
+    text-align: center;
+    height: 35px;
+    line-height:35px;
+    font-size: 10px;
+    font-weight: bold;
+    background: #e3e7e8;
+    color: #b3b3b3;
+    cursor: pointer;
+}
+.bs .filterButton-active{
+    background: #6bd3bb;
+    color: #1b527f;
+}
+.bs .filter-input{
+    border-radius: 0px;
+    text-align:left;
+    width: 200px;
+    padding-left: 5px;
+    font-size:12px;
+    color: #1b527f;
+    background: #e7eaeb;
+}
+.bs .date-select{
+    background: url({!URLFOR($Resource.CampaignInfluenceReportResources,'images/arrow.png')}) no-repeat scroll 95% center / 15px auto #e7eaeb !important;
+    text-overflow: ""; 
+    cursor: pointer;
+}
+.bs .summaryPanel{
+
+}
+.bs .sectionHeader{
+    height: 50px;
+    background: #95dbcb;
+    color: #1b527f;
+    font-size: 21px;
+    font-weight: bold;
+    line-height: 50px;
+    width : 100%;
+    text-align: center;
+    font-family: 'Oswald';
+    letter-spacing: 1px;
+}
+.bs .sectionContent{
+    text-align : center;
+    background: #e1f0fb;
+    display: block;
+    padding: 10px 40px;
+    margin-top:0px;
+}
+.bs .oppCountPanel{
+    background: #ffffff;
+    font-weight: bold;
+    padding: 10px;
+}
+.bs .oppCountHeader{
+    font-size: 10px;
+    color: #1b527f; 
+    letter-spacing : .5px;  
+    margin-bottom: 7px;
+}
+.bs .oppCountDiv{
+    color: #2bb897;
+    font-size: 50px;
+    font-family : 'Oswald';
+}
+.bs .accountCountPanel{
+    font-weight: bold;
+}
+.bs .accountCountHeader{
+    font-size: 10px;
+    color: #1b527f; 
+    letter-spacing : .5px;  
+    margin: 10px 0px;
+}
+.bs .accountCountDiv{
+    color: #1b527f;
+    font-size: 50px;
+    font-family : 'Oswald';
+}
+.bs .statRow{
+    color: #1b527f;
+    background: #e1f0fb;
+    padding: 10px;
+}
+.bs .statCell{
+    padding:5px;
+    text-align:center;
+    font-size:16px;
+    color: #1b527f !important;
+    font-family: 'Oswald';
+}
+.bs .statCell-first{
+    font-size:11px;
+    text-align:left;
+    padding:10px;
+    letter-spacing: .5px;
+}
+.chartsBlock{
+    margin-top:20px;
+    background: #e1f0fb;
+    padding: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+.runReport{
+    padding: 5px;
+    color: white;
+    font-size:25px;
+    cursor: pointer;
+    border: 1px solid white;
+    margin-left: 5px;
+}
+.runReport:hover{
+    color: #2bb897;
+    border: 2px solid #2bb897;
+}
+</style>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+
+    <title>Accounts and Opportunities Report</title>
+   
+    <!-- Bootstrap Core CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'css/bootstrap.css')}"/> 
+    <!-- Custom CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'css/bootstrap-multiselect.css')}"/> 
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
+  
+    <!-- Fonts -->
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:100,200,300,400,500,600,700' rel='stylesheet' type='text/css' />
+    <link href='https://fonts.googleapis.com/css?family=Oswald' rel='stylesheet' type='text/css' />
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,600,700,800,300' rel='stylesheet' type='text/css' />  
+    
+</head>
+
+<body>
+<div class="bs">
+<apex:form >
+    <div class="reportingSideBar">
+        <div class="sideMenuBar" >
+            <apex:image height="30" width="30" value="{!URLFOR($Resource.LeanData__images,'Overview_white.png')}" /> &nbsp; Overview
+        </div>
+        <div class="sideMenuBar" >
+            <apex:image height="30" width="30" value="{!URLFOR($Resource.LeanData__images,'Campaigns_white.png')}" /> &nbsp; Campaigns
+        </div>
+        <div class="sideMenuBar sideMenuBar-active" >
+            <apex:image height="30" width="30" value="{!URLFOR($Resource.LeanData__images,'accts_opps_color.png')}" /> &nbsp; <apex:outputLabel style="font-weight:normal;" value="Accounts & Opportunities" />
+        </div>
+    </div>
+    <div class="reportingContent">
+        <div class="titleBar">
+            <apex:outputLabel styleClass="pageTitle" value="ACCOUNTS & OPPORTUNITIES" />
+            <div class="filterContainer divTable" >
+                <div class="divTableCell"> 
+                    <div class="filterButton filterButton-active oppCreatedButton" >
+                        OPP CREATED
+                    </div>
+                </div>
+                <div class="divTableCell"> 
+                    <div class="filterButton oppClosedButton" style="margin-left:5px;">
+                        OPP CLOSED
+                    </div>
+                </div>
+                <div class="divTableCell form-group"> 
+                    <apex:selectList size="1" value="{!dateRange}" styleClass="filter-input date-select" style="-webkit-appearance:none;height:30px;line-height:30px;margin-left:20px;border-radius:0px;">
+                          <apex:selectOptions value="{!dateRangeOptions}" />
+                          <apex:actionSupport event="onchange" reRender="dateRangePanel" action="{!setDateRange}" onComplete="datePickerJS();"/>
+                    </apex:selectList> 
+                </div>
+                <div class="divTableCell">
+                    <input style="height:0px; top:-1000px; position:absolute" type="text" value="" />
+                    <apex:outputPanel id="dateRangePanel" layout="block" style="margin-left: 8px;">
+                        <apex:inputText value="{!startDateString}" styleclass="filter-input startDate" style="width: 80px;padding: 3px; font-weight: normal;" />
+                        <apex:inputText value="{!endDateString}" styleclass="filter-input endDate" style="margin-left:5px;width: 80px;padding: 3px; font-weight: normal;" />
+
+                    </apex:outputPanel>
+                </div>
+                <div class="divTableCell">
+                    <div class="runReport"> <i class="glyphicon glyphicon-stats" /></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="summaryPanel">
+            <div class="divTable" >
+                <div class="divTableCell" style="padding: 20px;">
+                    <div class="sectionHeader" style="width: 185px; height:50px;">
+                        TOTAL REACH
+                    </div>
+                    <div class="sectionContent" style="width: 185px;padding-bottom:20px;">
+                        <div class="oppCountPanel" >
+                            <div class="oppCountHeader"> OPPORTUNITIES </div>
+                            <div class="oppCountDiv">  </div>
+                        </div>
+                        <div class="accountCountPanel">
+                            <div class="accountCountHeader" > ACROSS ACCOUNTS </div>
+                            <div class="accountCountDiv" > </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="divTableCell" style="vertical-align:top;padding-top:20px;">
+                    <table style="font-size:11px; width: 337px;">
+                        <tr>
+                            <td class="sectionHeader" style="width:202.5px; text-align: left;padding-left:10px;" >
+                                <apex:outputLabel value="LEADS & CONTACTS" style="margin-bottom:0px; " />
+                            </td>
+                            <td class="sectionHeader" style="font-size:11px;background: #1b527f; color:white;width: 67.5px;">
+                                SFDC
+                            </td>
+                            <td class="sectionHeader" style="font-size:11px;width: 67.5px;color:white;background:#2bb897;">
+                                LEANDATA
+                            </td>
+                        </tr>
+                        <tr class="statRow">
+                            <td class="statCell-first" >
+                                <apex:outputLabel value="TOTAL # OF LEADS & CONTACTS IN OPPORTUNITIES" style="margin-bottom:0px;color:#1b527f;" />
+                            </td>
+                            <td class="statCell sfdc_total">
+                                
+                            </td>
+                            <td class="statCell ld_total" style="color:#2bb897 !important;">
+                                
+                            </td>
+                        </tr>
+                        <tr class="statRow" style="border-top:2px solid white;">
+                            <td class="statCell-first" >
+                                <apex:outputLabel value="AVERAGE # OF LEADS & CONTACTS PER OPPORTUNITY" style="margin-bottom:0px;color:#1b527f;" />
+                            </td>
+                            <td class="statCell sfdc_average">
+                                
+                            </td>
+                            <td class="statCell ld_average" style="color:#2bb897 !important;" >
+                                
+                            </td>
+                        </tr>
+                    </table>  
+                    
+                    <table style="margin-top:20px;">
+                        <tr>
+                            <td style="width:337px;">
+                                <div class="sectionHeader">
+                                    CAMPAIGN MEMBER TOUCHES
+                                </div>
+                                <div class="statCell" style="font-weight: bold;font-size:10px; background: #e1f0fb;height:40px;line-height:35px;font-family:'Open Sans';">
+                                    AVERAGE # OF CAMPAIGN MEMBER TOUCHES PER OPPORTUNITY
+                                </div>
+                            </td>
+                            <td class="avgTouches" style="text-align:center;width:67.5px; color:white; background:#1b527f; font-size: 50px; font-family:'Oswald';">
+                                
+                            </td>
+                        </tr>
+                    </table>                  
+                </div>
+            </div>
+        </div>
+        
+        <div class="chartsPanel">
+            <div class="chartsBlock">
+                <div class="divTable">
+                    <div class="divTableCell" style="width: 400px;">
+                        <div style="padding-left:10px;">
+                            <div class="sectionHeader">
+                                OPPORTUNITY STAGE
+                            </div>
+                            <div class="oppStageChart2" style="height:240px;width:400px;">
+                            
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <div class="divTableCell" style="width: 400px;">
+                        <div class="sectionHeader">
+                            OPPORTUNITY STAGE
+                        </div>
+                        <div class="oppStageChart1" style="height:240px;width:400px;">
+                        
+                        </div>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</apex:form>
+</div>
+
+
+
+</body>
+
+<!-- jQuery Version 1.11.1 -->
+<apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/jquery.js')}"/> 
+<apex:includeScript value="{!URLFOR($Resource.LeanData__JqueryUI, 'jquery-ui-1.11.4.custom/jquery-ui.min.js')}"  /> 
+ 
+<!-- Bootstrap Core JavaScript -->
+<apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/bootstrap.js')}"/> 
+
+<!-- JavaScript -->
+<apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/bootstrap-multiselect.js')}"/> 
+
+<!-- High Charts -->
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/funnel.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+<script>
+function bindJS(){
+    datePickerJS();
+}
+function formatNumbers( num ){
+    if( num % 1 != 0 ){
+        num = num.toFixed( 1 );
+    }
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+function datePickerJS(){
+    j$( ".startDate" ).datepicker({
+      defaultDate: "+1w",
+      changeMonth: true,
+      changeYear: true,
+      onClose: function( selectedDate ) {
+        j$( ".endDate" ).datepicker( "option", "minDate", selectedDate );
+      },
+      onSelect: function( selectedDate ) {          
+        j$( ".presetDateRange" ).val("Custom");
+      }
+    });
+    j$( ".endDate" ).datepicker({
+      defaultDate: "+1w",
+      changeMonth: true,
+      changeYear: true,
+      onClose: function( selectedDate ) {
+        j$( ".startDate" ).datepicker( "option", "maxDate", selectedDate );
+      },
+      onSelect: function( selectedDate ) {            
+        j$( ".presetDateRange" ).val("Custom");
+      }
+    });
+}
+
+function drawCharts(){
+    console.log( ' Draw Charts ' );
+    var queryString = "SELECT id, MasterLabel FROM OpportunityStage WHERE IsActive = true ORDER BY SortOrder";
+    var result = sforce.connection.query(queryString);
+    console.log( result );
+    //Set Up Data for Opp Stage
+
+    var oppStageChart1 = [];
+    var oppStageChart2 = [];
+    var oppStages = [];
+    var oppStageTouches = [];
+    var oppStageAvgTouches = [];
+    var oppStageOpps = [];
+    var closedWonAvg = 0;
+    for (var i = 0; i< result.records.length; i++ ) {
+          var oppStage = result.records[i].MasterLabel;
+          oppStages.push ( oppStage );
+          if (rC.opportunityStageChart.hasOwnProperty(oppStage)) {
+              var newEntry = [ oppStage,  rC.opportunityStageChart[oppStage].totalUniqueTouches ];
+              oppStageChart1.push( newEntry );  
+                
+              oppStageTouches.push( rC.opportunityStageChart[oppStage].totalTouches );
+              oppStageOpps.push( rC.opportunityStageChart[oppStage].totalOpportunities );
+              oppStageAvgTouches.push( parseFloat ((rC.opportunityStageChart[oppStage].totalTouches / rC.opportunityStageChart[oppStage].totalOpportunities ).toFixed(2)) );
+              console.log( formatNumbers(rC.opportunityStageChart[oppStage].totalTouches / rC.opportunityStageChart[oppStage].totalOpportunities)  );
+              if( oppStage == 'Closed Won' )
+                  closedWonAvg = (rC.opportunityStageChart[oppStage].totalTouches / rC.opportunityStageChart[oppStage].totalOpportunities) ;
+          }
+          else{
+              oppStageChart2.push( [ oppStage, 0] );
+              oppStageTouches.push( 0 );  
+              oppStageOpps.push( 0 );
+              oppStageAvgTouches.push( 0 );
+          }
+    }
+    /*
+    j$('.oppStageChart1').highcharts({
+        chart: {
+            type: 'funnel',
+            marginRight: 100
+        },
+        title: {
+            text: '',
+            x: -50
+        },
+        plotOptions: {
+            series: {
+                dataLabels: {
+                    enabled: true,
+                    format: '<b>{point.name}</b> ({point.y:,.0f})',
+                    color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black',
+                    softConnector: true
+                },
+                neckWidth: '20%',
+                neckHeight: '15%'
+
+                //-- Other available options
+                // height: pixels or percent
+                // width: pixels or percent
+            }
+        },
+        legend: {
+            enabled: false
+        },
+        series: [{
+            name: 'Leads & Contacts',
+            data: oppStageChart1
+        }]
+    });
+    */
+    j$('.oppStageChart2').highcharts({
+        chart: {
+            type: 'bar'
+        },
+        title: {
+            text: ''
+        },
+        xAxis: {
+            categories: oppStages,
+            title: {
+                text: null
+            }         
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: 'Average Campaign Touches',
+                align: 'high'
+            },
+            labels: {
+                overflow: 'justify'
+            },
+            plotLines: [{
+                    value: closedWonAvg,
+                    color: 'red',
+                    dashStyle: 'shortdash',
+                    width: 2,
+                    label: {
+                        text: 'Closed Won'
+                    }
+                }]
+        },
+        tooltip: {
+            valueSuffix: ' average touches'
+        },
+        plotOptions: {
+            bar: {
+                dataLabels: {
+                    enabled: true
+                }
+            }
+        },
+        legend: {
+            enabled: false
+        },
+        credits: {
+            enabled: false
+        },
+        series: [{
+            name: 'Average Campaign Touches',
+            data: oppStageAvgTouches
+        }]
+    });
+}
+
+
+</script>
+</apex:page>
