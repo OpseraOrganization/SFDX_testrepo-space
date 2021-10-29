@@ -1,0 +1,663 @@
+<apex:page id="pg" controller="E2CP.Config1" action="{!loadPreferences}" tabStyle="setup_wizard__tab" title="Email to Case Premium Initial Setup: Page 2">
+    <apex:includeScript value="/soap/ajax/29.0/connection.js"/>
+
+    <style type="text/css"> 
+    .primaryPalette {background-color:#D36D00 !important;}
+    .brdPalette, .secondaryPalette {border-top-color:#D36D00 !important;}
+
+    .pbSubheader { 
+        background: #e96e25 !important; /* Fallback to solid color for older browsers */ 
+        background-image: linear-gradient(to top, #b95e15, #f97e35) !important; 
+        border-radius: 4px; 
+        text-shadow: -1px 0 #b95e15, 0 1px #b95e15,1px 0 #b95e15, 0 -1px #b95e15; 
+    } 
+    
+    .pageTitleIcon { 
+        background-image: url(/img/icon/wrench32.png) !important; /* Change this URL to point to the icon you want to use */ 
+    } 
+
+    select {
+        padding-bottom: 1px;
+    }
+
+    .owner-cell {
+        padding-left: 4px;
+    }
+
+    .owner-cell .requiredBlock {
+        top: 0px !important;
+        bottom: 2px !important;
+    }
+
+    .owner-cell select {
+        margin-right: 2px;
+    }
+    </style> 
+
+    <apex:sectionHeader title="Email to Case Premium" subtitle="Preferences Configuration" help="https://kb.internetcreations.com/pkb_Home?l=en_US&c=Products%3AEmail_to_Case_Premium"/>
+    <apex:form id="frmMain">
+        <apex:pageMessages showDetail="false" id="pgmsgs" />
+        <apex:pageMessage severity="warning" strength="3" title="No Organization Wide Email Addresses Exist" summary="The New Comment page will not function properly and will not send outbound emails." rendered="{!replyToAddressOptions.size == 0}"/>
+        <apex:pageBlock title="Initial Setup" id="pbMain"> 
+            
+            <apex:facet name="header">
+                <apex:outputpanel >
+                <table width="100%">
+                <tr>
+                
+                <td style="width:75%; text-align:center;">
+                    <apex:commandButton action="{!previous}" value="Previous"/>
+                    <apex:actionStatus id="quickStatus">
+                        <apex:facet name="start">
+                            <apex:outputPanel >
+                                <div style="z-index:99; position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:silver; opacity:.30; filter: alpha(opacity = 30);"></div> 
+                                <apex:commandButton value="Saving..." disabled="true"/>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:facet name="stop">
+                            <apex:commandButton id="quickSave" action="{!quick}" value="Quick Save" rerender="quickStatus,pgmsgs" status="quickStatus"/>
+                        </apex:facet>
+                    </apex:actionStatus>   
+                    <apex:commandButton action="{!finish}" value="Finish"/>
+                    <apex:commandButton action="{!next}" value="Next (Optional)"/>
+                </td>
+                
+                <td style="text-align:right;">
+                    <!--PageJumper start-->
+                    <apex:outputPanel >
+                         <apex:actionStatus id="pjStatus">
+                            <apex:facet name="start">
+                                <apex:outputtext value="{!pj.statusText}"/> 
+                            </apex:facet>
+                            <apex:facet name="stop">
+                                <apex:outputpanel >
+                                    <apex:outputLabel for="pagejump" value="Jump to "/>
+                                    <apex:selectList value="{!pj.currentPage}"  id="pagejump" size="1">
+                                        <apex:selectOptions value="{!pj.allPages}"/>
+                                        <apex:actionSupport event="onchange" action="{!jumpToPage}" status="pjStatus"/>
+                                    </apex:selectList> 
+                                </apex:outputpanel>
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputpanel>
+                    <!--PageJumper end-->
+                </td>
+                
+                </tr>
+                </table>
+                </apex:outputPanel>
+            </apex:facet>
+            
+            <apex:actionFunction name="quickSave" action="{!quick}" status="quickStatus"/>
+            
+            <apex:facet name="footer">
+                <apex:outputpanel >
+                <table width="100%">
+                <tr>
+               <td style="width:75%; text-align:center;">
+                    <apex:commandButton action="{!previous}" value="Previous"/>
+                    <apex:actionStatus id="quickStatus2">
+                        <apex:facet name="start">
+                            <apex:outputPanel >
+                                <div style="z-index:99; position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:silver; opacity:.30; filter: alpha(opacity = 30);"></div> 
+                                <apex:commandButton value="Saving..." disabled="true"/>
+                            </apex:outputPanel> 
+                        </apex:facet>
+                        <apex:facet name="stop">
+                            <apex:commandButton action="{!quick}" value="Quick Save" rerender="quickStatus2,pgmsgs" status="quickStatus2"/>
+                        </apex:facet>
+                    </apex:actionStatus>   
+                    <apex:commandButton action="{!finish}" value="Finish"/>
+                    <apex:commandButton action="{!next}" value="Next (Optional)"/>
+                </td>
+                <td>
+                </td>
+                </tr>
+                </table>
+                </apex:outputPanel>
+            </apex:facet>
+
+    <apex:pageBlockSection id="ROUTING_SECTION" columns="1" title="5. Outgoing Email Routing - Default">
+        <apex:outputPanel >
+            To ensure that replies are processed by Email to Case Premium, select an Organization Wide Address (created previously) that emails should be sent From{!IF(conf0.ENABLE_CASE_FEED_EXTENSION,'',' when adding a new comment')}. Email to Case Premium can support multiple Organization Wide Addresses and those are configured on the Outbound Configuration page.
+            <p/>
+            {!IF(conf0.ENABLE_CASE_FEED_EXTENSION,'Emails','Public Comments')} Send From:
+            <br/>
+            <apex:selectList multiselect="false" id="REPLY_TO_ADDRESS_Text" value="{!REPLY_TO_ADDRESS}" required="false" size="1" style="margin: 5px 0 0 25px;" rendered="{!replyToAddressOptions.size > 0}">
+                <apex:selectOptions value="{!replyToAddressOptions}"/>
+                <apex:selectOptions value="{!replyToAddressOptionsOverflow}"/>
+            </apex:selectList>
+            <apex:outputPanel id="PRIVATE_COMMENT_ROUTING" rendered="{!!conf0.ENABLE_CASE_FEED_EXTENSION}">
+                <p/>
+                Private Comments Send From (optional):
+                <br/>
+                <apex:selectList multiselect="false" id="REPLY_TO_ADDRESS_PRIVATE_Text" value="{!REPLY_TO_ADDRESS_PRIVATE}" size="1" style="margin: 5px 0 0 25px;" rendered="{!replyToAddressPrivateOptions.size > 0}">
+                    <apex:actionSupport event="onchange" reRender="PRIVATE_COMMENT_FORWARDING"/>
+                    <apex:selectOptions value="{!replyToAddressPrivateOptions}"/>
+                    <apex:selectOptions value="{!replyToAddressPrivateOptionsOverflow}"/>
+                </apex:selectList>
+                <apex:outputPanel id="PRIVATE_COMMENT_FORWARDING" rendered="{!ENABLE_ROUTING_SERVICE_ADDRESSES && (NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0)}">
+                    <p>
+                        Private Comment Forwarding Address:
+                    </p>
+                    <a style="display: block;margin: 5px 0 0 25px;" href="mailto:{!PrivateForwardingAddress}" target="_blank">{!PrivateForwardingAddress}</a>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+    </apex:pageBlockSection>
+
+    <apex:pageBlockSection columns="1" title="6. Case Creation Settings">
+        <apex:pageBlockSectionItem >
+            <apex:outputPanel >
+                <apex:outputLabel value="Set Forwarding Address for Each Inbound Email Address"/>
+            </apex:outputPanel>
+            <apex:outputPanel >
+                <apex:inputCheckbox value="{!ENABLE_ROUTING_SERVICE_ADDRESSES}" selected="{!ENABLE_ROUTING_SERVICE_ADDRESSES}" id="ENABLE_ROUTING_SERVICE_ADDRESSES_Checkbox" disabled="{!conf0.ExistingService == null || conf0.ExistingService.size == 0}">
+                    <apex:actionSupport event="onchange" reRender="E2C_EMAIL_CASE_ORIGIN_ROUTING_Panel,PRIVATE_COMMENT_ROUTING"/>
+                </apex:inputCheckbox>
+                <apex:outputPanel rendered="{!conf0.ExistingService == null || conf0.ExistingService.size == 0}">
+                    An Email Service must be created before this setting can be enabled. <a href="/apex/Config0" target="_blank">Click here</a> to create one now.
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        <apex:outputPanel >
+            When a new case is created via Email to Case Premium, you can select values for the Case Origin field, the Priority field, and the Record Type based upon the To address the sender uses. For example, support@mycompany.com could open a case with an origin of Email and Normal priority whereas goldsupport@mycompany.com could open a case with an origin of Email (Gold Support) and High priority. Note that Record Types are not available in Professional Edition or if your organization is not configured to use them for cases.<br />
+            <div style="margin:5px 0 0 25px;">
+            <apex:outputPanel id="E2C_EMAIL_CASE_ORIGIN_ROUTING_Panel" >
+                    <apex:outputPanel id="E2C_EMAIL_CASE_ORIGIN_ROUTING_EditPanel">
+                        <table>
+                            <tr>
+                                <th style="vertical-align:middle">To Address</th>
+                                <th style="vertical-align:middle">Origin</th>
+                                <th style="vertical-align:middle">Priority</th>
+                                <th style="vertical-align:middle">Record Type</th>
+                                <th style="vertical-align:middle">Owner</th>
+                                <th style="vertical-align:middle">
+                                    <apex:outputPanel rendered="{!ENABLE_ROUTING_SERVICE_ADDRESSES && (NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0)}">
+                                        <apex:outputText value="Forwarding Address"/>&nbsp;&nbsp;
+                                        <input type="button" class="btn"  onclick="generateEmailServiceAddresses(); this.disabled = true;" value="Generate Addresses"/>
+                                    </apex:outputPanel>
+                                </th>
+                            </tr>
+                            <apex:repeat value="{!lstInner}" var="e1" id="therepeat">
+                                <tr>
+                                    <td><apex:inputText size="70" maxlength="32200" value="{!e1.prefKey}" required="false" id="ROUTING_ADDRESS_Text" styleClass="pref-key"/></td>
+                                    <td><apex:selectList id="ROUTING_ORIGIN_Text" required="false" value="{!e1.prefValue}" multiselect="false" size="1" styleClass="pref-val">
+                                            <apex:selectOptions value="{!routingOriginOptions}" />
+                                        </apex:selectList>
+                                    </td>
+                                    <td>
+                                        <apex:selectList id="ROUTING_PRIORITY_Text" required="false" value="{!e1.prefPriority}" multiselect="false" size="1">
+                                            <apex:selectOptions value="{!casePriorityOptions}" />
+                                        </apex:selectList>                                                
+                                    </td>
+                                    <td>
+                                        <apex:outputPanel >
+                                            <apex:selectList rendered="{!caseRecordTypeOptions.size > 0}" id="ROUTING_RECTYPE_Text" required="false"  value="{!e1.prefRectype}" multiselect="false" size="1">
+                                                <apex:selectOptions value="{!caseRecordTypeOptions}" />
+                                            </apex:selectList>
+                                            <apex:outputText rendered="{!caseRecordTypeOptions.size <= 0}">N/A</apex:outputText>
+                                        </apex:outputPanel>
+                                    </td>
+                                    <td class="owner-cell">
+                                        <apex:inputField required="false" value="{!e1.prefOwner.OwnerId}"/>
+                                    </td>
+                                    <td>
+                                        <apex:outputPanel id="esa" rendered="{!ENABLE_ROUTING_SERVICE_ADDRESSES}" style="white-space:nowrap;">
+                                            <a href="mailto:{!e1.prefESAName}" target="_blank">{!e1.prefESAName}</a>
+                                            <apex:inputText style="height:0;width:0;visibility:hidden;" styleClass="pref-esa" value="{!e1.prefESA}"/>
+                                        </apex:outputPanel>
+                                    </td>
+                                </tr>
+                            </apex:repeat>
+                        </table>
+                        <apex:commandbutton value="Add Row" action="{!AddMore}" rerender="E2C_EMAIL_CASE_ORIGIN_ROUTING_EditPanel"/>
+                    </apex:outputPanel>
+            </apex:outputPanel>
+            </div>
+        </apex:outputPanel>
+    </apex:pageBlockSection>
+
+    <apex:pageBlockSection columns="1" title="7. Timezone" rendered="{!!conf0.ENABLE_CASE_FEED_EXTENSION}">
+        <apex:outputPanel >
+        Comments are stored in Salesforce.com using UTC time and displayed in the timezone you configure for the application.  This configuration enables you to control the time zone used in emails that are sent when you add a comment.
+        <br />
+            <apex:selectList value="{!DISPLAY_TIME_ZONE}" multiselect="false" size="1" title="The timezone used when listing comments chronologically in the email" id="DISPLAY_TIME_ZONE_Select" required="true" style="margin: 5px 0 0 25px;">
+            <apex:selectOption itemValue="Africa/Abidjan" />
+            <apex:selectOption itemValue="Africa/Accra" />
+            <apex:selectOption itemValue="Africa/Addis_Ababa" />
+            <apex:selectOption itemValue="Africa/Algiers" />
+            <apex:selectOption itemValue="Africa/Asmera" />
+            <apex:selectOption itemValue="Africa/Bangui" />
+            <apex:selectOption itemValue="Africa/Bissau" />
+            <apex:selectOption itemValue="Africa/Blantyre" />
+            <apex:selectOption itemValue="Africa/Bujumbura" />
+            <apex:selectOption itemValue="Africa/Cairo" />
+            <apex:selectOption itemValue="Africa/Casablanca" />
+            <apex:selectOption itemValue="Africa/Conakry" />
+            <apex:selectOption itemValue="Africa/Dakar" />
+            <apex:selectOption itemValue="Africa/Dar_es_Salaam" />
+            <apex:selectOption itemValue="Africa/Djibouti" />
+            <apex:selectOption itemValue="Africa/Douala" />
+            <apex:selectOption itemValue="Africa/Freetown" />
+            <apex:selectOption itemValue="Africa/Gaborone" />
+            <apex:selectOption itemValue="Africa/Harare" />
+            <apex:selectOption itemValue="Africa/Johannesburg" />
+            <apex:selectOption itemValue="Africa/Kampala" />
+            <apex:selectOption itemValue="Africa/Khartoum" />
+            <apex:selectOption itemValue="Africa/Kigali" />
+            <apex:selectOption itemValue="Africa/Kinshasa" />
+            <apex:selectOption itemValue="Africa/Lagos" />
+            <apex:selectOption itemValue="Africa/Libreville" />
+            <apex:selectOption itemValue="Africa/Lome" />
+            <apex:selectOption itemValue="Africa/Luanda" />
+            <apex:selectOption itemValue="Africa/Lubumbashi" />
+            <apex:selectOption itemValue="Africa/Lusaka" />
+            <apex:selectOption itemValue="Africa/Malabo" />
+            <apex:selectOption itemValue="Africa/Maputo" />
+            <apex:selectOption itemValue="Africa/Maseru" />
+            <apex:selectOption itemValue="Africa/Mbabane" />
+            <apex:selectOption itemValue="Africa/Mogadishu" />
+            <apex:selectOption itemValue="Africa/Monrovia" />
+            <apex:selectOption itemValue="Africa/Nairobi" />
+            <apex:selectOption itemValue="Africa/Ndjamena" />
+            <apex:selectOption itemValue="Africa/Niamey" />
+            <apex:selectOption itemValue="Africa/Nouakchott" />
+            <apex:selectOption itemValue="Africa/Ouagadougou" />
+            <apex:selectOption itemValue="Africa/Porto-Novo" />
+            <apex:selectOption itemValue="Africa/Sao_Tome" />
+            <apex:selectOption itemValue="Africa/Timbuktu" />
+            <apex:selectOption itemValue="Africa/Tripoli" />
+            <apex:selectOption itemValue="Africa/Tunis" />
+            <apex:selectOption itemValue="Africa/Windhoek" />
+            <apex:selectOption itemValue="America/Adak" />
+            <apex:selectOption itemValue="America/Anchorage" />
+            <apex:selectOption itemValue="America/Anguilla" />
+            <apex:selectOption itemValue="America/Antigua" />
+            <apex:selectOption itemValue="America/Aruba" />
+            <apex:selectOption itemValue="America/Asuncion" />
+            <apex:selectOption itemValue="America/Barbados" />
+            <apex:selectOption itemValue="America/Belize" />
+            <apex:selectOption itemValue="America/Bogota" />
+            <apex:selectOption itemValue="America/Buenos_Aires" />
+            <apex:selectOption itemValue="America/Caracas" />
+            <apex:selectOption itemValue="America/Cayenne" />
+            <apex:selectOption itemValue="America/Cayman" />
+            <apex:selectOption itemValue="America/Chicago" />
+            <apex:selectOption itemValue="America/Costa_Rica" />
+            <apex:selectOption itemValue="America/Cuiaba" />
+            <apex:selectOption itemValue="America/Curacao" />
+            <apex:selectOption itemValue="America/Dawson_Creek" />
+            <apex:selectOption itemValue="America/Denver" />
+            <apex:selectOption itemValue="America/Dominica" />
+            <apex:selectOption itemValue="America/Edmonton" />
+            <apex:selectOption itemValue="America/El_Salvador" />
+            <apex:selectOption itemValue="America/Fortaleza" />
+            <apex:selectOption itemValue="America/Godthab" />
+            <apex:selectOption itemValue="America/Grand_Turk" />
+            <apex:selectOption itemValue="America/Grenada" />
+            <apex:selectOption itemValue="America/Guadeloupe" />
+            <apex:selectOption itemValue="America/Guatemala" />
+            <apex:selectOption itemValue="America/Guayaquil" />
+            <apex:selectOption itemValue="America/Guyana" />
+            <apex:selectOption itemValue="America/Halifax" />
+            <apex:selectOption itemValue="America/Havana" />
+            <apex:selectOption itemValue="America/Indianapolis" />
+            <apex:selectOption itemValue="America/Jamaica" />
+            <apex:selectOption itemValue="America/La_Paz" />
+            <apex:selectOption itemValue="America/Lima" />
+            <apex:selectOption itemValue="America/Los_Angeles" />
+            <apex:selectOption itemValue="America/Managua" />
+            <apex:selectOption itemValue="America/Manaus" />
+            <apex:selectOption itemValue="America/Martinique" />
+            <apex:selectOption itemValue="America/Mazatlan" />
+            <apex:selectOption itemValue="America/Mexico_City" />
+            <apex:selectOption itemValue="America/Miquelon" />
+            <apex:selectOption itemValue="America/Montevideo" />
+            <apex:selectOption itemValue="America/Montreal" />
+            <apex:selectOption itemValue="America/Montserrat" />
+            <apex:selectOption itemValue="America/Nassau" />
+            <apex:selectOption itemValue="America/New_York" />
+            <apex:selectOption itemValue="America/Noronha" />
+            <apex:selectOption itemValue="America/Panama" />
+            <apex:selectOption itemValue="America/Paramaribo" />
+            <apex:selectOption itemValue="America/Phoenix" />
+            <apex:selectOption itemValue="America/Port-au-Prince" />
+            <apex:selectOption itemValue="America/Port_of_Spain" />
+            <apex:selectOption itemValue="America/Porto_Acre" />
+            <apex:selectOption itemValue="America/Puerto_Rico" />
+            <apex:selectOption itemValue="America/Regina" />
+            <apex:selectOption itemValue="America/Santiago" />
+            <apex:selectOption itemValue="America/Santo_Domingo" />
+            <apex:selectOption itemValue="America/Sao_Paulo" />
+            <apex:selectOption itemValue="America/Scoresbysund" />
+            <apex:selectOption itemValue="America/St_Johns" />
+            <apex:selectOption itemValue="America/St_Kitts" />
+            <apex:selectOption itemValue="America/St_Lucia" />
+            <apex:selectOption itemValue="America/St_Thomas" />
+            <apex:selectOption itemValue="America/St_Vincent" />
+            <apex:selectOption itemValue="America/Tegucigalpa" />
+            <apex:selectOption itemValue="America/Thule" />
+            <apex:selectOption itemValue="America/Tijuana" />
+            <apex:selectOption itemValue="America/Tortola" />
+            <apex:selectOption itemValue="America/Vancouver" />
+            <apex:selectOption itemValue="America/Winnipeg" />
+            <apex:selectOption itemValue="Antarctica/Casey" />
+            <apex:selectOption itemValue="Antarctica/DumontDUrville" />
+            <apex:selectOption itemValue="Antarctica/Mawson" />
+            <apex:selectOption itemValue="Antarctica/McMurdo" />
+            <apex:selectOption itemValue="Antarctica/Palmer" />
+            <apex:selectOption itemValue="Asia/Aden" />
+            <apex:selectOption itemValue="Asia/Almaty" />
+            <apex:selectOption itemValue="Asia/Amman" />
+            <apex:selectOption itemValue="Asia/Anadyr" />
+            <apex:selectOption itemValue="Asia/Aqtau" />
+            <apex:selectOption itemValue="Asia/Aqtobe" />
+            <apex:selectOption itemValue="Asia/Ashkhabad" />
+            <apex:selectOption itemValue="Asia/Baghdad" />
+            <apex:selectOption itemValue="Asia/Bahrain" />
+            <apex:selectOption itemValue="Asia/Baku" />
+            <apex:selectOption itemValue="Asia/Bangkok" />
+            <apex:selectOption itemValue="Asia/Beirut" />
+            <apex:selectOption itemValue="Asia/Bishkek" />
+            <apex:selectOption itemValue="Asia/Brunei" />
+            <apex:selectOption itemValue="Asia/Calcutta" />
+            <apex:selectOption itemValue="Asia/Colombo" />
+            <apex:selectOption itemValue="Asia/Dacca" />
+            <apex:selectOption itemValue="Asia/Damascus" />
+            <apex:selectOption itemValue="Asia/Dubai" />
+            <apex:selectOption itemValue="Asia/Dushanbe" />
+            <apex:selectOption itemValue="Asia/Hong_Kong" />
+            <apex:selectOption itemValue="Asia/Irkutsk" />
+            <apex:selectOption itemValue="Asia/Jakarta" />
+            <apex:selectOption itemValue="Asia/Jayapura" />
+            <apex:selectOption itemValue="Asia/Jerusalem" />
+            <apex:selectOption itemValue="Asia/Kabul" />
+            <apex:selectOption itemValue="Asia/Kamchatka" />
+            <apex:selectOption itemValue="Asia/Karachi" />
+            <apex:selectOption itemValue="Asia/Katmandu" />
+            <apex:selectOption itemValue="Asia/Krasnoyarsk" />
+            <apex:selectOption itemValue="Asia/Kuala_Lumpur" />
+            <apex:selectOption itemValue="Asia/Kuwait" />
+            <apex:selectOption itemValue="Asia/Macao" />
+            <apex:selectOption itemValue="Asia/Magadan" />
+            <apex:selectOption itemValue="Asia/Manila" />
+            <apex:selectOption itemValue="Asia/Muscat" />
+            <apex:selectOption itemValue="Asia/Nicosia" />
+            <apex:selectOption itemValue="Asia/Novosibirsk" />
+            <apex:selectOption itemValue="Asia/Phnom_Penh" />
+            <apex:selectOption itemValue="Asia/Pyongyang" />
+            <apex:selectOption itemValue="Asia/Qatar" />
+            <apex:selectOption itemValue="Asia/Rangoon" />
+            <apex:selectOption itemValue="Asia/Riyadh" />
+            <apex:selectOption itemValue="Asia/Saigon" />
+            <apex:selectOption itemValue="Asia/Seoul" />
+            <apex:selectOption itemValue="Asia/Shanghai" />
+            <apex:selectOption itemValue="Asia/Singapore" />
+            <apex:selectOption itemValue="Asia/Taipei" />
+            <apex:selectOption itemValue="Asia/Tashkent" />
+            <apex:selectOption itemValue="Asia/Tbilisi" />
+            <apex:selectOption itemValue="Asia/Tehran" />
+            <apex:selectOption itemValue="Asia/Thimbu" />
+            <apex:selectOption itemValue="Asia/Tokyo" />
+            <apex:selectOption itemValue="Asia/Ujung_Pandang" />
+            <apex:selectOption itemValue="Asia/Ulan_Bator" />
+            <apex:selectOption itemValue="Asia/Vientiane" />
+            <apex:selectOption itemValue="Asia/Vladivostok" />
+            <apex:selectOption itemValue="Asia/Yakutsk" />
+            <apex:selectOption itemValue="Asia/Yekaterinburg" />
+            <apex:selectOption itemValue="Asia/Yerevan" />
+            <apex:selectOption itemValue="Atlantic/Azores" />
+            <apex:selectOption itemValue="Atlantic/Bermuda" />
+            <apex:selectOption itemValue="Atlantic/Canary" />
+            <apex:selectOption itemValue="Atlantic/Cape_Verde" />
+            <apex:selectOption itemValue="Atlantic/Faeroe" />
+            <apex:selectOption itemValue="Atlantic/Jan_Mayen" />
+            <apex:selectOption itemValue="Atlantic/Reykjavik" />
+            <apex:selectOption itemValue="Atlantic/South_Georgia" />
+            <apex:selectOption itemValue="Atlantic/St_Helena" />
+            <apex:selectOption itemValue="Atlantic/Stanley" />
+            <apex:selectOption itemValue="Australia/Adelaide" />
+            <apex:selectOption itemValue="Australia/Brisbane" />
+            <apex:selectOption itemValue="Australia/Broken_Hill" />
+            <apex:selectOption itemValue="Australia/Darwin" />
+            <apex:selectOption itemValue="Australia/Hobart" />
+            <apex:selectOption itemValue="Australia/Lord_Howe" />
+            <apex:selectOption itemValue="Australia/Perth" />
+            <apex:selectOption itemValue="Australia/Sydney" />
+            <apex:selectOption itemValue="Europe/Amsterdam" />
+            <apex:selectOption itemValue="Europe/Andorra" />
+            <apex:selectOption itemValue="Europe/Athens" />
+            <apex:selectOption itemValue="Europe/Belgrade" />
+            <apex:selectOption itemValue="Europe/Berlin" />
+            <apex:selectOption itemValue="Europe/Brussels" />
+            <apex:selectOption itemValue="Europe/Bucharest" />
+            <apex:selectOption itemValue="Europe/Budapest" />
+            <apex:selectOption itemValue="Europe/Chisinau" />
+            <apex:selectOption itemValue="Europe/Copenhagen" />
+            <apex:selectOption itemValue="Europe/Dublin" />
+            <apex:selectOption itemValue="Europe/Gibraltar" />
+            <apex:selectOption itemValue="Europe/Helsinki" />
+            <apex:selectOption itemValue="Europe/Istanbul" />
+            <apex:selectOption itemValue="Europe/Kaliningrad" />
+            <apex:selectOption itemValue="Europe/Kiev" />
+            <apex:selectOption itemValue="Europe/Lisbon" />
+            <apex:selectOption itemValue="Europe/London" />
+            <apex:selectOption itemValue="Europe/Luxembourg" />
+            <apex:selectOption itemValue="Europe/Madrid" />
+            <apex:selectOption itemValue="Europe/Malta" />
+            <apex:selectOption itemValue="Europe/Minsk" />
+            <apex:selectOption itemValue="Europe/Monaco" />
+            <apex:selectOption itemValue="Europe/Moscow" />
+            <apex:selectOption itemValue="Europe/Oslo" />
+            <apex:selectOption itemValue="Europe/Paris" />
+            <apex:selectOption itemValue="Europe/Prague" />
+            <apex:selectOption itemValue="Europe/Riga" />
+            <apex:selectOption itemValue="Europe/Rome" />
+            <apex:selectOption itemValue="Europe/Samara" />
+            <apex:selectOption itemValue="Europe/Simferopol" />
+            <apex:selectOption itemValue="Europe/Sofia" />
+            <apex:selectOption itemValue="Europe/Stockholm" />
+            <apex:selectOption itemValue="Europe/Tallinn" />
+            <apex:selectOption itemValue="Europe/Tirane" />
+            <apex:selectOption itemValue="Europe/Vaduz" />
+            <apex:selectOption itemValue="Europe/Vienna" />
+            <apex:selectOption itemValue="Europe/Vilnius" />
+            <apex:selectOption itemValue="Europe/Warsaw" />
+            <apex:selectOption itemValue="Europe/Zurich" />
+            <apex:selectOption itemValue="Indian/Antananarivo" />
+            <apex:selectOption itemValue="Indian/Chagos" />
+            <apex:selectOption itemValue="Indian/Christmas" />
+            <apex:selectOption itemValue="Indian/Cocos" />
+            <apex:selectOption itemValue="Indian/Comoro" />
+            <apex:selectOption itemValue="Indian/Kerguelen" />
+            <apex:selectOption itemValue="Indian/Mahe" />
+            <apex:selectOption itemValue="Indian/Maldives" />
+            <apex:selectOption itemValue="Indian/Mauritius" />
+            <apex:selectOption itemValue="Indian/Mayotte" />
+            <apex:selectOption itemValue="Indian/Reunion" />
+            <apex:selectOption itemValue="Pacific/Apia" />
+            <apex:selectOption itemValue="Pacific/Auckland" />
+            <apex:selectOption itemValue="Pacific/Chatham" />
+            <apex:selectOption itemValue="Pacific/Easter" />
+            <apex:selectOption itemValue="Pacific/Efate" />
+            <apex:selectOption itemValue="Pacific/Enderbury" />
+            <apex:selectOption itemValue="Pacific/Fakaofo" />
+            <apex:selectOption itemValue="Pacific/Fiji" />
+            <apex:selectOption itemValue="Pacific/Funafuti" />
+            <apex:selectOption itemValue="Pacific/Galapagos" />
+            <apex:selectOption itemValue="Pacific/Gambier" />
+            <apex:selectOption itemValue="Pacific/Guadalcanal" />
+            <apex:selectOption itemValue="Pacific/Guam" />
+            <apex:selectOption itemValue="Pacific/Honolulu" />
+            <apex:selectOption itemValue="Pacific/Kiritimati" />
+            <apex:selectOption itemValue="Pacific/Kosrae" />
+            <apex:selectOption itemValue="Pacific/Majuro" />
+            <apex:selectOption itemValue="Pacific/Marquesas" />
+            <apex:selectOption itemValue="Pacific/Nauru" />
+            <apex:selectOption itemValue="Pacific/Niue" />
+            <apex:selectOption itemValue="Pacific/Norfolk" />
+            <apex:selectOption itemValue="Pacific/Noumea" />
+            <apex:selectOption itemValue="Pacific/Pago_Pago" />
+            <apex:selectOption itemValue="Pacific/Palau" />
+            <apex:selectOption itemValue="Pacific/Pitcairn" />
+            <apex:selectOption itemValue="Pacific/Ponape" />
+            <apex:selectOption itemValue="Pacific/Port_Moresby" />
+            <apex:selectOption itemValue="Pacific/Rarotonga" />
+            <apex:selectOption itemValue="Pacific/Saipan" />
+            <apex:selectOption itemValue="Pacific/Tahiti" />
+            <apex:selectOption itemValue="Pacific/Tarawa" />
+            <apex:selectOption itemValue="Pacific/Tongatapu" />
+            <apex:selectOption itemValue="Pacific/Truk" />
+            <apex:selectOption itemValue="Pacific/Wake" />
+            <apex:selectOption itemValue="Pacific/Wallis" />
+            </apex:selectList>
+        </apex:outputPanel>
+    </apex:pageBlockSection>
+
+
+
+        </apex:pageBlock>
+    </apex:form>
+    
+    <script>
+    function logDebug(txt) {
+        if (window.console) console.log(txt);
+    }
+    
+    function updateText(elem,text,add) {
+        if (elem.innerText) {
+            if (add) elem.innerText += text
+            else elem.innerText = text;
+        } else {
+            if (add) elem.textContent += text;
+            else elem.textContent = text;
+        }
+    }
+    
+    //overwrite help
+    var hlinks = document.getElementsByClassName('links')[0];
+    updateText(hlinks,'',false);
+    hlinks.appendChild(createLink('Documentation','https://ic.secure.force.com/e2cpdocs'));
+    hlinks.appendChild(createTextElement('span',' | '));
+    hlinks.appendChild(createLink('Knowledge Base','https://kb.internetcreations.com/pkb_Home?l=en_US&c=Products%3AEmail_to_Case_Premium'));
+    hlinks.appendChild(createTextElement('span',' | '));
+    hlinks.appendChild(createLink('e2cpremium@internetcreations.com','mailto:e2cpremium@internetcreations.com'));
+    hlinks.appendChild(createTextElement('span',' '));
+    hlinks.appendChild(createHelpIcon());
+    hlinks.appendChild(createTextElement('span','\r\n'));
+    //hlinks.appendChild(createTextElement('div','Free implementation assistance is available.'));
+    
+    hlinks.style.fontSize = 'larger';
+    hlinks.style.position = 'absolute';
+    hlinks.style.float  = 'right';
+    hlinks.style.right = '0%';
+    
+    function createLink(text,ref) {
+        var link = document.createElement('a');
+        updateText(link,text,false);
+        link.href = ref;
+        link.target = '_blank';
+        return link;
+    }
+    
+    function createTextElement(tag,text) {
+        var elem = document.createElement(tag);
+        updateText(elem,text,false);
+        if (tag == 'div')
+            elem.style.fontSize = 'smaller';
+        elem.style.color = 'black';
+        elem.style.textDecoration = 'none';
+        return elem;
+    }
+    
+    function createHelpIcon() {
+        var icon = document.createElement('img');
+        icon.src = '/s.gif';
+        icon.alt = 'Help';
+        icon.className = 'helpIcon';
+        icon.title = 'Help';
+        return icon;
+    }
+    
+    function generateEmailServiceAddresses() {
+        sforce.connection.sessionId = '{!$Api.Session_ID}';
+        var newEsas = [];
+        
+        var addrs = document.getElementsByClassName('pref-key');
+        var origins = document.getElementsByClassName('pref-val');
+        var esas = document.getElementsByClassName('pref-esa');
+        for (var i = 0;i < addrs.length;i++) {
+            if (!esas[i].value && origins[i].value) {
+                var esa = new sforce.SObject("EmailServicesAddress");
+                esa.FunctionId = "{!IF(NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0,conf0.ExistingService[0].Id,'')}";
+                var local = addrs[i].value.replace('@','.');
+                esa.LocalPart = local.substring(0,local.lastIndexOf('.'));
+                esa.IsActive = true;
+                esa.RunAsUserId = "{!conf0.runAsId}";
+                esa.AuthorizedSenders = "";
+                newEsas.push(esa);
+            }
+        }
+        
+        var privateAddr = '{!JSENCODE(PrivateOrgWideText)}';
+        var privateForward = '{!JSENCODE(PrivateForwardingAddress)}';
+        var privateAddrElem = document.getElementById('pg:frmMain:pbMain:ROUTING_SECTION:REPLY_TO_ADDRESS_PRIVATE_Text');
+        var needsPrivate = false;
+        
+        if (privateAddrElem) {
+            var privateOptions = privateAddrElem.options;
+            for (var i = 0;i < privateOptions.length;i++) {
+                if (privateOptions[i].selected) {
+                    needsPrivate = (privateAddr != privateOptions[i].text || privateForward == '') && privateOptions[i].text != '';
+                    if (needsPrivate) {
+                        privateAddr = privateOptions[i].text;
+                        for (var i = 0;i < addrs.length;i++) {
+                            if (addrs[i].value == privateAddr) {
+                                needsPrivate = false;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        
+        if (needsPrivate) {
+            var esa = new sforce.SObject("EmailServicesAddress");
+            esa.FunctionId = "{!IF(NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0,conf0.ExistingService[0].Id,'')}";
+            var local = privateAddr.replace('@','.');
+            esa.LocalPart = local.substring(0,local.lastIndexOf('.'));
+            esa.IsActive = true;
+            esa.RunAsUserId = "{!conf0.runAsId}";
+            esa.AuthorizedSenders = "";
+            newEsas.push(esa);
+        }
+        if (newEsas.length > 0)
+            var result = sforce.connection.create(newEsas, {onSuccess : success, onFailure : failure});
+    }
+    
+    function success(result) {
+        result.reverse();
+        var esas = document.getElementsByClassName('pref-esa');
+        for (var i = 0;i < esas.length;i++) {
+            if (!esas[i].value)
+                esas[i].value = result.pop().id;
+        }
+        quickSave();
+    }
+    
+    function failure(error) {
+        logDebug(error)
+    }
+
+    //Bill - ctrl + s to quick save
+    addEventListener('keydown', function(e) {
+        if(e.ctrlKey && e.keyCode == 83) {
+            document.querySelector('input[id$=\':quickSave\']').click();
+            e.preventDefault();
+        }
+    });
+    </script>
+</apex:page>

@@ -1,0 +1,488 @@
+<apex:page cache="false" expires="0"  controller="AOGRealTimeReport" showHeader="false" action="{!fwdBB}" standardStylesheets="false">
+<html xmlns="http://www.w3.org/1999/xhtml" style="height:100%">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>AOG Dashboard</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
+<script>
+    !window.jQuery && document.write('<script src="jquery-1.4.3.min.js"><\/script>');
+</script>
+<script type="text/javascript" src="{!$Resource.fancybox_js}"></script>
+<script type="text/javascript">
+    $(document).ready(function() {        
+        $(".popup_details").fancybox();
+    });
+</script>
+<script language="javascript">
+var BrowserDetect = {
+    init: function () {
+        this.url = this.searchString(this.dataOS);
+        this.width = this.getBrowserHeight();
+    },
+    getBrowserHeight: function () {
+        var winW;
+        if (document.body && document.body.offsetWidth) {
+         winW = document.body.offsetWidth;
+        }
+        if (document.compatMode=='CSS1Compat' &&
+            document.documentElement &&
+            document.documentElement.offsetWidth ) {
+         winW = document.documentElement.offsetWidth;
+        }
+        if (window.innerWidth && window.innerHeight) {
+         winW = window.innerWidth;
+        }        
+        return winW;
+    },
+    searchString: function (data) {
+        for (var i=0;i<data.length;i++) {
+            var dataString = data[i].string;
+            var dataProp = data[i].prop;
+            this.versionSearchString = data[i].versionSearch || data[i].identity;
+            if (dataString) {
+                if (dataString.indexOf(data[i].subString) != -1)
+                    return data[i].url;               
+            }
+            else if (dataProp)
+                return data[i].url;
+        }
+    },
+    dataOS : [
+        {
+            string: navigator.platform,
+            subString: "Win",
+            identity: "Windows",
+            url: ""
+        },
+        {
+            string: navigator.platform,
+            subString: "Linux",
+            identity: "Linux",
+            url: ""
+        },
+        {
+            string: navigator.platform,
+            subString: "Mac",
+            identity: "Mac",
+            url: ""
+        },
+        {
+            string: navigator.userAgent,
+            subString: "iPhone",
+            identity: "iPhone/iPod",
+            url: "/AOG_Dashboard_mobile"
+        },
+        {
+            string: navigator.userAgent,
+            subString: "iPad",
+            identity: "iPad",
+            url: "/AOG_Dashboard_touch"
+        },
+        {
+            string: navigator.userAgent,
+            subString:"Profile/MIDP-",
+            identity: "Mobile",
+            url: "/AOG_Dashboard_mobile"
+        }
+    ]
+
+};
+BrowserDetect.init();
+if(BrowserDetect.url != "")location.href=BrowserDetect.url;
+if( BrowserDetect.width >= 1920 ){
+    document.writeln('<link href="{!$Resource.fixed_css}" rel="stylesheet" type="text/css" />');
+    document.write("<style type='text/css'>" +
+   ".datatable table tr td.age .tag { background-image: url({!$Resource.wide_tag_sprite}); }" +
+   ".datatable table tr td .star { background-image: url({!$Resource.wide_star_sprite}); }</style>");
+}
+else { 
+    document.writeln('<link href="{!$Resource.liquid_css}" rel="stylesheet" type="text/css" />');
+    document.write("<style type='text/css'>" +
+   ".datatable table tr td.age .tag { background-image: url({!$Resource.mid_tag_sprite}); }" +
+   ".datatable table tr td .star { background-image: url({!$Resource.mid_star_sprite}); }</style>");
+}
+
+var mouseTimer = null, cursorVisible = true;
+
+function disappearCursor() {
+    mouseTimer = null;
+    document.body.style.cursor = "none";
+    document.styleSheets[2].cssRules[2].style.cursor = "none";
+    cursorVisible = false;
+}
+
+window.onmousemove = checkCursor;
+
+function checkCursor() {
+    if (mouseTimer) {
+        window.clearTimeout(mouseTimer);
+    }
+    if (!cursorVisible) {
+        document.body.style.cursor = "default";
+        document.styleSheets[2].cssRules[2].style.cursor = "default";
+        cursorVisible = true;
+    }
+    mouseTimer = window.setTimeout(disappearCursor, 1000);
+}
+
+</script>
+<script src="{!$Resource.swfobject_modified}" type="text/javascript"></script>
+<style type="text/css">
+body {
+    /*cursor: none;*/
+}
+#headerow table {
+    width: 100%;
+    max-width: 1890px;
+}
+a, a:hover {
+    text-decoration: none;
+    /*cursor: none;*/
+}
+.datatable {
+    padding-bottom: 500px;
+}
+.datatable table { 
+    background-image: url({!$Resource.item_row_bg});
+    height: 160px;
+}
+td {
+    text-align: left;
+}
+.datatable table tr td.age.spex { 
+    background-image: url({!$Resource.spex});
+}
+#footerow {
+    background-image: url({!$Resource.footer_bg});
+    font-size: 18px;
+}
+#footerow div .button {
+    background-image: url({!$Resource.dashboard_buttons});
+    background-repeat: no-repeat;
+    height: 25px;
+    width: 115px;
+    display: table-cell;
+    border: none;
+    padding: 0px;
+}
+#footerow div .button.scroll {
+    background-position: -115px 0px;
+}
+#footerow div .button.stop {
+    background-position: -115px -25px;
+}
+#footerow div .button.hrs24 {
+    background-position: 0px -25px;
+}
+#footerow div .button.hrs4 {
+    background-position: 0px 0px;
+}
+.non-flash_container {
+    width: 100%;
+    max-width: 1890px;
+    text-align: center;
+    vertical-align: middle;
+    display: table-cell;
+}
+.non-flash_container h1 {
+    color: #FFF;
+    position: fixed;
+    top: 40px;
+    font-size: 36px;
+}
+
+#fancybox-loading div {
+    background-image: url({!$Resource.fancybox_png});
+}
+</style>
+<link rel="stylesheet" type="text/css" href="{!$Resource.fancybox_css}" media="screen" />
+</head>
+
+<body>
+
+<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" id="headerow">
+  <tr align="center" valign="middle">
+    <td colspan="5" style="background-color:#000;" id="flash_placeholder">
+      <object id="FlashID" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="100%" height="100%">
+      <param name="movie" value="{!$Resource.header_planes_blur}" />
+      <param name="quality" value="high" />
+      <param name="FlashVars" value="aogs_closed={!countclosed}" />
+      <param name="wmode" value="transparent" />
+      <param name="swfversion" value="8.0.35.0" />
+      <!-- This param tag prompts users with Flash Player 6.0 r65 and higher to download the latest version of Flash Player. Delete it if you don't want users to see the prompt. -->
+      <param name="expressinstall" value="{!$Resource.express_install}" />
+      <!-- Next object tag is for non-IE browsers. So hide it from IE using IECC. -->
+      <!--[if !IE]>-->
+      <object type="application/x-shockwave-flash" data="{!$Resource.header_planes_blur}" width="100%" height="100%">
+        <!--<![endif]-->
+        <param name="quality" value="high" />
+        <param name="FlashVars" value="aogs_closed={!countclosed}" />
+        <param name="wmode" value="transparent" />
+        <param name="swfversion" value="8.0.35.0" />
+        <param name="expressinstall" value="{!$Resource.express_install}" />
+        <!-- The browser displays the following alternative content for users with Flash Player 6.0 and older. -->
+        <div class="non-flash_container">
+          <h1>{!countclosed}</h1>
+          <img src="{!$Resource.nonflash_header}" alt="{!countclosed} AOG's closed today" width="100%" />
+        </div>
+        <!--[if !IE]>-->
+      </object>
+      <!--<![endif]-->
+    </object></td>
+  </tr>
+  <tr align="center" valign="middle">
+    <td height="67" colspan="5" style="background-image: url({!$Resource.top_header});">    
+    <table border="0" align="center" cellpadding="0" cellspacing="0">
+      <tr align="left" valign="middle">
+        <th height="67" class="age" style="text-align: center;">AGE</th>
+        <th height="67" class="open_aog">OPEN AOGs</th>
+        <th height="67" class="service_level">SERVICE LEVEL</th>
+        <th height="67" class="status">STATUS</th>
+        <th height="67" class="case_owner">CASE/OWNER</th>
+      </tr>
+    </table></td>
+  </tr>
+</table>
+<table border="0" align="center" id="datatable" class="datatable" cellpadding="0"  cellspacing="0" >
+
+    <apex:repeat value="{!cases}" var="cas">
+    <tr>
+    <td align="center" valign="middle">
+    <!-- {!serverUrl} -->
+    <a href="https://c.na19.visual.force.com/apex/AOG_getCase?CASE={!cas.Id}" class="popup_details">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td rowspan="2" align="center" valign="middle" class="age {!IF((cas.SPEX_Exchange__c),"spex","non-spex")}">
+             
+              <div class="tag {!cas.AOG_Service_level__c}">{!cas.Age_in_Hours__c}
+                <div>Last Update:<br />{!cas.Last_Modified_Text__c} ago</div>
+              </div>
+          </td>
+          <td class="open_aog">
+              <div class="account">{!cas.Account_Name__c}</div>
+              {!cas.Aircraft_Type__r.Name}
+              <p><span class="label">CSM: </span>{!cas.CP_CSM__c}</p>
+          </td>
+          <td class="service_level">
+          
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Superior' && cas.X4_Hour_AOG__c=='24-hour' ),true,false)}" >    
+                <div class="star three"></div>
+                </apex:outputpanel>
+                 
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Comprehensive' && cas.X4_Hour_AOG__c=='24-hour' ),true,false)}" >
+                 <div class="star two"></div>
+                </apex:outputpanel>
+                  
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Standard' && cas.X4_Hour_AOG__c=='24-hour' ),true,false)}" >
+                 <div class="star one"></div>
+                </apex:outputpanel>
+                     
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Refer to Network' && cas.X4_Hour_AOG__c=='24-hour' ),true,false)}" >
+                 <div class="star half"></div>
+                </apex:outputpanel>
+                
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Superior' && cas.X4_Hour_AOG__c=='4-hour' ),true,false)}" >
+                 <div class="star blue three"></div> 
+                </apex:outputpanel>
+                
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Comprehensive' && cas.X4_Hour_AOG__c=='4-hour' ),true,false)}" >
+                 <div class="star blue two"></div>
+                </apex:outputpanel>
+                      
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Standard' && cas.X4_Hour_AOG__c=='4-hour' ),true,false)}" >
+                 <div class="star blue one"></div>
+                </apex:outputpanel>
+                
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Refer to Network' && cas.X4_Hour_AOG__c=='4-hour' ),true,false)}" >
+                 <div class="star blue half"></div>
+                </apex:outputpanel> 
+              
+          </td>
+          <td align="left" valign="middle" class="status">
+              {!cas.Sub_Status__c}
+          </td>
+          <td class="case_owner">
+              <apex:outputLink value="{!serverUrl}{!cas.Id}" target="_blank" >
+              {!RIGHT(cas.CaseNumber,7)} - {!cas.OwnerName__c}
+              </apex:outputLink>
+          </td>
+        </tr>
+        <tr>
+          <td>
+              <p><span class="label">Aircraft Location: </span>{!cas.Aircraft_Location__c}</p>
+              <p><span class="label">Next Flight: </span>{!cas.Next_Flight_Out_Date__c}</p>
+              <p><span class="label">Operator: </span>{!cas.Owner_Operator_Information__c}</p>
+          </td>
+          <td colspan="3" class="part_ship">
+              <p><span class="label">Part Number: </span>{!cas.Product_Part__c} - {!cas.Product_Name__c}</p>
+              <p><span class="label">Ship From: </span>{!cas.Hardware_Ship_From_Address__c}</p>
+          </td>
+        </tr>
+    </table>
+    </a>
+    </td>
+    </tr>
+    </apex:repeat>
+    <tr>
+    <td align="center" valign="middle" style="font-family: Verdana,Geneva,sans-serif; font-size: 26px;">
+    Open 4-Hour AOGs {!Fourcount} ({!sla4hr} % within SLA)
+    <br/>
+    Open 24-Hour AOGs {!TwentyFourcount} ({!sla24hr} % within SLA)
+    <br/>
+    Total Open AOGs {!totalcount}
+    </td>
+    </tr>
+    <apex:outputpanel rendered="{!IF( ((currentId!='24' && Fourcount == 0) || (currentId=='24' && TwentyFourcount == 0)),"true","false" )}">
+        <style>
+        body {
+            padding-bottom: 0px;
+            padding-top: 0px;
+            height: 100%;
+        }
+        </style>
+      <object id="all_flying" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="100%" height="80%">
+      <param name="movie" value="{!$Resource.all_flying}" />
+      <param name="quality" value="high" />
+      <param name="FlashVars" value="aog_hours={!IF((currentId!='24'),"4","24")}" />
+      <param name="wmode" value="transparent" />
+      <param name="swfversion" value="8.0.35.0" />
+      <!-- This param tag prompts users with Flash Player 6.0 r65 and higher to download the latest version of Flash Player. Delete it if you don't want users to see the prompt. -->
+      <param name="expressinstall" value="{!$Resource.express_install}" />
+      <!-- Next object tag is for non-IE browsers. So hide it from IE using IECC. -->
+      <!--[if !IE]>-->
+      <object type="application/x-shockwave-flash" data="{!$Resource.all_flying}" width="100%" height="80%">
+        <!--<![endif]-->
+        <param name="quality" value="high" />
+        <param name="FlashVars" value="aog_hours={!IF((currentId!='24'),"4","24")}" />
+        <param name="wmode" value="transparent" />
+        <param name="swfversion" value="8.0.35.0" />
+        <param name="expressinstall" value="{!$Resource.express_install}" />
+        <!-- The browser displays the following alternative content for users with Flash Player 6.0 and older. -->
+        <div class="non-flash_container">
+          <img src="{!$Resource.nonflash_4hrs}" />
+        </div>
+        <!--[if !IE]>-->
+      </object>
+      <!--<![endif]-->
+    </object>
+    
+    </apex:outputpanel>
+
+</table> 
+
+<apex:form >
+<div id="footerow">
+    <div>
+       
+        <apex:outputpanel rendered="{!IF((currentId!='24'),true,false)}" >Displaying 4 hrs. AOGs <a href="?id=24" id="tggl_hours" class="button hrs24" title="View 24 Hour Cases">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></apex:outputpanel>
+        <apex:outputpanel rendered="{!IF((currentId=='24'),true,false)}" >Displaying All AOGs <a href="?id=4" id="tggl_hours" class="button hrs4" title="View 4 Hour Cases">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></apex:outputpanel>
+        <apex:outputpanel rendered="{!IF((scroll=='true'),true,false)}" ><a href="?scroll=false" id="tggl_scroll" class="button stop" title="Disable Scrolling">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></apex:outputpanel>
+        <apex:outputpanel rendered="{!IF((scroll!='true'),true,false)}" ><a href="?scroll=true" id="tggl_scroll" class="button scroll" title="Enable Scrolling">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></apex:outputpanel>
+       <!-- 
+        <apex:commandButton styleClass="button hrs24" rendered="{!IF((currentId!='24'),true,false)}" action="{!getallCases}"  />
+        <apex:commandButton styleClass="button hrs4" rendered="{!IF((currentId=='24'),true,false)}" action="{!getAll4Cases}"  />
+        <apex:commandButton styleClass="button stop" rendered="{!IF((scroll=='true'),true,false)}" action="{!scrollOff}"  />
+        <apex:commandButton styleClass="button scroll" rendered="{!IF((scroll!='true'),true,false)}" action="{!scrollOn}"  />
+       -->
+    </div>
+</div>
+</apex:form>
+
+</body>
+<script language="javascript"  type="text/javascript" >
+
+function queryString(parameter) { 
+
+var loc = location.search.substring(1, location.search.length);
+  
+  var param_value = false;
+  var params = loc.split("&");
+  for (i=0; i<params.length;i++) {
+      param_name = params[i].substring(0,params[i].indexOf('='));
+      if (param_name == parameter) {
+          param_value = params[i].substring(params[i].indexOf('=')+1)
+      }
+  }
+  if (param_value) {
+      return param_value;
+  }
+  else {
+      return false; 
+  }
+}
+
+var scrollvalue = queryString("scroll");
+var hrsvalue = queryString("id");
+
+var tggl_hours = document.getElementById("tggl_hours");
+var tggl_scroll = document.getElementById("tggl_scroll");
+
+
+if(hrsvalue != ""){
+    tggl_scroll.href += ("&id="+hrsvalue);
+}
+if(scrollvalue != ""){
+    tggl_hours.href += ("&scroll="+scrollvalue);
+}
+
+//alert( tggl_hours.href );
+
+var run;
+var run1;
+var delay = 100;//in milliseconds
+var scroll_amount = 1;// in pixels
+var interval;
+var y = 0;
+
+delay = (Math.round((1/Math.round(document.body.scrollHeight/document.documentElement.clientHeight))*1000));
+
+function animatedScroll() {
+
+  if( (document.documentElement.scrollTop + document.documentElement.clientHeight) >= document.body.scrollHeight) {
+      clearInterval(interval);
+      window.location.reload();
+      window.scrollTo(0,0);
+  } else {
+      window.scrollBy(0,scroll_amount);
+      y = y + scroll_amount;
+  }
+
+}
+
+function doScroll() {
+    interval = setInterval("animatedScroll()",delay);
+}
+
+function doReload() {
+    window.location.reload(true);
+}
+
+if(scrollvalue=="true" && (document.documentElement.clientHeight < document.body.scrollHeight))  {
+    doScroll(); 
+} else {    
+    var run2 = setInterval(doReload,80000);
+}
+
+obj_td = document.getElementById("flash_placeholder");
+obj_fla = document.getElementById("FlashID");
+
+function resizeFlash(){
+    if( obj_td.offsetWidth < 1920){
+        obj_fla.height = ( Math.round(obj_td.offsetWidth * .09) );
+        obj_td.height = obj_fla.height;
+    }
+    else obj_td.height = 170;
+
+    document.body.style.paddingTop = (eval(obj_td.height)+67)+"px";    
+}
+
+window.onload = resizeFlash;
+window.onresize = resizeFlash;
+
+</script>
+</html>
+<apex:insert name="footer">
+        <c:honeywellFooter />
+</apex:insert>
+
+</apex:page>

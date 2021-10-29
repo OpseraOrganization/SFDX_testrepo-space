@@ -1,0 +1,1018 @@
+<apex:page controller="DSALV.s_ConsoleController" tabstyle="Control_Panel__tab" showHeader="true" docType="html-5.0"> 
+<!-- // ******* Copyright Data Salvation Ltd December 2012. 
+    // ******* Contact john.jordan@datasalvation.co.uk
+    // ******* WARNING! Commercial Software, All Use Must Be Licensed)
+    // ******* This software is protected by copyright Law and International Treaties. Unauthorized use, modification, duplication, 
+    // ******* reverse engineering, any form of redistribution, or use in part or in whole other than by prior, express, 
+    // ******* printed and signed license for use is subject to civil and criminal prosecution. This notice includes code & 
+    // ******* any related objects, sub functions or classes pertaining to or dependent on this code. 
+    // ******* If you have received this code in error, please notify copyright holder and destroy this and any other copies as instructed. -->
+<apex:outputPanel id="wholepage">   
+<apex:form >
+    <apex:image id="theImage" value="{!$Resource.DSALV__DSAL_Logo_Small}"   rendered="{!If(page =='0', true, false)}"/><br/><br/> 
+    
+  
+   <apex:pageMessages id="pageMessageBit" rendered="{!If(page =='0', true, false)}"/>  
+   <apex:commandButton action="{!viewLog}" value="See Validation Log!"  rendered="{!If(AND(page =='0',validationFail), true, false)}"/>
+     
+<apex:pageBlock title="Data Salvation" rendered="{!If(page =='0', true, false)}">   
+
+<apex:pageblocksection title="Setup Wizards" collapsible="true" columns="1">  
+    <apex:outputPanel id="wiz">
+	    <apex:commandLink value="" title="Setup Wizard" action="{!GoToWizard}" style="margin-left:30px; margin-right:10px;"> <!--  reRender="wholepage"> -->
+	    	<apex:image width="50" height="50" url="{!$Resource.DSALV__Wizard2}"/>
+	    </apex:commandLink>
+	    <apex:commandLink value="" title="REGEX Library" action="{!GoToRegex}" style="margin-left:10px; margin-right:10px;"> <!--reRender="wholepage">-->
+	    	<apex:image width="50" height="50" url="{!$Resource.DSALV__REGEX2}"/>
+	    </apex:commandLink>
+    </apex:outputPanel>
+</apex:pageblocksection>
+
+
+<apex:pageblocksection title="Run Data Salvation" collapsible="true" columns="2">  
+
+     <apex:pageblocksectionitem >
+        
+        <apex:outputLabel value="Configuration To Execute Now: "/>
+        
+        <apex:outputPanel >
+	        <apex:selectList id="listofconfig" value="{!ActiveConfiguration}" multiselect="false" size="1">
+	        	<apex:selectOptions value="{!ConfigItems}"/>
+	        </apex:selectList>
+	        <apex:commandButton action="{!s_MainProcessBatch}" value="Run Now"/>
+        </apex:outputPanel>
+    </apex:pageblocksectionitem>
+
+    <apex:pageblocksectionitem >    
+        <apex:outputLabel value="Schedule Jobs to run in the future: "/>
+        <apex:commandButton action="{!s_GoToScheduler}" value="Go To Scheduler"/>
+    </apex:pageblocksectionitem>
+
+</apex:pageblocksection>
+    
+    
+    <br/> 
+    
+    <apex:pageblocksection title="Monitor Data Salvation" collapsible="true" columns="1"> 
+    <apex:commandButton action="{!s_GoToAllResults}" value="Go To Results Page"/>
+    <apex:pageBlockTable value="{!BatchProgress}" var="batch" id="batch"> 
+        
+        <apex:column headerValue="" style="width:15px" >
+            <apex:commandLink value="Abort" status="Batchrefresh" action="{!AbortJob}" reRender="batch" rendered="{!IF((OR((batch.Apex.Status == 'Queued'),(batch.Apex.Status == 'Preparing'),(batch.Apex.Status == 'Processing'))), TRUE, FALSE)}">
+                <apex:param name="AbortID" value="{!batch.Apex.Id}" assignTo="{!BatchJobID}"/>
+            </apex:commandLink> 
+        </apex:column> 
+        <apex:column headerValue="Date" style="width:30px" >  
+            <apex:outputtext value="{!batch.DateT}"/>
+        </apex:column>  
+        <apex:column headerValue="Configuration" style="width:30px" >  
+            <apex:outputtext value="{!batch.Tlog.DSALV__Category__c}"/>
+        </apex:column> 
+        <apex:column headerValue="Status" style="width:20px" >  
+            <apex:outputtext value="{!batch.Apex.Status}"/>
+        </apex:column>   
+        <apex:column headerValue="Total No. Batches" style="width:20px" >  
+            <apex:outputtext value="{!batch.Apex.TotalJobItems}"/>
+        </apex:column>  
+        <apex:column headerValue="Batches Processed" style="width:20px" >  
+            <apex:outputtext value="{!batch.Apex.JobItemsProcessed}"/>
+        </apex:column> 
+        <apex:column headerValue="Number of Errors" style="width:10px" >  
+            <apex:outputtext value="{!batch.Apex.NumberOfErrors}"/>
+        </apex:column>  
+        <apex:column headerValue="Status Detail" style="width:20px" >  
+            <apex:outputtext value="{!batch.Apex.ExtendedStatus}"/>
+        </apex:column> 
+        <apex:column headerValue="Results" style="width:30px" >
+            <apex:commandLink value="Go To Results" action="{!Results}" rendered="{!IF((batch.Apex.Status == 'Completed'), TRUE, FALSE)}"> 
+                <apex:param name="ResultParam" value="{!batch.TLog.DSALV__Category__c}~{!batch.TLog.DSALV__Job_Start_Date_Time_string__c}" assignTo="{!ResultParam}"/>
+            </apex:commandLink>
+        </apex:column> 
+        <apex:column headerValue="Job Log" style="width:30px" >
+            <apex:commandLink value="Log" action="{!GoToLog}" > 
+                <apex:param name="CurrentLog" value="{!batch.TLog.id}" assignTo="{!CurrentLog}"/>
+            </apex:commandLink>
+        </apex:column> 
+    </apex:pageBlockTable>
+   
+    <apex:outputPanel id="actionpoll" >
+        <apex:actionPoller reRender="batch" id="poller" enabled="{!If(page =='0', true, false)}" interval="10" status="Batchrefresh"/> 
+    </apex:outputPanel>
+     
+     
+    
+        <apex:pageblocksectionitem >
+            <apex:commandButton action="{!s_MonitorBatchApex}" value="Monitor Apex jobs"/>
+            
+            <apex:outputPanel >
+                <apex:actionStatus id="Batchrefresh"  stopText="">
+                    <apex:facet name="start">
+                        <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+                    </apex:facet>
+                </apex:actionStatus>  
+            </apex:outputPanel>
+        </apex:pageblocksectionitem>
+    
+</apex:pageblocksection>
+</apex:pageBlock>
+</apex:form>
+
+
+<!-- // ******************************************************************************************************************************************* -->
+<!-- // ********************************** Wizard pages ******************************************************************* -->
+<!-- // ******************************************************************************************************************************************* -->
+
+<script>
+    function closeIt()
+    {
+        if ({!If(page !='0', true, false)}){
+            return "Leaving the page while editing configuration settings, fields or categories will cause your changes to be lost!";
+        }
+        else{
+            tempDisableBeforeUnload = false;
+            return;
+        }
+    }
+  
+    window.onbeforeunload = closeIt;
+    
+</script>
+
+<apex:outputPanel id="Light" rendered="{!If(page !='0', true, false)}" >
+
+<!------------------------Page 1 - List of Configurations with Add button-------------------------------------------------------------------------------->
+
+    <!-- Configuration Table -->
+    <apex:pageMessages id="message"/>
+    <apex:form >
+        <apex:outputPanel id="conftable">
+        
+        <apex:pageBlock title="Configuration Wizard" rendered="{!If(page =='1', true, false)}" >
+        	
+              <apex:pageBlockSection title="Configurations" columns="1" collapsible="false"> 
+              <apex:image title="A Data Salvation Configuration defines a particular set of analysis rules for a chosen object. Multiple configurations can be created for any objects including custom objects. The fields and the type of analysis performed on them are fully customizable. The scope of the analysis can be defined using a filter and the results can also be categorized by a field of your choice. Once Configurations are created they can be run immediately or scheduled." value="/img/alohaSkin/help_orange.png"/>
+              <apex:outputpanel style="overflow:scroll;height:335px;" layout="block">
+               <apex:pageBlockTable value="{!Config}" var="Con"> 
+                   <apex:column headerValue="Action" style="width:20px">
+                        <apex:commandLink value="Edit" status="conftablestatus" action="{!EditLink}"  reRender="confedit,conftable,traffic" style="text-decoration:none; color:#0066CC">
+                            <apex:param name="EditConfParam" value="{!Con.Name}" assignTo="{!EditConfID}"/>
+                        </apex:commandLink> 
+                        |&nbsp;
+                          <apex:commandLink value="Del" status="conftablestatus" action="{!DelConfig}"  onclick="if (!confirm('Warning! This will delete the configuration along with any field definitions, categories and analysis results. Would you like to continue?')) return;" reRender="conftable,message" style="text-decoration:none; color:#0066CC" >
+                            <apex:param name="DelParam" value="{!Con.Name}" assignTo="{!EditConfID}"/>
+                        </apex:commandLink>
+                        |&nbsp;
+                          <apex:commandLink value="Duplicate" status="conftablestatus" action="{!ToDuplicate}" reRender="confedit,conftable,traffic" style="text-decoration:none; color:#0066CC">
+                            <apex:param name="DupParam" value="{!Con.Name}" assignTo="{!EditConfID}"/>
+                        </apex:commandLink>
+                        |&nbsp;
+                        <apex:commandLink value="Run" status="conftablestatus" action="{!s_MainProcessBatch}"  reRender="wholepage"  style="text-decoration:none; color:#0066CC">
+                            <apex:param name="EditConfParam" value="{!Con.Name}" assignTo="{!ActiveConfiguration}"/>
+                        </apex:commandLink>
+                   </apex:column>
+                   
+                   <apex:column headerValue="Config Name" style="width:20px"> 
+                        <apex:outputText value="{!Con.Name}"/>
+                   </apex:column>
+                   
+                   <apex:column headerValue="Object" style="width:20px">  
+                       <apex:outputText value="{!Con.DSALV__Object_Name__c}"/>
+                   </apex:column>
+                   
+                   <apex:column headerValue="Jump To" style="width:20px">
+                        <apex:commandLink value="Fields" status="conftablestatus" action="{!FieldLink}"  reRender="fieldpage,conftable" style="text-decoration:none; color:#0066CC">
+                            <apex:param name="EditConfParam" value="{!Con.Name}" assignTo="{!EditConfID}"/>
+                        </apex:commandLink> 
+                        |&nbsp;
+                         <apex:commandLink value="Categories" status="conftablestatus" action="{!CatLink}"  reRender="catpage,conftable"  style="text-decoration:none; color:#0066CC">
+                            <apex:param name="EditConfParam" value="{!Con.Name}" assignTo="{!EditConfID}"/>
+                        </apex:commandLink>
+                    </apex:column>  
+                    
+               </apex:pageBlockTable>
+               </apex:outputpanel>
+            </apex:pageBlockSection>  
+            
+        <!-- Create config button -->
+        <apex:pageBlockButtons >
+	        <apex:commandButton action="{!ToCreate}" value="Create New" status="conftablestatus"  styleClass="btn" reRender="confedit,conftable" />
+			<apex:commandButton action="{!Finish}" value="Finish" styleClass="btn" rendered="{!NOT(EditFields)}" reRender="wholepage"/>
+        </apex:pageBlockButtons>        
+            <!--Status icon-->    
+            <apex:actionStatus id="conftablestatus"  stopText="">
+                <apex:facet name="start">
+                    <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+                </apex:facet>
+            </apex:actionStatus>  
+        </apex:pageBlock>
+        </apex:outputPanel>
+    </apex:form> 
+    
+<!---*****************************Page 2 - Create New Configuration*********************************--->
+<apex:form >
+    <apex:outputPanel id="confedit">
+ <apex:pageblock title="Create Configuration" rendered="{!If(page =='2', true, false)}">
+        <!--***Step 1 *** -->
+        <apex:pageBlockSection title="Step 1 - Select Object and Configuration Name (Mandatory)" columns="2">
+        
+        <!-- Object Picklist if Creating new-->
+        <apex:pageblocksectionitem rendered="{!NOT(Edit)}">
+            <apex:outputLabel value="Object"/>
+            <apex:outputPanel id="objectlist">
+	            <apex:selectList value="{!ConfigVar.DSALV__Object_Name__c}" multiselect="false" size="1"  rendered="{!UseObjectDropDown}" >
+	                <apex:actionSupport status="confeditstatus" event="onchange" action="{!DefaultConfName}" rerender="ConfName, filTable, FilterTable" />   
+	                <apex:selectOptions value="{!SysObj}"/> 
+	            </apex:selectList>
+	            <apex:inputText id="ConfigName" value="{!ConfigVar.DSALV__Object_Name__c}" size="35" rendered="{!NOT(UseObjectDropDown)}"/>
+	            <apex:commandButton action="{!objSearch}" status="confeditstatus" value="Search" styleClass="btn"  rerender="ConfigName, objectlist,message" rendered="{!NOT(UseObjectDropDown)}"/>
+	           	<apex:commandLink value="Search Instead" status="confeditstatus"  reRender="ConfigName, objectlist" rendered="{!UseObjectDropDown}">
+                	<apex:param name="EditField" value="false" assignTo="{!UseObjectDropDown}" /> 
+              	</apex:commandLink> 
+	        </apex:outputPanel>
+        </apex:pageblocksectionitem> 
+        
+        <!-- Object Locked if editing--> 
+        <apex:pageblocksectionitem rendered="{!Edit}">
+            <apex:outputText value="Object" />
+            <apex:outputField value="{!ConfigVar.DSALV__Object_Name__c}" />
+        </apex:pageblocksectionitem> 
+        
+        <!-- Name edit mode- generated by adding default to the end of the selected object -->
+        <apex:pageBlockSectionItem rendered="{!OR(ChangeName, not(Edit))}" >
+        	<apex:outputPanel id="ConfName">
+	            <apex:outputText value="Configuration Name" />
+	            <apex:inputText id="ConfigName" value="{!ConfigUIName}" size="35"/>
+        	</apex:outputPanel>  
+        </apex:pageBlockSectionItem>
+        
+        <!-- Name View mode -->
+        <apex:pageBlockSectionItem rendered="{!AND(NOT(ChangeName), Edit)}" >
+            <apex:outputText value="Configuration Name" />
+            <apex:outputText value="{!ConfigUIName}" />
+        </apex:pageBlockSectionItem>
+        </apex:pageBlockSection>
+        
+        <!--***Step 2 *** -->
+        <apex:pageBlockSection title="Step 2 - Filter By Fields (Optional)" id="FilterTable" columns="1">
+            <apex:outputText value="Select Object to view filters" rendered="{!HideFilters}"/>
+            
+            <apex:dataTable value="{!DispFilters}" var="fil" rowClasses="odd,even" id="filTable" style="height:40px" rendered="{!NOT(HideFilters)}">
+                
+                <apex:column style="width:55px">
+                    <apex:commandLink value="Clear"  action="{!ClearFilter}" reRender="filTable">
+                        <apex:param name="clear" value="{!Fil.filterRow}" assignTo="{!CurrentFilterRow}" /> 
+                    </apex:commandLink> 
+                </apex:column>
+                
+                <apex:column style="width:25px" >
+					<apex:outputText value="  {!fil.DisplayRow}." />
+                </apex:column>
+                
+                <apex:column headerValue="Field" >
+                    <apex:selectList value="{!fil.field}"  multiselect="false" size="1" >
+                        <apex:actionSupport event="onchange" action="{!refreshFieldType}" rerender="filTable" >
+                            <apex:param name="filterfield" value="{!Fil.FilterRow}" assignTo="{!CurrentFilterRow}" />
+                        </apex:actionSupport>   
+                        <apex:selectOptions value="{!FieldFilter}"/>
+                    </apex:selectList> 
+                </apex:column>
+                
+                <apex:column style="width:140px" headerValue="Operator">
+                    <!--***Filter compare options if string -->
+                    <apex:selectList value="{!fil.compare}" style="width:130px;" multiselect="false" size="1" rendered="{!IF(OR((Fil.FieldType == 'STRING'),(Fil.FieldType == 'PHONE'),(Fil.FieldType == 'EMAIL'),(Fil.FieldType == 'URL')), TRUE, FALSE)}">
+                        <apex:actionSupport event="onchange" rerender="filTable" />
+                        <apex:selectOptions value="{!StringCompare}"/>
+                    </apex:selectList> 
+                    <!--***Filtercompare options if null -->
+                    <apex:selectList value="{!fil.compare}" style="width:130px;" multiselect="false" size="1" disabled="true" rendered="{!IF(OR((Fil.FieldType == null),(Fil.FieldType == '')), TRUE, FALSE)}">
+                        <apex:actionSupport event="onchange" rerender="filTable" />
+                        <apex:selectOptions value="{!NullCompare}"/>
+                    </apex:selectList> 
+                    <!--***Filter compare options if Boolean -->
+                    <apex:selectList value="{!fil.compare}" style="width:130px;" multiselect="false" size="1" rendered="{!IF(Fil.FieldType == 'BOOLEAN', TRUE, FALSE)}">
+                        <apex:selectOptions value="{!BooleanCompare}"/>
+                    </apex:selectList> 
+                    <!--***Filter compare options if ID -->
+                    <apex:selectList value="{!fil.compare}" style="width:130px;" multiselect="false" size="1" rendered="{!IF(AND(OR((Fil.FieldType == 'ID'),(Fil.FieldType == 'REFERENCE')), Fil.field != 'RECORDTYPEID'), TRUE, FALSE)}">
+                        <apex:actionSupport event="onchange" rerender="filTable" />
+                        <apex:selectOptions value="{!IDCompare}"/>
+                    </apex:selectList> 
+                    <!--***Filter compare options if RecordTypeID -->
+                    <apex:selectList value="{!fil.compare}" style="width:130px;" multiselect="false" size="1" rendered="{!IF(Fil.field == 'RECORDTYPEID', TRUE, FALSE)}">
+                        <apex:actionSupport event="onchange" rerender="filTable" />
+                        <apex:selectOptions value="{!RecordTypeCompare}"/>
+                    </apex:selectList> 
+                    
+                    <!--***Filter compare options if Picklist -->
+                    <apex:selectList value="{!fil.compare}" style="width:130px;" multiselect="false" size="1" rendered="{!IF(Fil.FieldType == 'PICKLIST', TRUE, FALSE)}">
+                        <apex:actionSupport event="onchange" rerender="filTable" />
+                        <apex:selectOptions value="{!PicklistCompare}"/>
+                    </apex:selectList> 
+                    <!--***Filter compare options if MultiPicklist -->
+                    <apex:selectList value="{!fil.compare}" style="width:130px;" multiselect="false" size="1" rendered="{!IF(Fil.FieldType == 'MULTIPICKLIST', TRUE, FALSE)}">
+                        <apex:actionSupport event="onchange" rerender="filTable" />
+                        <apex:selectOptions value="{!MultiPicklistCompare}"/>
+                    </apex:selectList> 
+                    <!--***Filter compare options if Number/date -->
+                    <apex:selectList value="{!fil.compare}" style="width:130px;" multiselect="false" size="1" rendered="{!IF(OR((Fil.FieldType == 'DATE'),(Fil.FieldType == 'DATETIME'),(Fil.FieldType == 'DOUBLE'),(Fil.FieldType == 'INTEGER'),(Fil.FieldType == 'TIME'),(Fil.FieldType == 'CURRENCY'),(Fil.FieldType == 'PERCENT')), TRUE, FALSE)}">
+                        <apex:actionSupport event="onchange" rerender="filTable" />
+                        <apex:selectOptions value="{!NumberCompare}"/>
+                    </apex:selectList> 
+                </apex:column>
+                
+                <apex:column style="width:100px" headerValue="Value">
+                    <apex:inputText value="{!fil.value}" size="18" disabled="{!IF(OR((Fil.FieldType == null),(Fil.FieldType == '')), TRUE, FALSE)}" rendered="{!IF(AND((Fil.FieldType != 'BOOLEAN'), (Fil.FieldType != 'PICKLIST') , (Fil.FieldType != 'DATETIME'),(Fil.FieldType != 'DATE'), (Fil.FieldType != 'MULTIPICKLIST'),(fil.compare != 'is null'),(fil.compare != 'is not null')), TRUE, FALSE)}"/>
+                    
+                    <!--***PICKLIST for PICKLIST -->
+                    <apex:selectList value="{!fil.value}" style="width:120px;" multiselect="false" size="1" rendered="{!IF(AND(fil.compare != 'is null',fil.compare != 'is not null',Fil.FieldType == 'PICKLIST'), TRUE, FALSE)}">
+                        <apex:selectOptions value="{!Fil.Picklist}"/>
+                    </apex:selectList> 
+                    
+                    <!--***PICKLIST for MULTIPICKLIST -->
+                    <apex:selectList value="{!fil.multiValue}" style="width:120px;" multiselect="true" size="1" rendered="{!IF(AND(fil.compare != 'is null',fil.compare != 'is not null',Fil.FieldType == 'MULTIPICKLIST'), TRUE, FALSE)}">
+                        <apex:selectOptions value="{!Fil.Picklist}"/> 
+                    </apex:selectList> 
+                    
+                    <!--***Filter compare options if Boolean -->
+                    <apex:selectList value="{!fil.value}" style="width:80px;" multiselect="false" size="1" rendered="{!IF(Fil.FieldType == 'BOOLEAN', TRUE, FALSE)}">
+                        <apex:selectOptions value="{!Boolean}"/>
+                    </apex:selectList> 
+                    
+                    
+                    
+                    <!--***DateTime Picker if Date Time
+                    <apex:input type="datetime-local" styleClass="select-box" value="{!fil.DT}" rendered="{!IF(AND(fil.compare != 'is null',fil.compare != 'is not null',Fil.FieldType == 'DATETIME'), TRUE, FALSE)}"/>
+                     -->
+                    <apex:inputfield value="{!fil.tri.DSALV__Date_Time_Field_01__c}" rendered="{!IF(AND(fil.compare != 'is null',fil.compare != 'is not null',Fil.FieldType == 'DATETIME'), TRUE, FALSE)}"/>
+                     
+                     
+                    <!--***Date Picker if Date Time
+                    <apex:input type="date" value="{!fil.D}" rendered="{!IF(AND(fil.compare != 'is null',fil.compare != 'is not null',Fil.FieldType == 'DATE'), TRUE, FALSE)}"/>
+                     -->
+                    <apex:inputfield value="{!fil.tri.DSALV__Date_Field_01__c}" rendered="{!IF(AND(fil.compare != 'is null',fil.compare != 'is not null',Fil.FieldType == 'DATE'), TRUE, FALSE)}"/>
+                    
+                </apex:column>
+                
+                <apex:column style="width:40px; vertical-align:bottom; text-align:left;" rendered="{!HideFilterLogic}"  >
+                    <apex:outputText value="{!fil.andText}" />
+                </apex:column>
+                
+                
+                <apex:column style="width:10px" title="{!fil.helptext}">
+                    <apex:image value="/img/alohaSkin/help_orange.png" rendered="{!IF(OR((Fil.FieldType != null),(Fil.FieldType != '')), TRUE, FALSE)}"/>
+                </apex:column>
+                
+                <apex:column style="width:200px" >
+                    <apex:outputText value="Type: {!fil.fieldType}." style="font-style:italic" rendered="{!IF(OR((Fil.FieldType != null),(Fil.FieldType != '')), TRUE, FALSE)}"/>
+                </apex:column>
+                
+                <apex:column style="width:500px" >
+                    <apex:outputText value="{!fil.error}." style="text-decoration:none; color:#FF0000" rendered="{!IF(Fil.error != null, TRUE, FALSE)}"/> 
+                </apex:column>
+
+            </apex:dataTable>
+            
+            <apex:pageBlockSectionItem rendered="{!NOT(HideFilters)}">
+	            <apex:outputPanel id="add">
+		            <apex:commandLink value="Add Row     "  action="{!addFilterRow}" reRender="filTable,add" rendered="{!if(FilterCurrentRow <5, true, false)}"/>
+		            <apex:commandLink value="Remove Row"  action="{!RemoveFilterRow}" reRender="filTable,add"  rendered="{!if(FilterCurrentRow > 3, true, false)}" />    
+	            </apex:outputPanel>
+            </apex:pageBlockSectionItem>
+
+            
+            <!-- Filter Logic -->
+
+	        	<apex:pageBlockSectionItem rendered="{!NOT(HideFilters)}">
+	        		<apex:outputPanel id="FilLogic2">
+		        		<apex:outputLabel value="Filter Logic" rendered="{!NOT(HideFilterLogic)}"/>
+	        		</apex:outputPanel>
+		        	
+		        	<apex:outputPanel id="FilLogic">
+		        		<apex:commandLink value="Add Filter Logic       "  action="{!ToggleFilterLogic}" reRender="FilLogic,FilLogic2,FilterTable" rendered="{!HideFilterLogic}"/>
+			            <apex:inputText value="{!filterLogic}" size="50" rendered="{!NOT(HideFilterLogic)}"/>
+						<apex:image title="Apply Boolean conditions to the filter. For example (1 AND 2) OR 3 will run Data Salvation on records that match the first and second filter lines or the third." value="/img/alohaSkin/help_orange.png"/>
+		        	
+			            <apex:commandLink value="Remove Filter Logic"  action="{!ToggleFilterLogic}" reRender="FilLogic,FilLogic2,FilterTable" rendered="{!NOT(HideFilterLogic)}"/>
+		            </apex:outputPanel>
+	        	</apex:pageBlockSectionItem>
+	        	
+	        	<apex:outputText value="{!filterLogicError}" style="text-decoration:none; color:#FF0000" rendered="{!NOT(AND(HideFilterLogic, HideFilters))}"/>
+			    
+        	
+       	</apex:pageBlockSection>
+        
+        <!--***Step 3 *** -->
+        <apex:pageBlockSection title="Step 3 - Advance Settings (Optional)" id="section1" columns="2">
+        <!-- Notify User Lookup -->
+        <apex:pageBlockSectionItem >
+            <apex:outputLabel value="Notify User When Finished?" for="Userreq"/>
+            <apex:outputPanel >
+	            <apex:inputField value="{!FakeCont.CompanySignedID}"/>
+	            <apex:image title="Select a user to notify by email when the Data Salvation Analysis has finished" value="/img/alohaSkin/help_orange.png"/>
+            </apex:outputPanel>
+		        	 
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem >
+           	<apex:outputPanel >
+            	<apex:outputLabel value="Select Traffic Light Thresholds:" />
+            </apex:outputPanel>
+            <apex:outputPanel >
+
+	            <apex:dataTable value="{!traffValues}" var="traff" rowClasses="odd,even" styleClass="tableClass" id="traffic">
+	                <apex:column style="width:20px">
+	                    <apex:outputText value="0%" />
+	                </apex:column>
+	                <apex:column style="width:40px; background-color:red;">
+	                    <apex:outputText value="     " />
+	                </apex:column>
+	                <apex:column style="width:30px">
+	                    <apex:inputText value="{!traff.redorange}" size="2"/>
+	                </apex:column>
+	                <apex:column style="width:40px; background-color:orange;">
+	                    <apex:outputText value="     " />
+	                </apex:column>
+	                <apex:column style="width:30px">
+	                    <apex:inputText value="{!traff.orangegreen}" size="2"/>
+	                </apex:column>
+	                <apex:column style="width:40px; background-color:green;">
+	                    <apex:outputText value="     " />
+	                </apex:column>
+	                <apex:column style="width:20px">
+	                    <apex:outputText value="100%" />
+	                </apex:column>
+	            </apex:dataTable>
+	            <apex:image title="These are the values for the red/orange and orange/green thresholds for the traffic light gauge feature on the record detail page and the conditional formatting on the results page." value="/img/alohaSkin/help_orange.png"/>
+            
+            </apex:outputPanel>
+            
+        </apex:pageBlockSectionItem>
+      <!--  <br/>
+        <br/>
+        <script>twistSection(document.getElementById("{!$Component.section1}").childNodes[0].childNodes[0]); </script>  -->
+        </apex:pageBlockSection>
+        
+        
+
+        <apex:pageBlockButtons >
+            <apex:commandButton action="{!resetWizard}" status="confeditstatus" value="Cancel" styleClass="btn" rendered="{!OR(AND(NOT(ChangeName), Edit),NOT(Edit))}" reRender="confedit, conftable,message"/>
+            <apex:commandButton action="{!saveconfigedit}" status="confeditstatus" value="Save and Back to Config List" styleClass="btn" rendered="{!Edit}" reRender="confedit, conftable,message"/>
+            <apex:commandButton action="{!ToFields}" status="confeditstatus" rendered="{!Edit}" value="Next>" styleClass="btn" reRender="confedit, fieldpage,message" />
+            <apex:commandButton action="{!saveAndFinishConfig}" status="confeditstatus" value="Finish" styleClass="btn" rendered="{!Edit}" reRender="wholepage"/>
+            <apex:commandButton action="{!saveAndRunConfig}" status="confeditstatus" value="Run" styleClass="btn" rendered="{!Edit}"  reRender="wholepage"/>
+            <apex:commandButton action="{!WithoutDefaults}" status="confeditstatus" rendered="{!NOT(Edit)}" value="Add Fields" styleClass="btn" reRender="confedit, fieldpage,message" />
+            <apex:commandButton action="{!DefaultNext}" status="confeditstatus" rendered="{!NOT(Edit)}" value="Add ALL Fields" styleClass="btn" reRender="confedit, fieldpage,message" />
+        </apex:pageBlockButtons>
+ 
+            <!--Status icon-->    
+            <apex:actionStatus id="confeditstatus"  stopText="">
+                <apex:facet name="start">
+                    <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+                </apex:facet>
+            </apex:actionStatus>  
+    </apex:pageblock>  
+    </apex:outputPanel>
+    </apex:form>
+<!--**********************Page 3 - Fields associated with the configuration****************************************---->
+
+     <apex:form > 
+         <apex:outputPanel id="fieldpage">
+        <apex:pageBlock title="{!configVar.name} Fields" rendered="{!If(page == '3', true, false)}" >  
+            <!---------------------------------The filed picklist---------------------------->
+                <apex:pageBlockSection title="Step 4 - Select Fields to Analyse" columns="2" collapsible="false" rendered="{!NOT(EditFields)}" >
+                
+                <apex:pageblocksectionitem rendered="{!NOT(EditFields)}">
+                    <apex:outputLabel value="FieldList"/>
+                    <apex:selectList value="{!FieldChosen}" multiselect="false" size="1" >
+                        <apex:actionSupport event="onchange" status="filterstatus" rerender="fieldView" />
+                        <apex:selectOptions value="{!FieldsInWrapper}"/>
+                    </apex:selectList>
+                </apex:pageblocksectionitem> 
+                
+                <apex:pageblocksectionitem >            
+                    <apex:actionStatus id="filterstatus"  stopText="">
+                        <apex:facet name="start">
+                            <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:pageblocksectionitem>  
+            </apex:pageBlockSection>                    
+            <apex:pageBlockSection columns="1">
+            <!---------------------------------The chosen field check types------------------>
+               
+               <apex:outputpanel style="overflow:scroll;height:245px;" layout="block" rendered="{!NOT(EditFields)}"> 
+                    
+              <!--**** View Table**** -->  
+              <apex:pageBlockTable id="fieldView"  value="{!BuildField}" var="Field" rendered="{!NOT(EditFields)}">   
+
+                   <!-- checkbox column -->
+                   
+                    <apex:column style="width:15px"  id="checkboxcol">
+                        <apex:facet name="header">
+                            <apex:inputCheckbox value="{!checkAllValue}">
+                                <apex:actionSupport event="onchange" rerender="checkboxcol" action="{!CheckAll}"/>
+                            </apex:inputCheckbox>
+                        </apex:facet>
+                        <apex:inputCheckbox value="{!Field.Checkbox}"/>
+                    </apex:column>
+
+                    <apex:column headerValue="Action" style="width:40px"> 
+                        <apex:commandLink value="Edit" status="fieldstatus" action="{!EditSingleField}" reRender="fieldpage">
+                            <apex:param name="EditField" value="{!Field.counter}" assignTo="{!CheckTypeRow}" /> 
+                        </apex:commandLink> 
+                        |&nbsp;
+                          <apex:commandLink value="Del" status="fieldstatus" action="{!DelSingleField}"  onclick="if (!confirm('are you sure?')) return;"  reRender="fieldpage,message">
+                            <apex:param name="EditField" value="{!Field.counter}" assignTo="{!CheckTypeRow}" />
+                        </apex:commandLink>
+                    </apex:column>
+                   
+                   <!-- Check type column  -->
+                    <apex:column headerValue="Check Type" style="width:20px">
+                       <apex:outputText value="{!Field.CheckTypeUI}"/> 
+                   </apex:column> 
+                   
+                   <!-- Field name column -->
+                  <apex:column headerValue="Field Name/Relationship" style="width:20px">  
+                       <apex:outputText value="{!Field.FieldUI}"  />
+                   </apex:column>  
+                   
+                   <!-- Field type column -->
+                  <apex:column headerValue="Field Type" style="width:20px">  
+                       <apex:outputText value="{!Field.Fieldtype}"  />
+                   </apex:column>  
+
+                   <!-- Validation Column -->
+                   <apex:column headerValue="Validation Details" style="width:20px">
+                        <apex:outputText value="> " rendered="{!IF((Field.CheckTypeUI == 'HASCHILDREN'), TRUE, FALSE)}"/>
+                        <apex:outputText value="{!Field.ValidationUI} "/>
+                        <apex:outputfield value="{!Field.MoreAnalysis.DSALV__Date_Field_01__c}" rendered="{!IF(Field.CheckTypeUI == 'DATECOMPARE (DATE)', TRUE, FALSE)}"/> 
+                   </apex:column>
+                   
+                   
+                   <!-- Score Column -->
+                   <apex:column headerValue="Score" style="width:20px">
+                        <apex:outputText value="{!Field.ScoreUI}"/>
+                   </apex:column>
+                   
+                   <!-- Description Column -->
+                   <apex:column headerValue="Label" style="width:20px">
+                        <apex:outputText value="{!Field.DescriptionUI}"/>
+                   </apex:column>
+                   
+                   <!-- More Analysis column -->
+                   <apex:column headerValue="Unique Values" style="width:20px">
+                        <apex:outputfield value="{!Field.MoreAnalysis.DSALV__Checkbox_Field_01__c}" rendered="{!IF(AND((Field.CheckTypeUI != 'HASCHILDREN'),(Field.fieldType != 'DATETIME'), (Field.fieldType != 'ID')), true, false)}"/>
+                        <br/>
+                        <apex:outputtext value="Case Sensitive?" rendered="{!IF(AND(OR((Field.fieldType == 'STRING'), (Field.fieldType == 'EMAIL'),(Field.fieldType == 'MULTIPICKLIST'),(Field.fieldType == 'PICKLIST'),(Field.fieldType == 'REFERENCE'),(Field.fieldType == 'TEXTAREA'),(Field.fieldType == 'URL')),(Field.MoreAnalysis.DSALV__Checkbox_Field_01__c == true)), true, false)}"/>
+                       	<apex:outputfield value="{!Field.MoreAnalysis.DSALV__Checkbox_Field_02__c}" rendered="{!IF(AND(OR((Field.fieldType == 'STRING'), (Field.fieldType == 'EMAIL'),(Field.fieldType == 'MULTIPICKLIST'),(Field.fieldType == 'PICKLIST'),(Field.fieldType == 'TEXTAREA'),(Field.fieldType == 'URL')),(Field.MoreAnalysis.DSALV__Checkbox_Field_01__c == true),(Field.fieldtype != 'REFERENCE')), true, false)}"/>
+                       	<apex:outputfield value="{!Field.MoreAnalysis.DSALV__Checkbox_Field_03__c}" rendered="{!IF(AND((Field.MoreAnalysis.DSALV__Checkbox_Field_01__c == true),(Field.fieldtype == 'REFERENCE')), true, false)}"/>
+                   </apex:column>
+               </apex:pageBlockTable>
+               </apex:outputPanel>
+               <apex:outputpanel style="overflow:scroll;height:320px;" layout="block" rendered="{!EditFields}"> 
+               
+                <!-- ****Edit Table**** -->  
+                  <apex:pageBlockTable id="Edittable" value="{!EFields}" var="EF" rendered="{!EditFields}" >   
+                   
+                   <!-- help Text column -->
+                	<apex:column style="width:10px" title="{!EF.help}">
+                 		<apex:image value="/img/alohaSkin/help_orange.png" />
+            		</apex:column>   
+                   
+                   <!-- Check type column  -->
+                   <apex:column headerValue="Check Type" style="width:20px">
+                       <apex:selectList value="{!EF.CheckTypeUI}" multiselect="false" size="1"  >
+                            <apex:actionSupport status="fieldstatus" event="onchange" rerender="Edittable" action="{!refreshFieldhelp}">
+                                <apex:param name="CheckTypeRow" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+                            </apex:actionSupport>
+                            <apex:selectOptions value="{!CheckTypeOptions}"/>
+                       </apex:selectList>
+                   </apex:column> 
+                  
+                  
+                   <!-- Field name column -->
+                  <apex:column headerValue="Field Name/Relationship" style="width:20px" id="Fieldcol">  
+                        <!--//Field picklist if REGEX-->
+                        <apex:selectList value="{!EF.FieldUI}"  multiselect="false" size="1" rendered="{!IF(EF.CheckTypeUI == 'REGEX', TRUE, FALSE)}">
+                        	<apex:actionSupport status="fieldstatus" event="onchange" rerender="description,unique,moreEdit" action="{!refreshDescription}">
+                                <apex:param name="CheckTypeRow" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+                            </apex:actionSupport>
+                            <apex:selectOptions value="{!AllFields}"/>
+                        </apex:selectList> 
+                        <!--//Field picklist if DateCompare-->
+                        <apex:selectList value="{!EF.FieldUI}" multiselect="false" size="1" rendered="{!IF(OR((EF.CheckTypeUI == 'DATECOMPARE (NUMBER)'),(EF.CheckTypeUI == 'DATECOMPARE (DATE)')), TRUE, FALSE)}">
+                        	<apex:actionSupport status="fieldstatus" event="onchange" rerender="description,unique,moreEdit" action="{!refreshDescription}">
+                                <apex:param name="CheckTypeRow" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+                            </apex:actionSupport>
+                            <apex:selectOptions value="{!DateFields}"/>
+                        </apex:selectList> 
+                        <!--//Field picklist if Number-->
+                        <apex:selectList value="{!EF.FieldUI}"  multiselect="false" size="1" rendered="{!IF(EF.CheckTypeUI == 'NUMBER', TRUE, FALSE)}">
+                        	<apex:actionSupport status="fieldstatus" event="onchange" rerender="description,unique,moreEdit" action="{!refreshDescription}">
+                                <apex:param name="CheckTypeRow" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+                            </apex:actionSupport>
+                            <apex:selectOptions value="{!NumberFields}"/>
+                        </apex:selectList> 
+                        <!--//Field picklist if INLIST-->
+                        <apex:selectList value="{!EF.FieldUI}"  multiselect="false" size="1" rendered="{!IF(EF.CheckTypeUI == 'INLIST', TRUE, FALSE)}">
+                        	<apex:actionSupport status="fieldstatus" event="onchange" rerender="description,unique,moreEdit" action="{!refreshDescription}">
+                                <apex:param name="CheckTypeRow" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+                            </apex:actionSupport>
+                            <apex:selectOptions value="{!INLISTFields}"/>
+                        </apex:selectList> 
+                        <!--//Field picklist if ISNULL or NOTNULL-->
+                        <apex:selectList value="{!EF.FieldUI}"  multiselect="false" size="1" rendered="{!IF(OR((EF.CheckTypeUI == 'NOTNULL'),(EF.CheckTypeUI == 'ISNULL')), TRUE, FALSE)}">
+                        	<apex:actionSupport status="fieldstatus" event="onchange" rerender="description,unique,moreEdit" action="{!refreshDescription}">
+                                <apex:param name="CheckTypeRow" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+                            </apex:actionSupport>
+                            <apex:selectOptions value="{!NullFields}"/>
+                        </apex:selectList> 
+                        <!--//Relationship picklist of HASCHILDREN selected-->
+                        <apex:selectList value="{!EF.relationship}" multiselect="false" size="1"  rendered="{!IF(EF.CheckTypeUI == 'HASCHILDREN', TRUE, FALSE)}">
+                        	<apex:actionSupport status="fieldstatus" event="onchange" rerender="description,unique,moreEdit" action="{!refreshDescription}">
+                                <apex:param name="CheckTypeRow" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+                            </apex:actionSupport>
+                            <apex:selectOptions value="{!HasChildrenOptions}"/>
+                       </apex:selectList> 
+                   </apex:column>        
+
+                   <!-- Validation Column -->
+                        <apex:column headerValue="Validation Details" id="valcol">
+                        <apex:outputPanel id="REGEX">
+                            
+                             <!--//Picklist for Number or date compare-->
+                            <apex:selectList value="{!EF.Operator}" multiselect="false" size="1"  rendered="{!IF((OR(EF.CheckTypeUI == 'DATECOMPARE (DATE)', EF.CheckTypeUI == 'DATECOMPARE (NUMBER)', EF.CheckTypeUI == 'NUMBER')), TRUE, FALSE)}" >                 
+                                <apex:selectOptions value="{!NumCompareOptions}"/>
+                            </apex:selectList> 
+                            
+                            <!--//Date picklist for DATECOMPARE-->
+                            <apex:inputField value="{!EF.MoreAnalysis.DSALV__Date_Field_01__c}" rendered="{!IF(EF.CheckTypeUI == 'DATECOMPARE (DATE)', TRUE, FALSE)}"/>
+                            
+                             <!--//Number field for HasChildren, Date and Number-->
+                             <apex:outputText value=">" rendered="{!IF((EF.CheckTypeUI == 'HASCHILDREN'), TRUE, FALSE)}"/>
+                             <apex:inputText value="{!EF.OpVal}" size="14" rendered="{!IF(OR((EF.CheckTypeUI == 'DATECOMPARE (NUMBER)'),(EF.CheckTypeUI == 'NUMBER'), (EF.CheckTypeUI == 'HASCHILDREN')), TRUE, FALSE)}"/>
+     
+                             <!--//Text area for INLIST-->
+                             <apex:pageblocksectionitem rendered="{!IF(EF.CheckTypeUI == 'INLIST', TRUE, FALSE)}" helptext="Please enter a list of items separated by a comma then a space">
+                                 <apex:inputTextArea value="{!EF.ValidationUI}" />
+                              </apex:pageblocksectionitem>
+                             <!--//Picklist for REGEX-->
+                            <apex:selectList value="{!EF.ValidationUI}" multiselect="false" size="1"  rendered="{!IF((EF.CheckTypeUI == 'REGEX'), TRUE, FALSE)}" >               
+	                        	<apex:actionSupport status="fieldstatus" event="onchange" rerender="description,unique,moreEdit" action="{!refreshDescription}">
+	                                <apex:param name="CheckTypeRow" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+	                            </apex:actionSupport>
+	                            <apex:selectOptions value="{!RegexList}"/>
+                            </apex:selectList> 
+                        </apex:outputPanel>
+                    </apex:column>
+                    
+                   <!-- Score Column -->
+                   <apex:column headerValue="Score" style="width:20px">
+                        <apex:inputText value="{!EF.ScoreUI}" size="4"/>
+                   </apex:column>
+                   
+ 
+                   <!-- Description Column -->
+                   <apex:column headerValue="Label" >
+                   		<apex:outputPanel id="description">
+                        	<apex:inputText value="{!EF.DescriptionUI}" size="35"/>
+                         </apex:outputPanel>
+                   </apex:column>
+                  
+                    
+                   <!-- More Analysis column -->
+                   <apex:column style="width:110px" headerValue="Unique Values"  >
+		    			<apex:outputPanel id="unique">
+	                        <apex:inputfield value="{!EF.MoreAnalysis.DSALV__Checkbox_Field_01__c}" rendered="{!IF(AND((EF.CheckTypeUI != 'HASCHILDREN'),(EF.fieldType != 'DATETIME'), (EF.fieldType != 'ID')), true, false)}">
+	                        	<apex:actionSupport event="onchange" rerender="moreEdit" />
+	                        </apex:inputfield>
+	                        <br/>
+	                        <apex:outputPanel id="moreEdit">
+	                        	<apex:outputtext value="Case Sensitive?" rendered="{!IF(AND(OR((EF.fieldType == 'STRING'), (EF.fieldType == 'EMAIL'),(EF.fieldType == 'MULTIPICKLIST'),(EF.fieldType == 'PICKLIST'),(EF.fieldType == 'REFERENCE'),(EF.fieldType == 'TEXTAREA'),(EF.fieldType == 'URL')),(EF.MoreAnalysis.DSALV__Checkbox_Field_01__c == true)), true, false)}"/>
+	                        	<apex:inputfield value="{!EF.MoreAnalysis.DSALV__Checkbox_Field_02__c}" rendered="{!IF(AND(OR((EF.fieldType == 'STRING'), (EF.fieldType == 'EMAIL'),(EF.fieldType == 'MULTIPICKLIST'),(EF.fieldType == 'PICKLIST'),(EF.fieldType == 'TEXTAREA'),(EF.fieldType == 'URL')),(EF.MoreAnalysis.DSALV__Checkbox_Field_01__c == true),(EF.fieldtype != 'REFERENCE')), true, false)}"/>
+	                        	<apex:outputfield value="{!EF.MoreAnalysis.DSALV__Checkbox_Field_03__c}" rendered="{!IF(AND((EF.MoreAnalysis.DSALV__Checkbox_Field_01__c == true),(EF.fieldtype == 'REFERENCE')), true, false)}"/>
+                        	</apex:outputPanel>
+                        </apex:outputPanel>
+                   </apex:column>
+                    
+                    <!-- cancel Column -->
+                    <apex:column headerValue=" " style="width:5px">  
+                        <apex:commandLink value="" title="REGEX Library" action="{!IndieCancel}" status="fieldstatus" reRender="fieldpage,filter" >
+					    	<apex:image width="20" height="20" url="/img/func_icons/remove12_on.gif"/>
+					    	<apex:param name="Indie" value="{!EF.editcount}" assignTo="{!CheckTypeRow}" />
+					    </apex:commandLink>
+                    </apex:column>
+                    
+                   <!-- Error Column -->
+                   <apex:column headerValue="" >
+                        <apex:outputText value="{!EF.error}" style="text-decoration:none; color:#FF0000" rendered="{!IF(AND(EF.error != null, EF.error != ''), TRUE, FALSE)}"/>
+                   </apex:column>
+
+               </apex:pageBlockTable>
+               
+               
+               </apex:outputpanel>
+           
+           </apex:pageBlockSection>
+           
+        
+            <apex:pageBlockButtons >
+                <apex:commandButton action="{!resetWizard}" value="Back to Config List" status="fieldstatus" styleClass="btn" rendered="{!NOT(EditFields)}" reRender="fieldpage, conftable"/>
+                <apex:commandButton action="{!BackToConfigEdit}" value="<Previous" status="fieldstatus" styleClass="btn" reRender="confedit, fieldpage" rendered="{!NOT(EditFields)}"/>
+                <apex:commandButton action="{!NextToCat}" value="Next>" status="fieldstatus" styleClass="btn" reRender="fieldpage, catpage" rendered="{!NOT(EditFields)}"/>
+                <apex:commandButton action="{!Finish}" value="Finish" status="fieldstatus" styleClass="btn"   reRender="wholepage" rendered="{!NOT(EditFields)}"/>
+                <apex:commandButton action="{!s_MainProcessBatch}" status="fieldstatus" value="Run" styleClass="btn" reRender="wholepage" rendered="{!NOT(EditFields)}"/>
+            </apex:pageBlockButtons>
+            
+            <!--Edit Button -->
+            <apex:commandButton action="{!EditFields}" status="fieldstatus"  value="Edit" styleClass="btn" reRender="fieldpage,message" rendered="{!NOT(EditFields)}"/> 
+            <!--Delere Button -->
+            <apex:commandButton action="{!SetToDelete}" status="fieldstatus" onclick="if (!confirm('are you sure?')) return;"  value="Delete" styleClass="btn" reRender="fieldpage,message" rendered="{!NOT(EditFields)}"/> 
+            <!--Cancel Button -->
+            <apex:commandButton action="{!CancelEdit}" status="fieldstatus"  value="Cancel" styleClass="btn" reRender="fieldpage,message" rendered="{!EditFields}"/> 
+            <!--New Field Button -->
+            <apex:commandButton action="{!NewField}" status="fieldstatus"  value="New" styleClass="btn" reRender="fieldpage,message,filter"/> 
+            <!--Save Button-->
+            <apex:commandButton action="{!SaveFields}" status="fieldstatus"  value="Save" styleClass="btn" reRender="fieldpage,message" rendered="{!EditFields}"/> 
+                
+            <!--Status icon-->    
+            <apex:actionStatus id="fieldstatus"  stopText="">
+                <apex:facet name="start">
+                    <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+                </apex:facet>
+            </apex:actionStatus>
+            
+       </apex:pageBlock> 
+       </apex:outputPanel>                 
+    </apex:form> 
+<!--**********************Page 4 - Categories associated with the configuration****************************************---->
+
+<apex:form > 
+    <apex:outputPanel id="catpage">
+    <apex:pageBlock title="{!Configvar.name} Categories" rendered="{!If(page =='4', true, false)}" >  
+        <apex:pageBlockSection title="Step 5 - Select Field(s) to Categorise by" columns="1" collapsible="false" >  
+            <apex:outputPanel id="CatTable">     
+                <apex:outputpanel style="overflow:scroll;height:185px;" layout="block"> 
+                    <!--**** View Table****   -->
+                    <apex:pageBlockTable id="catview" width="400px" value="{!BuildCat}" var="Cate" rendered="{!NOT(EditCat)}">   
+                        
+                        <apex:column id="checkbox" style="width:10px">
+                            <apex:facet name="header">
+                                <apex:inputCheckbox value="{!checkAllCat}">
+                                    <apex:actionSupport event="onchange" rerender="checkbox" action="{!CheckAllCat}"/>
+                                </apex:inputCheckbox>
+                            </apex:facet>
+                            <apex:inputCheckbox value="{!Cate.Checkbox}"/>
+                        </apex:column>
+                        
+	            		
+                        <!-- Edit Del column column -->
+                        <apex:column headerValue="Action" style="width:45px"> 
+                            <apex:commandLink value="Edit" status="catstatus" onclick="tempDisableBeforeUnload = false;" action="{!EditSingleCat}" reRender="catpage">
+                                <apex:param name="EditField" value="{!Cate.Catcounter}"  assignTo="{!currentRowCat}" />  
+                            </apex:commandLink> 
+                            |&nbsp; 
+                            <apex:commandLink value="Del" status="catstatus" onclick="if (!confirm('are you sure?')) return;"  action="{!DelSingleCat}" reRender="catpage,message">
+                                <apex:param name="EditField" value="{!Cate.Catcounter}"  assignTo="{!currentRowCat}" /> 
+                            </apex:commandLink> 
+                        </apex:column>
+
+                        <!-- Field name column--> 
+                        <apex:column headerValue="Field Name" style="width:20px">  
+                            <apex:outputText value="{!Cate.CatField}" />
+                        </apex:column>   
+                        
+                        <!-- Enable Checkbox column--> 
+                        <apex:column headerValue="Enabled" style="width:20px">  
+                            <apex:outputField value="{!Cate.Cat.DSALV__Enabled__c}" />
+                        </apex:column> 
+                    </apex:pageBlockTable>
+                        
+                        
+                    <!-- ****Edit Table**** -->  
+                    <apex:pageBlockTable id="catedit" value="{!ECat}" var="EC" rendered="{!EditCat}" >   
+                       
+	                   <!-- help Text column -->
+	                	<apex:column style="width:10px" title="{!CatHelp}">
+	                 		<apex:image value="/img/alohaSkin/help_orange.png" />
+	            		</apex:column>  
+	                       
+                        <!-- Field name column -->
+                        <apex:column headerValue="Field Name" style="width:20px" >  
+                            <!--//Category field picklist-->
+                            <apex:selectList value="{!EC.CatField}" multiselect="false" size="1" >
+                                <apex:selectOptions value="{!CatFields}"/>
+                            </apex:selectList> 
+                        </apex:column>    
+                        
+                        <!-- Enable Checkbox column--> 
+                        <apex:column headerValue="Enabled" style="width:20px">  
+                            <apex:inputcheckbox value="{!EC.CatEnable}" />
+                        </apex:column>   
+                        
+                        <!-- cancel Column -->
+                        <apex:column headerValue=" " style="width:5px"> 
+                            <apex:commandButton action="{!IndieCancelCat}" status="catstatus" image="/img/func_icons/remove12_on.gif" reRender="catpage">
+                                <apex:param name="Indie" value="{!EC.EditCatcounter}" assignTo="{!currentRowCat}" />
+                            </apex:commandButton>       
+                        </apex:column> 
+                        
+                    </apex:pageBlockTable>
+                    
+                </apex:outputpanel>
+            </apex:outputPanel>
+        </apex:pageBlockSection>
+        
+        <apex:pageBlockButtons >
+            <apex:commandButton action="{!resetWizard}" status="catstatus" value="Back to Config List"  styleClass="btn" rendered="{!NOT(editcat)}"  reRender="catpage, conftable"/>
+            <apex:commandButton action="{!BackToFields}" status="catstatus" value="<Previous" styleClass="btn" reRender="fieldpage, catpage" rendered="{!NOT(editcat)}"/>
+            <apex:commandButton rendered="{!NOT(editcat)}" status="catstatus" value="Next>" disabled = "true" styleClass="btn" />
+            <apex:commandButton action="{!Finish}" value="Finish" status="catstatus" styleClass="btn"  reRender="wholepage" rendered="{!NOT(editcat)}"/>
+            <apex:commandButton action="{!s_MainProcessBatch}" value="Run" status="catstatus" styleClass="btn"   reRender="wholepage" rendered="{!NOT(editcat)}"/>
+        </apex:pageBlockButtons>
+        
+        <!--Edit Button -->
+        <apex:commandButton action="{!EditSelCat}" status="catstatus" value="Edit" styleClass="btn" reRender="catpage,message" rendered="{!NOT(editcat)}"/>  
+        <!--Delete Button -->
+        <apex:commandButton action="{!SetToDeleteCat}" status="catstatus" onclick="if (!confirm('are you sure?')) return;"  value="Delete" styleClass="btn" reRender="catpage,message" rendered="{!NOT(editcat)}"/> 
+        <!--Cancel Button -->
+        <apex:commandButton action="{!CancelEditCat}" status="catstatus"  value="Cancel" styleClass="btn" reRender="catpage,message" rendered="{!editcat}"/> 
+        <!--New Category Button -->
+        <apex:commandButton action="{!NewCat}" status="catstatus"  value="New"  styleClass="btn" reRender="catpage,message"/> 
+        <!--Save Button -->
+        <apex:commandButton action="{!SaveCat}" status="catstatus"  value="Save" styleClass="btn" reRender="catpage,message" rendered="{!editcat}"/> 
+        
+        <apex:actionStatus id="catstatus"  stopText="">
+            <apex:facet name="start">
+                <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+            </apex:facet>
+        </apex:actionStatus>
+        
+    </apex:pageBlock> 
+    </apex:outputPanel>                
+</apex:form> 
+
+</apex:outputPanel>
+
+<!--*************************************************************************** -->
+<!--**********************REGEX Library****************************************---->
+<!--*************************************************************************** -->
+
+ 
+<apex:outputPanel id="light2" rendered="{!If(page =='Reg', true, false)}">
+
+<apex:form > 
+<apex:pageMessages id="mess"/>
+    <apex:pageBlock title="REGEX Library" rendered="{!If(page =='Reg', true, false)}">  
+	    
+        <!--//Table section -->
+        <apex:pageBlockSection title="REGEX" columns="1" collapsible="false"  rendered="{!IF(regState == 'table', true, false)}">   
+            <apex:outputPanel id="regTable"> 
+            
+            <apex:pageblocksectionitem >    
+		        <apex:outputLabel value="Hide Standard Data Salvation REGEX from view?"/>
+		        <apex:inputcheckbox value="{!hideStandard}">
+            		<apex:actionSupport event="onchange" rerender="regTable"/>
+            	</apex:inputcheckbox>
+		        
+	    	</apex:pageblocksectionitem>
+                
+                <apex:outputpanel style="overflow:scroll;height:400px;" layout="block"> 
+                   <apex:pageBlockTable value="{!Regex}" var="Reg"> 
+                   
+                        <apex:column headerValue="Action" style="width:155px ">
+                            <apex:commandLink value="Edit" status="RegexStatus" rendered="{!IF(Reg.Reg.DSALV__API_Name_Unique__c == null, true, false)}" action="{!EditReg}" reRender="light2" >
+                                <apex:param name="RegName" value="{!Reg.Reg.Name}" assignTo="{!Regname}" />
+                            </apex:commandLink>
+                            <apex:outputText value="-----" rendered="{!IF(Reg.Reg.DSALV__API_Name_Unique__c != null, true, false)}"/>
+                            |&nbsp;
+                            <apex:commandLink value="Del" status="RegexStatus" action="{!DelReg}" onclick="if (!confirm('are you sure?')) return;" rendered="{!IF(Reg.Reg.DSALV__API_Name_Unique__c == null, true, false)}" reRender="light2">
+                                <apex:param name="RegName" value="{!Reg.Reg.Name}" assignTo="{!Regname}" />
+                            </apex:commandLink>
+                            <apex:outputText value="-----" rendered="{!IF(Reg.Reg.DSALV__API_Name_Unique__c != null, true, false)}"/>
+                            |&nbsp;
+                            <apex:commandLink value="Duplicate" status="RegexStatus" action="{!DupReg}" reRender="light2">
+                                <apex:param name="RegName" value="{!Reg.Reg.Name}" assignTo="{!Regname}" />
+                            </apex:commandLink>  
+                            |&nbsp;
+                            <apex:commandLink value="View" status="RegexStatus" action="{!viewreg}" reRender="light2" >
+                                <apex:param name="RegName" value="{!Reg.Reg.Name}" assignTo="{!Regname}" />
+                            </apex:commandLink>
+                       </apex:column>
+                       
+                       <apex:column headerValue="REGEX Name" >  
+                           <apex:outputText value="{!Reg.Reg.Name}"/>
+                       </apex:column>
+                       
+                       <apex:column headerValue="REGEX" >
+                           <apex:outputText value="{!Reg.ShortVal}"  style="font-family: monospace;  font-size: 13px; "/>
+                       </apex:column>
+                       
+                       <apex:column headerValue=" Test " style="text-align:centre;" >
+                            <apex:commandLink value="Test" status="RegexStatus" action="{!TestReg}" reRender="light2">
+                                <apex:param name="RegName" value="{!Reg.Reg.Name}" assignTo="{!Regname}" />
+                            </apex:commandLink> 
+                       </apex:column>
+                       
+                   </apex:pageBlockTable>
+                </apex:outputpanel>
+            </apex:outputPanel>
+        </apex:pageBlockSection>
+        
+        <!--//Edit/new section -->
+        <apex:pageBlockSection title="REGEX" columns="1" collapsible="false" rendered="{!IF(OR(regState == 'new', regState == 'edit'), true, false)}">
+             <apex:pageBlockSectionItem >
+                 <apex:outputtext value="Name:" />
+                 <apex:inputText value="{!chosenReg.name}" />
+             </apex:pageBlockSectionItem>
+             <apex:pageBlockSectionItem >
+                 <apex:outputtext value="REGEX:" />
+                 <apex:inputTextarea value="{!RegValue}" cols="70" rows="6" style="font-family: monospace;  font-size: 13px;"/>
+             </apex:pageBlockSectionItem>       
+        </apex:pageBlockSection>
+        
+        <!--//View section -->
+        <apex:pageBlockSection title="REGEX" columns="1" collapsible="false" rendered="{!IF(OR(regState == 'view'), true, false)}">
+             <apex:pageBlockSectionItem >
+                 <apex:outputtext value="Name:" />
+                 <apex:outputText value="{!chosenReg.name}" />
+             </apex:pageBlockSectionItem>
+             <apex:pageBlockSectionItem >
+                 <apex:outputtext value="REGEX:" />
+                 <apex:outputtext value="{!RegValue}"  style="font-family: monospace;  font-size: 13px;"/>
+             </apex:pageBlockSectionItem>       
+        </apex:pageBlockSection>
+        
+        <!--//Test section -->
+        <apex:pageBlockSection columns="1" collapsible="false" rendered="{!IF(regState == 'test', true, false)}">
+            <apex:outputtext value="Testing: '{!chosenReg.name}' REGEX" />
+            <apex:pageBlockSectionItem >
+                <apex:outputtext value="Text to Test:" />
+                <apex:inputTextarea value="{!TestData}" cols="40" rows="3"/>
+            </apex:pageBlockSectionItem>      
+        </apex:pageBlockSection>
+        
+        <!--Cancel Button -->
+        <apex:commandButton action="{!cancelReg}" status="RegexStatus" value="Cancel" styleClass="btn" reRender="light2" rendered="{!IF(OR(regState == 'new', regState == 'edit', regState == 'test', regState == 'view'), true, false)}"/> 
+        <!--Upsert Button -->
+        <apex:commandButton action="{!UpsertReg}" status="RegexStatus" value="Update" styleClass="btn" reRender="light2" rendered="{!IF(regState == 'edit', true, false)}"/> 
+        <!--Upsert Button -->
+        <apex:commandButton action="{!UpsertReg}" status="RegexStatus" value="Add" styleClass="btn" reRender="light2" rendered="{!IF(regState == 'new', true, false)}"/> 
+        <!--Create Button -->
+        <apex:commandButton action="{!createReg}" status="RegexStatus" value="New" styleClass="btn" reRender="light2" rendered="{!IF(regState == 'table', true, false)}"/> 
+        <!--Test Button -->
+        <apex:commandButton action="{!TestRegex}" status="RegexStatus" value="Test" styleClass="btn" reRender="light2" rendered="{!IF(regState == 'test', true, false)}"/>
+        <!--Finish -->
+        <apex:commandButton action="{!FinishReg}" status="RegexStatus" value="Finish" styleClass="btn"  reRender="wholepage" rendered="{!IF(or(regState == 'table',regState == 'test'), true, false)}"/>
+        <!--  Get Data From API -->
+        <apex:commandButton action="{!RefreshfromAPI}" rerender="light2,mess" status="RegexStatus" value="Refresh Standard Library" styleClass="btn" rendered="{!IF(regState == 'table', true, false)}">
+        	 <apex:param name="RegexAPIUpdateType"  value="REGEX" assignTo="{!RegexAPIUpdateType}"/>
+        </apex:commandButton>
+        
+        <!--Status icon-->    
+        <apex:actionStatus id="RegexStatus"  stopText="">
+            <apex:facet name="start">
+                <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+            </apex:facet>
+        </apex:actionStatus>
+    </apex:pageBlock> 
+</apex:form>
+
+</apex:outputPanel>
+
+<!-- // ******************************************************************************************************************************************* -->
+<!-- // ********************Product Key section************************************************************************************************ -->
+<!-- // ******************************************************************************************************************************************* -->
+
+<!-- <apex:pageblocksection title="Initial Setup" collapsible="true"  columns="1" rendered="{!not(setup)}">
+    <apex:commandButton action="{!s_addDSALencryption}" value="Create Initial Settings"/>
+</apex:pageblocksection>   -->
+
+<apex:form >
+<apex:pageBlock title="Product Key" rendered="{!If(page =='0', true, false)}">   
+
+<apex:outputPanel id="productkey" >
+    <apex:pageblocksection columns="1"> <!--  title="Product Key" collapsible="true"  > -->
+        
+        <apex:outputPanel rendered="{!not(EnterKey)}" >
+            <apex:outputText value="{!ExpDateText}" style="font-size:14px; color:green" rendered="{!valid}"/>
+            <apex:outputText value="Product Key Invalid/Expired - Limited to 1000 Records! Please contact info@datasalvation.co.uk to remove product restrictions." style="font-size:14px; color:red" rendered="{!Not(valid)}"/>
+        </apex:outputPanel>
+        
+        <apex:pageblocksectionitem rendered="{!not(EnterKey)}" >
+            <apex:commandButton action="{!s_changeProductPage}" value="Update Product Key" rerender="productkey"/>
+        </apex:pageblocksectionitem>
+        
+        <apex:pageblocksectionitem rendered="{!EnterKey}" >
+            <apex:InputTextArea value="{!key.DSALV__Key__c}" cols="95" rows="1"/>
+            <apex:commandButton action="{!s_updateKey}" value="Save" rerender="productkey"/>
+        </apex:pageblocksectionitem>
+    </apex:pageblocksection>
+</apex:outputPanel>
+
+</apex:pageBlock>
+</apex:form>
+<!-- *********************************************************** -->
+
+
+</apex:outputPanel>     
+</apex:page>

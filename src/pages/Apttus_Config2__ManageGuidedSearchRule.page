@@ -1,0 +1,1061 @@
+<!-- 
+ 	Apttus Config & Pricing
+ 	ManageGuidedSearchRule
+ 	 
+ 	@2010-2015 Apttus Inc. All rights reserved.
+-->
+<apex:page standardController="Apttus_Config2__GuidedSearchRule__c"
+			extensions="Apttus_Config2.ManageGuidedSearchRuleController"
+			showHeader="true"
+			sidebar="{!ShowAdminSidebar}" 
+			cache="false"> 
+			
+	<apex:includeScript value="{!URLFOR($Resource.Apttus_Config2__JQueryUILibrary19, 'js/jquery-1.8.3.min.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.Apttus_Config2__JQueryUILibrary19, 'js/jquery-ui-1.9.2.custom.min.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.Apttus_Config2__JSTreeLibrary, 'jstree-v.pre1.0/jquery.jstree.js')}"/>
+	<apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__JQueryUILibrary19, 'css/smoothness/jquery-ui-1.9.2.custom.css')}"/>
+	<apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__GridSystemLibrary, 'text.css')}"/>
+	<apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__GridSystemLibrary, '960.css')}"/>
+	<apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__FormeeLibrary, '/css/formee-style.css')}" />
+	<apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__FormeeLibrary, '/css/formee-structure.css')}" />
+	<script type="text/javascript">
+	var j$ = jQuery.noConflict();
+	var currentFilter;
+	j$.APTTUS = {};
+	j$.APTTUS.actionDeleteCheckboxesCount = 0;
+	j$(document).ready(function(){
+		j$('.child-filter .aptGroupHeader').addClass('sectionUp');
+		
+		//disable delete buttons at startup 
+		j$('.actionBLockDeleteButton').attr("disabled", true);
+		j$('.actionBLockDeleteButton').addClass("aptButtonDisabled");
+		
+		/*j$(document).on('change', '.rule-category', function(){
+			j$('.rule-interview-name').val(j$(this).val());
+			
+		});*/
+		
+		j$(document).on('click', '.child-filter .aptGroupHeader', function(){
+			currentFilter = this;
+			j$.APTTUS.expanded = j$(this).next('.expand-filters').val();
+			j$.APTTUS.rowNum = j$(this).next('.expand-filters').next('.row-num').val();
+			if(j$.APTTUS.expanded == 'true'){
+				j$.APTTUS.expanded = 'false';
+			}else{
+				j$.APTTUS.expanded = 'true';
+			}
+			expandFilter(j$.APTTUS.expanded, j$.APTTUS.rowNum);
+		});
+		
+		j$(document).on('click', '.delete-entry', function(){
+			if (j$(this).attr("checked")) {
+				j$.APTTUS.actionDeleteCheckboxesCount += 1;
+				
+			} else {
+				j$.APTTUS.actionDeleteCheckboxesCount -= 1;
+				
+			}
+			
+			toggleActionDeleteButtonAccess();
+	
+		});
+		
+	});
+	
+	function slideFilter(){
+		j$(currentFilter).next('.expand-filters').next('.row-num').next('.child-filter-fields').slideToggle(400);
+		j$(currentFilter).toggleClass('sectionDown');
+		j$(currentFilter).toggleClass('sectionUp');
+	}
+	
+	function toggleActionDeleteButtonAccess(){
+		if (j$.APTTUS.actionDeleteCheckboxesCount == 0 ){
+			j$('.actionBLockDeleteButton').attr("disabled", true);
+			j$('.actionBLockDeleteButton').addClass("aptButtonDisabled");
+			
+		} else {
+			j$('.actionBLockDeleteButton').attr("disabled", false);
+			j$('.actionBLockDeleteButton').removeClass("aptButtonDisabled");
+			
+		}
+		
+	}
+	
+	function displayDeleteConfirmationBox(type,entryIndex,filterIndex){
+		j$( "#deletionConfirmationBox" ).dialog({
+			modal: true,
+			buttons: {
+			  Yes: function() {
+				j$.APTTUS.actionDeleteCheckboxesCount = 0;
+				if(type=='filter'){
+					doDeleteFilter(entryIndex,filterIndex);
+					
+				}else{
+					doDeleteEntry(entryIndex);
+					
+				}
+				toggleActionDeleteButtonAccess();
+				j$(this).dialog( "close" );
+			    
+			  },
+			  No: function() {
+			    j$(this).dialog( "close" );
+			    
+			  }
+			  
+			}
+			
+	    });
+	    
+	}
+	
+	/**
+	*Switch inputs to disabled or enabled depending on is edit mode.
+	*/
+	function toggleEditMode(isEditMode){
+		if(isEditMode == true){
+			j$(".aptRoundedDiv input[type='text'],.aptRoundedDiv input[type='checkbox'],textarea, select").removeAttr("disabled");
+			j$(".lookupIcon").show();
+		}else{
+			j$(".aptRoundedDiv input[type='text'],.aptRoundedDiv input[type='checkbox'],textarea, select").attr("disabled", "disabled");
+			j$(".lookupIcon").hide();
+		}
+	}
+	
+	//set the properties and actions of the remove dialog
+	function promptDelete(){
+		j$( "#dialog-confirm" ).dialog({
+			resizable: false,
+			modal: true,
+			buttons: {
+			"{!$Label.apttus_config2__delete}": function() {
+					doDeleteRule();
+	
+				},
+				Cancel: function() {
+					j$( this ).dialog( "close" );
+	
+				}
+	
+			}
+  	
+  		});
+	
+	}
+	//display loading div for right column
+	function showLoadingDiv() {
+		determineLocationAndSizeOfOveraly();
+		j$('.aptLoadingOverlay').show();
+	}
+	
+	//hide loading div for right column
+	function hideLoadingDiv() {
+		j$('.aptLoadingOverlay').hide();
+	}
+	
+	//get height and width of right column
+	function determineLocationAndSizeOfOveraly() {
+		var position = j$('#contentWrap').position();
+		j$('.aptLoadingOverlay').css( { position: 'absolute', left: position.left, top: position.top });
+		j$('.aptLoadingOverlay').width(j$('#contentWrap').width());
+		j$('.aptLoadingOverlay').height(j$('#contentWrap').height()+25);
+	}
+	</script>
+	<style>
+	.jstree-default.jstree-focused {
+		background: none !important;
+	}
+	.tree-commands{
+		font-size:12px;
+	} 
+	.aptRoundedDiv {
+				padding-bottom: 5px;
+				background-color: white;
+				border: 1px solid #aaaaaa;
+				-webkit-border-radius: 4px; /* Safari 3-4, iOS 1-3.2, Android ≤1.6 */
+		         border-radius: 4px; /* Opera 10.5, IE9+, Safari 5, Chrome, Firefox 4+, iOS 4, Android 2.1+ */
+			  	
+				/* IE Stuff */		
+			 	zoom: 1; 
+				width:100%;
+		         
+		}
+		
+	   	div.aptProductListHeader {
+    		cursor: pointer;
+
+	    	width:100%;
+	    	padding: 6px 0px;
+			font-size: 1em;
+			line-height: 1.5em;
+			color: #6f6f6f;
+			-webkit-border-top-left-radius: 6px;
+			-webkit-border-top-right-radius: 6px;
+			-moz-border-radius-topleft: 6px;
+			-moz-border-radius-topright: 6px;
+			border-top-left-radius: 6px;
+			border-top-right-radius: 6px;
+			
+			background: url('{!$Resource.CPQNewSprites}') repeat-x;
+			background-position: 0px 0px;
+			
+		}
+		div.aptProductListSubHeader {
+    		cursor: pointer;
+	    	padding: 4px 0px;
+			font-size: 1em;
+			line-height: 1.5em;
+			color: #6f6f6f;
+			float:left;
+			background: url('{!$Resource.CPQNewSprites}') repeat-x;
+			background-position: 0px -150px;
+			border-spacing: 10px;
+			width:100%
+		}
+		
+		div.aptProductCatalogLine {
+    		width:50%; 
+    		margin-left:10px;    
+    	}
+    	
+    	div.aptCategoryIcon {
+    		background: url('{!$Resource.CPQNewSprites}');
+		 	background-position: -4px -282px;
+			height: 15px;
+			width: 15px;
+			margin-left:5px;
+			float:left;
+		
+    	}
+    	
+    	div.aptCategoryIcon {
+    		background: url('/img/forcecom/icon_sprite.png');
+		 	background-position: 0px 0px;
+			height: 16px;
+			width: 16px;
+			margin-left:5px;
+			float:left;
+		
+    	}
+    	
+    	.aptProductManagementLink{
+    		display:table-cell
+    	}
+    	
+    	.aptPanelGrid{
+    		width:100%;
+    		border-spacing: 0px;
+    	}
+    	
+    	.aptPanelGrid tr {
+    		border-spacing: 0px;
+    	}
+    	
+    	.aptPanelGrid td {
+    		border-spacing: 0px;
+    	}
+    	
+    	.aptPanelColumn{
+    		width:100%;
+    		border-spacing: 0px;
+    	}
+    	
+    	.aptPanelColumn a{
+    		margin-left: 10px;
+    		font-size:11px;
+    	}
+    	.aptRoundedDiv2 {
+				border: 1px solid #DDD;
+				margin-right:1%;
+				margin-left:1%;
+				-webkit-border-radius: 6px; /* Safari 3-4, iOS 1-3.2, Android ≤1.6 */
+		         border-radius: 6px; /* Opera 10.5, IE9+, Safari 5, Chrome, Firefox 4+, iOS 4, Android 2.1+ */
+			  	/* useful if you don't want a bg color from leaking outside the border: */
+				/* -moz-background-clip: padding; -webkit-background-clip: padding-box; background-clip: padding-box; */
+				/*-webkit-box-shadow: 0px 0px 4px 0px #000;  Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */
+		        /*box-shadow: 0px 0px 4px 0px #000; /* Opera 10.5, IE9+, Firefox 4+, Chrome 6+, iOS 5 */
+				margin-top:5px;
+				/* IE Stuff */		
+			 	zoom: 1; 
+		      	filter: 
+		          progid:DXImageTransform.Microsoft.Shadow(color=#000000,direction=0,strength=2),
+		          progid:DXImageTransform.Microsoft.Shadow(color=#000000,direction=45,strength=2),
+		          progid:DXImageTransform.Microsoft.Shadow(color=#000000,direction=90,strength=2),
+		          progid:DXImageTransform.Microsoft.Shadow(color=#000000,direction=135,strength=2),
+		          progid:DXImageTransform.Microsoft.Shadow(color=#000000,direction=180,strength=2),
+		          progid:DXImageTransform.Microsoft.Shadow(color=#000000,direction=225,strength=2),
+		          progid:DXImageTransform.Microsoft.Shadow(color=#000000,direction=270,strength=2),
+		          progid:DXImageTransform.Microsoft.Shadow(color=#000000,direction=315,strength=2);
+		         
+		}
+		
+		.aptProductHeader {
+			background: -moz-linear-gradient(top,  rgba(30,87,153,1) 0%, rgba(125,185,232,0) 100%);
+			background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(30,87,153,1)), color-stop(100%,rgba(125,185,232,0)));
+			background: -webkit-linear-gradient(top,  rgba(30,87,153,1) 0%,rgba(125,185,232,0) 100%);
+			background: -o-linear-gradient(top,  rgba(30,87,153,1) 0%,rgba(125,185,232,0) 100%);
+			background: -ms-linear-gradient(top,  rgba(30,87,153,1) 0%,rgba(125,185,232,0) 100%);
+			background: linear-gradient(to bottom,  rgba(30,87,153,1) 0%,rgba(125,185,232,0) 100%);
+			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', endColorstr='#007db9e8',GradientType=0 );
+			border-radius: 3px;
+			height:40px;		
+		}
+		
+		.aptGroupHeader {
+			background: -moz-linear-gradient(top, rgba(211,211,211,0.65) 0%, rgba(255,255,255,0) 100%);
+			background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(211,211,211,0.65)), color-stop(100%,rgba(255,255,255,0)));
+			background: -webkit-linear-gradient(top, rgba(211,211,211,0.65) 0%,rgba(255,255,255,0) 100%);
+			background: -o-linear-gradient(top, rgba(211,211,211,0.65) 0%,rgba(255,255,255,0) 100%);
+			background: -ms-linear-gradient(top, rgba(211,211,211,0.65) 0%,rgba(255,255,255,0) 100%);
+			background: linear-gradient(to bottom, rgba(211,211,211,0.65) 0%,rgba(255,255,255,0) 100%);
+			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a6d3d3d3', endColorstr='#00ffffff',GradientType=0 );
+			height: 40px;
+			padding-top: 10px;
+			padding-left: 10px;
+		}
+		div.aptSubMenu {
+    		background: -moz-linear-gradient(top, rgba(211,211,211,0.65) 0%, rgba(255,255,255,0) 100%);
+			background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(211,211,211,0.65)), color-stop(100%,rgba(255,255,255,0)));
+			background: -webkit-linear-gradient(top, rgba(211,211,211,0.65) 0%,rgba(255,255,255,0) 100%);
+			background: -o-linear-gradient(top, rgba(211,211,211,0.65) 0%,rgba(255,255,255,0) 100%);
+			background: -ms-linear-gradient(top, rgba(211,211,211,0.65) 0%,rgba(255,255,255,0) 100%);
+			background: linear-gradient(to bottom, rgba(211,211,211,0.65) 0%,rgba(255,255,255,0) 100%);
+			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a6d3d3d3', endColorstr='#00ffffff',GradientType=0 );
+			border: 1px solid #DDD;
+			margin-top: 10px;
+		}
+		 
+		.ruleList, .filterList{
+			list-style-type:none;
+			padding-left:0px;
+		}
+		
+		.formee .formee-txt, .formee input[type="text"], .formee input[type="password"], .formee input[type="file"], .formee textarea{
+			line-height: 0.7em;
+			padding: 5px;
+			height: 2.0em;
+			width:75%;
+		} 
+		
+		.formee select {
+			line-height: 0.7em;
+			padding: 2px;
+			height: 2.0em;
+			width:95%;
+		}
+		
+		.formee legend{
+			font-size: 1.5em;
+			font-weight: bold;
+			margin-left: 3%;
+			width: 20%;
+		}
+				
+		.formee-button, .formee input[type="submit"], .formee input[type="button"], .formee input[type="reset"] {
+			font-size: 12px;
+			text-transform:none;
+		}
+		
+		ul li, ol li {
+			margin-left: 0em;
+			margin-right: 1.5em;
+			padding-left: 0;
+		}
+		
+		h2{
+			display: block;
+			margin-left:0px !important;
+			font: bold 14px/1.1em Arial,Sans-Serif;
+		}
+		
+
+		
+		.alignRight{
+			text-align:right;
+		}
+		.input-row{
+			margin:2px 10px;
+			border-bottom: 1px solid #eeeeee;
+			clear: both;
+		}
+		.input-label{
+			width:120px;
+			float:left;
+		}
+		.input-field{
+		}
+		#category-fields{
+			padding:5px;
+		}
+		#loading, #reorderLoading, #loading-prods, #loading-option-groups{
+			display:none;
+			text-align:center;
+		}	
+		.idEditClassWrapClass{
+			min-height:500px;
+		}	
+		#pocs-list li{
+			margin-left:30px;
+		}
+		.aux-button{
+			float:right;
+		}
+		.selectedProduct{
+			background:#FFFF66;
+		}
+		.errorMsg{
+			margin-top:10px;
+		}
+		.hasImage a ins{
+			background-size:14px !important;
+		}
+		.command-buttons{
+			text-align:center;
+		}
+		.idEditPOGWrap{
+			float:left;
+		}
+		#right-col{
+			float:left;
+			min-width:988px;
+			width: 95%;
+			border:1px solid #aaaaaa;
+			padding:10px;
+			background:#eeeeee;
+			position:relative;
+			left:-1px;
+		}
+		@media screen and (-webkit-min-device-pixel-ratio:0) {
+			#right-col{
+				min-width:1045px;
+			}
+		}
+		.left-col{
+			float:left;
+		}
+		.jstree{
+			width:220px;
+			overflow-y:auto;
+		}
+		.grid-7-12{
+			width:auto;
+		}
+		.formee .alpha .left-col{
+			margin:10px !important;
+		}
+		.jstree li.noImage-product > a ins{ 
+			background:url({!$Resource.ProductIcon}) no-repeat;
+			filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src='{!$Resource.ProductIcon}', sizingMethod='scale');
+		    -ms-filter: "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='{!$Resource.ProductIcon}', sizingMethod='scale')";
+		    -webkit-background-size: 12px;
+		    -moz-background-size: 12px;
+		    -o-background-size: 12px;
+		    background-size: 12px;
+		}
+		.jstree li.noImage-optiongroup > a ins{ 
+			background:url({!$Resource.ProductGroupIcon}) no-repeat;
+			filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src='{!$Resource.ProductGroupIcon}', sizingMethod='scale');
+		    -ms-filter: "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='{!$Resource.ProductGroupIcon}', sizingMethod='scale')";
+		    -webkit-background-size: 12px;
+		    -moz-background-size: 12px;
+		    -o-background-size: 12px;
+		    background-size: 12px;
+		}
+		.jstree a {
+			display:inline !important;
+		}
+		.wrapper{
+			min-width:1200px;
+		}
+		.formee-button, .formee input[type="submit"], .formee input[type="button"], .formee input[type="reset"] {
+		    padding: 4px;
+		}
+		.formee .formee-txt, .formee input[type="text"], .formee input[type="password"], .formee input[type="file"], .formee textarea {
+		    width: 130px;
+		}
+		#sidetree{
+			height:auto;
+			padding-bottom:10px;
+			border:1px solid #eeeeee;
+		}
+		#contentWrap{
+			min-width:1260px;
+		}
+		@media screen and (-webkit-min-device-pixel-ratio:0) {
+			#contentWrap{ 
+				min-width:1325px;
+			}
+		}		
+		.jstree-clicked{
+			border-left:1px solid #eeeeee;
+			border-top:1px solid #eeeeee;
+			border-bottom:1px solid #eeeeee;
+		}
+		.ui-tabs .ui-tabs-nav li.tab-header{
+			float:none;
+			margin:10px 5px;
+		}
+		.shadow {
+			-moz-box-shadow: 3px 3px 4px #000;
+			-webkit-box-shadow: 3px 3px 4px #000;
+			box-shadow: 3px 3px 4px #000;
+		}
+		iframe{
+			border:none;
+		}
+		.tree-commands{
+			margin-bottom:5px;
+		}
+		.main-head{
+			float:left;
+			line-height: 25px;
+		}
+		.node-label{
+			white-space:normal;
+		}
+		ins{
+			float:left;
+		}
+		#dialog-confirm{
+			display:none;
+		}
+		
+		.modal {
+		    display:    none;
+		    position:   fixed;
+		    z-index:    1000;
+		    top:        0;
+		    left:       0;
+		    height:     100%;
+		    width:      100%;
+		    background: rgba( 255, 255, 255, .8 ) 
+		                50% 50% 
+		                no-repeat;
+		}
+		
+		/* When the body has the loading class, we turn
+		   the scrollbar off with overflow:hidden */
+		body.loading {
+		    overflow: hidden;   
+		}
+		
+		/* Anytime the body has the loading class, our
+		   modal element will be visible */
+		body.loading .modal {
+		    display: block;
+		}
+		#loading-box{
+			position:fixed;
+		    top: 50%;
+		    left: 50%;
+		    width:30em;
+		    height:18em;
+		    margin-top: -9em; /*set to a negative number 1/2 of your height*/
+		    margin-left: -15em; /*set to a negative number 1/2 of your width*/
+		    text-align:center;
+		}
+		.saving-img{
+			width:20px;
+			vertical-align:middle;
+		}
+		.aptLoadingOverlay {
+			background-color: #ffffff;
+			background-image: url('/img/loading32.gif');
+			background-repeat: no-repeat;
+			background-position: center 35px;
+			display: none;
+			z-index: 10000;
+			opacity: 0.7;
+			filter:alpha(opacity=70);
+			-moz-opacity:0.7;
+			-khtml-opacity: 0.7;
+			text-align:center; 
+			vertical-align:center;
+			-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)";
+		}
+		.input-col-left{
+			float:left;
+			width:400px;
+			margin-right:5px;
+		}
+		.input-col-right{
+			float:left;
+			width:400px;
+			margin-left:5px;
+		}
+		.fullWidth {
+			margin:0px;
+			padding:0px;
+			width:100%;
+		}
+		input.rule-entry{
+			width:100% !important;
+		}
+		input.rule-filter{
+			width:100% !important;
+		}
+		.aptButtonDisabled {
+			background: gray !important;
+		}
+		.rule-interview-name, .expand-filters, .row-num{
+			display:none;
+		}
+		.child-filter{
+			float: none;
+			margin: 0 auto;
+			display: block;
+			clear: both;
+			width:75%;
+		}
+		.child-filter .aptGroupHeader{
+			cursor:pointer;
+		}
+		.sectionUp h2{
+  	 		padding-left:15px;
+  	 		background-position: 0px -11px;
+  	 		background-image: url('{!$Resource.Image_Toggle}');
+			background-size: 10px 100px;
+			background-repeat: no-repeat;
+  	 	}
+  	 	.sectionDown h2{
+  	 		padding-left:15px;
+  	 		background-position: 0px -80px;
+  	 		background-image: url('{!$Resource.Image_Toggle}');
+			background-size: 10px 100px;
+			background-repeat: no-repeat;
+		}
+		#dialog-confirm{
+			display:none;
+		}
+		.delete-link{
+			height:27px;	
+			display:table-cell;
+			vertical-align:bottom;
+		}
+		.filterList li, .entryList li{
+			border-bottom:1px solid #eeeeee;
+			margin-right:0 !important;
+		}
+	</style>
+	<div class="aptLoadingOverlay">
+		<div>
+			<br/>
+			<h2>{!$Label.Loading}...</h2><br/>
+				&nbsp;
+		</div>
+	</div>
+	<apex:form id="gsrForm" styleClass="formee wrapper">
+		<script>
+			j$(document).ready(function(){
+				toggleEditMode({!isEditMode});
+			});
+		</script>
+		<div id="deletionConfirmationBox" title="{!$Label.Warning}" style = "display:none;">
+			<p>{!$Label.RuleDeletionConfirmation}</p>
+		</div>
+		
+		<apex:outputPanel id="idErrorMsg">
+			<apex:pageMessages />
+		</apex:outputPanel>
+		
+		<div id="contentWrap" class="aptRoundedDiv">
+			<div class="aptGroupHeader">
+				<div style="float:left; min-width:300px;">
+					<!-- div style="float:left;"><apex:commandButton action="{!doBack}" value="{!$Label.Back}"/></div -->
+					<h2 class="main-head">&nbsp;&nbsp;&nbsp;&nbsp;
+						<apex:outputText value="{!$Label.apttus_config2__new}" rendered="{!ISBLANK(selectedGuidedSearchRule.Id)}" />
+						<apex:outputText value="{!selectedGuidedSearchRule.Name} -" rendered="{!NOT(ISBLANK(selectedGuidedSearchRule.Id))}" />
+						{!$Label.GuidedSearchRule}</h2>
+				</div>
+				<div style="text-align:center;padding:0 0 0 100px;float:left;">
+					<apex:actionStatus id="saveRuleEntryTop" >
+				          <apex:facet name="start">
+		                     <img src="/img/loading.gif"/>
+		                  </apex:facet>
+		                  <apex:facet name="stop">
+		                     
+		                  </apex:facet>
+					</apex:actionStatus>
+					<apex:commandButton action="{!doEdit}" 
+										value="{!$Label.apttus_config2__edit}" 
+										reRender="gsrForm, idErrorMsg"
+										rendered="{!NOT(isEditMode)}"
+										status="saveRuleEntryTop"/>
+					
+					<apex:commandButton action="{!doClone}" 
+										value="{!$Label.apttus_config2__clone}" 
+										reRender="gsrForm, idErrorMsg"
+										rendered="{!NOT(ISBLANK(selectedGuidedSearchRule.Id)) && NOT(isEditMode)}"
+										status="saveRuleEntryTop"/>
+										
+					<apex:commandButton action="{!doSave}" 
+										value="{!$Label.apttus_config2__save}" 
+										rendered="{!isEditMode}"/>
+										
+					<apex:commandButton action="{!doSaveAndNew}" 
+										value="{!$Label.apttus_config2__saveandnew}"
+										rendered="{!isEditMode}"/>
+					
+					<apex:commandButton value="{!$Label.apttus_config2__cancel}"
+										immediate="true"
+										rendered="{!isEditMode}"
+										action="{!doCancel}"
+										reRender="gsrForm"/>
+					
+					<apex:commandButton value="{!$Label.apttus_config2__delete}"
+										onClick="promptDelete();"
+										rendered="{!NOT(ISBLANK(selectedGuidedSearchRule.Id)) && NOT(isEditMode)}"
+										reRender="gsrForm"/>
+										
+				</div>
+				
+				<div class="clear"></div>
+			</div>
+			
+			<div id="category-fields">
+				<div class="input-col-left">	
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRule__c.fields.Name.label}"/>
+						</div>
+						<div class="input-field grid-7-12">
+							<apex:inputField value="{!selectedGuidedSearchRule.Name}"/>
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRule__c.fields.Apttus_Config2__Description__c.label}"/>
+						</div>
+						<div class="input-field grid-7-12">
+							<apex:inputField value="{!selectedGuidedSearchRule.Apttus_Config2__Description__c}"/>
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRule__c.fields.Apttus_Config2__CategoryId__c.label}"/>
+						</div>
+						<div class="input-field grid-7-12">
+							<apex:inputField styleClass="rule-category" value="{!selectedGuidedSearchRule.Apttus_Config2__CategoryId__c}">
+								<apex:actionSupport event="onchange" 
+									rerender="subCategory" />
+							</apex:inputField>
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+					<apex:outputPanel id="subCategory" styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRule__c.fields.Apttus_Config2__ClassificationId__c.label}"/>
+						</div>
+						<div class="input-field grid-7-12">
+							<apex:selectList size="1" value="{!selectedClassificationId}" >
+								<apex:selectOptions value="{!categoryHierarchy}"/>
+							</apex:selectList>
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="{!$ObjectType.Apttus_Config2__ClassificationName__c.fields.Apttus_Config2__GuidePage__c.label}"/>
+						</div>
+						<div class="input-field grid-7-12">
+							<apex:inputText value="{!guidePage}"/>
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRule__c.fields.Apttus_Config2__Active__c.label}"/>
+						</div>
+						<div class="input-field grid-7-12">
+							<apex:inputField value="{!selectedGuidedSearchRule.Apttus_Config2__Active__c}"/>
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+				</div>
+				<div class="input-col-right">	
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRule__c.fields.Apttus_Config2__EffectiveDate__c.label}"/>
+						</div>
+						<div class="input-field grid-7-12">
+							<apex:inputField value="{!selectedGuidedSearchRule.Apttus_Config2__EffectiveDate__c}"/>
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRule__c.fields.Apttus_Config2__ExpirationDate__c.label}"/>
+						</div>
+						<div class="input-field grid-7-12">
+							<apex:inputField value="{!selectedGuidedSearchRule.Apttus_Config2__ExpirationDate__c}"/>
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="Created By"/>
+						</div>
+						<div class="input-field grid-7-12">
+							{!createdBy}&nbsp;
+							{!createdDate}
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+					<apex:outputPanel styleClass="input-row" layout="block">
+						<div class="input-label">
+							<apex:outputLabel value="Last Modified By"/>
+						</div>
+						<div class="input-field grid-7-12">
+							{!lastModifiedBy}&nbsp;
+							{!lastModifiedDate}
+						</div>
+						<div class="clear"/>
+					</apex:outputPanel>
+				</div>
+			</div>
+			
+			<apex:outputPanel id="entryList">
+				<apex:variable value="{!0}" var="entryNum"/>
+				<apex:dataList value="{!ListofRuleEntries}" var="ruleEntry" styleClass="ruleList">
+					<div class="aptRoundedDiv" style="margin:10px;width:auto;">
+						<div class="aptGroupHeader">
+							<h2>{!$ObjectType.GuidedSearchRuleEntry__c.Label}</h2>
+						</div>
+						<div class="grid-12-12 fullWidth" style="font-weight:bold;">
+							<div class="grid-4-12" style="padding-bottom:0px;" ><apex:outputLabel value="{!$Label.apttus_config2__question}" /></div>
+							<div class="grid-2-12" style="padding-bottom:0px;" ><apex:outputLabel value="{!$Label.apttus_config2__operator}" /></div>
+							<div class="grid-4-12" style="padding-bottom:0px;" ><apex:outputLabel value="{!$Label.apttus_config2__value}" /></div>
+							<!-- div class="grid-1-12" style="padding-bottom:0px;" ><apex:outputLabel value="{!$Label.apttus_config2__delete}" /></div -->
+						</div>
+						<div class="grid-12-12 fullWidth">
+							<div class="grid-4-12" >
+								<apex:selectList value="{!ruleEntry.entry.Apttus_Config2__InclusionCriteriaFieldName__c}" size="1" >
+									<apex:selectOptions value="{!searchAttributeFields}"/>
+									<apex:actionSupport event="onchange" 
+														rerender="inclusionCriteria"
+														onSubmit="showLoadingDiv();"
+														onComplete="hideLoadingDiv();"/>
+								</apex:selectList>
+							</div>
+							<div class="grid-2-12" > 
+								<apex:inputField styleClass="rule-entry" value="{!ruleEntry.entry.Apttus_Config2__InclusionCriteriaCompOper__c}"/>
+							</div>
+							<apex:outputPanel id="inclusionCriteria" styleClass="grid-4-12" layout="block" > 
+								<apex:inputField rendered="{!NOT(ruleEntry.isPicklist)}" styleClass="rule-entry" value="{!ruleEntry.entry.Apttus_Config2__InclusionCriteriaFieldValue__c}"/>
+								<apex:selectList rendered="{!ruleEntry.isPicklist}" value="{!ruleEntry.entry.Apttus_Config2__InclusionCriteriaFieldValue__c}" size="1" >
+									<apex:selectOptions value="{!ruleEntry.fieldValueItems}"/>
+								</apex:selectList>
+							</apex:outputPanel>
+							<div class="grid-1-12" >
+								<apex:outputPanel styleClass="delete-link" rendered="{!isEditMode}">
+									<a href="javascript:void(0);" onClick="displayDeleteConfirmationBox('entry','{!entryNum}','');">{!$Label.apttus_config2__delete} {!$Label.apttus_config2__entry}</a>
+									<!-- apex:inputCheckbox styleClass="delete-entry" value="{!ruleEntry.deleteEntry}" / -->
+								</apex:outputPanel>
+							</div>
+							<div class="grid-12-12 fullWidth child-filter">
+								<div class="aptRoundedDiv" style="margin:10px;width:auto;">
+									<div class="aptGroupHeader {!IF(ruleEntry.expanded || ruleEntry.hasError,'sectionDown','sectionUp')}">
+										<h2>{!$ObjectType.GuidedSearchRuleFilter__c.LabelPlural}</h2>
+									</div>
+									<input class="expand-filters" type="checkbox" value="{!ruleEntry.expanded}" />
+									<input class="row-num" value="{!entryNum}" />
+									<div class="child-filter-fields" style="{!IF(ruleEntry.expanded || ruleEntry.hasError,'display:block;','display:none;')}">
+										<script>
+											j$(document).ready(function(){
+												toggleEditMode({!isEditMode});
+											});
+										</script>
+										<div class="grid-12-12 fullWidth" style="font-weight:bold;">
+											<div class="grid-3-12" style="padding-bottom:0px;" ><apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRuleFilter__c.fields.Apttus_Config2__FieldName__c.label}" /></div>
+											<div class="grid-2-12" style="padding-bottom:0px;" ><apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRuleFilter__c.fields.Apttus_Config2__CompOper__c.Label}" /></div>
+											<div class="grid-3-12" style="padding-bottom:0px;" ><apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRuleFilter__c.fields.Apttus_Config2__MapTo__c.Label}" /></div>
+											<div class="grid-3-12" style="padding-bottom:0px;" ><apex:outputLabel value="{!$ObjectType.Apttus_Config2__GuidedSearchRuleFilter__c.fields.Apttus_Config2__FieldValue__c.Label}" /></div>
+											<div class="grid-1-12" style="padding-bottom:0px;" ><apex:outputLabel value="" /></div>
+										</div>
+										<apex:variable value="{!0}" var="filterNum"/>
+										<apex:dataList value="{!ruleEntry.childFilters}" var="entryFilter" styleClass="filterList">
+											<div class="grid-3-12" > 
+												<apex:selectList value="{!entryFilter.filter.Apttus_Config2__FieldName__c}" size="1" >
+													<apex:selectOptions value="{!productAttributeFields}"/>
+													<apex:actionSupport event="onchange" 
+																		rerender="mapTo"
+																		onSubmit="showLoadingDiv();"
+														onComplete="hideLoadingDiv();"/>
+												</apex:selectList>
+											</div>
+											<div class="grid-2-12" > 
+												<apex:inputField styleClass="rule-filter" value="{!entryFilter.filter.Apttus_Config2__CompOper__c}"/>
+											</div>
+											<div class="grid-3-12" >
+												<apex:inputField styleClass="rule-filter" value="{!entryFilter.filter.Apttus_Config2__MapTo__c}">
+													<apex:actionSupport event="onchange" 
+																		rerender="mapTo"
+																		onSubmit="showLoadingDiv();"
+																		onComplete="hideLoadingDiv();"/>
+												</apex:inputField>
+											</div>
+											<apex:outputPanel id="mapTo" layout="block" styleClass="grid-3-12" >
+												<apex:inputField rendered="{!entryFilter.filter.Apttus_Config2__MapTo__c == 'Value' && NOT(entryFilter.isPicklist)}" styleClass="rule-filter" value="{!entryFilter.filter.Apttus_Config2__FieldValue__c}"/>
+												<apex:selectList rendered="{!entryFilter.filter.Apttus_Config2__MapTo__c == 'Value' && entryFilter.isPicklist}" value="{!entryFilter.filter.Apttus_Config2__FieldValue__c}" size="1" >
+													<apex:selectOptions value="{!entryFilter.fieldValueItems}"/>
+												</apex:selectList>
+												<apex:selectList rendered="{!NOT(entryFilter.filter.MapTo__c == 'Value' && NOT(entryFilter.isPicklist)) 
+																			&& NOT(entryFilter.filter.MapTo__c == 'Value' && entryFilter.isPicklist)}" 
+																value="{!entryFilter.filter.Apttus_Config2__FieldValue__c}" size="1" >
+													<apex:selectOptions value="{!searchAttributeFields}"/>
+												</apex:selectList>
+											</apex:outputPanel>
+											<div class="grid-1-12" >
+												<apex:outputPanel styleClass="delete-link" rendered="{!isEditMode}">
+													<a href="javascript:void(0);" onClick="displayDeleteConfirmationBox('filter','{!entryNum}','{!filterNum}');">{!$Label.apttus_config2__delete} {!$Label.apttus_config2__filter}</a>
+													<!-- apex:inputCheckbox styleClass="delete-entry" value="{!entryFilter.deleteFilter}" / -->
+												</apex:outputPanel>
+											</div>
+											<apex:variable var="filterNum" value="{!filterNum + 1}"/>
+										</apex:dataList>
+										<div class="grid-12-12" style="text-align: right;padding-top: 0px;padding-bottom: 0px;">
+											<apex:actionStatus id="addNewFilter" >
+										          <apex:facet name="start">
+							                         <img src="/img/loading.gif"/>
+							                      </apex:facet>
+							                      <apex:facet name="stop">
+							                         
+							                      </apex:facet>
+											</apex:actionStatus>
+											<apex:commandButton action="{!doAddNewFilter}"
+																value="{!$Label.apttus_config2__add} {!$Label.apttus_config2__filter}" 
+																reRender="entryList,idErrorMsg"
+																rendered="{!isEditMode}"
+																status="addNewFilter">
+												<apex:param name="entryIndex" value="{!entryNum}"/>
+											</apex:commandButton>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<apex:variable var="entryNum" value="{!entryNum + 1}"/>
+				</apex:dataList>
+			</apex:outputPanel>
+			<!-- div class="grid-12-12" style="padding-top: 0px; padding-bottom: 5px; text-align: right ">
+				<apex:actionStatus id="deleteNewRuleEntry" >
+			          <apex:facet name="start">
+                         <img src="/img/loading.gif"/>
+                      </apex:facet>
+                      <apex:facet name="stop">
+                         
+                      </apex:facet>
+				</apex:actionStatus>
+				<apex:commandButton onclick="displayDeleteConfirmationBox(); return false;"
+									value="{!$Label.apttus_config2__delete}" 
+									styleClass="actionBLockDeleteButton"/>
+			</div -->	
+				
+			<div class="grid-12-12" style="text-align: right;padding-top: 0px;padding-bottom: 0px;">
+				<apex:actionStatus id="addNewRuleEntry" >
+			          <apex:facet name="start">
+                         <img src="/img/loading.gif"/>
+                      </apex:facet>
+                      <apex:facet name="stop">
+                         
+                      </apex:facet>
+				</apex:actionStatus>
+				<apex:commandButton action="{!doAddNewRuleEntry}"
+									value="{!$Label.apttus_config2__add} {!$Label.apttus_config2__entry}" 
+									reRender="entryList,idErrorMsg"
+									rendered="{!isEditMode}"
+									status="addNewRuleEntry"/>
+			</div>
+			<div style="margin:10px 0 0 10px;">
+				<div style="float:left;width:300px;">&nbsp;
+				</div>
+				<div style="text-align:center;padding:0 0 0 100px;float:left;">
+					<apex:actionStatus id="saveRuleEntryBottom" >
+				          <apex:facet name="start">
+		                     <img src="/img/loading.gif"/>
+		                  </apex:facet>
+		                  <apex:facet name="stop">
+		                     
+		                  </apex:facet>
+					</apex:actionStatus>
+					<apex:commandButton action="{!doEdit}" 
+										value="{!$Label.apttus_config2__edit}" 
+										reRender="gsrForm, idErrorMsg"
+										rendered="{!NOT(isEditMode)}"
+										status="saveRuleEntryBottom"/>
+					
+					<apex:commandButton action="{!doClone}" 
+										value="{!$Label.apttus_config2__clone}" 
+										reRender="gsrForm, idErrorMsg"
+										rendered="{!NOT(ISBLANK(selectedGuidedSearchRule.Id)) && NOT(isEditMode)}"
+										status="saveRuleEntryBottom"/>
+					
+					<apex:commandButton action="{!doSave}" 
+										value="{!$Label.apttus_config2__save}"
+										rendered="{!isEditMode}"/>
+										
+					<apex:commandButton action="{!doSaveAndNew}" 
+										value="{!$Label.apttus_config2__saveandnew}"
+										rendered="{!isEditMode}"/>
+					
+					<apex:commandButton value="{!$Label.apttus_config2__cancel}"
+										rendered="{!isEditMode}"
+										immediate="true"
+										action="{!doCancel}"
+										reRender="gsrForm"/>
+					
+					<apex:commandButton value="{!$Label.apttus_config2__delete}"
+										onClick="promptDelete();"
+										rendered="{!NOT(ISBLANK(selectedGuidedSearchRule.Id)) && NOT(isEditMode)}"
+										reRender="gsrForm"/>
+				</div>
+				
+				<div class="clear"></div>
+			</div>
+		</div>
+		
+		<apex:actionFunction name="expandFilter"
+							 action="{!doExpandFilters}"
+							 reRender="entryList">
+			<apex:param name="isExpanded" value=""/>
+			<apex:param name="rowNum" value=""/>
+		</apex:actionFunction>
+		
+		<apex:actionFunction name="doDeleteFilter"
+							 action="{!deleteSingleFilter}"
+							 immediate="true"
+							 reRender="entryList,idErrorMsg">
+			<apex:param name="entryNum" value=""/>
+			<apex:param name="filterNum" value=""/>
+		</apex:actionFunction>
+		
+		<apex:actionFunction name="doDeleteEntry"
+							 action="{!deleteSingleEntry}"
+							 immediate="true"
+							 reRender="entryList,idErrorMsg">
+			<apex:param name="entryNum" value=""/>
+		</apex:actionFunction>
+		
+		<apex:actionFunction name="doDeleteRule" 
+								action="{!doDelete}"
+								rerender="entryList,idErrorMsg"/>
+								
+		<!-- apex:actionFunction name="invokeDeleteRuleEntries" 
+        					 action="{!doDeleteRuleEntries}"
+                             reRender="entryList,idErrorMsg"
+							 status="deleteNewRuleEntry" />
+							 
+		<apex:actionFunction name="invokeClearErrorsAndDelete" 
+        					 action="{!clearErrors}"
+                             reRender="entryList,idErrorMsg"
+                             immediate="true"
+							 onComplete="" /-->
+		
+		<div id="dialog-confirm" title="{!$Label.RemoveConfirmation}">
+			<p><span class="ui-icon ui-icon-alert" style="float: left; margin: 0 7px 20px 0;"></span>{!$Label.RemoveMessage}</p>
+		</div>
+	</apex:form>
+</apex:page>

@@ -1,0 +1,507 @@
+<apex:page controller="DMAPP.TAMStandardController">
+     <apex:remoteObjects >
+
+        <apex:remoteObjectModel name="DMAPP__DM_Account_Plan__c" 
+            jsShorthand="AccountPlan" 
+            fields="
+                Id,
+                Name
+            "
+        >
+            <apex:remoteObjectField name="OwnerId" jsShorthand="Owner"/>
+            <apex:remoteObjectField name="DMAPP__Updated__c" jsShorthand="Updated"/>
+            <apex:remoteObjectField name="DMAPP__Updated_By__c" jsShorthand="UpdatedBy"/>
+            <apex:remoteObjectField name="DMAPP__To_Date__c" jsShorthand="ToDate"/>
+            <apex:remoteObjectField name="DMAPP__From_Date__c" jsShorthand="FromDate"/>
+            <apex:remoteObjectField name="DMAPP__Batch_Execution_Date__c" jsShorthand="LastScorecardRunDate"/>
+            
+        </apex:remoteObjectModel>
+
+        <apex:remoteObjectModel name="User" jsShorthand="Owner" fields="Id, Name, Title">
+        </apex:remoteObjectModel>
+
+        <apex:remoteObjectModel name="DMAPP__AM_Plan_Team__c" jsShorthand="Member"
+            fields="
+                Id
+            "
+        >
+            <apex:remoteObjectField name="DMAPP__Account_Plan__c" jsShorthand="Plan"/>
+            <apex:remoteObjectField name="DMAPP__User__c" jsShorthand="User"/>
+            <apex:remoteObjectField name="DMAPP__Last_Accessed_Date__c" jsShorthand="LastAccessedDate"/>
+            <apex:remoteObjectField name="DMAPP__Is_Plan_Owner__c" jsShorthand="PlanOwner"/>
+            
+        </apex:remoteObjectModel>
+
+        <apex:remoteObjectModel name="DMAPP__AM_Plan_Unit__c" 
+            jsShorthand="Unit" 
+            fields="
+                Id,
+                Name
+            "
+        >
+            <apex:remoteObjectField name="DMAPP__Account_Type__c" jsShorthand="Segmentation"/>
+            <apex:remoteObjectField name="DMAPP__Parent_Plan_Unit__c" jsShorthand="Parent"/>
+            <apex:remoteObjectField name="DMAPP__Targeted__c" jsShorthand="Targeted"/>
+            <apex:remoteObjectField name="DMAPP__Level_Of_Relationship__c" jsShorthand="Relationship"/>
+            <apex:remoteObjectField name="DMAPP__Account_Plan__c" jsShorthand="Plan"/>
+            <apex:remoteObjectField name="DMAPP__Order__c" jsShorthand="Order"/>
+        </apex:remoteObjectModel>
+
+        <apex:remoteObjectModel name="DMAPP__AM_Plan_Metric_Score__c" 
+            jsShorthand="Scores" 
+            fields="
+                Id
+            "
+        >
+            <apex:remoteObjectField name="DMAPP__Current_Opportunities_Score_Amount__c" jsShorthand="CurrentOpps"/>
+            <apex:remoteObjectField name="DMAPP__Potential_Opportunities_Score_Amount__c" jsShorthand="PotentialOpps"/>
+            <apex:remoteObjectField name="DMAPP__Date__c" jsShorthand="Date"/>
+            <apex:remoteObjectField name="DMAPP__Target_Revenue_Score_Amount__c" jsShorthand="WonOpps"/>
+            <apex:remoteObjectField name="DMAPP__Account_Plan__c" jsShorthand="Plan"/>
+            
+        </apex:remoteObjectModel>
+
+        <apex:remoteObjectModel name="DMAPP__AM_Plan_Revenue_Target__c" 
+            jsShorthand="RevenueTarget" 
+            fields="
+                Id
+            "
+        >
+            <apex:remoteObjectField name="DMAPP__Start_Date__c" jsShorthand="StartDate"/>
+            <apex:remoteObjectField name="DMAPP__End_Date__c" jsShorthand="EndDate"/>
+            <apex:remoteObjectField name="DMAPP__Revenue_Target__c" jsShorthand="Target"/>
+            <apex:remoteObjectField name="DMAPP__Account_Plan__c" jsShorthand="Plan"/>
+            
+        </apex:remoteObjectModel>
+
+     </apex:remoteObjects>
+
+    <apex:include pageName="DMAPP__OpportunityMapConfiguration"/>
+    <apex:include pageName="DMAPP__acc_mgmt_objectives_app_remote_objects"/>
+
+    <script type="text/javascript">
+        
+    'use strict';
+
+    angular
+        .module('acc_mgmt__plan_data_remote', [ 'ttg.VfRemoting' ])
+        .factory(
+            'RemoteObjects', 
+            [
+                '$q', 'jqDateFormat', 'VFRemoting', 'Labels',
+                function($q, jqDateFormat, VFRemoting, Labels) {
+
+                    var planSummaryData = {
+                        teamActivityValue : 70,
+                        teamActivityLabel : '70%',
+                        planStageValue : 'Implementation',
+                        planStageLabel : 'Implementation',
+                        planReviewDateLabel: '2016-01-01'
+                    };
+
+                    function getPlanSummaryData(planId) {
+
+                        var defer = $q.defer();
+
+                        var plan = new SObjectModel.AccountPlan();
+                        ttg.ttgQATracker.callStarted();
+                        plan.retrieve(
+                        { 
+                            limit: 100,
+                            where: {
+                                Id: {eq: planId}
+                            }
+                        }, 
+                        function(err, records) {
+                            ttg.ttgQATracker.callEnded();
+                            if (err) {
+                                defer.reject(err);
+                            } else {
+                                if(!(records && records.length > 0)) {
+                                    defer.reject('No record exists for record id ' + planId);
+                                } else {
+                                    var accountplan = records[0];                                  
+                                    var userids = _.uniq([
+                                                        records[0].get('Owner'), 
+                                                        records[0].get('UpdatedBy') 
+                                                    ]);
+                                    var owner = new SObjectModel.Owner();
+
+                                    owner.retrieve(
+                                        {
+                                            limit: 100,
+                                            where: {
+                                                Id: {
+                                                    in: userids
+                                                }
+                                            }
+                                        },
+                                        function(err, records) {
+                                            var contacts = {};
+                                            _.each(records, function(contact) {
+                                                contacts[contact.get('Id')] = contact;
+                                            })
+                                            planSummaryData.planOwnerId =
+                                                accountplan.get('Owner');
+                                            planSummaryData.lastUpdatedByValue = 
+                                                accountplan.get('UpdatedBy');
+                                            planSummaryData.lastUpdatedByLabel = '-';
+                                            if(contacts[accountplan.get('UpdatedBy')] != undefined){
+                                                planSummaryData.lastUpdatedByLabel = (
+                                                    accountplan.get('UpdatedBy') ? 
+                                                       contacts[accountplan.get('UpdatedBy')].get('Name') :
+                                                       ''
+                                                );
+                                            }
+
+                                            planSummaryData.planOwnerName = '-';
+                                            if(contacts[accountplan.get('Owner')] != undefined){
+                                                planSummaryData.planOwnerName = 
+                                                    contacts[accountplan.get('Owner')].get('Name');
+                                            }
+
+                                            var fromDate = accountplan.get('FromDate'); 
+                                            planSummaryData.fromDateLabel = jQuery.datepicker.formatDate( 
+                                                jqDateFormat,
+                                                fromDate
+                                            );
+                                            planSummaryData.fromDateValue = fromDate ? moment(fromDate).valueOf() : '';
+                                            console.log('planSummaryData.fromDate Label = ' + planSummaryData.fromDateLabel + ', Value = ' + planSummaryData.fromDateValue);
+
+                                            var toDate = accountplan.get('ToDate'); 
+                                            planSummaryData.toDateLabel = jQuery.datepicker.formatDate( 
+                                                jqDateFormat,
+                                                toDate
+                                            );;
+                                            planSummaryData.toDateValue = toDate ? moment(toDate).valueOf() : '';
+                                            console.log('planSummaryData.toDate Label = ' + planSummaryData.toDateLabel + ', Value = ' + planSummaryData.toDateValue);
+
+                                            var lastUpdated = accountplan.get('Updated');
+                                            planSummaryData.lastUpdatedLabel = jQuery.datepicker.formatDate( 
+                                                jqDateFormat,
+                                                lastUpdated
+                                            );
+                                            planSummaryData.lastUpdatedValue = lastUpdated ? moment(lastUpdated).valueOf() : '';
+                                            console.log('planSummaryData.lastUpdated Label = ' + planSummaryData.lastUpdatedLabel + ', Value = ' + planSummaryData.lastUpdatedValue);
+
+                                            planSummaryData.lastScorecardBatchRun =
+                                                accountplan.get('LastScorecardRunDate');
+                                            var planReviewDate = new Date();
+                                            planSummaryData.planReviewDateLabel = 
+                                                jQuery.datepicker.formatDate( jqDateFormat, planReviewDate );
+
+                                            defer.resolve(planSummaryData);
+                                        }
+                                    );   
+                                }
+                            }
+                        }
+                        );
+                        return defer.promise;
+                    }
+
+                    function getPlanUnitSummaryData(planId) {
+                        function adapt(units) {
+                            return _.map(units, function(unit) {
+                                return {
+                                    unitId: unit.get('Id'),
+                                    parentId: unit.get('Parent'),
+                                    unitName: unit.get('Name'),
+                                    segmentation: unit.get('Segmentation'),
+                                    targeted: unit.get('Targeted'),
+                                    targetedLabel: unit.get('Targeted') === true ? 'Yes' : 'No'
+                                }
+                            });
+                        }
+
+                        var deferred = $q.defer();
+                        var planunits = new SObjectModel.Unit();
+                        planunits.retrieve(
+                            { 
+                                limit: 100,
+                                where: {
+                                    'Plan': {eq: planId}
+                                },
+                                orderby: [ {Order: 'ASC'} ]
+                            },
+                            function(err, records) {
+                                if (err) {
+                                    deferred.reject(err);
+                                } else {
+                                    deferred.resolve(adapt(records));
+                                }
+                            }
+                        );
+
+                        return deferred.promise;
+                    }
+
+                    function getPlanUnitAggregateData(planId) {
+                        function adapt(result) {
+                            result = result.plan.totalData;
+
+                            var byunits = _.groupBy(result, 'unitId');
+                            result = _.values(
+                                _.map(
+                                    byunits,
+                                    function(value, key) {
+                                        return _.reduce(
+                                            value,
+                                            function(memo, aggdata) {
+                                                if('Current' === aggdata.opportunityType) {
+                                                    memo.currentCountValue += aggdata.oppcount;
+                                                    memo.currentValue += aggdata.total;
+                                                } else if('Won' === aggdata.opportunityType) {
+                                                    memo.wonCountValue += aggdata.oppcount;
+                                                    memo.wonValue += aggdata.total;
+                                                } else if('Potential' === aggdata.opportunityType){
+                                                    memo.potentialCountValue += aggdata.oppcount;
+                                                    memo.potentialValue += aggdata.total;
+                                                }
+                                                return memo;
+                                            },
+                                            {
+                                                unitId: key,
+                                                potentialCountValue: 0,
+                                                currentCountValue: 0,
+                                                wonCountValue: 0,
+                                                potentialValue: 0,
+                                                currentValue: 0,
+                                                wonValue: 0
+                                            }
+                                        );
+                                    }
+                                )
+                            );
+
+                            return result;
+                        }
+
+                        var deferred = $q.defer();
+                        VFRemoting.invoke(
+                            '{!$RemoteAction.TAMStandardController.getSummaryAggregateData}',
+                            [planId],
+                            function(result, event)
+                            {
+                                if (event.type == 'exception') { 
+                                    deferred.reject(result);
+                                } else {
+                                    deferred.resolve(adapt(result));
+                                }
+                            }
+                        );
+                        return deferred.promise;
+                    }
+
+                    function getLastActiveValue(lastactive) {
+                        var today = moment.utc({
+                            h    :0, 
+                            m    :0, 
+                            s    :0, 
+                            ms   :0}
+                        );
+
+
+                        var val, label;
+                        if(lastactive) {
+                            console.log('lastactive = ' + lastactive);
+                            console.log('today = ' + today.format());
+                            
+                            lastactive = moment(lastactive).utc();
+                            /*new Date(
+                                            lastactive.getTime() 
+                                            + (lastactive.getTimezoneOffset() * 60000)
+                                        );*/
+                            
+                            console.log('lastactive TMZ = ' + lastactive);
+                            console.log('lastactive = ' + lastactive.format());
+                            var diff = 
+                                today
+                                .diff(lastactive, 'days');
+                            
+                            console.log('diff = ' + diff);
+                            switch(diff) {
+                                case 0:
+                                    label = Labels.COMMON_TODAY;
+                                    break;
+                                case 1:
+                                    label = Labels.COMMON_ONE_DAY;
+                                    break;
+                                default:
+                                    label = diff + ' '+Labels.COMMON_DAYS;
+                            }
+
+                            val = diff;
+                        } else {
+                            label = '-';
+                        }
+
+                        return {
+                            label: label,
+                            value: val
+                        }
+                    }
+
+                    function getTeamMembersData(planId) {
+                        function adapt(teammembers, contactsById) {
+
+                            return _.map(teammembers, function(teammember) {
+                                var lastactive = getLastActiveValue(teammember.get('LastAccessedDate'));
+                                var contact = contactsById[teammember.get('User')];
+                                var contactName = '-';
+                                var contactTitle = '-';
+                                if(contact != undefined){
+                                    contactName = contact.get('Name');
+                                    contactTitle = contact.get('Title');
+                                }
+                                return {
+                                    lastActiveLabel: lastactive.label,
+                                    lastActiveValue: lastactive.value,
+                                    name: contactName,
+                                    title: contactTitle
+                                }
+                            });
+                        }
+
+                        var deferred = $q.defer();
+                        var planmembers = new SObjectModel.Member();
+                        ttg.ttgQATracker.callStarted();
+                        planmembers.retrieve(
+                            { 
+                                limit: 100,
+                                where: {
+                                    'Plan': {eq: planId}
+                                }
+                            },
+                            function(err, records) {
+                                ttg.ttgQATracker.callEnded();
+                                if (err) {
+                                    deferred.reject(err);
+                                } else {
+
+                                    var userids = _.map(records, function(rec) {
+                                        return rec.get('User')
+                                    });
+                                    var owner = new SObjectModel.Owner();
+                                    owner.retrieve(
+                                        {
+                                            limit: 100,
+                                            where: {
+                                                Id: {
+                                                    in: userids
+                                                }
+                                            }
+                                        },
+                                        function(err, contacts) {
+                                            var contactsById = {};
+                                            _.each(contacts, function(contact) {
+                                                contactsById[contact.get('Id')] = contact;
+                                            })
+                                            var team = _.sortBy(
+                                                adapt(records, contactsById),
+                                                'lastActiveValue'
+                                            );
+
+                                            deferred.resolve(team);
+                                        }
+                                    ); 
+                                }
+                            }
+                        );
+
+                        return deferred.promise;
+                    }
+
+
+                    function getScorecardData(planId) {
+                        function adapt(scorecarddata) {
+                            return _.map(scorecarddata, function(scorecard) {
+                                return {
+                                    dateValue: scorecard.get('Date'),
+                                    currentValue: scorecard.get('CurrentOpps'),
+                                    wonValue: scorecard.get('WonOpps'),
+                                    potentialValue: scorecard.get('PotentialOpps')
+                                }
+                            });
+                        }
+
+                        var deferred = $q.defer();
+
+                        var scores = new SObjectModel.Scores();
+                        ttg.ttgQATracker.callStarted();
+                        scores.retrieve(
+                            { 
+                                limit: 100,
+                                where: {
+                                    'Plan': {eq: planId}
+                                },
+                                orderby: [ {Date: 'ASC NULLS FIRST'} ]
+                            },
+                            function(err, records) {
+                                ttg.ttgQATracker.callEnded();
+                                if (err) {
+                                    deferred.reject(err);
+                                } else {
+                                    console.log('>>> SCORECARD Records = ' + records.length);
+                                    
+                                    deferred.resolve(adapt(records));
+                                }
+                            }
+                        );
+
+                        return deferred.promise;
+                    }
+
+                    function getRevenueTargets(planId) {
+                        function adapt(targets) {
+                            return _.map(targets, function(target) {
+                                var adaptedTarget = {
+                                    endDateValue: target.get('EndDate'),
+                                    dateValue: target.get('StartDate'),
+                                    targetValue: target.get('Target')
+                                };
+                                console.log('getRevenueTargets(): adaptedTarget = ' + JSON.stringify(adaptedTarget));
+                                
+                                return adaptedTarget;
+                            });
+                        }
+
+                        var deferred = $q.defer();
+
+                        var targets = new SObjectModel.RevenueTarget();
+                        ttg.ttgQATracker.callStarted();
+                        targets.retrieve(
+                            { 
+                                limit: 100,
+                                where: {
+                                    'Plan': {eq: planId}
+                                },
+                                orderby: [ {StartDate: 'ASC'} ]
+                            },
+                            function(err, records) {
+                                ttg.ttgQATracker.callEnded();
+                                if (err) {
+                                    deferred.reject(err);
+                                } else {
+                                    deferred.resolve(adapt(records));
+                                }
+                            }
+                        );
+
+                        return deferred.promise;
+                    }
+
+                    return {
+                        getPlanSummaryData : getPlanSummaryData,
+                        getPlanUnitAggregateData: getPlanUnitAggregateData,
+                        getTeamMembersData : getTeamMembersData,
+                        getScorecardData: getScorecardData,
+                        getRevenueTargets: getRevenueTargets,
+                        getPlanUnitSummaryData: getPlanUnitSummaryData
+                    }
+                }
+            ]
+        );
+
+    </script>
+</apex:page>

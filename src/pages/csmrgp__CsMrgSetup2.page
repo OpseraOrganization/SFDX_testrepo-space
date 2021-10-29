@@ -1,0 +1,404 @@
+<apex:page id="pg" title="Find Existing Duplicates" sidebar="false" controller="csmrgp.CsMrgSetupCtrl" tabStyle="Setup_Wizard__tab">
+    <apex:includeScript value="/support/console/42.0/integration.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/remove-console-padding.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/icon-util.js')}"/>
+    <script type="text/javascript">
+        if(sforce.console.isInConsole()) {
+            removeConsolePadding();
+        }
+    </script>
+    <!-- SLDS Version 2.3.1 -->
+    <apex:stylesheet value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/style/slds/assets/styles/salesforce-lightning-design-system-vf.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/style/csmrgp-style.css')}"/>
+    <style type="text/css"> 
+        /* CSS for analytics:reportChart in SLDS */
+        #analytics-container {
+            display:flex;
+            justify-content:center;
+        }
+
+        div#analytics-container div.reportTitle {
+            text-align: center;
+        }
+
+        div#analytics-container span.asOfDate {
+            justify-content: center;
+        }
+
+        /* Text field widths */
+        .slds-form-element-resize {
+            width: 10rem !important;
+        }
+
+        /* Overlay text */
+        #searchingText::after {
+            content:attr(data-content);
+            position:absolute;
+        }
+
+        /* Search Status Table */
+        .slds-scope .slds-table thead {
+            position: absolute!important;
+            margin: -1px!important;
+            border: 0!important;
+            padding: 0!important;
+            width: 1px!important;
+            height: 1px!important;
+            overflow: hidden!important;
+            clip: rect(0 0 0 0)!important;
+        }
+
+        .slds-scope .slds-table_cell-buffer tr>td:first-child {
+            padding-left:0.75rem;
+        }
+
+        .slds-scope .slds-table_cell-buffer tr>td:last-child {
+            padding-right:0.75rem;
+        }
+
+        .slds-scope .slds-table tr {
+            display: block;
+            border:0
+        }
+
+        .slds-scope .slds-table td:before, .slds-scope .slds-table td:before {
+            float: left;
+            margin-top: .125rem;
+        }
+
+        .slds-scope .slds-table td:before, .slds-scope .slds-table th:before{
+            font-size: .75rem;
+            line-height: 1.25;
+            color: #54698d;
+            text-transform: uppercase;
+            letter-spacing: .0625rem;
+            display: block;
+            padding-bottom: .25rem;
+            content: attr(data-label);
+        }
+
+        .slds-scope .slds-table td, .slds-scope .slds-table th{
+            display: block;
+            padding: .75rem;
+            max-width: 100%;
+            width: 100%;
+            clear: both;
+            white-space: normal;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .slds-scope .slds-table td, .slds-scope .slds-table td {
+            text-align: right;
+        }
+
+        .slds-scope .slds-table_bordered:not(.slds-no-row-hover) tbody tr:hover>td:not(.slds-is-selected) {
+            box-shadow:none;
+        }
+
+        .slds-scope .slds-table:not(.slds-no-row-hover) tbody tr:hover>td {
+            background-color: transparent;
+        }
+    </style>
+    <apex:outputPanel rendered="{!$User.UIThemeDisplayed == 'Theme4u'}">
+        <style type="text/css">
+            html body.sfdcBody {
+                overflow: hidden !important;
+            }
+        </style>
+    </apex:outputPanel>
+    <apex:form id="form" styleClass="bg-white">
+        <apex:actionFunction name="runBatchJob" action="{!runBatchJob}" reRender="jobStatusTable,hideSearchOverlayScript"/>
+        <div class="slds-scope">
+            <div id="searchOverlay" class="slds-backdrop slds-backdrop_open slds-backdrop_white" style="display:none;">
+                <div class="slds-align_absolute-center">
+                    <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                    <div>
+                        <!-- The 'data-content' controls the three dots in the overlay -->
+                        <div id="searchingText" class="slds-text-heading_large" style="font-weight:700;" data-content=".">Searching</div>
+                        <apex:commandButton reRender="" action="{!abortJob}" oncomplete="endSearch();" value="Cancel" style="position:absolute;" styleClass="slds-button slds-button_brand slds-m-top_large"/>
+                    </div>
+                </div>
+            </div>
+
+            <c:CsMrgPageHeader title="Search Organization for Duplicates" showContactUsButton="false"/>
+            <div class="slds-grid slds-wrap slds-m-bottom_small">
+                <div class="slds-size_1-of-2 sldsc-flex-item slds-p-horizontal_medium">
+                    <div class="slds-section slds-is-open">
+                        <h3 class="slds-section__title">
+                            <span class="slds-truncate slds-p-horizontal_small">Search for Duplicates</span>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content slds-p-around_small">
+                            <p>Optional: While we recommend the default criteria, you can configure duplicate criteria inside of Case Merge Premium Settings <apex:commandLink action="{!goToSetDuplicateCriteria}">here</apex:commandLink>. (Criteria for Case Closed status will be ignored.)</p>
+                            <ol class="slds-list_ordered slds-m-top_small">
+                                <li>Use the two date selectors to set the range that will determine which cases will be searched. The default is set to use the last three months.</li>
+                                <ul class="slds-list_dotted"><li>Increasing the range may significantly increase the time to process the records based on the number of cases.</li></ul>
+                                <li>Select the length of time between Case Open Date for which cases should be considered duplicates. The default is set to seven days.</li>
+                                <li>Click the &quot;Begin Search&quot; button to begin the search for duplicates. You will be notified by email when the job is complete.</li>
+                            </ol>
+                            <div class="slds-form slds-form_horizontal slds-p-top_xx-large">
+                                <div id="start-date" class="slds-form-element">
+                                    <label class="slds-form-element__label">Start Date</label>
+                                    <div class="slds-form-element__control">
+                                        <apex:inputField styleClass="slds-input slds-form-element-resize" value="{!startDummy.ActivityDate}"/>
+                                    </div>
+                                </div>
+                                <div id="end-date" class="slds-form-element">
+                                    <label class="slds-form-element__label">End Date</label>
+                                    <div class="slds-form-element__control">
+                                        <apex:inputField styleClass="slds-input slds-form-element-resize" value="{!endDummy.ActivityDate}"/>
+                                    </div>
+                                </div>
+                                <div id="max-date-range" class="slds-form-element">
+                                    <label class="slds-form-element__label" for="date-max-range">
+                                        Max. Range of Days Between Duplicates
+                                        <div class="tooltip">
+                                            <button class="slds-button slds-button_icon tooltip-button" type="button" style="background:url('{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/tooltip_60.png')}');"/>
+                                            <span class="tooltiptext tooltip_top">
+                                                <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left" role="tooltip">
+                                                    <div class="slds-popover__body">Cases will only be considered duplicates if their created dates fall within this range.</div>
+                                                </div>
+                                            </span>
+                                        </div>
+                                    </label>
+                                    <div class="slds-form-element__control">
+                                        <div class="slds-select_container slds-form-element-resize">
+                                            <apex:selectList styleClass="slds-select" value="{!dateRange}" size="1">
+                                                <apex:selectOptions value="{!dateRangeOptions}" />
+                                            </apex:selectList>
+                                        </div>
+                                        <div class="slds-form-element slds-form-element-resize" style="text-align: center;">
+                                            <apex:commandButton id="searchButton" styleClass="slds-button slds-button_neutral slds-m-top_small" value="Begin Search" onclick="beginSearch();return false;"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-size_1-of-2 sldsc-flex-item slds-p-horizontal_medium">
+                    <div class="slds-section slds-is-open">
+                        <h3 class="slds-section__title">
+                            <span class="slds-truncate slds-p-horizontal_small">Search Status</span>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content slds-p-around_small">
+                            <apex:outputPanel layout="block" id="jobStatusTable" styleClass="slds-m-bottom_small">
+                                <table class="slds-table slds-table_bordered slds-table_cell-buffer" style="border-top:none;">
+                                    <thead>
+                                        <tr class="slds-text-title_caps">
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Status">Status</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Total Cases">Total Cases</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Cases Processed">Cases Processed</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Failed Cases">Failed Cases</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Status Detail">Status Detail</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Completion Date">Completion Date</div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td scope="row" data-label="Status">
+                                                <div class="slds-truncate">{!job.Status}</div>
+                                            </td>
+                                            <td data-label="Total Cases">
+                                                <div class="slds-truncate">{!job.TotalJobItems * 5}</div>
+                                            </td>
+                                            <td data-label="Cases Processed">
+                                                <div class="slds-truncate">{!job.JobItemsProcessed * 5}</div>
+                                            </td>
+                                            <td data-label="Failed Cases">
+                                                <div class="slds-truncate">{!job.NumberOfErrors * 5}</div>
+                                            </td>
+                                            <td data-label="Status Detail">
+                                                <div class="slds-truncate">{!job.ExtendedStatus}</div>
+                                            </td>
+                                            <td data-label="Completion Date">
+                                                <div class="slds-truncate">{!completionString}</div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <apex:actionPoller action="{!updateJobStatus}" rendered="{!continuePolling}" reRender="jobStatusTable,hideSearchOverlayScript" interval="5"/>
+                            </apex:outputPanel>
+                            <p>
+                                <!-- <span class="bold">Once the status above displays &quot;Completed&quot;, click the &quot;Refresh&quot; button on the report chart below.
+                                </span>-->
+                                For additional analytics see the 
+                                <apex:outputPanel style="display:inline;" rendered="{!dashboardId != null}">
+                                    <a href="/{!dashboardId}" target="_blank">Case Merge Premium</a>
+                                </apex:outputPanel>
+                                <apex:outputPanel style="display:inline;" rendered="{!dashboardId = null}">Case Merge Premium</apex:outputPanel> 
+                                dashboard.
+                            </p>
+                            <div id='analytics-container'>
+                                <analytics:reportChart reportId="{!reportIds}" size="medium" showRefreshButton="true" hideOnError="true" rendered="{!reportIds != null}"/>
+                            </div>
+                        </div>
+                    </div>               
+                </div>
+            </div>
+            <div style="width:100%; display:flex; justify-content: center" class="slds-border_top slds-p-top_large">
+                <div class="slds-button-group" role="group">
+                    <apex:commandButton action="{!goToSetupWizard}" styleClass="slds-button slds-button_neutral" value="Setup Wizard"/>
+                    <apex:commandButton action="{!goToConfig}" styleClass="slds-button slds-button_neutral" value="Configure Settings"/>
+                </div>
+            </div>
+        </div>
+    </apex:form>
+
+    <script type="application/javascript">
+        var searchMessageInterval;
+        var beganSearch = false;
+
+        function updateSearchMessage() {
+            var dots = document.getElementById('searchingText').getAttribute('data-content');
+            if(document.getElementById('searchOverlay').style.display !== 'none' && dots.length < 3) {
+                dots += '.';
+            }
+            else {
+                dots = '';
+            }
+            document.getElementById('searchingText').setAttribute('data-content',dots);
+        }
+
+        function beginSearch() {
+            var dots = document.getElementById('searchingText').getAttribute('data-content');
+            dots = '';
+            ACTION_OVERLAYS.setEnableTabsForPageExceptDiv(false, 'searchOverlay');
+            disableSearchButton(document.getElementById('{!$Component.form.searchButton}'));
+            document.getElementById('searchOverlay').style.display = 'flex';
+            searchMessageInterval = setInterval(updateSearchMessage,1000);
+            beganSearch = true;
+            runBatchJob();
+        }
+
+        function endSearch() {
+            ACTION_OVERLAYS.setEnableTabsForPage(true);
+            document.getElementById('searchOverlay').style.display = "none";
+            var srchButton = document.getElementById('{!$Component.form.searchButton}');
+            if(srchButton && srchButton.hasAttribute('disabled')) {
+                enableSearchButton(srchButton);
+            }
+            srchButton.focus();
+            clearInterval(searchMessageInterval);
+            beganSearch = false;
+            autoRefreshReport();
+        }
+
+        function disableSearchButton(srchBtn) {
+            srchBtn.value = "Searching...";
+            srchBtn.setAttribute('disabled','disabled');
+            srchBtn.blur();
+        }
+
+        function enableSearchButton(srchBtn) {
+            srchBtn.value = "Begin Search";
+            srchBtn.removeAttribute('disabled');
+        }
+
+        function replaceCalendarButton(dir, calBtn) {
+            var button = document.createElement('button');
+            button.classList.add('slds-button');
+            button.classList.add('slds-button_icon');
+            button.classList.add('slds-button_icon-container');
+            button.classList.add('calButton');
+
+            button.onclick = calBtn.onclick;
+            button.title = calBtn.title;
+
+            var img = document.createElement('img');
+
+            if(dir === 'left') {
+                img.src = "{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/style/slds/assets/icons/utility/left_60.png')}";
+            }
+
+            if(dir === 'right') {
+                img.src = "{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/style/slds/assets/icons/utility/right_60.png')}";
+            }
+            
+            button.innerHTML = img.outerHTML;
+
+            calBtn.parentNode.replaceChild(button,calBtn);
+        }
+
+        function updateCalendarSelect(calSelect) {
+            var selectParent = calSelect.parentElement;
+
+            var selectContainer = document.createElement('div');
+            selectContainer.className = 'slds-select_container';
+
+            selectParent.replaceChild(selectContainer,calSelect);
+            selectContainer.appendChild(calSelect);
+            calSelect.className = 'slds-select';
+        }
+
+        function setupCalendar() {
+            [].forEach.call(document.getElementsByClassName('calLeft'),
+                function(leftButton) {
+                    replaceCalendarButton('left',leftButton);
+                }
+            );
+
+            [].forEach.call(document.getElementsByClassName('calRight'),
+                function(rightButton) {
+                    replaceCalendarButton('right',rightButton);
+                }
+            );
+
+            [].forEach.call(document.querySelectorAll('#calMonthPicker,#calYearPicker'),
+                function(calSelect) {
+                    updateCalendarSelect(calSelect);
+                }
+            );
+
+            [].forEach.call(document.querySelectorAll('.dateBar'),
+                function(dateBar) {
+                    dateBar.classList.add('slds-date-bar');
+                }
+            );
+        }
+
+        function autoRefreshReport() {
+            document.querySelector('#analytics-container').querySelector('.refreshButton').click();
+        }
+
+        function setFocusOnLoad() {}
+        sforce.console.setTabTitle('Setup - Case Merge Premium');
+
+        window.onload = function() {
+            setupCalendar();
+        }
+
+        if({!job.Status == 'Queued' || job.Status == 'Preparing' || job.Status == 'Processing' || job.Status == 'Holding'}) {
+            beginSearch();
+        }
+    </script>
+    <!-- JS for disabling tabs when overlays are present -->
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/action-overlays.js')}"/>
+    <apex:outputPanel id="hideSearchOverlayScript">
+        <apex:outputPanel rendered="{!!continuePolling}">
+            <script type="application/javascript">
+                if(beganSearch) {
+                    endSearch();
+                }
+            </script>
+        </apex:outputPanel>
+    </apex:outputPanel> 
+</apex:page>

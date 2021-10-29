@@ -1,0 +1,1304 @@
+<apex:page controller="E2CP.Config2" action="{!loadPreferences}" tabStyle="settings__tab" id="pg" title="Email to Case Premium Outbound Configuration">
+    <style>
+        !div.pbSubheader{color:#000000 !important;}
+    </style>
+    
+    <style type="text/css">
+    .primaryPalette {background-color:#D36D00 !important;}
+    .brdPalette, .secondaryPalette {border-top-color:#D36D00 !important;}
+
+    .pbSubheader {
+        background: #e96e25 !important; /* Fallback to solid color for older browsers */
+        background-image: linear-gradient(to top, #b95e15, #f97e35) !important;
+        border-radius: 4px;
+        text-shadow: -1px 0 #b95e15, 0 1px #b95e15,1px 0 #b95e15, 0 -1px #b95e15;
+    }
+    
+    .pageTitleIcon {
+        background-image: url(/img/icon/wrench32.png) !important; /* Change this URL to point to the icon you want to use */
+    }
+    </style>
+        
+    
+    <script>
+    function lbmove(direction){
+
+        var listbox = document.getElementById('pg:frmMain:pbMain:basicPrefPBS:NEW_COMMENT_BLOCK_ORDER_PBSI:ncbo');
+        var selIndex = listbox.selectedIndex;
+     
+        if(selIndex == -1) return;
+     
+        var increment = -1;
+        if(direction == 'up')
+            increment = -1;
+        else
+            increment = 1;
+     
+        if((selIndex + increment) < 0 || (selIndex + increment) > (listbox.options.length-1)) return;
+                         
+        var selValue = listbox.options[selIndex].value;
+        var selText = listbox.options[selIndex].text;
+        listbox.options[selIndex].value = listbox.options[selIndex + increment].value
+        listbox.options[selIndex].text = listbox.options[selIndex + increment].text
+     
+        listbox.options[selIndex + increment].value = selValue;
+        listbox.options[selIndex + increment].text = selText;
+     
+        listbox.selectedIndex = selIndex + increment;
+        
+        //put the options val into hidden text field
+        var tbox = document.getElementById('pg:frmMain:pbMain:basicPrefPBS:NEW_COMMENT_BLOCK_ORDER_PBSI:ncbotext');
+        tbox.value = '';
+        for (var i=0; i < listbox.length; i++){
+            tbox.value = tbox.value + listbox.options[i].value + ',';
+        }
+        tbox.value = tbox.value.slice(0,-1);
+    }
+    </script>
+            
+    
+    <apex:sectionHeader title="Email to Case Premium" subtitle="Preferences Configuration" help="https://kb.internetcreations.com/pkb_Home?l=en_US&c=Products%3AEmail_to_Case_Premium" />
+    
+    <apex:form id="frmMain">
+        <apex:pageMessages showDetail="false" id="pgmsgs" />
+        <apex:pageMessage severity="warning" strength="3" title="No Organization Wide Email Addresses Exist" summary="The New Comment page will not function properly and will not send outbound emails." rendered="{!replyToAddressOptions.size == 0}"/>
+        
+        <apex:outputPanel rendered="{!hasEmailError}">
+            <div class="message errorM3">
+                <table class="messageTable">
+                <tr>
+                    <td>
+                        <img alt="ERROR" class="msgIcon" src="/s.gif" title="ERROR" />
+                    </td>
+                    <td>
+                        <h4 style="color:#cc0000">Error:</h4><br/>
+                        <apex:outputPanel >
+                        {!EmailErrorText} Email to Case Premium will not function properly if email is disabled.
+                        <a href='/email-admin/editOrgEmailSettings.apexp?setupid=OrgEmailSettings'>Click here</a> and set Access Level to "All email".
+                        </apex:outputPanel>
+                    </td>
+                </tr>
+                </table>
+            </div>
+        </apex:outputPanel>
+        
+        <apex:pageBlock title="Step 1: Outbound Configuration" id="pbMain">
+
+            <apex:facet name="header">
+                <apex:outputpanel >
+                <table width="100%">
+                <tr>
+                
+                <td style="width:75%; text-align:center;">
+                    <apex:commandButton action="{!previous}" value="Previous"/>
+                    <apex:actionStatus id="quickStatus">
+                        <apex:facet name="start">
+                            <apex:outputPanel >
+                                <div style="z-index:99; position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:silver; opacity:.30; filter: alpha(opacity = 30);"></div>
+                                <apex:commandButton value="Saving..." disabled="true"/>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:facet name="stop">
+                            <apex:commandButton id="quickSave" action="{!quick}" value="Quick Save" rerender="quickStatus,pgmsgs" status="quickStatus"/>
+                        </apex:facet>
+                    </apex:actionStatus>
+                    <apex:commandButton action="{!next}" value="Next"/>
+                </td>
+                
+                <td style="text-align:right;">
+                    <!--PageJumper start-->
+                    <apex:outputPanel >
+                         <apex:actionStatus id="pjStatus">
+                            <apex:facet name="start">
+                                <apex:outputtext value="{!pj.statusText}"/>
+                            </apex:facet>
+                            <apex:facet name="stop">
+                                <apex:outputpanel >
+                                    <apex:outputLabel for="pagejump" value="Jump to "/>
+                                    <apex:selectList value="{!pj.currentPage}"  id="pagejump" size="1">
+                                        <apex:selectOptions value="{!pj.allPages}"/>
+                                        <apex:actionSupport event="onchange" action="{!jumpToPage}" status="pjStatus"/>
+                                    </apex:selectList>
+                                </apex:outputpanel>
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputpanel>
+                    <!--PageJumper end-->
+                </td>
+                
+                </tr>
+                </table>
+                </apex:outputPanel>
+            </apex:facet>
+            
+            <apex:facet name="footer">
+                <apex:outputpanel >
+                <table width="100%">
+                <tr>
+                <td style="width:75%; text-align:center;">
+                    <apex:commandButton action="{!previous}" value="Previous"/>
+                    <apex:actionStatus id="quickStatus2">
+                        <apex:facet name="start">
+                            <apex:outputPanel >
+                                <div style="z-index:99; position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:silver; opacity:.30; filter: alpha(opacity = 30);"></div>
+                                <apex:commandButton value="Saving..." disabled="true"/>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:facet name="stop">
+                            <apex:commandButton action="{!quick}" value="Quick Save" rerender="quickStatus2,pgmsgs" status="quickStatus2"/>
+                        </apex:facet>
+                    </apex:actionStatus>
+                    <apex:commandButton action="{!next}" value="Next"/>
+                </td>
+                <td>
+                </td>
+                </tr>
+                </table>
+                </apex:outputPanel>
+            </apex:facet>
+            
+            <apex:pageBlockSection collapsible="false" title="Page Description" columns="1" id="prefDescPBS" showHeader="false">These settings affect the features available on the {!IF(ENABLE_CASE_FEED_EXTENSION,'Answer Customer','New Comment')} page and the outbound email it generates.</apex:pageBlockSection>
+
+            <!-- ///////////General Settings//////////// -->
+            
+            <apex:pageBlockSection title="General Settings" columns="1" id="basicPrefPBS" rendered="{!!ENABLE_CASE_FEED_EXTENSION}">
+                
+                <apex:pageBlockSectionItem >
+                    Prior to enablement, please review the following knowledge article on the Enhanced Comment Editor features, limitations, and best practices.<br/>
+                    <a href="https://ic.secure.force.com/editor" target="_blank">https://ic.secure.force.com/editor</a>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_HTML_SUPPORT" helpText="Enables a rich text editor on the New Comment page allowing end users to send HTML outbound emails. This feature utilizes TinyMCE, an open source project licensed under LGPL.">
+                    <apex:outputLabel value="Enable Enhanced Comment Editor" for="ENABLE_HTML_SUPPORT_Checkbox"/>
+                    <apex:inputCheckbox value="{!ENABLE_HTML_SUPPORT}" selected="{!ENABLE_HTML_SUPPORT}" id="ENABLE_HTML_SUPPORT_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="NEW_COMMENT_BLOCK_ORDER_PBSI">
+                    
+                    <apex:outputLabel value="New Comment Section Order" />
+                    <apex:outputPanel id="opncbo">
+                        <table>
+                            <tr>
+                                <td>
+                                    <apex:selectList id="ncbo">
+                                        <apex:selectOptions value="{!NEW_COMMENT_BLOCK_ORDER_OPTIONS}" />
+                                    </apex:selectList>
+                                </td>
+                                <td style="vertical-align:middle;" >
+                                    <img class="upArrowIcon" title="Up" alt="Up" src="/s.gif" onclick="lbmove('up')" />
+                                    <br/>
+                                    <img class="downArrowIcon" title="Down" alt="Down" src="/s.gif"  onclick="lbmove('down')" />
+                                </td>
+                            </tr>
+                        </table>
+                        <apex:inputText value="{!ncbo}" style="width:600px; display:none;" id="ncbotext"/>
+                    </apex:outputPanel>
+
+                </apex:pageBlockSectionItem>
+                
+
+                <apex:pageBlockSectionItem id="DISPLAY_TIME_ZONE_PBSI" helpText="Comments are stored in Salesforce.com using UTC time and displayed in the timezone you configure for the application.  This configuration enables you to control the time zone used in emails that are sent when you add a comment.">
+                    <apex:outputLabel value="Timezone" for="DISPLAY_TIME_ZONE_Select"/>
+                    <apex:selectList value="{!DISPLAY_TIME_ZONE}" multiselect="false" size="1" title="The timezone used when listing comments chronologically in the email" id="DISPLAY_TIME_ZONE_Select" required="true" >
+                        <apex:selectOption itemValue="Africa/Abidjan" />
+                        <apex:selectOption itemValue="Africa/Accra" />
+                        <apex:selectOption itemValue="Africa/Addis_Ababa" />
+                        <apex:selectOption itemValue="Africa/Algiers" />
+                        <apex:selectOption itemValue="Africa/Asmera" />
+                        <apex:selectOption itemValue="Africa/Bangui" />
+                        <apex:selectOption itemValue="Africa/Bissau" />
+                        <apex:selectOption itemValue="Africa/Blantyre" />
+                        <apex:selectOption itemValue="Africa/Bujumbura" />
+                        <apex:selectOption itemValue="Africa/Cairo" />
+                        <apex:selectOption itemValue="Africa/Casablanca" />
+                        <apex:selectOption itemValue="Africa/Conakry" />
+                        <apex:selectOption itemValue="Africa/Dakar" />
+                        <apex:selectOption itemValue="Africa/Dar_es_Salaam" />
+                        <apex:selectOption itemValue="Africa/Djibouti" />
+                        <apex:selectOption itemValue="Africa/Douala" />
+                        <apex:selectOption itemValue="Africa/Freetown" />
+                        <apex:selectOption itemValue="Africa/Gaborone" />
+                        <apex:selectOption itemValue="Africa/Harare" />
+                        <apex:selectOption itemValue="Africa/Johannesburg" />
+                        <apex:selectOption itemValue="Africa/Kampala" />
+                        <apex:selectOption itemValue="Africa/Khartoum" />
+                        <apex:selectOption itemValue="Africa/Kigali" />
+                        <apex:selectOption itemValue="Africa/Kinshasa" />
+                        <apex:selectOption itemValue="Africa/Lagos" />
+                        <apex:selectOption itemValue="Africa/Libreville" />
+                        <apex:selectOption itemValue="Africa/Lome" />
+                        <apex:selectOption itemValue="Africa/Luanda" />
+                        <apex:selectOption itemValue="Africa/Lubumbashi" />
+                        <apex:selectOption itemValue="Africa/Lusaka" />
+                        <apex:selectOption itemValue="Africa/Malabo" />
+                        <apex:selectOption itemValue="Africa/Maputo" />
+                        <apex:selectOption itemValue="Africa/Maseru" />
+                        <apex:selectOption itemValue="Africa/Mbabane" />
+                        <apex:selectOption itemValue="Africa/Mogadishu" />
+                        <apex:selectOption itemValue="Africa/Monrovia" />
+                        <apex:selectOption itemValue="Africa/Nairobi" />
+                        <apex:selectOption itemValue="Africa/Ndjamena" />
+                        <apex:selectOption itemValue="Africa/Niamey" />
+                        <apex:selectOption itemValue="Africa/Nouakchott" />
+                        <apex:selectOption itemValue="Africa/Ouagadougou" />
+                        <apex:selectOption itemValue="Africa/Porto-Novo" />
+                        <apex:selectOption itemValue="Africa/Sao_Tome" />
+                        <apex:selectOption itemValue="Africa/Timbuktu" />
+                        <apex:selectOption itemValue="Africa/Tripoli" />
+                        <apex:selectOption itemValue="Africa/Tunis" />
+                        <apex:selectOption itemValue="Africa/Windhoek" />
+                        <apex:selectOption itemValue="America/Adak" />
+                        <apex:selectOption itemValue="America/Anchorage" />
+                        <apex:selectOption itemValue="America/Anguilla" />
+                        <apex:selectOption itemValue="America/Antigua" />
+                        <apex:selectOption itemValue="America/Aruba" />
+                        <apex:selectOption itemValue="America/Asuncion" />
+                        <apex:selectOption itemValue="America/Barbados" />
+                        <apex:selectOption itemValue="America/Belize" />
+                        <apex:selectOption itemValue="America/Bogota" />
+                        <apex:selectOption itemValue="America/Buenos_Aires" />
+                        <apex:selectOption itemValue="America/Caracas" />
+                        <apex:selectOption itemValue="America/Cayenne" />
+                        <apex:selectOption itemValue="America/Cayman" />
+                        <apex:selectOption itemValue="America/Chicago" />
+                        <apex:selectOption itemValue="America/Costa_Rica" />
+                        <apex:selectOption itemValue="America/Cuiaba" />
+                        <apex:selectOption itemValue="America/Curacao" />
+                        <apex:selectOption itemValue="America/Dawson_Creek" />
+                        <apex:selectOption itemValue="America/Denver" />
+                        <apex:selectOption itemValue="America/Dominica" />
+                        <apex:selectOption itemValue="America/Edmonton" />
+                        <apex:selectOption itemValue="America/El_Salvador" />
+                        <apex:selectOption itemValue="America/Fortaleza" />
+                        <apex:selectOption itemValue="America/Godthab" />
+                        <apex:selectOption itemValue="America/Grand_Turk" />
+                        <apex:selectOption itemValue="America/Grenada" />
+                        <apex:selectOption itemValue="America/Guadeloupe" />
+                        <apex:selectOption itemValue="America/Guatemala" />
+                        <apex:selectOption itemValue="America/Guayaquil" />
+                        <apex:selectOption itemValue="America/Guyana" />
+                        <apex:selectOption itemValue="America/Halifax" />
+                        <apex:selectOption itemValue="America/Havana" />
+                        <apex:selectOption itemValue="America/Indianapolis" />
+                        <apex:selectOption itemValue="America/Jamaica" />
+                        <apex:selectOption itemValue="America/La_Paz" />
+                        <apex:selectOption itemValue="America/Lima" />
+                        <apex:selectOption itemValue="America/Los_Angeles" />
+                        <apex:selectOption itemValue="America/Managua" />
+                        <apex:selectOption itemValue="America/Manaus" />
+                        <apex:selectOption itemValue="America/Martinique" />
+                        <apex:selectOption itemValue="America/Mazatlan" />
+                        <apex:selectOption itemValue="America/Mexico_City" />
+                        <apex:selectOption itemValue="America/Miquelon" />
+                        <apex:selectOption itemValue="America/Montevideo" />
+                        <apex:selectOption itemValue="America/Montreal" />
+                        <apex:selectOption itemValue="America/Montserrat" />
+                        <apex:selectOption itemValue="America/Nassau" />
+                        <apex:selectOption itemValue="America/New_York" />
+                        <apex:selectOption itemValue="America/Noronha" />
+                        <apex:selectOption itemValue="America/Panama" />
+                        <apex:selectOption itemValue="America/Paramaribo" />
+                        <apex:selectOption itemValue="America/Phoenix" />
+                        <apex:selectOption itemValue="America/Port-au-Prince" />
+                        <apex:selectOption itemValue="America/Port_of_Spain" />
+                        <apex:selectOption itemValue="America/Porto_Acre" />
+                        <apex:selectOption itemValue="America/Puerto_Rico" />
+                        <apex:selectOption itemValue="America/Regina" />
+                        <apex:selectOption itemValue="America/Santiago" />
+                        <apex:selectOption itemValue="America/Santo_Domingo" />
+                        <apex:selectOption itemValue="America/Sao_Paulo" />
+                        <apex:selectOption itemValue="America/Scoresbysund" />
+                        <apex:selectOption itemValue="America/St_Johns" />
+                        <apex:selectOption itemValue="America/St_Kitts" />
+                        <apex:selectOption itemValue="America/St_Lucia" />
+                        <apex:selectOption itemValue="America/St_Thomas" />
+                        <apex:selectOption itemValue="America/St_Vincent" />
+                        <apex:selectOption itemValue="America/Tegucigalpa" />
+                        <apex:selectOption itemValue="America/Thule" />
+                        <apex:selectOption itemValue="America/Tijuana" />
+                        <apex:selectOption itemValue="America/Tortola" />
+                        <apex:selectOption itemValue="America/Vancouver" />
+                        <apex:selectOption itemValue="America/Winnipeg" />
+                        <apex:selectOption itemValue="Antarctica/Casey" />
+                        <apex:selectOption itemValue="Antarctica/DumontDUrville" />
+                        <apex:selectOption itemValue="Antarctica/Mawson" />
+                        <apex:selectOption itemValue="Antarctica/McMurdo" />
+                        <apex:selectOption itemValue="Antarctica/Palmer" />
+                        <apex:selectOption itemValue="Asia/Aden" />
+                        <apex:selectOption itemValue="Asia/Almaty" />
+                        <apex:selectOption itemValue="Asia/Amman" />
+                        <apex:selectOption itemValue="Asia/Anadyr" />
+                        <apex:selectOption itemValue="Asia/Aqtau" />
+                        <apex:selectOption itemValue="Asia/Aqtobe" />
+                        <apex:selectOption itemValue="Asia/Ashkhabad" />
+                        <apex:selectOption itemValue="Asia/Baghdad" />
+                        <apex:selectOption itemValue="Asia/Bahrain" />
+                        <apex:selectOption itemValue="Asia/Baku" />
+                        <apex:selectOption itemValue="Asia/Bangkok" />
+                        <apex:selectOption itemValue="Asia/Beirut" />
+                        <apex:selectOption itemValue="Asia/Bishkek" />
+                        <apex:selectOption itemValue="Asia/Brunei" />
+                        <apex:selectOption itemValue="Asia/Calcutta" />
+                        <apex:selectOption itemValue="Asia/Colombo" />
+                        <apex:selectOption itemValue="Asia/Dacca" />
+                        <apex:selectOption itemValue="Asia/Damascus" />
+                        <apex:selectOption itemValue="Asia/Dubai" />
+                        <apex:selectOption itemValue="Asia/Dushanbe" />
+                        <apex:selectOption itemValue="Asia/Hong_Kong" />
+                        <apex:selectOption itemValue="Asia/Irkutsk" />
+                        <apex:selectOption itemValue="Asia/Jakarta" />
+                        <apex:selectOption itemValue="Asia/Jayapura" />
+                        <apex:selectOption itemValue="Asia/Jerusalem" />
+                        <apex:selectOption itemValue="Asia/Kabul" />
+                        <apex:selectOption itemValue="Asia/Kamchatka" />
+                        <apex:selectOption itemValue="Asia/Karachi" />
+                        <apex:selectOption itemValue="Asia/Katmandu" />
+                        <apex:selectOption itemValue="Asia/Krasnoyarsk" />
+                        <apex:selectOption itemValue="Asia/Kuala_Lumpur" />
+                        <apex:selectOption itemValue="Asia/Kuwait" />
+                        <apex:selectOption itemValue="Asia/Macao" />
+                        <apex:selectOption itemValue="Asia/Magadan" />
+                        <apex:selectOption itemValue="Asia/Manila" />
+                        <apex:selectOption itemValue="Asia/Muscat" />
+                        <apex:selectOption itemValue="Asia/Nicosia" />
+                        <apex:selectOption itemValue="Asia/Novosibirsk" />
+                        <apex:selectOption itemValue="Asia/Phnom_Penh" />
+                        <apex:selectOption itemValue="Asia/Pyongyang" />
+                        <apex:selectOption itemValue="Asia/Qatar" />
+                        <apex:selectOption itemValue="Asia/Rangoon" />
+                        <apex:selectOption itemValue="Asia/Riyadh" />
+                        <apex:selectOption itemValue="Asia/Saigon" />
+                        <apex:selectOption itemValue="Asia/Seoul" />
+                        <apex:selectOption itemValue="Asia/Shanghai" />
+                        <apex:selectOption itemValue="Asia/Singapore" />
+                        <apex:selectOption itemValue="Asia/Taipei" />
+                        <apex:selectOption itemValue="Asia/Tashkent" />
+                        <apex:selectOption itemValue="Asia/Tbilisi" />
+                        <apex:selectOption itemValue="Asia/Tehran" />
+                        <apex:selectOption itemValue="Asia/Thimbu" />
+                        <apex:selectOption itemValue="Asia/Tokyo" />
+                        <apex:selectOption itemValue="Asia/Ujung_Pandang" />
+                        <apex:selectOption itemValue="Asia/Ulan_Bator" />
+                        <apex:selectOption itemValue="Asia/Vientiane" />
+                        <apex:selectOption itemValue="Asia/Vladivostok" />
+                        <apex:selectOption itemValue="Asia/Yakutsk" />
+                        <apex:selectOption itemValue="Asia/Yekaterinburg" />
+                        <apex:selectOption itemValue="Asia/Yerevan" />
+                        <apex:selectOption itemValue="Atlantic/Azores" />
+                        <apex:selectOption itemValue="Atlantic/Bermuda" />
+                        <apex:selectOption itemValue="Atlantic/Canary" />
+                        <apex:selectOption itemValue="Atlantic/Cape_Verde" />
+                        <apex:selectOption itemValue="Atlantic/Faeroe" />
+                        <apex:selectOption itemValue="Atlantic/Jan_Mayen" />
+                        <apex:selectOption itemValue="Atlantic/Reykjavik" />
+                        <apex:selectOption itemValue="Atlantic/South_Georgia" />
+                        <apex:selectOption itemValue="Atlantic/St_Helena" />
+                        <apex:selectOption itemValue="Atlantic/Stanley" />
+                        <apex:selectOption itemValue="Australia/Adelaide" />
+                        <apex:selectOption itemValue="Australia/Brisbane" />
+                        <apex:selectOption itemValue="Australia/Broken_Hill" />
+                        <apex:selectOption itemValue="Australia/Darwin" />
+                        <apex:selectOption itemValue="Australia/Hobart" />
+                        <apex:selectOption itemValue="Australia/Lord_Howe" />
+                        <apex:selectOption itemValue="Australia/Perth" />
+                        <apex:selectOption itemValue="Australia/Sydney" />
+                        <apex:selectOption itemValue="Europe/Amsterdam" />
+                        <apex:selectOption itemValue="Europe/Andorra" />
+                        <apex:selectOption itemValue="Europe/Athens" />
+                        <apex:selectOption itemValue="Europe/Belgrade" />
+                        <apex:selectOption itemValue="Europe/Berlin" />
+                        <apex:selectOption itemValue="Europe/Brussels" />
+                        <apex:selectOption itemValue="Europe/Bucharest" />
+                        <apex:selectOption itemValue="Europe/Budapest" />
+                        <apex:selectOption itemValue="Europe/Chisinau" />
+                        <apex:selectOption itemValue="Europe/Copenhagen" />
+                        <apex:selectOption itemValue="Europe/Dublin" />
+                        <apex:selectOption itemValue="Europe/Gibraltar" />
+                        <apex:selectOption itemValue="Europe/Helsinki" />
+                        <apex:selectOption itemValue="Europe/Istanbul" />
+                        <apex:selectOption itemValue="Europe/Kaliningrad" />
+                        <apex:selectOption itemValue="Europe/Kiev" />
+                        <apex:selectOption itemValue="Europe/Lisbon" />
+                        <apex:selectOption itemValue="Europe/London" />
+                        <apex:selectOption itemValue="Europe/Luxembourg" />
+                        <apex:selectOption itemValue="Europe/Madrid" />
+                        <apex:selectOption itemValue="Europe/Malta" />
+                        <apex:selectOption itemValue="Europe/Minsk" />
+                        <apex:selectOption itemValue="Europe/Monaco" />
+                        <apex:selectOption itemValue="Europe/Moscow" />
+                        <apex:selectOption itemValue="Europe/Oslo" />
+                        <apex:selectOption itemValue="Europe/Paris" />
+                        <apex:selectOption itemValue="Europe/Prague" />
+                        <apex:selectOption itemValue="Europe/Riga" />
+                        <apex:selectOption itemValue="Europe/Rome" />
+                        <apex:selectOption itemValue="Europe/Samara" />
+                        <apex:selectOption itemValue="Europe/Simferopol" />
+                        <apex:selectOption itemValue="Europe/Sofia" />
+                        <apex:selectOption itemValue="Europe/Stockholm" />
+                        <apex:selectOption itemValue="Europe/Tallinn" />
+                        <apex:selectOption itemValue="Europe/Tirane" />
+                        <apex:selectOption itemValue="Europe/Vaduz" />
+                        <apex:selectOption itemValue="Europe/Vienna" />
+                        <apex:selectOption itemValue="Europe/Vilnius" />
+                        <apex:selectOption itemValue="Europe/Warsaw" />
+                        <apex:selectOption itemValue="Europe/Zurich" />
+                        <apex:selectOption itemValue="Indian/Antananarivo" />
+                        <apex:selectOption itemValue="Indian/Chagos" />
+                        <apex:selectOption itemValue="Indian/Christmas" />
+                        <apex:selectOption itemValue="Indian/Cocos" />
+                        <apex:selectOption itemValue="Indian/Comoro" />
+                        <apex:selectOption itemValue="Indian/Kerguelen" />
+                        <apex:selectOption itemValue="Indian/Mahe" />
+                        <apex:selectOption itemValue="Indian/Maldives" />
+                        <apex:selectOption itemValue="Indian/Mauritius" />
+                        <apex:selectOption itemValue="Indian/Mayotte" />
+                        <apex:selectOption itemValue="Indian/Reunion" />
+                        <apex:selectOption itemValue="Pacific/Apia" />
+                        <apex:selectOption itemValue="Pacific/Auckland" />
+                        <apex:selectOption itemValue="Pacific/Chatham" />
+                        <apex:selectOption itemValue="Pacific/Easter" />
+                        <apex:selectOption itemValue="Pacific/Efate" />
+                        <apex:selectOption itemValue="Pacific/Enderbury" />
+                        <apex:selectOption itemValue="Pacific/Fakaofo" />
+                        <apex:selectOption itemValue="Pacific/Fiji" />
+                        <apex:selectOption itemValue="Pacific/Funafuti" />
+                        <apex:selectOption itemValue="Pacific/Galapagos" />
+                        <apex:selectOption itemValue="Pacific/Gambier" />
+                        <apex:selectOption itemValue="Pacific/Guadalcanal" />
+                        <apex:selectOption itemValue="Pacific/Guam" />
+                        <apex:selectOption itemValue="Pacific/Honolulu" />
+                        <apex:selectOption itemValue="Pacific/Kiritimati" />
+                        <apex:selectOption itemValue="Pacific/Kosrae" />
+                        <apex:selectOption itemValue="Pacific/Majuro" />
+                        <apex:selectOption itemValue="Pacific/Marquesas" />
+                        <apex:selectOption itemValue="Pacific/Nauru" />
+                        <apex:selectOption itemValue="Pacific/Niue" />
+                        <apex:selectOption itemValue="Pacific/Norfolk" />
+                        <apex:selectOption itemValue="Pacific/Noumea" />
+                        <apex:selectOption itemValue="Pacific/Pago_Pago" />
+                        <apex:selectOption itemValue="Pacific/Palau" />
+                        <apex:selectOption itemValue="Pacific/Pitcairn" />
+                        <apex:selectOption itemValue="Pacific/Ponape" />
+                        <apex:selectOption itemValue="Pacific/Port_Moresby" />
+                        <apex:selectOption itemValue="Pacific/Rarotonga" />
+                        <apex:selectOption itemValue="Pacific/Saipan" />
+                        <apex:selectOption itemValue="Pacific/Tahiti" />
+                        <apex:selectOption itemValue="Pacific/Tarawa" />
+                        <apex:selectOption itemValue="Pacific/Tongatapu" />
+                        <apex:selectOption itemValue="Pacific/Truk" />
+                        <apex:selectOption itemValue="Pacific/Wake" />
+                        <apex:selectOption itemValue="Pacific/Wallis" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="PUBLIC_CHECKED_PBSI" helpText="Controls the default behavior of the 'Public' checkbox on the 'New Comment' page.">
+                    <apex:outputLabel value="Check the 'Public' Checkbox by Default" for="PUBLIC_CHECKED_Checkbox" />
+                    <apex:inputCheckbox value="{!PUBLIC_CHECKED}" selected="{!PUBLIC_CHECKED}" id="PUBLIC_CHECKED_Checkbox" />
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="ENABLE_PREVIEW_EMAIL" helpText="Display 'Preview Email' button on the 'New Comment' page to allow previewing the email as it would be viewed by the recipient.">
+                    <apex:outputLabel value="Enable Email Preview" for="ENABLE_PREVIEW_EMAIL_Checkbox"/>
+                    <apex:inputCheckbox value="{!ENABLE_PREVIEW_EMAIL}" selected="{!ENABLE_PREVIEW_EMAIL}" id="ENABLE_PREVIEW_EMAIL_Checkbox" />
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="ENABLE_DRAFT_COMMENTS" helpText="Automatically saves a draft while working in the 'New Comment' page. The saved draft will load the next time the user goes to send a comment from that case.">
+                    <apex:outputLabel value="Enable Draft Comments" for="DRAFT_COMMENTS_Checkbox"/>
+                    <apex:inputCheckbox value="{!DRAFT_COMMENTS}" selected="{!DRAFT_COMMENTS}" id="DRAFT_COMMENTS_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_PUBLIC_WARNING" helpText="A customized warning can be displayed whenever a public comment is being entered on the New Comment page.">
+                    <apex:outputLabel value="Display Warning for Public Comments" for="ENABLE_PUBLIC_WARNING_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_PUBLIC_WARNING}" selected="{!ENABLE_PUBLIC_WARNING}" id="ENABLE_PUBLIC_WARNING_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="PUBLIC_WARNING_TEXT" helpText="The text displayed when the Public checkbox is enabled.">
+                    <apex:outputLabel value="Public Warning Text" for="PUBLIC_WARNING_TEXT_text" />
+                    <apex:inputTextarea value="{!PUBLIC_WARNING_TEXT}"  id="PUBLIC_WARNING_TEXT_text" cols="120" rows="2" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="INCLUDE_CLOSED_CASE_STATUS_PBSI" helpText="Check this box if you would like to allow users to choose closed case statuses while adding a new comment.">
+                    <apex:outputLabel value="Include Closed Case Statuses" for="INCLUDE_CLOSED_CASE_STATUS_Checkbox" />
+                    <apex:inputCheckbox value="{!INCLUDE_CLOSED_CASE_STATUS}" selected="{!INCLUDE_CLOSED_CASE_STATUS}" id="INCLUDE_CLOSED_CASE_STATUS_Checkbox" />
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="COLLAPSE_CASE_SUMMARY_SECTION_PBSI" helpText="Check this box to collapse this section by default when the New Comment page loads.">
+                    <apex:outputLabel value="Collapse Case Summary Section" for="COLLAPSE_CASE_SUMMARY_SECTION_Checkbox" />
+                    <apex:inputCheckbox value="{!COLLAPSE_CASE_SUMMARY_SECTION}" selected="{!COLLAPSE_CASE_SUMMARY_SECTION}" id="COLLAPSE_CASE_SUMMARY_SECTION_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="COLLAPSE_CUSTOM_FIELDS_SECTION_PBSI" helpText="Check this box to collapse this section by default when the New Comment page loads.">
+                    <apex:outputLabel value="Collapse Case Fields Section" for="COLLAPSE_CUSTOM_FIELDS_SECTION_Checkbox" />
+                    <apex:inputCheckbox value="{!COLLAPSE_CUSTOM_FIELDS_SECTION}" selected="{!COLLAPSE_CUSTOM_FIELDS_SECTION}" id="COLLAPSE_CUSTOM_FIELDS_SECTION_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ConfigureFieldSet" helptext="Email to Case Premium uses Salesforce Field Sets to allow you to select which fields are available for display and editing on the New Comment page.">
+                    <apex:outputLabel value="Select Case Fields on New Comment Page" />
+                    <a href="/p/setup/custent/FieldSetListUI/d?tableEnumOrId=Case&setupid=CaseFieldSets" target="_blank" >Click here and select Edit for New Comment Case Fields</a>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="NUM_FIELD_SET_COLUMNS_PBSI" helpText="The number of columns that the field set will be displayed in on the New Comment page.">
+                    <apex:outputLabel value="Field Set Columns" for="NUM_FIELD_SET_COLUMNS_Select"/>
+                    <apex:selectList id="NUM_FIELD_SET_COLUMNS_Select" value="{!NUM_FIELD_SET_COLUMNS}" size="1">
+                        <apex:selectOption itemValue="1"/>
+                        <apex:selectOption itemValue="2"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="COLLAPSE_COMMENTS_SECTION_PBSI" helpText="Check this box to collapse this section by default when the New Comment page loads.">
+                    <apex:outputLabel value="Collapse Previous Comments Section" for="COLLAPSE_COMMENTS_SECTION_Checkbox" />
+                    <apex:inputCheckbox value="{!COLLAPSE_COMMENTS_SECTION}" selected="{!COLLAPSE_COMMENTS_SECTION}" id="COLLAPSE_COMMENTS_SECTION_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_CANNED_COMMENTS_PBSI" helpText="Allow your users to select Canned Comments when adding a new comment. Canned Comments can be managed by going to the Canned Comments tab.">
+                    <apex:outputLabel value="Enable Canned Comments" for="ENABLE_CANNED_COMMENTS_Checkbox" />
+                    <apex:outputPanel >
+                        <apex:inputCheckbox value="{!ENABLE_CANNED_COMMENTS}" selected="{!ENABLE_CANNED_COMMENTS}" id="ENABLE_CANNED_COMMENTS_Checkbox">
+                            <apex:actionSupport event="onchange" reRender="ENABLE_CANNED_ATTACHMENTS_Panel,SEARCH_CANNED_COMMENT_TEXT_Panel"/>
+                        </apex:inputCheckbox>
+                        &nbsp;<a href="/{!CannedCommentPrefix}/o" target="_blank" >Click here to create and edit Canned Comments</a>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ConfigureCannedCommentFilters" helpText="Define filters that will dynamically determine which Canned Comment categories are available for a Case on the New Comment page based on selected field values.">
+                    <apex:outputLabel value="Canned Comment Filters"/>
+                    <a href="/{!ccFilterPrefix}" target="_blank">Click here to configure Canned Comment Filters</a>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_CANNED_ATTACHMENTS_PBSI" helpText="When inserting a Canned Comment, attachments on the Canned Comment will be cloned to the Case and selected for inclusion with the new comment. Only files under 5 MB will be copied to the Case.">
+                    <apex:outputLabel value="Enable Canned Comment Attachments" for="ENABLE_CANNED_COMMENTS_Checkbox" />
+                    <apex:outputPanel id="ENABLE_CANNED_ATTACHMENTS_Panel">
+                        <apex:inputCheckbox value="{!ENABLE_CANNED_ATTACHMENTS}" id="ENABLE_CANNED_ATTACHMENTS_Checkbox" disabled="{!!ENABLE_CANNED_COMMENTS}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="SEARCH_CANNED_COMMENT_TEXT_PBSI" helpText="When searching for a Canned Comment on the New Comment page via the type ahead search it will expand the search and include the comment text body.">
+                    <apex:outputLabel value="Search Canned Comment Text" for="SEARCH_CANNED_COMMENT_TEXT_Checkbox" />
+                    <apex:outputPanel id="SEARCH_CANNED_COMMENT_TEXT_Panel">
+                        <apex:inputCheckbox value="{!SEARCH_CANNED_COMMENT_TEXT}" id="SEARCH_CANNED_COMMENT_TEXT_Checkbox" disabled="{!!ENABLE_CANNED_COMMENTS}" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="PKB_BASE_URL_PBSI" helpText="If you intend to include links to articles from your Public Knowledge Base in Canned Comments then you must enter the base URL of your knowledge base.">
+                    <apex:outputLabel value="Public Knowledge Base URL" for="PKB_BASE_URL_Text" />
+                    <apex:inputText value="{!PKB_BASE_URL}" id="PKB_BASE_URL_Text"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="COMMENT_BOX_WIDTH" helpText="The width of the comment entry box in pixels.">
+                    <apex:outputLabel value="Comment Entry Box Width" for="COMMENT_BOX_WIDTH_Text" />
+                    <apex:inputText value="{!COMMENT_BOX_WIDTH}" id="COMMENT_BOX_WIDTH_Text" size="3"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="COMMENT_BOX_HEIGHT" helpText="The height of the comment entry box in pixels.">
+                    <apex:outputLabel value="Comment Entry Box Height" for="COMMENT_BOX_HEIGHT_Text" />
+                    <apex:inputText value="{!COMMENT_BOX_HEIGHT}" id="COMMENT_BOX_HEIGHT_Text" size="3"/>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="PREVENT_OVERSIZED_COMMENTS_PBSI" helpText="When enabled the end user will not be able to send an email from the New Comment page that exceeds the Case Comment maximum length of characters.">
+                    <apex:outputLabel value="Prevent Sending When Max Comment Length is Exceeded" for="PREVENT_OVERSIZED_COMMENTS_Checkbox" />
+                    <apex:inputCheckbox value="{!PREVENT_OVERSIZED_COMMENTS}" id="PREVENT_OVERSIZED_COMMENTS_Checkbox"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            
+            <!-- ///////////Comment List Settings//////////// -->
+            
+            <apex:pageBlockSection title="Comment List" columns="1" id="commentListPBS">
+                <apex:pageBlockSectionItem id="ENABLE_AUTO_RESIZE_COMMENT_LIST_PBSI" helpText="The height of the inline Comment List page will be automatically adjusted to fit all comments displayed and will expand/contract when needed as the filters are changed.">
+                    <apex:outputLabel value="Auto Resize Comment List" for="ENABLE_AUTO_RESIZE_COMMENT_LIST_Checkbox" />
+                    <apex:outputPanel >
+                        <apex:inputCheckbox value="{!ENABLE_AUTO_RESIZE_COMMENT_LIST}" id="ENABLE_AUTO_RESIZE_COMMENT_LIST_Checkbox"/>
+                        <apex:outputPanel layout="inline" style="position: relative;" onmouseover="this.children[0].style.display = 'block';" onmouseout="this.children[0].style.display = 'none';">
+                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left" role="tooltip" style="display: none;position: absolute;top: -50px; left: 0;width: 300px; padding: 2px 5px; background: #fefdb9; border: 1px solid orange;">
+                                <div class="slds-popover__body">This functionality is currently not supported in the Lightning Experience.</div>
+                            </div>
+                            <img style="height:16px;width:16px;" src="/img/msg_icons/warning24.png"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="COMMENT_LIST_RESULTS_PER_PAGE_PBSI" helpText="The number of results displayed on each page of the Comment List. Lowering this value can help prevent and/or fix issues with the Comment List not loading.">
+                    <apex:outputLabel value="Results Per Page" for="COMMENT_LIST_RESULTS_PER_PAGE_text" />
+                    <apex:inputText value="{!COMMENT_LIST_RESULTS_PER_PAGE}" id="COMMENT_LIST_RESULTS_PER_PAGE_text"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            
+            <!-- ///////////History Text Settings//////////// -->
+            
+            <apex:pageBlockSection title="History Text" columns="1" id="histTextPBS" rendered="{!!ENABLE_CASE_FEED_EXTENSION}">
+                <apex:pageBlockSectionItem id="SHORT_HISTORY_TEXT" helpText="The E2CP__HistoryText__c field contains a chronology of the recent public comments on a case that can be merged in an email template.  By excluding the most recent public comment, you can use a custom merge field containing the most recent public comment, followed by merge fields for the sender's signature, and finally followed by the history text, to allow for a more personalized email template.">
+                    <apex:outputLabel value="Exclude Most Recent Comment from History Text" for="SHORT_HISTORY_TEXT_Checkbox" />
+                    <apex:inputCheckbox value="{!SHORT_HISTORY_TEXT}" selected="{!SHORT_HISTORY_TEXT}" id="SHORT_HISTORY_TEXT_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="HISTORY_TEXT_COMMENT_COUNT_PBSI" helpText="The number of comments to be included in the History Text field. If 'Exclude Most Recent Comment from History Text' is enabled then the number of comments in the History Text will be reduced by one.">
+                    <apex:outputLabel value="History Text Comment Count" for="HISTORY_TEXT_COMMENT_COUNT_Text"/>
+                    <apex:selectList multiselect="false" id="HISTORY_TEXT_COMMENT_COUNT_Text" value="{!HISTORY_TEXT_COMMENT_COUNT}" size="1" >
+                        <apex:selectOptions value="{!historyTextCommentCountOptions}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="HISTORY_NAME_FORMAT" helpText="The format used for names in outgoing comments in the history text. If Custom is selected then you can supply a static value that will be used in place of the comment author's name. For example, you may want to display a department name such as 'Technical Support'.">
+                    <apex:outputLabel value="History Text Name Format" for="HISTORY_NAME_FORMAT_Select" />
+                    <apex:outputPanel >
+                        <apex:selectList value="{!HISTORY_NAME_FORMAT}" id="HISTORY_NAME_FORMAT_Select" size="1">
+                            <apex:actionSupport event="onchange" reRender="histTextPBS"/>
+                            <apex:selectOption itemValue="{first} {last}" itemLabel="First Last"/>
+                            <apex:selectOption itemValue="{last}, {first}" itemLabel="Last, First"/>
+                            <apex:selectOption itemValue="{first} {l}" itemLabel="First L"/>
+                            <apex:selectOption itemValue="{first}" itemLabel="First"/>
+                            <apex:selectOption itemValue="Custom" itemLabel="Custom"/>
+                        </apex:selectList>
+                        <apex:inputText style="margin-left:10px;" value="{!HISTORY_NAME_CUSTOM}" rendered="{!HISTORY_NAME_FORMAT == 'Custom'}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="HISTORY_DATE_FORMAT" helpText="The format used for dates in the history text. ">
+                    <apex:outputLabel value="History Text Date Format" for="HISTORY_DATE_FORMAT_Select" />
+                    <apex:outputPanel >
+                        <apex:selectList value="{!HISTORY_DATE_FORMAT}" id="HISTORY_DATE_FORMAT_Select" size="1">
+                            <apex:actionSupport event="onchange" reRender="date-example"/>
+                            <apex:selectOption itemValue="MM/dd/yyyy hh:mm:ss a z" itemLabel="MM/dd/yyyy hh:mm:ss a z"/>
+                            <apex:selectOption itemValue="dd/MM/yyyy hh:mm:ss a z" itemLabel="dd/MM/yyyy hh:mm:ss a z"/>
+                            <apex:selectOption itemValue="yyyy/MM/dd hh:mm:ss a z" itemLabel="yyyy/MM/dd hh:mm:ss a z"/>
+                            <apex:selectOption itemValue="MM/dd/yyyy" itemLabel="MM/dd/yyyy"/>
+                            <apex:selectOption itemValue="dd/MM/yyyy" itemLabel="dd/MM/yyyy"/>
+                            <apex:selectOption itemValue="yyyy/MM/dd" itemLabel="yyyy/MM/dd"/>
+                            <apex:selectOption itemValue="EEE, MMM dd, yyyy 'at' h:mm a z" itemLabel="EEE, MMM dd, yyyy 'at' h:mm a z" />
+                        </apex:selectList>
+                        <apex:outputPanel id="date-example" style="margin-left:10px;">
+                            Example: {!formattedDate}
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="HISTORY_HEADER_FORMAT" helpText="The format used for the header of all comments in the history text. Use the markers {date} and {name} to populate data formatted per above. These markers are case sensitive. ">
+                    <apex:outputLabel value="History Text Header Format" for="HISTORY_HEADER_FORMAT_Text" />
+                    <apex:inputTextarea value="{!HISTORY_HEADER_FORMAT}" id="HISTORY_HEADER_FORMAT_Text" cols="120" rows="3"/>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            
+            <!-- ///////////Organization Wide Addresses//////////// -->
+
+            <apex:pageBlockSection title="Organization-Wide Addresses" columns="1" id="orgWidePBS">
+                
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Hybrid"/>
+                    <apex:outputPanel >
+                        Select these options to change the Display Name on the outbound email to the user sending it. An Org-Wide address will continue to be used as the Reply-To. See documentation for more information.
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="REPLY_TO_ADDRESS_PRIVATE_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}" helpText="To ensure that replies are processed by Email to Case Premium, select an address that emails should be sent From when adding a new private comment.">
+                    <apex:outputLabel value="Private (All)" for="REPLY_TO_ADDRESS_PRIVATE_Text"/>
+                    <apex:outputPanel layout="none">
+                        <apex:selectList multiselect="false" id="REPLY_TO_ADDRESS_PRIVATE_Text" value="{!REPLY_TO_ADDRESS_PRIVATE}" size="1" >
+                            <apex:selectOptions value="{!replyToAddressPrivateOptions}"/>
+                            <apex:selectOptions value="{!replyToAddressPrivateOptionsOverflow}"/>
+                        </apex:selectList>
+                        <apex:inputCheckbox id="PRIVATE_ADDRESS_HYBRID_Checkbox" style="margin-left: 10px;vertical-align: middle;" value="{!PRIVATE_ADDRESS_HYBRID}"/>
+                        <apex:outputLabel for="PRIVATE_ADDRESS_HYBRID_Checkbox" style="font-weight: bold;">Hybrid</apex:outputLabel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="REPLY_TO_ADDRESS_PBSI" helpText="To ensure that replies are processed by Email to Case Premium, select an address that emails should be sent when sending an email.">
+                    <apex:outputLabel value="Default" for="REPLY_TO_ADDRESS_Text"/>
+                    <apex:outputPanel layout="none">
+                        <apex:selectList multiselect="false" id="REPLY_TO_ADDRESS_Text" value="{!REPLY_TO_ADDRESS}" required="false" size="1">
+                            <apex:selectOptions value="{!replyToAddressOptions}"/>
+                            <apex:selectOptions value="{!replyToAddressOptionsOverflow}"/>
+                        </apex:selectList>
+                        <apex:inputCheckbox id="PUBLIC_ADDRESS_HYBRID_Checkbox" style="margin-left: 10px;vertical-align: middle;" value="{!PUBLIC_ADDRESS_HYBRID}"/>
+                        <apex:outputLabel for="PUBLIC_ADDRESS_HYBRID_Checkbox" style="font-weight: bold;">Hybrid</apex:outputLabel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="REPLY_TO_ADDRESS_BY_ORIGIN_PBSI" helpText="Email to Case Premium can automatically select a different From address to use for outbound emails based on any case picklist field.  You must add all Org Wide Addresses by navigating to Setup > Administration Setup > Email Administration > Organization-Wide Addresses.">
+                    <apex:outputLabel value="By Case Field" for="REPLY_TO_ADDRESS_BY_ORIGIN_Panel"/>
+                    <apex:outputPanel id="REPLY_TO_ADDRESS_BY_ORIGIN_Panel" >
+                        <apex:outputPanel id="ORGWIDE_CONTROLLING_FIELD_Panel">
+                            <b>Controlling Field</b>&nbsp;<br/>
+                            <apex:selectList value="{!ORGWIDE_CONTROLLING_FIELD}" multiselect="false" size="1">
+                                <apex:selectOptions value="{!OrgWideFieldOpts}" />
+                                <apex:actionSupport event="onchange" rerender="REPLY_TO_ADDRESS_BY_ORIGIN_Panel"/>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                        
+                        <br/>&nbsp;
+                        
+                        <apex:outputPanel id="REPLY_TO_ADDRESS_BY_ORIGIN_EditPanel">
+                                <table>
+                                    <tr>
+                                        <th><apex:outputText value="Value" /></th>
+                                        <th><apex:outputText value="From Address" /></th>
+                                        <th><apex:outputText value="Hybrid" /></th>
+                                    </tr>
+                                    <apex:repeat value="{!lstInnerRTABO}" var="e1" id="rptRTABO">
+                                        <tr>
+                                            <td>
+                                                <apex:selectList id="REPLY_TO_ORIGIN_Text" required="false" value="{!e1.prefKey}" multiselect="false" size="1">
+                                                    <apex:selectOptions value="{!OrgWidePicklistOpts}"/>
+                                                </apex:selectList>
+                                            </td>
+                                            <td>
+                                                <apex:selectList id="REPLY_TO_ADDRESS_Text" required="false" value="{!e1.prefValue}" multiselect="false" size="1">
+                                                    <apex:selectOptions value="{!replyToAddressNonreqOptions}" />
+                                                    <apex:selectOptions value="{!replyToAddressNonreqOptionsOverflow}" />
+                                                </apex:selectList>
+                                            </td>
+                                            <td>
+                                                <apex:inputCheckbox value="{!e1.prefHybrid}"/>
+                                            </td>
+                                        </tr>
+                                    </apex:repeat>
+                                </table>
+                                <apex:commandbutton value="Add Row" action="{!Add}" rerender="REPLY_TO_ADDRESS_BY_ORIGIN_EditPanel">
+                                    <apex:param name="param1" value="1" />
+                                </apex:commandbutton>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+
+            </apex:PageBlockSection>
+            
+            
+            <!-- ///////////Email Notification Recipients//////////// -->
+
+            <apex:PageBlockSection collapsible="true" title="Email Notification Recipients" columns="1" id="emailNotificationPrefPBS">
+
+                <apex:pageBlockSectionItem id="LABEL_CONTACT_NAME_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}" helpText="If your organization refers to case contacts using other terminology, for example, customers, clients, etc, you can set that name here.">
+                    <apex:outputLabel value="Label - Contact" for="LABEL_CONTACT_NAME_Text"/>
+                    <apex:inputText size="25" maxlength="32200" value="{!LABEL_CONTACT_NAME}" id="LABEL_CONTACT_NAME_Text" />
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="ERROR_INVALID_CONTACT_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}" helpText="Error text displayed when a Contact or Contact Role has a missing or invalid email address.">
+                    <apex:outputLabel value="Error - Invalid Contact" for="ERROR_INVALID_CONTACT_Text"/>
+                    <apex:inputText size="70" maxlength="32200" value="{!ERROR_INVALID_CONTACT}" id="ERROR_INVALID_CONTACT_Text" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="LABEL_LEAD_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION && ENABLE_LEADS}" helpText="If your organization refers to leads using other terminology, you can set that name here.">
+                    <apex:outputLabel value="Label - Lead" for="LABEL_LEAD_Text"/>
+                    <apex:inputText size="25" maxlength="32200" value="{!LABEL_LEAD}" id="LABEL_LEAD_Text"  />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_CONTACT_REMINDER_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}" helpText="When enabled, a warning message will be displayed on the New Comment page when there is not a contact on the case and the public box is checked.">
+                    <apex:outputLabel value="Enable Contact Reminder" for="ENABLE_CONTACT_REMINDER_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_CONTACT_REMINDER}" selected="{!ENABLE_CONTACT_REMINDER}" id="ENABLE_CONTACT_REMINDER_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_CONTACT_ROLES_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}" helpText="If your organization uses Salesforce.com's standard Contact Roles functionality, you can include them on new comment email notifications.">
+                    <apex:outputLabel value="Enable Contact Roles" for="ENABLE_CONTACT_ROLES_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_CONTACT_ROLES}" selected="{!ENABLE_CONTACT_ROLES}" id="ENABLE_CONTACT_ROLES_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_TEAM_MEMBERS_PBSI" rendered="{!SUPPORTS_CASETEAMS}" helpText="If your organization uses Salesforce.com's standard Case Team functionality, you can include case team members on email notifications.">
+                    <apex:outputLabel value="Enable Case Teams" for="ENABLE_TEAM_MEMBERS_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_TEAM_MEMBERS}" selected="{!ENABLE_TEAM_MEMBERS}" id="ENABLE_TEAM_MEMBERS_Checkbox" />
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="LABEL_TEAM_MEMBERS_NAME_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION && SUPPORTS_CASETEAMS}" helpText="If your organization refers to team members using other terminology, for example, employees, staff, etc, you can set that name here.">
+                    <apex:outputLabel value="Label - Team Members" for="LABEL_TEAM_MEMBERS_NAME_Text"/>
+                    <apex:inputText size="25" maxlength="32200" value="{!LABEL_TEAM_MEMBERS_NAME}" id="LABEL_TEAM_MEMBERS_NAME_Text"  />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="UNCHECKED_TEAM_MEMBER_ROLES_PBSI" rendered="{!SUPPORTS_CASETEAMS}" helpText="You can control the default recipient type behavior for team members on a role by role basis.  To, CC and BCC refer to the respective fields available when sending an email.  For example, you could have a role called 'Customer (Executive)' defaulting to No Email and a role called 'Customer (CC)' defaulting to CC.  These defaults can be overridden when sending an email.">
+                    <apex:outputPanel >
+                        <apex:outputLabel value="Team Member Roles" for="UNCHECKED_TEAM_MEMBER_ROLES_TextArea"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel >
+                        <apex:outputPanel rendered="{!lstTeamMemberRoles.size = 0}">
+                            This organization does not contain any Case Team Roles. <a href="/0B7?kp=500&setupid=CaseTeamRoles" target="_new">Click here to define them.</a>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!lstTeamMemberRoles.size > 0}" >
+                            <table border="1" style="border-spacing:0;" >
+                            <tr>
+                                <td style="font-weight:bold; padding:3px;" >Role Name</td>
+                                <td style="font-weight:bold; padding:3px;" >Default Recipient Type</td>
+                            </tr>
+                            <apex:repeat value="{!lstTeamMemberRoles}" var="r">
+                                <tr >
+                                    <td style="vertical-align: middle; padding: 0px 2px 0px 2px;">
+                                        <apex:outputText value="{!r.rolename}"/>
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <apex:selectRadio value="{!r.sendtype}" >
+                                            <apex:selectOptions value="{!sendtypes}"/>
+                                        </apex:selectRadio>
+                                    </td>
+                                </tr>
+                            </apex:repeat>
+                            </table>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="ENABLE_ADDITIONAL_EMAILS_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="You can allow your reps to manually specify To addresses to be included on new comment email notifications.">
+                    <apex:outputLabel value="Enable Additional To" for="ENABLE_ADDITIONAL_EMAILS_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_ADDITIONAL_EMAILS}" selected="{!ENABLE_ADDITIONAL_EMAILS}" id="ENABLE_ADDITIONAL_EMAILS_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_ADDITIONAL_CCS_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="You can allow your reps to manually specify CC addresses to be included on new comment email notifications.">
+                    <apex:outputLabel value="Enable Additional CC" for="ENABLE_ADDITIONAL_CCS_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_ADDITIONAL_CCS}" selected="{!ENABLE_ADDITIONAL_CCS}" id="ENABLE_ADDITIONAL_CCS_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_ADDITIONAL_BCCS_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="You can allow your reps to manually specify BCC addresses to be included on new comment email notifications.">
+                    <apex:outputLabel value="Enable Additional BCC" for="ENABLE_ADDITIONAL_BCCS_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_ADDITIONAL_BCCS}" selected="{!ENABLE_ADDITIONAL_BCCS}" id="ENABLE_ADDITIONAL_BCCS_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="COLLAPSE_EMAILS_SECTION_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="Check this box to collapse this section by default when the New Comment page loads.">
+                    <apex:outputLabel value="Collapse Emails Section" for="COLLAPSE_EMAILS_SECTION_Checkbox" />
+                    <apex:inputCheckbox value="{!COLLAPSE_EMAILS_SECTION}" selected="{!COLLAPSE_EMAILS_SECTION}" id="COLLAPSE_EMAILS_SECTION_Checkbox" />
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="EMAIL_NOTIFICATION_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="Controls whether recipients are automatically selected to receive an email notification when the Public checkbox is selected. Note that the Unchecked Team Member Roles are still respected.">
+                    <apex:outputLabel value="Check 'Email Notification' Checkboxes" for="EMAIL_NOTIFICATION_Checkbox" />
+                    <apex:inputCheckbox value="{!EMAIL_NOTIFICATION}" selected="{!EMAIL_NOTIFICATION}" id="EMAIL_NOTIFICATION_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="SHOW_RECIPIENTS_IN_COMMENT_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="The recipients of an email notification can be documented at the top of each comment for easy reference.  Alternatively, you can expose the Emails related list and open the respective email to obtain this information.">
+                    <apex:outputLabel value="Show Email Recipients at the Top of the Comment" for="SHOW_RECIPIENTS_IN_COMMENT_Checkbox" />
+                    <apex:inputCheckbox value="{!SHOW_RECIPIENTS_IN_COMMENT}" selected="{!SHOW_RECIPIENTS_IN_COMMENT}" id="SHOW_RECIPIENTS_IN_COMMENT_Checkbox" />
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="USE_SIGNATURE_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="Controls whether a user's personal signature is added to the bottom of an outgoing email when adding a new comment. Note that the signature is added to the very bottom of the outbound email, not the bottom of the new comment.  Consider using email template merge fields instead.  The signature is configured under Setup > Personal Setup > Email > My Email Settings.">
+                    <apex:outputLabel value="Add Signature to Emails" for="USE_SIGNATURE_Checkbox" />
+                    <apex:inputCheckbox value="{!USE_SIGNATURE}" selected="{!USE_SIGNATURE}" id="USE_SIGNATURE_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="PRIVATE_COMMENT_DOMAINS_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                    helpText="Specify domain names like yourorganization.com that are authorized to be sent private comments via email from the New Comment page. E2CP will block users from sending private comments to email addresses with domains not specified here.">
+                    <apex:outputLabel value="Internal Domains" for="PRIVATE_COMMENT_DOMAINS_op" />
+                       
+                    <apex:outputPanel id="PRIVATE_COMMENT_DOMAINS_op">
+                        <apex:variable var="ind" value="{!0}"/>
+                        <apex:repeat var="pcd" value="{!PRIVATE_COMMENT_DOMAINS}">
+                            <apex:variable var="ind" value="{!ind+1}"/>
+                            <apex:inputText value="{!pcd.Dom}" size="30"/>
+                            <apex:outputPanel rendered="{!ind - 3 == 0}" >
+                                <br/>
+                                <apex:variable var="ind" value="{!0}"/>
+                            </apex:outputPanel>
+                        </apex:repeat>
+                        <apex:commandButton value="Add Three" action="{!addPcd}" reRender="PRIVATE_COMMENT_DOMAINS_op" />
+                    </apex:outputPanel>
+                    
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="IGNORE_INTERNAL_SUBDOMAINS" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                    helpText="If the domain portion of the email address includes a subdomain, it will be ignored when checking for a matching internal domain. For example, email@sub.domain.com will be matched to the internal domain of domain.com.">
+                    <apex:outputLabel value="Ignore Subdomains for Internal Domains" for="IGNORE_INTERNAL_SUBDOMAINS_Checkbox"/>
+                    <apex:inputCheckbox value="{!IGNORE_INTERNAL_SUBDOMAINS}" selected="{!IGNORE_INTERNAL_SUBDOMAINS}" id="IGNORE_INTERNAL_SUBDOMAINS_Checkbox"/>
+                </apex:pageBlockSectionItem>
+
+            </apex:PageBlockSection>
+            
+            
+            <!-- ///////////Attachments//////////// -->
+
+            <apex:PageBlockSection collapsible="true" title="Attachments" columns="1" id="attachmentsPrefPBS" rendered="{!!ENABLE_CASE_FEED_EXTENSION}">
+
+                <apex:pageBlockSectionItem id="ENABLE_ATTACHMENTS_PBSI"
+                helpText="When checked, your reps can select attachments associated with the case to be included as attachments on outbound new comment email notifications.">
+                    <apex:outputLabel value="Enable Attachments Selection" for="ENABLE_ATTACHMENTS_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_ATTACHMENTS}" selected="{!ENABLE_ATTACHMENTS}" id="ENABLE_ATTACHMENTS_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="COLLAPSE_ATTACHMENTS_SECTION_PBSI"
+                helpText="Check this box to collapse this section by default when the New Comment page loads.">
+                    <apex:outputLabel value="Collapse Attachments Section" for="COLLAPSE_ATTACHMENTS_SECTION_Checkbox" />
+                    <apex:inputCheckbox value="{!COLLAPSE_ATTACHMENTS_SECTION}" selected="{!COLLAPSE_ATTACHMENTS_SECTION}" id="COLLAPSE_ATTACHMENTS_SECTION_Checkbox" />
+                </apex:pageBlockSectionItem>
+          
+                <apex:pageBlockSectionItem id="ENABLE_ATTACHMENT_UPLOAD_PBSI"
+                helpText="If the browser supports it, a file drag & drop panel will be displayed on the New Comment page. A manual upload button is always available.">
+                    <apex:outputLabel value="Enable Drag and Drop Attachment Upload" for="ENABLE_ATTACHMENT_UPLOAD_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_ATTACHMENT_UPLOAD}" selected="{!ENABLE_ATTACHMENT_UPLOAD}" id="ENABLE_ATTACHMENT_UPLOAD_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="DISPLAY_EXISTING_FILES_FROM_PBSI"
+                helpText="Determines which object(s) should be displayed in the existing section under attachments on the New Comment page, either Salesforce Files, Attachments, or Both.">
+                    <apex:outputLabel value="Display Existing Files From" for="DISPLAY_EXISTING_FILES_FROM_Select" />
+                    <apex:selectList value="{!DISPLAY_EXISTING_FILES_FROM}" size="1" id="DISPLAY_EXISTING_FILES_FROM_Select">
+                        <apex:selectOption itemLabel="Attachments" itemValue="attachments"/>
+                        <apex:selectOption itemLabel="Salesforce Files" itemValue="files"/>
+                        <apex:selectOption itemLabel="Both" itemValue="both"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="INSERT_OUTBOUND_FILE_AS_PBSI"
+                helpText="Determines which object new email attachments uploaded from the New Comment page will be inserted into, either Salesforce Files or Attachments.">
+                    <apex:outputLabel value="Insert New Outbound Files As" for="INSERT_OUTBOUND_FILE_AS_Select" />
+                    <apex:selectList value="{!INSERT_OUTBOUND_FILE_AS}" size="1" id="INSERT_OUTBOUND_FILE_AS_Select">
+                        <apex:selectOption itemLabel="Attachments" itemValue="attachment"/>
+                        <apex:selectOption itemLabel="Salesforce Files" itemValue="file"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_ATTACHMENT_REMINDER"
+                helpText="When enabled, if one of the phrases in the list below is found in the comment body on the New Comment page and no attachment has been selected a warning will be displayed reminding the user to include the referenced attachment.">
+                    <apex:outputLabel value="Enable Attachment Reminder" for="ENABLE_ATTACHMENT_REMINDER_Checkbox"/>
+                    <apex:outputPanel id="ATTACHMENT_REMINDER_SETTINGS">
+                        <apex:inputCheckbox value="{!ENABLE_ATTACHMENT_REMINDER}" id="ENABLE_ATTACHMENT_REMINDER_Checkbox">
+                            <apex:actionSupport event="onchange" reRender="ATTACHMENT_REMINDER_SETTINGS"/>
+                        </apex:inputCheckbox>
+                        
+                        <apex:outputPanel id="ATTACHMENT_REMINDER_PHRASES" layout="block" style="margin-top:10px;" rendered="{!ENABLE_ATTACHMENT_REMINDER}">
+                            <apex:outputLabel for="ATTACHMENT_REMINDER_PHRASES_Text">
+                                Enter phrases to be searched for in the new comment body, one per line. This setting is case insensitive. If left blank, the default phrases will be used.
+                            </apex:outputLabel>
+                            <br/>
+                            <apex:inputTextArea value="{!ATTACHMENT_REMINDER_PHRASES}" id="ATTACHMENT_REMINDER_PHRASES_Text" style="width:600px; height:100px;"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:PageBlockSection>
+
+
+            <!-- ///////////Email Template//////////// -->
+
+            <apex:PageBlockSection collapsible="true" title="Email Templates" columns="1" id="emailTemplatePrefPBS">
+
+                <apex:pageBlockSectionItem id="EMAIL_TEMPLATES_FOLDER_PBSI"
+                helpText="Folder containing email templates that users can select.">
+                    <apex:outputLabel value="Email Template Folder" for="EMAIL_TEMPLATES_FOLDER_Text"/>
+                    <apex:outputPanel >
+                        <apex:selectList id="EMAIL_TEMPLATES_FOLDER_Text" required="false" value="{!EMAIL_TEMPLATES_FOLDER}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!emailTemplatesFolderOptions}" />
+                            <apex:actionSupport event="onchange" action="{!refreshTemplates}"
+                                rerender="emailTemplatePrefPBS" status="refStat" />
+                        </apex:selectList>
+                        <apex:actionStatus id="refStat" startText=" (loading templates...)"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="PRIVATE_TEMPLATE_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="This template will be used for all private comments.">
+                    <apex:outputLabel value="Private Comment Template" for="PRIVATE_TEMPLATE_op" />
+                    <apex:outputPanel >
+                        <apex:selectList rendered="{!defaultTemplateOptions.size > 0}" id="PRIVATE_TEMPLATE_Text" required="false" value="{!PRIVATE_TEMPLATE}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!defaultTemplateOptions}" />
+                        </apex:selectList>
+                        <apex:outputLabel rendered="{!defaultTemplateOptions.size = 0}" style="color:red;">
+                            Selected folder is empty.
+                        </apex:outputLabel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="DEFAULT_TEMPLATE_PBSI"
+                helpText="When sending an email, this template will used by default for emails unless you have specified Auto-Selection Rules below.">
+                    <apex:outputLabel value="Default Email Template" for="DEFAULT_TEMPLATE_Text"/>
+                    <apex:outputPanel >
+                        <apex:selectList rendered="{!defaultTemplateOptions.size > 0}" id="DEFAULT_TEMPLATE_Text" required="false" value="{!DEFAULT_TEMPLATE}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!defaultTemplateOptions}" />
+                        </apex:selectList>
+                        <apex:outputLabel rendered="{!defaultTemplateOptions.size = 0}" style="color:red;">
+                            Selected folder is empty.
+                        </apex:outputLabel>
+                        <apex:outputPanel rendered="{!ENABLE_CASE_FEED_EXTENSION}">
+                            <br/>
+                            <apex:outputLink value="/_ui/support/organization/SupportOrganizationSetupUi/d" target="_blank">
+                            Click here and select Enable Default Email Templates, then set the Apex Class Name as E2CPTemplateSelector to enable default templates in Case Feed.
+                            </apex:outputLink>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_TEMPLATE_SELECT_PBSI"
+                helpText="Allows your users to select templates that are marked Available for Use{!IF(ENABLE_CASE_FEED_EXTENSION,'',' in the email template folder specified above')}."><!--hasCaseFeed && -->
+                    <apex:outputLabel value="Enable Template Selection" for="ENABLE_TEMPLATE_SELECT_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_TEMPLATE_SELECT}" selected="{!ENABLE_TEMPLATE_SELECT}" id="ENABLE_TEMPLATE_SELECT_Checkbox" />
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="COLLAPSE_TEMPLATES_SECTION_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="Check this box to collapse this section by default when the New Comment page loads.">
+                    <apex:outputLabel value="Collapse Template Section" for="COLLAPSE_TEMPLATES_SECTION_Checkbox" />
+                    <apex:inputCheckbox value="{!COLLAPSE_TEMPLATES_SECTION}" selected="{!COLLAPSE_TEMPLATES_SECTION}" id="COLLAPSE_TEMPLATES_SECTION_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="STATUS_BASED_TEMPLATES_PBSI"
+                helpText="Email templates can be auto-selected based upon case Status, Origin or both. The first rule to match is used.  For example, if you want to use Template A when the Status=Closed, but use Template B when the Status=Closed and Origin=Gold Support, be sure to order the more specific rule higher.  Email templates are selected on page load and additionally when either the Status or Origin field is changed on the New Comment page.">
+                    <apex:outputPanel >
+                        <apex:outputLabel value="Template Auto-selection Rules" for="STATUS_BASED_TEMPLATES_Panel"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="STATUS_BASED_TEMPLATES_Panel">
+                        <apex:outputPanel id="STATUS_BASED_TEMPLATES_EditPanel">
+                                <table>
+                                    <tr>
+                                        <td><!--<apex:outputText value="Status" style="font-weight:bold;" />-->
+                                            <apex:selectList value="{!TEMPLATE_CONTROLLING_FIELD_1}" size="1">
+                                                <apex:actionSupport event="onchange" reRender="STATUS_BASED_TEMPLATES_Panel"/>
+                                                <apex:selectOptions value="{!OrgWideFieldOpts}"/>
+                                            </apex:selectList>
+                                        </td>
+                                        <td><!--<apex:outputText value="Origin" style="font-weight:bold;" />-->
+                                            <apex:selectList value="{!TEMPLATE_CONTROLLING_FIELD_2}" size="1">
+                                                <apex:actionSupport event="onchange" reRender="STATUS_BASED_TEMPLATES_Panel"/>
+                                                <apex:selectOptions value="{!OrgWideFieldOpts}"/>
+                                            </apex:selectList>
+                                        </td>
+                                        <td><apex:outputText value="Template" style="font-weight:bold;" /></td>
+                                        <td colspan="2"><apex:outputText value="Order" style="font-weight:bold;" /></td>
+                                    </tr>
+                                    <apex:repeat value="{!lstInnerSBT}" var="e2" id="rptSBT">
+                                        <tr>
+                                            <td><apex:selectList id="PAIRED_STATUS_Text" required="false" value="{!e2.prefKeyStat}" multiselect="false" size="1">
+                                                    <apex:selectOptions value="{!templateControl1Options}"/>
+                                                </apex:selectList>
+                                            </td>
+                                            <td>
+                                                <apex:selectList id="PAIRED_ORIGIN_Text" required="false" value="{!e2.prefKeyOrig}" multiselect="false" size="1">
+                                                    <apex:selectOptions value="{!templateControl2Options}"/>
+                                                </apex:selectList>
+                                            
+                                            </td>
+                                            <td><apex:selectList id="PAIRED_TEMPLATE_Text" required="false" value="{!e2.prefValue}" multiselect="false" size="1">
+                                                    <apex:selectOptions value="{!pairedTemplateOptions}" />
+                                                </apex:selectList>
+                                            </td>
+                                            <td>
+                                                <apex:commandButton action="{!moveUp}" value=" Move Up " reRender="STATUS_BASED_TEMPLATES_EditPanel" rendered="{!e2.ord != 0}" >
+                                                    <apex:param name="sbtInd" value="{!e2.Ord}" />
+                                                </apex:commandbutton>
+                                            </td>
+                                            <td>
+                                                <apex:commandButton action="{!moveDown}" value="Move Down" reRender="STATUS_BASED_TEMPLATES_EditPanel" rendered="{!e2.ord != lstInnerSBT.size-1}">
+                                                    <apex:param name="sbtInd" value="{!e2.Ord}" />
+                                                </apex:commandbutton>
+                                            </td>
+                                        </tr>
+                                    </apex:repeat>
+                                </table>
+                                <apex:commandbutton value="Add Row" action="{!AddSBT}" rerender="STATUS_BASED_TEMPLATES_EditPanel">
+                                    <apex:param name="param1" value="2" />
+                                </apex:commandbutton>
+                        </apex:outputPanel>
+                        
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+            </apex:PageBlockSection>
+            
+            
+            <!-- ///////////Email Distribution//////////// -->
+            
+            <apex:pageBlockSection collapsible="true" title="Email Distribution" columns="1" id="emailDistributionPBS" rendered="{!!ENABLE_CASE_FEED_EXTENSION}">
+                <apex:pageBlockSectionItem >
+                    Prior to enablement, please review the following documentation on Email Distribution features, limitations, and best practices.<br/>
+                    <a href="https://ic.secure.force.com/e2cpdistribution" target="_blank">https://ic.secure.force.com/e2cpdistribution</a>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_DISTRIBUTION_PBSI"
+                helpText="Enables the Email Distribution feature globally.">
+                    <apex:outputLabel value="Enable Email Distribution" for="ENABLE_DISTRIBUTION_Checkbox" />
+                    <apex:outputPanel >
+                        <apex:inputCheckbox value="{!ENABLE_DISTRIBUTION}" selected="{!ENABLE_DISTRIBUTION}" disabled="{!ISBLANK(BLACKHOLE_ID)}" id="ENABLE_DISTRIBUTION_Checkbox" />
+                        <apex:outputPanel layout="inline" style="position: relative;" rendered="{!ISBLANK(BLACKHOLE_ID)}" onmouseover="this.children[0].style.display = 'block';" onmouseout="this.children[0].style.display = 'none';">
+                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left" role="tooltip" style="display: none;position: absolute;top: -50px; left: 0;width: 300px; padding: 2px 5px; background: #fefdb9; border: 1px solid orange;">
+                                <div class="slds-popover__body">Contact Substitution must be configured before enabling Email Distribution. Please return to 'Initial Setup: Page 1' and complete the required setup.</div>
+                            </div>
+                            <img style="height:16px;width:16px;" src="/img/msg_icons/error24.png"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="DISTRIBUTION_LOOP_PERIOD_PBSI"
+                helpText="The time period in seconds when determining if a comment loop is in progress.">
+                    <apex:outputLabel value="Loop Period" for="DISTRIBUTION_LOOP_PERIOD_Checkbox" />
+                    <apex:inputText value="{!DISTRIBUTION_LOOP_PERIOD}" id="DISTRIBUTION_LOOP_PERIOD_Checkbox" size="4" disabled="{!ISBLANK(BLACKHOLE_ID)}"/>
+                </apex:pageBlockSectionItem>
+            
+                <apex:pageBlockSectionItem id="DISTRIBUTION_LOOP_COUNT_PBSI"
+                helpText="The number of comments that must occur in the above time period to trigger comment loop protection.">
+                    <apex:outputLabel value="Loop Count" for="DISTRIBUTION_LOOP_COUNT_Checkbox" />
+                    <apex:inputText value="{!DISTRIBUTION_LOOP_COUNT}" id="DISTRIBUTION_LOOP_COUNT_Checkbox" size="4" disabled="{!ISBLANK(BLACKHOLE_ID)}"/>
+                </apex:pageBlockSectionItem>
+               
+               <apex:pageBlockSectionItem id="ENABLE_DISTRIBUTION_HYBRID_EMAIL_PBSI"
+               helpText="When enabled, the emails sent via Email Distribution will display as coming from the original sender's name rather than the name of the organization wide email address. The reply to address will remain as the configured organization wide email address to ensure that responses are captured in Salesforce.">
+                   <apex:outputLabel value="Display Original Sender's Name" for="ENABLE_DISTRIBUTION_HYBRID_EMAIL_Checkbox"/>
+                   <apex:inputCheckbox value="{!ENABLE_DISTRIBUTION_HYBRID_EMAIL}" disabled="{!ISBLANK(BLACKHOLE_ID)}" id="ENABLE_DISTRIBUTION_HYBRID_EMAIL_Checkbox"/>
+               </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            
+            <!-- ///////////Case Feed//////////// -->
+            
+            <apex:pageBlockSection collapsible="true" title="Case Feed" columns="1" id="caseFeedPBS" rendered="{!ENABLE_CASE_FEED_EXTENSION}"><!--hasCaseFeed && -->
+                <!--<apex:pageBlockSectionItem id="ENABLE_CASE_FEED_EXTENSION_PBSI"
+                helpText="Enables the Case Feed support globally.">
+                    <apex:outputLabel value="Enable Case Feed" for="ENABLE_CASE_FEED_EXTENSION_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_CASE_FEED_EXTENSION}" selected="{!ENABLE_CASE_FEED_EXTENSION}" id="ENABLE_CASE_FEED_EXTENSION_Checkbox" />
+                </apex:pageBlockSectionItem>
+                -->
+                <apex:pageBlockSectionItem id="CASE_FEED_BODY_FORMAT_PBSI"
+                helpText="The format that the email body will be entered as for the E2CP case feed email publisher.">
+                    <apex:outputLabel value="Case Feed Email Body Format"/>
+                    <apex:selectList value="{!CASE_FEED_BODY_FORMAT}" size="1">
+                        <apex:selectOptions value="{!caseFeedBodyFormatOptions}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="CASE_FEED_BUTTON_LABEL_PBSI"
+                helpText="The button label that will be used when sending an email using the E2CP case feed email publisher.">
+                    <apex:outputLabel value="Case Feed Button Label"/>
+                    <apex:inputText value="{!CASE_FEED_BUTTON_LABEL}"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ANSWER_CUSTOMER_HEIGHT_PBSI" helpText="The default and minimum height of the Answer Customer case feed action in pixels.">
+                    <apex:outputLabel value="Answer Customer Action Height" for="ANSWER_CUSTOMER_HEIGHT_Text" />
+                    <apex:inputText value="{!ANSWER_CUSTOMER_HEIGHT}" id="ANSWER_CUSTOMER_HEIGHT_Text" size="3"/>
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem id="ENABLE_AUTO_RESIZE_ANSWER_CUSTOMER_PBSI" helpText="The height of the Answer Customer action will automatically be adjusted to fit the size of the email publisher as it expands.">
+                    <apex:outputLabel value="Auto Resize Answer Customer Action" for="ENABLE_AUTO_RESIZE_ANSWER_CUSTOMER_Checkbox" />
+                    <apex:outputPanel >
+                        <apex:inputCheckbox value="{!ENABLE_AUTO_RESIZE_ANSWER_CUSTOMER}" id="ENABLE_AUTO_RESIZE_ANSWER_CUSTOMER_Checkbox"/>
+                        <apex:outputPanel layout="inline" style="position: relative;" onmouseover="this.children[0].style.display = 'block';" onmouseout="this.children[0].style.display = 'none';">
+                            <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left" role="tooltip" style="display: none;position: absolute;top: -50px; left: 0;width: 300px; padding: 2px 5px; background: #fefdb9; border: 1px solid orange;">
+                                <div class="slds-popover__body">This functionality is currently not supported in the Lightning Experience.</div>
+                            </div>
+                            <img style="height:16px;width:16px;" src="/img/msg_icons/warning24.png"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_ANSWER_CUSTOMER_BCC_PBSI" helpText="Controls whether the Answer Customer case feed action will display the BCC recipients input box.">
+                    <apex:outputLabel value="Enable BCC Recipients for Answer Customer Action" for="ENABLE_ANSWER_CUSTOMER_BCC_Checkbox"/>
+                    <apex:inputCheckbox value="{!ENABLE_ANSWER_CUSTOMER_BCC}" id="ENABLE_ANSWER_CUSTOMER_BCC_Checkbox"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="THREAD_ID_IN_SUBJECT_PBSI"
+                helpText="When sending email from a case, insert Thread Id in the subject of the email.">
+                    <apex:outputLabel value="Insert Thread Id in Email Subject"/>
+                    <apex:inputCheckbox value="{!THREAD_ID_IN_SUBJECT}"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="THREAD_ID_IN_BODY_PBSI"
+                helpText="When sending email from a case, insert Thread Id in the body of the email.">
+                    <apex:outputLabel value="Insert Thread Id in Email Body"/>
+                    <apex:inputCheckbox value="{!THREAD_ID_IN_BODY}"/>
+                </apex:pageBlockSectionItem>
+                <!--
+                <apex:pageBlockSectionItem id="EMAIL_STATUS_PBSI">
+                    <apex:selectList value="{!EMAIL_STATUS}" size="1">
+                        <apex:selectOptions value="{!emailStatusOptions}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>-->
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection columns="1" title="New Comment Actions" id="pbsNCA" rendered="{!!ENABLE_CASE_FEED_EXTENSION}">
+                <apex:outputPanel >
+                    <p>
+                    New Comment Actions are very similar to the standard Custom Button and
+                    Links (Content Source = URL) that you can already implement in Salesforce.
+                    If you are able to make a Custom Button or Link successfully, we will help
+                    you replicate the same behavior in a New Comment Action. Note that
+                    JavaScript actions are not supported.
+                    </p>
+                    <p>
+                    Because of the complexities of supporting this advanced feature, Internet
+                    Creations product support can only assist with New Comment Actions that you
+                    have first implemented successfully outside of Email to Case Premium as a
+                    Custom Button/Link on the Case object. If you are having difficulty
+                    configuring a New Comment Action, implement the action using the standard
+                    Custom Button/Link functionality and then open a case. When opening a case,
+                    please grant us login access and provide a link to the working Custom
+                    Button/Link.
+                    </p>
+                    <p>
+                    If you are unable to implement the desired functionality in a Custom
+                    Button/Link, contact your Salesforce administrator for assistance or
+                    inquire with your Internet Creations account executive about professional
+                    services.
+                    </p>
+                    <p>
+                    <a href="/{!NCAPrefix}/o" target="_blank" >Click here to create and edit New Comment Actions</a>
+                    </p>
+                </apex:outputPanel>
+            </apex:pageBlockSection>
+
+        </apex:pageBlock>
+    </apex:form>
+    
+    <script>
+    //collapse New Comment Actions section
+    if ({!!ENABLE_CASE_FEED_EXTENSION})
+        twistSection(document.getElementById("{!$Component.frmMain.pbMain.pbsNCA}").firstChild.firstChild);
+    twistSection(document.getElementById("{!$Component.frmMain.pbMain.emailDistributionPBS}").firstChild.firstChild);
+    </script>
+    
+    <script>
+    function updateText(elem,text,add) {
+        if (elem.innerText) {
+            if (add) elem.innerText += text
+            else elem.innerText = text;
+        } else {
+            if (add) elem.textContent += text;
+            else elem.textContent = text;
+        }
+    }
+    
+    //overwrite help
+    var hlinks = document.getElementsByClassName('links')[0];
+    updateText(hlinks,'',false);
+    hlinks.appendChild(createLink('Documentation','https://ic.secure.force.com/e2cpdocs'));
+    hlinks.appendChild(createTextElement('span',' | '));
+    hlinks.appendChild(createLink('Knowledge Base','https://kb.internetcreations.com/pkb_Home?l=en_US&c=Products%3AEmail_to_Case_Premium'));
+    hlinks.appendChild(createTextElement('span',' | '));
+    hlinks.appendChild(createLink('e2cpremium@internetcreations.com','mailto:e2cpremium@internetcreations.com'));
+    hlinks.appendChild(createTextElement('span',' '));
+    hlinks.appendChild(createHelpIcon());
+    hlinks.appendChild(createTextElement('span','\r\n'));
+    //hlinks.appendChild(createTextElement('div','Free implementation assistance is available.'));
+    
+    hlinks.style.fontSize = 'larger';
+    hlinks.style.position = 'absolute';
+    hlinks.style.float  = 'right';
+    hlinks.style.right = '0%';
+    
+    function createLink(text,ref) {
+        var link = document.createElement('a');
+        updateText(link,text,false);
+        link.href = ref;
+        link.target = '_blank';
+        return link;
+    }
+    
+    function createTextElement(tag,text) {
+        var elem = document.createElement(tag);
+        updateText(elem,text,false);
+        if (tag == 'div')
+            elem.style.fontSize = 'smaller';
+        elem.style.color = 'black';
+        elem.style.textDecoration = 'none';
+        return elem;
+    }
+    
+    function createHelpIcon() {
+        var icon = document.createElement('img');
+        icon.src = '/s.gif';
+        icon.alt = 'Help';
+        icon.className = 'helpIcon';
+        icon.title = 'Help';
+        return icon;
+    }
+    
+    //Bill - ctrl + s to quick save
+    addEventListener('keydown', function(e) {
+        if(e.ctrlKey && e.keyCode == 83) {
+            document.querySelector('input[id$=\':quickSave\']').click();
+            e.preventDefault();
+        }
+    });
+    </script>
+</apex:page>

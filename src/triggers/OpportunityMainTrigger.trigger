@@ -1,0 +1,6 @@
+trigger OpportunityMainTrigger on Opportunity(before insert,before update, before delete,after insert ,after update,after delete) {
+        TriggerDispatcher.Run(new OpportunityTriggerHandler());
+        /*    if(AvoidRecursion1.isFirstRun_OpportunityMainTrigger()){
+    } */
+
+}

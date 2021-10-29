@@ -1,0 +1,71 @@
+<apex:page id="pg" standardcontroller="Case" extensions="csmrgp.CsMrgDupeDetectorCtrl" showHeader="false" standardStylesheets="true" applyHtmlTag="false">
+
+    <apex:outputPanel rendered="{!$User.UIThemeDisplayed == 'Theme4d' || $User.UIThemeDisplayed == 'Theme4u'}">
+        <style type="text/css">
+            body{
+                padding: 0px !important;
+            }
+        </style>
+    </apex:outputPanel>
+
+    <apex:includeScript value="/support/console/43.0/integration.js"/>
+
+    <script type="text/javascript">
+        function triggerQuery(){
+            // only do this with rerender if you are not in lightning
+            if('{!$User.UIThemeDisplayed}' == 'Theme3'){
+                startQuery();
+                return false;
+            }
+        }
+    </script>
+
+    <apex:form id="frm">
+        <!-- <body> -->
+        <body onload="triggerQuery();">
+            <apex:actionFunction name="startQuery" action="{!runCaseSearch}" rerender="lblPanel"/>
+            <apex:outputPanel layout="block" id="lblPanel">
+                <script>
+                    function openCMP(){
+                        if(sforce.console.isInConsole())
+                            sforce.console.getEnclosingPrimaryTabId(navCMP);
+                        else if(sforce.one != null)
+                            sforce.one.navigateToURL('{!linkUrl}', false);
+                    }
+
+                    var navCMP = function navCMP(result) {
+                        var primaryTabId = result.id;
+                        sforce.console.openSubtab(primaryTabId , "{!linkUrl}", true);
+                    };
+                </script>
+
+                <!-- MD: 2015-09-23 - The standard a tags are the fix for Lightning Experience in Firefox -->
+                <!-- MD: 2016-11-29 - appears that rerender no longer works in lightning, can't use remote actions in an iframe -->
+                
+                <a id="encryptErrConsole" href="#" onclick="openCMP();" style="height: 20px; display:{!IF(encryptedFieldErr, 'block', 'none')}">Encrypted fields are not supported in Duplicate Criteria</a>
+                <a id="encryptErr" href="{!linkUrl}" target="_parent" style="height: 20px; display:{!IF(encryptedFieldErr, 'block', 'none')}">Encrypted fields are not supported in Duplicate Criteria</a>
+                
+                <!-- <apex:outputLink id="lblFoundConsole" value="#" onclick="openCMP();" style="background-color:gold; display:{!IF(dupesFound, 'block', 'none')}">{!linkText}</apex:outputLink>
+                <apex:outputLink id="lblFound" value="{!linkUrl}" target="_parent" style="background-color:gold; display:{!IF(dupesFound, 'block', 'none')}">{!linkText}</apex:outputLink> -->
+                <a id="lblFoundConsole" href="#" onclick="openCMP();" style="height: 20px; background-color:gold; display:{!IF(dupesFound, 'block', 'none')}">{!linkText}</a>
+                <a id="lblFound" href="{!linkUrl}" target="_parent" style="height: 20px; background-color:gold; display:{!IF(dupesFound, 'block', 'none')}">{!linkText}</a>
+
+                <apex:outputText id="lblNone" style="display:{!IF(dupesFound, 'none', 'block')};" value="{!IF(queryRunning, 'Searching...', 'None')}"/>
+
+                <script>
+                    if(sforce.console.isInConsole() || sforce.one != null){
+                        document.getElementById('lblFound').style.display = 'none';
+                        document.getElementById('encryptErr').style.display = 'none';
+                    }
+                    else{
+                        document.getElementById('lblFoundConsole').style.display = 'none';
+                        document.getElementById('encryptErrConsole').style.display = 'none';
+                    }
+
+                    // 
+                </script>
+            </apex:outputPanel>
+        </body>
+    </apex:form>
+
+</apex:page> <!-- 15px height -->

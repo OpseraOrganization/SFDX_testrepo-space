@@ -1,0 +1,459 @@
+<apex:page standardcontroller="Service_Request__c" extensions="CustomerTop10IssuesClass" showHeader="false" sidebar="false"  standardStylesheets="false">
+  <apex:form >
+  
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<meta name="viewport" content="initial-scale = 1.0,maximum-scale = 1.0"/>
+<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+<title>Customer Rating Dashboard</title>
+
+<!-- Bootstrap -->
+<link href="{!URLFOR($Resource.CRDCss, '/css/bootstrap/bootstrap.min.css')}" rel="stylesheet"/>
+
+<link href="{!URLFOR($Resource.CRDCss, '/css/responsiveView.css')}"/>
+
+<!-- --------------------------------------------------------------------------------------------------------------TAB CONTENT -->
+
+<link href="{!URLFOR($Resource.CRDCss, '/css/responsive-tabs.css')}" type="text/css" />
+<link href="{!URLFOR($Resource.CRDCss, '/css/Style.css')}" rel="stylesheet"/>
+<script src="{!URLFOR($Resource.CRDjs, '/js/responsive-tabs.js')}" type="text/javascript"></script>
+
+<!-- --------------------------------------------------------------------------------------------------------------TAB CONTENT -->
+    <!--apex:stylesheet value="{!$Resource.boilerplate}"/>
+    <apex:stylesheet value="{!$Resource.customertop10issues}"/-->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="initial-scale = 1.0,maximum-scale = 1.0"/>
+    <script type="text/javascript">
+    
+    $(window).unload( function () { 
+        if($.cookie('toolbar') != $('#footerow').css("height") )
+            $.cookie('toolbar',$('#footerow').css("height"));
+    });
+    $(document).ready(function() {
+         var scroll = true;
+        if($.cookie('device') == 'tv') location.href="/AOGRealTimeReport/AOG_Dashboard_Samsung?id=24";
+    
+        if($.cookie('toolbar'))$('#footerow').css("height",$.cookie('toolbar'));
+    
+        $(".popup_details").fancybox();
+        
+        /*$(".trigger").toggle(
+            function() { 
+                $('#footerow').animate({height:'70px'}, 500);
+            }, 
+            function() { 
+                $('#footerow').animate({height:'35px'}, 500);
+            }
+        );*/
+        $(".trigger").click(function() {
+                $('#footerow').animate({height:($('#footerow').css("height")=='35px'?'70px':'35px')}, 500);
+        });
+        
+        if( window.location.search.length > 0){
+        
+            $('li a, .button').each(function(index) {/**/
+                /*var newVar = $(this).attr('href').replace("?","");*/
+                
+                if( $(this).hasClass("home") ) return;
+                
+                var newVar = $(this).attr('href');
+                if(newVar.lastIndexOf("&")!=-1)newVar = newVar.substring(newVar.lastIndexOf("?")+1,newVar.lastIndexOf("&"));
+                else newVar = newVar.substring(newVar.lastIndexOf("?")+1);
+                
+                var splitVar = newVar.split("=");
+                var expPatt = new RegExp("\\b"+splitVar[0]+"=\\b[a-zA-Z0-9_%]*");
+                var currentURL = window.location.search;
+                
+                if( currentURL.search(splitVar[0]+'=')==-1 ){//not found!
+                    currentURL += '&'+newVar;
+                    $(this).attr('href',currentURL);//Set New URL
+                }
+                else{
+                    currentURL = currentURL.replace(expPatt,newVar);
+                    $(this).attr('href',currentURL);//Set New URL
+                }
+                
+            });
+            
+         }
+    });
+</script>
+   <style type="text/css">
+a, a:hover {
+    text-decoration: none;
+}
+#headerow table {
+    width: 100%;
+    max-width: 1890px;
+}
+.totals {
+    font-family: Verdana,Geneva,sans-serif; 
+    font-size: 26px;
+    text-align: left;
+}
+.totals span {
+    color: #0084CA;
+}
+.datePicker {
+    display:none;
+}
+/*.datatable {
+    padding-bottom: 500px;
+}*/
+.datatable table { 
+    background-image: url({!$Resource.item_row_bg}); 
+    height: 160px;
+}
+.datatable tr td {
+    text-align: left;
+}
+.datatable table tr td.age.spex { 
+    background-image: url({!$Resource.spex});
+}
+.datatable table tr td.age.AcceleratedRepair { 
+    
+    background-image: url({!$Resource.AcceleratedRepair});
+ 
+}
+.datatable table tr td.age.tech{ 
+    background-image: url({!$Resource.tech});
+}
+
+#footerow {
+    background-image: url({!$Resource.footer_bg});
+    font-size: 18px;
+}
+#footerow .button {
+    background-image: url({!$Resource.dashboard_buttons});
+    background-repeat: no-repeat;
+    height: 25px;
+    width: 115px;
+    display: table-cell;
+    border: none;
+    padding: 0px;
+    text-decoration: none;
+}
+#footerow .button.home {
+    background-position: 0px -75px;
+}
+#footerow .button.scroll {
+    background-position: -115px 0px;
+}
+#footerow .button.stop {
+    background-position: -115px -25px;
+}
+.redtext {
+    color: #ee3124;
+}
+.greentext {
+    color: #058f0c;
+    
+}
+</style>
+    </head>
+    <body  onload='doScroll();' >
+<div id="primaryContainer" class="primaryContainer dashboard cusTop10 clearfix">
+  <div class="top-nav clearfix">
+    <div class="fixInnerHeader clearfix"> <a href="http://honeywellaero.force.com/Dashboards/DandS_First_Drill_Down?scroll=true" class="menulinkbox clearfix"> <span class="Home"></span>
+      <p class="Home1"> Back </p>
+      </a>
+      <p class="headingText"> CUSTOMER TOP ISSUES </p>
+      <a href="#" class="srDashboardLink clearfix" data-toggle="modal" data-target="#airbuslogosPopUp" > <span class="Home4"></span>
+      <p class="Home1"> SR Dashboard </p>
+      </a> </div>
+  </div>
+  <div class="clearfix rowFluidContain">
+    <div class="box11extra1 clearfix"> </div>
+    <!--<img src="img/logo-airbus.svg" class="commonLogoLarge image" />-->
+    <div class="rightAlignTggBox clearfix">
+      <p class="top10OnlyText"> Show Top Issues Only </p>
+      <div class="toggleBtn clearfix"> <a id="Toggle_YES" href="#" class="commonToggle" data-target="true">
+        <p class="toggleTextYes"> Yes </p>
+        <div class="toggleYesBox1 clearfix"></div>
+        </a> <a id="Toggle_NO" href="#" class="commonToggle">
+        <p class="toggleTextNo">No<br />
+        </p>
+        <div class="toggleNoBox1 clearfix"></div>
+        </a> </div>
+    </div>
+  </div>
+  <div id="TopIssues">
+  <apex:repeat value="{!DSSRRecords}" var="s">
+  <div class="innerPriContent" > 
+    <!--  INNER BOX 1 START -->
+    <div class="containBoxdiv marginTopreq1 clearfix">
+      <div class="containBoxRow1 borderBottomWht clearfix">
+        <p class="col-md-620"> SR Number&#x3a;<br />
+        </p>
+        <a onclick="redirect('{!s.id}');" style="cursor: pointer;">  
+        <p class="col-md-621">{!s.Name}<br />
+        </p>
+        </a>
+        <p class="col-md-620"> Due Date&#x3a; </p>
+        <apex:outputPanel rendered="{!if(s.Customer_Due_Date__c!=null,(s.Customer_Due_Date__c>NOW()),'false')}">
+           <p class="greentext">  {!s.Customer_Due_Date__c}<span class="qusIconSymbol"></span> </p>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!if(s.Customer_Due_Date__c!=null,(s.Customer_Due_Date__c<NOW()),'false')}">
+            <p class="redtext">  {!s.Customer_Due_Date__c}<span class="qusIconSymbol"></span> </p>
+        </apex:outputPanel>
+      </div>
+      <div class="containBoxRow1 clearfix">
+      <p class="col-md-620"> Account Name </p>
+        <p class="col-md-621"> {!s.Account_Name__r.Name}<br />
+        </p>
+        <p class="col-md-620"> Escalation Tier&#x3a; </p>
+        <p class="col-md-621"> {!s.Escalation_Tier__c}<br />
+        </p>
+        <p class="col-md-620"> Complexity Level&#x3a; </p>
+        <p class="col-md-621">{!s.Complexity_Level__c}<br />
+        </p>
+      </div>
+      <div class="containBoxRow1 clearfix">
+        <p class="col-md-620"> Attribute&#x3a; </p>
+        <p class="col-md-621"> {!s.Atr__c}<br />
+        </p>
+        <p class="col-md-620"> Responsible Party&#x3a; </p>
+        <p class="col-md-621"> {!s.Function_Responsible__c}<br />
+        </p>
+      </div>
+      <div class="containBoxRow1 clearfix">
+        <p class="col-md-620"> Subject&#x3a; </p>
+        <div class="containBoxRow2 clearfix">
+          <p class="col-md-633"> {!s.Subject__c}<br />
+          </p>
+        </div>
+      </div>
+      <div class="containBoxRow1 clearfix">
+        <p class="col-md-620"> Problem Description&#x3a;</p>
+        <div class="containBoxRow5 clearfix">
+          <p class="col-md-616"> {!s.Problem_Description__c}<br />
+          </p>
+        </div>
+      </div>
+     
+      <div id="ROW_OPEN1" class="containBoxRow1 clearfix">
+        <p class="col-md-620"> Resolution&#x3a; </p>
+        <div class="containBoxRow5 clearfix">
+          <p class="col-md-616"> {!s.Status_Resolution__c}
+          </p>
+           </div>
+      </div>
+        <p class="col-md-620"> Owner Name&#x3a; </p>
+        <p class="col-md-621"> {!s.Owner.name}<br />
+        </p>
+    </div>
+    </div>
+    </apex:repeat>
+    </div>
+    
+    <div id="AllIssues">
+    <apex:repeat value="{!DSSRRecordsAll}" var="s">
+  <div class="innerPriContent" > 
+    
+    <div class="containBoxdiv marginTopreq1 clearfix">
+      <div class="containBoxRow1 borderBottomWht clearfix">
+        <p class="col-md-620"> SR Number&#x3a;<br />
+        </p>
+        <a onclick="redirect('{!s.id}');" style="cursor: pointer;">  
+        <p class="col-md-621">{!s.Name}<br />
+        </p>
+        </a>
+        <p class="col-md-620"> Due Date&#x3a; </p>
+        <apex:outputPanel rendered="{!if(s.Customer_Due_Date__c!=null,(s.Customer_Due_Date__c>NOW()),'false')}">
+           <p class="greentext">  {!s.Customer_Due_Date__c}<span class="qusIconSymbol"></span> </p>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!if(s.Customer_Due_Date__c!=null,(s.Customer_Due_Date__c<NOW()),'false')}">
+            <p class="redtext">  {!s.Customer_Due_Date__c}<span class="qusIconSymbol"></span> </p>
+        </apex:outputPanel>
+      </div>
+      <div class="containBoxRow1 clearfix">
+      <p class="col-md-620"> Account Name </p>
+        <p class="col-md-621"> {!s.Account_Name__r.Name}<br />
+        </p>
+        <p class="col-md-620"> Escalation Tier&#x3a; </p>
+        <p class="col-md-621"> {!s.Escalation_Tier__c}<br />
+        </p>
+        <p class="col-md-620"> Complexity Level&#x3a; </p>
+        <p class="col-md-621">{!s.Complexity_Level__c}<br />
+        </p>
+      </div>
+      <div class="containBoxRow1 clearfix">
+        <p class="col-md-620"> Attribute&#x3a; </p>
+        <p class="col-md-621"> {!s.Atr__c}<br />
+        </p>
+        <p class="col-md-620"> Responsible Party&#x3a; </p>
+        <p class="col-md-621"> {!s.Function_Responsible__c}<br />
+        </p>
+      </div>
+      <div class="containBoxRow1 clearfix">
+        <p class="col-md-620"> Subject&#x3a; </p>
+        <div class="containBoxRow2 clearfix">
+          <p class="col-md-633"> {!s.Subject__c}<br />
+          </p>
+        </div>
+      </div>
+      <div class="containBoxRow1 clearfix">
+        <p class="col-md-620"> Problem Description&#x3a;</p>
+        <div class="containBoxRow5 clearfix">
+          <p class="col-md-616"> {!s.Problem_Description__c}<br />
+          </p>
+        </div>
+      </div>
+     
+     
+      <div id="ROW_OPEN1" class="containBoxRow1 clearfix">
+        <p class="col-md-620"> Resolution&#x3a; </p>
+        <div class="containBoxRow5 clearfix">
+          <p class="col-md-616"> {!s.Status_Resolution__c}
+          </p>
+          </div>
+      </div>
+       <p class="col-md-620"> Owner Name&#x3a; </p>
+        <p class="col-md-621"> {!s.Owner.name}<br />
+        </p>
+    </div>
+    </div>
+    </apex:repeat>
+    </div> 
+  <!--   ---------------------  Airbus logo popup screen code --- START -------- -->
+  <div class="modal fade clearfix" id="airbuslogosPopUp" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div id="popupShowAirbuslog" class="popupShowAirbuslog clearfix">
+      <div class="modelBoxHeader clearfix">
+        <p class="titleHeadtext">  </p>
+      </div>
+      <!--a id="box0" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-airbus.svg" /> </a> <a id="box1" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-boeing.svg"  /> </a> <a id="box2" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-bombardier.svg"  /> </a> <a id="box3" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-british-airways.svg"  /> </a> <a id="box4" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-dassault.svg" /> </a> <a id="box5" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-dla.png" /> </a> <a id="box6" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-embraer.svg" /> </a> <a id="box7" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-gulfstream.svg" /> </a> <a id="box8" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-lufthansa.svg" /> </a> <a id="box9" class="commonLogoBox clearfix" data-dismiss="modal"> <img class="commonImglogo image" src="img/logo-northrop-grumman.svg" /> </a>-->
+      <div class="tfooterSection clearfix"> <a class="submitBtn clearfix" data-dismiss="modal" >
+        <p class="buttontext"> Ok </p>
+        </a> </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript" src="{!URLFOR($Resource.CRDjs, 'js/jquery.js')}"></script> 
+<script type="text/javascript" src="{!URLFOR($Resource.CRDjs, 'js/bootstrap.min.js')}"></script> 
+<script type="text/javascript"> 
+
+$(document).ready(function(){ 
+/* *******  Toggle code Start  ********   */
+    $("#Toggle_NO").hide();
+    $("#AllIssues").hide();
+    $('.toggleBtn').on('click',function() {
+            // $(".innerPriContent").slideToggle(); /* Slider Toggle if require remove comment and use this code */
+        if($(this).children("a.commonToggle").attr('data-target')=="true"){
+            $('#Toggle_YES').hide();
+            $("#Toggle_NO").show();
+            $("#AllIssues").show();
+            $("#TopIssues").hide();
+            $(this).children("a.commonToggle").attr('data-target',"false"); // SET FALSE VALUE
+        }else{
+           $("#Toggle_NO").hide();
+            $('#Toggle_YES').show();
+             $("#AllIssues").hide();
+            $("#TopIssues").show();
+            $(this).children("a.commonToggle").attr('data-target',"true"); // SET FALSE VALUE
+        }           
+    });
+
+    
+     /* ** Above Toggle code use for checking toggle value are True or False it help to display Top 10 page is ordered by due date, older to newer from top to bottom, and the toggle on top should change from Top 10 Only  ** */
+    
+/* *******  Toggle code End  ********   */
+
+
+$('.openDiv').on('click',function() {
+    $child = $('#' + $(this).data('target'));
+    $($child).show();
+    $(this).parent().parent().hide();
+});
+
+$('.closeDiv').on('click',function() {
+    $(this).parent().parent().hide();
+    $divId = $($(this).parent().parent()).attr('id');
+    
+    $('[data-target=' + $divId+ ']').parent().parent().show();
+});
+
+$('.closeDiv').parent().parent().hide();
+
+});
+</script>
+<div id="footerow">
+    <div id="testdev2" > 
+        <table border="0" align="center" cellpadding="0" cellspacing="0"><tbody><tr><td valign="middle">
+            <div class="custom_dropdown">  
+                <ul class="main">
+                    <apex:outputpanel layout="none" rendered="{!IF((scroll=='true'),true,false)}" >
+                        <td style="padding-left: 15px;">          
+                            <a id="tggl_scroll" class="button stop" href="?scroll=false" title="Disable Scrolling">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;        </a>
+                        </td>
+                    </apex:outputpanel>
+                    <apex:outputpanel layout="none" rendered="{!IF((scroll!='true'),true,false)}" >
+                        <td style="padding-left: 15px;">          
+                            <a id="tggl_scroll" class="button scroll" href="?scroll=true" title="Enable Scrolling">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a>
+                        </td>
+                    </apex:outputpanel>
+                </ul>
+            </div>
+        </td></tr></tbody></table>
+    </div>
+</div>
+</body>
+<script type="text/javascript" src="{!$Resource.jQuery_js}"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script language="javascript" type="text/javascript" > 
+   
+   var scrollvalue = queryString("scroll"); 
+   var tggl_scroll = document.getElementById("tggl_scroll");
+   if(scrollvalue != ""){
+    tggl_hours.href += ("&scroll="+scrollvalue);
+}
+   
+    function doScroll() {
+    //alert(scroll);
+    if( scrollvalue=="true")
+     var interval = setInterval("startscrolling()",200);
+     
+}
+ function startscrolling(){
+ //alert(scroll);
+      window.scrollBy(0,2);
+ }
+               
+                    
+function queryString(parameter) { 
+
+var loc = location.search.substring(1, location.search.length);
+  
+  var param_value = false;
+  var params = loc.split("&");
+  for (i=0; i<params.length;i++) {
+      param_name = params[i].substring(0,params[i].indexOf('='));
+      if (param_name == parameter) {
+          param_value = params[i].substring(params[i].indexOf('=')+1)
+      }
+  }
+  if (param_value) {
+      return param_value;
+  }
+  else {
+      return false; 
+  }
+}
+
+function redirect(SRId){ 
+var sr=SRId;
+//alert('test:'+sr);
+//alert('{!$Label.servernameurl}');
+window.open('{!$Label.servernameurl}'+'/'+sr);
+}   
+        
+    </script>
+</html>
+  </apex:form>
+  <apex:insert name="footer">
+        <c:honeywellFooter />
+</apex:insert>
+
+</apex:page>

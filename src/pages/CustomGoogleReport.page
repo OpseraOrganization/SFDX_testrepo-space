@@ -1,0 +1,1126 @@
+<apex:page controller="CustomGoogleReportCtrl" showHeader="true" sidebar="false" readOnly="true"> 
+    <script src="{!URLFOR($Resource.customreport,'jquery-1.11.3.min.js')}"></script>
+    <script src="{!URLFOR($Resource.TSSCommunityRes,'js/bootstrap.min.js')}"></script>
+    <script src="{!URLFOR($Resource.TSSCommunityRes,'js/jquery-ui.js')}"></script>
+    <link href="{!URLFOR($Resource.TSSCommunityRes,'css/jquery-ui.css')}" rel="stylesheet" media="screen"/> 
+    <link href="{!URLFOR($Resource.customreport,'jquery.mobile-1.4.5.min.css')}" rel="stylesheet" />
+     <script>
+        $(document).bind('mobileinit',function(){
+            $.mobile.changePage.defaults.changeHash = false;
+            $.mobile.hashListeningEnabled = false;
+            $.mobile.pushStateEnabled = false;
+        });
+    </script>  
+     
+    <!-- Google API inclusion -->
+    <apex:includeScript id="a" value="https://www.google.com/jsapi" />
+    <apex:pageMessages id="msg"/>
+    <style>
+        .shadowDivDisableClass{
+            display:none;
+            height: 0px !important;
+        }
+
+        .shadowDivEnableClass{
+            position:absolute;
+            overflow:hidden;
+            opacity:0.3;
+            z-Index:50;
+            filter:alpha(opacity=30);
+            background-Color:#000000;
+            display:block;
+        }   
+        .hide {
+          display: none !important;
+        }
+        .show {
+          display: block !important;
+        } 
+        .dateFormat{
+   visibility:hidden;
+}   
+   </style> 
+   <div id="shadowDivId" class="shadowDivDisableClass" ></div>
+    <div id="visibleDivId"> 
+   <apex:form >
+   
+   <apex:pageMessages id="pageMsgId"/>
+   <apex:pageBlock id="pgblock">
+   <b>GTO Reports</b>
+   <apex:pageBlockSection title="Filter" columns="3">
+   
+       <apex:inputField value="{!repfitler.Activity__c}" id="ActivityId" onchange="disableOEM();"/>
+   
+       <apex:inputField value="{!repfitler.Other_Case_metrics__c}" id="OtherCasemetricsId"/>
+       
+       <apex:inputField value="{!repfitler.SBU__c}" id="SBUId"/>
+       
+       <apex:inputField value="{!repfitler.GTO_Group__c}" id="GTOGroupId"/>
+   
+       <apex:inputField value="{!repfitler.Open_Closed__c}" id="OpenClosedId"/>
+   
+       <apex:inputField value="{!repfitler.Enterprise__c}" id="EnterpriseId"/>
+   
+       <apex:inputField value="{!repfitler.Region__c}" id="RegionId"/>
+   
+       <apex:inputField value="{!repfitler.Aircraft_Type__c}" id="AircraftTypeId"/>
+      
+       <apex:inputField value="{!repfitler.Account_Name__c}" id="AccountNameId"/>
+   
+       <apex:inputField value="{!repfitler.OEM__c}" id="OEMId" />
+       <apex:inputField value="{!repfitler.SR_OEM__c}" id="SREMId"/>
+       <apex:inputField value="{!repfitler.Net_Satisfaction_Score__c}" id="NetSatisfactionScoreId" />
+ 
+       <apex:inputField value="{!repfitler.See_Detail__c}" id="SeeDetailId"/>
+   
+       <apex:inputField value="{!repfitler.Part_Number__c}" id="PartNumberId"/>
+       <br/>
+       <apex:inputField value="{!repfitler.From_Date__c}" id="FromDateId"/>
+ 
+       <apex:inputField value="{!repfitler.To_Date__c}" id="ToDateId"/>
+   
+       <apex:inputField value="{!repfitler.Trend__c}" id="TrendId"/>
+       
+       <apex:inputField value="{!repfitler.Resolution_Time__c}" id="ResolutionTimeId"  />
+ 
+       <apex:inputField value="{!repfitler.Age__c}" id="AgeId" onchange="disableOEM();"/>
+   
+       <apex:inputField value="{!repfitler.Age_Buckets__c}" id="AgeBucketsId" style="disabled: true;" onchange="disableOEM();"/>
+       
+   </apex:pageBlockSection>
+   
+        <div id="disablingDiv" style="position:absolute;top: 0px;left: 0px;display:none">
+        </div>
+        <div id="loadingImage" style="position:relative;left:50%;top:10%;display:none"><!--position:relative;left:50%;display:none-->
+            <apex:image value="{!$Resource.Processing}"/> &nbsp;&nbsp;Request is in progress...Please wait.<br/>
+        </div>
+        <apex:actionStatus onstart="addGrayoutEffect(true, 'shadowDivId', 'visibleDivId');freezeBackground();" onstop="addGrayoutEffect(false, 'shadowDivId', 'visibleDivId');unFreezeBackground();"  id="resultStatus">                                                        
+        </apex:actionStatus>    
+     <br/><div id="slider">
+     <apex:iframe src="/apex/slider" height="100px" id="ifrmReportViewer"/></div>
+     <div id="bucketList"><b>
+         <input type="radio" name="ageBucketRadio" id="Bucket1" value="Bucket1" /><apex:outputText value="Age Bucket1(<10,<20,<24,<72,<240)"></apex:outputText>
+         <input type="radio" name="ageBucketRadio" id="Bucket2" value="Bucket2" /><apex:outputText value="Age Bucket2(10-72,24-72,24-240,72-240)"></apex:outputText>
+         <input type="radio" name="ageBucketRadio" id="Bucket3" value="Bucket3" /><apex:outputText value="Age Bucket3(>10,>24,>72,>240)"></apex:outputText>
+     </b></div>
+          <apex:commandButton value="Generate Report"  onclick="initCharts1()" reRender="pgblock,chartBlock,msg" status="resultStatus" id="GenerateReportBtn" oncomplete="disableOEM();"/>
+     <!--<apex:commandButton value="all cases"  onclick="initCharts12()" reRender="chartBlock"/>-->
+    <!-- Google Charts will be drawn in this DIV -->
+    </apex:pageBlock>
+    <div id="chartBlock" />
+    <div id="processingId">
+    <b id="ContactNameDiv"></b></div>
+    <div id="seeDeatailDiv" onclick="exportRedirect()" class="hidden"><a href="#">Click here for details </a></div>
+    
+    <div id="chartBlock1"  style="height:100%;"/>
+    
+    <div id="totalBlock" align="center">
+    <b id="totalDiv"></b>
+    </div>
+    <div align="center" id="count_ageId">    
+    <apex:image url="{!$Resource.count_age}" />
+    </div>
+    <div align="center" id="count_resolutionId">
+    <apex:image url="{!$Resource.count_resolution}"/>
+    </div>
+    <div align="center" id="count_both_ageId">
+    <apex:image url="{!$Resource.count_both_age}"/> 
+    </div>
+    <div align="center" id="count_hoursId">
+    <apex:image url="{!$Resource.count_hours}"/>    
+    </div>
+    <div align="center" id="count_both_hoursId">
+    <apex:image url="{!$Resource.count_both_hours}"/>   
+    </div>  
+    <div align="center" id="NSSImage">
+    <apex:image url="{!$Resource.NSSImage}"/>    
+    </div>
+    
+    </apex:form>
+    </div> 
+    <script type="text/javascript">
+    Visualforce.remoting.timeout = 120000; // Set timeout at page level
+
+      $( document ).ready(function() {
+           $('[id$=SREMId]').prop("disabled",true);
+           $('[id$=count_ageId]').css("display", "none");
+           $('[id$=count_resolutionId]').css("display", "none");
+           $('[id$=count_both_ageId]').css("display", "none");
+           $('[id$=count_hoursId]').css("display", "none");
+           $('[id$=count_both_hoursId]').css("display", "none");
+           $('[id$=NSSImage]').css("display", "none");
+           $('[id$=slider]').css("display", "none");
+           $('[id$=bucketList]').css("display", "none");
+           
+      });
+        // Load the Visualization API and the piechart package.
+        google.load('visualization', '1.0', {'packages':['corechart']});
+        
+        // Set a callback to run when the Google Visualization API is loaded.
+       
+        google.setOnLoadCallback(initCharts);
+         function initCharts() {
+         } 
+        function initCharts1() {  
+            $('[id$=count_ageId]').css("display", "none");
+            $('[id$=count_resolutionId]').css("display", "none");
+            $('[id$=count_both_ageId]').css("display", "none");
+            $('#processingId').show();
+            $('#totalBlock').hide();            
+            $('#ContactNameDiv').html('Preparing the chart.......');     
+            $('#chartBlock1').hide();
+            $('[id$=ResolutionTimeId]').prop("disabled",false);
+           var boolValidation =true;
+           
+           var iContentBody = $("#ifrmReportViewer").contents().find("body");           
+           var ageMin= iContentBody.find("#price-min").val();
+           var ageMax= iContentBody.find("#price-max").val();
+           
+           var ActivityValue= $('[id$=ActivityId]').val();
+           var OtherCasemetrics= $('[id$=OtherCasemetricsId]').val();
+           var SBU= $('[id$=SBUId]').val();    
+           if(SBU==''){
+              alert('Please select SBU filter');
+              boolValidation = false; 
+              displayDefault(); 
+              }
+           var GTOGroup= $('[id$=GTOGroupId]').val(); 
+           
+           if(ActivityValue=='Planned Meetings: Type = Proactive Contact Plan' && GTOGroup=='' && boolValidation ==true){
+              alert('Please select GTOGroup filter');
+              boolValidation = false; 
+              displayDefault();
+              }             
+           var OpenClosedValue= $('[id$=OpenClosedId]').val(); 
+           if(OpenClosedValue=='' && boolValidation ==true){
+              alert('Please select Open/Closed filter');
+              boolValidation = false;
+              displayDefault();
+              }
+           var Enterprise= $('[id$=EnterpriseId]').val(); 
+           var Region= $('[id$=RegionId]').val();
+           var AircraftType= $('[id$=AircraftTypeId]').val();           
+           var AirtTpId=$("input[id*='AircraftTypeId_lkid']" ).val();           
+           var AccountName= $('[id$=AccountNameId]').val();
+           var AccNameId=$("input[id*='AccountNameId_lkold']" ).val(); 
+           var OEM= $('[id$=OEMId]').val();  
+           var SROEM= $('[id$=SREMId]').val();   
+           var SROEMName= $("input[id*='SREMId_lkid']" ).val();           
+           var NetSatisfactionScore= $('[id$=NetSatisfactionScoreId]').val();
+           var SeeDetail= $('[id$=SeeDetailId]').val();
+           var PartNumber= $('[id$=PartNumberId]').val();
+           var FromDateValue= $('[id$=FromDateId]').val();           
+           var ToDateValue= $('[id$=ToDateId]').val();           
+           var TrendValue= $('[id$=TrendId]').val();  
+            if(TrendValue=='' && boolValidation ==true){
+              alert('Please select Trend filter');
+              boolValidation = false; 
+              displayDefault();
+              }        
+           var ResolutionTime= $('[id$=ResolutionTimeId]').val();
+           var Age= $('[id$=AgeId]').val();
+           var AgeBuckets= $('[id$=AgeBucketsId]').val();  
+           if(AgeBuckets != 'Yes')
+            AgeBuckets ='';      
+           var AgeBucketselected = $('input[name="ageBucketRadio"]:checked').val();
+            if(AgeBucketselected == null || AgeBucketselected == '' || AgeBucketselected == 'undefined')
+            AgeBucketselected =''; 
+          
+           
+           var b ='';
+           b =FromDateValue.split("/");           
+           var datefr = b[2]+'-';
+           if(b[0]!=null && b[0].length==0)
+            datefr = datefr+'00';
+           else if(b[0]!=null && b[0].length==1)
+            datefr = datefr+'0'+b[0];
+           else if(b[0]!=null && b[0].length==2)
+            datefr = datefr+b[0];
+           if(b[1]!=null && b[1].length==0)
+            datefr = datefr+'-00';
+           else if(b[1]!=null && b[1].length==1)
+            datefr = datefr+'-0'+b[1];
+           else if(b[1]!=null && b[1].length==2)
+            datefr = datefr+'-'+b[1];
+           datefr =datefr +'T00:00:00Z'; 
+           
+           b =ToDateValue.split("/");           
+           var dateto = b[2]+'-';
+           if(b[0]!=null && b[0].length==0)
+            dateto = dateto +'00';
+           else if(b[0]!=null && b[0].length==1)
+            dateto = dateto +'0'+b[0];
+           else if(b[0]!=null && b[0].length==2)
+            dateto = dateto +b[0];
+           if(b[1]!=null && b[1].length==0)
+            dateto = dateto +'-00';
+           else if(b[1]!=null && b[1].length==1)
+            dateto = dateto +'-0'+b[1];
+           else if(b[1]!=null && b[1].length==2)
+            dateto = dateto +'-'+b[1];
+           dateto =dateto +'T23:59:59Z'; 
+            
+           if((NetSatisfactionScore == 'Yes' && ResolutionTime == 'Yes') || (NetSatisfactionScore == 'Yes' && Age == 'Yes') || (ResolutionTime == 'Yes' && Age == 'Yes')){
+                alert('Please select only one of these for your query:  Net Satisfaction Score, Average Resolution Time, Average Age, or Age Buckets');
+                  
+               boolValidation = false;
+               displayDefault();
+           }
+           
+           if((Age =='Yes' && AgeBuckets == 'Yes') || (NetSatisfactionScore == 'Yes' && AgeBuckets == 'Yes') || (ResolutionTime == 'Yes' && AgeBuckets == 'Yes')){
+          // if(ActivityValue!='Planned Meetings: Type = Proactive Contact Plan' ){
+              alert('Please select only one of these for your query:  Net Satisfaction Score, Average Resolution Time, Average Age, or Age Buckets');
+               boolValidation = false;  
+               displayDefault();
+                 
+            //   }       
+           }
+            if((ActivityValue=='ATS (Cases)' || ActivityValue=='DTS (Cases)') && AgeBuckets =='Yes' && boolValidation ==true){
+               if(AgeBucketselected ==null || AgeBucketselected=='' || AgeBucketselected=='undefined'){
+                   alert('Please select atleast one age bucket');
+                   boolValidation = false;
+                   displayDefault();
+               }           
+           }
+            if(OpenClosedValue=='Both' && AgeBuckets == 'Yes'){
+                alert('Age Buckets filter is not available for Open/Closed ="Both" ');
+              boolValidation = false;
+              displayDefault();
+            }   
+            
+           if(FromDateValue!=null && ToDateValue!=null && FromDateValue != undefined && ToDateValue != undefined && FromDateValue != '' && ToDateValue != '' ){           
+               
+               var frDate1 =new Date(FromDateValue.split("/")[2],FromDateValue.split("/")[0]-1,FromDateValue.split("/")[1]);
+               var toDate1 =new Date(ToDateValue.split("/")[2],ToDateValue.split("/")[0]-1,ToDateValue.split("/")[1]);
+             
+               if(toDate1< frDate1){               
+                   boolValidation = false;                  
+                   alert('From Date must be less than To date');
+                   displayDefault();
+                  
+               }
+               
+               var frDate2=new Date(frDate1.getFullYear()+1, frDate1.getMonth(), frDate1.getDate()); 
+                              
+               if(boolValidation && frDate1 - toDate1 != 0 && frDate2<toDate1){
+                   boolValidation = false;
+                   
+                   alert('From and To date difference must be less than a year');
+                   displayDefault();
+                   
+               } 
+           } 
+         
+          if(boolValidation){
+            if(SeeDetail == 'Yes'){ 
+              $('#seeDeatailDiv').show();
+            }
+            else{
+                $('[id$=seeDeatailDiv]').css("display", "none");
+            }
+            console.log('AccNameId**'+AccNameId);
+              if(ActivityValue=='ATS (Cases)' || ActivityValue=='DTS (Cases)'){              
+              if(OpenClosedValue!='Both'){
+              if(NetSatisfactionScore!='Yes' && ( ResolutionTime!='Yes' && Age!='Yes')){
+              dataArray = new Array();
+              var total =0;
+              var TrendValueString =TrendValue;
+              if(AgeBucketselected !='')
+                TrendValueString = 'By Age '+AgeBucketselected;
+              CustomGoogleReportCtrl.caseSearch(ActivityValue,OtherCasemetrics,SBU,OpenClosedValue,Enterprise,Region,AirtTpId,AccNameId,OEM,NetSatisfactionScore,PartNumber,datefr,dateto,TrendValue,ResolutionTime,Age,ageMin,ageMax,AgeBuckets,AgeBucketselected, function(result, event){
+               if(event.status) {
+               var ageRange='';
+               if(ageMax>0)
+                ageRange ='\n Case Age Range is '+ageMin+' - '+ageMax;
+               // load Column chart
+                     var visualization = new google.visualization.ColumnChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();
+                     data.addColumn('string', 'Case');                     
+                     data.addColumn('number', 'Count');
+                      
+                     data.addColumn({type: 'number', role: 'annotation'});   
+                     // add rows from the remoting results
+                     total =0;
+                     for(var i =0; i<result.length;i++){
+                        var r = result[i];
+                        data.addRow([r.xAxisName, r.barChartValue,r.barChartValue]); 
+                        total = total+r.barChartValue;
+                      }
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10}},
+                                   
+                                   width:window.innerWidth,vAxis:{textStyle:{fontSize: 10}},
+                                   vAxis: {title: 'Count'},
+                                   hAxis:{title: TrendValueString ,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {alwaysOutside: true,textStyle: {fontSize: 14,color: '#000',auraColor: 'none'}},
+                                    title: 'ATS '+OpenClosedValue+' Cases '+TrendValueString +' SBU ='+SBU+ageRange
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                    $('#totalDiv').html('Total '+OpenClosedValue+' Count ='+total);
+                    $('#totalBlock').show();    
+                    
+                    //TODO need to check if no data found so msg
+                    $('[id$=count_hoursId]').css("display", "none");
+                   $('[id$=count_both_hoursId]').css("display", "none");
+                   $('[id$=NSSImage]').css("display", "none");
+                    
+              }
+              else{
+              alert(event.message);
+                  alert(event.status);
+                 // alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, { buffer: false, escape: false, timeout: 120000});
+              }//not age
+              if(NetSatisfactionScore =='Yes'){
+              var total =0;
+                    dataArray = new Array();            
+              CustomGoogleReportCtrl.caseNSSSearch(ActivityValue,OtherCasemetrics,SBU,OpenClosedValue,Enterprise,Region,AirtTpId,AccNameId,OEM,PartNumber,datefr,dateto,TrendValue,Age,ageMin,ageMax, function(result, event){
+               if(event.status) {
+               var ageRange='';
+               if(ageMax>0)
+                ageRange ='\n Case Age Range is '+ageMin+' - '+ageMax;
+               // load Column chart
+                     var visualization = new google.visualization.ComboChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();                     
+                     data.addColumn('string', 'NSS');                     
+                     data.addColumn('number', 'NSS Overall Percent');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     data.addColumn('number', 'NPS Percent');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     data.addColumn('number', 'Count');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     total=0;
+                     // add rows from the remoting results
+                     for(var i =0; i<result.length;i++){
+                        var r = result[i];
+                        data.addRow([r.xAxisName, r.OSbarChartValue,r.OSbarChartValue, r.NSSbarChartValue, r.NSSbarChartValue,r.count,r.count]); 
+                        total = total+r.count;
+                      }
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10}},
+                                 
+                                   width:window.innerWidth,vAxes:{textStyle:{fontSize: 10}},
+                                   vAxes: {0: {title: 'Feedback Score',format: '#\'%\''},1: {side: 'right',title: 'Count'}},
+                                   hAxis:{title: TrendValue,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   seriesType: 'bars',
+                                   series: {2: { targetAxisIndex:1,type: "line",color: '#FA8258'}, // Bind series 0 to an axis named 'distance'.
+                                   },
+                                   colors: ['#3366cc','green'],
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {alwaysOutside: true,textStyle: {fontSize: 10,color: 'black',auraColor: 'none'}},
+                                    title: 'ATS '+OpenClosedValue+' Cases Feedback Score '+TrendValue+' SBU ='+SBU+ageRange
+                                     
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    var formatter = new google.visualization.NumberFormat({fractionDigits: 0,suffix: '%'});
+                          formatter.format(data, 1);
+                          formatter.format(data, 2);
+                          formatter.format(data, 3);
+                          formatter.format(data, 4);
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                    $('#totalDiv').html('Total Count ='+total);
+                    $('#totalBlock').show();    
+                    //TODO need to check if no data found so msg
+                    $('[id$=count_hoursId]').css("display", "none");
+                   $('[id$=count_both_hoursId]').css("display", "none");
+                   $('[id$=NSSImage]').show();
+                    
+              }
+              else{
+              alert(event.message);
+                  alert(event.status);
+                 // alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, { buffer: false, escape: false, timeout: 120000});
+              }//NetSatisfactionScore
+              if(ResolutionTime=='Yes' || Age=='Yes'){
+                
+              dataArray = new Array();
+              var total =0;
+              CustomGoogleReportCtrl.caseSearch(ActivityValue,OtherCasemetrics,SBU,OpenClosedValue,Enterprise,Region,AirtTpId,AccNameId,OEM,NetSatisfactionScore,PartNumber,datefr,dateto,TrendValue,ResolutionTime,Age,ageMin,ageMax,'','', function(result, event){
+               if(event.status) {
+               var ageRange='';
+               if(ageMax>0)
+                ageRange ='\n Case Age Range is '+ageMin+' - '+ageMax;
+               // load Column chart
+                     var visualization = new google.visualization.ComboChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();
+                     data.addColumn('string', 'Case');                     
+                     data.addColumn('number', 'Count');
+                     data.addColumn({type: 'number', role: 'annotation'}); 
+                     if(Age=='Yes')
+                     data.addColumn('number', 'Avg Age');                    
+                     if(ResolutionTime=='Yes')
+                     data.addColumn('number', 'Avg ResolutionTime');
+                     data.addColumn({type: 'number', role: 'annotation'});  
+                     total=0;   
+                     // add rows from the remoting results
+                     for(var i =0; i<result.length;i++){
+                        var r = result[i];
+                        data.addRow([r.xAxisName, r.barChartValue,r.barChartValue,r.lineChartValue,r.lineChartValue]);
+                        total = total+r.barChartValue;
+                      }
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10}},
+                                   
+                                   width:window.innerWidth,vAxis:{textStyle:{fontSize: 10}},
+                                   vAxes: {0: {title: 'Count'},1: {side: 'right',title: titleString,minValue:0,viewWindow: {min: 0}}},
+                                   hAxis:{title: TrendValue,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   seriesType: 'bars',
+                                   series: {0: { targetAxisIndex: 0}, // Bind series 0 to an axis named 'distance'.
+                                   1: { targetAxisIndex: 1 , type: "line",color: 'black'}, // Bind series 1 to an axis named 'brightness'.
+                                   },
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {alwaysOutside: true,textStyle: {fontSize: 14,color: '#000',auraColor: 'none'}},
+                                    title: 'ATS '+OpenClosedValue+' Cases '+TrendValue+' SBU ='+SBU+ageRange
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                    $('#totalDiv').html('Total '+OpenClosedValue+' Count ='+total);
+                    $('#totalBlock').show();    
+                    //TODO need to check if no data found so msg
+                     if(ResolutionTime == 'Yes'){   
+                       $('[id$=count_ageId]').css("display", "none");
+                       $('[id$=count_resolutionId]').show();
+                       $('[id$=count_both_ageId]').css("display", "none");
+                       $('[id$=count_hoursId]').css("display", "none");
+                       $('[id$=count_both_hoursId]').css("display", "none");
+                       $('[id$=NSSImage]').css("display", "none");
+                    }
+                    if(Age == 'Yes'){   
+                       $('[id$=count_ageId]').show();
+                       $('[id$=count_resolutionId]').css("display", "none");
+                       $('[id$=count_both_ageId]').css("display", "none");
+                       $('[id$=count_hoursId]').css("display", "none");
+                       $('[id$=count_both_hoursId]').css("display", "none");
+                       $('[id$=NSSImage]').css("display", "none");
+                    }
+                    //TODO need to check if no data found so msg
+              }
+              else{
+              alert(event.message);
+                  alert(event.status);
+                 // alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, { buffer: false, escape: false, timeout: 120000});
+                
+              }//age
+               
+              }//both not
+             
+             }//case
+                 //if SRs
+             if(ActivityValue=='EPS (SRs)'){
+             
+             
+              dataArray = new Array();
+              if(OpenClosedValue!='Both'){
+             
+              if((ResolutionTime!='Yes' || Age!='Yes') || AgeBuckets == 'Yes'){
+              var TrendValueString = TrendValue;
+              if (AgeBuckets == 'Yes')
+                   TrendValueString = 'By Age Buckets';
+              var total=0;
+              CustomGoogleReportCtrl.SRSearch(SBU,OpenClosedValue,Enterprise,Region,AirtTpId,AccNameId,SROEMName,PartNumber,datefr ,dateto,TrendValue,ResolutionTime,Age,AgeBuckets,false, function(result, event){
+               if(event.status) {//check for age,resolution if yes load combo chart
+               // load Column chart
+                     var visualization = new google.visualization.ColumnChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();
+                     data.addColumn('string', 'Service Request');                     
+                     data.addColumn('number', 'Count');
+                      
+                     data.addColumn({type: 'number', role: 'annotation'});   
+                     // add rows from the remoting results
+                     total =0;
+                     var noOfRows =2;
+                     if(AgeBuckets == 'Yes') 
+                        noOfRows =1;                     
+                     for(var i =0; i<result.length-noOfRows;i++){
+                        var r = result[i];
+                        data.addRow([r.xAxisName, r.barChartValue,r.barChartValue]); 
+                        total = total+r.barChartValue;
+                      }
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10}},
+                                   
+                                   width:window.innerWidth,vAxis:{textStyle:{fontSize: 10}},
+                                   vAxis: {title: 'Count'},
+                                   hAxis:{title: TrendValueString ,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {alwaysOutside: true,textStyle: {fontSize: 14,color: '#000',auraColor: 'none'}},
+                                    title: OpenClosedValue+' EPS(SRs) '+TrendValueString+' SBU ='+SBU
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                   
+                    if(OpenClosedValue == 'Open' && AgeBuckets != 'Yes')
+                    $('#totalDiv').html('Total '+OpenClosedValue+' Count ='+total+'<br/> Open SRs (Before '+FromDateValue+') ='+result[result.length-2].barChartValue);   
+                    else
+                    $('#totalDiv').html('Total '+OpenClosedValue+' Count ='+total);   
+                    $('#totalBlock').show();    
+                    $('[id$=count_hoursId]').css("display", "none");
+           $('[id$=count_both_hoursId]').css("display", "none");
+           $('[id$=NSSImage]').css("display", "none");
+                    //TODO need to check if no data found so msg
+                    
+              }
+              else{
+                  alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, {escape:true});
+              
+              
+              
+              }
+             if((ResolutionTime == 'Yes' || Age == 'Yes') && AgeBuckets != 'Yes'){
+              
+              var total =0;
+              var titleString ='';
+              if(ResolutionTime == 'Yes')
+                titleString ='Average Resolution time';
+              else if(Age == 'Yes')
+                titleString ='Average Age';
+              CustomGoogleReportCtrl.SRSearch(SBU,OpenClosedValue,Enterprise,Region,AirtTpId,AccNameId,SROEMName,PartNumber,datefr ,dateto,TrendValue,ResolutionTime,Age,AgeBuckets,false, function(result, event){
+               if(event.status) {//check for age,resolution if yes load combo chart
+               // load Column chart
+                     var visualization = new google.visualization.ComboChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();
+                     data.addColumn('string', 'Service Request');                     
+                     data.addColumn('number', 'Count');
+                     data.addColumn({type: 'number', role: 'annotation'}); 
+                     if(Age=='Yes')
+                     data.addColumn('number', 'Avg Age');                    
+                     if(ResolutionTime=='Yes')
+                     data.addColumn('number', 'Avg ResolutionTime');
+                     data.addColumn({type: 'number', role: 'annotation'}); 
+                     // add rows from the remoting results
+                     total =0;
+                     
+                     for(var i =0; i<result.length-2;i++){
+                        var r = result[i];
+                        data.addRow([r.xAxisName, r.barChartValue,r.barChartValue,r.lineChartValue,r.lineChartValue]);
+                         
+                        total = total+r.barChartValue;
+                        
+                      }
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10}},
+                                   
+                                   width:window.innerWidth,vAxis:{textStyle:{fontSize: 10}},
+                                   vAxes: {0: {title: 'Count'},1: {side: 'right',title: titleString,minValue:0,viewWindow: {min: 0}}},
+                                   hAxis:{title: TrendValue,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   seriesType: 'bars',
+                                   series: {0: { targetAxisIndex: 0}, // Bind series 0 to an axis named 'distance'.
+                                   1: { targetAxisIndex: 1 , type: "line",color: 'black'}, // Bind series 1 to an axis named 'brightness'.
+                                   },
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {textStyle: {fontSize: 10,color: 'black',auraColor: 'none'}},
+                                    title: OpenClosedValue+' EPS(SRs) '+TrendValue+' SBU ='+SBU
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                    var avgShow1 ='';
+                    var avgShow = result[result.length-1].lineChartValue/total;
+                    if(Age == 'Yes'){
+                        avgShow1 =' Total Average Age '+avgShow.toFixed(2);
+                    }
+                    if(ResolutionTime == 'Yes'){
+                        avgShow1 =' Total Average Resolution Time '+avgShow.toFixed(2);
+                    }
+                    if(OpenClosedValue == 'Open')
+                    $('#totalDiv').html('Total '+OpenClosedValue+' Count ='+total+'<br/> Open SRs (Before '+FromDateValue+') ='+result[result.length-2].barChartValue+avgShow1  );   
+                    else
+                    $('#totalDiv').html('Total '+OpenClosedValue+' Count ='+total+avgShow1 );
+                    $('#totalBlock').show(); 
+                    if(ResolutionTime == 'Yes'){   
+                       $('[id$=count_ageId]').css("display", "none");
+                       $('[id$=count_resolutionId]').show();
+                       $('[id$=count_both_ageId]').css("display", "none");
+                       $('[id$=count_hoursId]').css("display", "none");
+                       $('[id$=count_both_hoursId]').css("display", "none");
+                       $('[id$=NSSImage]').css("display", "none");
+                    }
+                    if(Age == 'Yes'){   
+                       $('[id$=count_ageId]').show();
+                       $('[id$=count_resolutionId]').css("display", "none");
+                       $('[id$=count_both_ageId]').css("display", "none");
+                       $('[id$=count_hoursId]').css("display", "none");
+                       $('[id$=count_both_hoursId]').css("display", "none");
+                       $('[id$=NSSImage]').css("display", "none");
+                    }
+                    //TODO need to check if no data found so msg
+                    
+              }
+              else{
+                  alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, {escape:true});
+              
+              }
+              }
+              
+              ///for both
+              else if(OpenClosedValue == 'Both'){
+              
+              if(Age !='Yes'){
+              var totalOpen =0;
+              var totalClosed=0;
+                    CustomGoogleReportCtrl.SRBothSearch(SBU,OpenClosedValue,Enterprise,Region,AirtTpId,AccNameId,SROEMName,PartNumber,datefr ,dateto,TrendValue,ResolutionTime,Age,AgeBuckets, function(result, event){
+               if(event.status) {//check for age
+               // load Column chart
+                    // load Column chart
+                     var visualization = new google.visualization.ColumnChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();
+                     data.addColumn('string', 'Service Request');                     
+                     data.addColumn('number', 'Open Count');                      
+                     data.addColumn({type: 'number', role: 'annotation'});   
+                     data.addColumn('number', 'Closed Count');                      
+                     data.addColumn({type: 'number', role: 'annotation'});  
+                      totalOpen =0;totalClosed=0;
+                     // add rows from the remoting results                    
+                      $.each(result, function(index,value){
+                         
+                         data.addRow([value.xAxisName, value.openBarValue,value.openBarValue,value.closedBarValue,value.closedBarValue]); 
+                         totalOpen =totalOpen+value.openBarValue;
+                         totalClosed =totalClosed+value.closedBarValue;
+                      })
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10}},
+                                   
+                                   width:window.innerWidth,vAxis:{textStyle:{fontSize: 10}},
+                                   vAxis: {title: 'Count'},
+                                   hAxis:{title: TrendValue,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   colors: ['#3366cc','green'],
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {alwaysOutside: true,textStyle: {fontSize: 10,color: '#000',auraColor: 'none'}},
+                                    title: OpenClosedValue+' EPS(SRs) '+TrendValue+' SBU ='+SBU
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                    $('#totalDiv').html('Total Open Count ='+totalOpen+' and Total Close Count='+totalClosed); 
+                    $('#totalBlock').show();    
+                    $('[id$=count_hoursId]').css("display", "none");
+           $('[id$=count_both_hoursId]').css("display", "none");
+           $('[id$=NSSImage]').css("display", "none");
+                    //TODO need to check if no data found so msg
+                    
+              }
+              else{
+                  alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, {escape:true});
+               }
+               if(Age=='Yes'){
+              var totalOpen =0;
+              var totalClosed=0;               
+                    CustomGoogleReportCtrl.SRBothSearch(SBU,OpenClosedValue,Enterprise,Region,AirtTpId,AccNameId,SROEMName,PartNumber,datefr ,dateto,TrendValue,ResolutionTime,Age,AgeBuckets, function(result, event){
+               if(event.status) {//check for age
+               // load Column chart
+                    // load Column chart
+                     var visualization = new google.visualization.ComboChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();
+                     data.addColumn('string', 'Service Request');                     
+                     data.addColumn('number', 'Open Count');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     data.addColumn('number', 'Closed Count');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     data.addColumn('number', 'Open Avg Age');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     data.addColumn('number', 'Close Avg Age');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     totalOpen =0;totalClosed=0;
+                     // add rows from the remoting results                    
+                      $.each(result, function(index,value){
+                         
+                         data.addRow([value.xAxisName, value.openBarValue,value.openBarValue,value.closedBarValue,value.closedBarValue,value.openLineChartValue,value.openLineChartValue,value.closeLineChartValue,value.closeLineChartValue]); 
+                         totalOpen =totalOpen+value.openBarValue;
+                         totalClosed =totalClosed+value.closedBarValue; 
+                      })
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10},targetAxisIndex: 1},
+                                   
+                                   width:window.innerWidth,vAxes:{textStyle:{fontSize: 10}},
+                                   vAxes: {0: {title: 'Count'},1: {side: 'right',title: 'Average Age'}},
+                                   hAxis:{title: TrendValue,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   seriesType: 'bars',
+                                   series: {2: { targetAxisIndex:1,type: "line",color: '#FA8258'}, // Bind series 0 to an axis named 'distance'.
+                                   3: { targetAxisIndex: 1 , type: "line",color: 'black'}, // Bind series 1 to an axis named 'brightness'.
+                                   },
+                                   colors: ['#3366cc','green'],
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {alwaysOutside: true,textStyle: {fontSize: 10,color: 'black',auraColor: 'none'}},
+                                    title: OpenClosedValue+' EPS(SRs) '+TrendValue+' SBU ='+SBU
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                    $('#totalDiv').html('Total Open Count ='+totalOpen+' and Total Close Count='+totalClosed); 
+                    $('#totalBlock').show();    
+                    //TODO need to check if no data found so msg
+                     if(Age == 'Yes'){   
+                       $('[id$=count_ageId]').css("display", "none");
+                       $('[id$=count_resolutionId]').css("display", "none");
+                       $('[id$=count_both_ageId]').show();
+                       $('[id$=count_hoursId]').css("display", "none");
+                       $('[id$=count_both_hoursId]').css("display", "none");
+                       $('[id$=NSSImage]').css("display", "none");
+                    }
+                    
+              }
+              else{
+                  alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, {escape:true});
+               
+               } //age close
+              }
+             
+             
+             }    //activity sr
+             if(ActivityValue=='Planned Meetings: Type = Proactive Contact Plan'){
+             
+              dataArray = new Array();
+              if(OpenClosedValue!='Both'){              
+              console.log('in yes');
+              var total =0;
+              var hoursTotal=0;
+              CustomGoogleReportCtrl.PlannedMeetingSearch(GTOGroup,SBU,OpenClosedValue,AccNameId,datefr ,dateto,TrendValue, function(result, event){
+               if(event.status) {//check for age,resolution if yes load combo chart
+               // load Column chart
+                     var visualization = new google.visualization.ComboChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();
+                     data.addColumn('string', 'Planned Meetings');                     
+                     data.addColumn('number', 'Count');
+                     data.addColumn({type: 'number', role: 'annotation'});                      
+                     data.addColumn('number', 'Hours Spent');
+                     data.addColumn({type: 'number', role: 'annotation'}); 
+                     // add rows from the remoting results
+                      total =0;
+                      hoursTotal =0; 
+                     for(var i =0; i<result.length;i++){
+                        var r = result[i];
+                        data.addRow([r.xAxisName, r.barChartValue,r.barChartValue,r.lineChartValue,r.lineChartValue]);
+                        total = total+r.barChartValue;
+                        hoursTotal =hoursTotal+r.lineChartValue;
+                      }
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10}},
+                                   
+                                   width:window.innerWidth,vAxis:{textStyle:{fontSize: 10}},
+                                   vAxes: {0: {title: 'Count'},1: {side: 'right',title: 'Total Hours',minValue:0,viewWindow: {min: 0}}},
+                                   hAxis:{title: TrendValue,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   seriesType: 'bars',
+                                   series: {0: { targetAxisIndex: 0}, // Bind series 0 to an axis named 'distance'.
+                                   1: { targetAxisIndex: 1 , type: "line",color: 'black'}, // Bind series 1 to an axis named 'brightness'.
+                                   },
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {textStyle: {fontSize: 10,color: 'black',auraColor: 'none'}},
+                                    title: OpenClosedValue+' '+GTOGroup+' Planned meeting '+TrendValue+' SBU ='+SBU
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                    $('#totalDiv').html('Total '+OpenClosedValue+' Count ='+total+' Total Hours Spent='+hoursTotal.toFixed(2)); 
+                    $('#totalBlock').show(); 
+                    
+                       $('[id$=count_ageId]').css("display", "none");
+                       $('[id$=count_resolutionId]').css("display", "none");
+                       $('[id$=count_both_ageId]').css("display", "none");
+                       $('[id$=count_hoursId]').show();
+                       $('[id$=count_both_hoursId]').css("display", "none");
+                       $('[id$=NSSImage]').css("display", "none");
+                    
+                    //TODO need to check if no data found so msg
+                    
+              }
+              else{
+                  alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, {escape:true});
+              
+              
+              }
+              
+              ///for both
+              else if(OpenClosedValue == 'Both'){
+              var totalOpen =0;
+              var totalClosed=0;               
+                    CustomGoogleReportCtrl.PlannedMeetingBothSrch(GTOGroup,SBU,OpenClosedValue,AccNameId,datefr ,dateto,TrendValue, function(result, event){
+               if(event.status) {//check for age
+               // load Column chart
+                    // load Column chart
+                     var visualization = new google.visualization.ColumnChart(document.getElementById('chartBlock1'));
+                     // Prepare table model for chart with columns
+                     var data = new google.visualization.DataTable();
+                     data.addColumn('string', 'Planned meeting');                     
+                     data.addColumn('number', 'Expected Count');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     data.addColumn('number', 'Completed Count');
+                     data.addColumn({type: 'number', role: 'annotation'});
+                     
+                     totalOpen =0;totalClosed=0;
+                     // add rows from the remoting results                    
+                      $.each(result, function(index,value){
+                         
+                         data.addRow([value.xAxisName, value.openBarValue,value.openBarValue,value.closedBarValue,value.closedBarValue]); 
+                         totalOpen =totalOpen+value.openBarValue;
+                         totalClosed =totalClosed+value.closedBarValue; 
+                      })
+                      var options={legend : {position: 'right', textStyle: {fontSize: 10},targetAxisIndex: 1},
+                                   
+                                   width:window.innerWidth,vAxis:{textStyle:{fontSize: 10}},
+                                   vAxis: {title: 'Count'},
+                                   hAxis:{title: TrendValue,gridlines: {color: "#CCCCCC"},baselineColor: '#CCCCCC',
+                                   textStyle:{fontSize: 10},showTextEvery:1,slantedText:false},
+                                   colors: ['#3366cc','green'],
+                                   animation: { duration: 1000,"startup": true,easing: 'inAndOut'},
+                                   annotations: {alwaysOutside: true,textStyle: {fontSize: 10,color: 'black',auraColor: 'none'}},
+                                    title: OpenClosedValue+' '+GTOGroup+' Planned meeting '+TrendValue+' SBU ='+SBU
+                                   };
+                    // all done, lets draw the chart with some options to make it look nice.
+                    
+                    visualization.draw(data,options);
+                    $('#chartBlock1').show();
+                    $('#processingId').hide();
+                    $('#totalDiv').html('Total Expected Count ='+totalOpen+' and Total Completed Count='+totalClosed); 
+                    $('#totalBlock').show();    
+                    //TODO need to check if no data found so msg
+                      
+                       $('[id$=count_ageId]').css("display", "none");
+                       $('[id$=count_resolutionId]').css("display", "none");
+                       $('[id$=count_both_ageId]').css("display", "none");
+                       $('[id$=count_hoursId]').css("display", "none");
+                       $('[id$=NSSImage]').css("display", "none");
+                      // $('[id$=count_both_hoursId]').show();
+                       
+
+                    
+                    
+              }
+              else{
+                  alert('Looks like something went wrong !! Please try again or contact your administrator.');
+              }
+              }, {escape:true});
+              }
+             
+             
+             }//Planned metting
+            
+            }  //boolean validation end         
+          } 
+          
+        
+          //enable disable functions
+           function freezeBackground(){
+          document.getElementById('disablingDiv').style.display='block';
+          document.getElementById('loadingImage').style.display='block';
+        }  
+
+        function unFreezeBackground(){
+           document.getElementById('disablingDiv').style.display='none';
+           document.getElementById('loadingImage').style.display='none';
+        }
+        
+        function addGrayoutEffect(isVisible, shadowDivId, targetDivId){
+            var shadowDiv = document.getElementById(shadowDivId);
+            var targetDiv = document.getElementById(targetDivId);
+            if (isVisible) {
+                shadowDiv.style.offsetLeft = targetDiv.offsetLeft;
+                shadowDiv.style.top = targetDiv.offsetTop+'px';
+                shadowDiv.style.width = targetDiv.offsetWidth+'px';
+                shadowDiv.style.height = targetDiv.offsetHeight+'px';
+                shadowDiv.style.MozOpacity = 0.3;
+                shadowDiv.className = "shadowDivEnableClass";
+            } 
+            else {
+                shadowDiv.className = "shadowDivDisableClass";      
+            }
+       }
+       
+       function disableOEM(){
+      
+       var activity = $('[id$=ActivityId]').val();
+       var age = $('[id$=AgeId]').val();
+       var ageBuckets = $('[id$=AgeBucketsId]').val();
+       
+       $('[id$=OEMId]').prop("disabled",false);
+       $('[id$=SREMId]').prop("disabled",false);
+       $('[id$=EnterpriseId]').prop("disabled",false);
+           $('[id$=RegionId]').prop("disabled",false);
+           $('[id$=AircraftTypeId]').prop("disabled",false);
+           
+          $('[id$=PartNumberId]').prop("disabled",false);
+           $('[id$=ResolutionTimeId]').prop("disabled",false);
+           $('[id$=AgeId]').prop("disabled",false);
+           $('[id$=AgeBucketsId]').prop("disabled",false);
+      
+      
+       if(activity == 'Planned Meetings: Type = Proactive Contact Plan'){
+          $('[id$=OEMId]').val('');
+          $('[id$=SREMId]').val('');
+          $('[id$=OEMId]').prop("disabled",true);
+           $('[id$=SREMId]').prop("disabled",true);
+           $('[id$=EnterpriseId]').prop("disabled",true);
+           $('[id$=RegionId]').prop("disabled",true);
+           $('[id$=AircraftTypeId]').prop("disabled",true);
+           
+          $('[id$=PartNumberId]').prop("disabled",true);
+           $('[id$=ResolutionTimeId]').prop("disabled",true);
+           $('[id$=AgeId]').prop("disabled",true);
+           $('[id$=AgeBucketsId]').prop("disabled",true);
+           $('[id$=slider]').css("display", "none");
+           $('[id$=bucketList]').css("display", "none");
+       }
+       if((activity == 'DTS (Cases)') || (activity == 'ATS (Cases)')){
+          $('[id$=SREMId]').val('');
+          $('[id$=SREMId]').prop("disabled",true);          
+          $('[id$=OEMId]').prop("disabled",false);
+          if(age == 'Yes'){
+              $('[id$=slider]').show();           
+          }
+          else{
+               $('[id$=slider]').css("display", "none");
+          }
+          if(ageBuckets == 'Yes'){
+              $('[id$=bucketList]').show();          
+          }
+          else{
+              $('[id$=bucketList]').css("display", "none");
+          }
+        
+       }
+       if(activity == 'EPS (SRs)'){
+           $('[id$=AgeBucketsId]').prop("disabled",false);
+           $('[id$=slider]').css("display", "none");
+           $('[id$=bucketList]').css("display", "none");
+           $('[id$=SREMId]').prop("disabled",false);
+           $('[id$=OEMId]').prop("disabled",true);
+       }
+       }
+       function exportRedirect(){
+        
+        var exportUrl='/apex/SeeDetailsReport1?param1=';
+        var activity = $('[id$=ActivityId]').val();
+        var SBU= $('[id$=SBUId]').val(); 
+        var OpenClosedValue= $('[id$=OpenClosedId]').val(); 
+        var Enterprise= $('[id$=EnterpriseId]').val(); 
+        var Region= $('[id$=RegionId]').val();
+        var AirtTpId=$("input[id*='AircraftTypeId_lkid']" ).val();
+        var AccNameId=$("input[id*='AccountNameId_lkid']" ).val(); 
+        var PartNumber= $('[id$=PartNumberId]').val();
+        var FromDateValue= $('[id$=FromDateId]').val();              
+        var ToDateValue= $('[id$=ToDateId]').val();
+        var OEM= $('[id$=OEMId]').val();
+        var SROEM= $('[id$=SREMId]').val();   
+        var SROEMName= $("input[id*='SREMId_lkid']" ).val();
+        var OtherCasemetrics= $('[id$=OtherCasemetricsId]').val();
+        var FCR ='';
+        if(OtherCasemetrics=='First Call Resolution')
+            FCR ='FCR';
+        var iContentBody = $("#ifrmReportViewer").contents().find("body");           
+           var ageMin= iContentBody.find("#price-min").val();
+           var ageMax= iContentBody.find("#price-max").val();
+           
+        var b ='';
+           b =FromDateValue.split("/");           
+           var datefr = b[2]+'-';
+           if(b[0]!=null && b[0].length==0)
+            datefr = datefr+'00';
+           else if(b[0]!=null && b[0].length==1)
+            datefr = datefr+'0'+b[0];
+           else if(b[0]!=null && b[0].length==2)
+            datefr = datefr+b[0];
+           if(b[1]!=null && b[1].length==0)
+            datefr = datefr+'-00';
+           else if(b[1]!=null && b[1].length==1)
+            datefr = datefr+'-0'+b[1];
+           else if(b[1]!=null && b[1].length==2)
+            datefr = datefr+'-'+b[1];
+           datefr =datefr +'T00:00:00Z'; 
+           
+           b =ToDateValue.split("/");           
+           var dateto = b[2]+'-';
+           if(b[0]!=null && b[0].length==0)
+            dateto = dateto +'00';
+           else if(b[0]!=null && b[0].length==1)
+            dateto = dateto +'0'+b[0];
+           else if(b[0]!=null && b[0].length==2)
+            dateto = dateto +b[0];
+           if(b[1]!=null && b[1].length==0)
+            dateto = dateto +'-00';
+           else if(b[1]!=null && b[1].length==1)
+            dateto = dateto +'-0'+b[1];
+           else if(b[1]!=null && b[1].length==2)
+            dateto = dateto +'-'+b[1];
+           dateto =dateto +'T23:59:59Z';
+         
+        var GTOGroup= $('[id$=GTOGroupId]').val(); 
+        if(activity == 'EPS (SRs)'){
+            exportUrl =exportUrl+'SR_'+SBU+'_'+OpenClosedValue+'_'+Enterprise+'_'+Region+'_'+AirtTpId+'_';
+            exportUrl =exportUrl+AccNameId+'_'+PartNumber+'_'+datefr+'_'+dateto+'_'+SROEMName;
+            console.log('**'+exportUrl );
+        }
+        if(activity == 'Planned Meetings: Type = Proactive Contact Plan'){
+            exportUrl =exportUrl+'PM_'+SBU+'_'+GTOGroup+'_'+OpenClosedValue+'_'+AccNameId+'_'+datefr+'_'+dateto ;
+        } 
+        if(activity =='ATS (Cases)' || activity =='DTS (Cases)'){
+            if(activity =='ATS (Cases)')
+            exportUrl =exportUrl+'ACS_';
+            else
+            exportUrl =exportUrl+'DCS_';
+            exportUrl =exportUrl +SBU+'_'+OpenClosedValue+'_'+AccNameId+'_'+datefr+'_'+dateto+'_'+FCR+'_';
+            exportUrl =exportUrl +Enterprise+'_'+Region+'_'+AirtTpId+'_'+OEM+'_'+PartNumber+'_'+ageMin+'_'+ageMax;
+            
+            
+        }
+        
+        console.log('**'+exportUrl);        
+        window.open(exportUrl , '_blank'); 
+    }
+    function displayDefault(){
+        $('#processingId').hide();
+        $('#totalBlock').hide(); 
+        $('#ContactNameDiv').html(''); 
+        $('[id$=count_ageId]').css("display", "none");
+        $('[id$=count_resolutionId]').css("display", "none");
+        $('[id$=count_both_ageId]').css("display", "none");
+        $('[id$=count_hoursId]').css("display", "none");
+        $('[id$=count_both_hoursId]').css("display", "none");
+        $('[id$=seeDeatailDiv]').css("display", "none");
+        $('[id$=NSSImage]').css("display", "none");
+    } 
+    </script>
+    
+</apex:page>

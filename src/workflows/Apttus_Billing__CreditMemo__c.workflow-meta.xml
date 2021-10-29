@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <alerts>
+        <fullName>APTS_Duplicate_Billing_Doc_Num_For_Credit_Memo</fullName>
+        <description>APTS Duplicate Billing Doc Num For Credit Memo</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>rumyana.nikolcheva@honeywell.com</recipient>
+            <type>user</type>
+        </recipients>
+        <senderAddress>aviasoaccounts@honeywell.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>Apttus_Billing__ApttusBillingEmailTemplates/FE_Duplicate_Billing_Document_Num_For_CreditMemo</template>
+    </alerts>
+    <outboundMessages>
+        <fullName>APTS_CMROutbound</fullName>
+        <apiVersion>41.0</apiVersion>
+        <endpointUrl>https://it.api.honeywell.com/sfdc/aero/apttus/creditmemo/finalize</endpointUrl>
+        <fields>Id</fields>
+        <includeSessionId>false</includeSessionId>
+        <integrationUser>karanatakam.ganguraju@honeywell.com.aero</integrationUser>
+        <name>CMROutbound</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <outboundMessages>
+        <fullName>APTS_CreditMemoSimulateOrderOutbound</fullName>
+        <apiVersion>42.0</apiVersion>
+        <endpointUrl>https://it.api.honeywell.com/sfdc/aero/apttus/creditmemo/simulate</endpointUrl>
+        <fields>Id</fields>
+        <includeSessionId>false</includeSessionId>
+        <integrationUser>karanatakam.ganguraju@honeywell.com.aero</integrationUser>
+        <name>APTS_CreditMemoSimulateOrderOutbound</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <outboundMessages>
+        <fullName>APTS_SendCreditMemoAttachment</fullName>
+        <apiVersion>41.0</apiVersion>
+        <endpointUrl>https://apis.honeywell.com/sfdc-notification-prc-api-hwcor-pd-v1/NotificationService/aero/apttus/sendpdf</endpointUrl>
+        <fields>APTS_LatestAttachmentId__c</fields>
+        <fields>Id</fields>
+        <includeSessionId>false</includeSessionId>
+        <integrationUser>karanatakam.ganguraju@honeywell.com.aero</integrationUser>
+        <name>SendCreditMemoAttachment</name>
+        <protected>false</protected>
+        <useDeadLetterQueue>false</useDeadLetterQueue>
+    </outboundMessages>
+    <rules>
+        <fullName>APTS OnCreditMemo Create</fullName>
+        <actions>
+            <name>APTS_CreditMemoSimulateOrderOutbound</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <description>APTS OnCreditMemo Create</description>
+        <formula>ISPICKVAL( APTS_Integration_Status__c ,&apos;To be Processed&apos;) &amp;&amp; ISPICKVAL( Apttus_Billing__Status__c,&apos;Draft&apos;)</formula>
+        <triggerType>onCreateOrTriggeringUpdate</triggerType>
+    </rules>
+    <rules>
+        <fullName>APTS_AutoCMR</fullName>
+        <actions>
+            <name>APTS_CMROutbound</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>true</active>
+        <formula>AND(ISPICKVAL(Apttus_Billing__Status__c,&apos;Submitted&apos;), ISPICKVAL(PRIORVALUE(Apttus_Billing__Status__c),&apos;Draft&apos;))</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>APTS_DuplicateBillingDocumentNumCreditMemo</fullName>
+        <actions>
+            <name>APTS_Duplicate_Billing_Doc_Num_For_Credit_Memo</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <formula>AND (NOT(ISBLANK(PRIORVALUE(APTS_Billing_Document_Number__c))),  (ISCHANGED(APTS_Billing_Document_Number__c)))</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>APTS_SendCreditMemoAttachment</fullName>
+        <actions>
+            <name>APTS_SendCreditMemoAttachment</name>
+            <type>OutboundMessage</type>
+        </actions>
+        <active>false</active>
+        <formula>ISCHANGED( APTS_LatestAttachmentId__c )</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+</Workflow>

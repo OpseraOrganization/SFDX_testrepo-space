@@ -1,0 +1,2951 @@
+<apex:page standardController="DMAPP__Account_Political_Map__c" 
+    extensions="DMAPP.AccountPoliticalMapController,DMAPP.StandardControllerPPTExtension,DMAPP.ServerSideDeviceDetection"
+    sidebar="false" 
+    showHeader="{!NOT(fullScreen)}"
+    docType="html-5.0"
+    tabStyle="Account" 
+    action="{!logPoliticalMapUsage}"
+    >
+
+    <title>{!JSENCODE($Label.dmapp__resource_political_map)}</title>
+
+	<apex:includeLightning />
+    
+ 
+    <apex:messages />
+
+    <c:jQuery chosen="true"
+        jQueryUI="true" 
+        touchPunch="true"
+        tableDnD="true"
+        tooltip="true" 
+        paging="true"
+        underscore="true"
+        cookies="true"
+        angular="true"
+        angularext="true"
+        twbootstrap="true"
+        moment="true"
+     />
+
+    <c:Translations common_labels="true"
+       is_jquery_app="true"
+       om_labels="true"
+    ></c:Translations>
+ 
+    <apex:include pageName="DMAPP__acc_mgmt_objectives_app_remote_objects" rendered="{!accountPlan != null}"/>
+    <c:MobileRedirect applyLightning="true"/>
+    <c:PlaceholderOne />
+    
+    <c:AttachmentUploader />
+    <c:PolMapLastModifiedHelper />
+    <c:CustomLabelJSBridge alignContext="am"/>
+    <c:salesforce_design_system_helper slds_version="2.0.2"/>
+	<c:SldsIcons />
+    <c:ObjectiveCreateModal accountPlanId="{!accountPlan.Id}" jQueryUIDateFormat="{!jQueryUIDateFormat}" dontLoadVendor="true" rendered="{!accountPlan != null}"/>
+
+    <c:AccountPoliticalMap />
+	
+    <!--[if lte IE 8]>
+    <style>
+        span#sidePanelToggleButton, #contactsSidePanelToggleButton {
+           -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=3.061616997868383e-16, M12=1, M21=-1, M22=3.061616997868383e-16, SizingMethod='auto expand')";
+        }
+        
+        span#contactsSidePanelToggleButton {
+            -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=-1.8369701987210297e-16, M12=-1, M21=1, M22=-1.8369701987210297e-16, SizingMethod='auto expand')";
+        }
+        
+        span#sidePanelToggleButton.sidePanelToggleButtonCollapsed {
+            -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=-1.8369701987210297e-16, M12=-1, M21=1, M22=-1.8369701987210297e-16, SizingMethod='auto expand')";
+        }
+        span#contactsSidePanelToggleButton.sidePanelToggleButtonCollapsed {
+           -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=3.061616997868383e-16, M12=1, M21=-1, M22=3.061616997868383e-16, SizingMethod='auto expand')";
+        }
+        
+        span.accordionHeaderToggleExpanded {
+           -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=-1, M12=1.2246467991473532e-16, M21=-1.2246467991473532e-16, M22=-1, SizingMethod='auto expand')";
+        }
+        span.accordionHeaderToggleCollapsed {
+            -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=-1.8369701987210297e-16, M12=-1, M21=1, M22=-1.8369701987210297e-16, SizingMethod='auto expand')";
+        }
+    </style>
+    <![endif]-->
+    
+
+    <style>
+  
+        @import url("{!URLFOR($Resource.ttgcss,          'ttgcss/layout.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/ttg_orgchart.css')}");
+        
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/search-widget/searchWidget.css')}");
+        @import url("{!URLFOR($Resource.ttgcss,          'ttgcss/jquery.pulse.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/political_side_panel.css')}"); 
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/political_map.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/icons.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/tooltip.css')}");
+        /*@import url("{!URLFOR($Resource.jQueryUI,        'css/custom-theme/jquery-ui-1.8.21.custom.css')}"); */
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/glyphs/style.css')}");
+
+        @import url("{!URLFOR($Resource.SmartOM,         'css/summarytab.css')}");
+            
+        /* start of additions for Chatter */
+/* DMDEV-10011
+        @import url("{!URLFOR($Resource.SmartOM,         'css/chatterpost.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_side_panel.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_post.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_summary.css')}");
+*/
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/glyphs/style.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/miniclicker.css')}");
+        /* end of additions for Chatter */
+                    
+		ul.action_dropdown_ul li,
+        .create_dropdown_ul ul li{
+            margin-left: 0px;
+        }
+
+        div.canvasDiv {
+		    background-color: #AEBBC9;
+		}
+
+        div.smartOMPanel{
+            min-height: 50px;
+        }
+                    
+        div#ttg_pol_map_watermark {
+            color: #D7DDE4;
+        }
+                    
+        .fadedDialog {
+            opacity: 0.1;
+            filter: alpha(opacity=10); 
+        }
+        
+        div.draggableOpportunityHelper  {
+            z-index: 5;
+            border : 1px outset black;
+            background: url('{!URLFOR($Resource.TAM, 'images/icon_drag.png')}') 5px center no-repeat;            
+        }
+        
+        .contactname  {
+            padding-left: 25px;
+            background: url('{!URLFOR($Resource.TAM, 'images/icon_drag.png')}') 5px center no-repeat;        
+        }
+        
+        .contacttitle {
+            margin-left: 5px;
+            color: #999;
+        }
+        
+        div#sidePanelDiv {
+            z-index: 10;
+        }
+        
+        div.ttg-oc-dragging-helper {
+            z-index: 17;
+        }
+
+        div.ttg-oc-dragging-helper.fromBench{
+                margin-top: 40px;
+        }
+        
+        div.side_panel_rule_advice {
+            margin-top : 5px;
+            padding-bottom : 5px;
+        }
+
+        html, body {
+            font-family: Arial,Helvetica,Sans-Serif !important;
+            height: 100%;
+        }
+        html body.sfdcBody{
+            padding: 0;
+            overflow-y: scroll;
+            overflow-x: hidden;
+        }
+        
+        div.smartOMOpportunitySummary {
+            float: left;
+        }
+        
+        div.smartOMOpportunitySummary.AM {
+            width: 60%
+        }
+        
+        div.smartOMOpportunitySummary div.smartOMBackLink {
+           margin-top: 0;
+        }
+        
+        .map-account-name, .map-name {
+            padding-left: 30px;
+        }
+        
+        /* Restores AJAX spinner size to normal (AMOF-813) */
+        .spinner {
+            height: auto;
+            width: auto;
+        }
+            #legendDiv { min-width: 762px; }
+        
+                    #legendDiv .ttg_org_chart_legend_box_panel ul {
+                        height: auto; 
+                        min-height: 193px;
+                    } 
+
+        .hideTab {
+            height: 0 !important;
+            padding: 0 !important;
+        }
+        
+        div#buyingroleedit_chosen { width: 150px !important; }
+        
+        div.tasZoomControl { z-index: 8 !important; }
+        
+        /* Reposition legend for iPad (AMOF-1057) */ 
+        
+        @media only screen 
+        and (min-device-width: 768px) 
+        and (max-device-width: 1024px)  {
+        
+            div.helpAndPPTContainerAccount {
+                position: relative;
+                display: inline-block;
+                margin-left: 16px;
+                margin-top: 10px;
+            }
+
+
+            #legendDiv {
+                background-color: rgb(255, 255, 255); 
+                border: 2px solid rgb(156, 156, 156);
+                border-radius: 4px;
+                font-size: 8px;
+                left: 100px; 
+                padding: 3px;  
+                position: absolute;
+                z-index: 25;                    
+            }
+
+            div.accountMapUsageMessageSectionOpp {
+                margin-left: 0px;    
+            }
+        }       
+                    
+/* DMDEV-10011
+        div.smartOMPanel .myChatterPostPopup .myChatterTextAreaContainer {
+            overflow: visible;
+        }
+        
+        div.smartOMPanel .myChatterPostPopup .myChatterTextAreaContainer {
+            max-height: none;
+        }
+*/        
+        div.smartOMPanel .feedcontainer {
+            max-height: 300px;
+            overflow: auto;
+        }
+
+        .currMap {
+            float: left;
+            margin-top: 5px;
+            margin-left: 10px;
+            max-width: 100%;
+            width: 100%;
+            display: inline-flex;
+        }
+
+        @media only screen and (max-width: 768px), only screen and (max-device-width: 768px) {
+
+            /*.breadcrumbs li.read-only-li::first-letter{
+                color: #fff;
+            }*/
+
+            div.helpAndPPTContainer {
+
+                margin-bottom: 15px;
+            }
+
+            div.accountMapUsageMessageSectionOpp {
+                margin-left: 0px !important;
+                margin-bottom: 6px;
+                margin-top: 5px;
+            }
+
+            .backToMap {
+                /*display: none;*/
+            }
+
+            .accountMapUsageMessageSectionOpp.fullyHiddenSection {
+                display: inline-block !important;
+                visibility: hidden;
+            }
+        }
+
+        div.map {
+            background-color: #e3e3e3;
+            margin-bottom: 15px;
+            padding: 5px 10px;
+            position: relative;
+            clear: both;
+            height: 56px;
+
+        }
+
+        div.AMCurrentViewMap div.map_title {
+            /*font-size: 100%;*/
+            font-weight: 400;
+            margin: 0 0px 4px 30px;
+            height: 30px;
+            float: left;
+            color:#222;
+        }
+
+        .smartOMOpportunitySummary .map-account-name{
+        	text-decoration: underline;
+    		color: #00396b;
+        }
+        
+        .map-account-name {
+            background: url('{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_pm_folder.png')}') 6px center no-repeat;        
+            display: inline-block;
+            height: 20px;
+        }
+        
+        .map-name {
+            background: url('{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_pm_level.png')}') 7px center no-repeat;        
+            display: inline-block;
+            height: 20px;
+            margin-left: 10px;
+        }
+        
+        .map-changer {
+            padding: 0 10px;
+            vertical-align: middle;
+        }
+        
+        .AMCurrentViewMap {
+            padding-top: 5px;
+            padding-left: 20px;
+            /*font-size: 0.9em;*/
+            clear: left;
+            float: left;
+            margin-top: -8px;
+        }
+
+        .currMap.accountPlan .ul.breadcrumbs {
+
+        }
+
+        .smartOMMainHelpLink{
+            display: inline-block;
+            float: right;
+            margin: 0px 15px 0 0;
+        }
+        
+        span.backToMap {
+            background-image: url('{!URLFOR($Resource.ttgomjs, 'ttg/graph/feimages/icon_delete.png')}');
+            cursor: pointer;
+            float: right;
+            height: 16px;
+            margin: 10px 0px 0px 0px;
+            width: 16px;
+        }
+        
+        .changeMap {
+            background-image: url('{!URLFOR($Resource.TAM, 'images/icon_edit_criteria.png')}');
+            background-repeat: no-repeat;
+            float: right;
+            height: 16px;
+            margin-top: 15px;
+            width: 16px;
+            padding-right: 20px;
+            cursor: pointer;
+        }
+		
+       	#accountMapUsageDialog a, 
+       	.accountMapUsageMessageSection a,
+       	.accountMapUsageMessageSectionOpp a {
+			color: #405773;
+			text-decoration: underline;
+			cursor: pointer;
+		}		
+		
+		.accountMapUsageDialogScrollPanel {
+			overflow-y: auto;
+		   	max-height: 200px;
+		   	min-height: 100px;
+		   	overflow-y: auto;	
+		   	/*border: 1px solid #ccc;*/
+		   	padding: 10px;		
+		}
+		
+        div.add_objective{
+            position: relative;
+            float: right;
+            margin-right: 10px;
+            margin-top: -5px
+        }
+        
+        div.add_action{
+            position: relative;
+            margin: 0px 15px 0 0;
+            display: inline-block;
+            font-weight: 500;
+            font-size: 12px;
+            line-height: 33px;
+        }
+
+
+		/* DMPS-1497 IE specific media queries*/
+		@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) and (min-width: 943px) and (orientation:portrait) {	 
+			
+			.salesforce1 div#ttgCanvasDiv {
+				max-width: none;
+				height: 1423px !important; /* required to overwrite inline styles on rotation*/
+				width: 943px !important; /* required to overwrite inline styles on rotation*/
+			}
+			
+			.salesforce1 div.canvas {
+				max-width: none;
+				height: 100%;
+				width: 100%;
+			}
+		}
+
+		@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) and (min-width: 1423px) and (orientation:landscape) {
+			.salesforce1 div#ttgCanvasDiv {
+				max-width: none;
+				height: 943px !important; /* required to overwrite inline styles on rotation*/
+				width: 1423px !important; /* required to overwrite inline styles on rotation*/
+			}
+			
+			.salesforce1 div.canvas {
+				max-width: none;
+				height: 100%;
+				width: 100%;
+			}
+		}
+
+        /* IE11 epscific fix for DMPS-2232 / Breadcrumbs are not working properly for IE11 and Edge */
+        @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+            .breadcrumbs div.breadcrumbs_item{
+                max-width: 18%;
+            }
+        }
+
+        @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) and (max-width: 1345px){
+            .breadcrumbs div.breadcrumbs_item{
+                max-width: 18%;
+            }
+
+            .accountSizing .breadcrumbs div.breadcrumbs_item{
+                max-width: 40%;
+            }
+        }
+
+        @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) and (max-width: 1210px){
+            .breadcrumbs div.breadcrumbs_item{
+                max-width: 18%;
+            }
+        }
+
+        @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) and (max-width: 1090px){
+            .breadcrumbs div.breadcrumbs_item{
+                max-width: 17%;
+            }
+        }
+
+        div.helpAndPPTContainer{
+            max-height: 25px !important;
+            margin-top: 8px;
+            padding-bottom: 6px;
+            margin-left: 0;
+            float: right;
+        }
+
+        div.helpAndPPTContainerAccount {
+            width: auto;
+            /*margin-top: 6px;*/
+            margin-right: 10px;
+            position: relative;
+            right: 0px;
+            float: right;
+            top: 6px;
+               
+        }
+
+
+        @media only screen and (max-device-width: 1024px) and (orientation:portrait) { 
+            
+            ul.helpDropdown{
+                right: 20px;
+                top: 30px;
+
+            }
+        }
+
+        .slds-icon_container.altify-help-button-container {
+            float: left;
+        }
+
+       /**
+        * DMDEV-9352 - AM Navigation - Global Create Button
+        **/
+
+        .create_dropdown{
+            float: left;
+            margin: 0px 15px 0 0;
+            position: relative;
+            display: inline-block;
+            font-weight: 500;
+            font-size: 12px;
+            line-height: 33px;
+        }
+
+        .create_dropdown .show_dropdown{
+            display:block !important;
+        }
+
+        .slds .disabled_button{
+            background-color: #fff !important;
+            cursor: default !important;
+            color: #d8dde6 !important;
+            pointer-events: none !important;
+        }
+
+        div.smartOMPanel div.breadcrumb-info{
+            float: left;
+            width: 83%;
+        }
+
+        div.smartOMPanel div.isReadOnly{
+            width: 80%;
+        }
+
+        div.smartOMPanel div.isUsedElsewhere{
+            width: 80%;
+        }
+
+        div.smartOMPanel div.isUsedElsewhereAndReadOnly{
+            width: 75%;
+        }
+
+        div.smartOMPanel .breadcrumb_altify_logo {
+            background: url('{!URLFOR($Resource.Common, 'images/altify_logo@2x.png')}') no-repeat;
+            background-size: 100%;
+            float: left;
+            width: 17px;
+            min-width: 17px;
+            height: 30px;
+            margin-top: 7px;
+            margin-right: 5px;
+        }
+
+        .breadcrumb_container {
+            display: inline-block;
+        }
+
+        .breadcrumb_type_icon{
+            height: 1.25rem;
+            width: 1.50rem;
+            border-radius: 3px;
+            margin-top: 5px;
+            float: left;
+            min-width: 20px;
+        }
+
+        div.breadcrumbs.accountPlan {
+            margin-top:10px;
+        }
+
+        div.breadcrumbs {
+            float: left;
+            display: flex;
+            width: 100%;
+            min-height: 37px;
+        }
+
+        .breadcrumbs div {
+            color: #0070d2;
+            font-size: 12px;
+            margin-left: 0;
+            max-width: 22%;
+            float: left;
+            line-height: 15px;
+        }
+
+        .accountSizing .breadcrumbs_item {
+            max-width: 45%;
+        }
+
+            .accountSizing .breadcrumbs div .truncate-text {
+                max-width: 385px;
+            }
+
+        .breadcrumbs div .truncate-text {
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            display: block;
+            max-width: 100%;
+        }
+
+        .breadcrumbs div.read-only-li{
+            margin-right: 15px;
+        }
+
+        div.breadcrumbs.account_level {
+            margin: 10px 0px 0px 0px;
+        }
+
+        .breadcrumbs div.readOnlyText {
+            color: red;
+            float: left;
+            display: inline-block;
+            margin-right: 15px;
+            width: 99px;
+            white-space: nowrap;
+        }
+
+         @media only screen and (max-width: 667px), only screen and (max-device-width: 667px) {
+            .breadcrumbs li {
+                max-width: 20%;
+            }
+
+            ul.breadcrumbs {
+                max-width: 30%;
+            }  
+         }
+
+        .breadcrumbs li a {
+            text-decoration: none;
+            color: #222;
+        }
+
+        .breadcrumbs li a:hover {
+            color: #0070d2;
+            text-decoration: underline;
+        }
+
+        .breadcrumbs li.current a:hover {
+            text-decoration: none;
+            color: #222;
+        }
+
+        .breadcrumbs li:first-child {
+            padding-left: 0;
+        }
+
+        .breadcrumbs li:last-child {
+            padding-right: 0;
+        }
+
+        .breadcrumbs .current {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .breadcrumbs li:last-child:after {
+            background: transparent;
+        }
+
+        .breadcrumbs .sldsico-chevronright{
+            margin: 3px 4px 4px 4px;
+            color: #0070d2;
+            font-size: 10px;            
+        }    
+
+       .breadcrumb-info .breadcrumbs .separator{
+            /*content: '';
+            background: url('{!URLFOR($Resource.TAM, 'images/chevron_right.png')}');*/
+            background-repeat: no-repeat;
+            background-size: 5px;
+            background-position: center center;
+            display: inline-block;
+            width: 15px;
+            height: 8px;
+            margin-right: 0px;
+            margin-left: 1px;
+            margin-bottom: 3px;
+            display: table-cell;
+            float: left;
+            margin-top: 3px;
+            font-size: 20px;
+            line-height: 7px;
+            color: #455a75;
+        }
+
+        .linkedMapSection {
+            margin-top: 15px;
+            padding-right: 20px;
+            color: #222;
+            max-width:45%;
+            clear: both;
+            padding-left: 33px;
+            margin-bottom: 5px;
+        }
+
+        .linkedMapSection ul.linkedMap{
+            list-style-type: none;
+            padding-left: 0;
+            white-space: nowrap;
+            margin-top: 3px;
+            /*display: inline-block;*/
+            margin-bottom: 0px;
+        }
+
+        ul.linkedMap li{
+            color: #222;
+            font-size: 12px;
+            display: inline-block;
+            margin-left: 0;
+        }
+
+        ul.linkedMap .linked_map_content{
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 100%;
+            display: inline-block;
+            margin: 0px 10px -4px 5px;
+        }
+
+        ul.linkedMap .linked_map_content_container{
+            max-width: 55%;
+        }
+
+        .accountMapUsageMessageSection {
+            float: left;
+            margin-left: 70px;
+            margin-top: 6px;        
+            padding: 5px 10px 5px 22px;
+            border-radius: 6px;
+            border: 1px solid #445e75;
+            background: url({!URLFOR($Resource.ttgomjs, 'ttg/graph/feimages/icon_info.png')}) no-repeat scroll 5px center rgba(0, 0, 0, 0);
+        }
+        
+        .breadcrumb-info div.accountMapUsageMessageSectionOpp {
+            margin-left: 5px;
+            margin-bottom: 8px;
+            display: inline-block;      
+            padding: 5px 10px 5px 18px;
+            border-radius: 6px;
+            margin: -6px 0px 0px 0px;
+            float: left;
+            width: 82px;
+            max-width: 82px;
+            min-width: 82px;
+            white-space: nowrap;
+            height: 15px;
+            background: url({!URLFOR($Resource.ttgomjs, 'ttg/graph/feimages/icon_info.png')}) no-repeat scroll 4px center rgba(0, 0, 0, 0);
+            box-sizing: content-box; /* DMDEV-10146 Use Elsewhere missing alignment */ 
+        }
+
+        .accountMapUsageMessageSectionOpp.hideSection{
+            visibility: hidden;
+        }       
+
+        .breadcrumb-info div.accountMapUsageMessageSectionOpp.fullyHiddenSection {
+            display:none;
+        }
+
+        .create_objectives_form .slds-form-element__label,
+        .create_objectives_form .slds-lookup__result-text,
+        .create_objectives_form .slds-dropdown__item  {
+            text-align: left;
+        }
+
+        /* END Breadcrumb(le) CSS */
+
+        @media only screen and (max-width: 1840px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 74%;
+            }
+        }
+
+        @media only screen and (max-width: 1790px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 82%;
+            }
+        }
+            @media only screen and (max-width: 1790px) {
+                div.smartOMPanel div.isReadOnly {
+                    width: 79%;
+                }
+            }
+
+            @media only screen and (max-width: 1790px) {
+                div.smartOMPanel div.isUsedElsewhere {
+                    width: 79%;
+                }
+            }
+
+            @media only screen and (max-width: 1800px) {
+                div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                    width: 73%;
+                }
+            }
+
+        @media only screen and (max-width: 1680px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 81%;
+            }
+        }
+            @media only screen and (max-width: 1680px) {
+                div.smartOMPanel div.isReadOnly {
+                    width: 79%;
+                }
+            }
+
+        @media only screen and (max-width: 1590px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 80%;
+            }
+        }
+
+        @media only screen and (max-width: 1510px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 79%;
+            }
+        }
+
+        @media only screen and (max-width: 1480px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 79%;
+            }
+        }
+
+        @media only screen and (max-width: 1480px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 79%;
+            }
+        }
+
+        @media only screen and (max-width: 1440px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 78%;
+            }
+        }
+
+        @media only screen and (max-width: 1380px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 77%;
+            }
+        }
+
+        @media only screen and (max-width: 1320px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 75%;
+            }
+        }
+
+        @media only screen and (max-width: 1280px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 74%;
+            }
+        }
+
+        @media only screen and (max-width: 1180px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 73%;
+            }
+        }
+
+        @media only screen and (max-width: 1120px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 72%;
+            }
+        }
+
+        @media only screen and (max-width: 1095px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 71%;
+            }
+        }
+
+        @media only screen and (max-width: 1050px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 70%;
+            }
+        }
+
+        @media only screen and (max-width: 1020px) {
+            div.smartOMPanel div.breadcrumb-info {
+                width: 68%;
+            }
+        }
+
+        /* in ready only mode */
+
+        @media only screen and (max-width: 1685px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 78%;
+            } 
+        }
+
+        @media only screen and (max-width: 1580px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 77%;
+            }
+        }
+
+        @media only screen and (max-width: 1555px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 76%;
+            }
+        }
+
+        @media only screen and (max-width: 1515px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 75%;
+            }
+        }
+
+        @media only screen and (max-width: 1480px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 74%;
+            }
+        }
+
+        @media only screen and (max-width: 1440px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 73%;
+            }
+        }
+
+        @media only screen and (max-width: 1415px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 72%;
+            }
+        }
+
+        @media only screen and (max-width: 1380px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 71%;
+            }
+        }
+
+        @media only screen and (max-width: 1340px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 70%;
+            }
+        }
+
+        @media only screen and (max-width: 1320px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 69%;
+            }
+        }
+
+        @media only screen and (max-width: 1280px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 68%;
+            }
+        }
+
+        @media only screen and (max-width: 1260px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 67%;
+            }
+        }
+
+        @media only screen and (max-width: 1230px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 66%;
+            }
+        }
+
+        @media only screen and (max-width: 1180px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 65%;
+            }
+        }
+
+        @media only screen and (max-width: 1145px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 64%;
+            }
+        }
+
+        @media only screen and (max-width: 1130px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 63%;
+            }
+        }
+
+        @media only screen and (max-width: 1110px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 62%;
+            }
+        }
+
+        @media only screen and (max-width: 1080px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 61%;
+            }
+        }
+
+        @media only screen and (max-width: 1045px) {
+            div.smartOMPanel div.isReadOnly {
+                width: 59%;
+            }
+        }
+
+        /* map is used elsewhere */
+
+        @media only screen and (max-width: 1740px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 78%;
+            }
+        }
+
+        @media only screen and (max-width: 1650px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 77%;
+            }
+        }
+
+        @media only screen and (max-width: 1600px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 76%;
+            }
+        }
+
+        @media only screen and (max-width: 1560px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 75%;
+            }
+        }
+        
+        @media only screen and (max-width: 1525px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 74%;
+            }
+        }
+
+        @media only screen and (max-width: 1490px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 73%;
+            }
+        }
+
+        @media only screen and (max-width: 1450px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 72%;
+            }
+        }
+
+        @media only screen and (max-width: 1415px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 71%;
+            }
+        }
+
+        @media only screen and (max-width: 1380px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 70%;
+            }
+        }
+
+        @media only screen and (max-width: 1350px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 68%;
+            }
+        }
+
+        @media only screen and (max-width: 1300px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 67%;
+            }
+        }
+
+        @media only screen and (max-width: 1260px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 66%;
+            }
+        }
+
+        @media only screen and (max-width: 1240px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 65%;
+            }
+        }
+
+        @media only screen and (max-width: 1210px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 64%;
+            }
+        }
+
+        @media only screen and (max-width: 1190px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 63%;
+            }
+        }
+
+        @media only screen and (max-width: 1170px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 62%;
+            }
+        }
+
+        @media only screen and (max-width: 1150px) {
+            div.smartOMPanel div.isUsedElsewhere {
+                width: 61%;
+            }
+        }
+
+        /* in read only mode and map is used elsewhere */
+
+        @media only screen and (max-width: 1800px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 73%;
+            }
+        }
+
+        @media only screen and (max-width: 1765px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 72%;
+            }
+        }
+
+        @media only screen and (max-width: 1725px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 71%;
+            }
+        }
+
+        @media only screen and (max-width: 1680px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 70%;
+            }
+        }
+
+        @media only screen and (max-width: 1640px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 69%;
+            }
+        }
+
+        @media only screen and (max-width: 1610px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 68%;
+            }
+        }
+
+        @media only screen and (max-width: 1575px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 67%;
+            }
+        }
+
+        @media only screen and (max-width: 1540px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 66%;
+            }
+        }
+
+        @media only screen and (max-width: 1510px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 65%;
+            }
+        }
+
+        @media only screen and (max-width: 1475px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 64%;
+            }
+        }
+
+        @media only screen and (max-width: 1440px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 63%;
+            }
+        }
+
+        @media only screen and (max-width: 1420px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 62%;
+            }
+        }
+
+        @media only screen and (max-width: 1390px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 61%;
+            }
+        }
+        
+        @media only screen and (max-width: 1365px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 60%;
+            }
+        }
+
+        @media only screen and (max-width: 1335px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 59%;
+            }
+        }
+
+        @media only screen and (max-width: 1310px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 58%;
+            }
+        }
+
+        @media only screen and (max-width: 1285px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 57%;
+            }
+        }
+
+        @media only screen and (max-width: 1270px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 56%;
+            }
+        }
+
+        @media only screen and (max-width: 1250px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 55%;
+            }
+        }
+
+        @media only screen and (max-width: 1235px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 54%;
+            }
+        }
+
+        @media only screen and (max-width: 1210px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 53%;
+            }
+        }
+
+        @media only screen and (max-width: 1180px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 52%;
+            }
+        }
+
+        @media only screen and (max-width: 1165px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 51%;
+            }
+        }
+
+        @media only screen and (max-width: 1150px) {
+            div.smartOMPanel div.isUsedElsewhereAndReadOnly {
+                width: 50%;
+            }
+        }
+
+        @media only screen 
+        and (min-device-width : 768px) 
+        and (max-device-width : 1024px)  { 
+            
+            div.isUsedElsewhereOrReadOnly{
+                min-height: 80px;
+            }
+
+            div.smartOMPanel div.breadcrumb-info {
+                width: 60%;
+                min-width: 0px;
+            }
+
+            div.smartOMPanel div.breadcrumb-info .currMap {
+                width: 90%;
+            }
+
+            div.smartOMPanel div.breadcrumb-info .currMap .breadcrumbs div.readOnlyText{
+                position: absolute;
+                top: 52px;
+                left: 30px;
+            }
+
+            div.smartOMPanel div.breadcrumb-info .currMap .breadcrumbs div.accountMapUsageMessageSectionOpp{
+                position: absolute;
+                top: 51px;
+                left: 30px;
+            }
+
+            div.smartOMPanel div.breadcrumb-info .currMap .breadcrumbs div.accountMapUsageMessageSectionOpp_readOnlyActive{
+                left: 140px !important;
+            }
+
+            div.smartOMPanel div.linkedMap-adjust{
+                /*float: right;*/
+                margin: 0px 20px 0px 0px;
+            }
+
+            ul.linkedMap .linked_map_content_container{
+                max-width: 35%;
+            }
+
+            .linkedMapSection ul.linkedMap{
+                display: inline-block;
+                width: 100%;
+            }
+
+            div.smartOMPanel div.linkedMap-adjust{
+                max-width: 290px;
+                width: 290px;
+                padding: 0px;
+                margin: 0px 0px 0px 0px;
+                position: absolute;
+                right: 8px;
+                top: 50px;
+            }
+        }
+
+        @media only screen 
+        and (min-device-width : 768px) 
+        and (max-device-width : 1024px) 
+        and (orientation : landscape) { 
+
+            div.smartOMPanel div.breadcrumb-info {
+                width: 720px;
+                min-width: 0px;
+            }    
+
+            div.smartOMPanel div.breadcrumb-info .currMap{
+                width: 100%;
+            }
+
+            div.smartOMPanel div.breadcrumb-info div.breadcrumbs {
+                width: 93%;
+            }
+
+            div.smartOMPanel div.breadcrumb-info div.breadcrumbs div {
+                max-width: 23%;
+            }
+        }
+
+        @media only screen 
+        and (min-device-width : 768px) 
+        and (max-device-width : 1024px) 
+        and (orientation : portrait) { 
+
+            div.smartOMPanel div.breadcrumb-info {
+                max-width: 460px;
+                min-width: 0px;
+            } 
+
+            div.smartOMPanel{
+                max-width: 768px;
+            }
+        }
+
+
+	/* DMDEV-10206 Relationships Dialog pans off screen and new scroll bar appears */
+	TABLE.CRUD #select_map_create_type TD {
+	    white-space: initial;
+	}
+
+    </style>
+
+    <script src="/soap/ajax/25.0/connection.js"></script>
+    
+    <apex:includeScript value="{!$Resource.DMAPP__l10njs}" />
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__prefix)}"/>
+    
+    <apex:outputPanel layout="block" rendered="{!  NOT($CurrentPage.parameters.hide_summary  == 'true') }">
+    <div class="altify smartOMPanel">
+        
+        <div class="breadcrumb-info">
+
+             <apex:outputPanel id="smartOMBackLinkPolMapExpress2" layout="block" styleClass="smartOMBackLink" rendered="{!opportunityMapId != null}">
+                 <c:outputLink target="_top" value="{! URLFOR($Page.am_opp_map_app, null, [id=opportunityMapId])}" styleClass="backlink">Back to Opportunity Map</c:outputLink>
+             </apex:outputPanel>
+        
+             <apex:outputPanel layout="inline-block" styleClass="{! IF(accountMapUsage != null && accountMapUsage.usedElseWhere, 'currMap map_usedElsewhere', 'currMap') }" rendered="{!opportunityMapId != null}">
+
+                <span class="breadcrumb_altify_logo"></span>
+                
+                <div class="breadcrumbs accountPlan">
+                    <div class="breadcrumbs_item">
+                    	<span class="backLinkWithoutLightning">
+                        	<c:outputLink target="{!IF(isWin8Touch, '_self', '_top')}" title="{!account.Name}" value="/{!account.Id}" styleClass="AM truncate-text"> {! account.Name }</c:outputLink>
+                        </span>
+                    	<span class="backLinkWithLightning" style="display:none;">
+                        	<c:outputLink applyLEXLogic="true" target="{!IF(isWin8Touch, '_self', '_top')}" title="{!account.Name}" value="/{!account.Id}" styleClass="AM truncate-text"> {! account.Name }</c:outputLink>
+                        </span>	
+                    </div>
+                    
+                    <span class="sldsico-chevronright"></span>
+
+                    <div class="breadcrumbs_item">                                                                                     
+                        <c:outputLink target="{!IF(isWin8Touch, '_self', '_top')}" title="{! accountPlan.Name }" value="{! URLFOR($Page.am_opp_map_app, null, [id=opportunityMapId])}" rendered="{!$CurrentPage.parameters.retURL == null}"  styleClass="AM truncate-text">  {! accountPlan.Name }
+                        </c:outputLink>               
+                        <c:outputLink target="{!IF(isWin8Touch, '_self', '_top')}" title="{! accountPlan.Name }" value="{!$CurrentPage.parameters.retURL}" rendered="{!$CurrentPage.parameters.retURL != null}" styleClass="AM truncate-text">  
+                            {! accountPlan.Name }
+                        </c:outputLink>              
+                    </div>
+
+                    <span class="sldsico-chevronright"></span>
+                    <div class="breadcrumbs_item">                                                                                                          
+                        <c:outputLink target="{!IF(isWin8Touch, '_self', '_top')}" title="{! planUnit.Name }" value="{! URLFOR($Page.am_opp_map_app, null, [id=opportunityMapId])}" rendered="{!$CurrentPage.parameters.retURL == null}" styleClass="AM truncate-text">  {!  planUnit.Name}
+                        </c:outputLink>               
+                        <c:outputLink target="{!IF(isWin8Touch, '_self', '_top')}" title="{! planUnit.Name }" value="{!$CurrentPage.parameters.retURL}" rendered="{!$CurrentPage.parameters.retURL != null}" styleClass="AM truncate-text">  {!  planUnit.Name}
+                        </c:outputLink>               
+                    </div>
+
+                    <span class="sldsico-chevronright"></span>
+                    <div class="breadcrumbs_item current">
+                        <apex:outputText title="{!accountMap.Name}" value="{! accountMap.Name }" styleClass="map_title truncate-text"></apex:outputText>
+                        
+                    </div>
+
+                    <apex:outputPanel styleClass="readOnlyText" layout="block" rendered="{!NOT(editable)}">  
+                        {!JSENCODE($Label.dmapp__om_read_only_access)}
+                    </apex:outputPanel>
+
+                    <apex:outputPanel styleClass="{! IF(accountMapUsage != null && accountMapUsage.usedElseWhere, 'accountMapUsageMessageSectionOpp', 'accountMapUsageMessageSectionOpp fullyHiddenSection') }" layout="block">  
+                        <a id="showAccountMapUsageLinkOpp">{!JSENCODE($Label.dmapp__rel_map_used_elsewhere)}</a>
+                    </apex:outputPanel>
+                </div>
+
+             </apex:outputPanel>
+
+            <apex:outputPanel styleClass="currMap accountSizing" rendered="{!opportunityMapId == null}">
+                <span class="breadcrumb_altify_logo"></span>
+                <div class="breadcrumbs account_level">
+                   
+                    <div class="breadcrumbs_item">
+                    	<span class="backLinkWithoutLightning">
+                        	<c:outputLink target="{!IF(isWin8Touch, '_self', '_top')}" title="{!account.Name}" value="/{!account.Id}" styleClass="AM truncate-text"> {! account.Name}</c:outputLink>
+                        </span>
+                        <span class="backLinkWithLightning" style="display:none;">
+                        	<c:outputLink applyLEXLogic="true" target="{!IF(isWin8Touch, '_self', '_top')}" title="{!account.Name}" value="/{!account.Id}" styleClass="AM truncate-text"> {! account.Name}</c:outputLink>
+                        </span>		
+                    </div>
+                    <span class="sldsico-chevronright"></span>
+                    <div class="breadcrumbs_item current">
+                        <apex:outputText title="{! accountMap.Name}" value="{! accountMap.Name}" styleClass="map_title truncate-text"></apex:outputText>
+                        
+                    </div>
+                    
+                    <apex:outputPanel styleClass="readOnlyText" layout="block" rendered="{!NOT(editable)}">  
+                        {!JSENCODE($Label.dmapp__om_read_only_access)}
+                    </apex:outputPanel>
+
+                    <apex:outputPanel rendered="{!accountMapUsage.usedElseWhere}" styleClass="{! IF(accountMapUsage != null && accountMapUsage.usedElseWhere, 'accountMapUsageMessageSectionOpp', 'accountMapUsageMessageSectionOpp fullyHiddenSection') }" layout="block">  
+                        <a id="showAccountMapUsageLinkOpp">{!JSENCODE($Label.dmapp__rel_map_used_elsewhere)}</a>
+                    </apex:outputPanel>
+
+                </div>
+                
+             </apex:outputPanel>
+
+            <div id='reloadPageLink' style='display:none'>
+    			<apex:form >
+    	        	<apex:actionFunction name="reloadPage" action="{!reload}" />
+    	        </apex:form> 
+    		</div>
+		</div>
+
+        <apex:outputPanel styleClass="{! IF (opportunityMapId != null, 'helpAndPPTContainer', 'helpAndPPTContainerAccount' ) } slds" layout="block">
+           <div 
+              class="
+                create_dropdown  
+                slds-dropdown-trigger--click
+                "
+              style="display: none;"
+              onClick="javascript: toggleCreateMenu();" 
+              >
+                <button 
+                    class="
+                        create_dropdown_button 
+                        slds-button 
+                        slds-button--neutral 
+                        slds-button--brand
+                    ">{!$Label.nav_createbutton}
+                  <span class="slds-icon_container">
+                    <span
+                      class="
+                        slds-button__icon--right 
+                        slds-button__icon 
+                        sldsico-down"
+                    />                     
+                  </span>
+                </button>
+
+                <div 
+                    class="
+                        slds-dropdown 
+                        slds-dropdown--right 
+                        create_dropdown_ul"
+                        style="display: none;" 
+                    >
+                  <ul class="dropdown__list" role="menu">
+                    <li 
+                        id="AddObjectiveLi"
+                        class="slds-dropdown__item"
+                        style='display:none' 
+                    >
+                        <a 
+                            href="javascript:void(0);"
+                            id="AddObjectiveButton"
+                            onClick="javascript: showObjectiveCreateEditDialog(null);"
+                        >{!$Label.resource_Objective}</a>
+                    </li>
+                    <li 
+                        id="AMPPTLink" 
+                        class="slds-dropdown__item"
+                        style='display:none' 
+                    >
+                        <a 
+                            href="javascript:void(0);"
+                            id="PPTEXPORT2"
+                            onclick="javascript: handlePPTX();" 
+                        >{!JSENCODE($Label.COMMON_PPT_EXPORT)}</a>
+                    </li>
+                  </ul>
+                </div>
+            </div>
+        
+            <div id='ActionsDiv' 
+                class="
+                    add_action 
+                    slds-dropdown-trigger--click" 
+                onClick='javascript: toggleActionsMenu();'
+            >
+                  <button id="ActionsButton" class="add_action_button slds-button slds-button--neutral">{!$Label.resource_Actions}
+                        <span class="slds-icon_container">
+                            <span
+                              class="
+                                slds-button__icon--right 
+                                slds-button__icon 
+                                sldsico-down"
+                            />                    
+                       </span>
+                  </button>
+                  <div style="display:none" id='ActionsMenu' class="slds-dropdown slds-dropdown--right">
+                    <ul class="dropdown__list action_dropdown_ul" role="menu">
+                   
+                      <apex:outputText rendered="{!editable}">        
+                          <li class="slds-dropdown__item">
+                        <a role="menuitem" onClick="javascript: renameMap();">
+                          <p class="slds-truncate">{!JSENCODE($Label.COMMON_ACTION_RENAME_MAP)}</p>
+                        </a>
+                      </li>
+                      </apex:outputText>
+                      
+                      <apex:outputText rendered="{!opportunityMapId != null && editable}">        
+                          <li class="slds-dropdown__item">
+                        <a role="menuitem" onClick="javascript:daGraph.eventManager().fireEvent('change_plan_unit_map');">
+                          <p class="slds-truncate">{!JSENCODE($Label.COMMON_CHANGE_MAP)}</p>
+                        </a>
+                      </li>
+                      </apex:outputText>
+                      
+                      <apex:outputText rendered="{!opportunityMapId == null}">
+                      <li class="slds-dropdown__item">
+                        <a role="menuitem" onClick='javascript: makeMapPrimary();'>
+                          <p class="slds-truncate">{!JSENCODE($Label.AM_MAKE_MAP_PRIMARY)}</p>
+                        </a>
+                      </li>
+                      </apex:outputText>
+                      
+                    </ul>
+                  </div>
+            </div>
+
+            <apex:outputPanel styleClass="backToMap" onclick="daGraph.eventManager().fireEvent('not_fullscreen')" rendered="{!opportunityMapId != null}"/>
+
+            <div id='accountPlansMainHelp' class="smartOMMainHelpLink">
+                
+                <c:help_dropdown_button />
+
+            </div> 
+
+        </apex:outputPanel>
+
+
+			<div id="accountMapUsageDialog" style="display:none;">	    
+				<p>{!JSENCODE($Label.DMAPP__rel_map_making_changes_will_impact)}</p>    
+				<div class="accountMapUsageDialogScrollPanel">
+					<apex:outputPanel id="accountMapUsageUnits" layout="block" rendered="{!accountMapUsage != null && accountMapUsage.planUnits != null && accountMapUsage.planUnits.size != 0}">
+					<div>
+					    <strong>{!JSENCODE($Label.DMAPP__am_rel_map_plan_units)}</strong>
+					    <ul>
+					    <apex:repeat value="{!accountMapUsage.planUnits}" var="usageItem">
+					   	    <li><a href="javascript:void(0);" onClick="javascript:gotoURL('{!JSENCODE(usageItem.url)}')" target="blank">{!usageItem.name}</a></li>
+						</apex:repeat>
+						</ul>
+					</div>
+					</apex:outputPanel>  	
+					<apex:outputPanel id="accountMapUsageMaps" layout="block" rendered="{!accountMapUsage != null && accountMapUsage.accountMaps != null && accountMapUsage.accountMaps.size != 0}">
+					<div>
+					    <strong>{!JSENCODE($Label.DMAPP__am_accounts)}</strong>
+					    <ul>
+					    <apex:repeat value="{!accountMapUsage.accountMaps}" var="usageItem">
+					   	    <li><a href="javascript:void(0);" onClick="javascript:gotoURL('{!JSENCODE(usageItem.url)}')" target="blank">{!usageItem.name}</a></li>
+						</apex:repeat>
+						</ul>
+					</div>
+                	</apex:outputPanel>  
+				</div>	
+			</div>	        		                          
+	         <!-- styleClass="{! IF (opportunityMapId != null, 'helpAndPPTContainer', 'helpAndPPTContainerAccount' ) } slds" -->
+             <apex:outputPanel id="linkedMapSection" layout="block" styleClass="linkedMapSection linkedMap-adjust" rendered="{!opportunityMapId != null && planUnit != null && planUnit.DMAPP__Account_Political_Map__c != null  && (planUnit.Account_Political_Map__r.Account__r.Name != account.Name || planUnit.Account_Political_Map__r.Name != accountMap.Name )}">
+                <ul class="linkedMap">
+                    <li style="margin-right: -5px;">{!JSENCODE($Label.AM_LINKED_MAP)}:&nbsp;</li>
+                    <li class="linked_map_content_container"> 
+                        <apex:outputText styleClass="linked_map_content" value="{! planUnit.Account_Political_Map__r.Account__r.Name}" title="{! planUnit.Account_Political_Map__r.Account__r.Name}"></apex:outputText> 
+                    </li>
+                    <li class="linked_map_content_container">
+                        / <apex:outputText styleClass="linked_map_content" value="{!planUnit.Account_Political_Map__r.Name}" title="{!planUnit.Account_Political_Map__r.Name}"></apex:outputText>
+                    </li>
+                </ul>
+            </apex:outputPanel>
+             <apex:outputPanel layout="block" styleClass="AMCurrentViewMap" rendered="{!opportunityMapId != null}">
+            
+		         <style>
+		         	ul.helpDropdown {
+		         		top: 25px !important;
+		         	}
+		         </style>	                                  
+             </apex:outputPanel>
+            <apex:outputPanel layout="block" styleClass="AMCurrentViewMap" rendered="{!opportunityMapId == null}">
+                <style>
+                    ul.helpDropdown {
+                        top: 20px !important;
+                    }
+                 </style>                                     
+            </apex:outputPanel>
+        
+    
+<!-- DMDEV-10011
+        <div class="chatterContainer">                   
+             <apex:include pageName="ChatterPostPolMap"/>
+        </div>
+ -->		
+
+        
+
+        <!--</div>-->
+    </div>
+    </apex:outputPanel>    
+
+    <div id="TAS" class="">
+        
+        <apex:include pageName="DMAPP__Account_Pol_Map_Print_Fix_IE7" />
+        
+        <div class="all">       
+            <div id="ttgCanvasDiv" class="canvasDiv test" style="overflow:hidden; position:relative;">       
+                <div id="ttgCanvas" class="canvas"></div>
+            </div>                 
+        </div>
+    </div>
+    
+    
+    <!-- some images that the code makes use of -->
+    <div style="display:none">
+  
+        <img id="ttg_oc_img_unknown"                                src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_unknown.png')}"/>
+        <img id="ttg_oc_img_not_set"                                src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/not_set.gif')}"/>      
+        <img id="ttg_oc_img_attention"                              src="{!URLFOR($Resource.ttgomjs, 'ttg/graph/feimages/icon_approved.png')}"/>      
+        <img id="ttg_oc_img_grey_x"                                 src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/grey_x.png')}"/>        
+        <img id="ttg_oc_img_influences"                             src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/down_alt.png')}"/>      
+        <img id="ttg_oc_img_influencedby"                           src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/up_alt.png')}"/>      
+        <img id="ttg_oc_img_key_player"                             src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_key_decision.png')}"/>       
+        <img id="ttg_oc_influence_drag"                             src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_influence_drag.png')}"/>       
+        <img id="ttg_oc_selected"                                   src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_selected.png')}"/>       
+    
+        <img id="ttg_graph_img_expand"                              src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_expand.png')}"/>       
+        <img id="ttg_graph_img_collapse"                            src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_collapse.png')}"/>       
+        <img id="ttg_graph_img_external"                            src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_account_external.png')}"/>
+        <img id="ttg_graph_img_loading"                             src="{!URLFOR($Resource.ttgomjs, 'ttg/graph/images/loading_icon.gif')}"/>     
+        <img id="ttg_graph_img_open_contact"                        src="{!URLFOR($Resource.ttgomjs, 'ttg/graph/feimages/icon_contact_info.png')}"/>     
+        <img id="ttg_graph_img_linkedin"                            src="{!URLFOR($Resource.Assessment, 'common/images/linkedIn.png')}"/>     
+     
+    </div>
+        
+    <!-- l10n data -->
+    <apex:includeScript value="{!$Resource.DMAPP__l10njs}"/>
+    
+    
+    <!-- these are general purpose js libraries -->
+
+    <script>
+    
+    var $j = jQuery.noConflict();
+        
+    $j.ajaxSetup({
+        jsonp: null,
+        jsonpCallback: null,
+        async: true
+    });
+    
+    </script>
+
+
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__excanvas)}"/> 
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ftk, 'forcetk.js')}"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__Raphael, 'raphael-min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__Raphael, 'rgbcolor.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__Raphael, 'canvg.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/ttgutils.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/orgchart/js/profile_picture_widget.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/graph/js/slds_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/graph/js/lightning_styled_components.js')}"/>
+
+    <!-- Perf: added includes -->
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/visualforce_error_handler.js')}"/> 
+    <!-- Perf: end -->
+    
+    <!-- these are org chart specific js pages -->
+    
+    
+    <!--[if lt IE 9]>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/ie.js')}"/> 
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/json2.js')}"/> 
+    <!--[endif]-->
+
+    <!-- <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/alljs.js')}"/> -->
+    <script src="{!URLFOR($Resource.ttgomjs, 'ttg/alljs.js')}"></script>
+    
+<!--     <script src="http://localhost:80/ttg/alljs.js"></script> -->
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__CoachMe, 'new_coach/parser.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__CoachMe, 'new_coach/engine.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__CoachMe, 'new_coach/coach_manager.js')}"/>
+    
+	<apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/orgchart/js/placeholder_node_renderer.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/orgchart/js/create_placeholder_node_button.js')}"/>   
+	<apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/orgchart/js/confirm_and_fire.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/orgchart/js/reorder_buttons.js')}"/>  
+
+    <apex:include pageName="DMAPP__AMPoliticalMapCoachRules"/>
+        
+    <c:CRUD />
+
+    <c:OrgChartAPI />
+
+    <c:PPTAPI />
+        
+    <script>
+
+
+        //DMDEV-6854 targeted fix. Need to make salesforce1 logic correct for future release
+        if (!ttg.urlServiceInstance.isSalesforce1()) { 
+            jQuery('html').removeClass('salesforce1');
+        }
+        
+        function gotoURL(url){
+            if((typeof window.sforce != 'undefined') && (window.sforce != null) && 
+                    (typeof window.sforce.one != 'undefined') && (window.sforce.one != null)){
+                window.sforce.one.navigateToURL('/apex/' + ttg.vfp + url);
+            }
+            else{
+                window.open('/apex/' + ttg.vfp + url, '_blank');
+            }
+            
+        }
+
+
+        /* 
+         * Copyright © {! JSENCODE($Setup.DMAPP__Company_Information__c.DMAPP__Company_Name__c)}. All rights reserved.
+         *  
+         */        
+                
+        ttg.context.orgchartbase =  '{!JSENCODE($Resource.ttgomjs)}' ;
+        ttg.context.decision_criteria_base =  '{!JSENCODE($Resource.DecisionCriteria)}' ;
+        ttg.context.common = '{!JSENCODE($Resource.Common)}';
+        ttg.context.orgId = 'RANDOM_ORG_ID';
+        ttg.context.sessionId = '{!JSENCODE($Api.Session_ID)}';
+        ttg.context.url = 'RANDOM_URL';
+
+        ttg.simpleFlatPPTExporter = function(anchorOppId, isLicensedForPP, isPPTLightingPopupEnabled) {
+
+            var api = ttg.apiLayer.PPTAPI( { sessionid : '{!JSENCODE($Api.Session_ID)}', accountid : '{!JSENCODE(accountMap.id)}'} );
+            var dialogOpen = true;
+            var callCount = 0;
+
+            var spinnerImg = 
+                jQuery('<img>')
+                    .attr('id', 'tas_ajax_spinner')
+                    .addClass('spinner')
+                    .attr('src', "{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}")
+                ;
+
+            
+            function createFutureDownloadAdvice() {
+                if (isLicensedForPP) {
+                    return jQuery('<ol autofocus style="padding:0;" />')
+                            .append(jQuery('<li/>').text('{!JSENCODE($Label.PPT_ALTIFY_IS_PREPARING_YOUR_PRESENTATION)}'))
+                            .append(jQuery('<li/>').text('{!JSENCODE($Label.PPT_ONCE_COMPLETE_A_LINK_WILL_APPEAR_BELOW)}'))
+                            .append(jQuery('<div style="text-align: center;margin: 22px;"/>').attr({id: 'pptlightninglink'}))
+                }
+                else {
+                    return jQuery('<ol/>')
+                            .append(jQuery('<li/>').text('{!JSENCODE($Label.PPT_ALTIFY_IS_PREPARING_YOUR_PRESENTATION)}'))
+                            .append(jQuery('<li/>').text('{!JSENCODE($Label.PPT_ONCE_COMPLETE_A_LINK_WILL_APPEAR_BELOW)}'))
+                            .append(jQuery('<li/>').text('{!JSENCODE($Label.PPT_RIGHT_CLICK_THIS_LINK)}'))
+                            .append(jQuery('<li/>').text('{!JSENCODE($Label.PPT_OPN_THIS_SAVED_FILE_WITH_POWERPOINT)}'))
+                            .append(jQuery('<li/>').text('{!JSENCODE($Label.PPT_CLOSE_THIS_DIALOG_WHEN_SAVE_AS_HAS_COMPLETED)}'))
+                }
+            }
+
+
+            function createFutureLinkDiv() {
+                callCount = 0;
+                return  jQuery('<div/>')
+                    .css({ width : '100%', 'text-align' : 'center'})
+                    .addClass('ttg_future_ppt_exporter_linkdiv')
+                    .append(jQuery('<span/>').text('{!JSENCODE($Label.COMMON_PREPARING)}'));
+                    
+            }
+
+            function deletefuturePPTX(id) {
+                api.deletePPTX(id,
+                
+                    function() { createfuturePPTX(id) },                    
+                    function() { /* error */ },                 
+                    function() { /* complete */ }               
+                )
+                
+            }           
+            
+            function createfuturePPTX(id) {
+                api.postPPTX(id,
+                    {param: { id: id } },
+                    function() { checkForFuturePPTXUrl(id) },                   
+                    function() { /* error */ },                 
+                    function() { /* complete */ }               
+                )
+                
+            }           
+
+            function checkForFuturePPTXUrl(id) {
+				function createLightningComponent(documentId) {
+                    jQuery('.ttg_future_ppt_exporter_linkdiv').html('...');
+					$Lightning.use("DMAPP:IncludeLightningOut", function() {
+						$Lightning.createComponent("DMPPT:PPTX",
+							{ documentId : documentId },
+							"pptlightninglink",
+							function(cmp, status, errorMessage) {
+			                    jQuery('.ttg_future_ppt_exporter_linkdiv').html('');
+							}
+						);
+					});
+				}
+
+                api.getPPTX(id,
+                
+                    function(responseData) { 
+                        if (responseData != null && responseData.downloadURL != null) {
+
+                            jQuery('.ttg_future_ppt_exporter_linkdiv').html('');
+
+                            if (isLicensedForPP) {
+                            	if (isPPTLightingPopupEnabled) {
+									createLightningComponent(responseData.documentId);
+                            	}
+                            	else {
+	                                jQuery('.ttg_future_ppt_exporter_linkdiv').append(
+	                                    jQuery('<div/>')
+	                                            .css({width:'100%', 'text-align' : 'center' })
+	                                            .append(jQuery('<iframe/>', {src : 'https://' + document.domain.replace('DMAPP.'.toLowerCase(), 'dmppt.') + responseData.downloadURL, height : '40px', width : '100%', frameBorder : 0, seamless : 'seamless' }))
+	                                )
+	                            }
+                            }
+                            else {
+                                jQuery('.ttg_future_ppt_exporter_linkdiv').append(
+                                    jQuery('<a/>', {href: responseData.downloadURL })
+                                        .css({'text-decoration': 'underline', 'cursor': 'pointer'})
+                                        .text('{!JSENCODE($Label.COMMON_CLICK_TO_SAVE)}')
+                                )
+                            }
+                        }
+                        else {
+                            if (++callCount > 40) {
+                                jQuery('.ttg_future_ppt_exporter_linkdiv').html('');
+                                jQuery('.ttg_future_ppt_exporter_linkdiv').append(
+                                    jQuery('<a/>')
+                                        .css({'text-decoration': 'underline', 'cursor': 'pointer'})
+                                        .text('Taking too long.  Continue waiting?')
+                                        .click(function() { callCount = 0; checkForFuturePPTXUrl(id)} ) 
+                                )
+                            }
+                            else {
+                                jQuery('.ttg_future_ppt_exporter_linkdiv').html('');
+                                jQuery('.ttg_future_ppt_exporter_linkdiv').append(
+                                    jQuery('<span/>').css({'display': 'inline-block', width: '100px', 'text-align': 'left'}).text('Waiting' + dots(callCount, 4))
+                                )
+                                if (dialogOpen) {
+                                    checkForFuturePPTXUrl(id);
+                                }
+                            }
+                            
+                        } 
+                    },
+                    function() { /* error */ },                 
+                    function() { /* complete */ }               
+                )
+
+            }
+            
+            function dots(num, mnum) {
+            
+                var s = '';
+                while(s.length < (num % mnum)) {
+                    s += '.';
+                }
+
+                while(s.length < mnum) {
+                    s += ' ';
+                }
+                
+                return s;
+            }
+
+            function futureFailure() {
+            }
+                
+            function closeDialog() {
+                dialogOpen = false;
+                jQuery('#ttg_simple_ppt_exporter_div').remove();
+            }
+            
+            function showDialog() {
+                
+                jQuery('<div/>',{ id : 'ttg_simple_ppt_exporter_div'})
+                    .addClass('ttg_simple_ppt_exporter')
+                    .append(
+                        createFutureDownloadAdvice()
+                    )
+                    .append(
+                        createFutureLinkDiv() 
+                    )
+                    .dialog({
+                        title       :   '{!JSENCODE($Label.COMMON_EXPORT_PLAN_TO_POWERPOINT)}'
+                        , closeText   : '{!JSENCODE($Label.COMMON_CLOSE)}'
+                        , width     :   '500px',
+                        close: closeDialog
+                    });
+            }
+
+            showDialog();
+            deletefuturePPTX(anchorOppId)
+            
+            return {
+            }
+        };    
+         
+        var daGraph; 
+
+        jQuery(document).ready(function() {
+        
+        	var isLightningExperience = ttg.isLightningExperience();
+			if(isLightningExperience) {
+				jQuery('.backLinkWithLightning').show();
+				jQuery('.backLinkWithoutLightning').hide();
+				//console.log('>>> showing backLinkWithLightning and hiding backLinkWithoutLightning');
+			} else {
+				jQuery('.backLinkWithLightning').hide();
+				jQuery('.backLinkWithoutLightning').show();
+				//console.log('>>> hiding backLinkWithLightning and showing backLinkWithoutLightning');
+			}
+        
+         
+        var isUsedElsehwere = {! IF(accountMapUsage != null && accountMapUsage.usedElseWhere, true, false) };
+        var isReadOnly = {!NOT(editable)};
+
+        if ( isReadOnly && !isUsedElsehwere ) {
+            jQuery('.breadcrumb-info').addClass('isReadOnly');
+        }
+
+        if( isUsedElsehwere && !isReadOnly ){
+            jQuery('.breadcrumb-info').addClass('isUsedElsewhere');
+        }
+
+        if( isUsedElsehwere && isReadOnly ){
+            jQuery('.breadcrumb-info').addClass('isUsedElsewhereAndReadOnly');
+        }
+
+        if( isUsedElsehwere || isReadOnly ){
+            jQuery('.smartOMPanel').addClass('isUsedElsewhereOrReadOnly');
+        }
+
+        if ({!showPPTLink}) {
+            if({!isLicensedForPPT}) {
+				jQuery('.create_dropdown').show();
+				jQuery('#AMPPTLink').show();
+            }
+        }     
+
+        if ({! (isLicensedForAccountManager && !isObjectivesDisabledOnPlanType && (planUnit.Id != null) ) }) {
+            jQuery('.create_dropdown').show();
+            jQuery('#AddObjectiveLi').show();
+        }
+
+        if( isUsedElsehwere ){
+            jQuery('.linkedMapSection').addClass('linkedMap-adjust');
+        }
+
+        if ( isReadOnly ) {
+            jQuery('#AddObjectiveButton').addClass('disabled_button');
+            jQuery('.accountMapUsageMessageSectionOpp').addClass('accountMapUsageMessageSectionOpp_readOnlyActive');
+        }
+            var accountPolMap = (function() {
+                function adaptAddOrgChartContact(data) {
+                
+                    var adapted = {
+                        links : {
+                            link : []
+                        }
+                    };
+                    //TODO
+                    jQuery.each(data.contacts, function(idx,c) {
+                        adapted.links.link.push({
+                            id : c.orgchartcontactid, 
+                            contactTasks : c.contactTasks, 
+                            contactIssues : c.contactIssues,
+                            planLevelTaskCount : c.planLevelTaskCount, 
+                            color: c.color,
+                            squares: c.squares,
+                            accountRelationship : c.accountrelationship,
+                            customProfilePictureUrl : c.customProfilePictureUrl,
+                            isExecutiveSponsor : c.isExecutiveSponsor
+                        }
+                        );//, accountUnitId: c.accountUnitId});
+                    })
+                    
+                    return adapted;
+                }
+                
+                function adaptSearchOrgCharts(data) {
+                
+                    var adapted = {
+                        "org_charts": {
+                            "org_chart": []
+                            }
+                    }
+                                
+                    jQuery.each(data.records, function(idx,rec) {
+                        adapted.org_charts.org_chart.push({
+                            id      :   rec.Id,
+                            name    :   rec.Name,//rec[ttg.vfp+'Account__r'].Name,
+                            type    :   rec.attributes.type
+                        });
+                    });
+                    
+                    return adapted;
+                }
+                
+                        
+                function adaptSearchOrgChartsJS(data, typevar) {
+                
+                    var adapted = {
+                        "org_charts": {
+                            "org_chart": []
+                            }
+                    }
+                                
+                    jQuery.each(data.records, function(idx,rec) {
+                        adapted.org_charts.org_chart.push({
+                            id      :   rec.Id,
+                            name    :   rec.Name,//rec[ttg.vfp+'Account__r'].Name,
+                            type    :   typevar
+                        });
+                    });
+                    
+                    return adapted;
+                }
+                
+                        
+                function adaptSearchOrgChartsJS(data, typevar) {
+                
+                    var adapted = {
+                        "org_charts": {
+                            "org_chart": []
+                            }
+                    }
+                                
+                    jQuery.each(data.records, function(idx,rec) {
+                        adapted.org_charts.org_chart.push({
+                            id      :   rec.Id,
+                            name    :   rec.Name,//rec[ttg.vfp+'Account__r'].Name,
+                            type    :   typevar
+                        });
+                    });
+                    
+                    return adapted;
+                }
+                
+                //
+                // The Org Chart related calls
+                //
+                function createGraph(graph, success, error, complete) {
+                    // in sfdc native we dont have an org chart object
+                    // every org chart is assumed to have one and so we 
+                    // will always be able to load one and hence never 
+                    // have to create one
+                };
+                
+                function addOrgChartContactJS(graphId, planUnitId, orgChartContacts, success, error, complete) {
+                    
+                    var succ = function(data) { try { success( adaptAddOrgChartContact(data) ); } finally { complete(); } };
+                    var err = ttg.ajaxErrorFunction(error,complete);
+                    
+                    // handle the array ness in the orgChartContact param
+                    
+                    var req =  { "occs" : { "contacts" : [] } };
+                    
+                    jQuery.each( jQuery.makeArray(orgChartContacts), function(idx, occ) {
+                            req.occs.contacts.push( { 
+                                mapId               :   graphId,
+                                
+                                political           :   occ.political,
+                                adaptability        :   occ.adaptability,
+                                coverage            :   occ.coverage,
+                                status              :   occ.status,
+                                decisionorientation :   occ.decisionorientation,
+                                
+                                contactid           :   occ.id,
+                                hookstoid           :   occ.hookstoid,
+                                onbench             :   occ.onbench,
+                                accountrelationship :   'internal'
+                            }); 
+                    });
+                    
+                    ttgInvoker.invokeVFR(
+                        '{!$RemoteAction.AccountPoliticalMapController.addOrgChartContact}',
+                        req.occs, 
+                        planUnitId || null,
+                        function(result, event) { 
+                            if (event.type == 'exception') { 
+                                err(result,event);
+                            } else {
+                                succ(result); 
+                            } 
+                        }, {escape: false}
+                    )          
+                }
+            
+            
+                function bulkUpdateContactAttributeJS(contacts, planunitid, success, error, complete) {
+                
+                    var succ = function(data) { try { success(data); } finally { complete(); } };
+                    var err = ttg.ajaxErrorFunction(error,complete);
+                
+                    function makeContactsList(arr) {
+                        var cl = {
+                            contactid : []
+                        }
+                        
+                        if (typeof arr !== 'undefined' && arr.length > 0) {
+                            jQuery.each(arr, function(idx, a) { cl.contactid.push(a); });    
+                        }
+                        
+                        return cl;
+                    }
+                            
+                    adaptedPost = {
+                        occs    :   {
+                            contacts : []
+                        }
+                    };
+                    
+                    
+                    jQuery.each(jQuery.makeArray(contacts), function(idx, cntct) {
+                        var newCntct = {
+                                mapId               :   '{!JSENCODE(accountMap.Linked_Map__c)}' ? '{!JSENCODE(accountMap.Linked_Map__c)}' : '{!JSENCODE(accountMap.Id)}',
+                                polmapid            :   cntct.polmapid,
+                                contactid           :   cntct.id,
+                                orgchartcontactid   :   cntct.orgchartcontactid, 
+                                ownerid             :   cntct.ownerid,
+                                note                :   cntct.note,
+                                political           :   cntct.political,
+                                adaptability        :   cntct.adaptability,
+                                coverage            :   cntct.coverage,
+                                status              :   cntct.status,
+                                decisionorientation :   cntct.decisionorientation,
+                                //keyplayer           :   cntct.keyplayer,
+                                //approved            :   cntct.approved,
+                                influences          :   makeContactsList(cntct.influences),
+                                conflictinfluences          :   makeContactsList(cntct.conflictinfluences),
+                                influencedby        :   makeContactsList(cntct.influencedBy),
+                                conflictinfluencedby        :   makeContactsList(cntct.conflictinfluencedBy),
+                                hookstoid           :   cntct.hookstoid,
+                                onbench             :   cntct.onbench,
+                                accountrelationship :   cntct.accountrelationship,
+                        		placeholder			:	cntct.placeholder,
+                        		placeholderreportsto		:	cntct.placeholderreportsto,
+                        		placeholdertitle			:	cntct.placeholdertitle
+                            };
+                
+                        adaptedPost.occs.contacts.push(newCntct);
+                    })
+                    
+                    
+                    var req = JSON.stringify(adaptedPost);
+                    
+                    ttgInvoker.invokeVFR(
+                        '{!$RemoteAction.AccountPoliticalMapController.updateContactAttribute}',
+                        adaptedPost.occs, 
+                        planunitid || null,
+                        function(result, event) { 
+                            if (event.type == 'exception') { 
+                                err(result,event);
+                            } else {
+                                succ(result); 
+                            }
+                        }, {escape: false}
+                    )                       
+                }
+                
+                function updateContactAttributeJS(contactId, planunitid, contactAttr, orgChartMetadata, success, error, complete) {
+                    bulkUpdateContactAttributeJS(jQuery.makeArray(contactAttr), planunitid, success, error, complete);
+                }
+                
+                
+        
+                function removeOrgChartContactJS(contactId, planunitid, success, error, complete) {   
+                
+                    var succ = function(data) { try { success(data); } finally { complete(); } };
+                    var err = ttg.ajaxErrorFunction(error,complete);
+                
+                    ttgInvoker.invokeVFR(
+                        '{!$RemoteAction.AccountPoliticalMapController.removeOrgChartContact}',
+                        contactId, 
+                        planunitid || null,
+                        function(result, event) { 
+                            if (event.type == 'exception') { 
+                                err(result,event);
+                            } else {
+                                succ(result); 
+                            }
+                        }, {escape: false}
+                    )   
+                }
+        
+                function loadOrgChart(id, success, error, complete) {   
+                        
+                    function sfdc_success(data) {
+                        success(adaptLoadOrgChart(data));
+                    }
+                    
+                    var succ = function(data) { try {sfdc_success(data)} finally { complete(); } };
+                    var err = ttg.ajaxErrorFunction(error,complete); 
+                    
+                    ttgInvoker.invokeVFR(
+                        '{!$RemoteAction.AccountPoliticalMapController.loadAccountOrgChartWithTasks}',
+                        '{!JSENCODE(accountMap.id)}', 
+                        '{!JSENCODE(planUnitId)}',
+                        function(result, event) { 
+                            if (event.type == 'exception') { 
+                                err(result,event);
+                            } else {
+                                succ(result); 
+                            }
+                        }, {escape: false}
+                    ) 
+                }
+
+                function reduceSubMap(submap){
+                    return _.reduce(
+                                _.keys(submap),
+                                function(memo, val){
+                                    var attrName = '';
+                                    if(val == 'Id'){
+                                        attrName = 'Id_api';
+                                    }
+                                    else{
+                                        attrName = val.replace('__c', '_api');
+                                        attrName = attrName.replace(ttg.vfp, '');
+                                    }
+                                    memo[attrName] = submap[val];
+                                    return memo;
+                                },
+                                {}
+                            );
+                }
+        
+                function addSubMap(submap, planunitid, success, error, complete) {
+                    
+                    if(!complete) {
+                        complete = function() {};
+                    }
+                
+                    var succ = function(data) { try {success(data)} finally { complete(); } };
+                    var err = ttg.ajaxErrorFunction(error,complete); 
+                    var submap = reduceSubMap(submap);
+                    
+                    ttgInvoker.invokeVFR(
+                        '{!$RemoteAction.AccountPoliticalMapController.addSubMap}',
+                        submap,
+                        planunitid || null,
+                        function(result, event) { 
+                            if (event.type == 'exception') { 
+                                err(result,event);
+                            } else {
+                                succ(result); 
+                            }
+                        }, {escape: false}
+                    ) 
+                }
+                
+                function addSubMaps(submaps, planunitid, success, error, complete) {
+                    
+                    if(!complete) {
+                        complete = function() {};
+                    }
+                
+                    var succ = function(data) { try {success(data)} finally { complete(); } };
+                    var err = ttg.ajaxErrorFunction(error,complete); 
+                    
+                    //convert submaps to intermediate object
+                    var paramMaps = [];
+                    //_.each(submaps, function(map){
+                    paramMaps = _.map(submaps, function(map){
+                        return reduceSubMap(map);
+
+                    });
+
+                    ttgInvoker.invokeVFR(
+                        '{!$RemoteAction.AccountPoliticalMapController.addSubMaps}',
+                        paramMaps, 
+                        planunitid || null,
+                        function(result, event) { 
+                            if (event.type == 'exception') { 
+                                err(result,event);
+                            } else {
+                                succ(result); 
+                            }
+                        }, {escape: false}
+                    ) 
+                }
+        
+                function deleteSubMap(nodeid, planunitid, success, error, complete) {
+                    if(!complete) {
+                        complete = function() {};
+                    }
+                
+                    var succ = function(data) { try {success(data)} finally { complete(); } };
+                    var err = ttg.ajaxErrorFunction(error,complete); 
+                    
+                    ttgInvoker.invokeVFR(
+                        '{!$RemoteAction.AccountPoliticalMapController.deleteSubMap}',
+                        nodeid, 
+                        planunitid || null,
+                        function(result, event) { 
+                            if (event.type == 'exception') { 
+                                err(result,event);
+                            } else {
+                                succ(result); 
+                            }
+                        }, {escape: false}
+                    ) 
+                }
+
+                function deleteMultipleSubMaps(nodeid, planunitid, success, error, complete) {
+                    if(!complete) {
+                        complete = function() {};
+                    }
+
+                    var succ = function(data) { try {success(data)} finally { complete(); } };
+                    var err = ttg.ajaxErrorFunction(error,complete); 
+                    
+                    ttgInvoker.invokeVFR(
+                        '{!$RemoteAction.AccountPoliticalMapController.deleteMultipleSubMaps}',
+                        nodeid, 
+                        planunitid || null,
+                        function(result, event) { 
+                            if (event.type == 'exception') { 
+                                err(result,event);
+                            } else {
+                                succ(result); 
+                            }
+                        }, {escape: false}
+                        ) 
+                }
+        
+                var that = {};
+                that.deleteMultipleSubMaps = deleteMultipleSubMaps;
+                that.deleteSubMap = deleteSubMap;
+                that.addSubMap = addSubMap;
+                that.addSubMaps = addSubMaps;
+                that.loadOrgChart = loadOrgChart;
+                //that.createGraph = createGraph;    // No need to migrate as it is redundant.
+                that.updateContactAttribute = updateContactAttributeJS;   // Migrated to use JS Remoting
+                that.bulkUpdateContactAttribute = bulkUpdateContactAttributeJS;
+                that.removeOrgChartContact = removeOrgChartContactJS;     // Migrated to use JS remoting
+                that.addOrgChartContact = addOrgChartContactJS;           // Migrated to use JS remoting
+                //that.getOrgChartContact = getOrgChartContact;  // No need to migrate as it is redundant.
+                that.adaptSearchOrgCharts = adaptSearchOrgCharts;
+                that.adaptSearchOrgChartsJS = adaptSearchOrgChartsJS;
+                
+                return that;
+            })();
+            
+            var apiSpec = { 
+                sessionid : '{!JSENCODE($Api.Session_ID)}', 
+                graphId : '{!JSENCODE(accountMap.id)}',
+                disableCreateContact : {!disableCreationOfContacts}
+            }
+
+           
+            var apilayer = jQuery.extend({}, ttg.apiLayer.orgchartapi(apiSpec), accountPolMap, ttg.apiLayer.crud(apiSpec));
+            jQuery.extend(apilayer, apilayer.am);
+            
+            // var fetchapi = ttg.apiLayer.crud( { sessionid : '{!JSENCODE($Api.Session_ID)}', disableCreateContact : {!disableCreationOfContacts} } );
+            // ttg.fetch.metadata('Opportunity', apilayer);
+            // ttg.fetch.metadata('Account', apilayer);
+            // ttg.fetch.metadata('Contact', apilayer);
+                                    
+            var accounts = [
+                {Id: '{!JSENCODE(accountMap.Account__c)}', Name: '{!JSENCODE(accountMap.Account__r.Name)}'}
+                
+            ];//politicalMapAccounts;
+            
+            var assocAcctIds = [];
+            var assocAcctNames = [];
+            <apex:repeat value="{!accountGroupMembers}" var="grpmember">
+                assocAcctIds.push('{!JSENCODE(grpmember.Account__c)}');
+                assocAcctNames.push('{!JSENCODE(grpmember.Account__r.Name)}');
+            </apex:repeat>
+            
+            /**
+            accounts = _.map(accounts, function(account) {
+                return {Id: account[ttg.vfp + 'Account__r'].Id, Name: account.Name};
+            });
+            **/
+            var loadIt = function() {
+                
+                var graphId = 'Id'
+
+                if('{!JSENCODE(accountMapId)}') {
+                    <apex:repeat value="{!accountMap.Linked_Maps__r}" var="linkmap">
+                        assocAcctIds.push('{!JSENCODE(linkmap.Account__c)}');
+                        assocAcctNames.push('{!JSENCODE(linkmap.Account__r.Name)}');
+                    </apex:repeat>
+
+                    assocAcctIds = _.uniq(assocAcctIds);
+                    assocAcctNames = _.uniq(assocAcctNames);
+                    
+                    spec = {
+                            graphId                         :   '{!JSENCODE(accountMap.Linked_Map__c)}' ? '{!JSENCODE(accountMap.Linked_Map__c)}' : '{!JSENCODE(accountMap.Id)}',
+                            linkeeMapId                     :   '{!JSENCODE(accountMap.Linked_Map__c)}' ? '{!JSENCODE(accountMap.Id)}' : '',
+                            orgId                           :   ttg.context.orgId,
+                            sessionId                       :   ttg.context.sessionId,
+                            sessionid                       :   ttg.context.sessionId,
+                            url                             :   ttg.context.url,
+                            orgChartType                    :   'accountpolmap',
+                            mapaccounts                     :   accounts,
+                            orgChartName                    :   '{!JSENCODE(accountMap.name)}',
+                            readonly                        :   {! editable == false },
+                            printUrl                        :   'Account_Pol_Map_Print?id={!JSENCODE(accountMap.id)}&',
+                            associatedAccountId             :   '{!JSENCODE(accountMap.Account__c)}',
+                            associatedAccountName           :   '{!JSENCODE(accountMap.Account__r.Name)}',
+                            associatedAccountIds            :   assocAcctIds,
+                            associatedAccountNames          :   assocAcctNames,
+                            userName                        :   '{!JSENCODE(currentUserName)}',
+                            userId                          :   '{!JSENCODE(currentUserId)}',
+                            metadataOptions :   {
+                                skipAttributes              :   ['buyingrole','approval']
+                            },
+                            disableCreateContact            :   {!disableCreationOfContacts},
+                            displayTitle                    :   [
+                                                                     '{!JSENCODE(accountMap.Linked_Map__c)}' ?
+                                                                     '{!JSENCODE(accountMap.Linked_Map__r.Name)}'
+                                                                     :
+                                                                     '{!JSENCODE(accountMap.Name)}'
+                                                                ],
+                            apiMetadataTimestamp            :   'apiMetadataTimestamp',    
+                            isStandaloneCRM                 :   false,
+                            ttgApi                          :   apilayer,
+                            add_contact_def_search_field    : 'AccountId',
+                            hasAM                           : {!isLicensedForAccountManager},
+                            hasOM                           : {! OR( isLicensedForOppManager, isLicensedForPoliticalMapExpress ) },
+                            hasPoliticalMapExpress          : {!isLicensedForPoliticalMapExpress} && !{!isLicensedForOppManager},
+                            nodeHeight                      :   150, //70,
+                            nodeWidth                       :   130, //100
+                            dateFormat                      :   '{!JSENCODE(jQueryUIDateFormat)}',
+                            disableContactCreation          : {!IF(disableCreationOfContacts, true, false)},
+                            hideActions                     : {!IF(hideActions, true, false)},
+                            hideIssues                      : {!IF(hideIssues, true, false)},
+                            skin                            : '{!JSENCODE(politicalMapSkin)}',
+                            socialSettings                  : '{!JSENCODE(socialMediaSettings)}',
+                            disableCoaching                 : {!IF(disableCoaching, true, false)},
+                            politicalMapCoachRules          : {
+                                contact_coaching_rules  : ttg.coach_am_political_map_contact_rules,
+                                contact_profile_rules   : ttg.coach_am_political_map_profile_rules,
+                                map_rules               : ttg.coach_am_political_map_rules
+                            },                    
+                            fullscreen                      : {!IF(fullScreen || $User.UITheme == 'Theme4d', true, false)},
+                            hideExpandButton                : {!$User.UITheme == 'Theme4d'},
+                            showInfluenceLines              : {!IF(showInfluenceLines, true, false)},
+                            viewModeInfluenceLines          : {!IF(viewInfluenceLines, true, false)},
+                            attachmentFileServletUrl: '{! JSENCODE(attachmentFileServletUrl)}',
+                            hideCreateMsg                   : true,
+                            calledFromAM                    : true,
+                            //hideImportButton                : true,
+                            accountLevelMap                 : true,
+                            hidePrintButton                 : ttg.urlServiceInstance.isSalesforce1(),
+                            isoCode							: '{!JSENCODE(currencyISO)}',
+                            fullscreenmode                  : {!IF(fullScreen, true, false)},
+                            usedElseWhere					: {!IF(accountMapUsage != null && accountMapUsage.usedElseWhere, true, false)},
+    	                    areContactImagesDisabled		: {!IF(areContactImagesDisabled, true, false)},
+                    };
+                     
+                    if('{!JSENCODE(opportunityMapId)}') {
+                       spec.notFullscreenOverride = '{!JSENCODE($CurrentPage.parameters.retURL)}' ? 
+                                                        decodeURIComponent('{!JSENCODE($CurrentPage.parameters.retURL)}') :
+                                                        '/apex/' + ttg.vfp + 'am_opp_map_app?id=' + '{!JSENCODE(opportunityMapId)}';
+                       spec.oppmapid = '{!JSENCODE(opportunityMapId)}';
+                       spec.planunitid = '{!JSENCODE(planUnitId)}';
+                       spec.planunitname = '{!JSENCODE(planUnit.name)}';
+                       spec.associatedmapid = '{!JSENCODE(planUnit.Account_Political_Map__c)}';
+                       spec.associatedmapname = '{!JSENCODE(planUnit.Account_Political_Map__r.Name)}';
+                    }
+                } else {
+                    assocAcctIds = _.uniq(assocAcctIds);
+                    assocAcctNames = _.uniq(assocAcctNames);
+
+                    spec = {
+                        graphId                         :   '',
+                        orgId                           :   ttg.context.orgId,
+                        sessionId                       :   ttg.context.sessionId,
+                        sessionid                       :   ttg.context.sessionId,
+                        url                             :   ttg.context.url,
+                        orgChartType                    :   'accountpolmap',
+                        mapaccounts                     :   accounts,
+                        associatedAccountId             :   assocAcctIds && assocAcctIds.length ? assocAcctIds[0] : '{!JSENCODE(account.Id)}',
+                        associatedAccountName           :   assocAcctNames && assocAcctNames.length ? assocAcctNames[0] : '{!JSENCODE(account.Name)}',
+                        associatedAccountIds            :   assocAcctIds,
+                        associatedAccountNames          :   assocAcctNames,
+                        orgChartName                    :   '{!JSENCODE(opportunityMapId)}' ? '{!JSENCODE(planUnit.name)}' : '{!JSENCODE(account.name)}',
+                        readonly                        :   {!IF(editable == false, true, false) },
+                        userName                        :   '{!JSENCODE(currentUserName)}',
+                        userId                          :   '{!JSENCODE(currentUserId)}',
+                        metadataOptions :   {
+                            skipAttributes              :   ['buyingrole','approval']
+                        },
+                        disableCreateContact            :   {!IF(disableCreationOfContacts, true, false)},
+                        displayTitle                    :   [
+                                                                 '{!JSENCODE(account.Name)}'
+                                                            ],
+                        apiMetadataTimestamp            :   'apiMetadataTimestamp',    
+                        isStandaloneCRM                 :   false,
+                        ttgApi                          :   apilayer,
+                        add_contact_def_search_field    : 'AccountId',
+                        hasAM                           : {!IF(isLicensedForAccountManager, true, false)},
+                        hasOM                           : {! OR( isLicensedForOppManager, isLicensedForPoliticalMapExpress ) },
+                        hasPoliticalMapExpress          : {!IF(isLicensedForPoliticalMapExpress, true, false)} && !{!IF(isLicensedForOppManager, true, false)},
+                        nodeHeight                      :   150, //70,
+                        nodeWidth                       :   130, //100
+                        dateFormat                      :   '{!JSENCODE(jQueryUIDateFormat)}',
+                        disableContactCreation          : {!IF(disableCreationOfContacts, true, false)},
+                        hideActions                     : {!IF(hideActions, true, false)},
+                        hideIssues                      : {!IF(hideIssues, true, false)},
+                        hideDecisionCriteria            : false,
+                        skin                            : '{!JSENCODE(politicalMapSkin)}',
+                        socialSettings                  : '{!JSENCODE(socialMediaSettings)}',
+                        disableCoaching                 : {!IF(disableCoaching, true, false)},
+                        politicalMapCoachRules          : {
+                            contact_coaching_rules  : ttg.coach_am_political_map_contact_rules,
+                            contact_profile_rules   : ttg.coach_am_political_map_profile_rules,
+                            map_rules               : ttg.coach_am_political_map_rules
+                        },                    
+                        fullscreen                      : {!IF(fullScreen || $User.UITheme == 'Theme4d', true, false)},
+                        hideExpandButton                : {!$User.UITheme == 'Theme4d'},
+                        usedElseWhere					: {!IF(accountMapUsage != null && accountMapUsage.usedElseWhere, true, false)},
+                        showInfluenceLines              : {!IF(showInfluenceLines, true, false)},
+                        viewModeInfluenceLines          : {!IF(viewInfluenceLines, true, false)},
+                        hideCreateMsg                   : true,
+                        calledFromAM                    : true,
+                        hideImportButton                : true,
+                        accountLevelMap                 : true,
+                        isoCode							: '{!JSENCODE(currencyISO)}',
+                        createGraph                     : function(createSpec, succ) {
+                            if(!succ) {
+                                succ = function() {}
+                            }
+
+                            var mapMetadataControl = null;
+                            var metadataCreate = null;
+                             
+                            var createSpec = ttg.getDefaultCreateMapSpec(spec);
+                            createSpec.autosearch = true;
+                            createSpec.title = partnerLabels.political_analysis_launchpad_politics;
+                            createSpec.ttgid = 'Relationships'
+                            var oldpresave = createSpec.preSave;
+                            var postCreateCanceled = false;
+
+                            createSpec.preSave = function(that, spec) {
+                                oldpresave(that, spec);
+                                var dlg = that.getDialog();
+                                var fields = spec.fields;
+                            };
+
+                            createSpec.postSave = function(a, b, c) {
+                                succ(a, b, c);
+
+                                if((typeof window.sforce != 'undefined') && (window.sforce != null) && 
+                                    (typeof window.sforce.one != 'undefined') && (window.sforce.one != null)) {
+                                    window.sforce.one.navigateToURL('/apex/' + ttg.vfp + 'Account_Pol_Map?id=' + a.Id);
+                                } else {
+                                    window.location.href = '/apex/' + ttg.vfp + 'Account_Pol_Map?id=' + a.Id;
+                                }
+                            };
+
+                            createSpec.postCreateCancel = function() {
+                                !postCreateCanceled && ttg.tasNavigateToSObject('{!JSENCODE(account.Id)}');
+                                postCreateCanceled = true;
+                            };
+                
+                            if('{!JSENCODE(opportunityMapId)}') {
+                                createSpec.postCreateCancel = function() {
+                                    var redirectpage = '{!JSENCODE($CurrentPage.parameters.retURL)}' ? 
+                                            decodeURIComponent('{!JSENCODE($CurrentPage.parameters.retURL)}') :
+                                            '/apex/' + ttg.vfp + 'am_opp_map_app?id=' + '{!JSENCODE(opportunityMapId)}';
+
+                                    if((typeof window.sforce != 'undefined') && (window.sforce != null) && 
+                                        (typeof window.sforce.one != 'undefined') && (window.sforce.one != null)) {
+                                        window.sforce.one.navigateToURL(redirectpage);
+                                    } else {
+                                        window.location.href = redirectpage;
+                                    }
+
+                                };
+                                
+                                createSpec.unFocusOverride = createSpec.postCreateCancel;
+                                  
+                                createSpec.postSave = function(a, b, c) {
+                                    var success = function(a2, b2, c2) {
+                                      
+                                        var extraparam = '{!JSENCODE($CurrentPage.parameters.retURL)}' ? '&retURL=' + encodeURIComponent('{!JSENCODE($CurrentPage.parameters.retURL)}') : '';
+
+                                        if((typeof window.sforce != 'undefined') && (window.sforce != null) && 
+                                            (typeof window.sforce.one != 'undefined') && (window.sforce.one != null)) {
+                                            window.sforce.one.navigateToURL('/apex/' + ttg.vfp + 'Account_Pol_Map?id=' + a.Id + '&oppmapid=' + '{!JSENCODE(opportunityMapId)}' +  '&planunitid=' + '{!JSENCODE(planUnitId)}' + '&fullscreen=true' + extraparam);
+                                        } else {
+                                            window.location.href = '/apex/' + ttg.vfp + 'Account_Pol_Map?id=' + a.Id + '&oppmapid=' + '{!JSENCODE(opportunityMapId)}' +  '&planunitid=' + '{!JSENCODE(planUnitId)}' + '&fullscreen=true' + extraparam;
+                                        }
+                                          
+                                    };
+                                
+                                    var error = function() {};
+                                    var complete = function() {};
+
+                                    var succ = function(data) { try {success(data)} finally { complete(); } };
+                                    var err = ttg.ajaxErrorFunction(error,complete); 
+                                          
+                                    ttgInvoker.invokeVFR(
+                                        '{!$RemoteAction.AccountPoliticalMapController.associatePlanUnitAccountOrgChart}',
+                                        '{!JSENCODE(planUnitId)}',
+                                        a.Id, 
+                                        function(result, event) { 
+                                            if (event.type == 'exception') { 
+                                                err(result,event);
+                                            } else {
+                                                succ(result); 
+                                            }
+                                        },
+                                        {escape: false}
+                                    );
+                                }; // end of postSave
+
+                                var oldpostdisplay = createSpec.postDisplay;
+                                createSpec.postDisplay = function(dlg, data) {
+                                    var btns = dlg.dialog( 'option', 'buttons' );
+
+                                    if({!IF(editable == false, true, false)}) {
+                                        jQuery('button[ttgid="Save_button"]').attr('disabled', true).addClass('DISABLED');
+                                    }
+                                    
+                                    //AK changed from btns['Save'] to this syntax in order to be able to provide I18n we need to use Array of Objects syntax instead of Object Syntax to define to jQuery UI dialog buttons
+                                    var currclickfunc = btns[0].click;
+
+                                    var newsave = function() {
+                                        var isExisting = jQuery('input#existingmap:checked').length > 0;
+
+                                        if(isExisting) {
+                                            var mapid = dlg.find('#' + ttg.vfp + 'Linked_Map__c INPUT[type=\'hidden\']').val();
+
+                                            if(!mapid) {
+                                                dlg.find('td#ERROR_' + ttg.vfp + 'Linked_Map__c').removeClass('ERROR');
+                                                dlg.find('td#ERROR_' + ttg.vfp + 'Linked_Map__c').addClass('ERROR');
+                                                dlg.find('td#ERROR_' + ttg.vfp + 'Linked_Map__c').text(ttg.Labels.COMMON_PLEASE_SELECT_A_MAP);
+                                                return;
+                                            }
+
+                                            var success = function(a, b, c) {
+                                                      
+                                                if((typeof window.sforce != 'undefined') && (window.sforce != null) && 
+                                                    (typeof window.sforce.one != 'undefined') && (window.sforce.one != null)) {
+                                                    window.sforce.one.navigateToURL(
+                                                        '/apex/' + ttg.vfp + 'Account_Pol_Map?id=' + mapid + '&oppmapid=' + 
+                                                        '{!JSENCODE(opportunityMapId)}' + '&planunitid=' + 
+                                                        '{!JSENCODE(planUnitId)}' + '&fullscreen=true'
+                                                    );
+                                                } else {
+                                                    window.location.href = '/apex/' + ttg.vfp + 'Account_Pol_Map?id=' + mapid + 
+                                                        '&oppmapid=' + '{!JSENCODE(opportunityMapId)}' + '&planunitid=' + 
+                                                        '{!JSENCODE(planUnitId)}' + '&fullscreen=true';
+                                                }
+
+                                            };
+
+                                            var error = function() {};
+                                            var complete = function() {};
+
+                                            var succ = function(data) { try {success(data)} finally { complete(); } };
+                                            var err = ttg.ajaxErrorFunction(error,complete); 
+                                                          
+                                            ttgInvoker.invokeVFR(
+                                                '{!$RemoteAction.AccountPoliticalMapController.associatePlanUnitAccountOrgChart}',
+                                                '{!JSENCODE(planUnitId)}',
+                                                mapid, 
+                                                function(result, event) { 
+                                                    if (event.type == 'exception') { 
+                                                        err(result,event);
+                                                    } else {
+                                                        succ(result); 
+                                                    }
+                                                },
+                                                {escape: false}
+                                            );
+                                        } else {
+                                            currclickfunc();
+                                        }
+                                    };
+                                          
+                                    oldpostdisplay(dlg, data);
+
+                                    jQuery('button[ttgid="Save_button"]').unbind('click').on('click', newsave);
+                                } //end of postDisplay function
+                            } 
+                            metadataCreate = ttg.metadata(createSpec);
+                            metadataCreate.create(ttg.vfp + 'Account_Political_Map__c');
+                        } // end of createGraph function
+                    } // end of spec
+                             
+                    if('{!JSENCODE(opportunityMapId)}') {
+                        spec.notFullscreenOverride = '/apex/' + ttg.vfp + 'am_opp_map_app?id=' + '{!JSENCODE(opportunityMapId)}';
+                        spec.oppmapid = '{!JSENCODE(opportunityMapId)}';
+                        spec.planunitid = '{!JSENCODE(planUnitId)}';
+                        spec.planunitname = '{!JSENCODE(planUnit.name)}';
+                    }
+                            
+                    if({!IF(markprimary, true, false)}) {
+                        spec.markprimary = true;
+                        if({!IF(oldestMapForDefaultPrimaryMark != null, true,false) }) {
+                            spec.oldestmapname = '{!JSENCODE(oldestMapForDefaultPrimaryMark.Name)}';
+                            spec.oldestmapid = '{!JSENCODE(oldestMapForDefaultPrimaryMark.Id)}';
+                        }
+                    }
+                } // end of else ('{!JSENCODE(accountMapId)}')
+            
+                daGraph = ttg.displayGraph(spec);
+            } // end of loadIt function
+                     
+            loadIt();
+        });
+
+
+        function openit() {
+            ttg.legendBox(daGraph.getConfig(), daGraph.getOrgChartMetadata());            
+        }
+
+        function handlePPTX() {
+            ttg.simpleFlatPPTExporter(
+                '{!JSENCODE(accountMap.id)}',
+                {!IF(isLicensedForPPT, true, false)},
+                {!IF(isPPTLightingPopupEnabled, true, false)}
+            );
+        }
+        
+        function toggleActionsMenu() {
+            if({!IF(editable == false, true, false)}) {
+                return;
+            }
+            var actionsMenu = jQuery('#ActionsMenu');
+            var visible = actionsMenu.is(':visible');
+            visible ? actionsMenu.hide() : actionsMenu.show(); 
+        }
+        
+        function hideActionsMenu() {
+            var actionsMenu = jQuery('#ActionsMenu');
+            actionsMenu.hide(); 
+        }
+        
+        function makeMapPrimary() {
+            var confirmDialog = jQuery('<div/>', {
+                id: 'makeMapPrimaryDialog'
+            }).
+            append(jQuery('<span/>').text('{!JSENCODE($Label.AM_MAKE_MAP_PRIMARY_DESCRIPTION)}'));
+            confirmDialog.dialog({
+                modal: true,
+                title: '{!JSENCODE($Label.AM_MAKE_MAP_PRIMARY)}',
+                closeText: ttg.Labels.COMMON_CLOSE,
+                buttons: [{
+                    text: '{!JSENCODE($Label.COMMON_YES)}',
+                    ttgid: 'Yes',
+                    click: function() {
+                        var ttgApi = ttg.apiLayer.accountPoliticalMap({
+                            sessionid: '{!JSENCODE($Api.Session_ID)}',
+                            accountid: '{!JSENCODE(accountMap.id)}'
+                        });
+                        var mapId = '{!JSENCODE(accountMap.Id)}';
+                        ttgApi.markOrgChartAsPrimary(mapId,
+                            function() {
+                                confirmDialog.dialog('close');
+                            },
+                            function() { /* error */ },
+                            function() { /* complete */ }
+                        )
+                    }
+                }, {
+                    text: '{!JSENCODE($Label.COMMON_NO)}',
+                    ttgid: 'No',
+                    click: function() {
+                        confirmDialog.dialog('close');
+                    }
+                }]
+            });
+        }
+        
+        function renameMap() {
+        
+        	var mapName = '{!JSENCODE(accountMap.Name)}';
+        	
+        	function setUpMinLimitCheck() {
+        	
+        		var limitSize = 2;
+                var nawMapNameInput = jQuery('#newMapName');
+
+                nawMapNameInput.on('change keydown keyup mousedown mouseup', function() {
+                    var value = nawMapNameInput.val();
+                    var valueTrimmed = jQuery.trim(value);
+                    var valueLength = valueTrimmed.length || 0;
+                                    
+                    var saveButton = jQuery(".ui-dialog-buttonpane button:contains('Save')");
+                    
+                    if(valueLength < limitSize) {
+                        saveButton.button("disable");
+                    } else {
+                    	saveButton.button("enable");
+                    }
+            
+                });
+
+            };
+        	
+        	var renameMapDialog = jQuery('<div/>', {id: 'renameMapDialog'})
+    			.append(jQuery('<span/>').append(jQuery('<strong/>').text(ttg.Labels.COMMON_MAP_NAME+' ')))
+    			.append(jQuery('<input/>', {id: 'newMapName'}).val(mapName));
+                renameMapDialog.dialog({
+                    modal: true,
+                    title: '{!JSENCODE($Label.COMMON_ACTION_RENAME_MAP)}',
+                    closeText: ttg.Labels.COMMON_CLOSE,
+                    ttgid: 'Rename Map',
+                    buttons: [{
+                        text: ttg.Labels.DLG_SAVE,
+                        ttgid: 'Save',
+                        click: function() {
+
+                            var ttgApi = jQuery.extend({},ttg.apiLayer.crud({
+                                sessionid: '{!JSENCODE($Api.Session_ID)}',
+                                accountid: '{!JSENCODE(accountMap.id)}'
+                            }),
+                            ttg.apiLayer.accountPoliticalMap({
+                                sessionid: '{!JSENCODE($Api.Session_ID)}',
+                                accountid: '{!JSENCODE(accountMap.id)}'
+                            }));
+                            var mapId = '{!JSENCODE(accountMap.Id)}';
+                            var newMapName = jQuery('#newMapName').val();
+                            var newMapNameTrimmed = jQuery.trim(newMapName);
+
+                            ttgApi.renameOrgChart(mapId, newMapNameTrimmed,
+                                function() {
+                                    renameMapDialog.dialog('close');
+                                    renameMapDialog.remove();
+                                },
+                                function() { /* error */ },
+                                function() {
+                                    reloadPage();
+                                }
+                            )
+                        }
+                    }, {
+                        text: ttg.Labels.DLG_CANCEL,
+                        ttgid: 'Cancel',
+                        click: function() {
+                            renameMapDialog.dialog('close');
+                            renameMapDialog.remove();
+                        }
+
+                    }]
+                });
+             
+            setUpMinLimitCheck();
+        }
+
+        var spec = {};
+        if(typeof help != 'undefined'){
+            help.showHelp = function() {
+                    var url = '{!JSENCODE(helpURLBase)}' + '/Default.htm#AM/';
+                
+                    url += 'Account_Rel_Maps/Account_Rel_Maps.htm';
+                    
+                    var testwindow = window.open(url, "TAS", "resizable=1,location=1,status=1,scrollbars=1,width=600,height=600");
+            }
+        }   
+        jQuery(document).mouseup(function (e)
+        {
+            var actionsDiv = jQuery('#ActionsDiv');
+            if (!actionsDiv.is(e.target) // if the target of the click isn't the actionsDiv...
+                && actionsDiv.has(e.target).length === 0) // ... nor a descendant of the actionsDiv
+            {
+                hideActionsMenu();
+            }
+            
+        });
+        
+        jQuery('#showAccountMapUsageLink').add(jQuery('#showAccountMapUsageLinkOpp')).click(function() {
+        	var usageDialog = jQuery('#accountMapUsageDialog');
+        	usageDialog.dialog({
+        		title: '{!JSENCODE($Label.REL_MAP_WHERE_THIS_MAP_IS_USED)}',
+        		width: '450px',
+        		modal: true,
+                closeText: '{!JSENCODE($Label.COMMON_CLOSE)}',
+                buttons: [{
+                	id: 'close-usage-dialog',
+                	text: '{!JSENCODE($Label.COMMON_CLOSE)}',
+                    click: function() {	                           
+						jQuery(this).dialog('close'); 
+					}	                 	
+                }]
+        	}); 
+        });
+
+        function toggleCreateMenu() {
+            var createDropdown = jQuery('.create_dropdown_ul');
+            createDropdown.toggleClass('show_dropdown'); 
+        }
+        
+        if({!IF(editable == false, true, false)}) {
+            jQuery('button.add_action_button').attr('disabled', 'disabled');
+        }
+
+        jQuery(document).mouseup(function (e)
+        {
+            var createDropdownButton = jQuery('.create_dropdown_button');
+            var createDropdown = jQuery('.create_dropdown_ul');
+
+            if ( !createDropdownButton.is(e.target) && createDropdownButton.has(e.target).length === 0 )
+            {
+                createDropdown.removeClass('show_dropdown');
+            }
+
+        });
+        
+    </script>   
+
+</apex:page>

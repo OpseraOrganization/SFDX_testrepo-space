@@ -1,0 +1,75 @@
+<apex:page standardController="Quote__c" showHeader="true" >
+<script type="text/javascript">
+    document.onreadystatechange = function () {
+        var iframeElm = document.getElementById('iframe1');
+        var parentStyle = window.getComputedStyle(iframeElm.offsetParent);
+        var parentPaddingTop = parseInt(parentStyle.paddingTop);
+        var parentPaddingBottom = parseInt(parentStyle.paddingBottom);
+        var iframeBorder = parseInt(window.getComputedStyle(iframeElm).borderWidth) || 2;
+        var iframeParentPadding = parentPaddingTop + parentPaddingBottom;
+ 
+        // only do if on mobile 
+        if((typeof sforce != 'undefined') && sforce && (!!sforce.one)){
+            // when document is ready set height, width and style
+            setHeight(iframeElm, iframeParentPadding, iframeBorder);
+            setWidth(iframeElm, iframeBorder);
+            setStyle(iframeElm); 
+ 
+            // if window is resized adjust width again to be responsive
+            window.addEventListener("resize", function () {
+                setHeight(iframeElm, iframeParentPadding, iframeBorder);
+                setWidth(iframeElm, iframeBorder);
+            }, true);
+        } else {
+            setClasicHeight(iframeParentPadding, iframeBorder);
+            window.addEventListener("resize", function () {
+                setClasicHeight(iframeParentPadding, iframeBorder);
+            }, true);
+        }
+    }
+ 
+    function setClasicHeight(iframeParentPadding , iframeBorder) {
+        var iframeEl = document.getElementById('iframe1');
+        var headerEl = document.getElementById('AppBodyHeader');
+        var footerEl = document.getElementsByClassName('bPageFooter')[0];
+        var tableEl = document.getElementsByClassName('bodyDiv')[0];
+ 
+        // Get height values for all Salesforce elements (header, footer and container padding)
+        var sfElementsHeight = parseInt(headerEl.offsetHeight) + parseInt(footerEl.offsetHeight) + parseInt(window.getComputedStyle(tableEl).borderTopWidth);
+ 
+        // Set minimum iframe height
+        iframeEl.style.minHeight = '600px';
+        iframeEl.style.height = window.getWindowHeight() - sfElementsHeight - iframeParentPadding - (2 * iframeBorder)  + "px";
+    }
+ 
+    function setHeight(iframeElm, iframeParentPadding, iframeBorder) {
+        // height is set to full window
+        var newHeight = window.innerHeight - iframeParentPadding - (2 * iframeBorder) + "px";
+        iframeElm.style.height = newHeight;
+        // if not already set set maxHeight to iframe url so that SAP CPQ sets correct size
+        if (iframeElm.src.indexOf("maxHeight") === -1) {
+            iframeElm.src = iframeElm.src + "&maxHeight=" + newHeight;
+        }
+    }
+ 
+    function setWidth(iframeElm, iframeBorder) {         
+        // Set width to parent width - 2 * border size to avoid horizontal scroll
+        var widthValue = document.body.clientWidth - (2 * iframeBorder) + "px";
+        iframeElm.style.width = widthValue;
+    }
+ 
+    function setStyle(iframeElm){        
+        //Get style of parent element
+        var parentStyle = window.getComputedStyle(iframeElm.offsetParent);
+        var parentLeft = parentStyle.paddingLeft;
+        var parentRight = parentStyle.paddingRight;
+ 
+        // setting margin and overflow
+        iframeElm.style.marginLeft = '-' + parentLeft;
+        iframeElm.style.marginRight = '-' + parentRight;
+        iframeElm.style.overflow = "hidden";
+    }
+</script>
+<iframe id="iframe1"  width="100%" scrolling="true" 
+ src="https://s21.webcomcpq.com/salesforce/SfLogin.aspx?sfauthUserID={!$User.Username}&apiPartnerURL={!$Api.Partner_Server_URL_290}&apiSessionID={!$Api.Session_ID}&domain_name=HONEYWELL_PRD&apiPass=Password&action=New&sfqpOpportunityID={!Quote__c.Opportunity__c}" />
+</apex:page>

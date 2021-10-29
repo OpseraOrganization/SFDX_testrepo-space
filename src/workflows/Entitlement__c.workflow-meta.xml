@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fieldUpdates>
+        <fullName>Case_Creation_Update</fullName>
+        <field>Case_Creation__c</field>
+        <literalValue>1</literalValue>
+        <name>Case Creation Update</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Usage_Count</fullName>
+        <field>Number_Of_Seats__c</field>
+        <formula>Usage_Cap__c -  Usage_Count__c</formula>
+        <name>Update  Usage Count</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <rules>
+        <fullName>Entitlement Notify prior 30 days</fullName>
+        <active>false</active>
+        <description>activity to be auto created and an email notification to the owner 30 days before the entitlement start date.</description>
+        <formula>AND( NOT(ISNULL(Entitlement_Start_Date__c)),   NOT(ISPICKVAL(Entitlement_Type__c , &quot;Training Discount&quot;)), NOT(ISPICKVAL(Entitlement_Type__c , &quot;Training &quot;)), Entitlement_Start_Date__c  &gt;  TODAY(),   NOT(ISPICKVAL(Contract_Number__r.Status , &quot;Expired&quot;))    )</formula>
+        <triggerType>onCreateOrTriggeringUpdate</triggerType>
+        <workflowTimeTriggers>
+            <actions>
+                <name>Activity_assigned_to_you</name>
+                <type>Task</type>
+            </actions>
+            <offsetFromField>Entitlement__c.X30_days_Before_Start_Date__c</offsetFromField>
+            <timeLength>0</timeLength>
+            <workflowTimeTriggerUnit>Days</workflowTimeTriggerUnit>
+        </workflowTimeTriggers>
+    </rules>
+    <rules>
+        <fullName>Entitlement to Case Creation</fullName>
+        <active>true</active>
+        <description>Create time dependent action to create case in future time using Case creation check box</description>
+        <formula>AND(NOT(ISNULL(Entitlement_Start_Date__c)),NOT(ISNULL(Contract_Number__c)))</formula>
+        <triggerType>onCreateOnly</triggerType>
+        <workflowTimeTriggers>
+            <actions>
+                <name>Case_Creation_Update</name>
+                <type>FieldUpdate</type>
+            </actions>
+            <offsetFromField>Entitlement__c.Entitlement_Start_Date__c</offsetFromField>
+            <timeLength>0</timeLength>
+            <workflowTimeTriggerUnit>Days</workflowTimeTriggerUnit>
+        </workflowTimeTriggers>
+    </rules>
+    <rules>
+        <fullName>On Usage Cap Update</fullName>
+        <actions>
+            <name>Update_Usage_Count</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <active>true</active>
+        <formula>ISNEW() || ISCHANGED(Usage_Cap__c)</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <tasks>
+        <fullName>Activity_assigned_to_you</fullName>
+        <assignedToType>owner</assignedToType>
+        <description>An activity to be auto created and an email notification to the owner 30 days before the entitlement start date.</description>
+        <dueDateOffset>30</dueDateOffset>
+        <notifyAssignee>true</notifyAssignee>
+        <offsetFromField>Entitlement__c.Entitlement_Start_Date__c</offsetFromField>
+        <priority>Normal</priority>
+        <protected>false</protected>
+        <status>Not Started</status>
+        <subject>Activity assigned to you</subject>
+    </tasks>
+</Workflow>

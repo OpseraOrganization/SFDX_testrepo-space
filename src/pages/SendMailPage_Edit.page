@@ -1,0 +1,390 @@
+<apex:page standardController="EmailMessage" showHeader="true" sidebar="true" extensions="sendmailclass_edit">
+<apex:includeScript value="/support/console/20.0/integration.js"/>
+<a name="skiplink">
+<img src="/s.gif" height='1' width='1' alt="Content Starts Here" class="skiplink" title="Content Starts Here"/></a>
+<div class="bPageTitle">
+<div class="ptBody secondaryPalette">
+<div class="content">
+<img src="/s.gif" alt="Home"  class="pageTitleIcon" title="Home"/>
+<h1 class="pageType">Task<span  class="titleSeparatingColon">:</span></h1>
+<h2 class="pageDescription"> Send an Email</h2>
+</div>
+</div>
+</div>
+
+<apex:form >
+<apex:pagemessages ></apex:pagemessages>
+<script>
+  function plbsUp(input,Id){       
+          var doc = document.getElementById(Id).value;                       
+              plbsnewFunc();  
+  }
+              function poptastic(url)
+            {
+                newwindow=window.open(url,'name','width=800,height=600,top=0,toolbar=no ,scrollbars=yes,personalbar=no,location=no,directories=no,statusbar=no,menubar=no,status=no,resizable=yes,left=60,screenX=60,top=100,screenY=100');
+                if (window.focus) {newwindow.focus()}
+            }
+          
+    </script>
+
+<apex:pageBlock mode="detail">
+ <apex:pageBlock id="viewFolder" >
+<apex:commandButton action="{!send}" value="Send"/>
+<apex:commandButton value="Select Template" action="{!attachtemplate}" />
+<apex:commandButton action="{!attachfile}" value="Attach File from Computer" />
+<apex:commandButton action="{!attachfileCase}" value="Attach Related Case Documents" />
+<apex:commandButton action="{!cancel}" value="Cancel"/>
+
+<!-- CODE TO SHOW THE SECTION TO ATTACH DOCS FROM SYSTEM -->
+<apex:outputPanel rendered="{!showdoc}">
+<table>
+        <tr>
+        <td>
+        <b style="font-size:15px">1.Select the File</b><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;Type the path of the file or click the Browse button to find the file.(The file cannot be larger than 10MB.)
+        &nbsp;&nbsp;&nbsp;&nbsp;<apex:inputFile style="width:100%" id="fileToUpload" value="{!fileBody}" filename="{!fileName}" />  
+          
+        </td>
+        </tr>
+        <tr>
+        <td>
+        <br/>
+        </td>
+        </tr>
+        <tr>
+        <td>
+        <b style="font-size:15px">2.Click the Attach button.</b><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;Repeat steps 1 and 2 to attach multiple files.<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;( When the upload is complete the file will appear in the attachment list below. )<br/>
+         &nbsp;&nbsp;&nbsp;&nbsp;<apex:commandButton value="Attach To Email"  action="{!uploadfile}"/>
+          
+        </td>
+        </tr>
+       <tr>
+        <td>
+        <br/>
+        </td>
+        </tr>
+        <tr>
+        <td>
+        <b style="font-size:15px">3.Click the Done button to close the section.</b><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;<br/>
+         &nbsp;&nbsp;&nbsp;&nbsp;<apex:commandButton value="Done"   action="{!nodisp}" />
+          
+        </td>
+        </tr> 
+        
+        </table>
+ </apex:outputPanel>       
+<!-- <apex:outputpanel rendered="{!if(showlist==True,TRUE,FALSE)}">      
+<apex:pageBlock title="Attachments">
+ <apex:pageBlockTable value="{!file1}" var="a">
+<apex:column value="{!a.name}" title="File Name" headerValue="File"/>
+ <apex:column value="{!a.bodylength}" title="Size" headerValue="Size"/>
+</apex:pageBlockTable>
+</apex:pageBlock> 
+</apex:outputpanel> -->
+
+
+<!-- ***************************END OF CODE ********************** -->
+
+<!--- CODE TO SHOW THE LIST OF ATTACHMENTS RELATED TO CASE AND ALLOW USER TO SELECT FROM THEM -->
+<apex:pageBlock rendered="{!selectattach}" >
+<apex:commandButton value="Done" action="{!attachfromcase}">
+    <apex:pageBlockTable value="{!results1}"  var="item"> 
+            <apex:column >
+                <apex:inputCheckbox value="{!item.selected1}" id="checkedone1">
+               
+              <!--  <apex:actionSupport event="onclick"    /> -->
+                
+                </apex:inputCheckbox>
+                 </apex:column>
+             <apex:column >
+                <apex:facet name="header"> File Name</apex:facet>
+                 <apex:outputfield value="{!item.att.Name}"/>  
+               </apex:column>
+    </apex:pageBlockTable> 
+       
+</apex:commandButton>
+   <apex:commandButton action="{!cancelAttachment}" value="Cancel"  rerender="viewFolder"/>   
+</apex:pageBlock>
+
+<apex:pageBlock rendered="{!noselectattach}" >
+ 
+  
+  <apex:outputPanel rendered="{!noselectattach}"><b>THERE ARE NO ATTACHMENTS RELATED TO THIS CASE.</b></apex:outputPanel> <br/>
+ <apex:commandButton value="OK" action="{!hidemessage}" > 
+    </apex:commandButton>
+</apex:pageBlock> 
+<!-- ***************************END OF CODE ********************** -->
+<apex:pageBlock rendered="{!selectTemp}" >
+ <apex:pageBlockSection title="Select Template">
+  <apex:outputLabel value="Folder">
+           <apex:selectList size="1"  id="PsblApp"  value="{!EmailTemplate}"   onchange="plbsUp(this,'{!$Component.PsblApp}')">
+           <apex:selectOptions value="{!TempList}"></apex:selectOptions>         
+            <apex:actionFunction name="plbsnewFunc" action="{!ViewDetails}" 
+                                rerender="viewFolder" />                                             
+           </apex:selectList>          
+           </apex:outputLabel>  
+</apex:pageBlockSection>
+
+<apex:pageBlockTable value="{!emailTemplates}" var="templs">   
+      <apex:column >
+        <apex:facet name="header"> Name</apex:facet>                                             
+  <a href="#"  id="PsblApp1" OnClick="var caseId='{!caserecord.ID}';
+                  url='/apex/SendmailPage_Edit?caseid=';
+                  url=url+caseId; 
+                  url=url+'&templateId='; 
+                  var tempId='{!templs.Id}';
+                 url=url+tempId;  
+                  url=url+'&CCList='; 
+                  var To='{!Tolist}';
+                  var BCC='{!BCClist}';
+                  var CC='{!AddCClist}';
+                  url=url+'&Tolist='; 
+                  url=url+To;  
+                  url=url+'&BCClist='; 
+                  url=url+BCC;  
+                  url=url+'&AddCClist='; 
+                  url=url+CC;  
+                  url=url+'&Id='; 
+                  var pageId='{!PageId}';
+                  url=url+pageId;                                              
+     var URLret=window.location.href;   
+          
+                 
+                 var str='isdtp';
+                                  
+     if(URLret.search(str)==-1)
+       window.parent.location.href =url;
+
+else{
+
+function testCloseTab() {
+sforce.console.getEnclosingTabId(closeSubtab);
+
+}
+var closeSubtab = function closeSubtab(result) {
+
+var tabId = result.id;
+sforce.console.closeTab(tabId);
+};
+testCloseTab();
+ sforce.console.openPrimaryTab(undefined,url, true, 'Reply to Email');
+}
+
+  
+                  
+                  "
+     title="Click To Select Template">{!templs.Name}</a>
+  </apex:column>
+    
+       <apex:column >
+        <apex:inputhidden id="tempid" value="{!templs.Id}"/>     
+       </apex:column>
+  
+       <apex:column >
+        <apex:inputhidden id="tempid1" value="{!templateId}"/>     
+       </apex:column>
+       
+       <apex:column >
+        <apex:facet name="header"> Type</apex:facet>
+         <apex:outputfield value="{!templs.TemplateType}"/>  
+       </apex:column>
+      
+       <apex:column >
+        <apex:facet name="header"> Description</apex:facet>
+          <apex:outputfield value="{!templs.Description}"/>  
+       </apex:column>
+  
+     </apex:pageBlockTable> 
+   <apex:commandButton action="{!cancelTemplate}" value="Cancel Template"  rerender="viewFolder"/>
+  </apex:pageBlock>
+  
+ </apex:pageBlock>
+
+
+<apex:pageBlock rendered="{!isTemplate}">
+<div class="pbBody"><div class="pbSubheader first tertiaryPalette" id="head_1_ep"><h3>Edit Email<span  class="titleSeparatingColon">:</span></h3></div></div>
+
+
+<apex:pageBlock rendered="{!isHTML}">
+<table  class="detailList" border="0" cellpadding="0" cellspacing="0"><tr><td class="labelCol">Email Format</td>
+<td class="data2Col" colspan="3">&nbsp;<b>HTML</b>&nbsp;&nbsp;[&nbsp;
+    <apex:commandLink action="{!doref}"
+      value="Switch to Text-Only" id="theCommandLink"/>          
+     &nbsp;]</td></tr>
+</table>
+</apex:pageBlock>
+
+<apex:pageBlock rendered="{!isText}">
+<table  class="detailList" border="0" cellpadding="0" cellspacing="0"><tr><td class="labelCol">Email Format</td><td class="data2Col" colspan="3">&nbsp;<b>Text-Only</b>&nbsp;&nbsp;[&nbsp;
+<apex:commandLink action="{!doref1}"
+      value="Switch to HTML" id="theCommandLink"/>
+&nbsp;]</td></tr>
+</table>
+</apex:pageBlock>
+</apex:pageBlock>
+
+
+ <apex:pageBlockSection columns="1">
+<apex:pageBlockSectionItem >  <apex:outputLabel value="From"> </apex:outputLabel>
+           <apex:selectList value="{!Frmlst}" size="1">
+                 <apex:selectOptions value="{!FrmAdd}"/>
+                 </apex:selectList>
+        </apex:pageBlockSectionItem>
+        
+        
+         
+        <apex:pageBlockSectionItem > <apex:outputLabel value="Case No"  ></apex:outputLabel>
+        <apex:outputField value="{!caseRecord.casenumber}" styleClass="dataCol"  > </apex:outputField>
+       </apex:pageBlockSectionItem>
+       
+        <b>Please separate multiple addresses with semicolon only. Do not use spaces or commas. Do not use a semicolon if only ONE email address.</b>
+       
+        
+        <!-- Search for TO  CONTACTS ------>
+        <apex:pageBlockSectionItem >
+         <apex:commandLink title="Search Contacts" value="Search for Contacts" action="{!search}"  /> 
+        </apex:pageBlockSectionItem>
+        
+        <apex:outputPanel rendered="{!showresults}">
+        <b>First Name </b>
+        <apex:inputText id="fnam" value="{!fname}"/>
+         <b>Last Name </b>
+        <apex:inputText id="lnam" value="{!lname}"/>
+        <b>Account Name </b>
+        <apex:inputText id="Anam" value="{!Aname}"/>
+        <apex:commandButton action="{!query}" value="Search"/>
+        <apex:pageBlockTable rendered="{!success}" value="{!results}" var="r">
+        <apex:column >
+        <apex:inputCheckbox value="{!r.selected}" id="checkedone">
+        <apex:actionSupport event="onclick" action="{!GetSelected}" rerender="Selected_PBS"/>
+        </apex:inputCheckbox>
+         </apex:column>
+        <apex:column value="{!r.cnt.Firstname}" headerValue="First Name"/>
+         <apex:column value="{!r.cnt.Lastname}" headerValue="Last Name"/>
+          <apex:column value="{!r.cnt.Email}" headerValue="Email"/>
+        </apex:pageBlockTable>
+       
+      </apex:outputPanel>
+       <apex:outputPanel rendered="{!noquery}"><b>Please enter a search criteria.</b></apex:outputPanel>
+       <apex:outputPanel rendered="{!noresults}"><b>There are no records meeting this search criteria.</b></apex:outputPanel>
+     
+     
+          
+<apex:pageBlockSectionItem >  <apex:outputLabel value="To"> </apex:outputLabel>
+<apex:outputpanel id="Selected_PBS">
+         <apex:inputTextarea cols="100" rows="5" title="Please separate multiple addresses with semicolon only. Do not use spaces or commas. Do not use a semicolon if only ONE email address."  value="{!Tolist}"/>
+         </apex:outputpanel>
+        </apex:pageBlockSectionItem>
+        
+   
+       
+        <apex:pageBlockSectionItem >
+         <apex:commandLink title="Search Contacts" value="Search for Contacts" action="{!searchcc}"  /> 
+        </apex:pageBlockSectionItem>
+        
+        <apex:outputPanel rendered="{!showresultscc}">
+        <b>First Name </b>
+        <apex:inputText id="fnam1" value="{!fnamecc}"/>
+         <b>Last Name </b>
+        <apex:inputText id="lnam1" value="{!lnamecc}"/>
+        <b>Account Name </b>
+        <apex:inputText id="Anam1" value="{!Anamecc}"/>
+        <apex:commandButton action="{!querycc}" value="Search"/>
+        <apex:pageBlockTable rendered="{!successcc}" value="{!resultscc}" var="r">
+        <apex:column >
+        
+        <apex:inputCheckbox value="{!r.selectedcc}" id="checkedone1">
+        <apex:actionSupport event="onclick" action="{!GetSelectedcc}" rerender="Selected_PBS1"/>
+        </apex:inputCheckbox>
+         </apex:column>
+        <apex:column value="{!r.cntcc.Firstname}" headerValue="First Name"/>
+         <apex:column value="{!r.cntcc.Lastname}" headerValue="Last Name"/>
+          <apex:column value="{!r.cntcc.Email}" headerValue="Email"/>
+        </apex:pageBlockTable>
+       
+      </apex:outputPanel>
+         <apex:outputPanel rendered="{!noquerycc}"><b>Please enter a search criteria.</b></apex:outputPanel>
+       <apex:outputPanel rendered="{!noresultscc}"><b>There are no records meeting this search criteria.</b></apex:outputPanel>
+ 
+       <apex:pageBlockSectionItem >
+        <apex:outputLabel value="CC"> </apex:outputLabel>
+        <apex:outputpanel id="Selected_PBS1">
+         <apex:inputTextarea cols="100" rows="5" title="Please separate multiple addresses with semicolon only. Do not use spaces or commas. Do not use a semicolon if only ONE email address."   value="{!AddCClist}"/>
+          </apex:outputpanel> 
+        </apex:pageBlockSectionItem>
+        
+        <apex:pageBlockSectionItem >
+         <apex:commandLink title="Search Contacts" value="Search for Contacts" action="{!searchbcc}"  /> 
+        </apex:pageBlockSectionItem>
+        
+         <apex:outputPanel rendered="{!showresultsbcc}">
+        <b>First Name </b>
+        <apex:inputText id="fnam2" value="{!fnamebcc}"/>
+         <b>Last Name </b>
+        <apex:inputText id="lnam2" value="{!lnamebcc}"/>
+        <b>Account Name </b>
+        <apex:inputText id="Anam2" value="{!Anamebcc}"/>
+        <apex:commandButton action="{!querybcc}" value="Search"/>
+        <apex:pageBlockTable rendered="{!successbcc}" value="{!resultsbcc}" var="r">
+        <apex:column >
+        
+        <apex:inputCheckbox value="{!r.selectedbcc}" id="checkedone2">
+        <apex:actionSupport event="onclick" action="{!GetSelectedbcc}" rerender="Selected_PBS2"/>
+        </apex:inputCheckbox>
+         </apex:column>
+        <apex:column value="{!r.cntbcc.Firstname}" headerValue="First Name"/>
+         <apex:column value="{!r.cntbcc.Lastname}" headerValue="Last Name"/>
+          <apex:column value="{!r.cntbcc.Email}" headerValue="Email"/>
+        </apex:pageBlockTable>
+       
+      </apex:outputPanel>
+          <apex:outputPanel rendered="{!noquerybcc}"><b>Please enter a search criteria.</b></apex:outputPanel>
+       <apex:outputPanel rendered="{!noresultsbcc}"><b>There are no records meeting this search criteria.</b></apex:outputPanel>
+ 
+        <apex:pageBlockSectionItem >
+          <apex:outputLabel value="BCC"> </apex:outputLabel>
+           <apex:outputpanel id="Selected_PBS2">
+         <apex:inputTextarea cols="100" rows="5" title="Please separate multiple addresses with semicolon only. Do not use spaces or commas. Do not use a semicolon if only ONE email address."  value="{!BCClist}"/>
+         </apex:outputpanel> 
+        </apex:pageBlockSectionItem>
+        
+                      <apex:pageBlockSectionItem ><apex:outputLabel value="Subject" lang="40"  ></apex:outputLabel>
+          <apex:outputtext style="width:100%" value="{!Subject}" ></apex:outputtext></apex:pageblockSectionItem>
+          
+          <apex:pageBlockSectionItem rendered="{!isHTML}" ><apex:outputLabel value="Body"  ></apex:outputLabel>
+         <apex:inputTextarea Id="bdy"   rows="25" Value="{!HtmlemailBody}" richText="true"/>      
+         </apex:pageBlockSectionItem>
+         
+         <apex:pageBlockSectionItem rendered="{!isText}" ><apex:outputLabel value="Body"  ></apex:outputLabel>        
+         <apex:inputTextarea cols="100" rows="5" Id="bdy1"   rendered="{!isText}" Value="{!HtmlemailBody}" richText="false"/>
+         </apex:pageBlockSectionItem>
+         
+
+</apex:pageBlockSection>
+
+<!----- Attachment section ---->
+          <apex:pageblocksection columns="1" title="Attachment Information" >
+               
+     <apex:pageBlockTable value="{!showatt}" var="v" > 
+     <apex:column width="2" >
+          <apex:facet name="header"> </apex:facet>
+          <Apex:commandLink value="Delete" action="{!del}" >
+          <apex:param name="ide" value="{!v.id}" assignTo="{!testassign}"/>
+          </apex:commandLink>
+          </apex:column>  
+               <apex:column >
+        <apex:facet name="header"> Name</apex:facet>
+          <apex:outputfield value="{!v.Name}" />  
+       </apex:column>
+         
+          </apex:pageBlockTable> 
+         
+       </apex:pageBlockSection>
+<!----------End of Attachment section -------------------->
+
+  </apex:pageBlock>
+  </apex:form>
+</apex:page>

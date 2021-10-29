@@ -1,0 +1,166 @@
+<apex:page sidebar="false" showHeader="false" standardStylesheets="false" docType="html-5.0" applyHtmlTag="false" cache="false"> 
+    <html>
+        <head>
+            <meta charset="utf-8"></meta>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+            <meta name="viewport" content="width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable = no"></meta>
+            <title>Direct Access Order Status Login </title>
+            <meta name="description" content="DAR aero app"></meta>
+            <!--<link rel="shortcut icon" href="">-->
+            <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.DirectAccess_Assets, 'css/bootstrap.min.css')}"> </link>
+            <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.DirectAccess_Assets, 'css/DAR-styles.css')}"> </link>   
+            <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/lib/jquery-3.2.1.min.js')}"> </script>
+            <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/lib/bootstrap.min.js')}"> </script>
+
+            <!-- <link rel="stylesheet" href="{!URLFOR($Resource.hybridappResource, 'css/jquery.mobile.min.css')}" /> -->
+            <script type="text/javascript" src="{!URLFOR($Resource.hybridappResource, 'js/jquery.mobile.min.js')}"></script>
+            <script type="text/javascript" src="https://localhost/cordova.js"></script> 
+            <script type="text/javascript" src="{!URLFOR($Resource.hybridappResource, 'js/force.js')}"></script>
+        </head>     
+        
+        <body >  
+           <script type="text/javascript" src="assets/js/DAR-scripts.js"></script>      
+        
+            <div id="DAR-wrapper">
+                <div class="DAR-content">
+                    <section id="DAR-oc-screen" class="container DAR-subcontent">
+                        <!--<a class="DAR-back-nav" href="/bgadir/DirectAccess_Homepage" style="display:none"> </a>Comment: removed for IOS change-->
+                        <figure class="row DAR-map-socket DAR-cloud-bg">  </figure>
+                        <article class="row DAR-contact-block">
+                            <h2 class="DAR-contact-heading"> Order Status </h2>
+                            <p class="DAR-contact-note"> Here is a quick update of your orders at Honeywell.  </p>
+                            <span class="DAR-section-img DAR-order-status"> </span>
+                        </article>                      
+                        <div class="row DAR-os-conatainer DAR-section-bg">                          
+                            <!-- <div style="float: left; margin-left: 0px;" class="span6"> -->
+                                <!-- <div class="semitrans">    -->
+                                    <!-- <p class="errordiv" style="color:red; size:14px;" id="errorid"></p><br/> -->                                     
+                                    <form  action= "https://cwa.honeywell.com/login.do" method="post" name="cwa_login" class="DAR-form-section DAR-login-form" target="_self" id="loginform">
+                                        <div class="form-group">
+                                            <label for="username" >Honeywell ID</label>
+                                            <input type="text" class="form-control input-lg" name="username" placeholder="Honeywell ID" id="username" ></input>
+                                        </div>
+                                        <div class="form-group mb-50">
+                                            <label for="password" >Password</label>
+                                            <input type="password" tabindex="2" name="password" placeholder="Password" id="password" class="form-control input-lg"/>
+                                            <input type="hidden" name="appid" value="4704" />
+                                            
+                                        </div>
+                                        <div class="checkbox">
+                                            <input type="checkbox" id="remhonid"/> 
+                                            <label class="checkbox-ui" for="remhonid"> Remember me </label>
+                                        </div>
+                                        <!-- <div class="checkbox">
+                                            <label class="checkbox" for="sp"> <input  class="checkbox" type="checkbox" id="sp" name="Sha"/> Remember me</label>
+                                        </div>
+                                        <div style="padding-bottom:20px;">
+                                            <label><input type="checkbox" style="width:20px; height:15px;" id="remhonid" name="remhonid"/> Remember me</label>
+                                        </div> -->
+                                        <button tabindex="3" type="submit" class="btn btn-primary btn-lg" onclick="return validate();">Sign in</button>
+                                    </form>
+                                <!-- </div> -->
+                            <!-- </div> -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="modal fade" id="DAR-os-error-modal" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title" id="mySmallModalLabel"> Login Error </h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true"></span> </button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="DAR-os-error"> Invalid Honeywell ID or Password. Please try again. </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+<script type="text/javascript">
+            var userAgent = navigator.userAgent;
+            var hon_loggedIn = false;   
+            var userIdFromTheme= '';           
+            var hon_first_name = "";     
+            var hon_last_name = ""; 
+            var userNameAsItIs;
+            function validate(){
+                userNameAsItIs = $('#username').val();
+                ConvertCase();
+                if($('#username').val() == ''){
+                    $('.DAR-os-error').html('Please enter Username.');
+                    $('#DAR-os-error-modal').modal();
+                    return false;
+                }else if($('#password').val() == ''){
+                    $('.DAR-os-error').html('Please enter Password.');
+                    $('#DAR-os-error-modal').modal();
+                    return false;
+                }else {
+                    localStorage.setItem('presentHID-Local', userNameAsItIs);
+                    localStorage.setItem('presentHIDSetting-Local', "Set");
+                    if($('#remhonid').is(':checked'))
+                    {
+                        localStorage.setItem('presentpassword-Local', $('#password').val());
+                    }
+                    else
+                    {
+                        localStorage.removeItem('presentpassword-Local');
+                    }
+                    return true;
+                }
+            }       
+            //Get parameters
+            function getParameterByName(name) {
+                name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+                var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                    results = regex.exec(location.search);
+                return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+            }
+            function ConvertCase() {         
+                var tt = $('#username').val().toLowerCase();
+                $('#username').val(tt);
+                
+            }
+        </script>
+        </body>  
+    </html>
+    <script>
+       $("#loginform2").submit(function(e){
+         alert('inside submit');
+        //e.preventDefault();
+        e.preventDefault();
+         $.ajax({         
+         crossDomain: true,
+        url:'https://cwa.honeywell.com/login.do',
+        type:'post',
+
+        success: function() { alert("Success"); },
+    error: function() { alert('Failed!'); },
+});
+});
+
+        $(document).ready(function(){
+            var errorCode = getParameterByName('errcode');
+            if(errorCode == 'cwa01'){
+                localStorage.setItem('presentHID-Local', "");
+                $('.DAR-os-error').html(' Invalid Honeywell ID or Password. Please try again. ');
+                $('#DAR-os-error-modal').modal();
+            }
+            
+            var uname = localStorage.getItem('presentHID-Local');
+            var pword = localStorage.getItem('presentpassword-Local');
+            
+            if(uname != null && pword != null)
+            {
+                $("#remhonid").prop('checked', true);
+                $('#username').val(uname);
+                $('#password').val(pword);
+            }
+        });
+    </script>   
+    <site:googleAnalyticsTracking />
+    <!--<apex:insert name="footer">
+        <c:honeywellFooter />
+</apex:insert>-->
+
+</apex:page>

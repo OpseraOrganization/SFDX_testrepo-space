@@ -1,0 +1,163 @@
+<apex:page controller="CP_Reserve1_cls" showHeader="true" sidebar="true" action="{!getdetails}" tabStyle="Course_Catalog__tab">
+<apex:includeScript value="/soap/ajax/21.0/connection.js"/>
+    <apex:includeScript value="/soap/ajax/21.0/apex.js"/>
+        <apex:outputPanel id="scr">
+        <apex:outputPanel id="scr1" rendered="{!callwindow}">
+        <script>   
+           alert('Thank you for your request to register for this training course.  Based on your login credentials, at this time you are unable to register for this course.  Please contact our training administrator at  Training.Solutions2@Honeywell.com or 1-602-365-2833 for assistance with this matter.');
+        </script>     
+        </apex:outputPanel>
+        </apex:outputPanel>
+        <apex:outputPanel id="scr2">
+        <apex:outputPanel id="scr3" rendered="{!callwindow1}">
+        <script>   
+           alert('Sorry.... you cannot registration for courses,because your not assigned to an account,Please contact training administrator');
+        </script>     
+        </apex:outputPanel>
+        </apex:outputPanel>
+<apex:form >
+<table width="100%">
+<tr>
+<td>
+<apex:pageBlock mode="edit">
+<table bgcolor="black" width="100%">
+<tr>
+<td>
+<font color="white" size="2"><b>Selected Course details</b></font>
+</td>
+</tr>
+</table>
+<br/>
+<table cellpadding="4" cellspacing="4">
+<tr>
+
+<td>
+<apex:outputText value="{!Name}" style="font-weight:bold"/>
+</td>
+</tr>
+<tr>
+
+<td>
+<apex:outputText value="{!Description}"/>
+</td>
+</tr>
+<tr>
+<td>
+<apex:outputLabel value="Who Should Attend :    " style="font-weight:bold"></apex:outputLabel> &nbsp;&nbsp;
+
+<apex:outputText value="{!Who}"/>
+</td>
+
+</tr>
+<tr>
+<td colspan="3">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<apex:image value="{!$Resource.HwTrng_im1}"/>
+<apex:outputLabel value="Skill Level :" style="font-weight:bold"></apex:outputLabel>&nbsp;&nbsp;
+<apex:outputText value="{!Level}"/>
+</td>
+</tr>
+<tr>
+<td colspan="3">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<apex:image value="{!$Resource.HwTrng_im2}"/>
+<apex:outputLabel value="Prerequisites :" style="font-weight:bold"></apex:outputLabel>&nbsp;&nbsp;
+<apex:outputText value="{!Prerequisites}"/>
+</td>
+</tr>
+<tr>
+<td colspan="3">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<apex:image value="{!$Resource.hwTrng_im3}"/>
+<apex:outputLabel value="Hours of Instruction :" style="font-weight:bold"></apex:outputLabel>&nbsp;&nbsp;
+<apex:outputText value="{!Hours}"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<apex:outputLabel value="Duration :" style="font-weight:bold"></apex:outputLabel>&nbsp;&nbsp;
+<apex:outputText value="{!Duration}"/>
+</td>
+</tr>
+<tr>
+<td colspan="3">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<apex:image value="{!$Resource.HwTrng_im4}"/>
+<apex:outputLabel value="Per Student Price :" style="font-weight:bold"></apex:outputLabel>&nbsp;&nbsp;
+<apex:outputText value="{0, number, $0.00}" > 
+<apex:param value="{!price}" />
+</apex:outputText>
+</td>
+</tr>
+</table>
+</apex:pageBlock>
+<apex:pageBlock mode="edit" rendered="{!showclass}">
+<table bgcolor="black" width="100%">
+<tr>
+<td>
+<font color="white" size="2"><b>Register for this Course</b></font>
+</td>
+</tr>
+</table>
+<apex:pageBlockTable value="{!classes}" var="v" >
+<apex:column >
+ <b>{!v.Class_Name__c}</b><br/>
+ {!v.Location__r.name}
+</apex:column>
+<apex:column >
+<apex:outputText value="{0, number, $0.00}" > 
+<apex:param value="{!v.Product_Per_Student_Price__c}" />
+</apex:outputText> 
+</apex:column>
+<apex:column >
+  <apex:outputpanel >  <b><apex:outputfield value="{!v.Start_Date__c}"/>  -  <apex:outputfield value="{!v.End_Date__c}"/></b></apex:outputpanel><br/>
+  <apex:outputpanel rendered="{!IF((v.Status__c!='Cancelled' && v.Waitlist_students__c < v.Seats_Remaining__c),TRUE,FALSE)}"><apex:outputText value="{!FLOOR(v.Seats_Remaining__c- v.Waitlist_students__c)}"/></apex:outputpanel>
+  <apex:outputpanel rendered="{!IF((v.Status__c!='Cancelled'&& v.Waitlist_students__c >= v.Seats_Remaining__c ),TRUE,FALSE)}"><apex:outputText value="0"/></apex:outputpanel>
+  <!-- Modified for SR# 358547 - Start -->
+  <!-- <apex:outputtext value="{!IF((v.Number_of_reservations__c==0),' Open ',IF((v.Number_of_reservations__c==v.Total_Number_of_Seats__c),' Closed ',' Open Seats'))}"/> -->
+  <apex:outputtext value="{!IF((v.Status__c=='Cancelled'),' Class Cancelled',IF((v.Number_of_reservations__c==0),' Open ',IF((v.Number_of_reservations__c==v.Total_Number_of_Seats__c),' Closed ',' Open Seats')))}"/>
+  <!-- Modified for SR# 358547 - End -->
+  <apex:outputpanel rendered="{!IF((v.Status__c=='Cancelled'),FALSE,TRUE)}">  [<apex:outputfield value="{!v.Number_of_reservations__c}"/>/<apex:outputfield value="{!v.Total_Number_of_Seats__c}"/> ]</apex:outputpanel><br/>
+    <!-- Modified for SR# 358547 - Start -->
+    <!-- <apex:outputLink value="/apex/CP_Reserve2_VF" style="font-color:dodgerblue"><font color="dodgerblue"><u>Register</u></font> -->
+       <apex:commandLink action="{!reserve}"  style="font-color:dodgerblue" rendered="{!IF((v.Status__c=='Cancelled' ||(v.Seats_Remaining__c- v.Waitlist_students__c)<=0),'False','True')}" ><font color="dodgerblue"><u>Register</u></font>
+          <!-- Modified for SR# 358547 - End -->
+              <apex:param value="{!v.Id}"  assignTo="{!paramval}" name="vid"/>
+          </apex:commandLink> 
+           <apex:commandLink action="{!reserve}"  style="font-color:dodgerblue" rendered="{!IF((v.Status__c!='Cancelled' && (v.Seats_Remaining__c- v.Waitlist_students__c)<=0),'True','False')}" ><font color="dodgerblue"><u>Request Waitlist</u></font>
+               <apex:param value="{!v.Id}"  assignTo="{!paramval}" name="vid"/>
+           </apex:commandLink>
+          <!-- <apex:outputText style="font-weight:bold;color:Red;text-align:center" rendered="{!IF((v.Seats_Remaining__c<=0),'True','False')}" >
+           <b><font color="red"> No Seats Available on this class. <br/>
+            Please choose other available class or contact our training administrator at Training.<br/>
+            Solutions2@Honeywell.com or 1-602-365-2833 </font> </b>
+           </apex:outputText>  -->
+          <br/>
+<!-- Modified for SR# 358547 - Start -->
+     <!-- <apex:outputLink value="/apex/CP_MassReserve2_VF" style="font-color:dodgerblue" rendered="{!pageblock1}"><font color="dodgerblue"><u>Mass Registration</u></font> -->
+     <apex:outputLink value="/apex/CP_MassReserve2_VF" style="font-color:dodgerblue" rendered="{!IF((v.Status__c=='Cancelled') ,'False',IF((pageblock1),'True','False'))}"><font color="dodgerblue"><u>Mass Registration</u></font>
+     <!-- Modified for SR# 358547 - End -->
+     
+           <apex:param value="{!v.Id}"  name="id"/>
+     </apex:outputLink>
+     <!-- <apex:commandButton value="Register the selected contact" action="{!myMethod}" rendered="{!showcontactpicklist}" >
+       </apex:commandButton>-->
+      
+    <!--- <apex:outputText rendered="{!NOT(ISNULL(o.a.Opportunity__c))}" >
+    <br/>
+      <a href='/{!o.a.Opportunity__c}' target='_blank'>
+      {!o.a.Opportunity__r.Name} - {!o.a.Opportunity__r.StageName}
+      </a>
+    </apex:outputText>--->
+                                                         
+</apex:column>
+</apex:pageBlockTable>
+</apex:pageBlock>
+<apex:pageBlock rendered="{!NOT(showclass)}">
+<font size="2" color="black"><b>There are no classes scheduled for this Course</b></font> &nbsp;&nbsp;&nbsp;
+<apex:outputLink value="/apex/CP_CourseInfo"  title="back">       [Back]
+       </apex:outputLink>
+</apex:pageBlock>
+</td>
+</tr>
+</table> 
+
+</apex:form>
+
+</apex:page>

@@ -1,0 +1,88 @@
+<apex:page sidebar="false" showHeader="false" showChat="false" cache="false" title="CXone">
+    <script src="/support/console/48.0/integration.js" type="text/javascript" />
+    <style>
+        html body.sfdcBody {
+            padding: 0px;
+        }
+    </style>
+    <div>
+        <iframe id="CXoneFrame" scrolling="yes" frameborder="0" style="position: absolute; height: 100%; width: 100%"></iframe>
+    </div>
+    <script type="text/javascript">
+        //Get CXone url from datastore and set to iframe
+        var url = localStorage.wfoUrl;
+        function handleMessages(event) {
+            if (isNullOrEmpty(url) || url.indexOf(event.origin) !== 0) {
+                return;
+            }
+            var data = event.data;
+            if (data && data.messageType && data.messageType === 'Loaded') {
+                var lightningAgentParam = getParameterByName(window.location.search, 'lightningAgent');
+                var authData = isNullOrEmpty(lightningAgentParam) ? localStorage.OAuthInfo : localStorage.authToken;
+                if (isNullOrEmpty(authData)) {
+                    return;
+                }
+
+                authData = JSON.parse(authData);
+                var tokenData = {
+                    messageType: 'Token',
+                    token: authData.accessToken,
+                    issuer: 'SFAgent'
+                };
+                event.source.postMessage(tokenData, event.origin);
+            }
+        };
+        //register for message event from CXone iframe
+        window.addEventListener("message", handleMessages, false);
+        document.addEventListener("DOMContentLoaded", function () {
+            //register for CXone tab  unload event
+            window.addEventListener("unload", function (event) {
+                localStorage.setItem('isCX1Open', false);
+            });
+            
+            localStorage.setItem('isCX1Open', true);
+            if (sforce.console.isInConsole()) {
+                //tab id changes after a page refresh. Hence, set the correct tab id here.
+                sforce.console.getEnclosingTabId(function (result) {
+                    localStorage.setItem('cx1Tab', result.id);
+                });
+            }
+            
+            //add query params for TOP & L2 navigation removal and to share token via postMessage      
+            document.getElementById('CXoneFrame').src = appendQueryString(url, { embeddedClient: true, postMsg: true });
+        });
+
+        function isNullOrEmpty(value) {
+            return (value === undefined || value === null || value === '');
+        }
+
+        function getParameterByName(queryStr, name) {
+            name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+            var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                results = regex.exec(queryStr);
+            return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+        }
+
+        function appendQueryString(url, map) {
+            let queryString = '';
+            let key = '';
+
+            for (key in map) {
+                if (map.hasOwnProperty(key)) {
+                    if (queryString !== '') {
+                        queryString += '&';
+                    }
+                    queryString += key + '=' + encodeURIComponent(map[key]);
+                }
+            }
+
+            if (url.indexOf('?') === -1) {
+                url += (queryString === '') ? queryString : '?' + queryString;
+            } else {
+                url += (queryString === '') ? queryString : '&' + queryString;
+            }
+            return url;
+        }
+
+    </script>
+</apex:page>

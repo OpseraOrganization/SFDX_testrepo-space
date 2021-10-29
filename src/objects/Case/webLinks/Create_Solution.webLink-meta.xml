@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Create_Solution</fullName>
+    <availability>online</availability>
+    <displayType>button</displayType>
+    <linkType>javascript</linkType>
+    <masterLabel>Create Solution</masterLabel>
+    <openType>onClickJavaScript</openType>
+    <protected>false</protected>
+    <url>{!REQUIRESCRIPT(&quot;/soap/ajax/13.0/connection.js&quot;)}
+var rec,rec1, csoId,gtoId;
+var caseId=&apos;{!Case.Id}&apos;;
+
+
+//getting the status of case closure
+var resultCase=sforce.connection.query(&quot;Select Id,IsClosed from Case where Id =&apos;&quot;+ caseId+&quot;&apos;&quot;);
+var recordsCase = resultCase.getArray(&apos;records&apos;);
+var recCas = recordsCase [0].IsClosed;
+
+if(recCas==&apos;true&apos;){
+
+var sol= new sforce.SObject(&quot;Solution&quot;);
+var quote2= new Array(1);
+quote2[0]=&apos;{!Case.Id}&apos;;
+var tmp1 = sforce.connection.retrieve(&apos;Subject&apos;,&apos;Case&apos;,quote2);
+var tmp2 = tmp1[0].Subject;
+var strSingleLineText2 = tmp2.replace(new RegExp( &quot;\\n&quot;, &quot;g&quot; ), &quot; &quot; ); 
+sol.SolutionName=strSingleLineText2;
+
+////////var type=&apos;{!Case.Type}&apos;;
+
+var type=&apos;{!Case.Case_Record_Type__c}&apos;;
+
+
+var cso=&apos;Solution CSO Non-Technical&apos;;
+var gto=&apos;Solution GTO Technical&apos;;
+var result=sforce.connection.query(&quot;Select Id,Name from RecordType where name =&apos;&quot;+ cso +&quot;&apos; or name =&apos;&quot;+ gto+&quot;&apos;&quot;);
+var records1 = result.getArray(&apos;records&apos;);
+rec = records1[0];
+rec1 = records1[1];
+if(rec.Name==&apos;Solution CSO Non-Technical&apos;){
+csoId=rec.Id;
+gtoId=rec1.Id;
+}
+else{
+csoId=rec1.Id;
+gtoId=rec.Id;
+}
+csoId=csoId.substring(0,15);
+gtoId=gtoId.substring(0,15);
+
+
+
+if(type==&apos;Technical Issue&apos;)
+sol.RecordTypeId=gtoId;
+else
+sol.RecordTypeId=csoId;
+sol.Status=&apos;Draft&apos;;
+sol.Product_Type__c = &apos;{!Case.Product_Type__c}&apos;;
+sol.Catalog_Product_Group__c = &apos;{!Case.Catalog_Product_Group__c}&apos;;
+sol.Supported_Product__c = &apos;{!Case.Supported_Product__c}&apos;;
+var air=&apos;{!Case.Aircraft_TypeId__c}&apos;;
+
+sol.Aircraft_Type__c=air;
+
+
+var quote= new Array(1);
+quote[0]=&apos;{!Case.Id}&apos;;
+
+var tmp = sforce.connection.retrieve(&apos;Resolution__c&apos;,&apos;Case&apos;,quote);
+var tmp1 = tmp[0].Resolution__c;
+if(tmp1==null)
+alert(&quot;Please enter Resolution to create Solution&quot;);
+else{
+
+var strSingleLineText = tmp1.replace(new RegExp( &quot;\\n&quot;, &quot;g&quot; ), &quot; &quot; );
+sol.SolutionNote=strSingleLineText;
+
+
+
+var quote1= new Array(1);
+quote1[0]=&apos;{!Case.Id}&apos;;
+var tmp1 = sforce.connection.retrieve(&apos;Description&apos;,&apos;Case&apos;,quote1);
+var tmp11 = tmp1[0].Description;
+if(tmp11==null)
+alert(&quot;Please enter Description to create Solution&quot;);
+else{
+var strSingleLineText1 = tmp11.replace(new RegExp( &quot;\\n&quot;, &quot;g&quot; ), &quot; &quot; );
+
+sol.faq__C=strSingleLineText1; 
+
+
+if(type==&apos;Technical Issue&apos;){
+var url= [location.protocol+&apos;//&apos;+location.host]+&apos;/apex/solution_page?cas=&apos;+caseId+&apos;&amp;rec=&apos;+gtoId;
+window.parent.location.href =url;
+}
+else{
+
+var result = sforce.connection.create([sol]);
+if (result[0].success==&apos;false&apos;) {
+alert(&quot;Please enter Subject&quot;);
+}
+else {
+var url= [location.protocol+&apos;//&apos;+location.host]+&apos;/&apos;+result[0].id+&apos;/e?retURL=%2F&apos;+result[0].id;
+window.parent.location.href =url;
+}
+
+}////////////
+}///////////
+
+}/////////////////////new else
+
+}
+
+
+
+
+else{
+
+alert(&quot;Please close the Case to create Solution&quot;);
+}</url>
+</WebLink>

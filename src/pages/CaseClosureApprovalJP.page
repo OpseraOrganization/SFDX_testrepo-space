@@ -1,0 +1,611 @@
+<apex:page controller="CaseClosure" action="{!updateApprovalrecord}" showHeader="false" sidebar="False" standardStylesheets="false" cache="false" docType="html-5.0" language="en"   >
+    <head>
+    <style>
+    .red-text {
+        color:red;    
+        }
+        .yellow-text {
+        color:yellow;    
+        }
+        .green-text {
+        color:green;    
+        }
+        <!-- modified for SCTASK2192951 -->
+        .padding{
+           padding-top:2% !important;
+        }
+        <!-- end-->
+    </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalabel = no" />
+    <title> AMS </title>
+    <meta name="description" content="Aero AMS" />
+    <!--<link rel="shortcut icon" href="">-->
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.Mobile_assets,'css/hon-dls.min.css')}" />
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.Mobile_assets,'css/AMS-styles.css')}" />
+    
+        
+    <script type="text/javascript" src="{!URLFOR($Resource.Mobile_assets,'js/lib/jquery-3.2.1.min.js')}"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.Mobile_assets,'js/lib/bootstrap.min.js')}"></script>
+    <!--[if IE]>
+        <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <script>
+    
+    $(document).ready(function(){
+            var toHide = $("#noOfTimeContacted");
+            toHide.hide();
+        $("#confirmDiv").hide();
+        
+            $("input[name='satisfy']").change(function(){
+                var satisfyVal = $(this).val();
+                $("[id*='satisfyHidden']").val(satisfyVal);
+            });
+            
+            $("input[name='extent']").change(function(){
+                var extentVal = $(this).val();
+                $("input[id*='extentHidden']").val(extentVal);
+            });
+            
+            $("input[name='time']").change(function(){
+                var timeVal = $(this).val();
+                $("input[id*='timesHidden']").val(timeVal);
+            });
+            
+           /* $("input[name='recommend']").change(function(){
+                var recommendVal = $(this).val();
+                $("input[id*='recommendHidden']").val(recommendVal);
+            });
+            */
+            
+            $("#yes_1").click(function(){
+                $("input[id*='conNumHidden']").val("1");
+                $("#yes_1").css("background", "#1792E5");
+                $("#no_2").css("background", "");
+                var toHide = $("#noOfTimeContacted");
+                toHide.hide();
+            });
+                
+            $("#no_2").click(function(){
+            $("input[id*='conNumHidden']").val("2");
+                $("#no_2").css("background", "#1792E5");
+                $("#yes_1").css("background", "");
+                $("#noOfTimeContacted").show();
+            });
+        $("input[name='reasonforopen1']").change(function(){
+                var reasonVal = $(this).val();
+                $("input[id*='reasonforopenAOG']").val(reasonVal);
+            });
+            
+            $("input[name='reasonforopen2']").change(function(){
+                var reasonVal = $(this).val();
+                $("input[id*='reasonforopenATS']").val(reasonVal);
+            });
+            
+            $("input[name='phonecall1']").change(function(){
+                var phoneVal = $(this).val();
+                $("input[id*='phoneCallRequestAOG']").val(phoneVal);
+            });
+        
+            $("input[name='phonecall2']").change(function(){
+                var phoneVal = $(this).val();
+                $("input[id*='phoneCallRequestATS']").val(phoneVal);
+            });
+
+        });
+        
+    </script>
+    <script>
+        function callOnsubmit()
+        {
+            var satisfyHidden2 = $("[id*='satisfyHidden']").val();
+            var extentHidden2 = $("input[id*='extentHidden']").val();
+            var timesHidden2 = $("input[id*='timesHidden']").val();
+           // var recommendHidden2 = $("input[id*='recommendHidden']").val();
+            var conNumHidden2 = $("input[id*='conNumHidden']").val();
+
+            console.log('Called and ');
+            console.log(satisfyHidden2);
+            console.log(extentHidden2);
+            console.log(timesHidden2);
+           // console.log(recommendHidden2);
+            console.log(conNumHidden2);
+            initiatemethod(satisfyHidden2, extentHidden2, timesHidden2, conNumHidden2);
+            cancelButton();
+            return false;
+        }
+        
+        function callOnReject()
+        {
+            var reasonforopenAOG = $("[id*='reasonforopenAOG']").val();
+            var reasonforopenATS = $("input[id*='reasonforopenATS']").val();
+            var phoneCallRequestAOG = $("input[id*='phoneCallRequestAOG']").val();
+            var phoneCallRequestATS = $("input[id*='phoneCallRequestATS']").val();
+            
+            console.log('Called reject and ');
+            console.log(reasonforopenAOG);
+            console.log(reasonforopenATS);
+            console.log(phoneCallRequestAOG);
+            console.log(phoneCallRequestATS);
+            initateReject(reasonforopenAOG, reasonforopenATS, phoneCallRequestAOG, phoneCallRequestATS);
+            cancelButton();
+            return false;
+        }
+
+        function cancelButton()
+        {
+            $("#maindiv").hide();
+            $("#confirmDiv").show();
+            return false;
+        }
+    </script>
+</head>
+<body>
+    <apex:form >
+    <apex:outputPanel id="wholeForm">
+    <apex:actionFunction name="initiatemethod" action="{!updateNoOfContacts}" reRender="confirmDiv" oncomplete="cancelButton();">
+        <apex:param id="satisfyHidden2" name="satisfyHidden2" value="" />
+        <apex:param id="extentHidden2" name="extentHidden2" value="" />
+        <apex:param id="timesHidden2" name="timesHidden2" value="" />
+        <!--- <apex:param id="recommendHidden2" name="recommendHidden2" value="" /> -->
+        <apex:param id="conNumHidden2" name="conNumHidden2" value="" />
+    </apex:actionFunction>
+<!-- //changes to move to other pages   -->    
+    <apex:actionFunction name="initateReject" action="{!updateRejectedrecord}" reRender="confirmDiv" oncomplete="cancelButton();">
+        <apex:param id="paramforopenAOG" name="paramforopenAOG" value="" />
+        <apex:param id="paramforopenATS" name="paramforopenATS" value="" />
+        <apex:param id="phoneCallparamAOG" name="phoneCallparamAOG" value="" />
+        <apex:param id="phoneCallparamATS" name="phoneCallparamATS" value="" />
+    </apex:actionFunction>
+        <!-- //changes to move to other pages   -->
+    <div id="AMS-wrapper">
+        <header id="AMS-header">
+            <div>
+                <figure class="logo-holder">
+                    <a href="javascript:void(0);"> <img src="{!URLFOR($Resource.Mobile_assets,'images/hon-logo.png')}" alt="Honeywell" /> </a>
+                </figure>
+            </div>
+        </header>
+        <div class="AMS-content" id="mainDivId">
+            <!-- page related content -->
+        <apex:outputPanel rendered="{!Approve}" >
+            <div class="container">
+                <div id="confirmDiv">
+                    <h1 class="row AMS-h1"><b>Thank you for the response. </b></h1>
+                </div>
+                <apex:outputPanel rendered="{!IF(c.status='Closed-Approved',TRUE,FALSE)}">
+                    <apex:outputText value="{!confirmMessage}" escape="false" rendered="{!confirm}"/>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(NOT(c.status='Closed-Approved'),TRUE,FALSE)}">
+                <div id="maindiv">
+                        <!-- modified for SCTASK2192951 -->
+
+               <!-- <h1 class="row AMS-h1"> ありがとうございました。本件はこれでクローズさせて頂きます。差し支えなければ私どもの対応について以下にご評価いただけると幸いです。： </h1> -->
+               <!--end-->
+                <apex:outputPanel id="showConfirm">
+                <apex:outputPanel rendered="{!confirm}">
+                    <apex:outputText value="{!confirmMessage}" escape="false" rendered="{!confirm}"/>
+                </apex:outputPanel>
+                </apex:outputPanel>
+                <form class="row">
+                    <ul class="list-unstyled AMS-survey-list container padding">
+                        <li class="row">
+                            <apex:outputPanel rendered="{!ATS}" >
+                                <label class="AMS-primary-label"> Honeywell チームは、最初の回答であなたの問題を解決できましたか? </label>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!AOG}" >
+                                <label class="AMS-primary-label"> ハネウェルAOGサポートは、あなたが私達に連絡したときにあなたの問題を解決しましたか？ </label>
+                            </apex:outputPanel>
+                            <div class="AMS-contacted">
+                                <div class="col-sm-6 AMS-contact-number">
+                                    <a class="btn btn-default btn-resolve" id="yes_1"> Yes </a>
+                                    <a class="btn btn-default btn-resolve" id="no_2"> No </a>
+                                    <span>もしそうでなければ、何回のコンタクトが必要でしたか </span>
+                                </div>
+                                <div id="noOfTimeContacted">
+                                <div class="AMS-dm-container" id="noOfTimeContacted">
+                                    <span class="AMS-selected-rating"> - - Rating - -  </span>
+                                    <ul class="col-sm-6 AMS-satisfier-list AMS-contacted-list list-inline list-unstyled">
+                                        <li class="col-sm-2 ">
+                                            <div class="AMS-radio">
+                                                <input type="radio" name="time" id="r-resolveTwo" value="2"/>
+                                                <label for="r-resolveTwo"> 2 </label>
+                                            </div>
+                                        </li>
+                                        <li class="col-sm-2 ">
+                                            <div class="AMS-radio">
+                                                <input type="radio" name="time" id="r-resolveThree" value="3"/>
+                                                <label for="r-resolveThree"> 3 </label>
+                                            </div>
+                                        </li>
+                                        <li class="col-sm-2 ">
+                                            <div class="AMS-radio">
+                                                <input type="radio" name="time" id="r-resolveFour" value="4"/>
+                                                <label for="r-resolveFour"> 4 </label>
+                                            </div>
+                                        </li>
+                                        <li class="col-sm-2 ">
+                                            <div class="AMS-radio">
+                                                <input type="radio" name="time" id="r-resolveFive" value="5+"/>
+                                                <label for="r-resolveFive"> 5 or more </label>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                                </div>
+                            </div>
+                            <hr/>
+                        </li>
+                        <li class="row">
+                            <apex:outputPanel rendered="{!ATS}" >
+                                <label class="AMS-primary-label"> 次の記述にどの程度同意、ないし不同意されますでしょうか？「Honeywell は私の問題解決を容易にしてくれた」 </label>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!AOG}" >
+                                <label class="AMS-primary-label"> どの程度まであなたは同意するか、あるいは同意しません： "Honeywell AOG Supportは私の問題を簡単に解決できました。" </label>
+                            </apex:outputPanel>
+                            <div class="AMS-dm-container">
+                                <span class="AMS-selected-rating"> - - Rating - -  </span>
+                                <ul class="row AMS-satisfier-list list-inline list-unstyled">
+                                    <li class="col-sm-1 AMS-high-r">
+                                        <div class="AMS-radio AMS-high-r">
+                                            <input type="radio" name="extent" id="r-strongAgree" value="7" />
+                                            <label for="r-strongAgree" style="color:black !important;"> 非常に同意でき </label>
+                                        </div>
+                                    </li>
+                                        <li class="col-sm-1 AMS-high-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="extent" id="r-agree" value="6"/>
+                                            <label for="r-agree" style="color:black !important;"> 同意できる </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-mid-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="extent" id="r-somewhatAgree" value="5"/>
+                                            <label for="r-somewhatAgree" style="color:black !important;"> 少し同意できる </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="extent" id="r-neutral" value="4"/>
+                                            <label for="r-neutral" style="color:black !important;"> どちらとも言えない </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="extent" id="r-somewhatDisagree" value="3"/>
+                                            <label for="r-somewhatDisagree" style="color:black !important;"> 少し同意できない </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="extent" id="r-disagree" value="2"/>
+                                            <label for="r-disagree" style="color:black !important;"> 同意できない </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="extent" id="r-strongDisagree" value="1"/>
+                                            <label for="r-strongDisagree" style="color:black !important;"> まったく同意できない </label>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <hr/>
+                        </li>
+                        <li class="row">
+                            <apex:outputPanel rendered="{!ATS}">
+                                <label class="AMS-primary-label"> Honeywell チームのサポートは、貴社の問題解決に対して全体としてどの程度満足のいくものでしたでしょうか? </label>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!AOG}">
+                                <label class="AMS-primary-label"> あなたの問題を解決するためにHoneywell AOGサポートにどの程度満足していますか？ </label>
+                            </apex:outputPanel>
+                            <div class="AMS-dm-container">
+                                <span class="AMS-selected-rating"> - - Rating - -  </span>
+                                <ul class="row AMS-satisfier-list list-inline list-unstyled">
+                                    <!--
+                                    <li class="col-sm-1 AMS-high-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-ten" value="10"/>
+                                            <label for="r-ten" style="color:black !important;"> 10 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-high-r"> 
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-nine" value="9"/>
+                                            <label for="r-nine" style="color:black !important;"> 9 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-mid-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-eight" value="8"/>
+                                            <label for="r-eight" style="color:black !important;"> 8 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-mid-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-seven" value="7"/>
+                                            <label for="r-seven" style="color:black !important;"> 7 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-six" value="6"/>
+                                            <label for="r-six" style="color:black !important;"> 6 </label>
+                                        </div>
+                                    </li>
+                                    -->
+                                    
+                                    <li class="col-sm-1 AMS-low-r" style="background-color:Green ;">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-five" value="5"/>
+                                            <label for="r-five" style="color:black !important;"> 5 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r" style="background-color:Green ;">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-four" value="4"/>
+                                            <label for="r-four" style="color:black !important;"> 4 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r" style="background-color:Yellow ;">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-three" value="3"/>
+                                            <label for="r-three" style="color:black !important;"> 3 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r" style="background-color:Red ;">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-two" value="2"/>
+                                            <label for="r-two" style="color:black !important;"> 2 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r" style="background-color:Red ;">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="satisfy" id="r-one" value="1"/>
+                                            <label for="r-one" style="color:black !important;"> 1 </label>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <hr />
+                        </li>
+                       <!-- <li class="row">
+                            <apex:outputPanel rendered="{!ATS}" >
+                                <label class="row AMS-primary-label"> ご友人や同僚の方にHoneywell をどの程度推薦したいと思いますか? </label>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!AOG}" >
+                                <label class="row AMS-primary-label"> Honeywell AOGサポートを友人や同僚に推薦するのはどれくらいでしょうか？ </label>
+                            </apex:outputPanel>
+                            <div class="AMS-dm-container">
+                                <span class="AMS-selected-rating"> - - Rating - -  </span>
+                                <ul class="AMS-satisfier-list list-inline list-unstyled">
+                                    <li class="col-sm-1 AMS-high-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rten" value="10" />
+                                            <label for="rten" style="color:black !important;"> 10 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-high-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rnine" value="9"/>
+                                            <label for="rnine" style="color:black !important;"> 9 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-mid-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="reight" value="8"/>
+                                            <label for="reight" style="color:black !important;"> 8 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-mid-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rseven" value="7"/>
+                                            <label for="rseven" style="color:black !important"> 7 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rsix" value="6"/>
+                                            <label for="rsix" style="color:black !important;"> 6 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rfive" value="5"/>
+                                            <label for="rfive" style="color:black !important;"> 5 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rfour" value="4"/>
+                                            <label for="rfour" style="color:black !important;"> 4 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rthree" value="3"/>
+                                            <label for="rthree" style="color:black !important;"> 3 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rtwo" value="2"/>
+                                            <label for="rtwo" style="color:black !important;"> 2 </label>
+                                        </div>
+                                    </li>
+                                    <li class="col-sm-1 AMS-low-r">
+                                        <div class="AMS-radio">
+                                            <input type="radio" name="recommend" id="rone" value="1"/>
+                                            <label for="rone" style="color:black !important;"> 1 </label>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <hr/>
+                        </li>  -->
+                        <li class="row">
+                            <label class="AMS-primary-label"> Honeywell が改善できる点、ないし評価できる点をお教えください。: </label>
+                            <div class="row AMS-comment">
+                                    <!--<textarea rows="2" class=""> </textarea>-->
+                                <apex:inputTextarea rows="2" value="{!FeedbackSurvey}" styleClass="form-control input-lg;" id="improveText"></apex:inputTextarea>
+                            </div>
+                        </li>
+                        <li class="row">
+                            <button class="btn btn-default AMS-btn AMS-cancel" onclick="cancelButton(); return false;"> CANCEL </button>
+                            <button class="btn btn-primary AMS-btn AMS-submit" onclick="callOnsubmit(); return false;"> SUBMIT </button>
+                            <!--<apex:commandButton styleClass="btn btn-primary AMS-btn AMS-submit" value="SUBMIT" action="{!updateNoOfContacts}"/>
+                        -->
+</li>
+                    </ul>
+                </form>
+                
+                </div>
+                 </apex:outputPanel>
+            </div>
+            </apex:outputPanel> 
+        
+        <apex:outputPanel rendered="{!reject}" id="edit-section" >
+                <div class="container">
+                    <div id="confirmDiv" style="display: none;">
+                        <h1 class="row AMS-h1"><b>Thank you for the response. </b></h1>
+                    </div><span id="j_id0:j_id2:j_id9">
+                    <div id="maindiv">
+                    <h1 class="row AMS-h1"> Your case will remain open, and we will continue to work it to resolution: </h1><span id="j_id0:j_id2:showConfirm"><span id="j_id0:j_id2:j_id11"></span></span>
+                    
+                        <ul class="list-unstyled AMS-survey-list AMS-satisfier-list-reject container">
+                            <li class="row"><span id="j_id0:j_id2:j_id19">
+                                <label class="AMS-primary-label"> Can you tell us why the case needs to remain open? </label></span>
+                                    <apex:outputPanel rendered="{!AOG}">
+                                        <div class="AMS-dm-container">
+                                            <span class="AMS-selected-rating"> - - Select - -  </span>
+                                            <ul class="row AMS-satisfier-list list-inline list-unstyled">
+                                                <li class="col-sm-12">
+                                                    <div class="AMS-radio">
+                                                        <input type="radio" name="reasonforopen1" id="ordernotgot" value="My order has not been received"/>
+                                                        <label for="ordernotgot"> My order has not been received </label>
+                                                    </div>
+                                                </li>
+                                                <li class="col-sm-12"> 
+                                                    <div class="AMS-radio">
+                                                        <input type="radio" name="reasonforopen1" id="remainopen" value="I have a remaining open item"/>
+                                                        <label for="remainopen"> I have a remaining open item </label>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!ATS}">
+                                        <div class="AMS-dm-container">
+                                            <span class="AMS-selected-rating"> - - Select - -  </span>
+                                            <ul class="row AMS-satisfier-list list-inline list-unstyled">
+                                                <li class="col-sm-12"> 
+                                                    <div class="AMS-radio">
+                                                        <input type="radio" name="reasonforopen2" id="notcontacted" value="I have not been contacted by Honeywell"/>
+                                                        <label for="notcontacted"> I have not been contacted by Honeywell </label>
+                                                    </div>
+                                                </li>
+                                                <li class="col-sm-12"> 
+                                                    <div class="AMS-radio">
+                                                        <input type="radio" name="reasonforopen2" id="infonotclear" value="The instructions provided to me are not clear"/>
+                                                        <label for="infonotclear"> The instructions provided to me are not clear </label>
+                                                    </div>
+                                                </li>
+                                                <li class="col-sm-12"> 
+                                                    <div class="AMS-radio">
+                                                        <input type="radio" name="reasonforopen2" id="confirmortest" value="I’m still confirming or testing the solution"/>
+                                                        <label for="confirmortest"> I’m still confirming or testing the solution </label>
+                                                    </div>
+                                                </li>
+                                                <li class="col-sm-12"> 
+                                                    <div class="AMS-radio">
+                                                        <input type="radio" name="reasonforopen2" id="followon" value="I have a follow-on question to the response"/>
+                                                        <label for="followon"> I have a follow-on question to the response </label>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </div>          
+                                    </apex:outputPanel>
+                                <hr></hr>
+                            </li>
+                            <li class="row">
+                                <label class="AMS-primary-label"> Please let us know what else is needed to resolve this issue:</label>
+                                <div class="row AMS-comment">
+                                    <apex:inputTextarea rows="2" value="{!comments}" styleClass="form-control input-lg;" id="issueResolution"></apex:inputTextarea>
+                                </div>
+                            </li>
+                            <hr></hr>
+                            <li class="row"><span id="j_id0:j_id2:j_id19">
+                                <label class="AMS-primary-label"> I'm requesting a phone call to discuss my case :</label></span>
+                                <div class="AMS-dm-container">
+                                    <apex:outputPanel rendered="{!AOG}" >
+                                        <ul class="row AMS-satisfier-list list-inline list-unstyled">
+                                            <li class="col-sm-12">
+                                                <div class="AMS-radio">
+                                                    <input id="r-specialistcall" name="phonecall1" type="radio" value="Yes, have a specialist call me"/>
+                                                    <label for="r-specialistcall"> Yes, have a specialist call me </label>
+                                                </div>
+                                            </li>
+                                                <li class="col-sm-12">
+                                                <div class="AMS-radio">
+                                                    <input id="r-mailfollowup1" name="phonecall1" type="radio" value="No, but continue to follow up with me via email"/>
+                                                    <label for="r-mailfollowup1"> No, but continue to follow up with me via email </label>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!ATS}" >
+                                        <ul class="row AMS-satisfier-list list-inline list-unstyled">
+                                            <li class="col-sm-12">
+                                                <div class="AMS-radio">
+                                                    <input id="r-techsupportcall" name="phonecall2" type="radio" value="Yes, have a Technical Support Engineer call me"/>
+                                                    <label for="r-techsupportcall"> Yes, have a Technical Support Engineer call me </label>
+                                                </div>
+                                            </li>
+                                                <li class="col-sm-12">
+                                                <div class="AMS-radio">
+                                                    <input id="r-mailfollowup2" name="phonecall2" type="radio" value="No, but continue to follow up with me via email"/>
+                                                    <label for="r-mailfollowup2"> No, but continue to follow up with me via email </label>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </apex:outputPanel>
+                                </div>
+                                <hr></hr>
+                            </li>
+                            <li class="row">
+                                <button class="btn btn-primary AMS-btn AMS-submit" onclick="callOnReject(); return false;"> SUBMIT </button>
+                                <button class="btn btn-default AMS-btn AMS-cancel" onclick="cancelButton(); return false;"> CANCEL </button>
+                                
+                                
+    </li>
+                        </ul>
+                    
+                    
+                    </div></span>
+                </div>
+            </apex:outputPanel>
+        </div>
+    </div>
+    <apex:inputHidden value="{!overallSatisfy}" id="satisfyHidden"/>
+    <apex:inputHidden value="{!extentStr}" id="extentHidden"/>
+    <apex:inputHidden value="{!timesStr}" id="timesHidden"/>
+    <!-- <apex:inputHidden value="{!recommendStr}" id="recommendHidden"/> -->
+    <apex:inputHidden value="{!conNumStr}" id="conNumHidden"/>
+
+    <apex:inputHidden value="{!reasonforopenAOG}" id="reasonforopenAOG" />
+    <apex:inputHidden value="{!reasonforopenATS}" id="reasonforopenATS" />
+    <apex:inputHidden value="{!phoneCallRequestAOG}" id="phoneCallRequestAOG" />
+    <apex:inputHidden value="{!phoneCallRequestATS}" id="phoneCallRequestATS" />
+
+    <!--<apex:inputText value="{!NOC1}" id="NOC1Hidden" />
+    <apex:inputText value="{!confirm}" id="confirmHidden" />-->
+    </apex:outputPanel>
+    </apex:form>
+    <script type="text/javascript" src="{!URLFOR($Resource.Mobile_assets,'js/AMS-scripts.js')}"></script>
+    <script>
+        (function(){
+            //AMS;
+        })();
+    </script>
+</body> 
+</apex:page>

@@ -1,0 +1,1367 @@
+<!-- 
+    10/25/17    SW      Updated Console API version from 39.0 to 41.0
+    02/28/19    BE      Various fixes, updates and optimizations (00168637, 00166517)
+                            - Fixed Calendar Styling
+                            - Removed Padding From Header
+                            - copyFromOrig now works for all field types
+                            - copyFromOrig now copies over the Owner type as well as the owner
+                            - Section Headers now use the "switch" icon instead of two separate "chevron" icons
+                            - Page scrolls to errors smoothly.
+                            - Any files related to an email are automatically moved over to the new case when an email is moved over
+                            - Fixed issue where dragging a row would prevent the auto-copy functionality from working.
+                            - Fixed Multi-Select picklist styling
+                            - Refactored drop() and move() code into one function.
+                            - Consistent Select Styling between browsers
+                            - Organized JS Code
+    03/15/19    BE      Once the page is loaded, javascript calls Apex that checks for and deletes and blacklisted objects in the CaseSplitIncludedChildren cusotm setting (00168846)
+-->
+<apex:page docType="html-5.0" extensions="csplit.SplitterController" standardController="Case" tabStyle="Case" id="pg" cache="false" title="{!Case.CaseNumber}: Split Case" sidebar="false">
+<apex:includeScript value="/support/console/41.0/integration.js"/>
+<apex:includeScript value="{!$Resource.csplit__jQuery_v2_1_1}"/>
+<apex:includeScript value="{!URLFOR($Resource.csplit__CaseSplitResources,'/js/svg4everybody.js')}"/>
+
+<apex:slds />
+<apex:stylesheet value="{!URLFOR($Resource.csplit__CaseSplitResources,'/css/CaseSplitStyle.css')}"/>
+<style>
+
+    @-moz-document url-prefix() {
+        select.slds-select {height: calc(1.875rem + (1px * 2)) !important;}
+    }
+
+    select.slds-select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+
+    .slds-select_container:after {
+        border-top-width: 6px !important;
+        border-left-width: 4px !important;
+        border-right-width: 4px !important;
+        bottom: 0.80rem !important;
+        pointer-events:none;
+    }
+
+    .slds-select_container.w_450 {
+        width: 450px;
+    }
+
+    /* Date Picker */
+    .slds-date-bar {
+        display: flex;
+        display: -ms-flexbox;
+        display: -webkit-flex; /* Safari */
+        -webkit-align-items: center; /* Safari 7.0+ */
+        align-items: center;
+    }
+
+    .datePicker {
+        background-color: #ffffff;
+        background-image: none;
+    }
+
+    .dateBar select:focus {
+        outline: 0 !important;
+        border-color: #1589ee !important;
+        background-color: #fff !important;
+    }
+
+    .datePicker table.calDays {
+        width: auto !important;
+    }
+
+    .datePicker select {
+        width: inherit !important;
+    }
+
+    .datePicker .calDays .weekend, .datePicker .calDays .weekday {
+        background: none;
+        border: 0 !important;
+        padding: 2px 0 !important;
+        width: 2rem !important;
+        height: 2rem !important;
+        border-radius: 50% !important;
+        margin: auto !important;
+        font-weight:normal !important;
+    }
+
+    .datePicker .calDays .todayDate {
+        background: none !important;
+        color: black !important;
+    }
+
+    .datePicker .calDays .selectedDate {
+        background-color: #005fb2 !important;    
+        color: white !important;
+    }
+
+    .datePicker .calDays .highlight {
+        background: none;
+    }
+
+    .dateFormat {
+        display: none;
+    }
+
+    .calButton {
+        height: 14px !important;
+        width: 9px !important;
+        margin-top: 2px !important;
+        margin-right: 10px !important;
+        margin-left: 10px !important;
+        cursor: pointer !important;
+        padding-left:2px;
+        padding-right:2px;
+    }
+
+    .calButtonRight {
+        border-left: 7px solid #706e6b;
+        border-top: 7px solid transparent;
+        border-bottom: 7px solid transparent;
+    }
+
+    .calButtonLeft {
+        border-right: 7px solid #706e6b;
+        border-top: 7px solid transparent;
+        border-bottom: 7px solid transparent;
+    }
+
+    .calButtonRight:hover {
+        border-left: 7px solid #005fb2;
+    }
+
+    .calButtonLeft:hover {
+        border-right: 7px solid #005fb2;
+    }
+
+    .dateBar {
+        padding-top: 4px !important;
+    }
+
+    .slds-box {
+        margin-top: 14px;
+    }
+    .slds-button_brand{
+        background-color: #ec7039 !important;
+        border: 1px solid #ec7039 !important;
+    }
+    .slds-button_neutral{
+        color: #ec7039 !important;
+    }
+    .lookupInput a { 
+        position: relative;
+        right:35px;
+        border: none !important;
+        width: 60px !important ;
+        background-color: transparent !important;
+    }
+
+    .existing-case-lookup {
+        padding-left: 6px !important;
+        width:30% !important;
+    }
+
+   .slds-section-title--divider {
+        cursor:pointer;
+        background-color: #ec7039 !important;
+        color:#FFFFFF !important;
+        border-radius:5px;
+    }
+
+    .slds-icon-utility-switch > .slds-icon {
+        fill: white !important;
+    }
+
+    td span, td a, td{
+        white-space: normal;
+
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+
+      -ms-word-break: break-all;
+      word-break: break-word;
+
+      -ms-hyphens: auto;
+      -moz-hyphens: auto;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+
+    }
+
+    .slds-grid .slds-col table:not(.multiSelectPicklistTable){
+        table-layout:auto;
+        overflow: hidden;
+    }
+
+    .slds-checkbox:not([id*="epeatTable"]):not([id*="addUserToTeam"]) {
+        display:none !important;
+    }
+
+   [draggable="true"]{
+        cursor:move;
+    }
+    tr>td>span{
+        cursor:text !important;
+    }
+
+    .slds-col:not(.repeatTable) {
+        margin: 7px 7px;
+        border: 1px solid #EFEFEF;
+        border-radius: 5px;
+        width: 99% !important;
+    }
+
+    .slds-checkbox{
+        width:auto !important;
+    }
+    .slds-icon.title-icon{
+        background: #ec7039 !important;
+    }
+
+    [id='pg:frm:origRepeatTable:tb']{
+        width:100%;
+        display:table;
+    }
+    [id='pg:frm:origRepeatTable:tb'] tr{
+        width:100%;
+    }
+    .userProfileHoverHeaderContent{
+        display:none;
+    }
+
+    .Subject{
+        width:450px !important;
+    }
+
+    .Description{
+        width:450px !important;
+        height:200px !important;
+        line-height:1.4em !important;
+        padding-top:0.75em !important;
+    }
+
+    .slds-section__content, .slds-grid{
+        padding: 1em !important;
+    }
+
+    .slds-size-1-of-2 {
+        max-width:50%;
+    }
+    
+    #copyToast{
+        visibility: hidden;
+        min-width: 20px;
+        margin-left: -100px;
+        background-color: #ec7039;
+        color: #fff;
+        text-align: center;
+        border-radius: 9px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 62px;
+    }
+    #copyToast.show{
+        visibility:visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+    @-webkit-keyframes fadein {
+        from {opacity: 0;} 
+        to { opacity: 1;}
+    }
+
+    @keyframes fadein {
+        from {opacity: 0;}
+        to {opacity: 1;}
+    }
+
+    @-webkit-keyframes fadeout {
+        from {opacity: 1;} 
+        to {opacity: 0;}
+    }
+
+    @keyframes fadeout {
+        from {opacity: 1;}
+        to {opacity: 0;}
+    }
+
+    /* custom slds-input css for dependent picklist */
+    select{
+        width: 450px !important;
+        background-color: #fff;
+        color: #16325c;
+        border: 1px solid #d8dde6;
+        border-radius: .25rem;
+        width: 100%;
+        transition: border .1s linear,background-color .1s linear;
+        display: inline-block;
+        padding: 0 1rem 0 .75rem;
+        line-height: 1.875rem;
+        min-height: calc(1.875rem + (1px * 2));
+    }
+
+    table.multiSelectPicklistTable {
+        width: 450px;
+    }
+
+    table.multiSelectPicklistTable td {
+        padding: 0 !important;
+    }
+
+    table.multiSelectPicklistTable select {
+        width: 180px;
+        max-width: 180px;
+    }
+
+    table.multiSelectPicklistTable td.multiSelectPicklistCell {
+        width: 90px;
+        text-align: center;
+    }
+
+    [data-objecttype] table td > * {
+        user-select: none !important;
+        cursor: move !important;
+        pointer-events: none !important;
+    }
+
+    [data-objecttype] table td a {
+        pointer-events: auto !important;
+    }
+
+    [data-objecttype] table th > *, [data-objecttype] table th {
+        user-select: none !important;
+        cursor: initial !important;
+        pointer-events: none !important;
+    }
+
+    [data-objecttype] table td a {
+        cursor: pointer !important; 
+    }
+
+    [data-objecttype] table td span[data-field-type='textarea'] {
+        user-select: text !important;
+        cursor: text !important;
+        pointer-events: auto !important;
+    }
+
+    .slds-section-title--divider span {
+        user-select: none !important;
+    }
+</style>
+
+<div class="slds-scope" >
+    <apex:actionStatus id="quickStatus">
+        <apex:facet name="start">
+            <apex:outputPanel >
+                <div class="slds-backdrop slds-backdrop_open" style="display:flex;">
+                    <div class="slds-align_absolute-center">
+                        <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                            <span class="slds-assistive-text">Loading</span>
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>
+        </apex:facet>
+    </apex:actionStatus>
+
+    <apex:form id="frm" styleClass="slds-form" html-novalidate="novalidate">
+        <apex:actionFunction name="checkForObjsToDelete" action="{!deleteBlacklistedObjects}" immediate="true" reRender="" />
+        <div class="slds-page-header">
+            <div class="slds-media">
+                <div class="slds-media__figure">
+                  <span class="slds-icon_container slds-icon-standard-case">
+                    <svg class="slds-icon title-icon" aria-hidden="true">
+                      <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/standard-sprite/svg/symbols.svg#case"></use>
+                    </svg>
+                  </span>
+                </div>
+                <div class="slds-media__body">
+                    <h1 class="slds-page-header__title slds-truncate slds-align-middle">Split Case</h1>
+                    <p class="slds-text-body_small ">Number: {!originalCase.CaseNumber} <br/>Subject: {!originalCase.Subject}</p>
+                </div>
+                <div style="position:relative;right:0px;top:1rem">
+                    <div id="pbbsTop" class="slds-button-group" style="text-align:center !important;">
+                        <apex:commandButton id="topbtnSave" value="Split" action="{!split}" styleClass="slds-button slds-button_brand" rerender="quickStatus,messages,apex2js,case-fields" status="quickStatus" style="border-radius: 5px 0px 0px 5px" oncomplete="splitOnComplete();">
+                        </apex:commandButton>
+                        <apex:commandButton id="topbtnSaveDis" value="Splitting..." disabled="true" style="display:none;"/>
+                        <apex:commandButton id="topbtnSaveAndAgain" value="Split & Split Again" rerender="quickStatus,messages,case-fields" status="quickStatus" action="{!splitAndAgain}" styleClass="slds-button slds-button_neutral" oncomplete="splitOnComplete();"/>
+                        <apex:commandButton id="topbtnSaveAndAgainDis" value="Splitting..." disabled="true" style="display:none;"/>
+                        <!-- No Close Case Page in Lightning, Only Show Split & Close in Classic -->
+                        <apex:commandButton id="topbtnSaveAndClose" value="Split & Close" rerender="quickStatus,messages,apex2js,case-fields" status="quickStatus" action="{!splitAndClose}" rendered="{!$User.UITheme == 'Theme3'}" styleClass="slds-button slds-button_neutral" oncomplete="splitOnComplete();"/>
+                        <!--<apex:commandButton id="topbtnSaveAndCloseDis" value="Splitting..." disabled="true" style="display:none;"/>-->
+                        <!-- <apex:commandButton id="bottombtnCncl" value="Cancel" immediate="true" action="{!cancel}" rerender="quickStatus" status="quickStatus" styleClass="slds-button slds-button_neutral" style="border-radius: 0px 5px 5px 0px;"/> -->
+                        <button type="button" onclick="cancelAF();" class="btn slds-button slds-button_neutral">Cancel</button>
+                        <!-- <apex:commandButton id="bottombtnCnclDis" value="Cancel" html-formnovalidate="formnovalidate" action="{!cancel}" disabled="true" style="display:none"/> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <div id="pb" class="slds-box slds-m-horizontal_medium slds-m-bottom_xx-large" title="Split Case">
+            <apex:outputPanel id="messages">
+                <apex:pageMessages />
+            </apex:outputPanel>
+
+            <apex:outputPanel id="instruct" style="margin:10px;">
+                <div class="slds-text-longform">
+                    <ol>
+                        <li style="{!IF(modeLocked,'display:none;','')}">Start by selecting whether you want to split into a new Case or into an Existing Case.</li>
+                        <li style="{!IF(mode == 'new','display:none;','')}">{!IF(modeLocked,'First','Next')}, select the Existing Case you would like to split into.</li>
+                        <li style="{!IF(mode == 'new' || updateExisting,'','display:none;')}">{!IF(modeLocked && mode == 'new','First','Next')}, set the values of the {!IF(mode == 'new','New','Existing')} Case. (Fields have been pre-populated with the values of the {!IF(mode == 'new','original','Existing')} Case).</li>
+                        <li>Then select the child objects (ie. Case Comments, Emails, and Case Team Members) that you want to be copied to the {!IF(mode == 'new','New','Existing')} Case. Objects can be dragged or double-clicked.</li>
+                    </ol>
+                </div>
+            </apex:outputPanel>
+
+            <!-- Case Split Mode -->
+            <apex:outputPanel id="mode">
+                <div class="slds-section slds-is-open {!IF((!modeLocked || (modeLocked && mode == 'existing')),'','slds-hide')}">
+                    <h3 class="slds-section-title--divider">
+                        <span class="slds-icon_container slds-icon-utility-switch">
+                            <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                              <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                            </svg>
+                        </span>
+                        {!IF(modeLocked,'Existing Case','Case Split Mode')}
+                    </h3>
+                    <apex:actionRegion immediate="true">
+                        <div class="slds-section__content" title="{!IF(modeLocked,'Existing Case','Case Split Mode')}" columns="1" collapsible="false" >
+                            <label class="slds-form-element__label" for="modelist" style="{!IF(modeLocked,"display:none","display:inline")}">Split To<br/></label>
+                            <div class="slds-select_container w_450">
+                                <apex:selectList id="modelist" value="{!mode}" size="1" styleClass="slds-select" rendered="{!!modeLocked}">
+                                    <apex:actionSupport action="{!changeMode}" event="onchange" reRender="instruct,case-fields,children,mode,repeatPanel,apex2js" oncomplete="changeModeOnComplete()"/>
+                                    <apex:selectOption itemLabel="New Case" itemValue="new"/>
+                                    <apex:selectOption itemLabel="Existing Case" itemValue="existing"/>
+                                </apex:selectList>
+                            </div>
+                            <label class="slds-form-element__label" style="{!IF(mode == 'existing','display:block','display:none')}">Existing Case</label>
+                            <apex:inputField label="Existing Case" value="{!dummyC.ParentId}" rendered="{!mode == 'existing'}" styleClass="slds-select existing-case-lookup">
+                                <apex:actionSupport action="{!updateExistingCase}" event="onchange" reRender="case-fields,children,messages,repeatPanel" oncomplete="renderOverrideElements()"/>
+                            </apex:inputField>
+                        </div>
+                    </apex:actionRegion>
+                </div>
+            </apex:outputPanel>
+        
+            <!-- Case Fields -->
+            <apex:outputPanel id="case-fields">
+                <apex:outputPanel styleClass="slds-section slds-is-open" title="Case Fields" html-collapsible="false" rendered="{!(c.Id != null && c.Id != '') || mode == 'new'}" layout="block">
+                    <h3 class="slds-section-title--divider">
+                        <span class="slds-icon_container slds-icon-utility-switch">
+                            <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                              <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                            </svg>
+                        </span>
+                        Case Fields
+                    </h3>
+                    <div class="slds-section__content slds-grid">
+                        <div class="slds-col slds-size_1-of-2 repeatTable">
+                            <apex:dataTable value="{!fields}" var="field" styleClass="slds-table" style="{!IF(c.Id!=null || mode == 'new','display:table','display:none')};width:100%" id="origRepeatTable">
+                                <apex:facet name="header">
+                                    <span class="slds-text-heading_small" style="width:50%;display:inline-block">Original Case</span>
+                                    <span class="slds-text-heading_small" style="width:50%;display:inline-block">{!IF(mode=='existing','Case #'+c.CaseNumber,'New Case')}</span>
+                                </apex:facet>
+
+                                <apex:column style="min-width:125px; width:10%">
+                                    <apex:outputPanel rendered="{!field.required}" style="color:red;">*&nbsp;</apex:outputPanel>
+                                    {!field.label}
+                                </apex:column>
+
+                                <apex:column style="width:35%">
+                                    <apex:inputField styleClass="slds-input {!field.path} {!IF(field.originalCaseHasError,'slds-has-error','')}" value="{!originalCase[field.path]}" style="width:450px" rendered="{!$ObjectType.Case.Fields[field.path].type != 'picklist'}"/>
+                                    <apex:outputPanel layout="block" styleClass="slds-select_container w_450" rendered="{!$ObjectType.Case.Fields[field.path].type == 'picklist'}">
+                                        <apex:inputField styleClass="slds-select {!field.path} {!IF(field.originalCaseHasError,'slds-has-error','')}" value="{!originalCase[field.path]}"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="block" rendered="{!field.originalCaseHasError}" styleClass="errorMsg" style="width:450px;">
+                                        <strong>Error: </strong> 
+                                        <span>{!field.originalCaseErrorMessage}</span>
+                                    </apex:outputPanel>
+                                    <!-- <apex:inputField styleClass="slds-input {!field.path}" value="{!originalCase[field.path]}" required="{!field.required}"  style="width:450px"/> -->
+                                    <!-- rendered="{!!field.related && (mode == 'new' || updateExisting)}" -->
+                                    <!-- <apex:outputField value="{!originalCase[field.path]}" rendered="{!field.related || (mode == 'existing' && !updateExisting)}"/>-->                            
+                                </apex:column>
+
+                                <apex:column style="width:10%">
+                                    <div style="text-align:center;  padding-left:10px; display:{!IF(mode == 'existing' && !updateExisting,'none','inline-block')}">
+                                        <a class="slds-button slds-button_neutral" onclick="copyFromOrig(event)">
+                                            <span class="slds-icon_container slds-icon-utility-forward" >
+                                                <svg class="slds-icon slds-icon_xx-small slds-icon-text-default" aria-hidden="true">
+                                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#forward"/>
+                                                </svg>
+                                            </span>
+                                        </a>
+                                    </div>
+                                </apex:column>
+
+                                <apex:column style="min-width:125px; width:10%">
+                                    <apex:outputPanel rendered="{!field.required}" style="color:red;">*&nbsp;</apex:outputPanel>
+                                    {!field.label}
+                                </apex:column>
+
+                                <apex:column style="width:35%">
+                                    <apex:inputField styleClass="slds-input {!field.path} {!IF(field.newCaseHasError,'slds-has-error','')}" value="{!c[field.path]}" rendered="{!!field.related && (mode == 'new' || updateExisting) && $ObjectType.Case.Fields[field.path].type != 'picklist'}" style="width:450px"/>
+                                    <apex:outputPanel layout="block" styleClass="slds-select_container w_450" rendered="{!!field.related && (mode == 'new' || updateExisting) && $ObjectType.Case.Fields[field.path].type == 'picklist'}">
+                                        <apex:inputField styleClass="slds-select {!field.path} {!IF(field.newCaseHasError,'slds-has-error','')}" value="{!c[field.path]}"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="block" rendered="{!field.newCaseHasError}" styleClass="errorMsg" style="width:450px;">
+                                        <strong>Error: </strong> 
+                                        <span>{!field.newCaseErrorMessage}</span>
+                                    </apex:outputPanel>
+                                    <apex:outputField value="{!c[field.path]}" rendered="{!field.related || (mode == 'existing' && !updateExisting)}"/>
+                                     <!-- <apex:inputField styleClass="slds-input {!field.path}" value="{!c[field.path]}" required="{!field.required}" rendered="{!!field.related && (mode == 'new' || updateExisting)}" style="width:450px"/> -->
+                                </apex:column>
+                            </apex:dataTable>
+                        </div>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="children">
+                <apex:actionRegion immediate="true">
+
+                    <!-- MD - CaseTeamMember -->
+                    <div class="slds-section slds-is-open" columns="1" style="{!IF((c.Id != null || mode == 'new') && addUserToTeamDisplay,'display:block','display:none')}">
+                        <h3 class="slds-section-title--divider">
+                            <span class="slds-truncate" title="Add Me as a Case Team Member">
+                                <span class="slds-icon_container slds-icon-utility-switch">
+                                    <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                                      <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                                    </svg>
+                                </span>
+                                Add Me as a Case Team Member
+                            </span>
+                        </h3>
+                        <div class="slds-section__content">
+                            <div class="slds-form-element__row slds-m-top_small">
+                                <div class="slds-form-element">
+                                    <span class="slds-checkbox" id="addUserToTeam">
+                                      <label class="slds-checkbox__label">
+                                        <apex:inputCheckbox styleClass="slds-input" id="addUserToTeam_input" value="{!addUserToTeam}" style="display:inline !important;"/>
+                                        <span class="slds-checkbox_faux"></span>
+                                        <span class="slds-form-element__label">Add Me to the Case Team</span>
+                                      </label>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="slds-form-element__row slds-m-top_small slds-m-left_large">
+                                <div class="slds-form-element">
+                                    <apex:outputLabel value="Case Team Role" /> <br/>
+                                    <div class="slds-select_container w_450">
+                                        <apex:selectList id="addUserToTeam_role" value="{!addUserToTeamRoleSelected}" size="1" styleClass="slds-select" >
+                                            <apex:selectOptions value="{!addUserToTeamRoles}" />
+                                        </apex:selectList>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slds-section slds-is-open " data-objectType="CaseTeamMember" id="caseTeamMembers" title="Case Team Members" columns="1" style="{!IF(caseTeamEnabled && caseTeamMembers.size>0 && (c.Id != null || mode == 'new'),'display:block','display:none')}">
+                        <h3 class="slds-section-title--divider">
+                            <span class="slds-truncate" title="Case Team Members">
+                                <span class="slds-icon_container slds-icon-utility-switch">
+                                    <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                                      <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                                    </svg>
+                                </span>
+                                Case Team Members
+                            </span>
+                        </h3>
+                        <div class="slds-section__content slds-grid">
+                            <div class="slds-col">
+                                <apex:dataTable id="origCaseTeamMembersTable" value="{!caseTeamMembers}" var="ctm" styleClass="slds-table slds-table_bordered">
+                                    <apex:facet name="header"><span class="slds-text-heading_small">Original Case</span></apex:facet>                      
+                                    <apex:column headerValue="Team Member">
+                                        <div class="slds-icon_container slds-icon-utility-threedots_vertical">
+                                            <svg class="slds-icon slds-icon_xx-small slds-icon-text-default" aria-hidden="true">
+                                              <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#threedots_vertical"></use>
+                                            </svg>&nbsp;
+                                            <apex:outputLink target="_blank" value="{!ctm.url}">{!ctm.caseTeamMember['Member.Name']}</apex:outputLink>
+                                        </div>                           
+                                        <apex:inputCheckbox value="{!ctm.copy}"/>                             
+                                    </apex:column>
+                                    <apex:column headerValue="Team Role">
+                                        <apex:outputText value="{!ctm.caseTeamMember['TeamRole.Name']}" />
+                                    </apex:column>
+                                </apex:dataTable>
+                            </div>
+                            <div class="slds-col">
+                                <table id="caseTeamMembersTable" class="slds-table slds-table_bordered" style="table-layout:auto;width:100%">
+                                    <thead>
+                                        <tr><th colspan="2" scope="colgroup"><span class="slds-text-heading_small">{!IF(mode == 'new','New Case','Case #' + c.CaseNumber)}  </span></th></tr> 
+                                        <tr>                         
+                                            <th>Team Member</th>
+                                            <th>Team Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="caseTeamMembersTable:tb"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <apex:outputPanel id="comms">
+                        <div class="slds-section slds-is-open slds-large" data-objectType="CaseComment" data-auto-copy="true" title="Case Comments" columns="1" style="{!IF(comments.size>0 && (c.Id != null || mode == 'new'),'display:block','display:none')}">
+                            <h3 class="slds-section-title--divider">
+                                <span class="slds-truncate" title="Case Comments">              
+                                    <span class="slds-icon_container slds-icon-utility-switch">
+                                        <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                                          <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                                        </svg>
+                                    </span>
+                                    Case Comments
+                                </span>
+                            </h3>
+                            <div class="slds-section__content slds-grid">
+                                <div class="slds-col">
+                                    <apex:dataTable id="origCcTable" value="{!comments}" var="cc" styleClass="slds-table slds-table_bordered">
+                                        <apex:facet name="header"><span class="slds-text-heading_small">Original Case </span></apex:facet>
+                                        <apex:column headerValue="Created By">
+                                            <div class="slds-icon_container slds-icon-utility-threedots_vertical">
+                                                <svg class="slds-icon slds-icon_xx-small slds-icon-text-default" aria-hidden="true">
+                                                  <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#threedots_vertical"></use>
+                                                </svg>&nbsp;
+                                                {!cc.comment.createdby.name}
+                                            </div>
+                                            <apex:inputCheckbox value="{!cc.copy}">
+                                                <apex:actionSupport event="onchange" action="{!autoSelectFromComment}" reRender="email,attach">
+                                                    <apex:param name="commId" value="{!cc.comment.id}"/>
+                                                </apex:actionSupport>
+                                            </apex:inputCheckbox>
+                                            <apex:inputHidden html-class="createdDate" value="{!cc.createdDatems}"/>
+                                        </apex:column>
+                                        <apex:column headerValue="Created Date" value="{!cc.comment.CreatedDate}"/>
+                                        <apex:column headerValue="Comment">
+                                            <apex:outputField html-data-field-type="{!$ObjectType.CaseComment.Fields.CommentBody.Type}" value="{!cc.comment.commentbody}"/>
+                                        </apex:column>
+                                    </apex:dataTable>
+                                </div>
+                                <div class="slds-col">
+                                    <table id="ccTable" class="slds-table slds-table_bordered" style="table-layout:auto;width:100%">
+                                        <thead>
+                                            <tr><th colspan="3" scope="colgroup"><span class="slds-text-heading_small">{!IF(mode == 'new','New Case','Case #' + c.CaseNumber)} </span></th></tr>
+                                            <tr><th>Created By</th>
+                                            <th style="min-width:150px">Created Date</th>
+                                            <th>Comment</th></tr>
+                                        </thead>
+                                        <tbody id="ccTable:tb">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+
+                    <div class="slds-section slds-is-open " data-objectType="EmailMessage" data-auto-copy="true" id="email" title="Emails" columns="1" style="{!IF(emails.size>0 && (c.Id != null || mode == 'new'), 'display:block','display:none')}">
+
+                        <h3 class="slds-section-title--divider">
+                            <span class="slds-truncate" title="Emails">
+                                <span class="slds-icon_container slds-icon-utility-switch">
+                                    <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                                      <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                                    </svg>
+                                </span>
+                                Emails 
+                            </span>
+                        </h3>
+                        <div class="slds-section__content slds-grid">
+                            <div class="slds-col">
+                                <apex:dataTable id="origEmailTable" value="{!emails}" var="mail" styleClass="slds-table slds-table_bordered">
+                                    <apex:facet name="header"><span class="slds-text-heading_small">Original Case</span></apex:facet> 
+                                    <apex:column headerValue="Status" style="min-width:70px">
+
+                                        <span class="slds-icon_container slds-icon-utility-threedots_vertical">
+                                            <svg class="slds-icon slds-icon_xx-small slds-icon-text-default" aria-hidden="true">
+                                              <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#threedots_vertical"></use>
+                                            </svg>
+                                        </span> &nbsp; 
+                                        <apex:outputField value="{!mail.email.status}"/>
+                                        <apex:inputHidden html-class="emailId" value="{!mail.email.id}"/>
+                                        <apex:inputHidden html-class="createdDate" value="{!mail.createdDatems}"/>
+                                    </apex:column>
+                                    <apex:column headerValue="Subject">
+                                        <apex:inputCheckbox value="{!mail.copy}">
+                                            <apex:actionSupport event="onchange" action="{!autoSelectFromEmail}" reRender="comms,attach">
+                                                <apex:param name="mailId" value="{!mail.email.id}"/>
+                                            </apex:actionSupport>
+                                        </apex:inputCheckbox>
+                                        <apex:outputLink target="_blank" value="{!mail.url}">{!mail.email.subject}</apex:outputLink>
+                                    </apex:column>
+                                    <apex:column headerValue="Email Address" value="{!mail.email.fromaddress}"/>
+                                    <apex:column headerValue="Message Date" value="{!mail.email.MessageDate}"/>
+                                </apex:dataTable>
+                            </div>
+                            <div class="slds-col">
+                                <table id="emailTable" class="slds-table slds-table_bordered" style="table-layout:auto;width:100%">
+                                    <thead>
+                                        <tr><th colspan="3" scope="colgroup"><span class="slds-text-heading_small">{!IF(mode == 'new','New Case','Case #' + c.CaseNumber)}</span></th></tr>
+                                        <tr><th>Status</th>
+                                        <th>Subject</th>
+                                        <th>Email Address</th>
+                                        <th>Message Date</th></tr>
+                                    </thead>
+                                    <tbody id="emailTable:tb"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <apex:outputPanel id="attach">
+                        <div class="slds-section slds-is-open" data-objectType="Attachment" title="Attachments" columns="1" style="{!IF(attachments.size>0 && (c.Id != null || mode == 'new'),'display:block','display:none')}">
+                            <h3 class="slds-section-title--divider">
+                                <span class="slds-truncate" title="Attachments">
+                                    <span class="slds-icon_container slds-icon-utility-switch">
+                                        <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                                          <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                                        </svg>
+                                    </span>
+                                    Attachments
+                                </span>
+                            </h3>
+                            <div class="slds-section__content slds-grid">
+                                <div class="slds-col">
+                                    <apex:dataTable id="origAttachTable" value="{!attachments}" var="a" styleClass="slds-table slds-table_bordered" style="table-layout:auto;width:100%">
+                                        <apex:facet name="header"><span class="slds-text-heading_small">Original Case</span></apex:facet>
+                                        <apex:column headerValue="File Name">
+                                            <apex:inputCheckbox value="{!a.copy}"/>
+                                            
+                                            <div class="slds-icon_container slds-icon-utility-threedots_vertical">
+                                                <svg class="slds-icon slds-icon_xx-small slds-icon-text-default" aria-hidden="true">
+                                                  <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#threedots_vertical"></use>
+                                                </svg> &nbsp; <apex:outputLink target="_blank" value="{!a.url}">{!a.attach.name}</apex:outputLink>
+                                            </div>
+                                            <apex:inputHidden html-class="createdDate" value="{!a.createdDatems}"/>
+                                        </apex:column>
+                                        <apex:column headerValue="Size in Bytes" value="{!a.attach.bodylength}"/>
+                                        <apex:column headerValue="Last Modified" value="{!a.attach.lastmodifieddate}"/>
+                                        <apex:column headerValue="Created By" value="{!a.attach.createdby.name}"/>
+                                    </apex:dataTable>
+                                </div>
+                                <div class="slds-col">
+                                    <table id="attachTable" class="slds-table slds-table_bordered" style="table-layout:auto;width:100%">
+                                        <thead>
+                                            <tr><th colspan="3" scope="colgroup"><span class="slds-text-heading_small">{!IF(mode == 'new','New Case','Case #' + c.CaseNumber)}</span></th></tr> 
+                                            <tr>                         
+                                            <th>File Name</th>
+                                            <th>Size in Bytes</th>
+                                            <th>Last Modified</th>
+                                            <th>Created By</th></tr>
+                                        </thead>
+                                        <tbody id="attachTable:tb"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+
+                    <div class="slds-section slds-is-open" data-objectType="File" id="file" title="Files" columns="1" style="{!IF(files.size>0 && (c.Id != null || mode == 'new'),'display:block','display:none')}">
+                        <h3 class="slds-section-title--divider">
+                            <span class="slds-truncate" title="Files">
+                                <span class="slds-icon_container slds-icon-utility-switch">
+                                    <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                                      <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                                    </svg>
+                                </span>
+                                Files
+                            </span>
+                        </h3>
+                        <div class="slds-section__content slds-grid">
+                            <div class="slds-col">
+                                <apex:dataTable id="origFilesTable" value="{!files}" var="f" styleClass="slds-table slds-table_bordered" style="table-layout:auto;width:100%">
+                                    <apex:facet name="header"><span class="slds-text-heading_small">Original Case</span></apex:facet>
+                                    <apex:column headerValue="File Name">
+                                        <apex:inputCheckbox value="{!f.copy}"/>
+                                        <apex:inputHidden html-class="createdDate" value="{!f.createdDatems}"/>
+                                        <div class="slds-icon_container slds-icon-utility-threedots_vertical">
+                                            <svg class="slds-icon slds-icon_xx-small slds-icon-text-default" aria-hidden="true">
+                                              <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#threedots_vertical"></use>
+                                            </svg> &nbsp;
+                                             <apex:outputLink target="_blank" value="{!f.url}">{!f.documentLink.ContentDocument.Title}</apex:outputLink>
+                                        </div> 
+                                    </apex:column>
+                                    <apex:column headerValue="Size in Bytes" value="{!f.documentLink.ContentDocument.ContentSize}"/>
+                                    <apex:column headerValue="Last Modified" value="{!f.documentLink.ContentDocument.LastModifiedDate}"/>
+                                    <apex:column headerValue="Created By" value="{!f.documentLink.ContentDocument.CreatedBy.Name}"/>
+                                </apex:dataTable>
+                            </div>
+                            <div class="slds-col">
+                                <table id="fileTable" class="slds-table slds-table_bordered" style="table-layout:auto;width:100%">
+                                    <thead>
+                                        <tr><th colspan="3" scope="colgroup"><span class="slds-text-heading_small">{!IF(mode == 'new','New Case','Case #' + c.CaseNumber)}</span></th></tr> 
+                                        <tr>                         
+                                        <th>File Name</th>
+                                        <th>Size in Bytes</th>
+                                        <th>Last Modified</th>
+                                        <th>Created By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fileTable:tb"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </apex:actionRegion>
+
+                <apex:repeat id="kids" value="{!Children}" var="kid">
+                    <div title="{!$ObjectType[kid.child.Object_Name__c].Label}" data-objectType="{!kid.child.Object_Name__c}" data-auto-copy="true" columns="1" style="{!IF(c.Id != null || mode == 'new','display:block','display:none')}">
+                        <div class="slds-section slds-is-open">
+                            <h3 class="slds-section-title--divider">
+                                <span class="slds-truncate" title="{!$ObjectType[kid.child.Object_Name__c].Label}">                     
+                                    <div class="slds-icon_container slds-icon-utility-switch">
+                                        <svg class="slds-icon slds-icon_xx-small slds-icon-text-default slds-section__title-action-icon" aria-hidden="true">
+                                          <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#switch"></use>
+                                        </svg>
+                                        {!$ObjectType[kid.child.csplit__Object_Name__c].Label}
+                                    </div>
+                                </span>
+                            </h3>
+                            <div class="slds-section__content slds-grid">
+                                <div class="slds-col">
+                                    <apex:dataTable id="origObjTable" value="{!kid.objects}" var="object" rendered="{!kid.objects != null}" styleClass="slds-table slds-table_bordered">
+                                        <apex:facet name="header"><span class="slds-text-heading_small">Original Case</span></apex:facet>
+                                        <apex:column headerValue="{!kid.infoLabel1}">
+                                            <div class="slds-icon_container slds-icon-utility-threedots_vertical">
+                                                <svg class="slds-icon slds-icon_xx-small slds-icon-text-default" aria-hidden="true">
+                                                  <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#threedots_vertical"></use>
+                                                </svg>
+                                                <apex:inputCheckbox value="{!object.copy}"/>
+                                            </div>&nbsp;
+                                            <apex:outputLink target="_blank" value="{!object.url}" disabled="{!object.url == null}"><apex:outputField value="{!object.obj[object.field1]}" /></apex:outputLink>
+                                        </apex:column>
+                                        <apex:column headerValue="{!kid.infoLabel2}">
+                                            <apex:outputField html-data-field-type="{!$ObjectType[kid.child.csplit__Object_Name__c].Fields[object.field2].Type}" value="{!object.obj[object.field2]}" />
+                                        </apex:column>
+                                    </apex:dataTable>
+                                </div>
+                                <div class="slds-col">
+                                    <table id="objTable" class="slds-table slds-table_bordered" style="table-layout:auto;width:100%">
+                                        <thead>
+                                            <tr><th colspan="2" scope="colgroup"><span class="slds-text-heading_small">{!IF(mode == 'new','New Case','Case #' + c.CaseNumber)}</span></th></tr>
+                                            <tr>                          
+                                            <th>{!kid.infoLabel1}</th>
+                                            <th>{!kid.infoLabel2}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="objTable:tb"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </apex:repeat>
+            </apex:outputPanel>
+        </div>
+
+        <div class="slds-docked-form-footer" style="background-color: rgba(239, 239, 239, 1) !important;">
+            <div id="pbbsBottom" class="slds-button-group" style="text-align:center !important;">
+                <apex:commandButton id="bottombtnSave" value="Split" action="{!split}" styleClass="slds-button slds-button_brand" rerender="quickStatus,messages,apex2js,case-fields" status="quickStatus" style="border-radius: 5px 0px 0px 5px" oncomplete="splitOnComplete();">
+                </apex:commandButton>
+                <apex:commandButton id="bottombtnSaveDis" value="Splitting..." disabled="true" style="display:none;"/>
+                <apex:commandButton id="bottombtnSaveAndAgain" value="Split & Split Again" rerender="quickStatus,messages,case-fields" status="quickStatus" action="{!splitAndAgain}" styleClass="slds-button slds-button_neutral" oncomplete="splitOnComplete();"/>
+                <apex:commandButton id="bottombtnSaveAndAgainDis" value="Splitting..." disabled="true" style="display:none;"/>
+                <apex:commandButton id="bottombtnSaveAndClose" value="Split & Close" rerender="quickStatus,messages,apex2js,case-fields" status="quickStatus" action="{!splitAndClose}" rendered="{!$User.UITheme == 'Theme3'}" styleClass="slds-button slds-button_neutral" oncomplete="splitOnComplete();"/>
+                <!--<apex:commandButton id="bottombtnSaveAndCloseDis" value="Splitting..." disabled="true" style="display:none;"/>-->
+                <!-- <apex:commandButton id="bottombtnCncl" value="Cancel" immediate="true" action="{!cancel}" rerender="quickStatus" status="quickStatus" styleClass="slds-button slds-button_neutral" style="border-radius: 0px 5px 5px 0px;"/> -->
+                <button type="button" onclick="cancelAF();" class="btn slds-button slds-button_neutral">Cancel</button>
+                <!-- <apex:commandButton id="bottombtnCnclDis" value="Cancel" html-formnovalidate="formnovalidate" action="{!cancel}" disabled="true" style="display:none"/> -->
+            </div>
+        </div>
+
+        <div id="copyToast">
+            Text copied to clipboard.
+        </div>
+ 
+        <apex:actionFunction name="cancelAF" immediate="true" action="{!cancel}"/> 
+    </apex:form>
+
+    <apex:outputPanel id="apex2js">
+        <script>
+            // Object to store all APEX values so only this script needs to be rerendered.
+            var APEX = {
+                caseNumber : '{!Case.CaseNumber}',
+                navURL : '{!navURL}',
+                jsonDeleteMap : '{!jsonDeleteMap}',
+                relatedThreshold : '{!relatedThreshold}',
+                addUserToTeamCurrentUserId : '{!addUserToTeamCurrentUserId}',
+                mode : '{!mode}'
+            };
+        </script>
+    </apex:outputPanel>
+
+    <script>
+        svg4everybody();
+        $ = jQuery.noConflict();
+        $(document).ready(function() {
+            checkForObjsToDelete();
+            styleCalendar();
+            renderOverrideElements();
+
+            // Console Setup
+            if(sforce && sforce.console && sforce.console.isInConsole()){ 
+                sforce.console.setTabTitle(APEX.caseNumber + ": Split"); 
+            }
+
+            setupCTM();
+            $('[title=\'Search scope\']').change(function(){
+                $(this).siblings('.lookupInput').children().val('');
+            });
+
+            $("[data-field-type='textarea']").each(function() {
+                setupDraggableRowSpanEvents(this);
+            });
+
+            $("[data-auto-copy='true']").mouseup(autoCopyHighlightedText);
+        });
+
+        // --- POST RENDERS --- //
+        function renderOverrideElements(){
+            reRenderMessages();
+            reRenderCaseFieldsSection();
+            $("input:checkbox").attr("class","slds-checkbox");
+            $(".slds-section-title--divider").attr("onclick","toggleSection(this)");
+            $("table[class='slds-table slds-table_bordered']").parent().attr({ondragover:"allowDrop(event);", onDrop:"drop(event);"});
+            $("tbody[id*='tb']:not(tbody[id*='epeatTable:tb'])").children().attr({draggable:"true", ondragstart:"dragStart(event);", ondblclick:"move(event);",ondragend:"dragEnd(event);"});
+            $("input[class='slds-input'],textarea[class='slds-input']").closest("tr").find("a").css("visibility","visible");
+            $("span[class='slds-input']").removeClass("slds-input");
+            $("span[class='dateFormat'").before("<br/>");
+            assignOrderNums();
+        }
+
+        function reRenderCaseFieldsSection() {
+            // Restyle Owner Id
+            var ownerIdCells = $("td:contains('Owner ID')");
+            ownerIdCells.siblings().find("div.slds-input.OwnerId").removeClass("slds-input");
+            ownerIdCells.siblings().find("span.lookupInput > input").addClass("slds-input").css({"width":"auto", "vertical-align" : "top"});
+            var selectContainer = $("<div></div>");
+            selectContainer.addClass("slds-select_container slds-m-right_x-small").css({"max-width":"125px","position":"relative","display":"inline-block"});
+            var ownerIdSelects = ownerIdCells.siblings().find("select");
+            ownerIdSelects.each(function() {
+                var selectContainerClone = selectContainer.clone();
+                $(this).replaceWith(selectContainerClone);
+                selectContainerClone.append(this);
+                $(this).addClass("slds-select").css({"max-width":"125px"});
+            });
+            $("div[class$='requiredInput'").parent().prev().prepend("<span style=\"color:red;\">* </span>");
+
+            // Restyle Multi-selects
+            $("img[id$='right_arrow'").replaceWith($('<div class="slds-button slds-button_neutral">' + '▶' + '</div>'));
+            $("img[id$='left_arrow'").replaceWith($('<div class="slds-button slds-button_neutral" style="position:relative;bottom:10px">' + '◀' + '</div>'));
+        }
+
+        function reRenderMessages() {
+            $("span[id$='messages']").find("br").remove();
+            $("div[role$='alert']").css("background-color","#fff");
+        }
+
+        function styleCalendar() { // Give Visualforce Calendar SLDS Styling
+            var scopeClass = 'slds-scope';
+
+            var datePicker = $("#datePicker");
+            if(!datePicker.parent().hasClass(scopeClass)) {
+                datePicker.remove();
+                var scopeWrapper = $("<span></span>");
+                scopeWrapper.append(datePicker);
+                $(document.body).append(scopeWrapper);
+            }
+
+            $(".calLeft, .calRight").each(function() {
+                var isLeft = $(this).hasClass("calLeft");
+                replaceCalendarButton((isLeft) ? 'left' : 'right', this);
+            });
+
+            $("#calMonthPicker,#calYearPicker").each(function() {
+                updateCalendarSelect(this);
+            });
+
+            $(".dateBar").each(function() {
+                $(this).addClass("slds-date-bar");
+            });
+        }
+
+        function replaceCalendarButton(dir, calBtn) {
+            var span = $("<span></span>");
+            span.addClass('calButton');
+            span.click(calBtn.onclick);
+            span.prop(calBtn.title);
+
+            if(dir === 'left') {
+                span.addClass('calButtonLeft');
+            }
+
+            if(dir === 'right') {
+                span.addClass('calButtonRight');
+            }
+
+            $(calBtn).replaceWith(span);
+        }
+
+        function updateCalendarSelect(calSelect) {
+            var selectContainer = $("<div></div>");
+            selectContainer.addClass("slds-select_container");
+
+            $(calSelect).replaceWith(selectContainer);
+            selectContainer.append(calSelect);
+            $(calSelect).addClass("slds-select");
+        }
+
+        function setupDraggableRowSpanEvents(span) { // Allows text in the tables to be highlighted and copied without dragging the row.
+            span.addEventListener('mousedown', function() { $(this).closest("tr[draggable='true']").attr("draggable", false);});
+            span.addEventListener('ondblclick', function() { event.preventDefault();});
+        }
+
+        // --- INITIALIZATION --- //
+        function setupCTM(){
+            // bind the click events
+            $("input[id*='addUserToTeam_input']").click(clickAddMeToTeam);
+            $("table[id*='caseTeamMembersTable'] > tbody > tr:has(a[href*='" + APEX.addUserToTeamCurrentUserId + "'])").find('input').click(clickCaseTeamMemberUser);
+            // sync the check boxes
+            clickAddMeToTeam();
+            // enable/disable the role selection based on the checkbox
+            disableRoleSelection();
+        }
+
+        function clickCaseTeamMemberUser(){
+            $("input[id*='addUserToTeam_input']").prop("checked", $("table[id*='caseTeamMembersTable'] > tbody > tr:has(a[href*='" + APEX.addUserToTeamCurrentUserId + "'])").find('input').prop("checked"));
+            disableRoleSelection();
+        }
+
+        function disableRoleSelection(){
+            if($("input[id*='addUserToTeam_input']").prop("checked") == true){
+                $("select[id*='addUserToTeam_role']").removeAttr("disabled");
+            }
+            else if($("input[id*='addUserToTeam_input']").prop("checked") == false){
+                $("select[id*='addUserToTeam_role']").attr("disabled", "disabled");
+            }
+        }
+
+        // --- SALESFORCE CONSOLE --- //
+        function consoleNavigate() {
+            sforce.console.getEnclosingPrimaryTabId(openNewCase);
+        }
+
+        function openNewCase(result) {
+            sforce.console.openSubtab(result.id, APEX.navURL, true, false, null, sforce.console.getEnclosingPrimaryTabId(refreshOriginalTab));
+        }
+
+        function refreshOriginalTab(result){
+            sforce.console.refreshPrimaryTabById(result.id, false, sforce.console.getEnclosingTabId(closeSubtab));
+        }
+
+        function refreshTab(result){
+            sforce.console.refreshPrimaryTabById(result.id, false, sforce.console.getEnclosingTabId(closeSubtab));
+        }
+
+        function closeSubtab(result) {
+            var tabId = result.id;
+            sforce.console.closeTab(tabId);
+        }
+
+        // --- TABLE DRAG AND DROP --- //
+        var dragging;
+        var siblingTable;
+        var insideAutoSelect = false;
+
+        function dragStart(event) {
+            // Set Global Variables used for drop
+            event.dataTransfer.setData('text', ''); // FF fix
+            if (event.target.tagName == "TR") {
+                dragging = event.target;
+                siblingTable = $(dragging).closest('.slds-col').siblings();
+                siblingTable.css("background-color","#efab8d");
+            } else
+                event.preventDefault();
+        }
+
+        function dragEnd(event) {
+            // Remove red background
+            siblingTable.css("background-color","");
+            dragging = null;
+        }
+
+        function move(event){
+            var target = event.currentTarget || event.target;   // BE - Use event.currentTarget for user double-clicking on the row. Use event.target for programatically clicking on the row.
+            moveItem(target, $(target).parents("div.slds-col").siblings().eq(0).find("table")[0]);
+        }
+
+        function moveItem(item, destTable) {
+            var deleteMap = JSON.parse(APEX.jsonDeleteMap);
+            var deleteBool = deleteMap[$(item).parents("[data-objecttype]").attr("data-objecttype")];
+
+            var isOriginalTable = destTable.id.indexOf("orig") > -1;
+
+            if(isOriginalTable) {
+                $(item).find(".slds-checkbox").prop("checked", false);
+                $(item).css("background-color","");
+            }
+            else {
+                $(item).find(".slds-checkbox").prop("checked", true);
+                $(item).css("background-color","#ffffa0");
+            }
+
+            var rowId = $(item).find(".emailId").val();
+            var createdDate = $(item).find(".createdDate").val();
+
+            var i, dragOrder, sortBool;
+            sortBool = false;
+            dragOrder = parseInt($(item).attr("orderNum"));
+            for(i = 0; i < destTable.rows.length; i++) {
+                if(dragOrder === parseInt($(destTable.rows[i]).attr("orderNum"))) {   // item already in list (clone only)
+                    if(isOriginalTable) {
+                        if(destTable !== item.parentElement.parentElement) {
+                            $(destTable.rows[i]).css("background-color","");
+                            $(item).remove();
+                        }
+                        $(destTable.rows[i]).css("background-color","");
+                    }
+                    sortBool = true;
+                    break;
+                }
+                else if(dragOrder < parseInt($(destTable.rows[i]).attr("orderNum"))){
+                    if (deleteBool != true){
+                        var clonedNode = $(item.cloneNode(true)).css('background-color','#ffffa0');
+                        clonedNode.find(".slds-checkbox").prop('checked',false);
+                        var spans = clonedNode.find('td>span');
+                        for(var j = 0; j < spans.length; j++) {
+                            setupDraggableRowSpanEvents(spans[j]);
+                        }
+                        item.parentNode.insertBefore(clonedNode[0],item);
+                    }
+                    destTable.rows[i].parentNode.insertBefore(item,destTable.rows[i]);
+                    
+                    
+                    sortBool = true;
+                    break;
+                }
+            }
+
+            if(sortBool == false){
+                if(deleteBool != true){
+                    var clonedNode = $(item.cloneNode(true)).css('background-color','#ffffa0');
+                    clonedNode.find(".slds-checkbox").prop('checked',false);
+                    var spans = clonedNode.find('td>span');
+                    for(var j = 0; j < spans.length; j++) {
+                        setupDraggableRowSpanEvents(spans[j]);
+                    }
+                    item.parentNode.insertBefore(clonedNode[0],item);
+                }     
+                destTable.tBodies[0].appendChild(item);
+            }
+            
+            if (destTable.id.indexOf("emailTable") >= 0 && insideAutoSelect == false){
+                insideAutoSelect = true;
+                autoSelectFromEmail(rowId,createdDate);
+                insideAutoSelect = false;
+            }
+            if (destTable.id.indexOf("ccTable") >= 0 && insideAutoSelect == false){
+                insideAutoSelect = true;
+                autoSelectFromComment(rowId,createdDate);
+                insideAutoSelect = false;
+            }
+            if(siblingTable) {  // BE - will only exist on drag + drop, not on double click.
+                siblingTable.css("background-color","");
+            }
+        }
+
+        function allowDrop(event) {
+            if(event.currentTarget.tagName == "DIV" && event.currentTarget.children[0].tagName == "TABLE"){
+                if(event.currentTarget === $(dragging).closest('.slds-col').siblings().get(0)){
+                    event.preventDefault();
+                }
+            }
+        }
+
+        function drop(event) {
+            event.preventDefault(); // FF fix
+            var destTable = $(event.currentTarget).closest(".slds-col").find("table")[0];
+            moveItem(dragging, destTable);
+        }
+
+        // --- EVENT LISTENERS --- //
+        function autoSelectFromEmail(rowId,createdDate) { // selects case comments and attachments created within 10000 ms of email and moves them to "new case" column
+            if(APEX.relatedThreshold === 'true'){
+                var allComments = $(document).find("[id='pg:frm:origCcTable']").find("tr[draggable='true']").each(function(){
+                    if(Math.abs(createdDate - $(this).find(".createdDate").val()) < 10000 && $(this).css('background-color') != "rgb(255, 255, 160)"){
+                        //$(this).trigger("dblclick", $(this).get(0));
+                        $(this)[0].dispatchEvent(new MouseEvent('dblclick',{'view':window, 'bubbles':true, 'cancelable': true}));
+                        
+                    }
+                });
+
+                var allAttachments = $(document).find("[id='pg:frm:origAttachTable']").find("tr[draggable='true']").each(function(){
+                    if(Math.abs(createdDate - $(this).find(".createdDate").val()) < 10000 && $(this).css('background-color') != "rgb(255, 255, 160)"){
+                       // $(this).trigger("dblclick", $(this).get(0));
+                       $(this)[0].dispatchEvent(new MouseEvent('dblclick',{'view':window, 'bubbles':true, 'cancelable': true}));
+                    }
+                });
+                
+                var allFiles = $(document).find("[id='pg:frm:origFilesTable']").find("tr[draggable='true']").each(function(){
+                    if(Math.abs(createdDate - $(this).find(".createdDate").val()) < 10000 && $(this).css('background-color') != "rgb(255, 255, 160)"){
+                        $(this).trigger("dblclick", $(this).get(0));
+                    }
+                });
+            }
+        }
+
+        function autoSelectFromComment(rowId,createdDate) { // selects case comments and attachments created within 10000 ms of email and moves them to "new case" column
+            if(APEX.relatedThreshold === 'true'){
+                var allEmails = $(document).find("[id='pg:frm:origEmailTable']").find("tr[draggable='true']").each(function(){
+                    if(Math.abs(createdDate - $(this).find(".createdDate").val()) < 10000 && $(this).css('background-color') != "rgb(255, 255, 160)"){
+                        $(this).trigger("dblclick", $(this).get(0));
+                    }
+                });
+                var allAttachments = $(document).find("[id='pg:frm:origAttachTable']").find("tr[draggable='true']").each(function(){
+                    if(Math.abs(createdDate - $(this).find(".createdDate").val()) < 10000 && $(this).css('background-color') != "rgb(255, 255, 160)"){
+                        $(this).trigger("dblclick", $(this).get(0));
+                    }
+                });
+                var allFiles = $(document).find("[id='pg:frm:origFilesTable']").find("tr[draggable='true']").each(function(){
+                    if(Math.abs(createdDate - $(this).find(".createdDate").val()) < 10000 && $(this).css('background-color') != "rgb(255, 255, 160)"){
+                        $(this).trigger("dblclick", $(this).get(0));
+                    }
+                });
+            }
+        }
+
+        function autoCopyHighlightedText(event) {
+            var sectionName = $(event.currentTarget).attr('data-objectType');
+            var anchorNode = window.getSelection().anchorNode;
+            var focusNode = window.getSelection().focusNode;
+            if(window.getSelection().toString() && anchorNode.nodeType === Node.TEXT_NODE && canCopyHighlightedText(anchorNode, focusNode)){
+                console.log('Copied');
+                document.execCommand('copy');  
+                window.getSelection().empty();
+                var x = document.getElementById("copyToast");
+                x.className = "show";
+                setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+            }
+            if(anchorNode != null) {
+                $(anchorNode).parents('tr[draggable]').attr("draggable", true);
+            }
+        }
+
+        function canCopyHighlightedText(anchorNode, focusNode) {
+            return !(anchorNode === null && focusNode === null) && $(anchorNode).closest("div.slds-col").get(0) === $(focusNode).closest("div.slds-col").get(0) && anchorNode.parentElement.getAttribute("data-field-type") === "textarea";
+        }
+
+        function toggleSection(el){
+            $(el).parent().toggleClass("slds-is-open");
+        }
+
+        function clickAddMeToTeam(){
+            $("table[id*='caseTeamMembersTable'] > tbody > tr:has(a[href*='" + APEX.addUserToTeamCurrentUserId + "'])").find('input').prop("checked", $("input[id*='addUserToTeam_input']").prop("checked"));
+            disableRoleSelection();
+        }
+
+        // --- COMPLETION HANDLERS --- //
+        function splitOnComplete() {
+            if(APEX.navURL && sforce && sforce.console && sforce.console.isInConsole()) {
+                consoleNavigate();
+            }
+            scrollToFirstError();
+            renderOverrideElements();
+        }
+
+        function changeModeOnComplete() {
+            renderOverrideElements();
+            /*if(APEX.mode === 'new') {
+                $('.slds-checkbox:not([id*="epeatTable"])[checked]:not([id*="addUserToTeam"])').each(function() {
+                    var destTable = $(this).closest(".slds-col").siblings().eq(0).find("table")[0];
+                    var row = $(this).closest("tr")[0];
+                    moveItem(row, destTable);
+                });
+            }*/
+        }
+
+        // --- OTHER --- //
+        function assignOrderNums(){
+            if($("[orderNum]").length === 0) { // only need to assign order-nums if there are none currently on the page, the tables should not re-render if a split fails
+                var i = 0;
+                $("tr[draggable=true]").each(function() {
+                    $(this).attr("orderNum",i);
+                    i++;
+                });
+            }
+        }
+
+        function scrollToFirstError() { // Scrolls to the first error on the page, if one exists.
+            var pageMessagesDiv = $('div.message.errorM3').first();
+            var firstInputWithError = $('input.slds-has-error').first();
+            var scrollOptions = {
+                behavior : "smooth",
+                block : "center"
+            };
+            if(pageMessagesDiv.length !== 0) {
+                pageMessagesDiv[0].scrollIntoView(scrollOptions);
+            }
+            else if(firstInputWithError.length !== 0) {
+                firstInputWithError[0].scrollIntoView(scrollOptions);
+            }
+        }
+
+        function copyFromOrig(event){
+            var picklistNodes = $(event.currentTarget).closest("tr").find(".multiSelectPicklistRow");   // Multi-Select
+            if(picklistNodes.length <1){ // if not a multi-picklist
+                var parentNode = $(event.currentTarget).closest("tr");
+                var origVals = parentNode.children().eq(1).find("select:not([multiple]),[type='text'],textarea");
+                var cloneVals = parentNode.children().eq(4).find("select:not([multiple]),[type='text'],textarea");
+                origVals.each(function(index) {
+                    cloneVals.eq(index).val($(this).val());
+                });
+            } 
+            else {
+                var availableLists = picklistNodes.find("[id$='_unselected']");
+                var availableListOriginal = availableLists.eq(0);
+                var availableListNew = availableLists.eq(1);
+
+                var chosenLists = picklistNodes.find("[id$='_selected']");
+                var chosenListOriginal = chosenLists.eq(0);
+                var chosenListNew = chosenLists.eq(1);
+
+                // get list of available options
+                var availableValues = [];
+                availableListOriginal.find("option").each(function() {
+                    availableValues.push($(this).val());
+                });
+
+                // get list of chosen options
+                var chosenValues = [];
+                chosenListOriginal.find("option").each(function() {
+                    chosenValues.push($(this).val());
+                });
+
+                // select items that need to be moved, and move them with a double-click
+                availableListNew.find("option").each(function() {
+                    if(availableValues.indexOf($(this).val()) === -1) {
+                        $(this).attr("selected","selected");
+                    }
+                });
+                availableListNew.dblclick();
+
+                // select items that need to be moved, and move them with a double-click
+                chosenListNew.find("option").each(function() {
+                    if(chosenValues.indexOf($(this).val()) === -1) {
+                        $(this).attr("selected","selected");
+                    }
+                });
+                chosenListNew.dblclick();
+            }
+        }
+
+        /*function disableButtons(){
+            $(document.getElementById('pg:frm:btnSave')).css("display","none");
+            $(document.getElementById('pg:frm:btnSaveDis')).css("display","inherit");
+            $(document.getElementById('pg:frm:btnSaveAndAgain')).css("display","none");
+            $(document.getElementById('pg:frm:btnSaveAndAgainDis')).css("display","inherit");
+            $(document.getElementById('pg:frm:btnSaveAndClose')).css("display","none");
+            $(document.getElementById('pg:frm:btnSaveAndCloseDis')).css("display","inherit");
+            $(document.getElementById('pg:frm:btnCncl')).css("display","none");
+            $(document.getElementById('pg:frm:btnCnclDis')).css("display","inherit");
+        }*/
+    </script>
+</div>
+<!-- </html> -->
+</apex:page>

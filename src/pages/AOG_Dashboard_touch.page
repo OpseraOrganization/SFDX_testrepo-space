@@ -1,0 +1,670 @@
+<apex:page cache="true" expires="10"  controller="AOGRealTimeReport" showHeader="false" standardStylesheets="false" >
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="HandheldFriendly" content="true"/>
+<meta http-equiv="cleartype" content="on" />
+<meta http-equiv="Cache-Control" content="no-cache" />
+<meta name="format-detection" content="telephone=no" />
+
+<title>AOG Dashboard Touch</title>
+<link rel="stylesheet" type="text/css" href="{!$Resource.fancybox_css}" media="screen" />
+<link rel="stylesheet" type="text/css" href="{!$Resource.fancybox_custommonitor_css}" media="screen" />
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
+<script type="text/javascript" src="{!$Resource.fancybox_js}"></script>
+<script type="text/javascript" src="{!$Resource.jq_cookiehandler_js}"></script>
+<script type="text/javascript">
+    var topbanner = 0;
+    $(window).unload( function () { 
+        if($.cookie('toolbar') != $('#footerow').css("height") )
+            $.cookie('toolbar',$('#footerow').css("height"));
+    });
+    $(document).ready(function() {
+    
+        if($.cookie('toolbar'))$('#footerow').css("height",$.cookie('toolbar'));
+        
+        $(".popup_details").fancybox();
+        
+        $(".trigger").click(function() {
+                $('#footerow').animate({height:($('#footerow').css("height")=='45px'?'115px':'45px')}, 500);
+        });
+        
+        if( window.location.search.length > 0){
+        
+            $('li a, .button').each(function(index) {/**/
+            
+                if( $(this).hasClass("home") ) return;
+                
+                var newVar = $(this).attr('href');
+                if(newVar.lastIndexOf("&")!=-1)newVar = newVar.substring(newVar.lastIndexOf("?")+1,newVar.lastIndexOf("&"));
+                else newVar = newVar.substring(newVar.lastIndexOf("?")+1);
+                
+                var splitVar = newVar.split("=");
+                var expPatt = new RegExp("\\b"+splitVar[0]+"=\\b[a-zA-Z0-9_%]*");
+                var currentURL = window.location.search;
+                
+                if( currentURL.search(splitVar[0]+'=')==-1 ){//not found!
+                    currentURL += '&'+newVar;
+                    $(this).attr('href',currentURL);//Set New URL
+                }
+                else{
+                    currentURL = currentURL.replace(expPatt,newVar);
+                    $(this).attr('href',currentURL);//Set New URL
+                }                
+            });            
+         }
+    });
+</script>
+<style type="text/css">
+body {
+    font-family: Verdana, Geneva, sans-serif;
+    font-size:15px;
+    background-color: #000;
+    color: #FFF;
+    margin: 0px;
+    padding-top: 200px;
+    padding-bottom: 100px;
+    text-shadow: 1px 1px 2px #000000;
+}
+a, a:hover{
+    color: #FFF;
+    text-decoration: none;
+}
+#headerow {
+    font-family: Arial,Helvetica,sans-serif;
+    font-size: 100%;
+    font-weight: bold;
+    height: 90px;
+    margin-left: auto;
+    margin-right: auto;
+    position: fixed;
+    top: 0;
+    width: 100%;
+}
+#headerow th {
+    color: #FFFFFF;
+    text-align: left;
+}
+#headerow .non-flash_container h1 {
+    color: #FFF;
+    position: fixed;
+    top: auto;
+    left: 3%;
+    font-size: 36px;
+}
+.age{
+    width: 200px;
+}
+/*.open_aog {
+    width: 660px;
+    padding-left: 10px;
+}*/
+.service_level {
+    width: 200px;
+    padding-left: 10px;
+}
+.status {
+    width: 50%;
+    vertical-align: middle;
+}
+.case_owner {
+    width: 200px;
+}
+.case {
+    width: 15%;
+    padding-left: 10px;
+}
+.updated {
+    width: 15%;
+    padding-left: 10px;
+}
+#datatable {
+    width: 100%;
+    background-color: #000;
+}
+#datatable tr td {
+    vertical-align: middle;
+    padding: 5px;
+    padding-top: 0px;
+}
+
+#datatable table {
+    height: 150px;
+    background-image: url({!$Resource.item_row_bg});
+    background-repeat: repeat-x;
+    background-position: center center;
+    border-width: 4px;
+    border-style: solid;
+    border-color: #52A3FF;
+    width: 100%;
+    /*max-width: 960px;*/
+    /*min-width: 320px;*/
+}
+#datatable table tr {
+    height: 0px;
+}
+#datatable table tr.divider, #datatable table tr.divider:hover {
+    background: none;
+    height: 25px;
+}
+#datatable table tr.divider td, #datatable table tr.divider:hover td {
+    background-color: #000;
+    height: 25px;
+    border: none;
+}
+#datatable table tr td {
+    vertical-align: middle;
+    height: 50%;
+    padding-top: 5px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 5px;
+    color:#FFF;
+}
+#datatable table tr td.age {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+    font-size: 130%;
+    font-weight: bold;
+    padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 20px;
+}
+.age.tech {
+    background-position: 0 center;
+    background-repeat: no-repeat;
+    display: table-cell;
+}
+#datatable table tr td.age.tech {
+    background-image: url({!$Resource.tech});
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+#datatable table tr td.age.spex {
+    background-image: url({!$Resource.spex});
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+#datatable table tr td.age .tag {
+    background-repeat: no-repeat;
+    height: 125px;
+    width: 90px;
+    padding-top: 10px;
+    padding-right: 0px;
+    padding-bottom: 10px;
+    padding-left: 0px;
+    background-image: url({!$Resource.mid_tag_sprite});
+}
+#datatable table tr .age div div {
+    font-size: 80%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: normal;
+    padding-top: 40px;
+}
+#datatable table tr td.age .Red {
+    background-position: -180px 0px;
+}
+#datatable table tr td.age .Red div {
+    color: #C48888;
+}
+#datatable table tr td.age .Yellow {
+    background-position: -90px 0px;
+}
+#datatable table tr td.age .Yellow div {
+    color: #EADCAC;
+}
+#datatable table tr td.age .Green {
+    background-position: 0px 0px;
+}
+#datatable table tr td.age .Green div {
+    color: #99B995;
+}
+#datatable table tr td.open_aog {
+}
+#datatable table tr td.open_aog .account {
+    font-size: 110%;
+    font-weight: bold;
+    display: block;
+}
+#datatable table tr td.open_aog .location {
+    font-size: 110%;
+}
+#datatable table tr td.open_aog .scheduled {
+    font-size: 110%;
+    color: #CAFFB9;
+}
+#datatable table tr td .status {
+    font-size: 80%;
+    font-weight: bold;
+    color: #FFD737;
+}
+#datatable table tr td .star {
+    background-image: url({!$Resource.mid_star_sprite});
+    background-repeat: no-repeat;
+    height: 45px;
+    width: 90px;
+    float: right;
+    margin-right: 10px;
+    background-position: 0px 0px;
+}
+#datatable table tr td .star.one {
+    background-position: 0px -45px;
+}
+#datatable table tr td .star.blue {
+    background-position: -90px 0px;
+}
+#datatable table tr td .star.blue.one {
+    width: 60px;
+    margin-right: 40px;
+    background-position: -90px -45px;
+}
+
+#datatable table tr td .two {
+    width: 60px;
+    margin-right: 40px;
+}
+#datatable table tr td .three {
+    width: 90px;
+}
+#datatable table tr td.case_owner {
+    font-size: 80%;
+    font-weight: bold;
+}
+#datatable table tr td.updated {
+    font-size: 160%;
+    letter-spacing: 1em;
+    font-weight: bolder;
+}
+#datatable table tr td.updated div {
+    padding: 10px;
+    margin-top: 10px;
+    background-color: #333;
+    border: 1px solid #FFF;
+    margin-right: 10px;
+}
+#datatable table p {
+    font-size: 80%;
+    margin: 0px;
+}
+#datatable table p span {
+    color: #73A7E0;
+}
+#footerow {
+    background-image: url({!$Resource.footer_bg});
+    font-size: 18px;
+    background-position: center top;
+    height: 45px;
+    background-repeat: repeat-x;
+    bottom: 0;
+    margin-left: auto;
+    margin-right: auto;
+    position: fixed;
+    text-align: center;
+    width: 100%;
+}
+#footerow .button {
+    background-image: url({!$Resource.samsung_dashboard_buttons});
+    background-repeat: no-repeat;
+    height: 64px;
+    width: 126px;
+    display: table-cell;
+    border: none;
+    padding: 0px;
+}
+#footerow .button.home {
+    background-position: 0px -192px;
+}
+#footerow .button.scroll {
+    background-position: -126px 0px;
+}
+#footerow .button.stop {
+    background-position: -126px -64px;
+}
+#footerow .button.hrs24 {
+    background-position: 0px -64px;
+}
+#footerow .button.hrs4 {
+    background-position: 0px 0px;
+}
+#footerow .button.std{
+    background-position: 0 -128px;
+    padding-left: 6px;
+    padding-top: 20px;
+    width: 120px;
+}
+#footerow li:hover .button.std{
+    background-position: -126px -128px;
+}
+#fancybox-wrap{
+    top: 0px !important;
+}
+#footerow i.icon {
+    float: left;
+}
+i.icon {
+    background-image: url({!$Resource.samsung_dashboard_buttons});
+    height: 28px;
+    width: 25px;
+    display: block;
+}
+i.icon.region {
+    background-position: -126px -192px;
+}
+i.icon.type {
+    background-position: -152px -192px;
+}
+i.icon.sbu {
+    background-position: -177px -192px;
+}
+.totals {
+    font-family: Verdana,Geneva,sans-serif;
+    font-size: 26px;
+    text-align: left;
+}
+.totals span {
+    color: #0084CA;
+}
+#fancybox-content .pop-up_columns {
+    font-size: 16px !important;
+}
+</style>
+<style type="text/css">
+.custom_dropdown {
+    display: block;
+    float: left;
+}
+.custom_dropdown ul{
+    display: block;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+.custom_dropdown ul.main ul {
+    display: none;
+    position: absolute;
+    background-color: #54677E;
+    left: 0px;
+    bottom: 64px;
+    z-index: 999;
+    width: 125px;
+    
+    border-radius: 5px 5px 0px 0px; 
+    
+    box-shadow: 0 -5px 10px rgba(0, 0, 0, 1);
+    -webkit-box-shadow: 0 -5px 10px rgba(0, 0, 0, 1);
+    -moz-box-shadow: 0 -5px 10px rgba(0, 0, 0, 1);
+    FILTER: Glow(Color=#000000, Strength=8);
+}
+.custom_dropdown ul.main ul li {
+    height: 25px;
+    padding-top: 10px;
+}
+.custom_dropdown ul.main ul li:hover {
+    background-color: #6F859F;  
+}
+.custom_dropdown ul.main li a{
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+    color: #FFF;
+    width: 100%;
+}
+.custom_dropdown ul.main li {
+    display: block;
+    text-align: center;
+}
+.custom_dropdown ul.main li:hover{
+    position:relative;
+}
+.custom_dropdown ul.main li:hover ul{
+    display:block;
+}
+</style>
+</head>
+<body>
+<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" id="headerow">
+
+  <apex:outputpanel layout="none" rendered="{!(SelectedReg!='' || SelectedType!='' || SelectedSBU!='')}" >
+  <style>body{ padding-top: 225px; }</style>
+  <tr>
+  <td background="{!$Resource.topbar_arrow_bg}">
+  <table border="0" cellpadding="0" cellspacing="0" style="height:45px;width:100%"><tr>
+  <td width="20%" align="center" background="{!$Resource.topbar_arrow_mid}">Currently Viewing:</td>
+  <td width="24"><img src="{!$Resource.topbar_arrow_tip}" width="24" height="45"/></td>
+  <td style="padding-left:10px;color:#EDC500">
+      <em>
+        {!IF(SelectedReg!='',' Region:'+SelectedReg+' |','')}
+        {!IF(SelectedType!='',' Type:'+SelectedType+' |','')}
+        {!IF(SelectedSBU!='',' SBU:'+SelectedSBU+' |','')}
+      </em>
+      <a href="{!serverUrl}AOGRealTimeReport/AOG_Dashboard_touch" style="color: #FFFFFF;text-decoration: underline;"><img src="{!$Resource.filters_icon}" style="vertical-align: middle;" alt="filters" width="16" height="16" border="0" /> Reset Filters</a>
+  </td>
+  </tr></table>
+  </td></tr>
+    
+  </apex:outputpanel>
+
+  <tr align="center" valign="middle">
+    <td colspan="5" style="background-color:#000;">
+      <div class="non-flash_container">
+          <h1>{!countclosed}</h1>
+          <img src="{!$Resource.nonflash_header}" alt="{!countclosed} AOG's closed today" width="100%" />
+      </div>
+    </td>
+  </tr>
+  <tr align="center" valign="middle">
+    <td height="67" colspan="5" style="background-image: url({!$Resource.top_header});">    
+    <table border="0" align="center" cellpadding="0" cellspacing="0">
+      <tr align="left" valign="middle">
+        <th height="67" class="age" style="text-align: center;">AGE</th>
+        <th height="67" class="case_owner">CASE/OWNER</th>
+        <th height="67" class="status">STATUS</th>
+        <th height="67" class="service_level">SERVICE LEVEL</th>
+      </tr>
+    </table></td>
+  </tr>
+</table>
+
+<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" id="datatable">
+  <apex:repeat value="{!cases}" var="cas" >
+  <tr>
+    <td align="center">
+    
+      <a href="{!serverUrl}AOGRealTimeReport/AOG_getCase?CASE={!cas.Id}" class="popup_details">
+      <table border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td rowspan="2" align="center" valign="middle" class="age {!IF((cas.SPEX_Exchange__c),"spex",IF(cas.Case_Record_Type__c=='Technical Issue',"tech",""))}">
+          <div class="tag {!cas.AOG_Service_level__c}"><span>{!cas.Age_in_Hours__c}</span>
+            <div>Updated:<br />{!cas.Last_Modified_Text__c} ago</div>
+          </div></td>
+          <td colspan="2" class="open_aog">
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Superior' && cas.X4_Hour_AOG__c=='24-hour' ),true,false)}" >    
+                <div class="star three"></div>
+                </apex:outputpanel>
+                 
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Comprehensive' && cas.X4_Hour_AOG__c=='24-hour' ),true,false)}" >
+                 <div class="star two"></div>
+                </apex:outputpanel>
+                  
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Standard' && cas.X4_Hour_AOG__c=='24-hour' ),true,false)}" >
+                 <div class="star one"></div>
+                </apex:outputpanel>
+                
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Refer to Network' && cas.X4_Hour_AOG__c=='24-hour' ),true,false)}" >
+                 <div class="star half"></div>
+                </apex:outputpanel>
+                     
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Superior' && cas.X4_Hour_AOG__c=='4-hour' ),true,false)}" >
+                 <div class="star blue three"></div> 
+                </apex:outputpanel>
+                
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Comprehensive' && cas.X4_Hour_AOG__c=='4-hour' ),true,false)}" >
+                 <div class="star blue two"></div>
+                </apex:outputpanel>
+                      
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Standard' && cas.X4_Hour_AOG__c=='4-hour' ),true,false)}" >
+                 <div class="star blue one"></div>
+                </apex:outputpanel>
+                
+                <apex:outputpanel rendered="{!IF((cas.Service_Level__c=='Refer to Network' && cas.X4_Hour_AOG__c=='4-hour' ),true,false)}" >
+                 <div class="star blue half"></div>
+                </apex:outputpanel>
+                
+          <div class="account">{!cas.Account_Name__c}</div>{!cas.Aircraft_Type__r.Name}<br />
+            <span class="case_owner">
+            {!RIGHT(cas.CaseNumber,7)} - {!cas.OwnerName__c}
+            </span>
+            <div class="status">{!IF(cas.Sub_Status__c!=null,cas.Sub_Status__c,"New AOG - TBD")}</div>
+          </td>
+        </tr>
+        <tr>
+          <td width="50%">
+            <p>{!cas.Aircraft_Location__c}</p>
+            <p>{!cas.Next_Flight_Out_Date__c}</p>
+          </td>
+          <td width="50%">
+            <p>{!cas.Product_Part__c} - {!LEFT(cas.Product_Name__c,20)}</p>
+            <p>{!cas.Hardware_Ship_From_Address__c}</p>
+          </td>
+        </tr>
+    </table>
+    </a>
+    
+    </td>
+  </tr>
+  </apex:repeat>   
+  <apex:outputPanel rendered="{!IF( ((currentId!='24' && Fourcount == 0) || (currentId=='24' && TwentyFourcount == 0)),'true','false' )}">
+  <tr><td>
+      <apex:image value="{!$Resource.mobile_4hrs}" width="100%" rendered="{!IF(currentId!='24' && Fourcount == 0, 'true','false') }" />
+      <apex:image value="{!$Resource.mobile_24hrs}" width="100%" rendered="{!IF(currentId=='24' && TwentyFourcount == 0, 'true','false') }" />
+  </td></tr>
+  </apex:outputPanel>
+  
+</table>
+<table width="750px" align="center" class="totals">
+    <tr><td>Open 4-Hour AOGs</td><td><span>{!Fourcount} ({!sla4hr} % within SLA)</span></td></tr>
+    <tr><td>Open 24-Hour AOGs</td><td><span>{!TwentyFourcount} ({!sla24hr} % within SLA)</span></td></tr>
+    <tr><td>Total Open AOGs</td><td><span>{!totalcount}</span></td></tr>
+    <tr><td>Total Open Technical AOGs</td><td><span>{!TechnicalCount}</span></td></tr>
+    <tr><td>Total Technical AOGs Closed Today</td><td><span>{!ClosedTechnicalCount}</span></td></tr>
+</table>
+<!-- TOOLBAR -->
+
+<div id="footerow">
+<div style="padding-bottom: 10px;"><a href="#" class="trigger"><img src="{!$Resource.options_tab}" width="226" height="37" border="0" /></a></div>
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+
+<td width="20%" align="center" valign="top" style="padding-left: 20px;"><a title="Go back to Home" id="home" href="#" class="button home">&nbsp;</a></td>
+
+<td width="20%" align="center" valign="top">
+
+    <table border="0" align="center" cellpadding="0" cellspacing="0"><tbody>
+    <tr>
+    <td>
+    <div class="custom_dropdown">  
+      <ul class="main">
+          <li>
+              <span>              
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedReg=='All'),true,IF((SelectedReg==''),true,false))}" ><a title="Change Region" id="tggl_region" href="#" class="button std"><i class="icon region"></i>All Regions</a></apex:outputpanel>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedReg=='Americas'),true,false)}" ><a title="Change Region" id="tggl_region" href="#" class="button std"><i class="icon region"></i>Americas</a></apex:outputpanel>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedReg=='Asia/Pacific Rim'),true,false)}" ><a title="Change Region" id="tggl_region" href="#" class="button std"><i class="icon region"></i>APAC</a></apex:outputpanel>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedReg=='Europe/MiddleEast/Africa/India'),true,false)}" ><a title="Change Region" id="tggl_region" href="#" class="button std"><i class="icon region"></i>EMEAI</a></apex:outputpanel>
+              </span>
+              <ul>
+                  <li><a href="?region=All">All Regions</a></li>
+                  <li><a href="?region=Asia%2FPacific%20Rim">APAC</a></li>
+                  <li><a href="?region=Europe%2FMiddleEast%2FAfrica%2FIndia">EMEAI</a></li>
+                  <li><a href="?region=Americas">Americas</a></li>
+              </ul>
+           </li>
+      </ul>
+    </div></td>
+    </tr>
+    </tbody></table>
+</td>
+
+<td width="20%" align="center" valign="top">
+
+    <table border="0" align="center" cellpadding="0" cellspacing="0"><tbody>
+    <tr>
+    <td>
+    <div class="custom_dropdown">  
+      <ul class="main">
+          <li>
+              <span>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedType=='All'),true,IF((SelectedType==''),true,false))}" ><a title="Change Type" id="tggl_region" href="#" class="button std"><i class="icon type"></i>All Types</a></apex:outputpanel>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedType=='Technical'),true,false)}" ><a title="Change Type" id="tggl_region" href="#" class="button std"><i class="icon type"></i>Technical</a></apex:outputpanel> 
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedType=='NonTechnical'),true,false)}" ><a title="Change Type" id="tggl_region" href="#" class="button std"><i class="icon type"></i>Non-Tech</a></apex:outputpanel> 
+              </span> 
+              <ul>
+                  <li><a href="?type=All">All Types</a></li>
+                  <li><a href="?type=Technical&id=24">Technical</a></li>
+                  <li><a href="?type=NonTechnical">Non-Tech</a></li>
+              </ul>
+           </li>
+      </ul>
+    </div></td>
+    </tr>
+    </tbody></table>
+</td>
+
+<td width="20%" align="center" valign="top">
+
+    <table border="0" align="center" cellpadding="0" cellspacing="0"><tbody>
+    <tr>
+    <td>
+    
+    <div class="custom_dropdown">  
+      <ul class="main">
+          <li>
+              <span>
+              
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedSBU=='All'),true,IF((SelectedSBU==''),true,false))}" ><a title="Change SBU" id="tggl_region" href="#" class="button std"><i class="icon sbu"></i>All SBU</a></apex:outputpanel>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedSBU=='BGA'),true,false)}" ><a title="Change SBU" id="tggl_region" href="#" class="button std"><i class="icon sbu"></i>BGA</a></apex:outputpanel>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedSBU=='ATR'),true,false)}" ><a title="Change SBU" id="tggl_region" href="#" class="button std"><i class="icon sbu"></i>ATR</a></apex:outputpanel>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedSBU=='D&S'),true,false)}" ><a title="Change SBU" id="tggl_region" href="#" class="button std"><i class="icon sbu"></i>D&amp;S</a></apex:outputpanel>
+              <apex:outputpanel layout="none" rendered="{!IF((SelectedSBU=='Intercompany'),true,false)}" ><a title="Change SBU" id="tggl_region" href="#" class="button std"><i class="icon sbu"></i>Intercomp.</a></apex:outputpanel>
+              
+              </span> 
+              <ul>
+                  <li><a href="?sbu=All">All SBU</a></li>
+                  <li><a href="?sbu=BGA">BGA</a></li>
+                  <li><a href="?sbu=ATR">ATR</a></li>
+                  <li><a href="?sbu=D%26S">D&amp;S</a></li>
+                  <li><a href="?sbu=Intercompany">Intercompany</a></li>
+              </ul>
+           </li>
+      </ul>
+    </div>
+    
+    </td>
+    </tr></tbody></table>
+
+</td>
+
+<td width="20%" align="center" valign="top">
+
+<table border="0" align="center" cellpadding="0" cellspacing="0"><tbody><tr><td valign="middle">
+
+    <apex:outputpanel layout="none" rendered="{!IF((currentId!='24'),true,false)}" ><td><a href="?id=24" id="tggl_hours" class="button hrs24" title="View All Cases">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></td></apex:outputpanel>
+    <apex:outputpanel layout="none" rendered="{!IF((currentId=='24'),true,false)}" ><td><a href="?id=4" id="tggl_hours" class="button hrs4" title="View 4 Hour Cases">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a></td></apex:outputpanel>
+
+</td></tr></tbody></table>
+
+</td>
+
+</tr>
+</table>
+</div>
+
+</body>
+</html>
+<apex:insert name="footer">
+        <c:honeywellFooter />
+</apex:insert>
+
+</apex:page>

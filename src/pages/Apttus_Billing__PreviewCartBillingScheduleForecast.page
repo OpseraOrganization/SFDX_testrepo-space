@@ -1,0 +1,338 @@
+<!-- 
+    Apttus Billing 
+    PreviewCartBillingScheduleForecast
+ 
+    @2013-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Config2__ProductConfiguration__c" extensions="Apttus_Billing.CartForecastBillingScheduleController" tabStyle="Apttus_Config2__ProductConfiguration__c"
+                                         showHeader="{!showHeadbar}" sidebar="{!showSidebar}" readOnly="true">
+   <style type="text/css">
+      .col0 { width:15%; text-align:left; }
+      .col1 { width:14%; text-align:center; }
+      .col2 { width:14%; text-align:center; }
+      .col3 { width:14%; text-align:center; } 
+      .col4 { width:15%; text-align:center; }
+      .col5 { width:14%; text-align:center; }
+      .col6 { width:14%; text-align:center; } 
+      .col7 { width:12%; text-align:center; }             
+   </style> 
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/jquery.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/jquery.jqplot.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.barRenderer.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.enhancedLegendRenderer.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.categoryAxisRenderer.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.highlighter.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.canvasTextRenderer.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.canvasAxisLabelRenderer.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.canvasAxisTickRenderer.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.pointLabels.min.js')}"></script>
+   <script type="text/javascript" src="{!URLFOR($Resource.BillingChartsLib, 'js/plugins/jqplot.cursor.min.js')}"></script>
+   <apex:stylesheet value="{!URLFOR($Resource.Apttus_Billing__BillingChartsLib, 'css/jquery.jqplot.min.css')}" /> 
+   <script type="text/javascript">      
+      
+      function getPeriodStr(name) {
+        var retStr = name;
+        switch (name.substring(0, 3)) {
+          case 'Jan':
+             retStr = retStr.replace('Jan', '01');
+             break;
+          case 'Feb':
+             retStr = retStr.replace('Feb', '02');
+             break;
+          case 'Mar':
+             retStr = retStr.replace('Mar', '03');
+             break;
+          case 'Apr':
+             retStr = retStr.replace('Apr', '04');
+             break;
+          case 'May':
+             retStr = retStr.replace('May', '05');
+             break;
+          case 'Jun':
+             retStr = retStr.replace('Jun', '06');
+             break;
+          case 'Jul':
+             retStr = retStr.replace('Jul', '07');
+             break;
+          case 'Aug':
+             retStr = retStr.replace('Aug', '08');
+             break;
+          case 'Sep':
+             retStr = retStr.replace('Sep', '09');
+             break;
+          case 'Oct':
+             retStr = retStr.replace('Oct', '10');
+             break;
+          case 'Nov':
+             retStr = retStr.replace('Nov', '11');
+             break;
+          case 'Dec':
+             retStr = retStr.replace('Dec', '12');
+             break;                                                    
+        }
+        return retStr;      
+      }
+   </script>      
+   <apex:sectionHeader title="{!$ObjectType.Apttus_Billing__BillingSchedule__c.label} {!$Label.apttus_billing__overview} {!$Label.apttus_billing__for}" subtitle="{!$Label.apttus_billing__cartwith} {!configName}" />   
+   <apex:pageMessages />
+   <apex:pageBlock id="bsOverview" title="{!$ObjectType.Apttus_Billing__BillingSchedule__c.label} {!$Label.apttus_billing__overview}" tabStyle="Apttus_Config2__ProductConfiguration__c">
+      <apex:pageBlockSection showHeader="false" columns="1">
+         <apex:panelGrid columns="7" id="theGrid" columnClasses="col0, col1, col2, col3, col4, col5, col6" width="100%" cellpadding="5" cellspacing="5">
+            <apex:outputText id="theZeroth" value="" />
+            <apex:outputText style="color:#5C1F5C; font-weight: bold;" value="{!$Label.apttus_billing__pendingmilestone}" id="theFirst"/>
+            <apex:outputText style="color:#00A; font-weight: bold;" value="{!$Label.apttus_billing__pendingbilling}" id="theSecond"/>
+            <apex:outputText style="color:#29A3CC; font-weight: bold;" value="{!$Label.apttus_billing__pendinginvoiced}" id="theThird"/>
+            <apex:outputText style="color:#006600; font-weight: bold;" value="{!$Label.apttus_billing__invoiced}" id="theFourth"/>              
+            <apex:outputText style="color:#A00; font-weight: bold;" value="{!$Label.apttus_billing__cancelled}" id="theFifth"/> 
+            <!-- <apex:outputText style="color:#4F4F4F; font-weight: bold;" value="{!$Label.Superseded}" id="theSixth"/>  -->
+            <apex:outputText style="font-weight: bold;" value="{!$Label.apttus_billing__total}" id="theSeventh"/> 
+            <apex:outputText style="font-weight: bold;" value="{!$Label.apttus_billing__carttotals}"/>            
+            <apex:outputText style="color:#5C1F5C;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!pendingMilestoneAmount}"/>
+            </apex:outputText> 
+            <apex:outputText style="color:#00A;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!pendingBillingAmount}"/>
+            </apex:outputText>
+            <apex:outputText style="color:#29A3CC;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!pendingInvoicedAmount}"/>
+            </apex:outputText>                                    
+            <apex:outputText style="color:#006600;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!invoicedAmount}"/>
+            </apex:outputText>                           
+            <!-- <apex:outputText style="color:#4F4F4F;" value="{0, number, {!acctCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!supersededAmount}"/>
+            </apex:outputText> -->
+            <apex:outputText style="color:#A00;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!cancelledAmount}"/>
+            </apex:outputText>                                         
+            <apex:outputText value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!totalAmount}"/>
+            </apex:outputText> 
+            <apex:outputText style="font-weight: bold;" value="{!$Label.apttus_billing__carttotals} ({!$Label.apttus_billing__filtered})"/>            
+            <apex:outputText style="color:#5C1F5C;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!pendingMilestoneAmountFiltered}"/>
+            </apex:outputText> 
+            <apex:outputText style="color:#00A;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!pendingBillingAmountFiltered}"/>
+            </apex:outputText>
+            <apex:outputText style="color:#29A3CC;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!pendingInvoicedAmountFiltered}"/>
+            </apex:outputText>                        
+            <apex:outputText style="color:#006600;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!invoicedAmountFiltered}"/>
+            </apex:outputText>                           
+            <!-- <apex:outputText style="color:#4F4F4F;" value="{0, number, {!acctCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!supersededAmountFiltered}"/>
+            </apex:outputText> -->
+            <apex:outputText style="color:#A00;" value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!cancelledAmountFiltered}"/>
+            </apex:outputText>                                         
+            <apex:outputText value="{0, number, {!configCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!totalAmountFiltered}"/>
+            </apex:outputText>                   
+         </apex:panelGrid>      
+      </apex:pageBlockSection>   
+   </apex:pageBlock>
+   <apex:form id="invPreviewForm">
+      <apex:actionFunction action="{!doGraphClickFilter}" name="refreshTableOnGraphClick" reRender="theGrid, bsPgBlk">
+         <apex:param name="periodStr" value=""/>
+         <apex:param name="clkdStatus" value=""/>
+      </apex:actionFunction>
+      <apex:actionFunction action="{!doGraphLegendClickFilter}" name="refreshTableOnGraphLegendClick" reRender="theGrid, bsPgBlk">
+         <apex:param name="periodStr" value=""/>
+         <apex:param name="clkdStatus" value=""/>
+      </apex:actionFunction>      
+      <apex:outputPanel style="float:right;">
+         <apex:selectList id="priceTypeChkBx" style="margin-bottom:4px;" value="{!fltrPriceTypeStr}" size="1" multiselect="false">
+            <apex:selectOptions value="{!priceTypeOptions}"/>
+            <apex:actionSupport event="onchange" reRender="bsPgBlk, chrtBlk, theGrid" action="{!doFilter}" />
+         </apex:selectList>          
+      </apex:outputPanel>   
+      <apex:outputPanel style="float:right;">
+         <apex:outputText value="{!$Label.apttus_billing__commonfilters}: "/>            
+         <apex:selectList id="productPkLst" style="margin-bottom:4px;" value="{!fltrProductStr}" size="1" multiselect="false">
+            <apex:selectOptions value="{!productValues}" />
+            <apex:actionSupport event="onchange" reRender="bsPgBlk, chrtBlk, theGrid" action="{!doFilter}" />
+         </apex:selectList>
+         <apex:selectList id="yearPkLst" style=" margin-bottom:4px;" value="{!fltrYearStr}" size="1" multiselect="false">
+            <apex:selectOptions value="{!yearValues}" />
+            <apex:actionSupport event="onchange" reRender="bsPgBlk, chrtBlk, theGrid" action="{!doFilter}" />
+         </apex:selectList>                               
+      </apex:outputPanel>  
+      <br /> 
+      <br /> 
+      <div style="margin-left: auto; margin-right: auto">
+         <apex:outputPanel id="chrtBlk" layout="block" style="width:100%;">
+          <div id="chart_div" style="min-height:550px;height:auto !important;"></div> 
+          <script type="text/javascript">
+             
+             var dataArray = new Array();
+             var legendArray = ['Pending Milestone', 'Pending Billing', 'Pending Invoiced', 'Invoiced', 'Cancelled'];
+             var ticksArray = new Array();
+             var pendingMileStoneArray = new Array();
+             var pendingBillingArray = new Array();
+             var pendingInvoicedArray = new Array();
+             var InvoicedArray = new Array();
+             var cancelledArray = new Array();
+             
+             var dataExists = {!chartData.size > 0};
+             //alert(dataExists);
+             if(dataExists) {
+                 <apex:repeat value="{!chartData}" var="cD" >
+                   var tempArray = new Array();
+                   ticksArray.push('{!cD.name}');
+                   pendingMileStoneArray.push({!cD.pendingMilestoneAmount});
+                   pendingBillingArray.push({!cD.pendingBillingAmount});
+                   pendingInvoicedArray.push({!cD.pendingInvoicedAmount});
+                   InvoicedArray.push({!cD.invoicedAmount});
+                   cancelledArray.push({!cD.cancelledAmount});                   
+                 </apex:repeat> 
+                 dataArray.push(pendingMileStoneArray);
+                 dataArray.push(pendingBillingArray);
+                 dataArray.push(pendingInvoicedArray);
+                 dataArray.push(InvoicedArray);
+                 dataArray.push(cancelledArray);
+             } else {
+               dataArray.push([0, 0, 0, 0, 0]);
+             }
+             //console.log(dataArray);
+            $jk = jQuery.noConflict(); 
+            $jk(document).ready(function(){
+              plot3 = $jk.jqplot('chart_div', dataArray, {
+                // Tell the plot to stack the bars.
+                stackSeries: true,
+                captureRightClick: true,
+                seriesColors: ['#5C1F5C', '#00A', '#29A3CC', '#006600', '#A00'],
+                negativeSeriesColors: ['#5C1F5C', '#00A', '#29A3CC', '#006600', '#A00'],
+                seriesDefaults:{
+                  renderer:$jk.jqplot.BarRenderer,
+                  rendererOptions: {
+                      // Put a 3 pixel margin between bars.
+                      barMargin: 3,
+                      // Highlight bars when mouse button pressed.
+                      // Disables default highlighting on mouse over.
+                      highlightMouseDown: true,
+                      fillToZero: true,
+                      varyBarColor: true  
+                  },
+                  pointLabels: {
+                      show: true,
+                      formatString: '%d',
+                      hideZeros: true
+                  }
+                },
+                axes: {
+                  xaxis: {
+                      renderer: $jk.jqplot.CategoryAxisRenderer,
+                      tickRenderer: $jk.jqplot.CanvasAxisTickRenderer,
+                      tickOptions:{
+                        formatString:'%b',
+                        angle: -90
+                      },                      
+                      ticks: ticksArray
+                  },
+                  yaxis: {
+                    // Don't pad out the bottom of the data range.  By default,
+                    // axes scaled as if data extended 10% above and below the
+                    // actual range to prevent data points right on grid boundaries.
+                    // Don't want to do that here.
+                    padMin: 0,
+                    tickOptions: { formatString: "%#.2f" },
+                    //min: 0
+                    label: '{!$Label.Amount}'
+                  }
+                },
+                legend: {
+                  renderer: $jk.jqplot.EnhancedLegendRenderer,
+                  show: true,
+                  location: 'n',
+                  labels: legendArray,
+                  placement: 'outsideGrid',
+                  showSwatches: true,
+                  rendererOptions: {
+                   numberRows: '1',
+                  }
+                },
+                highlighter: {
+                  show: true,
+                  useAxesFormatters: true,
+                  sizeAdjust: 7.5,                
+                  bringSeriesToFront: true,
+                  tooltipContentEditor: function(str, seriesIndex, pointIndex, plot) {
+                        return '<table class="tooltip-info" style="font-family: Arial; font-size: 10pt;"> <tr><td>'+ ticksArray[pointIndex] 
+                               + ': ' + str.substring(str.indexOf(',') + 1, str.length) + '</td></tr></table>';
+                  }
+                },
+                cursor: {
+                  show: false
+                }      
+              });
+              // Bind a listener to the "jqplotDataClick" event.  Here, simply change
+              // the text of the info3 element to show what series and ponit were
+              // clicked along with the data for that point.
+              $jk('#chart_div').bind('jqplotDataClick', 
+                function (ev, seriesIndex, pointIndex, data) {
+                  //$('#info3').html('series: '+seriesIndex+', point: '+pointIndex+', data: '+data);
+                  //console.log('series: '+seriesIndex+':'+legendArray[seriesIndex]+', point: '+pointIndex+':'+ticksArray[pointIndex]+', data: '+data);
+                  refreshTableOnGraphClick(getPeriodStr(ticksArray[pointIndex]), legendArray[seriesIndex]);
+                }
+              );
+              /*$jk('.jqplot-table-legend-label').each(function() {
+                  $jk(this).click(function(){
+                        alert('you have clicked on the serie : ' + $jk(this).html());
+                        refreshTableOnGraphLegendClick('', $jk(this).html());
+                  });
+              });*/            
+            });               
+          </script>         
+            
+         </apex:outputPanel>           
+      </div>     
+      <apex:pageBlock title="{!$ObjectType.Apttus_Billing__BillingSchedule__c.labelPlural}" id="bsPgBlk" tabStyle="InvoiceRun__c">
+         <apex:outputPanel style="float:right;">
+            <apex:outputText value="{!$Label.apttus_billing__filter}: "/>
+            <apex:selectList id="monthYearPkLst" style=" margin-bottom:4px;" value="{!fltrPeriodStr}" size="1" multiselect="false">
+               <apex:selectOptions value="{!monthYearValues}" />
+               <apex:actionSupport event="onchange" reRender="theGrid, bsPgBlk" action="{!doTableFilter}"/>
+             </apex:selectList>              
+         </apex:outputPanel>
+         <br/>
+        <apex:outputPanel rendered="{!IF(billingSchedules.size == 0, true, false)}">
+           <apex:outputText value=" {!$Label.apttus_billing__norecordsfound}. "/>
+        </apex:outputPanel>                           
+        <apex:pageBlockTable title="Billing Schedules" value="{!billingSchedules}" var="fbs" id="bsTable" rendered="{!IF(billingSchedules.size > 0, true, false)}">
+           <apex:column value="{!fbs.billingSchedule.Apttus_Billing__ReadyForInvoiceDate__c}"/>
+           <apex:column headerValue="{!$ObjectType.Product2.Fields.Name.Label}" value="{!fbs.productName}"/>
+           <apex:column headerValue="{!$ObjectType.Apttus_Config2__LineItem__c.Fields.Apttus_Config2__ChargeType__c.Label}" value="{!fbs.chargeType}"/>
+           <apex:column headerValue="{!$ObjectType.Apttus_Config2__LineItem__c.Fields.Apttus_Config2__PriceType__c.Label}" value="{!fbs.priceType}"/>
+           <apex:column value="{!fbs.billingSchedule.Apttus_Billing__PeriodStartDate__c}"/>
+           <apex:column value="{!fbs.billingSchedule.Apttus_Billing__PeriodEndDate__c}"/>
+           <apex:column value="{!fbs.billingSchedule.Apttus_Billing__FeeAmount__c}"/>
+           <apex:column value="{!fbs.billingSchedule.Apttus_Billing__Status__c}"/>
+        </apex:pageBlockTable> 
+        <apex:outputPanel layout="none" rendered="{!IF(billingSchedules.size > 0, true, false)}">
+           <!--<apex:outputPanel style="float:left;">  
+              <apex:outputText value=" {!$Label.View} "/>
+              <apex:selectList id="limitPkLst" style="margin-bottom:4px;" value="{!limitSize}" size="1" multiselect="false">
+                 <apex:selectOptions value="{!pageSizeValues}" />
+                 <apex:actionSupport event="onchange" reRender="bsPgBlk" action="{!doPageSizeChange}"/>
+              </apex:selectList>
+              <apex:outputText value=" {!$Label.recordsperpage}." />
+           </apex:outputPanel> -->
+         <apex:outputPanel >
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+         </apex:outputPanel>
+         <!--<apex:commandButton value="{!$Label.First}" rerender="bsPgBlk" action="{!firstPage}" disabled="{!IF(offsetSize == 0, true, false)}"/>
+         <apex:commandButton value="{!$Label.Previous}" rerender="bsPgBlk" action="{!previousPage}" disabled="{!IF(offsetSize == 0, true, false)}"/>
+         <apex:outputText value=" {!$Label.Showingpage}  {!currentPage}   {!$Label.Of}   {!numPages}  " />
+         <apex:commandButton value="{!$Label.Next}" rerender="bsPgBlk" action="{!nextPage}" disabled="{!IF(offsetSize + limitSize > totalRecs, true, false)}"/>
+         <apex:commandButton value="{!$Label.Last}" rerender="bsPgBlk" action="{!lastPage}" disabled="{!IF(offsetSize + limitSize > totalRecs, true, false)}"/>-->  
+         <apex:outputPanel style="float:right;">
+           <apex:outputText style="valign:top;" value="  {!$Label.apttus_billing__totalnumberofrecords}: {!totalRecs}  " />
+         </apex:outputPanel>                    
+        </apex:outputPanel>    
+      </apex:pageBlock> 
+   </apex:form>  
+</apex:page>

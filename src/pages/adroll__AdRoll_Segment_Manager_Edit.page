@@ -1,0 +1,122 @@
+<apex:page tabStyle="AdRoll_Audience_Manager__tab" standardStylesheets="false" sidebar="false" docType="html-5.0" applyBodyTag="False" applyHtmlTag="true" controller="adroll.SegmentVFC" >
+  <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <title>AdRoll Segment Manager</title>
+        <apex:slds />
+
+        <style>
+          .page-wrapper {padding: 0 2rem;}
+          div.addroll-settings button.slds-button--icon-success {color: #4bca81;}
+          div.addroll-settings button.slds-button--icon-warning {color: #ffb75d;}
+          div.addroll-settings .tooltip-container a {
+            display: inline-block;
+            padding: 1rem;
+          }
+        </style>
+        <c:SentryScriptComponent />
+        <c:DataIngestionPopupComponent />
+        <script type="text/javascript">
+
+          Visualforce.remoting.timeout = 120000; // Set timeout at page level to allow more time for large amount of records
+          appSettings = {
+
+            config: {
+              staticResourceBaseUrl: '{!URLFOR($Resource.adroll_segment_manager_edit)}'
+              , assetsStaticResourceBaseUrl: '{!URLFOR($Resource.adroll_assets)}'
+              , segmentEditUrl: '{!$Page.Adroll_Segment_Manager_Edit}'
+              , segmentId: '{!$CurrentPage.parameters.id}'
+              , segmentObjectOptions: '{!segmentObjectOptions}'
+              , uiThemeDisplayed: '{!$User.UIThemeDisplayed}'
+              , segmentManagerUrl: '{!getSegmentManagerPageURL}'
+              , advertisableEid: '{!getAdvertisableEid}'
+            },
+
+            remoteActions: {
+
+              // Segment Manager
+              getSegment: '{!$RemoteAction.SegmentVFC.getSegment}'
+              , saveSegment: '{!$RemoteAction.SegmentVFC.saveSegment}'
+              , getAvailableFields: '{!$RemoteAction.SegmentVFC.getAvailableFields}'
+              , getAllNames: '{!$RemoteAction.SegmentVFC.getAllNames}'
+              , getSegmentSnapshot: '{!$RemoteAction.SegmentVFC.getSegmentSnapshot}'
+              , deleteSegment: '{!$RemoteAction.SegmentVFC.deleteSegment}'
+              , lookupByName: '{!$RemoteAction.SegmentVFC.lookupByName}'
+              , liveSnapShot: '{!$RemoteAction.SegmentVFC.liveSnapshotCompanyList}'
+            },
+            localActions: {
+                doRedirect: function(url){
+                    // This is to check if the page is being rendered in lightning,
+                    // sforce object is only available in lightning experience
+                    // it's undefined in classic experience
+                    if (typeof sforce !== 'undefined' ) {
+                        sforce.one.navigateToURL(url, true);
+                    } else {
+                        // Can use window.location.href for Salesforce classic
+                        window.location.href = url;
+                    }
+                },
+            },
+            labels: {
+              adrollABM: "{! JSENCODE($Label.AdrollABM) }"
+              , title: "{! JSENCODE($Label.SegmentManager_Title) }"
+              , createSegment: "{! JSENCODE($Label.SegmentManager_CreateSegment) }"
+              , editSegment: "{! JSENCODE($Label.SegmentManager_EditSegment) }"
+              , whichObjects: "{! JSENCODE($Label.SegmentManager_WhichObjects) }"
+              , name: "{! JSENCODE($Label.SegmentManager_Col_Name) }"
+              , description: "{! JSENCODE($Label.SegmentManager_Col_Description) }"
+              , status: "{! JSENCODE($Label.SegmentManager_Col_Status) }"
+              , active: "{! JSENCODE($Label.SegmentManager_Active) }"
+              , inactive: "{! JSENCODE($Label.SegmentManager_Inactive) }"
+              , contactHeader: "{! JSENCODE($Label.SegmentManager_Contact_Header) }"
+              , leadHeader: "{! JSENCODE($Label.SegmentManager_Lead_Header) }"
+              , accountHeader : "{! JSENCODE($Label.Segment_Manager_Account_Header) }"
+              , opportunityHeader: "{! JSENCODE($Label.SegmentManager_Opportunity_Header) }"
+              , campaignHeader: "{! JSENCODE($Label.SegmentManager_Campaign_Header) }"
+              , contactInstruction: "{! JSENCODE($Label.SegmentManager_Contact_Instruction) }"
+              , leadInstruction: "{! JSENCODE($Label.SegmentManager_Lead_Instruction) }"
+              , accountInstruction: "{! JSENCODE($Label.Segment_Manager_Account_Instruction) }"
+              , opportunityInstruction: "{! JSENCODE($Label.SegmentManager_Opportunity_Instruction) }"
+              , campaignInstruction: "{! JSENCODE($Label.SegmentManager_Campaign_Instruction) }"
+              , contactRemove: "{! JSENCODE($Label.SegmentManager_Contact_Remove) }"
+              , leadRemove: "{! JSENCODE($Label.SegmentManager_Lead_Remove) }"
+              , opportunityRemove: "{! JSENCODE($Label.SegmentManager_Opportunity_Remove) }"
+              , campaignRemove: "{! JSENCODE($Label.SegmentManager_Campaign_Remove) }"
+              , accountRemove: "{! JSENCODE($Label.Segment_Manager_Account_Remove) }"
+              , addRow: "{! JSENCODE($Label.SegmentManager_AddRow) }"
+              , customGrouping: "{! JSENCODE($Label.SegmentManager_CustomGrouping) }"
+              , fieldPlaceholder: "{! JSENCODE($Label.SegmentManager_FieldPlaceholder) }"
+              , selectCampaign: "{! JSENCODE($Label.SegmentManager_SelectCampaign) }"
+              , selectCampaignPlaceholder: "{! JSENCODE($Label.SegmentManager_SelectCampaignPlaceholder) }"
+              , campaignCol_Id: "{! JSENCODE($Label.SegmentManager_CampaignCol_Id) }"
+              , campaignCol_Remove: "{! JSENCODE($Label.SegmentManager_CampaignCol_Remove) }"
+              , btnDelete: "{! JSENCODE($Label.SegmentManager_Delete) }"
+              , btnSave: "{! JSENCODE($Label.SegmentManager_Save) }"
+              , btnClose: "{! JSENCODE($Label.SegmentManager_Close) }"
+              , segmentContains: "{! JSENCODE($Label.SegmentManager_SegmentContains) }"
+              , processFailed: "{! JSENCODE($Label.Error_ProcessFailed) }"
+              , allFieldsRequired: "{! JSENCODE($Label.Error_AllFieldsRequired) }"
+              , saveSuccessful: "{! JSENCODE($Label.Confirm_SaveSuccessful) }"
+              , deleteSuccessful: "{! JSENCODE($Label.Confirm_DeleteSuccessful) }"
+              , queryFailed: "{! JSENCODE($Label.Error_QueryFailed) }"
+              , specifyCustomLogic: "{! JSENCODE($Label.SegmentManager_SpecifyCustomLogic) }"
+              , cancelCustomLogic: "{! JSENCODE($Label.SegmentManager_CancelCustomLogic) }"
+              , customLogicPlaceholder: "{! JSENCODE($Label.SegmentManager_CustomLogicPlaceholder) }"
+              , customLogicError: "{! JSENCODE($Label.Error_CustomLogic) }"
+              , nameRequired: "{! JSENCODE($Label.Segment_Manager_Name_Required)}"
+              , warningMsg: "{!JSENCODE($Label.Warning_Toaster)}"
+              , toggleNotAvailable: "{!JSENCODE($Label.Toggle_Not_Available)}"
+              , optionNotAvailable: "{!JSENCODE($Label.Option_Not_Available)}"
+              , filterLogic: "{!JSENCODE($Label.Filter_Logic)}"
+            }
+          };
+      </script>
+
+    </head>
+    <body>
+
+        <div class="addroll-settings" id="root"></div>
+        <script src="{!URLFOR($Resource.adroll_segment_manager_edit, 'bundle.js')}" />
+    </body>
+
+</apex:page>

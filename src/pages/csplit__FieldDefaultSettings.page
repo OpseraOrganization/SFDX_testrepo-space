@@ -1,0 +1,186 @@
+<apex:page controller="csplit.FieldDefaultSettingsController" tabStyle="Setup_Wizard__tab" title="Case Split Field Default Settings" sidebar="none">
+<!-- 10/25/17    SW    Updated API version from 40.0 to 41.0 -->
+<apex:includeScript value="/support/console/28.0/integration.js"/>
+<apex:includeScript value="{!$Resource.csplit__jQuery_v2_1_1}"/>
+
+<apex:slds />
+<apex:stylesheet value="{!URLFOR($Resource.csplit__CaseSplitResources,'/css/CaseSplitStyle.css')}"/>
+
+<style>
+    .slds-box {
+        margin: 14px !important;
+    }
+    .link {
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    
+    .col-head {
+        vertical-align: middle;
+    }
+    
+    .hiddenBox {
+        visibility: hidden;
+        margin-right: -15px;
+    }
+    .slds-section__title {
+        background: #ec7039 !important;
+        color: #ffffff !important;
+    }
+</style>
+<script>
+    var j$ = jQuery.noConflict();
+    
+    j$(document).ready(function() {
+
+        updateCheckAll('Original');
+    });
+    
+    function checkAllBoxes(setting) {
+        j$('.use'+setting).prop('checked', true);
+        checkAll(setting);
+    }
+    
+    function updateCheckAll(setting) {
+        if(j$('.use' + setting + ':checked').length == {!fieldSetSize})
+            j$('#checkAll'+setting).prop('checked', true);
+        else
+            j$('#checkAll'+setting).prop('checked', false);
+    }
+</script>
+
+<div class = "slds-scope">
+<c:PageHeader title="Setup Wizard"/>
+<apex:form >
+    <apex:actionFunction name="checkAll" action="{!checkAll}" oncomplete="updateCheckAll('Original');" reRender="tbl">
+        <apex:param name="checkType" value=""/>
+    </apex:actionFunction>
+    <div class="slds-box slds-section slds-is-open">
+        <div class="slds-section__title slds-section-title--divider">
+            <span >Field Set Options</span>
+        </div>
+        <apex:pageMessages />
+        <div class="slds-section__content">
+            <div style="margin:0 0 10px 10px;" role="group">
+                The Case Split Fields field set can be accessed from <a class="link" onclick="openLink('/p/setup/custent/FieldSetListUI/d?setupid=CaseFieldSets&tableEnumOrId=Case');">this page</a>.<br/><br/>
+                For each field in the field set, select whether the value from the original Case, a blank value, or the default value for the field should be displayed on the Split page. Each field label must have one checkbox checked.
+            </div>
+            <br/>
+            <div >
+                <apex:dataTable id="tbl" value="{!fieldSettings}" var="fs" styleClass="slds-table slds-table_bordered slds-table_cell-buffer">
+
+                    <apex:column style="min-width:200px;" value="{!fs.label}">
+                        <apex:facet name="header">
+                            <div class="col-head">
+                                <span class="slds-text-title_caps">Field Label</span>
+                            </div>
+                        </apex:facet>
+                    </apex:column>
+
+                    <apex:column style="width:150px;">
+                        <apex:facet name="header">
+                            <div class="col-head">
+                                <input id="checkAllOriginal" type="checkbox" onclick="checkAllBoxes('Original');"/> <span class="slds-text-title_caps">Use Original</span>
+                            </div>
+                        </apex:facet>
+                        <apex:outputPanel id="orig">
+                            <apex:inputField styleClass="useOriginal" value="{!fs.setting.csplit__UseOriginalValue__c}" onclick="updateCheckAll();" rendered="{!NOT(fs.Setting.csplit__UseOriginalValue__c)}">
+                                <apex:actionSupport event="onchange" action="{!fs.selectOriginal}" oncomplete="disableCheckboxes();" reRender="orig,blank,deflt"/>
+                            </apex:inputField>
+                            <input type="checkbox" disabled="true" styleClass="useOriginal" checked="true" style="{!IF(fs.Setting.UseOriginalValue__c==true,"display:block","display:none")}"/>
+                        </apex:outputPanel>
+                    </apex:column>
+
+                    <apex:column style="width:150px;">
+                        <apex:facet name="header">
+                            <div class="col-head">
+                                <input id="checkAllBlank" type="checkbox" onclick="checkAllBoxes('Blank');"/> <span class="slds-text-title_caps">Use Blank</span>
+                            </div>
+                        </apex:facet>
+                        <apex:outputPanel id="blank">
+                            <apex:inputField styleClass="useBlank" value="{!fs.setting.csplit__UseBlankValue__c}" onclick="updateCheckAll();" rendered="{!NOT(fs.Setting.csplit__UseBlankValue__c)}">
+                                <apex:actionSupport event="onchange" action="{!fs.selectBlank}" reRender="orig,blank,deflt" oncomplete="disableCheckboxes();"/>
+                            </apex:inputField>
+                            <!-- <apex:inputHidden html-class="useBlank" value="{!fs.setting.csplit__UseBlankValue__c}"/> -->                           
+                            <input type="checkbox" disabled="true" styleClass="useOriginal" checked="true" style="{!IF(fs.Setting.UseBlankValue__c==true,"display:block","display:none")}"/>
+                        </apex:outputPanel>
+                    </apex:column>
+
+                    <apex:column style="width:150px;">
+                        <apex:facet name="header">
+                            <div class="col-head">
+                                <input id="checkAllDefault" type="checkbox" onclick="checkAllBoxes('Default');"/> <span class="slds-text-title_caps">Use Default</span>
+                            </div>
+                        </apex:facet>
+                        <apex:outputPanel id="deflt">
+                            <apex:inputField styleClass="useDefault" value="{!fs.setting.csplit__UseDefaultValue__c}" onclick="updateCheckAll();" rendered="{!NOT(fs.Setting.csplit__UseDefaultValue__c) && fs.allowDefault}">
+                                <apex:actionSupport event="onchange" action="{!fs.selectDefault}" reRender="orig,blank,deflt"/>
+                            </apex:inputField>
+                            <input type="checkbox" disabled="true" styleClass="useOriginal" checked="true" style="{!IF(fs.Setting.UseDefaultValue__c==true,"display:block","display:none")}"/>
+                        </apex:outputPanel>
+                    </apex:column>
+
+                </apex:dataTable>
+                <div/>
+            </div>
+        </div>
+        <br/>
+        <div >
+            <apex:actionStatus id="quickStatus">
+                <apex:facet name="start">
+                    <apex:outputPanel >
+                        <div style="z-index:99; position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:silver; opacity:.30; filter: alpha(opacity = 30);"></div> 
+                        <div class="slds-button-group" style="margin:auto; width:33%;">    
+                            <apex:commandButton styleClass="slds-button slds-button_neutral" value="Saving..." disabled="true"/>
+                            <a href="returnToWizard();" class="slds-button slds-button_neutral">Return to Setup Wizard</a>
+                        </div>
+                    </apex:outputPanel> 
+                </apex:facet>
+                <apex:facet name="stop">
+                    <apex:outputPanel >
+                        <div class="slds-button-group" style="margin:auto; width:33%;">    
+                            <apex:commandButton action="{!quickSave}" value="Quick Save" rerender="quickStatus" status="quickStatus" styleClass="slds-button slds-button_brand"/>
+                            <a onclick="returnToWizard();" class="slds-button slds-button_neutral">Return to Setup Wizard</a>
+                        </div>
+                    </apex:outputPanel>
+                </apex:facet>
+            </apex:actionStatus> 
+            
+        </div>
+    </div>
+    <br/>
+</apex:form>
+</div>
+
+<script>
+    if (sforce.console.isInConsole())
+        sforce.console.setTabTitle("Case Split Field Default Settings");
+    
+    var tabId;
+    
+    function returnToWizard() {
+        if (sforce.console.isInConsole())
+            sforce.console.getFocusedPrimaryTabId(backToWizard);
+        else
+            window.close();
+    }
+    
+    var backToWizard = function backToWizard(result) {
+        tabId = result.id;
+        sforce.console.closeTab(tabId);
+    }
+    
+    var closeCurrentTab = function closeCurrentTab(result) {
+        if (!result.success)
+            sforce.console.closeTab(tabId);
+    }
+    
+    function openLink(url) {
+        if (sforce.console.isInConsole())
+            sforce.console.openPrimaryTab(null,url,true);
+        else
+            window.open(url,'_blank');
+    }
+</script>
+
+</apex:page>

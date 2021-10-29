@@ -1,0 +1,547 @@
+<apex:page renderAs="pdf" 
+	title="Customer Date Sheet" 
+	cache="true" 
+	standardController="Account" 
+	extensions="TearSheetController" 
+	sideBar="false" 
+	showHeader="false"
+>
+
+<head>
+<apex:stylesheet value="{!$Resource.tearsheet}" />
+</head>
+<body topmargin="0" leftmargin="0" >
+
+{!errorLog}
+
+	<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td align="left" valign="bottom" width="50%"><img src="{!$resource.customer_data_sheet}"  style="vertical-align: top;"/></td>
+						<td align="right" valign="bottom" width="50%"><img src="{!$resource.hw_small_logo}" style="vertical-align: top;"/></td>
+					</tr>
+	</table>
+	
+	<apex:outputText rendered="{!regionName != ''}">
+						<table class="smallNormalText" width="100%" >
+							<tr>
+								<td align="left">
+									{!stringConstants['listing']} ( {!displayIndexLabel} ) {!stringConstants['bga_account_out_of']} {!countTotal}
+									<apex:outputText rendered="{! regionName!= ''}">&nbsp;for&nbsp;<span style="asmall">{!regionName}</span></apex:outputText>
+									
+										<apex:outputText rendered="{!regionName != '' && countTotal >= currentCount+1 }">
+										(&nbsp;
+											<a 	
+												class	=	"asmall" 
+												href	=	"{!$LABEL.link}/apex/tearsheet?{!regionType}={!regionName}&range={!currentCount+1},{!currentCount+indexSlotRange}" 
+											>
+												View Next {!IF(countTotal>=currentCount+indexSlotRange,indexSlotRange,countTotal-currentCount)} accounts.
+											</a>
+										 &nbsp;)
+										</apex:outputText>
+										
+									
+								</td>
+								<td  width="50%" align="right">
+									Generated from SFDC on&nbsp;<apex:outputText value="{0,date,MM'/'dd'/'yyyy HH:mm}"><apex:param value="{!currentTime}" /></apex:outputText>&nbsp;GMT.
+								</td>
+							</tr>
+						</table>
+						
+						
+						<div class="accountTable">
+						<br/>
+							**City Index**<apex:outputText rendered="{! regionName!= ''}">&nbsp;for&nbsp;{!regionName}</apex:outputText>
+							<span class="aBig">
+								<apex:repeat var="cityName" value="{!cityList}">
+									<br/>&nbsp;*{!cityName}
+											<span class="asmall">
+													<apex:repeat var="actName" value="{!cityNameAccountNameIndex[cityName]}">
+														<br/>&nbsp;&nbsp;&nbsp;&nbsp;&#8226;<a href='#{!actName}' name="top_{!actName}">{!actName}</a>
+														 <span style="font-size: 7px;">{!actSummary[actName]}</span> 
+													</apex:repeat>
+											</span>
+								</apex:repeat>
+							</span>
+							<br/><br/>
+						</div>
+						
+										<apex:outputText rendered="{!regionName != '' && countTotal >= currentCount+1 }">
+										(&nbsp;
+											<a 	
+												class	=	"asmall" 
+												href	=	"{!$LABEL.link}/apex/tearsheet?{!regionType}={!regionName}&range={!currentCount+1},{!currentCount+indexSlotRange}" 
+											>
+												View Next {!IF(countTotal>=currentCount+indexSlotRange,indexSlotRange,countTotal-currentCount)} accounts.
+											</a>
+										 &nbsp;)
+										</apex:outputText>
+							
+						<br/>	
+						<table width="100%">
+							<tr>
+								<td width="100%" align="center">
+									<img src="{!$resource.article_separator}" />
+								</td>
+							</tr>
+						</table>
+						<br/>					
+	</apex:outputText>
+	
+	<apex:outputText rendered="{!regionName == ''}">
+		<table style="width: 100%;" class="smallNormalText">
+				<tr>
+					<td  width="100%" align="right">
+								Generated from SFDC on&nbsp;<apex:outputText value="{0,date,MM'/'dd'/'yyyy HH:mm}"><apex:param value="{!currentTime}" /></apex:outputText>&nbsp;GMT.
+					</td>
+				</tr>	
+		</table>
+	</apex:outputText>
+	
+
+<apex:variable var="cnt" value="{!startIndex}" />
+<apex:repeat var="listActIds" value="{!accountIdMap}">
+<apex:repeat var="accountId" value="{!listActIds}">
+
+				<table width="100%" style="background-color: #FFBB33">
+				<tr>
+					<td align="left" width="50%" valign="middle">
+						{!substitute(TEXT(cnt),'.0','')}&nbsp;#&nbsp;
+						<a name="{!allPulledData[accountId]['Account'][0].Name}">{!allPulledData[accountId]['Account'][0].Name}
+						 ( {!allPulledData[accountId]['Account'][0].Report_City_Name__c} )
+						</a>
+					</td>
+					<td align="right" valign="bottom">
+							<apex:outputText rendered="{!regionName != ''}">
+								<a href="#top_{!allPulledData[accountId]['Account'][0].Name}">Goto Index</a>
+							</apex:outputText>	
+					</td>
+				</tr>
+				</table>
+				<br/>
+				
+				
+<apex:variable var="cnt" value="{!cnt+1}" />
+				
+				<table width="100%" cellpadding="0" cellspacing="0" class="accountTable">
+					<tr>
+							<td align="left" class="innertd" width="70%" valign="top">
+									<a class="aBig" href="{!$LABEL.link}/{!allPulledData[accountId]['Account'][0].Id}" target="_blank">{!allPulledData[accountId]['Account'][0].Name}</a>
+									<div class="normalText">
+											<div>{!allPulledData[accountId]['Account'][0].Report_Address_Line_1__c}</div>
+											<div>{!allPulledData[accountId]['Account'][0].Report_Address_Line_2__c}
+													{!IF(allPulledData[accountId]['Account'][0].Report_Address_Line_3__c<> '', ', '+allPulledData[accountId]['Account'][0].Report_Address_Line_3__c,'')}
+											</div>
+											<div>{!allPulledData[accountId]['Account'][0].Report_City_Name__c}</div>
+											<div>
+												{!IF(LEN(allPulledData[accountId]['Account'][0].Report_State_Code__c) > 1, allPulledData[accountId]['Account'][0].Report_State_Code__c+', ','**')}
+												{!allPulledData[accountId]['Account'][0].Report_Country_Name__c} 
+											</div>
+											<div>{!allPulledData[accountId]['Account'][0].Report_Postal_Code__c}</div>
+											
+											<apex:outputText rendered="{!allPulledData[accountId]['Account'][0].Phone <> '-'}">
+												<div>Phone: {!allPulledData[accountId]['Account'][0].Phone}</div>
+											</apex:outputText>
+											<apex:outputText rendered="{!allPulledData[accountId]['Account'][0].Fax<> '-'}">
+												<div>Fax: {!allPulledData[accountId]['Account'][0].Fax}</div>
+											</apex:outputText>
+									</div>
+							</td>
+							<td align="left" class="innertd" valign="top" width="30%">
+										<table width="100%" cellpadding="0" cellspacing="0">
+													<tbody class="paddingBottom30">
+													<tr>
+																<td  class="normalBoldText ">Owner</td>
+																<td>
+																	<a class="aBig" href="{!$LABEL.link}/_ui/core/userprofile/UserProfilePage?u={!allPulledData[accountId]['Account'][0].OwnerId}" target="_blank">{!allPulledData[accountId]['Account'][0].Owner.Name}</a>
+																</td>
+													</tr>
+													</tbody>
+													
+													<tr>			
+																<td class="normalBoldText">Type</td>
+																<td class="normalText">
+																	{!allPulledData[accountId]['Account'][0].Type}
+																</td>
+													</tr>
+													<tr>			
+																<td class="normalBoldText">SBU</td>
+																<td class="normalText">
+																	{!allPulledData[accountId]['Account'][0].Strategic_Business_Unit__c}
+																</td>
+													</tr>				
+													<tr>
+																<td class="normalBoldText">CBT</td>
+																<td class="normalText">
+																	{!allPulledData[accountId]['Account'][0].CBT_Team__c}
+																</td>
+													</tr>			
+													<tr>			
+																<td class="normalBoldText">Class</td>
+																<td class="normalText">
+																	{!allPulledData[accountId]['Account'][0].Customer_Class__c}
+																</td>
+													</tr>
+										</table>
+									<div><a class="aMedium" target="_blank" href="http://maps.google.co.in/maps?q={!allPulledData[accountId]['Account'][0].Report_Address_Line_1__c} {!allPulledData[accountId]['Account'][0].Report_Address_Line_2__c} {!allPulledData[accountId]['Account'][0].Report_Address_Line_3__c}, {!allPulledData[accountId]['Account'][0].Report_City_Name__c}, {!allPulledData[accountId]['Account'][0].Report_State_Code__c}, {!allPulledData[accountId]['Account'][0].Report_Country_Name__c}, {!allPulledData[accountId]['Account'][0].Report_Postal_Code__c}">Map</a></div>
+									<div> <a  class="aMedium" href="{!allPulledData[accountId]['Account'][0].website}" target="_blank">{!allPulledData[accountId]['Account'][0].Description}</a></div>
+							</td>
+					</tr>
+				</table>
+				
+				
+				
+<br/>
+<apex:variable var="vPrimaryContactList" value="{!allPulledData[accountId]['PrimaryContact']}"></apex:variable>	
+
+						<table class="otherTable" cellpadding="0" cellspacing="0" width="100%">
+						<tr>
+						<td class="tableHeader" width="100%" valign="middle">
+							<img src="{!$Resource.arrow}" height="25px" width="25px" style="vertical-align: middle;"></img>
+								<span class="aBig">Primary Contact</span>
+								<apex:outputText rendered="{!vPrimaryContactList.size == 0}">
+									&nbsp;-&nbsp;No contact marked as primary.
+								</apex:outputText>
+								{!IF(vPrimaryContactList.size > 0,' - '+TEXT(vPrimaryContactList.size),'')}
+						</td>
+						</tr>
+						</table>
+						
+						<apex:outputText rendered="{!vPrimaryContactList.size > 0}">	
+								<apex:dataTable value="{!vPrimaryContactList}" 
+									var="contact" cellPadding="0" cellpadding="0" 
+									columnClasses="tableRow normalText"  headerClass="tableBlueHeader" width="100%"
+									styleClass="tableOtherTopHeader" rowClasses="even,odd">
+										
+										<apex:column >
+										<apex:facet name="header" >Name</apex:facet>
+											<a class="aMedium" href="{!$Label.link}/{!contact.Id}" target="_blank">
+												{!contact.FirstName}&nbsp;{!contact.LastName}  
+											</a>
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Title</apex:facet>
+										{!contact.Job_Title__c}  
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Phone(Work)</apex:facet>
+										{!contact.Phone_1__c} 
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Cell Number</apex:facet>
+										{!contact.Phone_5__c} 
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Email</apex:facet>
+										{!contact.Primary_Email_Address__c} 
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Address</apex:facet>
+										<apex:outputText escape="false" value="{!contact.Address_Line_1__c}"></apex:outputText>
+										</apex:column>
+										
+							</apex:dataTable>	
+					</apex:outputText>	
+					<br/>
+					
+<apex:variable var="vOpportunityList" value="{!allPulledData[accountId]['Opportunity']}"></apex:variable>	
+
+					<table class="otherTable" cellpadding="0" cellspacing="0" width="100%">
+					<tr>
+					<td class="tableHeader" width="100%" valign="middle">
+					<img src="{!$Resource.arrow}" height="25px" width="25px" style="vertical-align: middle;"></img>
+					<span class="aBig">Opportunities</span>
+					<apex:outputText rendered="{!vOpportunityList.SIZE == 0}"> - No opportunity listed.</apex:outputText>
+					{!IF(vOpportunityList.size > 0,' - '+TEXT(vOpportunityList.size),'')}
+					</td>
+					</tr>
+					</table>
+					<apex:outputText rendered="{!vOpportunityList.SIZE > 0}">
+					<apex:dataTable value="{!vOpportunityList}" 
+					var="opp" cellPadding="0" cellpadding="0" 
+					columnClasses="tableRow normalText"  headerClass="tableBlueHeader" width="100%"
+					styleClass="tableOtherTopHeader" rowClasses="even,odd">
+					
+								<apex:column >
+								<apex:facet name="header" >Name</apex:facet>
+								<a class="aMedium" href="{!$Label.link}/{!opp.Id}" target="_blank">{!opp.Name}</a> 
+								</apex:column>
+								
+								<apex:column >
+								<apex:facet name="header" >Stage</apex:facet>
+								<apex:outputText escape="false" value="">
+									
+									{!opp.StageName}
+									
+									<Div style="font-size: 7px;">
+									
+										<apex:variable var="comnt" value="{!SUBSTITUTE(opp.Reason_for_Closed_Cancelled__c+';'+ opp.Reason_for_Closed_Lost__c+';'+opp.Reason_for_CLOSED_LOST_COMPETITION_1__c+';'+opp.Win_Loss_Reason_Text__c,';;','')}" ></apex:variable>
+										
+										<apex:outputText rendered="{!LEN(comnt) >= 4}" >
+										{!comnt}
+										</apex:outputText>
+									
+									</Div>
+								
+								</apex:outputText>  
+								</apex:column>
+								
+								<apex:column >
+								<apex:facet name="header" >CloseDate</apex:facet>
+								<apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+			                    <apex:param value="{!opp.closeDate}" />
+			                	</apex:outputText>
+								 
+								</apex:column>
+								
+								
+								<apex:column >
+								<apex:facet name="header" >Amount</apex:facet>
+								
+								<apex:outputText value="{0,number,$#,###.##}">
+								<apex:param value="{!opp.Amount}"></apex:param>
+								</apex:outputText>
+								</apex:column>
+								
+								
+								<apex:column >
+								<apex:facet name="header" >Owner</apex:facet>
+								{!opp.Owner.Name} 
+								</apex:column>
+								
+								
+								<apex:column >
+								<apex:facet name="header" >Aircraft</apex:facet>
+									<a class="aMedium" href="{!$Label.link}/{!opp.Aircraft_Ref__c}" target="_blank">
+									<apex:outputText escape="false" value="{!opp.Aircraft_Ref__r.Name}"></apex:outputText>
+									</a>
+								</apex:column>
+					
+					
+					</apex:dataTable>
+					</apex:outputText>
+					<br/>
+					<apex:variable var="vContractList" value="{!allPulledData[accountId]['Contract']}"></apex:variable>	
+										<table class="otherTable" cellpadding="0" cellspacing="0" width="100%">
+										<tr>
+										<td class="tableHeader" width="100%" valign="middle">
+											<img src="{!$Resource.arrow}" height="25px" width="25px" style="vertical-align: middle;"></img>
+												<span class="aBig">
+													Contracts
+												</span>
+												&nbsp;-&nbsp;
+												<apex:outputText rendered="{!vContractList.size > 0}">
+														{!IF(vContractList.size > 0,TEXT(vContractList.size),'')}
+														<span style="font-size: 8px;">
+															&nbsp;listing last {!stringConstants['displayNumberOfLastContractRecords']} records of each contract type.
+														</span>											
+												</apex:outputText>
+												<apex:outputText rendered="{!vContractList.size == 0}">
+													No contract listed.
+												</apex:outputText>
+										
+										</td>
+										</tr>
+										</table>
+										<apex:outputText rendered="{!vContractList.size > 0}">	
+												<apex:dataTable value="{!vContractList}" 
+													var="contract" cellPadding="0" cellpadding="0" 
+													columnClasses="tableRow normalText"  headerClass="tableBlueHeader" width="100%"
+													styleClass="tableOtherTopHeader" rowClasses="even,odd">
+														
+														<apex:column >
+															<apex:facet name="header" >Type</apex:facet>
+															{!contract.Type__c}
+														</apex:column>
+														<apex:column >
+															<apex:facet name="header" >Name</apex:facet>
+															<a class="aMedium" href="{!$Label.link}/{!contract.Id}" target="_blank">
+																{!contract.Name}
+															</a>
+														</apex:column>
+													
+														<apex:column >
+															<apex:facet name="header" >Start Date</apex:facet>
+															<apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+							                    			<apex:param value="{!contract.StartDate}" />
+							                				</apex:outputText>			
+														</apex:column>
+														
+														<apex:column >
+														<apex:facet name="header" >End date</apex:facet>
+															<apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+							                    			<apex:param value="{!contract.EndDate}" />
+							                				</apex:outputText>
+														</apex:column>
+														
+														<apex:column >
+														<apex:facet name="header" >Status</apex:facet>
+															{!contract.Status} 
+														</apex:column>
+														
+														<apex:column style="width:20%">
+														<apex:facet name="header" >Aircraft</apex:facet>
+															<a class="aMedium" href="{!$Label.link}/{!contract.Aircraft__c}" target="_blank">{!contract.Aircraft__r.name}</a> 
+														</apex:column>
+														
+											</apex:dataTable>	
+					</apex:outputText>	
+<br/>					
+					
+					<apex:variable var="vAircraftList" value="{!allPulledData[accountId]['Aircraft']}"></apex:variable>	
+						<table class="otherTable" cellpadding="0" cellspacing="0" width="100%">
+						<tr>
+						<td class="tableHeader" width="100%" valign="middle">
+						<img src="{!$Resource.arrow}" height="25px" width="25px" style="vertical-align: middle;"></img>
+						<span class="aBig">Aircrafts</span>
+						<apex:outputText rendered="{!vAircraftList.SIZE == 0}"> - No aircraft listed.</apex:outputText>
+						{!IF(vAircraftList.size > 0,' - ' + TEXT(vAircraftList.size),'')}
+						</td>
+						</tr>
+						</table>
+					
+					<apex:outputText rendered="{!vAircraftList.SIZE > 0}">
+					<apex:dataTable value="{!vAircraftList}" 
+					var="aircraft" cellPadding="0" cellpadding="0" 
+					columnClasses="tableRow normalText"  headerClass="tableBlueHeader" width="100%"
+					styleClass="tableOtherTopHeader" rowClasses="even,odd">
+					
+								<apex:column >
+								<apex:facet name="header" >Name</apex:facet>
+									<a class="aMedium" href="{!$Label.link}/{!aircraft.Id}" target="_blank">
+									<apex:outputText escape="false" value="{!aircraft.Name}"></apex:outputText>
+									</a>
+								</apex:column>
+								
+								
+								<apex:column >
+								<apex:facet name="header" >Base Airport</apex:facet>
+									{!aircraft.Base_ICAO__c}
+									<Div style="font-size: 7px;">
+									<a href="http://maps.google.com/?q=Airport {!aircraft.Base_ICAO__c} {!aircraft.Aircraft_Base__r.Name+' '}{!aircraft.Base_City__c+' '}{!aircraft.Cntry__c}">
+									{!aircraft.Aircraft_Base__r.Name}
+									</a>
+									</Div>  
+								</apex:column>
+								
+								
+								<apex:column >
+								<apex:facet name="header" >Base Location</apex:facet>
+								<Div style="font-size: 7px;">
+								{!aircraft.Base_City__c}
+								</Div>
+								<Div style="font-size: 7px;">
+								{!aircraft.State__c}
+								</Div>
+								<Div style="font-size: 7px;">
+								{!aircraft.Cntry__c}
+								</Div>
+								</apex:column>
+								
+								
+								<apex:column >
+								<apex:facet name="header" >EIS Date</apex:facet>
+									<apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+					                    <apex:param value="{!aircraft.Entry_into_service_EIS__c}" />
+				                	</apex:outputText>								
+								</apex:column>
+								
+								
+								<apex:column >
+									<apex:facet name="header" >Status</apex:facet>
+									{!aircraft.Bizview_Status_Desc__c} 
+									</apex:column>
+								<apex:column >
+								
+								<apex:facet name="header" >Maint. Events</apex:facet>
+									<apex:repeat var="maintVal" value="{!aircraft.Maintenance_Events__r}">
+									
+										<Div style="font-size: 7px;">
+												<span style="font-weight: bold;">{!maintVal.Name}</span>
+												*
+												<span>
+														<apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+							                    			<apex:param value="{!maintVal.Event_Date__c}" />
+						                				</apex:outputText>										
+												</span>
+												*
+												<span>
+														<apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+							                    			<apex:param value="{!maintVal.Event_Date_2__c}" />
+						                				</apex:outputText>										
+												</span>
+										</Div>
+										
+									</apex:repeat>								
+								</apex:column>
+								
+					</apex:dataTable>									
+					</apex:outputText>
+<br/>
+
+
+
+<apex:variable var="vOtherContactList" value="{!allPulledData[accountId]['OtherContact']}"></apex:variable>	
+						<table class="otherTable" cellpadding="0" cellspacing="0" width="100%">
+						<tr>
+						<td class="tableHeader" width="100%" valign="middle">
+							<img src="{!$Resource.arrow}" height="25px" width="25px" style="vertical-align: middle;"></img>
+								<span class="aBig">Other Contacts</span>
+								<apex:outputText rendered="{!vOtherContactList.size == 0}">
+									&nbsp;-&nbsp;No contact listed.
+								</apex:outputText>
+								{!IF(vOtherContactList.size > 0,' - '+TEXT(vOtherContactList.size),'')}
+						</td>
+						</tr>
+						</table>
+						<apex:outputText rendered="{!vOtherContactList.size > 0}">	
+								<apex:dataTable value="{!vOtherContactList}" 
+									var="contact" cellPadding="0" cellpadding="0" 
+									columnClasses="tableRow normalText"  headerClass="tableBlueHeader" width="100%"
+									styleClass="tableOtherTopHeader" rowClasses="even,odd">
+										
+										<apex:column >
+										<apex:facet name="header" >Name</apex:facet>
+										<a class="aMedium" href="{!$Label.link}/{!contact.Id}" target="_blank">
+											{!contact.FirstName}&nbsp;{!contact.LastName}  
+										</a>
+										</apex:column>
+									
+										<apex:column >
+										<apex:facet name="header" >Title</apex:facet>
+										{!contact.Job_Title__c}  
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Phone(Work)</apex:facet>
+										{!contact.Phone_1__c} 
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Cell Number</apex:facet>
+										{!contact.Phone_5__c} 
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Email</apex:facet>
+										{!contact.Primary_Email_Address__c} 
+										</apex:column>
+										<apex:column >
+										<apex:facet name="header" >Address</apex:facet>
+											<Div style="font-size: 7px;">
+												<apex:outputText escape="false" value="{!contact.Address_Line_1__c}"></apex:outputText>
+											</Div>
+										</apex:column>
+							</apex:dataTable>	
+					</apex:outputText>	
+							
+<br/><br/>				
+					<table width="100%">
+					<tr>
+						<td width="100%" align="center">
+							<img src="{!$resource.article_separator}" />
+						</td>
+					</tr>
+					</table>
+					<br/><br/>				
+</apex:repeat>
+</apex:repeat>
+</body>
+
+</apex:page>

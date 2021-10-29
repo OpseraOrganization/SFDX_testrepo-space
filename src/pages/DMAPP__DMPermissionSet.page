@@ -1,0 +1,361 @@
+<apex:page controller="DMAPP.DMPermissionSetController"
+    showHeader="true" 
+    sidebar="false" 
+    docType="html-5.0" 
+    >
+    
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/ttgutils.js')}"/>
+
+    <style>
+      .refreshCompleteSuccess {
+        font-weight: bold;
+        color:  #22B14C;
+      }
+      
+      .intermediate_step {
+        font-weight: bold;
+        color:  #FD8D33;      
+      }
+    </style>
+
+
+
+    
+    <apex:form id="theForm">
+    <script>
+      function startUnloadByBlock() {   
+        startUnloadByBlockAction();
+      }
+
+      function doUnloadByBlock() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        unloadSetupEntityAccessByBlockAction();
+        </apex:outputText>
+      }
+
+      function doPlatformUnloadByBlock() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        unloadPlatformSetupEntityAccessByBlockAction();
+        </apex:outputText>
+      }
+
+      function doUnloadFieldPermissionsByBlock() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        unloadFieldPermissionsByBlockAction();
+        </apex:outputText>
+      }
+
+      function doPlatformUnloadFieldPermissionsByBlock() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        unloadPlatformFieldPermissionsByBlockAction();
+        </apex:outputText>
+      }
+
+      function unloadSetupEntityAccessOnComplete() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        var areMoreSetupEntityRecords = "{!unloadSetupEntityAccessByBlockAreMoreRecords}";
+        if (areMoreSetupEntityRecords == 'true') {
+          unloadSetupEntityAccessByBlockAction();
+        } else {
+          unloadFieldPermissionsByBlockAction()
+        }
+        </apex:outputText>
+      }
+
+      function unloadPlatformSetupEntityAccessOnComplete() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        var areMoreSetupEntityRecords = "{!unloadSetupEntityAccessByBlockAreMoreRecords}";
+        console.log('unloadPlatformSetupEntityAccessOnComplete(): = ' + areMoreSetupEntityRecords);
+        if (areMoreSetupEntityRecords == 'true') {
+          console.log('unloadPlatformSetupEntityAccessOnComplete(): Calling unloadPlatformSetupEntityAccessByBlockAction');          
+          unloadPlatformSetupEntityAccessByBlockAction();
+        } else {
+          console.log('unloadPlatformSetupEntityAccessOnComplete(): Calling unloadPlatformFieldPermissionsByBlockAction');          
+          unloadPlatformFieldPermissionsByBlockAction()
+        }
+        </apex:outputText>
+      }
+
+      function unloadFieldPermissionOnComplete() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        var areMoreFieldPermissionRecords = "{!unloadFieldPermissionsByBlockAreMoreRecords}";
+        if(areMoreFieldPermissionRecords == 'true') {
+          unloadFieldPermissionsByBlockAction();
+        } else {
+          addFirstPassObjectsToPS()         
+        }
+        </apex:outputText>
+      }
+
+      function unloadPlatformFieldPermissionOnComplete() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        var areMoreFieldPermissionRecords = "{!unloadFieldPermissionsByBlockAreMoreRecords}";
+        console.log('unloadPlatformFieldPermissionOnComplete(): areMoreFieldPermissionRecords' + areMoreFieldPermissionRecords);
+        if(areMoreFieldPermissionRecords == 'true') {
+          console.log('unloadPlatformFieldPermissionOnComplete(): Calling unloadPlatformFieldPermissionsByBlockAction');          
+          unloadPlatformFieldPermissionsByBlockAction();
+        } else {
+          console.log('unloadPlatformFieldPermissionOnComplete(): Calling addFirstPassObjectsToPlatformPS');
+          addFirstPassObjectsToPlatformPS()         
+        }
+        </apex:outputText>
+      }
+
+      function doFirstPassWrapperPlatform() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        addFirstPassObjectsToPlatformPS();
+        </apex:outputText>      
+      }
+      
+      function doFirstPassWrapper() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        addFirstPassObjectsToPS();
+        </apex:outputText>
+      
+      }
+      
+      function doSecondPassWrapper() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        addSecondPassObjectsToPS();
+        </apex:outputText>
+      
+      }
+  
+      function doSecondPassWrapperPlatform() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        addSecondPassObjectsToPlatformPS();
+        </apex:outputText>
+      
+      }
+
+      function doInsightPassWrapper() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        addInsightObjectToPS();
+        </apex:outputText>
+      
+      }
+  
+      function doInsightPassWrapperPlatform() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        addInsightObjectToPlatformPS();
+        </apex:outputText>
+      
+      }
+    
+      function doFirstPassWrapperPlatform() {
+        <apex:outputText rendered="{! state != 'ERROR' }">
+        addFirstPassObjectsToPlatformPS();
+        </apex:outputText>
+      
+      }
+
+    </script>
+      <apex:actionFunction name="startUnloadByBlockAction" 
+        action="{!startUnloadByBlock}"
+        rerender="theForm"
+        status="unloadByBlockStatus"
+      />
+
+      <apex:actionFunction name="unloadSetupEntityAccessByBlockAction" 
+        action="{!unloadSetupEntityAccessByBlock}"
+        rerender="theForm"
+        status="unloadSetupEntityAccessByBlockStatus"
+        oncomplete="unloadSetupEntityAccessOnComplete()"
+      />
+
+      <apex:actionFunction name="unloadPlatformSetupEntityAccessByBlockAction" 
+        action="{!unloadPlatformSetupEntityAccessByBlock}"
+        rerender="theForm"
+        status="unloadSetupEntityAccessByBlockStatus"
+        oncomplete="unloadPlatformSetupEntityAccessOnComplete()"
+      />
+
+      <apex:actionFunction name="unloadFieldPermissionsByBlockAction" 
+        action="{!unloadFieldPermissionsByBlock}"
+        rerender="theForm"
+        status="unloadFieldPermssionsByBlockStatus"
+        oncomplete="unloadFieldPermissionOnComplete()"
+      />
+
+      <apex:actionFunction name="unloadPlatformFieldPermissionsByBlockAction" 
+        action="{!unloadPlatformFieldPermissionsByBlock}"
+        rerender="theForm"
+        status="unloadFieldPermssionsByBlockStatus"
+        oncomplete="unloadPlatformFieldPermissionOnComplete()"
+      />
+
+      <apex:actionFunction name="addFirstPassObjectsToPS" action="{!addFirstPassObjectsToPermissionSet}" rerender="theForm" status="firstPassStatus" oncomplete="doSecondPassWrapper()"/> 
+      <apex:actionFunction name="addFirstPassObjectsToPlatformPS" action="{!addFirstPassObjectsToPlatformPermissionSet}" rerender="theForm" status="firstPassStatus" oncomplete="doSecondPassWrapperPlatform()"/>
+
+      <apex:actionFunction name="addSecondPassObjectsToPS" action="{!addSecondPassObjectsToPermissionSet}" rerender="theForm" status="secondPassStatus" oncomplete="doInsightPassWrapper()"/> 
+      <apex:actionFunction name="addSecondPassObjectsToPlatformPS" action="{!addSecondPassObjectsToPlatformPermissionSet}" rerender="theForm" status="secondPassStatus" oncomplete="doInsightPassWrapperPlatform()"/>
+    
+      <apex:actionFunction name="addInsightObjectToPS" action="{!addInsightObjectsToPermissionSet}" rerender="theForm" status="addInsightStatus"/>
+      <apex:actionFunction name="addInsightObjectToPlatformPS" action="{!addInsightObjectsToPlatformPermissionSet}" rerender="theForm" status="addInsightStatus"/>
+      
+      
+    
+    
+        <table>
+          <tr>
+            <td colspan="4" align="center"><strong>Dealmaker Permission Set Administration Page</strong> </td>
+          </tr>
+          <tr>
+            <td colspan="4" align="center">&nbsp;</td>
+          </tr>
+          <tr>
+            <td colspan="4" align="center">The following manual steps are recommended:</td>
+          </tr>
+          <tr>
+            <td colspan="4" align="left">
+                <ol>
+                <li>
+                 <p>Click on the <strong><i>Refresh</i></strong> button below to refresh the named PermissionSet. If a PermissionSet does not already exist, it will be created.<br />The objects, fields, Apex pages and Apex classes which are necessary for access to Dealmaker, will be added to the Permission Set.</p>
+                </li>
+                <li>
+                    The Dealmaker users must be licensed. Refer to the <i>Dealmaker Admin Guide</i> for details of licensing a user for Dealmaker. 
+                </li>
+                <li>
+                    If you are using Altify Account Manager the following tabs must be manually added to the Permission Set: Account Plans and Market View.
+                </li>
+                <li>
+                    If you are using Dealmaker Sales Process Manager the following tabs must be manually added to the Permission Set: Team Views.
+                </li>
+                <li>
+                    The PermsissionSet must be assigned to the Dealmaker users.
+                </li>
+                <li>
+                    This process may take several minutes, please do not click away from this page until it is complete.
+                </li>
+                </ol>
+            </td>
+          </tr> 
+          <apex:outputText id="PermissionSetCompletedMsg" rendered="{!refreshPermissionSetComplete == true && state == 'PS_GENERATION_COMPLETE'}"> 
+            <tr>
+              <td colspan="4" align="center" class="refreshCompleteSuccess"><apex:outputlabel value="Refresh of {!userPermissionSetLabel} completed successfully" rendered="{!refreshPermissionSetComplete == true}"/></td>
+            </tr>
+          </apex:outputText>
+          <apex:outputText id="PermissionSetPlatformCompletedMsg" rendered="{!refreshPermissionSetPlatformComplete == true && state == 'PS_GENERATION_COMPLETE'}">
+            <tr>
+              <td colspan="4" align="center" class="refreshCompleteSuccess"><apex:outputlabel value="Refresh of {!userPermissionSetPlatformLabel} completed successfully" rendered="{!refreshPermissionSetPlatformComplete == true}"/></td>
+            </tr>
+          </apex:outputText>
+          <tr>
+            <td colspan="4" align="center">
+                        
+              <apex:actionStatus id="SaveButtonStatus" rendered="{! state == 'IDLE'  && state != 'ERROR'}">
+                <apex:facet name="stop">
+                  <apex:outputPanel >
+                    <apex:commandbutton value="{!UserRefeshButtonLabel} {!userPermissionSetLabel}"          
+                      action="{!startUnloadByBlock}"         
+                      status="SaveButtonStatus" 
+                      rerender="theForm" 
+                      style="align:right"
+                      oncomplete="doUnloadByBlock()"
+                    />
+                    
+                    <apex:commandbutton value="{!PlatformRefeshButtonLabel} {!userPermissionSetPlatformLabel}"  
+                      action="{!startUnloadByBlock}" 
+                      status="SaveButtonStatus" 
+                      rerender="theForm" 
+                      style="align:left" 
+                      rendered="{!platformLicenceExists}" 
+                      oncomplete="doPlatformUnloadByBlock()"
+                    />
+                  </apex:outputPanel>
+                </apex:facet>
+                
+                <apex:facet name="start">
+                  <apex:outputPanel >
+                    <div id="wrapper" style="position: absolute;z-index: 2001;top: 76%;left: 28%;">
+                      <img id="tas_ajax_spinner" class="spinner" align="middle" src="{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}"/>
+                    </div>
+                    <span class='intermediate_step'>Preparing to refresh the Dealmaker permission set.</span>
+                  </apex:outputPanel>
+                </apex:facet>
+              </apex:actionStatus>
+
+              <apex:actionStatus startText="Unloading Dealmaker Permission Set."
+                 id="unloadByBlockStatus"
+                 rendered="{! state == 'PS_UNLOAD_BY_BLOCK_IN_PROGRESS' && state != 'ERROR' }"
+              >
+                <apex:facet name="start">
+                  <apex:outputPanel >
+                    <div id="wrapper" style="position: absolute;z-index: 2001;top: 76%;left: 28%;">
+                      <img id="tas_ajax_spinner" class="spinner" align="middle" src="{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}"/>
+                    </div>
+                    <span class='intermediate_step'>Refreshing the base Dealmaker permission set.</span>
+                  </apex:outputPanel>
+                </apex:facet>               
+              </apex:actionStatus>
+              
+              <apex:actionStatus startText="Unload SetupEntityAccess from Permission Set."
+                 id="unloadSetupEntityAccessByBlockStatus"
+                 rendered="{! state == 'PS_UNLOAD_BY_BLOCK_IN_PROGRESS' && state != 'ERROR' }"
+              >
+                <apex:facet name="start">
+                  <apex:outputPanel >
+                    <div id="wrapper" style="position: absolute;z-index: 2001;top: 76%;left: 28%;">
+                      <img id="tas_ajax_spinner" class="spinner" align="middle" src="{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}"/>
+                    </div>
+                    <span class='intermediate_step'>Refreshing the base Dealmaker permission set.</span>
+                  </apex:outputPanel>
+                </apex:facet>               
+              </apex:actionStatus>
+
+              <apex:actionStatus startText="Unload FieldPermssions from Permission Set."
+                 id="unloadFieldPermssionsByBlockStatus"
+                 rendered="{! state == 'PS_UNLOAD_BY_BLOCK_IN_PROGRESS' && state != 'ERROR' }"
+              >
+                <apex:facet name="start">
+                  <apex:outputPanel >
+                    <div id="wrapper" style="position: absolute;z-index: 2001;top: 76%;left: 28%;">
+                      <img id="tas_ajax_spinner" class="spinner" align="middle" src="{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}"/>
+                    </div>
+                    <span class='intermediate_step'>Refreshing the base Dealmaker permission set.</span>
+                  </apex:outputPanel>
+                </apex:facet>               
+              </apex:actionStatus>
+
+              <apex:actionStatus startText="Add First Pass Objects to Permission Set."
+                id="firstPassStatus" 
+                rendered="{! state == 'PS_UNLOAD_COMPLETE' && state != 'ERROR' }">
+                       <apex:facet name="start">
+                        <apex:outputPanel >
+                          <div id="wrapper" style="position: absolute;z-index: 2001;top: 76%;left: 28%;">
+                            <img id="tas_ajax_spinner" class="spinner" align="middle" src="{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}"/>
+                          </div>
+                          <span class='intermediate_step'>Adding the base Dealmaker permission set.</span>
+                        </apex:outputPanel>
+                      </apex:facet>               
+                </apex:actionStatus>
+                    
+                <apex:actionStatus startText="Add Second Pass Objects to Permission Set." id="secondPassStatus" rendered="{! state == 'PS_FIRST_PASS_COMPLETE' && state != 'ERROR' }">
+                       <apex:facet name="start">
+                        <apex:outputPanel >
+                          <div id="wrapper" style="position: absolute;z-index: 2001;top: 76%;left: 28%;">
+                            <img id="tas_ajax_spinner" class="spinner" align="middle" src="{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}"/>
+                          </div>
+                          <span class='intermediate_step'>Extending the base Dealmaker permission set.</span>
+                        </apex:outputPanel>
+                      </apex:facet>               
+                </apex:actionStatus>
+                
+                <apex:actionStatus startText="Add Insight Objects to Permission Set." id="addInsightStatus" rendered="{! state == 'PS_SECOND_PASS_COMPLETE' && state != 'ERROR' }">
+                       <apex:facet name="start">
+                        <apex:outputPanel >
+                          <div id="wrapper" style="position: absolute;z-index: 2001;top: 76%;left: 28%;">
+                            <img id="tas_ajax_spinner" class="spinner" align="middle" src="{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}"/>
+                          </div>
+                          <span class='intermediate_step'>Adding insight objects to the Dealmaker permission set.</span>
+                        </apex:outputPanel>
+                      </apex:facet>               
+                </apex:actionStatus>
+          
+            </td>
+          </tr>
+        </table>
+    <apex:pageMessages />
+    </apex:form> 
+
+</apex:page>

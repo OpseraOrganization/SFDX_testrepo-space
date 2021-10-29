@@ -1,0 +1,1082 @@
+<apex:page title="Case Merge Premium Setup" showHeader="true" sidebar="false" controller="csmrgp.CsMrgSetupCtrl" tabStyle="Setup_Wizard__tab">
+    <apex:includeScript value="/support/console/42.0/integration.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/jsforce.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/navigation-tabs.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/action-overlays.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/remove-console-padding.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/string-utils.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/icon-util.js')}"/>
+    <script type="text/javascript">
+        if(sforce.console.isInConsole()) {
+            removeConsolePadding();
+        }
+    </script>
+    <!-- SLDS Version 2.3.1 -->
+    <apex:stylesheet value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/style/slds/assets/styles/salesforce-lightning-design-system-vf.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/style/csmrgp-style.css')}"/>
+    <style>
+        /* Allows calc() to work in Firefox */
+        body {    
+            height:100%;
+        }
+
+        /* Messages for quick setup */
+        .msg-error {
+            color:#c23934;
+        }
+
+        .msg-success {
+            color: #04844b;
+        }
+
+        /* Images */
+        .bimg {
+            float:right;
+            box-shadow:8px 8px 8px rgba(0,0,0,0.5);"
+        }
+
+        .bimg-padded {
+            padding: 0.25rem 0 0 0.25rem;
+        }
+        
+        #tab-choose-a-status .bimg {
+            width: 508px;
+        }
+
+        #tab-setup-case-page-layout .slds-box .bimg , #tab-setup-other-page-layouts .slds-box .bimg {
+            width: 687px;
+        }
+
+        /* Layout for tab content */
+        .instruction_row {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .instruction_row:not(:first-child) {
+            margin-top:1.5rem;
+        }
+
+        .instruction_text_container, .instruction_img_container {
+            -webkit-flex: 1; /* Safari 6.1+ */
+            -ms-flex: 1; /* IE 10 */ 
+            flex: 1;
+            max-width: 100%;
+        }
+
+        /* Next Steps Tab */
+        #next-steps {
+            display: -webkit-flex;
+            display: flex;
+        }
+
+        .next-step-container {
+             display: -webkit-flex;
+             display: flex;
+             -webkit-flex-direction: row;
+             flex-direction: row;
+             -webkit-justify-content: space-between;
+             justify-content: space-between;
+             width: 50%;
+             margin: 1rem;
+        }
+
+        /* Next and Previous Buttons */
+        #next-button::after {
+            content:' - ' attr(data-nextStep);
+        }
+
+        #previous-button::after {
+            content:' - ' attr(data-prevStep);
+        }
+
+        /* Page without metadata access (no quick setup) */
+        .alternate-steps-heading-hide {
+            display: none !important;
+        }
+
+        .slds-section__content__no-padding {
+            padding: 0 !important;
+        }
+
+        .slds-section__no-margin {
+            margin: 0 !important;
+        }
+
+        #imageOverlay {
+            cursor: zoom-out;
+        }
+
+        .setupImage {
+            cursor: zoom-in;
+        }
+
+        .image-overlay-image-container {
+            height: 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+
+        /*#imageOverlay img, .setupImage {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }*/
+    </style>
+
+    <apex:outputPanel layout="none" rendered="{!$User.UIThemeDisplayed == 'Theme4u'}">
+        <style>
+            html body.sfdcBody {
+                overflow: hidden !important;
+            }
+        </style>
+    </apex:outputPanel>
+
+    <script type="text/javascript">
+        function exists(aVar) {
+            return typeof(aVar) !== 'undefined' && aVar !== null;
+        }
+
+        function isEmpty(aVar) {
+            if(Array.isArray(aVar)) {
+                return aVar.length === 0;
+            }
+            return typeof(aVar) === 'undefined' || aVar === null || aVar === '';
+        }
+
+        function isEmptyObject(aVar) {
+            if(typeof(aVar) === 'object') {
+                for(var key in aVar) {
+                    if(aVar.hasOwnProperty(key))
+                        return false;
+                }
+                return true;
+            }
+            return false;
+        }
+    </script>
+    <apex:form id="frm" styleClass="bg-white">
+        <apex:actionFunction name="goToConfig" action="{!goToConfig}"/>
+        <div class="slds-scope">
+            <div id="actionOverlay" style="display:none;">
+                <div class="slds-backdrop slds-backdrop_open slds-backdrop_white" style="display:flex;">
+                    <div class="slds-align_absolute-center">
+                        <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand overlay-spinner">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                        <div>
+                            <div id="actionOverlayTitle" class="slds-text-heading_large" style="font-weight:700;"></div>
+                            <div id="actionOverlaySubtitle" class="slds-text-align_center"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="imageOverlay" style="display:none" onclick="hideImageOverlay();">
+                <div class="slds-backdrop slds-backdrop_open">
+                    <div class="image-overlay-image-container"></div>
+                </div>
+            </div>
+            <c:CsMrgPageHeader title="Setup Wizard"/>
+
+            <div id="setup_nav" class="slds-tabs_default">
+                <ul class="slds-tabs_default__nav">
+                    <apex:repeat value="{!tabNames}" var="tab">
+                        <li class="slds-tabs_default__item" onclick="switchNavigationTab(this)" data-navigation-id="setup_nav" data-tab-name="{!LOWER(tab)}" tabindex="0">
+                            <a id="tab-{!SUBSTITUTE(LOWER(tab), ' ', '_')}__item" class="slds-tabs_default__link" tabindex="0">{!tab}</a>
+                        </li>
+                    </apex:repeat>
+                </ul>
+
+                <!-- 
+                    The content wrappers of each tab. Right now they are empty divs that will be appended to via javascript.
+                -->
+                <apex:repeat value="{!tabNames}" var="tab">
+                    <div id="tab-{!SUBSTITUTE(LOWER(tab), ' ', '_')}" class="slds-tabs_default__content slds-hide tab_content_wrapper" data-tab-name="{!LOWER(tab)}" data-navigation-id="setup_nav">
+                        <div class="slds-box slds-m-horizontal_small">
+                        </div>
+                    </div>
+                </apex:repeat>
+
+                <!--
+                    The content of each tab.
+                -->
+                <!-- Getting Started -->
+                <div class="tab_content slds-hide" data-tab-name="getting started">
+                    <p>Case Merge Premium is a purpose-built add-on for salesforce.com that allows authorized users to find duplicate cases and merge them together. Child objects such as comments, attachments and emails are cloned to the primary record and the duplicate cases are closed and related to the primary case as child cases.</p>
+                    <p class='slds-m-top_small'>
+                        You will need a few minutes to setup your organization and configure our application. 
+                        <apex:outputPanel rendered="{!canShowMDTComponents}" layout="none">
+                            On the following pages, you may be presented 2 options for configuration. You can choose either way.
+                            <p class="slds-m-left_large"><b>1.</b> A quick way that allows you to confiure the app from this page.</p>
+                            <p class="slds-m-left_large"><b>2.</b> The steps to complete the configuration from the standard Salesforce setup panel. These are listed under the "Alternate Steps" section.</p>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!!canShowMDTComponents}" layout="none">
+                            Follow the instructions on the following pages to configure the app.
+                        </apex:outputPanel>
+                    </p>
+                </div>
+
+                <!-- Choose a Status -->
+                <div class="tab_content slds-hide" data-tab-name="choose a status">
+                    <apex:outputPanel rendered="{!canShowDupeStatusComponent}" layout="none">
+                        <div class="slds-section slds-is-open">
+                            <h3 class="slds-section__title">
+                                <button class="slds-button slds-section__title-action" onclick="toggleSection(this); return false;">
+                                    <img src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/switch_white_60.png')}" alt="switch" class="slds-section__title-action-icon slds-button__icon slds-button__icon_left"/>
+                                    <span class="slds-truncate" title="Create a Duplicate Status">Create a Duplicate Status</span>
+                                </button>
+                            </h3>
+                            <div aria-hidden="false" class="slds-section__content {!IF(canShowDupeStatusComponent,'slds-p-around_small','slds-section__content__no-padding')}">
+                                <p>Create a status to distinguish between cases closed ordinarily and cases closed because they are duplicate by entering it in the "Create New Merged Case Status" textbox below and clicking "Create New Status". We recommend "Closed as Duplicate". After the status is created, select it in the "Merged Case Status" dropdown and click "Save". Case Merge Premium will use this status to close your duplicate cases after they are merged.</p>
+                                <div class="slds-m-top_small">
+                                    <c:CMP_Setup_Duplicate_Status />
+                                </div>
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                    <div class="slds-section {!IF(canShowDupeStatusComponent,'slds-m-top_large','slds-is-open slds-section__no-margin')}">
+                        <h3 class="slds-section__title {!IF(canShowDupeStatusComponent,'','alternate-steps-heading-hide')}">
+                            <button aria-expanded="true" class="slds-button slds-section__title-action" onclick="toggleSection(this); return false;">
+                                <img src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/switch_white_60.png')}" alt="switch" class="slds-section__title-action-icon slds-button__icon slds-button__icon_left"/>
+                                <span class="slds-truncate" title="Alternate Steps">Alternate Steps</span>
+                            </button>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content {!IF(canShowDupeStatusComponent,'slds-p-around_small','slds-section__content__no-padding')}">
+                            <div class="instruction_row">
+                                <div class="instruction_text_container">
+                                    <apex:variable var="caseStatusSalesforceClassicURL" value="/p/setup/field/StandardFieldAttributes/d?id=Status&type=Case"/>
+                                    <p>To distinguish between cases closed ordinarily and cases closed because they are a duplicate, we recommend that you create a new case status called "Closed as Duplicate".  Case Merge Premium will use this status to close your duplicate cases after they are merged. <a target="_blank" href="{!IF(inLightning, '/one/one.app?source=aloha#/setup/object/Case/FieldsAndRelationships/page?address=' + URLENCODE(caseStatusSalesforceClassicURL), caseStatusSalesforceClassicURL)}">Click here to open the Status pick list</a> or navigate to <span class="italic">Setup</span> |
+                                    <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                        <span class="italic">Object Manager</span> | <span class="italic">Case</span> | <span class="italic">Fields &amp; Relationships</span>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                        <span class="italic">Customize</span> | <span class="italic">Cases</span> | <span class="italic">Fields</span>
+                                    </apex:outputPanel>
+                                    | <span class="italic">Status</span>. Click "New" and enter "Closed as Duplicate", or other wording if you prefer, select the appropriate support processes, and click "Save".</p>
+                                </div>
+                                <div class="instruction_img_container">
+                                    <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz01.png')}" styleClass="bimg bimg-padded setupImage"/>
+                                </div>
+                            </div>
+                            <div class="instruction_row">
+                                <div class="instruction_text_container">
+                                    <p>Next, edit the status entry you just created, check the "Closed" box and click "Save".</p>
+                                </div>
+                                <div class="instruction_img_container">
+                                    <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz02.png')}"  styleClass="bimg bimg-padded setupImage"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div> 
+                </div>
+
+                <!-- Setup Profiles -->
+                <div class="tab_content slds-hide" data-tab-name="setup profiles">
+                    <apex:outputPanel rendered="{!canShowMDTComponents}" layout="none">
+                        <div class="slds-section slds-is-open">
+                            <h3 class="slds-section__title">
+                                <button class="slds-button slds-section__title-action" onclick="toggleSection(this); return false;">
+                                    <img src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/switch_white_60.png')}" alt="switch" class="slds-section__title-action-icon slds-button__icon slds-button__icon_left"/>
+                                    <span class="slds-truncate" title="Give Visualforce Page Access to Profiles">Give Visualforce Page Access to Profiles</span>
+                                </button>
+                            </h3>
+                            <div aria-hidden="false" class="slds-section__content {!IF(canShowMDTComponents,'slds-p-around_small','slds-section__content__no-padding')}">
+                                <p>Move the desired profiles from the list of available profiles to the list of enabled profiles. Click "Save" to grant page access to all required Visualforce pages for those profiles.</p>
+                                <div class="slds-m-top_small">
+                                    <c:CMP_Setup_VFP_Access />
+                                </div>
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                    <div class="slds-section {!IF(canShowMDTComponents,'slds-m-top_large','slds-is-open slds-section__no-margin')}">
+                        <h3 class="slds-section__title {!IF(canShowMDTComponents,'','alternate-steps-heading-hide')}">
+                            <button aria-expanded="true" class="slds-button slds-section__title-action" onclick="toggleSection(this); return false;">
+                                <img src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/switch_white_60.png')}"  class="slds-section__title-action-icon slds-button__icon slds-button__icon_left"/>
+                                <span class="slds-truncate" title="Alternate Steps">Alternate Steps</span>
+                            </button>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content {!IF(canShowMDTComponents,'slds-p-around_small','slds-section__content__no-padding')}">
+                            <div class="instruction_row">
+                                <div class="instruction_text_container">
+                                    <p>To ensure the appropriate Profiles can merge cases, <a target="_blank" href="{!IF(inLightning,'/one/one.app#/setup/ApexPages/home','/apexpages/setup/listApexPage.apexp')}">click here to open Visualforce Pages</a> or navigate to <span class="italic">Setup</span> |
+                                    <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                        <span class="italic">Custom Code</span>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                        <span class="italic">Develop</span>
+                                    </apex:outputPanel>
+                                    | <span class="italic">Visualforce Pages</span>. Click on "Security" next to each of these pages:</p>
+                                        <ul class="slds-m-left_large">
+                                            <li><b>1.</b> Duplicates</li>
+                                            <li><b>2.</b> CsMrgFind</li>
+                                            <li><b>3.</b> CsMrgPassThru</li> 
+                                            <li><b>4.</b> CsMrgSelect</li>
+                                            <li><b>5.</b> Merge With Recent Case</li>
+                                        </ul>
+                                    <p>Ensure the appropriate profiles are added to the "Enabled Profiles" column.  Note that it is not recommended to give non-administrative profiles access to the CsMrgConfig page as that would allow someone to make changes to the configuration for Case Merge Premium.</p>
+                                </div>
+                                <div class="instruction_img_container">
+                                    <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz03.jpg')}" styleClass="bimg bimg-padded setupImage"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Setup Case Page Layout -->
+                <div class="tab_content slds-hide" data-tab-name="setup case page layout">
+                    <apex:outputPanel rendered="{!canShowMDTComponents}" layout="none">
+                        <div class="slds-section slds-is-open">
+                            <h3 class="slds-section__title">
+                                <button class="slds-button slds-section__title-action" onclick="toggleSection(this); return false;">
+                                    <img src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/switch_white_60.png')}" alt="switch" class="slds-section__title-action-icon slds-button__icon slds-button__icon_left"/>
+                                    <span class="slds-truncate" title="Add Components to Case Layouts">Add Components to Case Layouts</span>
+                                </button>
+                            </h3>
+                            <div aria-hidden="false" class="slds-section__content {!IF(canShowMDTComponents,'slds-p-around_small','slds-section__content__no-padding')}">
+                                <div class="slds-m-top_small">
+                                    <c:CMP_Setup_Page_Layouts />
+                                </div>
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                    <div class="slds-section {!IF(canShowMDTComponents,'slds-m-top_large','slds-is-open slds-section__no-margin')}">
+                        <h3 class="slds-section__title {!IF(canShowMDTComponents,'','alternate-steps-heading-hide')}">
+                            <button aria-expanded="true" class="slds-button slds-section__title-action" onclick="toggleSection(this); return false;">
+                                <img src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/switch_white_60.png')}"  class="slds-section__title-action-icon slds-button__icon slds-button__icon_left"/>
+                                <span class="slds-truncate" title="Alternate Steps">Alternate Steps</span>
+                            </button>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content {!IF(canShowMDTComponents,'slds-p-around_small','slds-section__content__no-padding')}">
+                            <!-- Dupe Button -->
+                            <h3 class="bold slds-text-heading_small">Adding the "Find Duplicates" Button</h3>
+                            <div class="instruction_row">
+                                <div class="instruction_text_container">
+                                    <p>To merge cases from a <span class="bold">case detail record</span>, <a target="_blank" href="{!IF(inLightning,'/one/one.app#/setup/object/Case/all/PageLayouts','/ui/setup/layout/PageLayouts?type=Case&setupid=CaseLayouts')}">click here to open Case Page Layouts</a> or navigate to <span class="italic">Setup</span> |
+                                    <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                        <span class="italic">Object Manager</span> | <span class="italic">Case</span>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                        <span class="italic">Customize</span> | <span class="italic">Cases</span>
+                                    </apex:outputPanel> | <span class="italic">Page Layouts</span>.
+                                        Choose "Edit" next to the layout you want to add the merge capability to. <span class="bold">(1)</span> Choose "Buttons" on the left and <span class="bold">(2)</span> drag and drop the "Find Duplicates" button to the "Custom Buttons" area of the page layout. <span class="bold">(3)</span> Click "Save".</p>
+                                </div>
+                                <div class="instruction_img_container">
+                                    <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz05.jpg')}" styleClass="bimg setupImage"/>
+                                </div>
+                            </div>
+                            <!-- Parent Case -->
+                            <h3 class="bold slds-text-heading_small">Adding the "Parent Case" Field</h3>
+                            <div class="instruction_row">
+                                <div class="instruction_text_container">
+                                    <p>Case Merge Premium sets the "primary" case as the parent case and the closed merged cases as the child cases so it can be seen from the "Related cases" related list. <a target="_blank" href="{!IF(inLightning,'/one/one.app#/setup/object/Case/all/PageLayouts','/ui/setup/layout/PageLayouts?type=Case&setupid=CaseLayouts')}">Click here to open Case Page Layouts</a> or navigate to <span class="italic">Setup</span> |
+                                    <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                        <span class="italic">Object Manager</span> | <span class="italic">Case</span>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                        <span class="italic">Customize</span> | <span class="italic">Cases</span>
+                                    </apex:outputPanel> | <span class="italic">Page Layouts</span>.
+                                    Choose "Edit" next to the layout(s) you want to update. <span class="bold">(1)</span> Choose "Fields" on the left. <span class="bold">(2)</span> Locate the "Parent Case" field and drag it onto your layout.<span class="bold">(3)</span> Click Save <span class="italic">Note that this step may already be completed in your organization.</span></p>
+                                </div>
+                                <div class="instruction_img_container">
+                                    <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz07.jpg')}" styleClass="bimg setupImage"/>
+                                </div>
+                            </div>
+                            <!-- Related Case Related List -->
+                            <h3 class="bold slds-text-heading_small">Adding the "Related Case" Related List</h3>
+                            <div class="instruction_row">
+                                <div class="instruction_text_container">
+                                    To view child cases from a parent case, add the "Related Case" related list to your Case page layout(s).
+                                    <a target="_blank" href="{!IF(inLightning,'/one/one.app#/setup/object/Case/all/PageLayouts','/ui/setup/layout/PageLayouts?type=Case&setupid=CaseLayouts')}">Click here to open Case Page Layouts</a> or navigate to <span class="italic">Setup</span> |
+                                    <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                        <span class="italic">Object Manager</span> | <span class="italic">Case</span>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                        <span class="italic">Customize</span> | <span class="italic">Cases</span>
+                                    </apex:outputPanel> | <span class="italic">Page Layouts</span>.
+                                    Click "Related Lists" on the left, locate "Related Cases" and click and drag that related list onto your layout. Click "Save".
+                                </div>
+                                <div class="instruction_img_container">
+                                    <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz08.png')}" styleClass="bimg setupImage"/>
+                                </div>
+                            </div>
+                            <!-- Duplicates VF Field -->
+                            <h3 class="bold slds-text-heading_small">Adding the "Duplicates" Visualforce Field</h3>
+                            <div class="instruction_row">
+                                <div class="instruction_text_container slds-p-right_large">
+                                    <p>Case Merge Premium includes the capability to display an inline alert on the case detail page when there is a possible duplicate. Note that this functionality uses the duplicate criteria you will setup on the next page of this wizard, so you may want to omit the alert if your criteria typically returns results for many cases; for example, if you base it simply on recently created cases.</p>
+                                    <div class="slds-m-left_xx-large">
+                                        <p><span class="bold">1.</span> <a target="_blank" href="{!IF(inLightning,'/one/one.app#/setup/object/Case/all/PageLayouts','/ui/setup/layout/PageLayouts?type=Case&setupid=CaseLayouts')}"> Click here to open Case Page Layouts</a> or navigate to <span class="italic">Setup</span> |
+                                        <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                            <span class="italic">Object Manager</span> | <span class="italic">Case</span> | <span class="italic">Case Page Layouts</span>.
+                                        </apex:outputPanel>
+                                        <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                            <span class="italic">Customize</span> | <span class="italic">Cases</span> | <span class="italic">Page Layouts</span>.
+                                        </apex:outputPanel>
+                                        Choose "Edit" next to the layout(s) you want to update.</p>
+                                        <p><span class="bold">2.</span> Locate "Duplicates" under Visualforce Pages.</p>
+                                        <p><span class="bold">3.</span> Drag it onto your layout as if it were a field. By default, its size will be too large, so you must manually set its attributes.</p>
+                                        <p><span class="bold">4.</span> Hover over the box on the layout and click the wrench icon. Set the height to 15 pixels and enable the label checkbox.</p>
+                                        <p><span class="bold">5.</span> Click "OK".</p>
+                                        <p><span class="bold">6.</span> Click "Save".</p>
+                                    </div>
+                                </div>
+                                <div class="instruction_img_container">
+                                    <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz09.jpg')}" styleClass="bimg setupImage"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Setup Other Page Layouts -->
+                <div class="tab_content slds-hide" data-tab-name="setup other page layouts">
+                    <apex:outputPanel rendered="{!canShowMDTComponents}" layout="none">
+                        <div class="slds-section slds-is-open">
+                            <h3 class="slds-section__title">
+                                <button class="slds-button slds-section__title-action" onclick="toggleSection(this); return false;">
+                                    <img src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/switch_white_60.png')}" alt="switch" class="slds-section__title-action-icon slds-button__icon slds-button__icon_left"/>
+                                    <span class="slds-truncate" title="Add Related Case List to Other Object Layouts">Add Related Case List to Other Object Layouts</span>
+                                </button>
+                            </h3>
+                            <div aria-hidden="false" class="slds-section__content {!IF(canShowMDTComponents,'slds-p-around_small','slds-section__content__no-padding')}">
+                                <p>You can merge cases from objects that have a relationship to Case as well by adding a list of related cases with a merge button to another object's layout</p>
+
+                                <p>Start by choosing an object in the "Related Object" dropdown below. Then add the page layouts for that object to the list of selected page layouts. Click "Save". Repeat this for each desired object.</p>
+
+                                <div class="slds-m-top_small">
+                                    <c:CMP_Setup_Related_Lists />
+                                </div>
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                    <div class="slds-section {!IF(canShowMDTComponents,'slds-m-top_large','slds-is-open slds-section__no-margin')}">
+                        <h3 class="slds-section__title {!IF(canShowMDTComponents,'','alternate-steps-heading-hide')}">
+                            <button aria-expanded="true" class="slds-button slds-section__title-action" onclick="toggleSection(this); return false;">
+                                <img src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/switch_white_60.png')}"  class="slds-section__title-action-icon slds-button__icon slds-button__icon_left"/>
+                                <span class="slds-truncate" title="Alternate Steps">Alternate Steps</span>
+                            </button>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content {!IF(canShowMDTComponents,'slds-p-around_small','slds-section__content__no-padding')}">
+                            <div class="instruction_row">
+                                <div class="instruction_text_container">
+                                    <p>To merge cases from the <span class="bold">related case list on another object</span>, <a target="_blank" href="{!IF(inLightning,'/one/one.app#/setup/object/Account/all/PageLayouts','/ui/setup/layout/PageLayouts?type=Account&setupid=AccountLayouts')}">click here to open Account Page Layouts</a> or navigate to <span class="italic">Setup</span> |
+                                    <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                        <span class="italic">Object Manager</span> | <span class="italic">Account</span>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                        <span class="italic">Customize</span> | <span class="italic">Accounts</span>
+                                    </apex:outputPanel>
+                                    | <span class="italic">Page Layouts</span>.  
+
+                                    Choose "Edit" next to the layout you want to add the merge capability to.  Scroll down to the Case Related List (or add it to the layout if it is not already present), <span class="bold">(1)</span> click the wrench icon in the list header, <span class="bold">(2)</span> expand the "Buttons" section, <span class="bold">(3)</span> select the "Merge" button and <span class="bold">(4)</span> add it to the selected buttons list. <span class="bold">(5)</span> Click "Save".  These steps may be repeated for Contact by <a target="_blank" href="{!IF(inLightning,'/one/one.app#/setup/object/Contact/all/PageLayouts','/ui/setup/layout/PageLayouts?type=Contact&setupid=ContactLayouts')}">clicking here to open Contact Page Layouts</a> or navigating to 
+
+                                    <span class="italic">Setup</span> |
+                                    <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                        <span class="italic">Object Manager</span> | <span class="italic">Contact</span>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                        <span class="italic">Customize</span> | <span class="italic">Contacts</span>
+                                    </apex:outputPanel>
+                                    | <span class="italic">Page Layouts</span>.  
+                                    Choose "Edit" next to the layout you want to add the merge capability to.</p>
+                                </div>
+                                <div class="instruction_img_container">
+                                    <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz10.png')}" styleClass="bimg setupImage"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lightning Experience  -->
+                <div class="tab_content slds-hide" data-tab-name="lightning experience">
+                    <a class="slds-button slds-button_brand" href="/{!IF(inLightning, 'one/one.app?source=alohaHeader#/setup/FlexiPageList/home', '_ui/flexipage/ui/FlexiPageFilterListPage')}" target="_blank">Add Lightning Components to Lightning Page Layouts</a>
+                    
+                    <div class="instruction_row">
+                        <div class="instruction_text_container">
+                            <p class="slds-m-bottom_x-small">Case Merge Premium comes packaged with two Lightning Components</p>
+                            <ul class="slds-list_dotted">
+                                <li><span class="bold">Duplicate Detector</span> to find and merge cases that match the duplicate criteria you defined in setup</li>
+                                <li><span class="bold">Merge with Recent Cases</span> will allow you to merge with recently viewed cases</li>
+                            </ul>
+
+                            <p class="slds-m-top_small">To add these Lightning Components to your page layout</p>
+                            <ol class="slds-list_ordered">
+                                <li>
+                                    Navigate to <span class="italics">Setup</span> | <span class="italics">User Interface</span> | <span class="italics">Lightning App Builder</span>
+                                </li>
+                                <li>Click Edit next to the Lightning Page for your Case Record Page</li>
+                                <li>On the edit page, scroll to the bottom of the left-hand panel and double-click "Case Merge Premium" under the Custom - Managed section.</li>
+                                <li>
+                                    Drag each component to the position where you want it on the screen
+                                </li>
+                            </ol>
+
+                            <p class="slds-m-top_small bold">Note</p>
+                            <ul class="slds-list_dotted">
+                                <li>These Lightning Components apply specifically for those working within the Lightning Experience and are not available in Salesforce Classic.</li>
+                                <li><a href="https://help.salesforce.com/articleView?id=domain_name_overview.htm&type=5" target="_blank">My Domain</a> must be enabled in order to use this Lightning Component.</li>
+                            </ul>
+                        </div>
+
+                        <div class="instruction_img_container">
+                            <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz12.png')}" styleClass="bimg setupImage" style="padding: 0;"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab_content slds-hide" data-tab-name="merging from case list views">
+                    <div class="instruction_row">
+                        <div class="instruction_text_container">
+                            <apex:variable var="caseSearchLayoutURL" value="/p/setup/layout/ListButtonsEdit?LayoutEntity=Case"/>
+                            <p>To merge cases from a <span class="bold">case list view</span>, <a target="_blank" href="{!IF(inLightning,'/one/one.app?source=aloha#/setup/object/Case/SearchLayouts/page?address=' + URLENCODE(caseSearchLayoutURL), caseSearchLayoutURL)}">click here to open Cases List View Search Layout</a> or navigate to <span class="italic">Setup</span> |
+                            <apex:outputPanel layout="none" rendered="{!inLightning}">
+                                <span class="italic">Object Manager</span> | <span class="italic">Case</span>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!NOT(inLightning)}">
+                                <span class="italic">Customize</span> | <span class="italic">Cases</span>
+                            </apex:outputPanel>
+                            | <span class="italic">Search Layouts</span>
+                            and click "Edit" next to "Cases List View". <span class="bold">(1)</span> Select "Merge" from the list of available buttons and <span class="bold">(2)</span> click "Add". <span class="bold">(3)</span> Click "Save".</p>
+                        </div>
+                        <div class="instruction_img_container">
+                            <apex:image url="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz06.png')}" styleClass="bimg setupImage"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Steps -->
+                <div class="tab_content slds-hide" data-tab-name="next steps">
+                    <div id="next-steps">
+                        <div class="slds-box next-step-container">
+                            <div class="next-step-l">
+                                <h1 style="font-weight:bold;">Scan for duplicates</h1>
+                                <p class='next-step-description'>Case Merge Premium can retroactively scan for duplicate cases.</p>
+                                <div class='next-step-img'>
+                                    <apex:image value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/setup-wizard/wiz11.png')}" styleClass="slds-m-top_small setupImage" style="width:315px !important;"/>
+                                </div>
+                            </div>
+                            <div class="next-step-r">
+                                <apex:commandButton action="{!goToSetupTwo}" styleClass="slds-button slds-button_neutral next-step-button" value="Get Started"/>
+                            </div>
+                        </div>
+                        <div class="slds-box next-step-container">
+                            <div class="next-step-l">
+                                <h1 style="font-weight:bold;">Change your settings</h1>
+                                <p class="next-step-description">Configure your Case Merge Premium settings.</p>
+                            </div>
+                            <div class="next-step-r">
+                                <button class="slds-button slds-button_brand next-step-button" onclick="goToConfig();return false;">
+                                    Configure Settings
+                                    <img class="slds-button__icon slds-button__icon_right" src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/forward_white_60.png')}"/>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 
+                    Add content to corresponding content wrappers.
+                -->
+                <script type="application/javascript">
+                    var setupNavigationContentWrappers = document.querySelectorAll('#setup_nav .tab_content_wrapper');
+                    var setupNavigationContent = document.querySelectorAll('#setup_nav .tab_content');
+                    for(var i = 0; i < setupNavigationContent.length; i++) {
+                        var snc = setupNavigationContent[i];
+                        var sncTabName = snc.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR);
+                        for(var j = 0; j < setupNavigationContentWrappers.length; j++) {
+                            var sncw = setupNavigationContentWrappers[j];
+                            if(sncw.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR) === sncTabName) {
+                                sncw.querySelector('.slds-box').appendChild(snc);
+                                break;
+                            }
+                        }
+                    }
+
+                    var activeTabIndex = 0;
+                    var hashString = window.location.hash.substr(1);
+                    if(hashString.length > 0) {
+                        var foundTab = false;
+                        for(var i =0; i < setupNavigationContentWrappers.length && !foundTab; i++) {
+                            var sncw = setupNavigationContentWrappers[i];
+                            if(hashString === removeSpaces(toTitleCase(sncw.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR)))) {
+                                activeTabIndex = i;
+                                foundTab = true;
+                            }
+                        }
+                    }
+                    NAVIGATION_TABS.showTabContent(setupNavigationContentWrappers[activeTabIndex]);
+                    document.querySelectorAll('#setup_nav .' + NAVIGATION_TABS.TAB_ITEM_CLASS)[activeTabIndex].classList.add(NAVIGATION_TABS.ACTIVE_TAB_CLASS);
+                    var tabContentDivs = document.querySelectorAll('#setup_nav div.tab_content');
+                    for(var i = 0; i < tabContentDivs.length; i++) {
+                        tabContentDivs[i].classList.remove(NAVIGATION_TABS.HIDE_CLASS);
+                    }
+                </script>
+            </div>
+            <div class="slds-m-top_medium {!IF(inLightning,'slds-p-bottom_x-large','')}" style="display:flex; justify-content: center;">
+                <div id="navigationButtonsWrapper">
+                    <button id='previous-button' data-prevStep='' class='slds-button slds-button_neutral' style='display:none;' onclick="previousTab(); return false;">Previous</button>
+                    <button id='next-button' data-nextStep="{!tabNames[1]}" class='slds-button slds-button_brand' onclick="nextTab(); return false;">Next</button>
+                </div>
+            </div>
+        </div>
+        <!-- JS for navigation tabs -->
+        
+        <script type="application/javascript">
+            NAVIGATION_TABS.IN_LIGHTNING_CONSOLE = {!$User.UIThemeDisplayed == 'Theme4u'};
+            function setFocusOnLoad() {}
+
+            function switchNavigationTab(newActiveNavigationTab) {
+                NAVIGATION_TABS.switchNavigationTab(newActiveNavigationTab);
+                postChangeTab();
+            }
+
+            function postChangeTab() {
+                setCurrentTabInHash();
+                updateNavigationButtonLabels();
+            }
+
+            function setCurrentTabInHash() {
+                var newTabName = NAVIGATION_TABS.getActiveTab().getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR);
+                var baseUrl = window.location.href.split('#')[0];
+                window.location.replace( baseUrl + '#' + removeSpaces(toTitleCase(newTabName)));
+            }
+
+            // Ignore Tabs and Arrow Keys to change navigation tabs.
+            function disableBackgroundListeners() {
+                ACTION_OVERLAYS.setEnableTabsForPage(false);
+                NAVIGATION_TABS.disableArrowMovement();
+            }
+
+            function enableBackgroundListeners() {
+                ACTION_OVERLAYS.setEnableTabsForPage(true);
+                NAVIGATION_TABS.enableArrowMovement();
+            }
+
+            function previousTab() {
+                NAVIGATION_TABS.moveToAdjacentTab(NAVIGATION_TABS.DIRECTION_PREVIOUS);
+                postChangeTab();
+            }
+
+            function nextTab() {
+                NAVIGATION_TABS.moveToAdjacentTab(NAVIGATION_TABS.DIRECTION_NEXT);
+                postChangeTab();
+            }
+
+            function updateNavigationButtonLabels() {
+                var activeTab = NAVIGATION_TABS.getActiveTab();
+                var prevButton = document.getElementById('previous-button');
+                var nextButton = document.getElementById('next-button');
+
+                var nextTab = activeTab.nextElementSibling;
+                var prevTab = activeTab.previousElementSibling;
+
+                var bothButtonsShowing = true;
+
+                if(nextTab === null) {
+                    nextButton.style.display = 'none';
+                    bothButtonsShowing = false;
+                }
+                else {
+                    nextButton.style.display = 'block';
+                    nextButton.setAttribute('data-nextStep', toTitleCase(nextTab.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR)));
+                }
+
+                if(prevTab === null) {
+                    prevButton.style.display = 'none';
+                    bothButtonsShowing = false;
+                }
+                else {
+                    prevButton.style.display = 'block';
+                    prevButton.setAttribute('data-prevStep', toTitleCase(prevTab.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR)));
+                }
+
+                var navigationButtonsWrapper = document.getElementById('navigationButtonsWrapper');
+                navigationButtonsWrapper.className = (bothButtonsShowing) ? 'slds-button-group' : '';
+            }
+
+            function toggleSection(sectionToggleButton) {
+                var sectionContent = document.getElementById(sectionToggleButton.getAttribute('aria-controls'));
+                var buttonParent = sectionToggleButton.parentNode;
+                while(!buttonParent.classList.contains('slds-section') && buttonParent !== null) {
+                    buttonParent = buttonParent.parentNode;
+                }
+
+                var section = buttonParent;
+                section.classList.toggle('slds-is-open');
+            }
+
+            function handleSetupImageOnClick(event) {
+                var imgUrl = event.target.src;
+                document.getElementById("imageOverlay").querySelector(".image-overlay-image-container").style.backgroundImage = "url('" + imgUrl + "')";
+                showImageOverlay();
+            }
+
+            function showImageOverlay() {
+                var imgOverlay = document.getElementById('imageOverlay');
+                imgOverlay.style.display = 'block';
+                disableBackgroundListeners();
+            }
+
+            function hideImageOverlay() {
+                var imgOverlay = document.getElementById('imageOverlay');
+                imgOverlay.style.display = 'none';
+                enableBackgroundListeners();
+            }
+
+            function setupImageClickListeners() {
+                var setupImages = document.querySelectorAll('.setupImage');
+                for(var i = 0; i < setupImages.length; i++) {
+                    setupImages[i].addEventListener('click',handleSetupImageOnClick);
+                }
+            }
+
+            function setupImageOverlayListeners() {
+                document.addEventListener('keyup', function(event) {
+                    if(event.keyCode === 27) {
+                        hideImageOverlay();
+                    }
+                });
+            }
+
+            if(exists(sforce) && exists(sforce.console)) {
+                sforce.console.setTabTitle('Setup - Case Merge Premium');
+            }
+            updateNavigationButtonLabels();
+
+            setupImageClickListeners();
+            setupImageOverlayListeners();
+        </script> 
+    </apex:form>
+    <!-- Polyfills -->
+    <script type="text/javascript">
+        // String.endsWith (for IE)
+        if(!String.prototype.endsWith) {
+            String.prototype.endsWith = function(search, this_len) {
+                if (this_len === undefined || this_len > this.length) {
+                    this_len = this.length;
+                }
+                return this.substring(this_len - search.length, this_len) === search;
+            };
+        }
+    </script>
+    <!-- Everything related to the metadata components -->
+    <apex:outputPanel layout="none" rendered="{!canShowMDTComponents}">
+        <script type="text/javascript">
+            var MetadataSetupComponents = {
+                conn : new jsforce.Connection({ accessToken: '{!$Api.Session_Id}' }),
+                mdtApiLimit : 10,
+                orgPrefix : '{!JSENCODE(orgNamespacePrefix)}',
+                
+                // Messages
+                MESSAGE_TYPES : {'SUCCESS':0, 'ERROR':1},
+
+                // Overlay
+                actionOverlayId : 'actionOverlay',
+                actionOverlayTitleId : 'actionOverlayTitle',
+                actionOverlaySubtitleId : 'actionOverlaySubtitle',
+
+                // Dueling picklists
+                emptyOptionString : '--None--',
+                switchedListAttribute : 'data-switched-list',
+            
+               
+                // Metadata Connection
+                metadataConnectionExists : function() {
+                    return exists(this.conn);
+                },
+
+                //callback(success,messages,(optional if success == false)available,(optional if success == false)selected)
+                loadLayoutsForObject : function(objectName, callback, isSelectedFunction) {
+                    if(this.metadataConnectionExists()) {
+                        comp = this;
+                        this.conn.metadata.list([{type:'Layout'}], '41.0', function(err,metadata){
+                            if(exists(err)) {
+                                callback(false,[err]);
+                            }
+                            else {
+                                var mdt = (Array.isArray(metadata) ? metadata : [metadata]);
+                                var layoutNames = [];
+                                for(var i = 0; i < mdt.length; i++) {
+                                    var layoutMDT = mdt[i];
+                                    var dashIndex = layoutMDT.fullName.indexOf('-');
+                                    var sObjName = layoutMDT.fullName.substring(0,dashIndex);
+                                    if(sObjName.endsWith('__c')) {
+                                        if(!isBlank(comp.orgPrefix)) {
+                                            sObjName = comp.orgPrefix + '__' + sObjName;
+                                        }
+                                    }
+                                    var layoutName = layoutMDT.fullName.substring(dashIndex + 1);
+                                    if(sObjName === objectName) {
+                                        if(!isBlank(comp.orgPrefix)) {
+                                           layoutNames.push(mdtName = sObjName + '-' + comp.orgPrefix + '__' + layoutName); 
+                                        }
+                                        else {
+                                            layoutNames.push(layoutMDT.fullName);
+                                        }
+                                        
+                                    }
+                                }
+                                if(!isEmpty(layoutNames)) {
+                                    var availableItems = [];
+                                    var selectedItems = [];
+                                    var callsToMake = Math.ceil(layoutNames.length / comp.mdtApiLimit);
+                                    for(var i = 0; i < layoutNames.length; i+= comp.mdtApiLimit) {
+                                        var layoutGroup = layoutNames.slice(i, i+comp.mdtApiLimit);
+                                        comp.conn.metadata.read('Layout',layoutGroup, function(err, mdtResult) {
+                                            if(exists(err)) {
+                                                callback(false,err);
+                                            }
+                                            else {
+                                                mdtResult = (Array.isArray(mdtResult) ? mdtResult : [mdtResult]);
+                                                for(var j = 0; j < mdtResult.length; j++) {
+                                                    var selected = isSelectedFunction(mdtResult[j]);
+                                                    if(selected) {
+                                                       selectedItems.push(mdtResult[j].fullName); 
+                                                    }
+                                                    else {
+                                                        availableItems.push(mdtResult[j].fullName);
+                                                    }
+                                                }
+                                                callsToMake--;
+                                                if(callsToMake <= 0) {
+                                                    callback(true,[], availableItems, selectedItems, comp.orgPrefix);
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                                else {
+                                    callback(false,['No layouts for ' + objectName]);
+                                }
+                            }
+                        })
+                    }
+                    else {
+                        callback(false,['Could not connect to Metadata API.']);
+                    }
+                },
+
+                // Errors
+                getAllMDTErrorMessages : function(err,results) {
+                    var errorMessages = [];
+                    if(exists(err)) {
+                        errorMessages.push(err);
+                    }
+                    else if(isEmptyObject(results)) {
+                        errorMessages.push('Result is empty');
+                    }
+                    else if(exists(results)){
+                        if(Array.isArray(results)) {
+                            for(var i = 0; i < results.length; i++) {
+                                var result = results[i];
+                                if(exists(result.errors)) {
+                                    errorMessages = errorMessages.concat(this.getErrorsFromResult(result));
+                                }
+                            }
+                        }
+                        else {
+                            errorMessages = errorMessages.concat(this.getErrorsFromResults(results));
+                        }
+                    }
+                    return errorMessages;
+                },
+
+                getErrorsFromResult : function(result) {
+                    if(exists(result.errors)) {
+                        if(Array.isArray(result.errors)) {
+                            var errorMessages = [];
+                            for(var i = 0; i < result.errors.length; i++) {
+                                errorMessages.push('Error -- ' + decodeURIComponent(result.fullName) + ' -- ' + result.errors[i].message);
+                            }
+                            return errorMessages;
+                        }
+                        else {
+                            return ['Error -- ' + decodeURIComponent(result.fullName) + ' -- ' + result.errors.message];
+                        }
+                    }
+                    return [];
+                },
+
+                getErrorsFromResults : function(results) {
+                    var errorMessages = [];
+                    for(var i = 0; i < results.length; i++) {
+                        errorMessages = errorMessages.concat(this.getErrorFromResult(results[i]));
+                    }
+                    return errorMessages;
+                },
+
+                getFailingMetadataNames : function(err,result) {
+                    if(exists(err)) {
+                        return [];
+                    }
+                    else {
+                        var failingNames = [];
+                        if(!Array.isArray(result)) {
+                            return exists(result.errors) ? [result.fullName] : [];
+                        }
+                        else {
+                            for(var i = 0; i < result.length; i++) {
+                                if(exists(result[i].errors)) {
+                                    failingNames.push(result[i].fullName);
+                                }
+                            }
+                            return failingNames;
+                        }
+                    }
+                },
+
+                // Dueling Picklists
+                moveItemsFromList : function(listFrom,listTo) {
+                    for(var i = 0; i < listFrom.options.length;) {
+                        if(listFrom.options[i].selected) {
+                            listFrom.options[i].setAttribute(this.switchedListAttribute, ((listFrom.options[i].getAttribute(this.switchedListAttribute) === 'true') ? 'false' : 'true'));
+                            listTo.appendChild(listFrom.options[i]);
+                        } else {i++;}
+                    }
+
+                    if(listFrom.options.length == 0) {
+                        this.addEmptyOption(listFrom);
+                    }
+
+                    for(var i = 0; i < listTo.options.length;) {
+                        if(listTo.options[i].value === this.emptyOptionString) {
+                            listTo.remove(i);
+                        }
+                        else {
+                            listTo.options[i].selected = false;
+                            i++;
+                        }
+                    }
+
+                    if(listTo.options.length == 0) {
+                        this.addEmptyOption(listTo);
+                    }
+                },
+
+                addEmptyOption : function(selectList) {
+                    var option = document.createElement('option');
+                    option.value = option.innerHTML = this.emptyOptionString;
+                    selectList.appendChild(option);
+                },
+
+                updateSwitchedListAttributeOnOptionList: function(list,errors) {
+                    for(var i = 0; i < list.length; i++) {
+                        if(list[i].value !== MetadataSetupComponents.emptyOptionString && errors.indexOf(list[i].value) === -1) {
+                            list[i].setAttribute(MetadataSetupComponents.switchedListAttribute,'false');
+                        }
+                    }
+                },
+
+                resetSwitchedListAttributeOnOptionList: function(list) {
+                    this.updateSwitchedListAttributeOnOptionList(list,[]);
+                },
+
+                emptySelect: function(selectElement) {
+                    for(var i = selectElement.options.length - 1; i >=0; i--) {
+                        selectElement.remove(i);
+                    }
+                },
+
+                getUpdatedOptions: function(selectElement, selected) {
+                    var attr = MetadataSetupComponents.switchedListAttribute;
+                    var selectElement = this.getOptionsFromSelect(selectElement);
+                    selectElement = selectElement.filter(function(e) {
+                        return e.getAttribute(attr) === 'true' && e.value !== '--None--';
+                    });
+                    return selectElement.map(function(e) {
+                        return {'name': e.value, 'option': e, 'selected': selected};
+                    });
+                },
+
+                // returns as a js array.
+                getOptionsFromSelect: function(selectList) {
+                    var arrOptions = [];
+                    for(var i = 0; i < selectList.length; i++) {
+                        arrOptions.push(selectList[i]);
+                    }
+                    return arrOptions;
+                },
+
+                // Messages
+                getMessagesPanel : function(messagePanelId) {
+                    return document.getElementById(messagePanelId);
+                },
+
+                addMessage : function(messagePanelId, msgType,msgText) {
+                    var messagesPanel = this.getMessagesPanel(messagePanelId)
+                    var msgClass = 'msg-';
+                    switch(msgType) {
+                        case this.MESSAGE_TYPES.SUCCESS:
+                            msgClass += 'success';
+                            break;
+                        case this.MESSAGE_TYPES.ERROR:
+                            msgClass += 'error';
+                            break;
+                        default:
+                            msgClass += 'error';
+                    }
+                    var message = document.createElement('DIV');
+                    message.className = msgClass;
+                    message.style.fontSize = '0.75rem';
+                    message.style.marginTop = '0.5rem';
+                    message.innerText = msgText;
+                    messagesPanel.appendChild(message);
+                },
+
+                clearMessages: function(messagePanelId) {
+                    var messagesPanel = this.getMessagesPanel(messagePanelId);
+                    while (messagesPanel.hasChildNodes()) {
+                        messagesPanel.removeChild(messagesPanel.lastChild);
+                    }
+                },
+
+                // Action Overlays
+                showActionOverlay : function() {
+                    var actionOverlay = this.getActionOverlay();
+                    actionOverlay.style.display = 'block';
+                    disableBackgroundListeners();
+                },
+
+                hideActionOverlay : function() {
+                    var actionOverlay = this.getActionOverlay();
+                    actionOverlay.style.display = 'none';
+                    this.setActionOverlayTitle('');
+                    this.setActionOverlaySubtitle('');
+                    enableBackgroundListeners();
+                },
+
+                setActionOverlayTitle : function(text) {
+                    document.getElementById(this.actionOverlayTitleId).innerText = text;
+                },
+
+                setActionOverlaySubtitle : function(text) {
+                    document.getElementById(this.actionOverlaySubtitleId).innerText = text;
+                },
+
+                getActionOverlay : function() {
+                    return document.getElementById(this.actionOverlayId);
+                },
+
+                getCompletedString: function(current, total) {
+                    return '(Completed ' + current + ' of ' + total + ')';
+                },
+
+                // Other
+                setElementsDisabled: function(elementIds, isDisabled) {
+                    for(var i = 0; i < elementIds.length; i++) {
+                        document.getElementById(elementIds[i]).disabled = isDisabled;
+                    }
+                }
+            };
+            VisualforcePageAccessComp.resetSwitchedListAttributeOnOptions();
+            PageLayoutsComponent.updateLayoutLists();
+            RelatedListsComponent.updateLayoutLists();
+        </script>
+    </apex:outputPanel>
+</apex:page>

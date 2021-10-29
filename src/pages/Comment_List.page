@@ -1,0 +1,101 @@
+<apex:page standardController="Case" extensions="CommentList" >
+<style type="text/css">
+    .noBottomBorder { border-bottom: 0px solid #000 ! important }
+</style>
+
+<apex:form target="_parent" id="allCommentsF">
+    <apex:actionFunction action="{!refreshPage}" name="refreshPage" reRender="listTable"/>
+    <!-- ALL COMMENTS -->
+    <apex:pageBlock id="allCommentsPB">
+        <apex:pageblockButtons >
+            <apex:commandButton oncomplete="window.parent.location='{!newPrivateComment}'; " Value="Private Comment" rendered="false" />
+            <apex:commandButton oncomplete="window.parent.location='{!newPublicCommentURL}';" Value="New Comment" />
+            <apex:commandButton oncomplete="window.open('{!listURL}','_blank')" rendered="{!NOT(showFullList)}" Value="Open List" />
+        </apex:pageblockButtons>
+        <apex:pageBlockSection columns="1" id="allCommentsPBS">
+            <apex:outputPanel onclick="refreshPage();" >
+                <apex:inputCheckbox id="pubFltr" value="{!publicFilter}"/> 
+                <apex:outputLabel for="pubFltr">Public Comments</apex:outputLabel>
+                <apex:inputCheckbox style="margin-left:20px;" id="priFltr" value="{!privateFilter}"/> 
+                <apex:outputLabel for="priFltr">Private Comments</apex:outputLabel>
+                <apex:inputCheckbox style="margin-left:20px;" id="statFltr" value="{!statusFilter}" rendered="false"/> 
+                <apex:outputLabel for="statFltr" rendered="false">Status Updates</apex:outputLabel>
+                
+            </apex:outputPanel>
+            
+            <apex:outputPanel style="overflow-y: scroll; display: block;" > 
+            
+            <apex:pageBlockTable id="listTable" value="{!filteredCommentItems}" styleClass="list" rowClasses="noBottomBorder" var="comment">   
+                <apex:column width="20" style="vertical-align: top; border-top: 1px solid {!comment.color}; border-bottom: 0px;">
+                    <apex:image value="{!URLFOR($Resource.commentListIcons, 'comment_list_icons/img/email-in.png')}" height="16" rendered="{!AND(NOT(ISNULL(comment.em)),comment.em.Incoming)}"/>
+                    <apex:image value="{!URLFOR($Resource.commentListIcons, 'comment_list_icons/img/email-out.png')}" height="16" rendered="{!AND(NOT(ISNULL(comment.em)),NOT(comment.em.Incoming))}"/>
+                    <apex:image value="{!URLFOR($Resource.commentListIcons, 'comment_list_icons/img/comment-public.png')}" height="16" rendered="{!AND(NOT(ISNULL(comment.cmt)),comment.cmt.IsPublished,ISNULL(comment.em))}"/>
+                    <apex:image value="{!URLFOR($Resource.commentListIcons, 'comment_list_icons/img/alarm.png')}" height="16" rendered="{!ISNULL(comment.cmt)}"/>
+                    <apex:image value="{!URLFOR($Resource.commentListIcons, 'comment_list_icons/img/comment-private.png')}" height="16" rendered="{!AND(ISNULL(comment.em),NOT(OR(ISNULL(comment.cmt),comment.cmt.IsPublished)))}"/> 
+                </apex:column>
+                <apex:column width="20" style="vertical-align: top; border-top: 1px solid {!comment.color}; border-bottom: 0px;">
+                    <a name="{!NULLVALUE(comment.cmt.id,comment.hstry.id)}"/><apex:outputLink target="_parent" value="/apex/comment_list?id={!CaseId}#{!NULLVALUE(comment.cmt.id,comment.hstry.id)}">{!comment.ord}</apex:outputLink>
+                 </apex:column>  
+                <apex:column width="70" style="vertical-align: top; white-space:nowrap; border-top: 1px solid {!comment.color}; border-bottom: 0px;" styleClass="actionColumn" headerValue="Action">
+                    <apex:outputText rendered="{!AND(updateable, NOT(ISNULL(comment.cmt)))}"><apex:outputLink value="/{!comment.cmt.id}/e?parent_id={!Case.id}&retURL=%2F{!Case.id}" target="_parent" styleClass="actionLink">Edit</apex:outputLink> |&nbsp;</apex:outputText>
+                    <apex:commandLink action="{!comment.togglePublic}" rendered="{!NOT(ISNULL(comment.cmt))}" value="{!IF(comment.cmt.IsPublished,'Make Private','Make Public')}" rerender="allCommentsPBS" styleClass="actionLink"/><apex:outputPanel rendered="{!NOT(ISNULL(comment.cmt))}"> |&nbsp;</apex:outputPanel>
+                    <apex:commandLink action="{!comment.deleteComment}" rendered="{!NOT(ISNULL(comment.cmt))}" value="Delete" styleClass="actionLink" rerender="allCommentsPBS">
+                    </apex:commandLink>
+                </apex:column> 
+                <apex:column width="40" style="vertical-align: top; border-top: 1px solid {!comment.color}; border-bottom: 0px;" headerValue="Public">
+                    <apex:outputField rendered="{!NOT(ISNULL(comment.cmt))}" value="{!comment.cmt.IsPublished}" />
+                </apex:column>
+                <apex:column headerValue="Comment" style="border-top: 1px solid {!comment.color}; border-bottom: 0px;">
+                    <apex:outputPanel rendered="{!NOT(ISNULL(comment.cmt))}">
+                        <b><apex:outputText value="Created by: "/><apex:outputField value="{!comment.cmt.CreatedById}"/>
+                        (<apex:outputField value="{!comment.cmt.CreatedDate}"/>)</b>
+                        <br/><span style="color: #000;"><apex:outputField value="{!comment.cmt.CommentBody}"/></span>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!ISNULL(comment.cmt)}">
+                       
+                        <strong><apex:outputField value="{!comment.hstry.Field}"/></strong> changed from&nbsp;<apex:outputField value="{!comment.hstry.OldValue}"/> to&nbsp;<strong><apex:outputField value="{!comment.hstry.NewValue}"/></strong>
+                        by&nbsp;<apex:outputField value="{!comment.hstry.CreatedById}"/>
+                        on&nbsp;<apex:outputField value="{!comment.hstry.CreatedDate}"/>.
+                        
+                   </apex:outputPanel>
+                </apex:column>
+                <apex:column width="200" style="vertical-align: top; border-top: 1px solid {!comment.color}; border-bottom: 0px;" >
+                    <!-- <table border="0" >
+                        <tr>
+                            <td class="noBottomBorder">
+                                <apex:image value="{!URLFOR($Resource.commentListIcons, 'comment_list_icons/img/email-in.png')}" height="16" rendered="{!AND(NOT(ISNULL(comment.em)),comment.em.Incoming)}"/>
+                                <apex:image value="{!URLFOR($Resource.commentListIcons, 'comment_list_icons/img/email-out.png')}" height="16" rendered="{!AND(NOT(ISNULL(comment.em)),NOT(comment.em.Incoming))}"/> 
+                             </td>
+                             <td class="noBottomBorder">
+                                <apex:outputLink value="/{!comment.em}" target="_BLANK" rendered="{!NOT(ISNULL(comment.em))}">Email</apex:outputLink><br/>
+                            </td>
+                        </tr>
+                    </table> -->
+                    <apex:outputLink value="/{!comment.em}" target="_BLANK" rendered="{!NOT(ISNULL(comment.em))}">Email</apex:outputLink><br/>
+                    <apex:repeat value="{!comment.attch}" var="attch">
+                        Attachment: &lt;<apex:outputLink target="_BLANK" value="/servlet/servlet.FileDownload?file={!attch.id}">{!attch.name}</apex:outputLink>&gt;<br/>
+                    </apex:repeat>
+                
+                </apex:column>
+            </apex:pageBlockTable>
+            </apex:outputPanel>
+        </apex:pageBlockSection>
+    </apex:pageBlock>
+</apex:form>
+<script>
+function resizeIF(){
+    ifrm = window.parent.document.getElementById('06640000000PNyD');
+    ifrmBody = ifrm.contentWindow.document.body;
+    ifrm.scrolling = 'no';
+    ifrm.height = ifrmBody.offsetHeight;
+    if(navigator.userAgent.indexOf('Firefox/5') != -1) ifrm.height = parseInt(ifrm.height) + 26;
+    if(navigator.userAgent.indexOf('Firefox/6') != -1) ifrm.height = parseInt(ifrm.height) + 26;
+    if(navigator.userAgent.indexOf('Firefox/7') != -1) ifrm.height = parseInt(ifrm.height) + 26;
+    if(navigator.userAgent.indexOf('Firefox/8') != -1) ifrm.height = parseInt(ifrm.height) + 26;
+    if(navigator.userAgent.indexOf('Firefox/9') != -1) ifrm.height = parseInt(ifrm.height) + 26;
+    //ifrm.setAttribute('style', 'overflow: hidden;');
+    ifrmBody.setAttribute('style', 'overflow: hidden;');
+}
+resizeIF();
+</script>
+</apex:page>

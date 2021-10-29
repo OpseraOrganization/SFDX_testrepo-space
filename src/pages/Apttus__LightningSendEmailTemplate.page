@@ -1,0 +1,302 @@
+<!-- 
+Apttus Contract Management
+LightningSendEmailTemplate
+
+@2017 Apttus Inc. All rights reserved.
+
+-->
+<apex:page standardController="Apttus__APTS_Agreement__c"
+           extensions="Apttus.LightningSendEmailWizardController" >
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.Apttus__SLDS080, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.Apttus__LightningResource, 'css/send-email-select-template.css')}" />
+        <apex:includeScript value="{!URLFOR($Resource.Apttus__LightningResource, 'js/send-email-select-template.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.Apttus__JQuery112Library, 'jquery-1.12.3.js')}"/>        
+        <apex:include pageName="Apttus__ComplyJSLibInclude" />
+
+        <script type="text/javascript" src="/soap/ajax/30.0/connection.js"></script>
+        <script type="text/javascript" src="/soap/ajax/30.0/apex.js"></script>
+        
+	
+        <apex:stylesheet value="{!URLFOR($Resource.Apttus__YUILibrary, '/yui/build/assets/skins/sam/skin.css')}" />
+        <apex:includescript value="{!URLFOR($Resource.Apttus__YUILibrary, '/yui/build/yahoo-dom-event/yahoo-dom-event.js')}" />
+        <apex:includescript value="{!URLFOR($Resource.Apttus__YUILibrary, '/yui/build/dragdrop/dragdrop-min.js')}" />
+        <apex:includescript value="{!URLFOR($Resource.Apttus__YUILibrary, '/yui/build/container/container-min.js')}" />
+        <apex:includescript value="{!URLFOR($Resource.Apttus__YUILibrary, '/yui/build/animation/animation-min.js')}" />
+	
+        <style>
+            html body.sfdcBody {
+            	padding: 0px 0px 0 0px;
+            }
+        </style>
+	
+	<script type="text/javascript">	
+
+		var protect = "{!protect}";
+		var unprotect = "{!unprotect}";
+		//var userAction = "{!userAction}";
+		var emailAuthorURL = "{!JSENCODE(emailAuthorURL)}";
+		
+        
+		var selectedTemplateId;
+		var attachmentIds;
+		var pLevel;
+		
+		var cPROTECTION_LEVEL_IGNORE = "Ignore";
+		
+		var selectRadioId = "";
+
+		/**
+		 * Prepare email template
+		`* - clone selected email template
+		 * - clone and add selected attachments to the cloned template
+		 * - apply protection if applicable
+		 * - launch email author page
+		 */
+         function prepareTemplate() {
+         	// temp email template
+			var newTemplateId = null;
+			// temporary object
+			var tempObjectId = null;
+			
+            try {
+            	initCall("{!$Api.Session_ID}");
+				
+				var applyProtection = ((protect == "true" && cPROTECTION_LEVEL_IGNORE != pLevel) || unprotect == "true");
+				 
+            	// clone email template
+            	newTemplateId = cloneEmailTemplate(selectedTemplateId);
+				
+            	// associate selected attachments to the new email template
+            	var strIds = new String(attachmentIds);
+            	
+            	// Use a temp object to get around html editing security. 
+				// copy attachments to a temp object and use the temp object for protect/unprotect operation. 
+				// copy attachments back to the email template after the protect/unprotect operation is done.
+				
+				// create a temporary object
+				if (applyProtection) {
+					
+					tempObjectId = createTemporaryObject();
+					// copy attachments to the temporary object
+            		var tempAttIds = copyAttachments(tempObjectId, strIds.split(','));
+				
+            		// apply/remove protection, if applicable
+            		if ((protect == "true") && (cPROTECTION_LEVEL_IGNORE != pLevel)) { 
+            			protectTemporaryDocs(tempObjectId, pLevel);
+            			
+            		} else if (unprotect == "true"){
+            			unprotectTemporaryDocs(tempObjectId);
+            			
+            		}
+				
+					// copy attachments to the email template
+					copyAttachments(newTemplateId, tempAttIds);
+					
+				} else {
+					
+					// copy attachments to the email template
+					copyAttachments(newTemplateId, strIds.split(','));
+					
+				}
+				
+				// substitute new template id and request email author page
+            	var tempId = newTemplateId.valueOf(0, 15);
+            	var url = emailAuthorURL.replace(/__NEW_TEMPLATE_ID_16CHARS__/g, tempId);
+				console.log(" Author Page URL : "+emailAuthorURL);
+                console.log("Navigating to URL : "+url);
+               	sforce.one.navigateToURL(url);
+
+            } catch(ex) {        
+           		erroralert("prepareTemplate()", ex);
+            	
+				// delete temp email template if it was already created
+				if (newTemplateId != null) {
+					// invoke action on the controller
+					invokeDoDeleteTempEmailTemplate(newTemplateId);
+					
+				}
+				
+				// back to agreement detail page
+         		goBack();
+         		
+            } finally {
+            	
+            	// delete temp object if it was already created
+				if (tempObjectId != null) {
+					// invoke action on the controller
+                    invokeDoDeleteTempObject(tempObjectId);
+					
+				}
+				
+            }
+            
+        }
+		
+		/**
+		 * Go back to the detail page
+		 */
+		function goBack() {
+			// get the agreement id
+			var agreementId = "{!agreementSO.Id}";
+			// go back to the detail page
+			navigateTo("/" + agreementId);
+			
+		}
+    
+    </script>
+    </head>
+    <body>
+        <apex:form >
+            <!-- Wizard header -->
+            <div class="slds">
+                <div class="spinner">
+                    <img class="slds-spinner--medium spinnerImg " src="https://www.lightningdesignsystem.com/assets/images/spinners/slds_spinner_brand.gif" alt="..." />
+                </div>
+                <div class="slds-page-header" role="banner">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-has-flexi-truncate">
+                            <div>
+                                <div>
+                                    
+                                </div>
+                                <h2 class="slds-text-heading--medium slds-truncate slds-align-middle">
+                                    {!stepTitle} 
+                                </h2>    
+                                
+                            </div>
+                            <div>
+                                <h3 class="slds-text-heading--small slds-m-right--small slds-truncate slds-align-middle">
+                                    {!APTS_Agreement__c.Name}
+                                </h3>    
+                            </div>
+                            <div class="visibleeror"> 
+                                <h2 class="error">
+                                    <apex:pageMessages />   
+                                </h2>    
+                            </div> 
+                            
+                        </div>
+                    </div>
+                </div>
+                <!-- /use case header -->
+                <!-- Use case -->
+                 
+                <div class="slds-page-header" role="banner">
+                    <div class="slds-grid">
+						<div class="slds-col slds-wrap">
+                            <div class="slds-box">
+                                <apex:outputpanel id="idFolderSelectionPanel" rendered="{!showStep4}" >
+                                    <apex:panelGrid columns="1">
+                                        <apex:panelGroup >
+                                            <b><apex:outputLabel value="{!$Label.apttus__folder}" for="idFolders" /></b>&nbsp;
+                                            <apex:selectList id="idFolders" 
+                                                             value="{!folderId}" 
+                                                             size="1"  
+                                                             onchange="invokeDoEmailTemplateSearch();">
+                                                <apex:selectOptions value="{!folders}" />
+                                            </apex:selectList>
+                                        </apex:panelGroup>
+                                    </apex:panelGrid>
+                                </apex:outputpanel>
+                                 
+                            </div>
+                            <div class="slds-box">
+                                <apex:outputPanel id="idTemplatesPanel">
+                                    <div class="slds-scrollable--x">
+                                        <apex:dataTable value="{!templates}" var="templateData" id="idTemplateTable"
+                                                        styleClass="slds-table slds-table--bordered" 
+                                                        rowClasses="temContent">
+                                             
+                                            <apex:facet name="footer{!if(templates == null || templates.size == 0, '','1')}" >No Templates available.</apex:facet>
+                                             
+                                            <apex:column onclick="invokeDoSelectEmailTemplate('{!templateData.emailTemplate.id}')">
+                                                <apex:facet name="header">{!$Label.apttus__select}</apex:facet>
+                                            </apex:column>
+                                            <apex:column onclick="invokeDoSelectEmailTemplate('{!templateData.emailTemplate.id}')">
+                                                <apex:facet name="header">{!$Label.apttus__name}</apex:facet>
+                                                <apex:outputText value="{!templateData.emailTemplate.Name}" />
+                                                
+                                            </apex:column>
+                                            <apex:column onclick="invokeDoSelectEmailTemplate('{!templateData.emailTemplate.id}')">
+                                                <apex:facet name="header">{!$Label.apttus__templatetype}</apex:facet>
+                                                <apex:outputText value="{!templateData.emailTemplate.TemplateType}" />
+                                            </apex:column>
+                                            
+                                            <apex:column onclick="invokeDoSelectEmailTemplate('{!templateData.emailTemplate.id}')">
+                                                <apex:facet name="header">{!$Label.apttus__description}</apex:facet>
+                                                <apex:outputText value="{!templateData.emailTemplate.Description}" />
+                                            </apex:column>
+                                        </apex:dataTable>
+                                    </div>
+                                       				
+                        		</apex:outputPanel> 
+                            </div>
+
+                    	</div>
+                        
+                    </div>
+                </div>
+                <!-- Use case -->
+                <div class="slds-page-header" role="banner">
+                    <div class="slds-grid">  
+                        <div class="slds-col"></div>
+                        <div class="slds-grid slds-grid_align-end">
+                            <apex:commandButton styleclass="slds-button slds-button--neutral"  value="{!$Label.apttus__cancel}"  action="{!doCancel}" />
+                            &nbsp;
+                            <apex:commandButton styleclass="slds-button slds-button--brand" action="{!onPrevious}" value="{!$Label.apttus__previous}"  />
+                            &nbsp;
+                            <apex:commandButton id="cmdButtonDoPrepareEmailTemplate"
+                                                styleclass="slds-button slds-button--brand"
+                                                action="{!doValidateEmailTemplateSelection}" 
+                                                value="{!$Label.apttus__next}"  
+                                                rendered="{!showStep4 && NOT(SkipEmailTemplateSelection)}"
+                                                oncomplete="doPrepareEmailTemplate('{!JSENCODE(emailTemplateId)}', '{!JSENCODE(attachmentIds)}', '{!JSENCODE(protectionLevel)}');" />
+
+                        </div>
+                    </div>
+                </div>   
+            </div>
+            <!-- check and perform email authoring step -->
+            <apex:outputPanel >
+                <script>
+                // check if email authoring step
+                var isEmailAuthoringStep = "{!IsEmailAuthoringStep}";
+                
+                if (isEmailAuthoringStep.toLowerCase() == 'true') {
+                    // prepare the template
+                    doPrepareEmailTemplate('{!JSENCODE(emailTemplateId)}', '{!JSENCODE(attachmentIds)}', '{!JSENCODE(protectionLevel)}');
+                    
+                }
+                
+                </script>
+            </apex:outputPanel>
+            <apex:actionFunction name="invokeDoEmailTemplateSearch"  
+                                 action="{!doEmailTemplateSearch}" 
+                                 status="waitStatus"
+                                 reRender="idTemplateTable, idButtonsTopPanel, idButtonsBottomPanel" />
+            
+            <apex:actionFunction name="invokeDoSelectEmailTemplate" 
+                                 action="{!doSelectEmailTemplate}" 
+                                 reRender="idButtonsTopPanel, idButtonsBottomPanel">
+                <apex:param name="param" assignTo="{!emailTemplateId}" value="" />
+            </apex:actionFunction>   
+            
+            <apex:actionFunction name="invokeDoDeleteTempEmailTemplate" 
+                                 action="{!doDeleteTempEmailTemplate}" 
+                                 reRender="dummy"> 
+                <apex:param name="param" assignTo="{!tempEmailTemplateId}" value="" />
+            </apex:actionFunction>    	
+            
+            <apex:actionFunction name="invokeDoDeleteTempObject" 
+                                 action="{!doDeleteTempObject}" 
+                                 reRender="dummy"> 
+                <apex:param name="param" assignTo="{!tempObjectId}" value="" />
+            </apex:actionFunction>    	
+			<script>
+                initTableSelector();
+            	 
+            </script>
+        </apex:form>
+    </body>
+</apex:page>

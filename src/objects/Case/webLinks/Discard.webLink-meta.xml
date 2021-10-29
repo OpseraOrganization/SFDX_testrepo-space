@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Discard</fullName>
+    <availability>online</availability>
+    <description>Per Certido Ticket# 326181: To Discard (or Cancel) Cases of all Case Record Types and also Users can select multiple Cases to Discard from List Views</description>
+    <displayType>massActionButton</displayType>
+    <linkType>javascript</linkType>
+    <masterLabel>Discard</masterLabel>
+    <openType>onClickJavaScript</openType>
+    <protected>false</protected>
+    <requireRowSelection>true</requireRowSelection>
+    <url>{!REQUIRESCRIPT(&quot;/soap/ajax/19.0/connection.js&quot;)} 
+
+var r=confirm(&quot;Are you sure you want to Discard the selected Cases? &quot;) 
+if (r==true) 
+{ 
+var url = parent.location.href; 
+var records = {!GETRECORDIDS($ObjectType.Case)}; 
+var updateRecords = []; 
+var idarr=&apos;&apos;; 
+var idarr1=&apos;&apos;; 
+
+
+if (records[0] == null) 
+{ 
+	alert(&quot;Please select at least one record to update.&quot;); 
+}
+else if (records != null &amp;&amp; records.length &gt; 5)
+{
+	alert(&quot;Please select less than or equal to 5 records to update&quot;);
+}
+else { 
+
+for(var k=0;k&lt;records.length;k++){ 
+idarr = idarr + &quot;&apos;&quot; +records[k] + &quot;&apos;&quot; + &quot;,&quot;; 
+} 
+idarr1 = &quot;(&quot; + idarr.substr(0,idarr.length-1) +&quot;)&quot;; 
+var result1 = sforce.connection.query(&quot;Select Id, Export_Compliance_Content_ITAR_EAR__c, Government_Compliance_SM_M_Content__c, Supported_Products__c, ContactId , Type, Classification__c from Case where Id in&quot; +idarr1 ); 
+var solno = result1.getArray(&apos;records&apos;); 
+
+for (var a=0; a&lt;solno.length; a++) { 
+var update_Case = new sforce.SObject(&quot;Case&quot;); 
+update_Case.Id = solno[a].Id; 
+update_Case.Status = &quot;Discard&quot;; 
+//alert(solno[a].Export_Compliance_Content_ITAR_EAR__c); 
+if(solno[a].Export_Compliance_Content_ITAR_EAR__c == &apos;Undetermined&apos;) { 
+update_Case.Export_Compliance_Content_ITAR_EAR__c=&apos;NO&apos;; 
+} 
+//alert(solno[a].Government_Compliance_SM_M_Content__c); 
+if(solno[a].Government_Compliance_SM_M_Content__c == &apos;Undetermined&apos;) { 
+update_Case.Government_Compliance_SM_M_Content__c=&apos;NO&apos;; 
+} 
+if(solno[a].Supported_Products__c == &apos;&apos; || solno[a].Supported_Products__c == null) { 
+var sprod = sforce.connection.query(&quot;Select Id from Supported_Products__c where Name = &apos;Dummy&apos; limit 1&quot;); 
+if(null!=sprod &amp;&amp; sprod.getArray(&apos;size&apos;)&gt;0 ){
+var sp = sprod.getArray(&apos;records&apos;); 
+update_Case.Supported_Products__c=sp[0].Id; 
+}
+} 
+
+if(solno[a].ContactId == &apos;&apos; || solno[a].ContactId == null) { 
+var contId = sforce.connection.query(&quot;Select Id, Name from Contact where Name = &apos;No Contact Required&apos; limit 1&quot;); 
+//var con = contId.getArray(&apos;records&apos;); 
+//update_Case.ContactId=con[0].Id; 
+} 
+//alert(solno[a].Type); 
+if(solno[a].Type == &apos;Invoice Disputes&apos; &amp;&amp; solno[a].Customer_PO_RO_WONumber__c == &apos;&apos; || solno[a].Customer_PO_RO_WONumber__c == null) { 
+update_Case.Customer_PO_RO_WONumber__c=&apos;12345&apos;; 
+} 
+//alert(solno[a].Classification__c); 
+if(solno[a].Classification__c == &apos;&apos; || solno[a].Classification__c == null) { 
+update_Case.Classification__c=&apos;Hand-Off NON-AERO&apos;; 
+} 
+
+updateRecords.push(update_Case); 
+} 
+//alert(&apos;Length1 : &apos;+updateRecords); 
+result = sforce.connection.update(updateRecords); 
+parent.location.href = url; 
+} 
+
+} 
+else 
+{ 
+
+}</url>
+</WebLink>

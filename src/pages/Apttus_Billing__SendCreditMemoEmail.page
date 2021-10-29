@@ -1,0 +1,98 @@
+<!-- 
+    Apttus Billing 
+    SendCreditMemoEmail
+ 
+    @2013-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Billing__CreditMemo__c" tabStyle="Apttus_Billing__CreditMemo__c" extensions="Apttus_Billing.SendCreditMemoEmailController">
+   <apex:messages />
+   <script type="text/javascript">
+     var selAttchArry = [];
+     function setSelectedAttchments(chkBx) {
+       selectOnlyCurrentAttachment(chkBx);
+       //alert(chkBx.checked);
+       if(chkBx.checked) {
+         selAttchArry.push(chkBx.value);
+         //console.log(selAttchArry);
+         setSelectedAtchmntsFn(chkBx.checked, chkBx.value);
+       } else if(!chkBx.checked) {
+         var index = selAttchArry.indexOf(chkBx.value);
+         //alert(index);
+         if(index != -1) {
+            selAttchArry.splice(index, 1);
+            //console.log(selAttchArry);
+            setSelectedAtchmntsFn(chkBx.checked, chkBx.value);
+         }
+       }
+       //alert(selAttchArry);
+     }
+     
+     function checkAttchmntIsSelected() {
+       if(selAttchArry.length <= 0 ) {
+         return confirm('{!$Label.SendEmailWithoutAttachment}');
+        // if(userConfrm) {
+           //setSelectedAtchmntsAndSend('');
+        // }
+        // return userConfrm;
+       }
+       //setSelectedAtchmntsAndSend(selAttchArry.join(', '));
+       return true;
+     }
+     
+    // Function to select only one attachment at a time
+    function selectOnlyCurrentAttachment(checkbox) {
+        if (checkbox.checked){
+            var inputs = document.getElementsByTagName('input');            
+            for (var i=0; i<inputs.length; i++) {
+                if (inputs[i].type == "checkbox" && inputs[i].checked && inputs[i] != checkbox){
+                    inputs[i].checked = false;
+                }  
+            }
+            selAttchArry = [];
+        }
+    }
+   </script>
+   <apex:sectionHeader title="{!$ObjectType.Apttus_Billing__CreditMemo__c.label}" subtitle="{!$Label.apttus_billing__send} {!$Label.apttus_billing__email}"/>
+   <apex:form id="MainForm">
+   <apex:pageMessages /> 
+     <apex:actionFunction name="setSelectedAtchmntsFn" action="{!setSelctedAttchments}" reRender="dummyPB">
+       <apex:param name="isChked" value="" />
+       <apex:param name="attchmntId" value="" />
+     </apex:actionFunction>
+     <apex:pageBlock id="blngCMEmailTmpltPB" title="{!$Label.apttus_billing__send} {!$ObjectType.Apttus_Billing__CreditMemo__c.label} {!$Label.apttus_billing__email}">
+         <apex:pageBlockButtons >
+               <apex:commandButton id="saveBtn" value="{!$Label.apttus_billing__send} {!$Label.apttus_billing__email}" action="{!sendCreditMemoEmail}" onclick="return checkAttchmntIsSelected();" disabled="{!IF(cmEmailContactSize > 0, false, true)}"/>
+               <apex:commandButton id="cancelBtn" value="{!$Label.apttus_billing__cancel}" action="{!cancel}" />
+         </apex:pageBlockButtons>
+         <apex:pageBlockSection showHeader="false" columns="2">
+            <apex:pageBlockSectionItem >
+            <apex:outputlabel value="{!$ObjectType.Account.fields.Apttus_Config2__CreditMemoEmailTemplate__c.label}" /> 
+            <apex:outputPanel > 
+               <apex:selectList value="{!selectedCMEmailTmplt}" size="1" multiselect="false">
+                  <apex:selectOptions value="{!cmEmailTemplates}"/>
+               </apex:selectList>         
+            </apex:outputPanel>
+            </apex:pageBlockSectionItem>
+            <apex:outputField value="{!cmSO.Name}" />
+            <apex:outputField value="{!cmSO.Apttus_Billing__BillToAccountId__c}" />
+            <apex:outputField value="{!cmSO.Apttus_Billing__LocationId__c}" />
+         </apex:pageBlockSection> 
+         <apex:pageBlockSection title="Select Email Attachment(s)" columns="1">
+            <apex:outputPanel rendered="{!IF(creditMemoAttachments.size == 0, true, false)}">
+               <apex:outputText value=" {!$Label.apttus_billing__norecordsfound}. "/>
+            </apex:outputPanel>                           
+            <apex:pageBlockTable title="Credit Memo Attachments" value="{!creditMemoAttachments}" var="cmAttch" id="cmEmailTable" rendered="{!IF(creditMemoAttachments.size > 0, true, false)}">
+               <apex:column >
+                  <input type="checkbox" class="clsselectAll" id="checkeId" name="checkId" value="{!cmAttch.Id}" onclick="setSelectedAttchments(this)"/>
+               </apex:column>
+               <apex:column value="{!cmAttch.Name}"/>
+               <apex:column value="{!cmAttch.ContentType}"/>
+               <apex:column value="{!cmAttch.CreatedDate}"/>
+            </apex:pageBlockTable>          
+         </apex:pageBlockSection>
+     </apex:pageBlock>
+     <apex:outputPanel id="dummyPB">
+       &nbsp;&nbsp;
+     </apex:outputPanel>
+   </apex:form> 
+</apex:page>

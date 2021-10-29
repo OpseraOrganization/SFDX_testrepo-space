@@ -1,0 +1,667 @@
+<apex:page controller="E2CP.Config0" contentType="{!IF($CurrentPage.parameters.s != '1', '', 'text/plane')}" tabStyle="setup_wizard__tab" id="pg" cache="false" title="Email to Case Premium Initial Setup: Page 1">
+<apex:outputText rendered="{!$CurrentPage.parameters.s=='1'}" value="{!$Api.Session_ID}"/>
+<apex:outputPanel layout="none" rendered="{!$CurrentPage.parameters.s!='1'}">
+
+<style type="text/css"> 
+.primaryPalette {background-color:#D36D00 !important;}
+.brdPalette, .secondaryPalette {border-top-color:#D36D00 !important;}
+
+.pbSubheader { 
+    background: #e96e25 !important; /* Fallback to solid color for older browsers */ 
+    background-image: linear-gradient(to top, #b95e15, #f97e35) !important; 
+    border-radius: 4px; 
+    text-shadow: -1px 0 #b95e15, 0 1px #b95e15,1px 0 #b95e15, 0 -1px #b95e15; 
+}
+.pageTitleIcon { 
+    background-image: url(/img/icon/wrench32.png) !important; /* Change this URL to point to the icon you want to use */ 
+}
+#sel-sec {
+    margin-left: 0px;
+    list style-type: none;
+    display: table;
+}
+#sel-sec li {
+    display: table-cell;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 316px;
+    margin-right: 4px;
+}
+#sel-sec li:hover {
+    background-color: #f97e35;
+}
+#sel-sec li input[type=radio] {
+    cursor: pointer;
+}
+#sel-sec li img {
+    max-width: 500px;
+    margin: 8px;
+    box-shadow: 4px 4px 4px #999;
+}
+#config-list li {
+    margin: 5px;
+}
+.helpimg{
+    margin: 5px 0;
+    display: block;
+}
+</style> 
+
+<!-- start email service scripts -->
+<apex:includeScript value="/soap/ajax/22.0/connection.js"/>
+
+<link rel="stylesheet" href="{!URLFOR($Resource.jquery,'jquery-ui-themes-1.12.1/themes/ui-lightness/jquery-ui.min.css')}" />
+<link rel="stylesheet" href="{!URLFOR($Resource.jquery,'jquery-ui-1.12.1/jquery-ui.min.css')}" />
+
+<script src="{!URLFOR($Resource.jquery,'jquery-3.5.1.min.js')}"></script>
+<script src="{!URLFOR($Resource.jquery,'jquery-ui-1.12.1/jquery-ui.min.js')}"></script>
+
+<script>
+function setFocusOnLoad() {}
+</script>
+
+<script>
+    function updateText(elem,text,add) {
+        if (elem.innerText) {
+            if (add) elem.innerText += text
+            else elem.innerText = text;
+        } else {
+            if (add) elem.textContent += text;
+            else elem.textContent = text;
+        }
+    }
+    
+sforce.connection.sessionId = '{!$Api.Session_ID}';
+
+//context user
+var ContextUserId;
+
+function getUserId(username){
+    var soql = "select Id, Name from User where Name = '" + username + "'";
+    var result = sforce.connection.query(soql, {onSuccess : setUser, onFailure : failed});
+}
+
+function setUser() {//result){
+    //var records = result.getArray("records");
+    //ContextUserId = records[0].Id;
+    //alert(records[0].Id + ' - ' + records[0].Name);
+    if (document.getElementById('pg:frmPop:pbPop:pbsPop:pbsiPop1:ContextUser').value == document.getElementById('pg:frmPop:pbPop:pbsPop:pbsiPop1:ContextUser_lkold').value)
+        ContextUserId = document.getElementById('pg:frmPop:pbPop:pbsPop:pbsiPop1:ContextUser_lkid').value;
+    else
+        ContextUserId = '';
+}
+
+//email objects
+function createEmailServicesFunction(){
+
+    if(ContextUserId == null || ContextUserId == ''){
+        var msg = '';
+        var namebox = document.getElementById('pg:frmPop:pbPop:pbsPop:pbsiPop1:ContextUser');
+        if(namebox.value != null && namebox.value != '')
+            msg = '\r\nThe Context User must be selected from the lookup dialog.\r\n';
+        else 
+            msg = '\r\nThe Context User cannot be blank.\r\n';
+        updateText(document.getElementById('errorbox'),msg,false);
+        return;
+    }
+
+    if("{!FullUsers}".indexOf(ContextUserId) == -1){
+        var msg = '';
+        msg = '\r\nThe Context User must have a full Salesforce license.\r\n';
+        updateText(document.getElementById('errorbox'),msg,true);
+        return;
+    }
+
+    updateText(document.getElementById('errorbox'),'',false);
+    
+    var esf = new sforce.SObject("EmailServicesFunction");
+    
+    ////Email Service Information
+    esf.FunctionName = '{!JSENCODE(ServiceName)}';
+    esf.ApexClassId = '{!JSENCODE(ProcMsgId)}';   
+    esf.AttachmentOption = 3;                //accept all attachments       
+    esf.AuthorizedSenders = '';              //blank is everybody
+    //esf.IsTextTruncated = true;
+    esf.IsTextAttachmentsAsBinary = false;            
+    esf.IsActive = true;
+    
+    ////Failure Response Settings [1 = bounce, 2 = discard, 3 = requeue]
+    esf.OverLimitAction = 3;        
+    esf.AddressInactiveAction = 2;    
+    esf.FunctionInactiveAction = 2;
+    esf.AuthenticationFailureAction = 2;
+    esf.AuthorizationFailureAction = 2;
+    esf.IsErrorRoutingEnabled = true;
+    esf.ErrorRoutingAddress = $('#pg\\:frmPop\\:pbPop\\:pbsPop\\:pbsiPop2\\:ErrorRoutingAddress').val();
+
+    var result = sforce.connection.create([esf], {onSuccess : createEmailServicesAddress, onFailure : failed});
+
+}
+
+function createEmailServicesAddress(result) {
+
+    var msg = '';
+    if (result[0].getBoolean("success")) {
+        
+        var esa = new sforce.SObject("EmailServicesAddress");
+    
+        esa.FunctionId = result[0].id;
+        
+        esa.LocalPart ='{!JSENCODE(AddressName)}';
+        esa.IsActive = true;
+        esa.RunAsUserId = ContextUserId; //$('#pg\\:frmPop\\:pbPop\\:pbsPop\\:pbsiPop1\\:ContextUser').val(); 
+        esa.AuthorizedSenders = '';        //blank is everybody
+            
+        var result = sforce.connection.create([esa], {onSuccess : success, onFailure : failed});
+    }
+    else {
+        msg += '\r\n' + result[0].getArray("errors")[0].getArray("message")[0] + '\r\n';
+        updateText(document.getElementById('errorbox'),msg,true);
+    }
+}
+
+function success(result) {
+    var msg = '';
+    if (result[0].getBoolean("success")) {
+        $('#EmailServiceForm').dialog('close');
+    } 
+    else {
+        msg += '\r\n' + result[0].getArray("errors")[0].getArray("message")[0] + '\r\n';
+        updateText(document.getElementById('errorbox'),msg,true);
+    }      
+}
+
+function failed(error) {
+    var msg = "<br/>Failed. Error is: " + error;
+    updateText(document.getElementById('errorbox'),msg,true);
+}
+
+
+
+//switch form to popup dialog
+$(function() {
+    $('#EmailServiceForm').dialog({
+        //height: 200,
+        width: 650,
+        autoOpen: false,
+        resizable: false,
+        show:'fade',
+        hide:'fade',
+        title:'Create New Email Service',
+        modal: true, 
+        close: refreshPanel
+    });
+
+});
+
+//manual instructions
+/* unused always hidden
+$(document).ready(function() {
+    if({!SupportsApi}) $('#pg\\:frmMain\\:pbMain\\:pbIncoming\\:opManual').hide();
+});
+
+function toggleMan(){
+    $('#manual').toggle(200);
+}
+*/
+
+function selectCaseFeed(feedOn) {
+    document.getElementById('pg:frmMain:pbMain:feedblock:casefeedbox').checked = feedOn;
+    if (feedOn)
+        document.getElementById('feed-sec-radio').checked = true;
+    else
+        document.getElementById('std-sec-radio').checked = true;
+    
+    updateFeedSupport();
+}
+</script>
+<!-- end email service scripts -->
+
+<!-- start email service popup -->
+<div id="EmailServiceForm" style="display: none;" >
+<apex:form id="frmPop">
+<apex:pageBlock id="pbPop">
+    <apex:pageBlockSection columns="1" id="pbsPop" >
+
+        <apex:pageBlockSectionItem id="pbsiPop1">
+            <apex:outputLabel value="Context User"/>
+            <apex:outputPanel >
+                <apex:inputField value="{!holder.OwnerId}" id="ContextUser" onchange="setUser();"  />
+            </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        
+        <apex:pageBlockSectionItem >
+            <apex:outputLabel value="" />
+            <apex:outputPanel >
+            This user will appear as the Created By user for new records created by Email to Case Premium.
+            </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+       
+        <apex:pageBlockSectionItem id="pbsiPop2">
+            <apex:outputLabel value="Error Routing Email Address" style="white-space:nowrap;"/>
+            <apex:outputPanel >
+                <div class="requiredInput">
+                    <div class="requiredBlock"></div>
+                    <apex:inputText id="ErrorRoutingAddress" size="40"/>
+                </div>
+            </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        
+         <apex:pageBlockSectionItem >
+            <apex:outputLabel value="" />
+            <apex:outputPanel >
+            Notification error emails will be sent to this email address instead of the sender&apos;s email address and prevents the sender being notified when email services cannot process an incoming email.
+            </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        
+        <apex:pageBlockSectionItem >
+            <apex:outputLabel value="" />
+            <input id="CreateEmailService" class="btn" type="button" value="Create Email Service" onclick="createEmailServicesFunction();" />
+        </apex:pageBlockSectionItem>
+       
+        <apex:pageblockSectionItem >
+            <apex:outputLabel value="" />
+            <apex:outputPanel >
+                <div id="errorbox" style="color:red;" />
+            </apex:outputPanel>
+        </apex:pageblockSectionItem>
+    </apex:pageBlockSection>
+</apex:pageBlock>
+</apex:form>
+</div>
+<!-- end email service popup -->
+
+    <apex:sectionHeader title="Email to Case Premium" subtitle="Preferences Configuration" help="https://kb.internetcreations.com/pkb_Home?l=en_US&c=Products%3AEmail_to_Case_Premium" />
+    
+    <apex:pageMessages showDetail="false" />
+    
+    <apex:form id="frmMain">
+    
+    <apex:outputPanel rendered="{!hasEmailError}">
+        <div class="message errorM3">
+            
+            <table class="messageTable">
+            <tr>
+                <td>
+                    <img alt="ERROR" class="msgIcon" src="/s.gif" title="ERROR" />
+                </td>
+                <td>
+                    <h4 style="color:#cc0000">Error:</h4><br/>
+                    <apex:outputPanel >
+                    {!EmailErrorText} Email to Case Premium will not function properly if email is disabled.
+                    <a href='/email-admin/editOrgEmailSettings.apexp?setupid=OrgEmailSettings'>Click here</a> and set Access Level to "All email".
+                    </apex:outputPanel>
+                </td>
+            </tr>
+            </table>
+        </div>
+    </apex:outputPanel>
+    
+    <apex:pageBlock title="Initial Setup" id="pbMain"> 
+        
+        <apex:facet name="header">
+            <apex:outputpanel >
+            <table width="100%">
+            <tr>
+            
+            <td style="width:75%; text-align:center;">
+                <apex:commandButton id="quickSave" action="{!quickSave}" value="Quick Save"/>
+                <apex:commandButton action="{!next}" value="Next"/>
+            </td>
+            
+            <td style="text-align:right;">
+                <!--PageJumper start-->
+                <apex:outputPanel >
+                     <apex:actionStatus id="pjStatus">
+                        <apex:facet name="start">
+                            <apex:outputtext value="{!pj.statusText}"/> 
+                        </apex:facet>
+                        <apex:facet name="stop">
+                            <apex:outputpanel >
+                                <apex:outputLabel for="pagejump" value="Jump to "/>
+                                <apex:selectList value="{!pj.currentPage}"  id="pagejump" size="1">
+                                    <apex:selectOptions value="{!pj.allPages}"/>
+                                    <apex:actionSupport event="onchange" action="{!pj.goToPage}" status="pjStatus"/>
+                                </apex:selectList> 
+                            </apex:outputpanel>
+                        </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputpanel>
+                <!--PageJumper end-->
+            </td>
+            
+            </tr>
+            </table>
+            </apex:outputPanel>
+        </apex:facet>
+        
+        <apex:facet name="footer">
+            <apex:outputpanel >
+            <table width="100%">
+            <tr>
+            <td style="width:75%; text-align:center;">
+                <apex:commandButton action="{!next}" value="Next"/>
+            </td>
+            <td>
+            </td>
+            </tr>
+            </table>
+            </apex:outputPanel>
+        </apex:facet>
+
+<p>Welcome to Email to Case Premium. You will need a few minutes to setup your organization and configure the application.</p>
+<br/>
+
+<apex:pageBlockSection id="feedblock" title="Case Feed" columns="1" rendered="{!SupportsAPI}">
+    <apex:outputPanel >
+        Is Case Feed enabled in your organization?
+        <apex:actionFunction name="updateFeedSupport" action="{!changeFeedSupport}"/>
+        <apex:inputCheckbox id="casefeedbox" value="{!enableCaseFeed}" style="visibility:hidden;"/>
+        <span id="sel-sec">
+            <ul>
+                <li id="std-sec-li" onclick="selectCaseFeed(false);">
+                    <input id="std-sec-radio" type="radio" name="caseLayout"/>
+                    <span>Original Case Layout</span>
+                    <img id="std-sec-image" src="{!$Resource.image015}"/>
+                </li>
+                <li id="e-sec-li" onclick="selectCaseFeed(true);">
+                    <input id="feed-sec-radio" type="radio" name="caseLayout"/>
+                    <span>Case Feed Layout</span>
+                    <img id="e-sec-image" src="{!$Resource.image014}"/>
+                </li>
+            </ul>
+        </span>
+    </apex:outputPanel>
+    <!--<apex:outputPanel rendered="{!enableCaseFeed && !hasFeedExtension}">
+        Please install the Case Feed Extension package in order to enable E2CP Case Feed support.
+        <p>
+            <a href="https://ic.secure.force.com/e2cpfeedprod">Production</a> | <a href="https://ic.secure.force.com/e2cpfeedsand">Sandbox</a>
+        </p>
+    </apex:outputPanel>-->
+</apex:pageBlockSection>
+
+<!-- start email service -->
+<apex:actionFunction action="{!loadData}" name="refreshPanel" reRender="opEmailService" />
+<apex:pageBlockSection columns="1" title="1. Incoming Email Routing" id="pbIncoming"><!-- rendered="{!!enableCaseFeed || hasFeedExtension}"-->
+
+    <apex:outputPanel id="opEmailService" rendered="{!SupportsAPI}">
+        <apex:outputPanel rendered="{!ExistingService == null || ExistingService.size == 0}" >
+        An Email Service must be created for incoming emails to be processed by Email to Case Premium.
+        <br/>
+        <input class="btn" id="btnCreateService" type="button" value="Create New Email Service" onclick="$('#EmailServiceForm').dialog('open');"/>
+        <br/><br/>
+        </apex:outputPanel>
+    
+        <apex:outputPanel rendered="{!ExistingService == null || ExistingService.size != 0}">
+        An Email Service exists for Email to Case Premium. 
+        <input class="btn" type="button" value="View" onclick="window.open('/email-admin/services/detailEmailServicesFunction.apexp?id={!ExistingService[0].Id}')" />
+        <br/>
+        </apex:outputPanel>
+        
+        <apex:outputPanel rendered="{!(ExistingService == null || ExistingService.size != 0) && ExistingAddress.size == 0}" >  
+        A routing address must be created for the Email Service. Click the View button above and select New Email Address.
+        </apex:outputPanel>
+        
+        <apex:outputPanel rendered="{!ExistingAddress.size != 0}" >  
+        Your email routing address: <b><font color="green">{!ExistingAddress[0].LocalPart}@{!ExistingAddress[0].EmailDomainName}</font></b>
+        <p>
+        For testing, you may want to have your IT department setup supporttest@yourcompany.com to forward to the routing address above. When you are ready to move to production, you can have your IT department forward emails addressed to support@yourcompany.com to that routing address as well.
+        </p>
+        </apex:outputPanel>
+    </apex:outputPanel>
+
+    <apex:outputPanel id="opManual" rendered="{!NOT(SupportsAPI)}">
+        <p>
+        <b>a. New Email Service: </b>
+        <a href="/email-admin/services/editEmailServicesFunction.apexp" target="_blank">Click
+        here to add an Email Service</a> or navigate to <i>Setup &gt; Develop &gt;
+        Email Services</i> <i>and click New Email Service.</i> Provide a common name
+        such as Email to Case Premium, and select the ProcessMessage class for the
+        Apex Class field. We recommend using the settings as pictured below,
+        however you may set them as you see fit for your organizations needs. When
+        finished, click Save and New Email Address
+        </p>
+        
+        <p>
+        <apex:image url="{!$Resource.E2CP__image003_0}" width="621" height="443" styleClass="helpimg" />
+        </p>
+        
+        <p>
+        <b>b. Email Service Address: </b>
+        Choose an email address name for internal use. In the example below, we suggest "e2cpremium", but you can use whatever you like. This address will not be exposed to your customers. The "Active" box should be checked by default.
+        </p>
+        
+        <p>
+        For the "Context User", we recommend using a dedicated API user account if you have one. This user will appear as the Created By user for new records created by Email to Case Premium. In most instances, you will want to use the same User Account specified as the <a href=" /_ui/support/organization/SupportOrganizationSetupUi/d?setupid=CaseSettings" target="_blank">"Automated Case User" in Support Settings.</a>
+        </p>
+        <p>
+        <u>Be sure to clear the Accept Email From field unless you want to restrict who can use Email to Case Premium.</u>
+        </p>
+        
+        <p>
+        <apex:image url="{!$Resource.E2CP__image004}" width="620" height="290" styleClass="helpimg" />
+        </p>
+        
+        <p>
+        <b>c. Setup Forwarding: </b>
+        After you click save, you will return to
+        the main Email Service screen and you will see the routing address assigned by
+        Salesforce.com, <a name="thePage_theForm_pageBlock2_addressTable_"><span
+        style='font-size:9.0pt;line-height:115%;font-family:Arial;color:#333333'>in the
+        example below: </span></a><a
+        href="mailto:e2cpremium@j-67885q4x4pp12gryef7s87erz.in.salesforce.com"><span
+        style='font-size:9.0pt;line-height:115%;font-family:Arial'>e2cpremium@j-67885q4x4pp12gryef7s87erz.in.salesforce.com</span></a><span
+        style='font-size:9.0pt;line-height:115%;font-family:Arial;color:#333333'>. For
+        testing, you may want to have your IT department setup </span><a
+        href="mailto:supporttest@yourcompany.com"><span style='font-size:9.0pt;
+        line-height:115%;font-family:Arial'>supporttest@yourcompany.com</span></a><span
+        style='font-size:9.0pt;line-height:115%;font-family:Arial;color:#333333'> to
+        forward to the routing address assigned to you. When you are ready to move to
+        production, you can have your IT department forward emails addressed to </span><a
+        href="mailto:support@yourcompany.com"><span style='font-size:9.0pt;line-height:
+        115%;font-family:Arial'>support@yourcompany.com</span></a><span
+        style='font-size:9.0pt;line-height:115%;font-family:Arial;color:#333333'> to
+        that routing address as well.</span></p>
+        
+        <p>
+        <apex:image url="{!$Resource.E2CP__image009}" width="620" height="153" styleClass="helpimg" />
+        </p>
+    </apex:outputPanel>
+</apex:pageBlockSection>
+
+<apex:pageBlockSection columns="1" title="2. Contact Substitution (optional)" id="pbsBlackhole"><!-- rendered="{!!enableCaseFeed || hasFeedExtension}"-->
+    
+    <p>
+    Salesforce requires a primary Contact to be included on template-driven outbound emails such as those sent via Email to Case Premium. In order to successfully send emails without the Case Contact, E2CP can automatically substitute a Contact that you pre-define.
+    </p>
+    <ul>
+        <li>
+        The Contact needs to be associated with an Account that all E2CP users have Read access to. If you have an Account for your organization, that would probably be a good choice.
+        </li>
+        <li>
+        The Substitute Contact’s first and last name can contain whatever text you like.
+        </li>
+        <li>
+        Note that although the contact is needed for template rendering it will not be included on the email.
+        </li>
+    </ul>
+
+    <apex:outputPanel id="opBlackHoleEmailService">
+        <p>
+            <b>a.</b> Create a Substitute Contact.
+        </p>
+        <p>
+            <a href="/003/e" target="_blank">Click here to create the Contact.</a>
+        </p>
+    </apex:outputPanel>
+    
+    <apex:outputPanel >
+    <b>b.</b>
+    Select the Contact you created &nbsp; <apex:inputField value="{!DummyCase.ContactId}" label=""/>
+    </apex:outputPanel>
+</apex:pageBlockSection>
+
+
+<apex:pageBlockSection columns="1" title="3. Outgoing Email Routing"><!-- rendered="{!!enableCaseFeed || hasFeedExtension}"-->
+    <apex:outputPanel >
+    <p>
+    Set up Organization Wide Addresses so that when customers reply to new emails sent from Salesforce, the replies are returned to your Email to Case Premium routing address(es) rather than your users’ personal email addresses.
+    </p>
+    
+    <p>
+    <a href="/0D2/e" target="_blank">Click here to add an Organization Wide Address</a> or navigate to <i>Setup > Email Administration > Organization-Wide Addresses</i> and click Add.
+    
+    To expedite initial testing, you can use the salesforce routing address created earlier and click Save.
+    </p>
+    
+    <p>
+    <apex:image url="{!$Resource.E2CP__image007}" width="620" height="386" style="box-shadow: 4px 4px 4px #999;" styleClass="helpimg" />
+    </p>
+    
+    <p>
+    <b>Note: When you add a new organization-wide address, it must be verified as a valid email address before becoming available for use. If the email address you entered is already forwarding to the salesforce.com routing address you created earlier, a new case will be created out of the verification email.  If you have not received your verification email/case, click Resend to have another one sent.</b>
+    </p>
+    </apex:outputPanel>
+</apex:pageBlockSection>
+
+<apex:pageBlockSection columns="1" title="4. Organization Configuration"><!-- rendered="{!!enableCaseFeed || hasFeedExtension}"--> <!-- Custom New Comment Page -->
+    <apex:outputPanel >
+        <ol id="config-list">
+            <apex:outputPanel rendered="{!!ENABLE_CASE_FEED_EXTENSION}">
+                <li>
+                    <b>Case Page Layouts</b>
+                </li>
+                <ul>
+                    <li>
+                        <b>New Comment Button: </b>
+                        You must add a button to your case page layouts to be able to access the custom New Comment page included 
+                        with the package.
+                        <a href="/ui/setup/layout/PageLayouts?type=Case&amp;setupid=CaseLayouts" target="_blank">Click
+                        here to access Case Page Layouts</a> or browse to <i>Setup &gt; Customize &gt;
+                        Cases &gt; Page Layouts</i> and click on Edit next to the page layout you want to
+                        work with. Drag and drop the New Comment button to the custom buttons area
+                        of the page layout. Save the page layout. Note, if you are unable to see the
+                        button, check the Page Layout Assignment. We do not recommend adding the New Comment button to page layouts assigned to Customer Portal users.
+                        <apex:image url="{!$Resource.E2CP__image011}" width="620" height="auto" styleClass="helpimg" style="border:1px solid black;"/>
+                    </li>
+                    <li>
+                        <b>Comment List: </b>
+                        Optionally, you can also add the <a href="https://docs.internetcreations.com/?id=a1L40000003jnY7EAI" target="_blank">Comment List</a> to your case page layouts.
+                        It provides agents with an improved user experience and increases efficiency and adoption.
+                        Follow the instructions above to edit the page layout you'd like to work with.
+                        Drag and drop the Comment List Visualforce Page on to the layout and click the wrench in the upper right to update properties per the recommended configuration below.
+                        <ul>
+                            <li>Width: 100%</li>
+                            <li>Height: 100</li>
+                            <li>Show scrollbars: checked</li>
+                            <li>Show label: unchecked</li>
+                        </ul>
+                        <apex:image url="{!$Resource.E2CP__image017}" height="auto" styleClass="helpimg" style="border:1px solid black;"/>
+                    </li>
+                </ul>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!ENABLE_CASE_FEED_EXTENSION}">
+                <li>
+                    <b>Case Page Layouts: </b>
+                    <a href="https://help.salesforce.com/HTViewHelpDoc?id=case_interaction_creating_feed_layouts.htm" target="_blank">
+                        Follow these instructions to create and edit feed layouts in Case Feed</a>. You must add a custom action to your case page layouts to be able to access the Answer Customer action included with the package. Make sure you are selecting the Answer Customer page in the E2CP namespace. If prompted for a height, enter 550 pixels. If a standard action also named Answer Customer is already on the layout, remove it and replace with the new custom action.
+                </li>
+            </apex:outputPanel>
+            <li>
+                <b>Page Permissions: </b> You must assign profile permissions for the {!IF(ENABLE_CASE_FEED_EXTENSION,'Answer Customer','New Comment')} page.
+                <a href="/_ui/perms/ui/profile/ApexPageProfilePermissionEdit/e?apex_id={!IF(ENABLE_CASE_FEED_EXTENSION,answerCustomerPageId,NewCmtPageId)}&apex_name={!IF(ENABLE_CASE_FEED_EXTENSION,'AnswerCustomer','New_Comment')}&apex_namespace=E2CP&save_button=has_save_button&setupid=ApexPages" 
+                target="_blank">Click here and move desired profiles to the Enabled box.</a>
+            </li>
+            
+            <apex:outputPanel rendered="{!SupportsAPI}">
+                <li>
+                    <b>Field Level Security: </b>
+                    <a target="_blank" href="/p/setup/layout/LayoutFieldList?type=Case&setupid=CaseFields">Click here</a> or navigate to Setup > Customize > Cases > Fields. For each of the following fields, click on the field name and then choose "Set Field-Level Security" and make sure that each profile for E2CP end users has "Visible" selected and NOT "Read-Only". 
+                    <ul>
+                        <li>AdditionalTo</li>
+                        <li>AdditionalCC</li>
+                        <li>AdditionalBCC</li>
+                        <li>Case Thread Id (Formula field - must be Read-Only)</li>
+                        <li>ExtraEmails</li>
+                        <apex:outputPanel rendered="{!!ENABLE_CASE_FEED_EXTENSION}">
+                            <li>HistoryText</li>
+                            <li>Most Recent Public Comment</li>
+                            <li>Most Recent Private Comment</li>
+                        </apex:outputPanel>
+                    </ul>
+                </li>
+            </apex:outputPanel>
+        </ol>
+    </apex:outputPanel>
+</apex:pageBlockSection>
+
+        </apex:pageBlock>
+    </apex:form>
+    
+    <script>
+    //collapse Contact Substitution section
+    twistSection(document.getElementById("{!$Component.frmMain.pbMain.pbsBlackhole}").firstChild.firstChild);
+    </script>
+    
+    <script>
+    //overwrite help
+    var hlinks = document.getElementsByClassName('links')[0];
+    updateText(hlinks,'',false);
+    hlinks.appendChild(createLink('Documentation','https://ic.secure.force.com/e2cpdocs'));
+    hlinks.appendChild(createTextElement('span',' | '));
+    hlinks.appendChild(createLink('Knowledge Base','https://kb.internetcreations.com/pkb_Home?l=en_US&c=Products%3AEmail_to_Case_Premium'));
+    hlinks.appendChild(createTextElement('span',' | '));
+    hlinks.appendChild(createLink('e2cpremium@internetcreations.com','mailto:e2cpremium@internetcreations.com'));
+    hlinks.appendChild(createTextElement('span',' '));
+    hlinks.appendChild(createHelpIcon());
+    hlinks.appendChild(createTextElement('span','\r\n'));
+    //hlinks.appendChild(createTextElement('div','Free implementation assistance is available.'));
+    
+    hlinks.style.fontSize = 'larger';
+    hlinks.style.position = 'absolute';
+    hlinks.style.float  = 'right';
+    hlinks.style.right = '0%';
+    
+    function createLink(text,ref) {
+        var link = document.createElement('a');
+        updateText(link,text,false);
+        link.href = ref;
+        link.target = '_blank';
+        return link;
+    }
+    
+    function createTextElement(tag,text) {
+        var elem = document.createElement(tag);
+        updateText(elem,text,false);
+        if (tag == 'div')
+            elem.style.fontSize = 'smaller';
+        elem.style.color = 'black';
+        elem.style.textDecoration = 'none';
+        return elem;
+    }
+    
+    function createHelpIcon() {
+        var icon = document.createElement('img');
+        icon.src = '/s.gif';
+        icon.alt = 'Help';
+        icon.className = 'helpIcon';
+        icon.title = 'Help';
+        return icon;
+    }
+    
+    if ({!enableCaseFeed})
+        document.getElementById('feed-sec-radio').checked = true;
+    else
+        document.getElementById('std-sec-radio').checked = true;
+
+    //Bill - ctrl + s to quick save
+    addEventListener('keydown', function(e) {
+        if(e.ctrlKey && e.keyCode == 83) {
+            document.querySelector('input[id$=\':quickSave\']').click();
+            e.preventDefault();
+        }
+    });
+    </script>
+    
+</apex:outputPanel>
+</apex:page>

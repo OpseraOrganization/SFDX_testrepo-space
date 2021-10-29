@@ -1,0 +1,569 @@
+<!--  
+ --  Apttus Billing management
+ --  ManageBillingPlan2
+ --   
+ --  @2018-2020 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Config2__BillingPlan__c"
+           extensions="Apttus_Billing.ManageBillingPlan2Controller"
+           action="{!doPrepare}">
+    
+    <script type="text/javascript">
+        function selectAllCheckboxes(obj){
+            var inputCheckBox = document.getElementsByTagName("input");                  
+            for(var i=0; i<inputCheckBox.length; i++){          
+                inputCheckBox[i].checked = obj.checked;
+            }
+        }
+    </script>
+    
+    <apex:stylesheet value="{!URLFOR($Resource.Apttus_Billing__BillingPlanCSS)}"/>
+    
+    <apex:form >
+        
+        <apex:actionFunction name="populateProposalWithLineItems" 
+                             action="{!doPrepare}" 
+                             rerender="idBilligPlanFlow"
+                             status="idRefreshingStatus" /> 
+        
+        <apex:actionFunction name="resetQuoteLineItemPageSize" 
+                             action="{!doResetQuoteLineItemPageSize}" 
+                             reRender="idLineItemSection"
+                             status="idRefreshingStatus" />
+                             
+        <apex:actionFunction name="resetPlanItemPageSize" 
+                             action="{!doResetPlanItemPageSize}" 
+                             reRender="idInvoiceDateAndAmountSection"
+                             status="idRefreshingStatus" />
+                             
+        <apex:actionFunction name="getBillingPlanTemplateDetail" 
+                             action="{!doGetBillingPlanTemplateDetail}" 
+                             reRender="idBilligPlanFlow"
+                             status="idRefreshingStatus"/>
+                             
+        <apex:actionStatus id="idRefreshingStatus" 
+                           style="font-style:bold;" 
+                           startText="{!$Label.apttus__refreshing}"/>
+        
+        <apex:pageBlock id="idBilligPlanFlow" 
+                        title="{!$ObjectType.Apttus_Config2__BillingPlan__c.Label}">
+            <apex:pageMessages />
+            <apex:outputPanel rendered="{!NOT(isOrderActivated || quoteLinesNotFound)}">
+                <div class="chevron-container clearfix">
+                    <apex:repeat value="{!chevronHeaderValues}" var="headerValue">
+                        <div class="{!IF(chevronHeaderValuesMap[headerValue]==true, 'chevron selected', 'chevron')}" 
+                                          id="idHeader">
+                            <span class="text">{!headerValue}</span>
+                        </div>
+                    </apex:repeat>
+                </div>
+                <br/><br/>  
+                
+                <!-- Define Billing Plan -->
+                <apex:pageBlockSection id="idPlanDetailSection" columns="1" rendered="{!showBillingPlan}">
+                
+                    <apex:pageBlockSectionItem >
+                        {!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__BillingPlanTemplateId__c.Label}
+                        <apex:outputField value="{!planSO.Apttus_Config2__BillingPlanTemplateId__c}" />
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        {!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Name.Label}
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!planSO.Name}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        {!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__PlanType__c.Label}
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"
+                                              rendered="{!!isBillingPlanByTemplate}"/>
+                            <apex:inputField value="{!planSO.Apttus_Config2__PlanType__c}"
+                                             rendered="{!!isBillingPlanByTemplate}">
+                                <apex:actionSupport event="onchange"
+                                                    rerender="idPlanDetailSection" />
+                            </apex:inputField>
+                            <apex:outputField value="{!planSO.Apttus_Config2__PlanType__c}" 
+                                          rendered="{!isBillingPlanByTemplate}" />
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!isPlanTypeFixed}">
+                        {!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__BillingStartDate__c.Label}
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!planSO.Apttus_Config2__BillingStartDate__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem rendered="{!isPlanTypeFixed}">
+                        {!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__BillingEndDate__c.Label}
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                            <apex:inputField value="{!planSO.Apttus_Config2__BillingEndDate__c}"/>
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        {!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__BillingMethod__c.Label}
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block"
+                                              rendered="{!!isBillingPlanByTemplate}"/>
+                            <apex:inputField value="{!planSO.Apttus_Config2__BillingMethod__c}" 
+                                             rendered="{!!isBillingPlanByTemplate}" />
+                            <apex:outputField value="{!planSO.Apttus_Config2__BillingMethod__c}" 
+                                         rendered="{!isBillingPlanByTemplate}" />
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        {!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__NumOfInstallments__c.Label}
+                        <apex:outputPanel styleClass="requiredInput" layout="block">
+                            <apex:outputPanel styleClass="requiredBlock" layout="block" 
+                                              rendered="{!!isBillingPlanByTemplate}"/>
+                            <apex:inputField value="{!planSO.Apttus_Config2__NumOfInstallments__c}" 
+                                             rendered="{!!isBillingPlanByTemplate}" />
+                            <apex:outputField value="{!planSO.Apttus_Config2__NumOfInstallments__c}" 
+                                              rendered="{!isBillingPlanByTemplate}" />
+                        </apex:outputPanel>
+                    </apex:pageBlockSectionItem>
+                    
+                    <apex:pageBlockSectionItem >
+                        {!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__Description__c.Label}
+                        <apex:inputField value="{!planSO.Apttus_Config2__Description__c}" />
+                    </apex:pageBlockSectionItem>
+                    
+                </apex:pageBlockSection>
+                                                
+                <!-- Select or Edit Line Items -->
+                <apex:pageBlockSection columns="1" 
+                                       title="{!$Label.apttus_billing__selectlineitems}"
+                                       id="idLineItemSection"
+                                       rendered="{!showLineItems}"
+                                       collapsible="false">
+                
+                    <apex:inputField value="{!planSO.Apttus_QPConfig__ProposalId__c}"
+                                     onchange="populateProposalWithLineItems();"
+                                     rendered="{!if(planSO.Apttus_QPConfig__ProposalId__c == null, true, false)}" />
+                    <apex:outputField value="{!planSO.Apttus_QPConfig__ProposalId__c}"
+                                      rendered="{!if(planSO.Apttus_QPConfig__ProposalId__c != null, true, false)}" />
+                   
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="{!$ObjectType.Apttus_Config2__BillingPlan__c.fields.Apttus_Config2__BillingPlanTemplateId__c.Label}"></apex:outputLabel>
+                        <apex:panelGroup >
+                            <apex:inputField value="{!planSO.Apttus_Config2__BillingPlanTemplateId__c}"
+                                             onChange="getBillingPlanTemplateDetail();" /> <br />
+                            <apex:commandLink value="Create new Template" 
+                                              id="createTemplateLink"
+                                              onclick="var url='{!newPlanTemplateURL}'; window.open(url);" />
+                        </apex:panelGroup>
+                    </apex:pageBlockSectionItem>
+                                      
+                    <apex:pageBlockTable id="idLineItemList" value="{!setQuoteLineItemList}"
+                                                 var="quoteLineItem">
+                        <apex:column >
+                            <apex:facet name="header">
+                                <apex:inputCheckbox onclick="selectAllCheckboxes(this,'inputId')"/> 
+                            </apex:facet>
+                            <apex:outputPanel >
+                                <apex:inputCheckbox value="{!quoteLineItem.selected}" 
+                                                    selected="{!quoteLineItem.selected}"/>
+                            </apex:outputPanel>
+                        </apex:column>
+
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c}"
+                            rendered="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c != null}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_Proposal__Product__c}"
+                            rendered="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c == null}" />
+
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__ChargeType__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__PriceType__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__StartDate__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__EndDate__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__Quantity2__c}"/>
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__NetPrice__c}" />
+                        
+                        <apex:column headerValue="{!$Label.apttus_billing__assettcv}"
+                                     value="{!quoteLineItem.assetTCV}"
+                                     rendered="{!isABOLineItem}" />
+                        
+                        <apex:column headerValue="{!$Label.apttus_billing__remainingbillableamount}"
+                                     value="{!quoteLineItem.remainingBillableAmount}"
+                                     rendered="{!isABOLineItem}" />
+                    
+                    </apex:pageBlockTable>
+                    <apex:outputPanel rendered="{!setQuoteLineItemList.size > 0}">
+                        <div style="text-align:right">
+                            &lt;<apex:outputLabel rendered="{!Not(hasPreviousQuoteLineItems)}">{!$Label.apttus_billing__first}</apex:outputLabel>
+                            <apex:commandLink rendered="{!hasPreviousQuoteLineItems}" 
+                                              action="{!firstQuoteLineItems}" 
+                                              reRender="idLineItemSection"
+                                              status="idRefreshingStatus">
+                                {!$Label.apttus_billing__first}
+                            </apex:commandLink>
+                            &nbsp;|&nbsp;
+                            <apex:outputLabel rendered="{!Not(hasPreviousQuoteLineItems)}">{!$Label.apttus_config2__previous}</apex:outputLabel>
+                                <apex:commandLink rendered="{!hasPreviousQuoteLineItems}" 
+                                                  action="{!previousQuoteLineItems}" 
+                                                  reRender="idLineItemSection"
+                                                  status="idRefreshingStatus">
+                                    {!$Label.apttus_config2__previous}
+                                </apex:commandLink>
+                                &nbsp; Page {!quoteLineItemIterable.currentPage} of {!quoteLineItemIterable.totalPages} &nbsp;
+                                <apex:outputLabel rendered="{!Not(hasNextQuoteLineItems)}">{!$Label.apttus_config2__next}</apex:outputLabel>
+                                <apex:commandLink rendered="{!hasNextQuoteLineItems}" 
+                                                  action="{!nextQuoteLineItems}" 
+                                                  reRender="idLineItemSection"
+                                                  status="idRefreshingStatus">
+                                    {!$Label.apttus_config2__next}
+                            </apex:commandLink>
+                            &nbsp;|&nbsp;
+                            <apex:outputLabel rendered="{!Not(hasNextQuoteLineItems)}">{!$Label.apttus_billing__last}</apex:outputLabel>
+                            <apex:commandLink rendered="{!hasNextQuoteLineItems}" 
+                                              action="{!lastQuoteLineItems}" 
+                                              reRender="idLineItemSection"
+                                              status="idRefreshingStatus">
+                                {!$Label.apttus_billing__last}
+                                </apex:commandLink>&gt;                            
+                            &nbsp;&nbsp;&nbsp;
+                            <b><apex:outputText value="Page Size : "/></b> &nbsp;
+                            <apex:selectList value="{!pageSize}" size="1" 
+                                             onchange="resetQuoteLineItemPageSize()">
+                                <apex:selectOptions value="{!pageSizeOptions}" />
+                            </apex:selectList>
+                        </div>
+                    </apex:outputPanel>
+                </apex:pageBlockSection>
+                
+                <!-- Define Invoice date and Amount -->
+                <apex:outputPanel id="idDefineInvoiceDateAndAmountSection" rendered="{!showFinalStep}">
+                    
+                    <!-- Display billing plan details with max start date, end date and total amount -->
+                    <table style="width:100%;">
+                        <tr>
+                            <th width="3%">
+                                <apex:outputLabel >{!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Name.Label}</apex:outputLabel>
+                            </th>
+                            <td width="10%">
+                                <apex:outputLabel >{!planSO.Name}</apex:outputLabel>
+                            </td>
+                            <th width="3%">
+                                <apex:outputLabel >{!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__NumOfInstallments__c.Label}</apex:outputLabel>
+                            </th>
+                            <td width="5%">
+                                <apex:outputLabel >{!planSO.Apttus_Config2__NumOfInstallments__c}</apex:outputLabel>
+                            </td>
+                            <th width="3%">
+                                <apex:outputLabel >{!$ObjectType.Apttus_Proposal__Proposal_Line_Item__c.Fields.Apttus_QPConfig__StartDate__c.Label}</apex:outputLabel>
+                            </th>
+                            <td width="5%">
+                                <apex:outputText value="{0,date,MM/dd/yyyy}"> 
+                                    <apex:param value="{!startDate}" />
+                                </apex:outputText>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                <apex:outputLabel >{!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__PlanType__c.Label}</apex:outputLabel>
+                            </th>
+                            <td>
+                                <apex:outputLabel >{!planSO.Apttus_Config2__PlanType__c}</apex:outputLabel>
+                            </td>
+                            <th>
+                                <apex:outputLabel >{!$ObjectType.Apttus_Config2__BillingPlan__c.Fields.Apttus_Config2__BillingMethod__c.Label}</apex:outputLabel>
+                            </th>
+                            <td>
+                                <apex:outputLabel >{!planSO.Apttus_Config2__BillingMethod__c}</apex:outputLabel>
+                            </td>
+                            <th>
+                                <apex:outputLabel >{!$ObjectType.Apttus_Proposal__Proposal_Line_Item__c.Fields.Apttus_QPConfig__EndDate__c.Label}</apex:outputLabel>
+                            </th>
+                            <td>
+                                <apex:outputText value="{0,date,MM/dd/yyyy}"> 
+                                    <apex:param value="{!endDate}" />
+                                </apex:outputText> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <th colspan="4"></th>
+                            <th>{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__Amount__c.Label}</th>
+                            <td>
+                                <apex:outputText value="{0, number, 0.00000}">
+                                    <apex:param value="{!totalAmount}" />
+                                </apex:outputText>
+                            </td>
+                        </tr>
+                    </table>
+                    <br/>  
+                    
+                    <!-- Display selected line items -->
+                    <apex:pageBlockSection columns="1" 
+                                           title="{!$Label.apttus_billing__selectedlineitems}"
+                                           id="idLineItemReadOnlySection"
+                                           collapsible="false">
+                    
+                        <apex:pageBlockTable id="idLineItemReadOnlyList" value="{!selectedLineItems}" var="quoteLineItem">
+                            <apex:column >
+                                <apex:inputCheckbox value="{!quoteLineItem.selected}" 
+                                                    selected="true" 
+                                                    disabled="true"/>
+                            </apex:column>
+
+                            <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c}"
+                                rendered="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c != null}" />
+                            <apex:column value="{!quoteLineItem.lineItemSO.Apttus_Proposal__Product__c}"
+                                rendered="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c == null}" />
+
+                            <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__ChargeType__c}" />
+                            <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__PriceType__c}" />
+                            <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__StartDate__c}" />
+                            <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__EndDate__c}" />
+                            <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__Quantity2__c}"/>
+                            <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__NetPrice__c}" />
+                            
+                            <apex:column headerValue="{!$Label.apttus_billing__assettcv}"
+                                         value="{!quoteLineItem.assetTCV}"
+                                         rendered="{!isABOLineItem}" />
+                                         
+                            <apex:column headerValue="{!$Label.apttus_billing__remainingbillableamount}"
+                                         value="{!quoteLineItem.remainingBillableAmount}"
+                                         rendered="{!isABOLineItem}" />
+                        
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+                    
+                    <!-- Display Billing Plan entries -->
+                    <apex:pageBlockSection columns="1" 
+                                           title="{!$Label.apttus_billing__defineinvoicedateandamount}"
+                                           id="idInvoiceDateAndAmountSection"
+                                           collapsible="false">
+                        
+                        <apex:variable value="{!0}" var="index" />
+                        <apex:pageBlockTable value="{!setBillingPlanItemMilestoneWrapperList}" var="planItemMileStoneSO">
+
+                            <apex:column >
+                                <apex:variable value="{!index + 1}" var="index" />
+                            </apex:column>
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__PlanItemName__c.Label}">
+                                
+                                <apex:inputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__PlanItemName__c}"
+                                                 rendered="{!NOT(isViewMode)}" />
+                                <apex:outputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__PlanItemName__c}"
+                                                  rendered="{!isViewMode}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__PeriodStartDate__c.Label}"
+                                        rendered="{!isPlanTypeFixed}">
+                                <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!NOT(isViewMode)}">
+                                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                                    <apex:inputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__PeriodStartDate__c}"/>
+                                </apex:outputPanel>
+                                <apex:outputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__PeriodStartDate__c}"
+                                                  rendered="{!isViewMode}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__PeriodEndDate__c.Label}"
+                                        rendered="{!isPlanTypeFixed}">
+                                <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!NOT(isViewMode)}">
+                                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                                    <apex:inputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__PeriodEndDate__c}"/>
+                                </apex:outputPanel>
+                                <apex:outputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__PeriodEndDate__c}"
+                                                  rendered="{!isViewMode}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__Milestone2__c.Fields.Apttus_Config2__ExpectedDate__c.Label}"
+                                        rendered="{!isPlanTypeMilestone}">
+                                <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!NOT(isViewMode)}">
+                                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                                    <apex:inputField value="{!planItemMileStoneSO.milestone.Apttus_Config2__ExpectedDate__c}"/>
+                                </apex:outputPanel>
+                                <apex:outputField value="{!planItemMileStoneSO.milestone.Apttus_Config2__ExpectedDate__c}"
+                                                  rendered="{!isViewMode}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__Milestone2__c.Fields.Apttus_Config2__ActualDate__c.Label}"
+                                        rendered="{!isPlanTypeMilestone}">
+                                <apex:inputField value="{!planItemMileStoneSO.milestone.Apttus_Config2__ActualDate__c}"
+                                                     rendered="{!NOT(isViewMode)}"/>
+                                <apex:outputField value="{!planItemMileStoneSO.milestone.Apttus_Config2__ActualDate__c}"
+                                                  rendered="{!isViewMode}" />
+                            </apex:column>
+                    
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__ReadyForInvoiceDate__c.Label}" rendered="{!!isPlanTypeMilestone}">
+                                <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!NOT(isViewMode)}">
+                                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                                    <apex:inputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__ReadyForInvoiceDate__c}"/>
+                                </apex:outputPanel>
+                                <apex:outputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__ReadyForInvoiceDate__c}"
+                                                  rendered="{!isViewMode}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__PaymentTermId__c.Label}">
+                                
+                                <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!NOT(isViewMode)}">
+                                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                                    <apex:inputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__PaymentTermId__c}"/>
+                                </apex:outputPanel>
+                                <apex:outputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__PaymentTermId__c}"
+                                                  rendered="{!isViewMode}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__Amount__c.Label}"
+                            rendered="{!NOT(isBillingMethodPercentage)}">
+                                
+                                <apex:outputPanel styleClass="requiredInput" 
+                                      layout="block"
+                                      style="{!if((planLineItemIterable.currentPage == planLineItemIterable.totalPages && 
+                                              index == setBillingPlanItemMilestoneWrapperList.size), 'display:none', '')}">
+                                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                                    <apex:inputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__Amount__c}"
+                                                     rendered="{!NOT(isViewMode) && isBillingMethodAmount}">
+                                        <apex:actionSupport event="onchange" 
+                                                            action="{!doCalculatePercentFromAmount}" 
+                                                            reRender="idInvoiceDateAndAmountSection"
+                                                            status="idRefreshingStatus">
+                                        
+                                            <apex:param name="selectedCounter" assignTo="{!selectedCounter}" value="{!index}" />
+                                        </apex:actionSupport>
+                                        
+                                    </apex:inputField>
+                                </apex:outputPanel>
+                                <apex:outputField value="{!planItemMileStoneSO.billingPlanItem.Apttus_Config2__Amount__c}"
+                                      rendered="{!isViewMode || 
+                                                 isBillingMethodSplitEvenly ||
+                                                (planLineItemIterable.currentPage == planLineItemIterable.totalPages && 
+                                                 index == setBillingPlanItemMilestoneWrapperList.size)}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields[percentFieldAPIName].Label}"
+                            >
+                                
+                                <apex:outputPanel styleClass="requiredInput" 
+                                      layout="block" 
+                                      rendered="{!NOT(isViewMode) && 
+                                                isBillingMethodPercentage}"
+                                      style="{!if((planLineItemIterable.currentPage == planLineItemIterable.totalPages && 
+                                              index == setBillingPlanItemMilestoneWrapperList.size), 'display:none', '')}">
+                                    
+                                    <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                                    <apex:inputText value="{!planItemMileStoneSO.percentageValue}">
+                                        <apex:actionSupport event="onchange" 
+                                                            action="{!doCalculatePercentFromAmount}" 
+                                                            reRender="idInvoiceDateAndAmountSection"
+                                                            status="idRefreshingStatus">
+                                        
+                                            <apex:param name="selectedCounter" assignTo="{!selectedCounter}" value="{!index}" />
+                                        </apex:actionSupport>
+                                    </apex:inputText>
+                                </apex:outputPanel>
+                                <apex:outputText value="{!planItemMileStoneSO.percentageValue}"
+                                 rendered="{!isViewMode || 
+                                             !isBillingMethodPercentage ||
+                                             (planLineItemIterable.currentPage == planLineItemIterable.totalPages && 
+                                              index == setBillingPlanItemMilestoneWrapperList.size)}"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__Milestone2__c.Fields.Apttus_Config2__Status__c.Label}"
+                                        rendered="{!isPlanTypeMilestone}">
+                                <apex:outputField value="{!planItemMileStoneSO.milestone.Apttus_Config2__Status__c}"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Apttus_Config2__Milestone2__c.Fields.Apttus_Config2__Comments__c.Label}"
+                                        rendered="{!isPlanTypeMilestone}">
+                                <apex:inputTextarea value="{!planItemMileStoneSO.milestone.Apttus_Config2__Comments__c}"
+                                                    rendered="{!NOT(isViewMode)}" 
+                                                    rows="2"/>
+                                <apex:outputField value="{!planItemMileStoneSO.milestone.Apttus_Config2__Comments__c}"
+                                                  rendered="{!isViewMode}" />
+                            </apex:column>
+                        
+                        </apex:pageBlockTable>
+                        
+                        <apex:outputPanel >
+                            <div style="text-align:right">
+                                &lt;<apex:outputLabel rendered="{!Not(hasPreviousPlanLineItems)}">{!$Label.apttus_billing__first}</apex:outputLabel>
+                                <apex:commandLink rendered="{!hasPreviousPlanLineItems}" 
+                                                  action="{!firstPlanLineItems}" 
+                                                  reRender="idInvoiceDateAndAmountSection"
+                                                  status="idRefreshingStatus">
+                                    {!$Label.apttus_billing__first}
+                                </apex:commandLink>
+                                &nbsp;|&nbsp;
+                                <apex:outputLabel rendered="{!Not(hasPreviousPlanLineItems)}">{!$Label.apttus_config2__previous}</apex:outputLabel>
+                                <apex:commandLink rendered="{!hasPreviousPlanLineItems}" 
+                                                  action="{!previousPlanLineItems}" 
+                                                  reRender="idInvoiceDateAndAmountSection"
+                                                  status="idRefreshingStatus">
+                                    {!$Label.apttus_config2__previous}
+                                </apex:commandLink>
+                                &nbsp; Page {!planLineItemIterable.currentPage} of {!planLineItemIterable.totalPages} &nbsp;
+                                <apex:outputLabel rendered="{!Not(hasNextPlanLineItems)}">{!$Label.apttus_config2__next}</apex:outputLabel>
+                                <apex:commandLink rendered="{!hasNextPlanLineItems}" 
+                                                  action="{!nextPlanLineItems}" 
+                                                  reRender="idInvoiceDateAndAmountSection"
+                                                  status="idRefreshingStatus">
+                                    {!$Label.apttus_config2__next}
+                                </apex:commandLink>
+                                &nbsp;|&nbsp;
+                                <apex:outputLabel rendered="{!Not(hasNextPlanLineItems)}">{!$Label.apttus_billing__last}</apex:outputLabel>
+                                <apex:commandLink rendered="{!hasNextPlanLineItems}" 
+                                                  action="{!lastPlanLineItems}" 
+                                                  reRender="idInvoiceDateAndAmountSection"
+                                                  status="idRefreshingStatus">
+                                    {!$Label.apttus_billing__last}
+                                </apex:commandLink>&gt;
+                                &nbsp;&nbsp;&nbsp;
+                                <b><apex:outputText value="Page Size : "/></b> &nbsp;
+                                <apex:selectList value="{!planItemsPageSize}" size="1" 
+                                                 onchange="resetPlanItemPageSize()">
+                                    <apex:selectOptions value="{!pageSizeOptions}" />
+                                </apex:selectList>
+                             </div>
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <!-- Action buttons -->
+                <div class="clearfix">
+                    <div class="pull-left">                 
+                        <apex:commandButton value="{!$Label.apttus_config2__previous}"
+                                            rendered="{!NOT(isViewMode) && showPrevious}"
+                                            action="{!goToPreviousAction}"
+                                            reRender="idBilligPlanFlow"
+                                            status="idRefreshingStatus"
+                                            styleClass="actionButtons"/>
+                    </div>
+                    <div class="pull-right">
+                        <apex:commandButton value="{!$Label.apttus_config2__cancel}"
+                                            action="{!doReturn}" 
+                                            immediate="true"
+                                            rendered="{!NOT(isViewMode)}"
+                                            styleClass="actionButtons"/>
+                                            
+                        <apex:commandButton value="{!$Label.apttus_config2__next}"
+                                                rendered="{!NOT(isViewMode) && showNext}"
+                                                action="{!goToNextAction}"
+                                                reRender="idBilligPlanFlow"
+                                                status="idRefreshingStatus"
+                                                styleClass="actionButtons"/>
+                        
+                        <apex:commandButton value="{!$Label.apttus_config2__save}" 
+                                        rendered="{!NOT(isViewMode) && showFinalStep}"
+                                        action="{!doSavePlanItems}"
+                                        styleClass="actionButtons"/>
+                
+                    </div>
+                </div>
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!isOrderActivated || quoteLinesNotFound || isViewMode}">
+                <apex:commandButton value="{!$Label.apttus_config2__return}"
+                                    action="{!doReturn}" 
+                                    immediate="true"
+                                    styleClass="actionButtons"/>
+            </apex:outputPanel> 
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

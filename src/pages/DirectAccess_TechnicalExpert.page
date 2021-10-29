@@ -1,0 +1,1218 @@
+<apex:page cache="false" StandardController="Account" extensions="BGAProductCategory,BGAMobCustomWebtocase,BGACSM,BGATechserre,BGAMob_Offline_Controller" showHeader="false" docType="html-5.0" standardStylesheets="false">
+<apex:form >
+  
+<html lang="en" manifest="/bgadir/DirectAccess_appcache">
+<head>
+    <meta charset="utf-8"></meta>
+    <meta name="viewport" content="width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable = no"></meta>
+    <title> DRA Order Status </title>
+    <meta name="description" content="DAR aero app"></meta>
+
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.DirectAccess_Assets, 'css/bootstrap.min.css')}"> </link>
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.DirectAccess_Assets, 'css/DAR-styles.css')}"> </link>
+    
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/lib/jquery-3.2.1.min.js')}"> </script>
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/lib/bootstrap.min.js')}"> </script>
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/DAR-ui-interaction-scripts.js')}"></script>
+    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcDk05hQ7DPSeuUOOUOAUVzvSHPSYBXxU"></script> -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIfAm8knTqIxs6WyscHYRAGSHQp0WPQxE"></script>
+
+</head>
+<body>
+    <div id="DAR-wrapper">
+        <div class="DAR-content">
+            <!-- page related content -->
+            <section id="AOG" class="container DAR-subcontent">
+                <figure id="mapholder" class="row DAR-map-socket"> </figure>
+              <a onclick="addURL(this);" href="/bgadir/DirectAccess_Homepage" class="DAR-back-nav DAR-back-home"></a> <!-- for quick change use this onclick="javascript:location.href='/bgadir/DirectAccess_Homepage'"-->
+                <article class="row DAR-contact-block sectionHide">
+                    <h2 class="DAR-contact-heading"> Technical Support </h2>
+                    <p class="DAR-contact-note"> 24x7 Field Service Engineers just one click away. </p>
+                    <ul id="other-number-lbl" class="DAR-contact-list list-unstyled">                       
+                    </ul>
+                    <apex:outputText id="USnumber" style="display : none;" rendered="true" value="{!DA_TS_USNo}"></apex:outputText>
+                     <apex:outputText id="INTnumber" style="display : none;" rendered="true" value="{!DA_TS_IntlNo}" ></apex:outputText>
+                    <apex:outputText id="TSEmail" style="display : none;" rendered="true" value="{!DA_TS_Email}" ></apex:outputText>
+                    <apex:outputText id="TSEmailContact" style="display : none;" rendered="true" value="{!DA_TS_Email_Contact}" ></apex:outputText>
+					 <apex:outputText id="TSCountry" style="display : block;" rendered="true" value="{!DA_TS_Country}" ></apex:outputText>
+                    <span class="DAR-section-img DAR-tech-exp"> </span>
+                </article>
+                <div class="row DAR-tech-expert-conatainer sectionHide">
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs DAR-tab" id="DAR-tab" role="tablist">
+                        <li role="presentation" class="active"><a href="#all" aria-controls="home" role="tab" data-toggle="tab" onClick="showSkillSetRecs('all');"> All </a></li>
+                        <li role="presentation"><a href="#avionics" aria-controls="profile" role="tab" data-toggle="tab" onClick="showSkillSetRecs('Avionics');"> Avionics </a></li>
+                        <li role="presentation"><a href="#mechanical" aria-controls="messages" role="tab" data-toggle="tab" onClick="showSkillSetRecs('Mechanical');"> Mechanical </a></li>
+                    </ul>
+                    
+                    <!-- Tab panes -->
+                    <div class="tab-content">
+                        <div role="tabpanel" class="tab-pane active" id="all">
+                            <div class="panel-group DAR-accordion" id="allTechList" role="tablist" aria-multiselectable="true"></div>
+                        </div>
+                        <div role="tabpanel" class="tab-pane" id="avionics">
+                            <div class="panel-group DAR-accordion" id="avionicsTechList" role="tablist" aria-multiselectable="true"></div>
+                        </div>
+                        <div role="tabpanel" class="tab-pane" id="mechanical">
+                            <div class="panel-group DAR-accordion" id="mechanicalTechList" role="tablist" aria-multiselectable="true"></div>
+                        </div>
+                    </div>
+                </div>                
+            </section> 
+            
+            <!--ashwin-->
+            <section id="DAR-aog-screen-Contact" class="container DAR-subcontent">
+                <figure class="row DAR-map-socket DAR-cloud-bg"> </figure>
+              <p href="/bgadir/DirectAccess_TechnicalExpert" class="DAR-back-nav" onclick="hideMethod(true);"></p>
+                <article class="row DAR-contact-block DAR-clearSection" id="contactDetailsInfo">
+                </article>              
+            </section>
+            <!--ashwin-->
+            
+            <!-- map -->
+            <div id="locselector" style="display : none;">
+            <section id="DAR-location" class="container DAR-subcontent">
+                <h4 class="row text-center"> Location </h4>
+                <div class="row DAR-location-form">
+                       <div class="DAR-location-form-content">   
+                        <div id="fse-region-search-content"  class="form-group">
+                            <div class="DAR-dm-container">
+                                <select class="form-control input-lg" name="asm-country-choice" id="asm-country-choice">
+                                </select>
+                            </div>
+                        </div>
+                        <div id="fse-region-search-content" class="form-group">
+                            <div ID="DAR-state-choice" class="DAR-dm-container">
+                                <select id="asm-state-choice" class="form-control input-lg">
+                                </select>
+                            </div>    
+                        </div>
+                        <div class="form-group map-action">
+                        <button class="btn btn-primary btn-lg" id="Thisismylocation" type="button"> SET AS MY LOCATION </button>
+                        <span class="DAR-location-resetter" id="currentlocation"></span>
+                        </div>  
+                       </div>           
+                    <div id="mapholder1"  class="row DAR-map-socket">
+                    </div>                    
+                </div>
+                <span id="SubHome" class="DAR-back-nav"></span>
+            </section>
+            </div>
+            <!-- map -->             
+        </div>  
+    </div>
+    
+    <!-- Spinner -->
+    <div class="DAR-spinner-wrapper"> <span class="DAR-spinner"> </span> </div>
+    <!-- Spinner -->
+
+    <script>
+    
+        $(document).ready(function(){
+            
+            DAR.DARSpinner.init(true);
+            var presentLat = localStorage.getItem('latituteval-Local');
+            var presentLong = localStorage.getItem('longitudeval-Local');
+            var presentState = localStorage.getItem('stateval-Local');
+            var presentCountry = localStorage.getItem('countryval-Local');  
+            var defaultSet = localStorage.getItem('isDefault-Local');
+
+            if(((presentLat != null && presentLong != null) || presentState != null || presentCountry != null) && defaultSet == null)
+            {
+                showPositionFurther();
+                showPosition1Further();
+            }
+            else
+            {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError, {enableHighAccuracy: true,timeout: 20000,maximumAge: 0});
+                } else {
+                    x.innerHTML = "Geolocation is not supported by this browser.";
+                }
+
+                navigator.geolocation.getCurrentPosition(showPosition1, showError1);
+            }
+                    window.onload = $('#AOG').show(), $('#locselector').hide(); 
+                 
+                    $("#asm-country-choice").append("<option value='None'>None</option>");
+                    
+
+                    $("#asm-country-choice").change(function() { 
+                    DAR.DARSpinner.init(true);
+                    $("#asm-state-choice").html('');
+                    $('#asm-state-choice').hide();
+                    $('#DAR-state-choice').hide();
+                    var doc = $('#asm-country-choice option:selected').val();
+                    DAR.DARSpinner.init(false);
+
+                    $("#asm-state-choice").append("<option value='None'>None</option>").attr('selected', 'true');
+                    if (doc == "Area Covered US" || doc == "Areas Covered Canada") {
+                        DAR.DARSpinner.init(true);
+                        $('#asm-state-choice').show();
+                        $('#DAR-state-choice').show();
+                        BGACSM.getStatevalues(doc, function(result, event) {
+                        if (event.status) {
+                        console.log(':::::::::::check if 123');
+                            if (result.length != 0) {
+                            for (var i = 0; i < result.length; i++) {
+                                $("#asm-state-choice").append("<option value='" + result[i] + "'>" + result[i] + "</option>");
+                                DAR.DARSpinner.init(true);
+                        }
+                        DAR.DARSpinner.init(false);
+                            //$('#asm-state-choice').selectmenu("refresh", true).selectmenu('enable');
+                        }
+                        } else {
+                            console.log(':::::::::::check else 123');                    
+                        }
+                        });
+                    }
+                });
+        
+        
+                $('#SubHome').click(function() {
+                
+                    DAR.DARSpinner.init(true);
+
+                    $('#locselector').hide();
+                    $('#AOG').show();
+
+                    DAR.DARSpinner.init(false);
+                });
+
+
+                 $('#currentlocation').click(function() {
+
+                    DAR.DARSpinner.init(true);
+
+                    localStorage.removeItem('latituteval-Local');
+                    localStorage.removeItem('longitudeval-Local');
+                    localStorage.removeItem('stateval-Local');
+                    localStorage.removeItem('countryval-Local');  
+                    localStorage.removeItem('isDefault-Local');
+
+                    location.reload();
+
+                });
+
+                
+                $('.DAR-back-home').click(function(e) {
+                    console.log('@@@@');
+                    redirect = $(this).attr('href');
+                    e.preventDefault();
+                    $('body').fadeOut(300, function() {
+                        document.location.href = redirect
+                    });
+                });
+                
+                window.onload = $('#locselector').hide();
+                
+                $('#mapholder').click(function() {
+                
+                if ($('#asm-country-choice').val() == "None")
+                $('#DAR-state-choice').hide();
+                  console.log('testcountry');
+                 BGACSM.getASMCountryvalues(function(result, event) {
+                        DAR.DARSpinner.init(true);
+                        if (event.status) {
+                        DAR.DARSpinner.init(true);
+                        if (result.length != 0) {
+                        DAR.DARSpinner.init(true);
+                            $("#asm-country-choice").append("<option value='Area Covered US'>USA</option>");
+                            $("#asm-country-choice").append("<option value='Areas Covered Canada'>CANADA</option>");
+                            for (var i = 0; i < result.length; i++) {
+                                DAR.DARSpinner.init(true);
+                                 console.log('testcountry'+result[i]);
+                                $("#asm-country-choice").append("<option value='" + result[i] + "'>" + result[i] + "</option>");
+                            }
+                        }
+                    }
+                    DAR.DARSpinner.init(false);  
+                    });              
+                    
+                    $('#AOG').hide();
+            
+                    $("#locselector").show();
+                    
+                    
+                    var s = localStorage.getItem('stateval-Local');
+                    var c = localStorage.getItem('countryval-Local');
+            
+                    if (s != null || c != null) {
+                     
+                     google.maps.event.trigger(map2, 'resize');
+                     map2.setZoom(3);
+                     }
+                    
+                    else{
+                    
+                    google.maps.event.trigger(map1, 'resize');
+                    map1.setZoom(10);                   
+                   }
+                });
+                
+    $('#Thisismylocation').click(function() {
+        DAR.DARSpinner.init(true);
+        
+        locationLoad='false'; // check
+        
+        if ($("#asm-country-choice").val() == 'None') {
+            alert('Please Select a Country');
+        }
+        
+        else {
+            DAR.DARSpinner.init(true);
+            
+            if ($('#asm-state-choice').val() == 'None' && $("#asm-country-choice").val() != 'None') {
+                console.log('2');
+                var map1 = new google.maps.Map(document.getElementById('mapholder1'), {
+                    zoom: 2,
+                    disableDefaultUI: true
+                });
+                //  $('[id$="TSCountry"]').val($("#asm-country-choice").val());
+                var geocoder = new google.maps.Geocoder();
+                
+                geocodeAddress(geocoder, map1);
+                localStorage.setItem('countryval-Local', $('#asm-country-choice').val());
+                localStorage.removeItem('stateval-Local');
+                localStorage.removeItem('latituteval-Local');
+                localStorage.removeItem('longitudeval-Local');
+            
+            } 
+            
+            else if ($('#asm-state-choice').val() != 'None' && $("#asm-country-choice").val() != 'None') {
+                console.log('4');
+                var map1 = new google.maps.Map(document.getElementById('mapholder1'), {
+                    zoom: 4,
+                    disableDefaultUI: true
+                });
+                
+                var geocoder = new google.maps.Geocoder();
+                
+                geocodeAddress(geocoder, map1);
+                localStorage.setItem('countryval-Local', $('#asm-country-choice').val());
+                localStorage.setItem('stateval-Local', $('#asm-state-choice').val());
+                localStorage.removeItem('latituteval-Local');
+                localStorage.removeItem('longitudeval-Local');
+            }
+            
+            $('#Cussupplist').empty();
+            searchgpsresults($("#asm-country-choice").val(), $('#asm-state-choice').val());
+            
+            $('#locselector').hide();
+            $('#AOG').show();
+            
+            if ($('#asm-country-choice').val() != 'None') {
+                console.log('test' + $('#asm-country-choice').val());
+                var map2 = new google.maps.Map(document.getElementById('mapholder'), {
+                    zoom: 4,
+                    disableDefaultUI: true
+                });
+                
+                var geocoder = new google.maps.Geocoder();
+                
+                geocodeAddress(geocoder, map2);
+            }
+            //DAR.DARSpinner.init(false);
+        }
+        DAR.DARSpinner.init(false);
+        
+        });   
+    
+    });
+      
+    var locationLoad;  
+    var map1;
+    var map2;
+                                       
+    function showPosition1(position) {
+        DAR.DARSpinner.init(true);
+        var s = localStorage.getItem('stateval-Local');
+        var c = localStorage.getItem('countryval-Local');
+        
+        if (s != null || c != null) {
+        
+            map2 = new google.maps.Map(document.getElementById('mapholder1'), {
+                zoom: 4,
+                disableDefaultUI: true
+            });
+            
+            var geocoder = new google.maps.Geocoder();
+            geocodeAddress(geocoder, map2);
+            searchgpsresults(c, s);
+        } 
+        else {
+            var lati = position.coords.latitude;
+            
+            var lngi = position.coords.longitude;
+            
+            var myLatLng = {
+                lat: lati,
+                lng: lngi
+            };
+            
+            map1 = new google.maps.Map(document.getElementById('mapholder1'), {
+                zoom: 15,
+                center: myLatLng,
+                disableDefaultUI: true
+            
+            });
+            
+            var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+            
+            var marker = new google.maps.Marker({
+                position: myLatLng,
+                map: map1,
+                title: 'Current location',
+                icon: icon
+            });
+            //DAR.DARSpinner.init(false);
+        }
+    }
+
+                    
+    function showError1(error) {
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+            // x.innerHTML = "User denied the request for Geolocation."
+            break;
+            case error.POSITION_UNAVAILABLE:
+            // x.innerHTML = "Location information is unavailable."
+            break;
+            case error.TIMEOUT:
+            // x.innerHTML = "The request to get user location timed out."
+            break;
+            case error.UNKNOWN_ERROR:
+            //x.innerHTML = "An unknown error occurred."
+            break;
+        }
+    }
+                    
+    function geocodeAddress(geocoder, resultsMap) {
+    
+        var s = localStorage.getItem('stateval-Local');
+        var c = localStorage.getItem('countryval-Local');
+        if ($('#asm-state-choice').val() == null || $('#asm-state-choice').val() == 'None') {
+        
+            if ($('#asm-country-choice').val() != null && $('#asm-country-choice').val() != 'None')
+            var address = document.getElementById('asm-country-choice').value;
+            else if (s != null && s != 'None') 
+            {
+                var address = s;
+            } 
+            else if (c != null && c != 'None') 
+            {
+                var address = c;
+            }
+        
+        } 
+        
+        else {
+            var address = document.getElementById('asm-state-choice').value;
+        }
+        
+        geocoder.geocode({
+        'address': address
+        }, function(results, status) {
+            if (status === 'OK') {
+                resultsMap.setCenter(results[0].geometry.location);
+                
+                var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+                
+                var marker = new google.maps.Marker({
+                map: resultsMap,
+                position: results[0].geometry.location,
+                icon: icon
+            });
+            
+            } else {
+                alert('Geocode was not successful for the following reason: ' + status);
+            }
+        });
+    }
+
+    function showPosition(position) {
+
+    var latlon = position.coords.latitude + "," + position.coords.longitude;
+
+    var lati = position.coords.latitude;
+
+    var lngi = position.coords.longitude;
+    
+    localStorage.setItem('latituteval-Local', lati);
+    localStorage.setItem('longitudeval-Local', lngi);
+    localStorage.removeItem('isDefault-Local');
+    localStorage.removeItem('stateval-Local');
+    localStorage.removeItem('countryval-Local');
+    timeoutBool = true;
+    
+    var myLatLng = {
+        lat: lati,
+        lng: lngi
+    };
+
+    var map = new google.maps.Map(document.getElementById('mapholder'), {
+        zoom: 15,
+        center: myLatLng,
+        disableDefaultUI: true
+
+    });
+
+    var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+
+    var marker = new google.maps.Marker({
+        position: myLatLng,
+        map: map,
+        title: 'Current location',
+        icon: icon
+    });
+
+    var geocoder = new google.maps.Geocoder;
+
+    geocoder.geocode({
+        'location': myLatLng
+    }, function(results, status) {
+
+        if (status === 'OK') {
+            if (results[0]) {
+
+                var arrAddress = results[0].address_components;
+
+                var itemLocality = '';
+                var itemCountry = '';
+
+
+                $.each(arrAddress, function(i, address_component) {
+
+                    if (address_component.types[0] == "administrative_area_level_1") {
+                        console.log("town:" + address_component.long_name);
+                        itemLocality = address_component.long_name;
+                    }
+
+                    if (address_component.types[0] == "country") {
+                        console.log("country:" + address_component.long_name);
+                        itemCountry = address_component.long_name;
+                    }
+
+                });
+
+                var s = localStorage.getItem('stateval-Local');
+                var c = localStorage.getItem('countryval-Local');
+                
+                if (s != null || c != null) {
+
+                    var map2 = new google.maps.Map(document.getElementById('mapholder'), {
+                        zoom: 4,
+                        disableDefaultUI: true
+                    });
+
+                    var geocoder = new google.maps.Geocoder();
+                    geocodeAddress(geocoder, map2);
+                    searchgpsresults(c, s);
+
+                } else {
+
+                    searchgpsresults(itemCountry, itemLocality);
+
+                }
+
+            } else {
+                window.alert('No results found');
+            }
+        } else {
+            window.alert('Geocoder failed due to: ' + status);
+        }
+    });
+
+    }
+        
+    function showError(error) {
+        timeoutBool = true;
+        DAR.DARSpinner.init(true);
+        localStorage.setItem('stateval-Local', 'Arizona');
+        localStorage.setItem('countryval-Local', 'United States');
+        localStorage.setItem('isDefault-Local', 'Yes');
+        console.log('arizona run');
+        showPositionFurther();
+        showPosition1Further();
+        //DAR.DARSpinner.init(false);
+    }
+
+    function showPositionFurther() {
+        var lati = localStorage.getItem('latituteval-Local');
+        var lngi = localStorage.getItem('longitudeval-Local');
+        var s = localStorage.getItem('stateval-Local');
+        var c = localStorage.getItem('countryval-Local');
+        
+        if((lati != null) && (lngi != null))
+        {
+            var myLatLng = {
+            lat: parseFloat(lati),
+            lng: parseFloat(lngi)
+        };
+        
+        var map = new google.maps.Map(document.getElementById('mapholder'), {
+            zoom: 15,
+            center: myLatLng,
+            disableDefaultUI: true
+        });
+        
+        var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+        
+        var marker = new google.maps.Marker({
+            position: myLatLng,
+            map: map,
+            title: 'Current location',
+            icon: icon
+        });
+        
+        var geocoder = new google.maps.Geocoder;
+        
+        geocoder.geocode({
+            'location': myLatLng
+        }, function(results, status) {
+        
+            if (status === 'OK') {
+                if (results[0]) {
+                var arrAddress = results[0].address_components;
+                var itemLocality = '';
+                var itemCountry = '';
+                
+                
+                $.each(arrAddress, function(i, address_component) {
+                
+                    if (address_component.types[0] == "administrative_area_level_1") {
+                        console.log("town:" + address_component.long_name);
+                        itemLocality = address_component.long_name;
+                    }
+                    
+                    if (address_component.types[0] == "country") {
+                        console.log("country:" + address_component.long_name);
+                        itemCountry = address_component.long_name;
+                    }
+                
+                });
+                
+                var s = localStorage.getItem('stateval-Local');
+                var c = localStorage.getItem('countryval-Local');
+                
+                if (s != null || c != null) {
+                
+                map2 = new google.maps.Map(document.getElementById('mapholder'), {
+                    zoom: 4,
+                    disableDefaultUI: true
+                });
+                
+                var geocoder = new google.maps.Geocoder();
+                geocodeAddress(geocoder, map2);
+                searchgpsresults(c, s);
+                
+                } 
+                
+                else {
+                searchgpsresults(itemCountry, itemLocality);
+                }
+                
+            } 
+            
+            else 
+            {
+            window.alert('No results found');
+            }
+            } 
+            else 
+            {
+            window.alert('Geocoder failed due to: ' + status);
+            }
+            
+        }
+        
+        );
+        }
+        
+        else if(s != null || c != null)
+        {
+            map2 = new google.maps.Map(document.getElementById('mapholder'), {
+                zoom: 4,
+                disableDefaultUI: true
+            });
+            
+            var geocoder = new google.maps.Geocoder();
+            geocodeAddress(geocoder, map2);
+            searchgpsresults(c, s);
+        }
+    }
+
+    function showPosition1Further() {
+        var s = localStorage.getItem('stateval-Local');
+        var c = localStorage.getItem('countryval-Local');
+        var lati = localStorage.getItem('latituteval-Local');
+        var lngi = localStorage.getItem('longitudeval-Local');
+    
+        if (s != null || c != null) {
+                map2 = new google.maps.Map(document.getElementById('mapholder1'), {
+                zoom: 4,
+                disableDefaultUI: true
+            });
+    
+            var geocoder = new google.maps.Geocoder();
+            geocodeAddress(geocoder, map2);
+            // searchgpsresults(c, s);//10Jan2020:Commented for Regional Support Number
+            // DAR.DARSpinner.init(false); -- Commented on Oct 6th
+    
+        } 
+        
+        else 
+        { 
+            var myLatLng = {
+                lat: parseFloat(lati),
+                lng: parseFloat(lngi)
+            };
+    
+                map1 = new google.maps.Map(document.getElementById('mapholder1'), {
+                zoom: 15,
+                center: myLatLng,
+                disableDefaultUI: true
+    
+            });
+    
+            var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+    
+            var marker = new google.maps.Marker({
+                position: myLatLng,
+                map: map1,
+                title: 'Current location',
+                icon: icon
+            });
+            
+        }
+       // DAR.DARSpinner.init(false); -- Commented on Oct 6th
+    }  
+    
+      
+    function searchgpsresults(country, state) {
+        //10Jan2020:Commented for Regional Support Number - Start
+        /*  if (country != 'undefined' && state != 'undefined') {
+            DAR.DARSpinner.init(true);
+            if (country == 'United States' || country == 'Area Covered US' ) {
+                doc = 'Area Covered US';
+            } else if (country == 'Canada' || country == 'Areas Covered Canada' ) {
+                doc = 'Areas Covered Canada';
+            } else {
+                doc = country;
+                state = '--None--';
+            }
+          DAR.DARSpinner.init(true);
+                    if( country == 'United States' || country == 'Area Covered US') {
+                       
+                        DAR.DARSpinner.init(true);
+                        $("#other-number-lbl").empty();
+                        var s = $('[id$="USnumber"]').text();
+                        console.log('&&&&&&Check S phone if'+s); 
+                        $("#other-number-lbl").append("<li class='DAR-phone'> <a id='DAR-contact-mode-tele' href='tel:"+s+"' class='DAR-contact-mode' >"+s+"</a></li>");
+                        DAR.DARSpinner.init(true);
+                        var s = $('[id$="TSEmail"]').text();  
+                        console.log('&&&&&&Check S email if'+s); 
+                        $("#other-number-lbl").append("<li class='DAR-email'> <a id='DAR-contact-mode-mail' href='mailto:"+s+"' class='DAR-contact-mode' >"+s+"</a></li>");
+                        // DAR.DARSpinner.init(false); -- Commented on Oct 6th Ashwin
+                        if(locationLoad!='false')
+                        {
+                        showSkillSetRecs('all');
+                        }
+            
+                    }  
+                    else{
+                        DAR.DARSpinner.init(true);
+                        $("#other-number-lbl").empty();
+                        var s = $('[id$="INTnumber"]').text();
+                        var selectedTelephone="";
+                        console.log('&&&&&&Check S phone else'+s); 
+                        BGATechserre.getPhoneValue(country, state, function(result, event) {
+                        console.log(result);
+                        $("#other-number-lbl").append("<li class='DAR-phone'> <a id='DAR-contact-mode-tele' href='tel:"+selectedTelephone+"' class='DAR-contact-mode' >"+selectedTelephone+"</a></li>");
+                        DAR.DARSpinner.init(true);
+                        var s = $('[id$="TSEmail"]').text(); 
+                        console.log('&&&&&&Check S email else'+s);                                      
+                        $("#other-number-lbl").append("<li class='DAR-email'> <a id='DAR-contact-mode-mail' href='mailto:"+s+"' class='DAR-contact-mode' >"+s+"</a></li>");
+                        DAR.DARSpinner.init(false);
+                        if(locationLoad!='false')
+                        {
+                        showSkillSetRecs('all');
+                        }
+                        });
+                        
+                    }  
+            }  *///10Jan2020:Commented for Regional Support Number--End
+    
+        if (country != 'undefined' && state != 'undefined') {
+            		   DAR.DARSpinner.init(true);
+                       $("#other-number-lbl").empty();
+                        var s = $('[id$="INTnumber"]').text();
+                        var selectedTelephone="";//10Jan2020:added for Regional Support Number
+                        console.log('&&&&&&Check S phone else'+s);
+                        //10Jan2020:added BGATechserre.getPhoneValue for Regional Support Number
+                        BGATechserre.getPhoneValue(country, state, function(result, event) {
+                        console.log(result);
+                        selectedTelephone=result;
+                        
+                        $("#other-number-lbl").append("<li class='DAR-phone'> <a id='DAR-contact-mode-tele' href='tel:"+selectedTelephone+"' class='DAR-contact-mode' >"+selectedTelephone+"</a></li>");
+                        DAR.DARSpinner.init(true);
+                        var s = $('[id$="TSEmail"]').text(); 
+                        console.log('&&&&&&Check S email else'+s);                                      
+                        $("#other-number-lbl").append("<li class='DAR-email'> <a id='DAR-contact-mode-mail' href='mailto:"+s+"' class='DAR-contact-mode' >"+s+"</a></li>");
+                        DAR.DARSpinner.init(false);
+                        if(locationLoad!='false')
+                        {
+                       	 showSkillSetRecs('all');
+                        }
+                        });
+        }     
+    }               
+    
+
+/*    function addURL(element){
+        
+                $(element).attr('href', function() {
+                var state = $('#asm-state-choice').val();
+                var country = $('#asm-country-choice').val();
+                if(state != 'NONE')           
+                var str1 ='?state='+state;
+                if(state == 'NONE'){
+                var str1 ='';
+                var str2 ='?country='+country;}
+                else
+                var str2 ='&country='+country;
+                if(state == null || country == 'NONE'){                
+                var str1 ='?state='+getParameterByName('state');
+                var str2 ='&country='+getParameterByName('country');
+                }
+                var qs = str1.concat(str2);
+                if((str1 == '?state=null' && str2 =='&country=null') || (str1 == '?state=None' && str2 =='&country=None') )
+                return this.href;
+                else            
+                return this.href +qs;
+            });
+}   
+
+function addurlhome(element){
+        
+                $(element).attr('href', function() {
+                var s = getParameterByName('state');
+                var c = getParameterByName('country');
+                if(s != null)           
+                var str1 ='?state='+s;
+                if(s == null ){
+                var str1 ='';
+                var str2 ='?country='+c;}
+                else
+                var str2 ='&country='+c;
+                if(s == null && c == null ){
+                var str1 ='';
+                var str2 ='';
+                }
+                var qs = str1.concat(str2); 
+                return this.href +qs;
+            });
+}  
+
+function getParameterByName(name, url){
+        if (!url) url = window.location.href;
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+}  */
+
+    function showSkillSetRecs(prodCheck){
+            DAR.DARSpinner.init(true);
+            console.log('::::test:::'+prodCheck);
+            var selectSkillTab = '';
+            if(prodCheck == 'all'){
+                DAR.DARSpinner.init(true);
+                selectSkillTab = 'allTechList';
+            }else if(prodCheck == 'Avionics'){
+                DAR.DARSpinner.init(true);
+                selectSkillTab = 'avionicsTechList';
+            }else if(prodCheck == 'Mechanical'){
+                DAR.DARSpinner.init(true);
+                selectSkillTab = 'mechanicalTechList';
+            }
+            $("#allTechList").empty();
+            $("#avionicsTechList").empty();
+            $("#mechanicalTechList").empty();
+
+            if (!navigator.userAgent.toLowerCase().match(/android/) && !navigator.userAgent.toLowerCase().match(/iphone/) && !navigator.userAgent.toLowerCase().match(/ipad/)){
+                DAR.DARSpinner.init(true);
+                var prod=prodCheck;
+                console.log('check status11');
+                BGAProductCategory.getProduct(prod,function(result, event){
+                DAR.DARSpinner.init(true);
+                    if(event.status){
+                    console.log('check status11'+event.status);
+                    DAR.DARSpinner.init(true);
+                    
+                    // ashwin logic jan 18 2018
+                    $("#allTechList").empty();
+                    $("#avionicsTechList").empty();
+                    $("#mechanicalTechList").empty();
+                    // ashwin logic jan 18 2018
+                    
+                        if(result.length != 0){
+                        DAR.DARSpinner.init(true);
+                            for(var n=0;n<result.length;n++){
+                                DAR.DARSpinner.init(true);
+                                var parDivDom = '<div class="panel panel-default" id="wrap-'+result[n].Id+'">';
+                                parDivDom += '<div id="par-'+result[n].Id+'" class="panel-heading" role="tab">';
+                                parDivDom += '<h4 class="panel-title">';
+                                parDivDom += '<a class="collapsed" role="button" data-toggle="collapse" data-parent="#'+selectSkillTab+'" href="#chl-'+result[n].Id+'" id="clk-'+result[n].Id+'" aria-expanded="true" aria-controls="collapseOne">'+result[n].Skill_Value__c+'</a>';
+                                parDivDom += '</h4>';
+                                parDivDom += '</div>'; 
+                                parDivDom += '</div>'; 
+                                showRelatedContacts(result[n].Id);
+                                if(prod == 'all'){
+                                    $("#allTechList").append(parDivDom);
+                                    //DAR.DARSpinner.init(false);
+                                }else if(prod == 'Avionics'){
+                                    $("#avionicsTechList").append(parDivDom);
+                                    //DAR.DARSpinner.init(false);
+                                }else if(prod == 'Mechanical'){
+                                    $("#mechanicalTechList").append(parDivDom);
+                                    //DAR.DARSpinner.init(false);
+                                }                           
+                            }
+                        }
+                        else{
+                            DAR.DARSpinner.init(true);
+                            var parDivDom = '<div class="panel panel-default" id="wrap-'+result[n].Id+'">';
+                                parDivDom += '<div id="par-'+result[n].Id+'" class="panel-heading" role="tab">';
+                                parDivDom += '<h4 class="panel-title">';
+                                parDivDom += '<a class="collapsed" role="button" data-toggle="collapse" data-parent="#'+selectSkillTab+'" href="#chl-'+result[n].Id+'" id="clk-'+result[n].Id+'" aria-expanded="true" aria-controls="collapseOne")>No TSE found</a>';
+                                parDivDom += '</h4>';
+                                parDivDom += '</div>'; 
+                                parDivDom += '</div>';
+
+                                if(prod == 'all'){
+                                    $("#allTechList").append(parDivDom);
+                                    //DAR.DARSpinner.init(false);
+                                }else if(prod == 'Avionics'){
+                                    $("#avionicsTechList").append(parDivDom);
+                                    //DAR.DARSpinner.init(false);
+                                }else if(prod == 'Mechanical'){
+                                    $("#mechanicalTechList").append(parDivDom);
+                                    DAR.DARSpinner.init(false);
+                                }
+                        }
+                        $(".bga-loader").hide();
+                    }
+                    else{
+                        $(".bga-loader").hide();             
+                        alert('Please try again after sometime');
+                    }
+                });
+            }
+            else if ((navigator.userAgent.toLowerCase().match(/android/) || navigator.userAgent.toLowerCase().match(/iphone/) || navigator.userAgent.toLowerCase().match(/ipad/))){
+                var prod=prodCheck;
+                BGAProductCategory.getProduct(prod,function(result, event){
+                    DAR.DARSpinner.init(true);
+                    console.log('check status22');
+                    if(event.status)
+                    {
+                    // ashwin logic jan 18 2018
+                    $("#allTechList").empty();
+                    $("#avionicsTechList").empty();
+                    $("#mechanicalTechList").empty();
+                    // ashwin logic jan 18 2018
+                    console.log('check status22'+event.status);
+                    DAR.DARSpinner.init(true);
+                        if(result.length != 0)
+                        {                     
+                            DAR.DARSpinner.init(true);       
+                            for(var n=0;n<result.length;n++){ 
+                                DAR.DARSpinner.init(true);
+                                var parDivDom = '<div class="panel panel-default" id="wrap-'+result[n].Id+'">';
+                                parDivDom += '<div id="par-'+result[n].Id+'" class="panel-heading" role="tab">';
+                                parDivDom += '<h4 class="panel-title">';
+                                parDivDom += '<a class="collapsed" role="button" data-toggle="collapse" data-parent="#'+selectSkillTab+'" href="#chl-'+result[n].Id+'" id="clk-'+result[n].Id+'" aria-expanded="true" aria-controls="collapseOne">'+result[n].Skill_Value__c+'</a>';
+                                parDivDom += '</h4>';
+                                parDivDom += '</div>'; 
+                                parDivDom += '</div>';  
+                                showRelatedContacts(result[n].Id);
+                                if(prod == 'all'){
+                                    $("#allTechList").append(parDivDom);
+                                    DAR.DARSpinner.init(false);
+                                }else if(prod == 'Avionics'){
+                                    $("#avionicsTechList").append(parDivDom);
+                                    DAR.DARSpinner.init(false);
+                                }else if(prod == 'Mechanical'){
+                                    $("#mechanicalTechList").append(parDivDom);
+                                    DAR.DARSpinner.init(false);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            DAR.DARSpinner.init(true);
+                            var parDivDom = '<div class="panel panel-default" id="wrap-'+result[n].Id+'">';
+                                parDivDom += '<div id="par-'+result[n].Id+'" class="panel-heading" role="tab">';
+                                parDivDom += '<h4 class="panel-title">';
+                                parDivDom += '<a class="collapsed" role="button" data-toggle="collapse" data-parent="#'+selectSkillTab+'" href="#chl-'+result[n].Id+'" id="clk-'+result[n].Id+'" aria-expanded="true" aria-controls="collapseOne">'+result[n].Skill_Value__c+'</a>';
+                                parDivDom += '</h4>';
+                                parDivDom += '</div>'; 
+                                parDivDom += '</div>'; 
+                                showRelatedContacts(result[n].Id);
+                            if(prod == 'all'){
+                                $("#allTechList").append(parDivDom);
+                                DAR.DARSpinner.init(false);
+                            }else if(prod == 'Avionics'){
+                                $("#avionicsTechList").append(parDivDom);
+                                DAR.DARSpinner.init(false);
+                            }else if(prod == 'Mechanical'){
+                                $("#mechanicalTechList").append(parDivDom);
+                                DAR.DARSpinner.init(false);
+                            }                                   
+                        }
+                    }
+                    else
+                    {        
+                        DAR.DARSpinner.init(true);
+                        alert('Please try again after sometime');
+                    }
+                });
+            }  
+        }
+        
+        //window.onload = showSkillSetRecs('all');
+                      
+        function showRelatedContacts(skillSetId){
+
+            //console.log(':::::showRelatedContacts:::::'+skillSetId);
+            var IsExpanded = $("#chl-"+skillSetId).hasClass("in");
+            //console.log('::::IsExpanded::::'+IsExpanded);
+            $(".conSecBool").empty();
+            console.log('check status33');
+            if(IsExpanded == false){
+
+                BGAProductCategory.getcontactlst(skillSetId,function(result, event){
+                    if(event.status)
+                    {
+                    console.log('check status33'+event.status);
+
+                        if(result.length != 0)
+                        {   
+                            console.log('::inside::');                                                                            
+                            if(result.length >= 1)
+                            {
+                                var contactSecHrdDom = '<div id="chl-'+skillSetId+'" class="panel-collapse collapse conSecBool" role="tabpanel" aria-labelledby="par-'+skillSetId+'">';
+                                    contactSecHrdDom += '<div class="panel-body">';
+                                    contactSecHrdDom += '<ul class="list-unstyled DAR-tech-contact-list">';
+                                var contactSecDom ='';
+                                
+                                for(var n=0;n<result.length;n++)
+                                {                                                 
+                                    var mobileapprole='';
+                                    var contactname='';
+                                    var contactrole='';
+                                    mobileapprole=result[n].Skill_Value__c;
+                                    if(typeof  result[n].Contact_Mobile_App_Role__c !== 'undefined')
+                                    {                                   
+                                        //mobileapprole=result[n].Contact_Mobile_App_Role__c;
+                                        contactrole=result[0].Contact_Mobile_App_Role__c;
+                                    }else{
+                                        //mobileapprole='';
+                                        contactrole='';
+                                    }
+                                    if(typeof  result[n].Contact_Name__c !== 'undefined')
+                                    {                                   
+                                        contactname=result[n].Contact_Name__c; 
+                                    }
+                                    else
+                                    {
+                                        contactname='';
+                                    }
+                    
+                                    contactSecDom += '<li>';
+                                    contactSecDom += '<a href="javascript: void(0);" class="DAR-tech-contact" onclick=show_more_menu_all("'+skillSetId+'","'+result[n].Contact__c+'");>';
+                                    contactSecDom += contactname;
+                                    contactSecDom += '</a>';
+                                    contactSecDom += '</li>';
+                                }
+                                contactSecDom = contactSecHrdDom + contactSecDom + '</ul></div></div>';
+                                $("#wrap-"+skillSetId).append(contactSecDom);                                
+                            }
+                            else
+                            {
+                                var contactname=result[0].Contact_Name__c;
+                                var contactrole=result[0].Contact_Mobile_App_Role__c;
+                                var contactId = result[0].Id;
+                                var contactSecHrdDom = '<div id="chl-'+skillSetId+'" class="panel-collapse collapse conSecBool" role="tabpanel" aria-labelledby="par-'+skillSetId+'">';
+                                    contactSecHrdDom += '<div class="panel-body">';
+                                    contactSecHrdDom += '<ul class="list-unstyled DAR-tech-contact-list">';
+                                var contactSecDom ='';
+                                    contactSecDom += '<li>';
+                                    contactSecDom += '<a href="javascript: void(0);" class="DAR-tech-contact" onclick=show_more_menu_all("'+skillSetId+'","'+contactId+'");>';
+                                    contactSecDom += contactname;
+                                    contactSecDom += '</a>';
+                                    contactSecDom += '</li>';
+                                    contactSecDom = contactSecHrdDom + contactSecDom + '</ul></div></div>';
+                                $("#wrap-"+skillSetId).append(contactSecDom);
+
+                                // $("#par-"+skillSetId).append("<li class='ui-li chl-"+skillSetId+" conlistSecCls' ><a onclick=show_more_menu_all('"+skillSetId+"','"+contactname+"'); style='color: #494949;white-space: normal;font-family: HoneywellSans-Medium;font-size: 20px;'>"+contactrole+"</a></li>");
+                            }                                       
+                        }
+                        else
+                        {
+                           var contactSecHrdDom = '<div id="chl-'+skillSetId+'" class="panel-collapse collapse conSecBool" role="tabpanel" aria-labelledby="par-'+skillSetId+'">';
+                                contactSecHrdDom += '<div class="panel-body">';
+                                contactSecHrdDom += '<ul class="list-unstyled DAR-tech-contact-list">';
+                            var contactSecDom ='';
+                                contactSecDom += '<li> <span> No Records Found </span> </li>';
+                                contactSecDom = contactSecHrdDom + contactSecDom + '</ul></div></div>';
+                            $("#wrap-"+skillSetId).append(contactSecDom);
+                        }
+                        $(".bga-loader").hide();
+                    }
+                    else
+                    {
+                        //$(".bga-loader").hide();                                 
+                        alert('Please try again after sometime');
+                    }
+                }); 
+                
+            }
+            DAR.DARSpinner.init(false);
+        }
+        
+        
+         var checkBoolean=true;
+        
+         function show_more_menu_all(indataSkill,indata1Con){
+                        DAR.DARSpinner.init(true);
+                        console.log('contactdetails:'+checkBoolean);
+                        
+                        checkBoolean=false;
+                        
+                        $(".DAR-clearSection").hide();
+                        $(".DAR-clearSection").empty();
+                        var $DARContactContainer = $("#DAR-aog-screen-Contact"); 
+                        BGAProductCategory.getContact(indata1Con, function(result, event){
+                        DAR.DARSpinner.init(true);
+                        if(result.length != 0) {
+                            DAR.DARSpinner.init(true);
+                            var contactFields='<article class="row DAR-contact-block DAR-clearSection">';
+                                contactFields+='<ul class="DAR-contact-list list-unstyled">';
+                                contactFields+='<h2 class="DAR-contact-heading DAR-clearSection"> '+result[0].Name+' </h2>';
+                                if(typeof result[0].Mobile_App_Role__c !== 'undefined')
+                                {
+                                contactFields +='<p>'+result[0].Mobile_App_Role__c+'</p>';
+                                }
+                                /*else
+                                {
+                                contactFields +='<p> No Data Found </p>';
+                                }*/
+                                if(typeof result[0].Employee_Region__c !== 'undefined')
+                                {
+                                contactFields +='<li class="DAR-location DAR-clearSection DAR-contact-mode">'+result[0].Employee_Region__c+'</li>';
+                                }
+                                /*else
+                                {
+                                contactFields +='<li class="DAR-location DAR-clearSection DAR-contact-mode"> No Data Found </li>';                                
+                                }*/
+                                if(typeof result[0].Mobile_App_Contact_Number__c !== 'undefined')
+                                {
+                                console.log('%%%%result[0].Mobile_App_Contact_Number__c'+result[0].Mobile_App_Contact_Number__c);
+                                contactFields +='<li class="DAR-phone DAR-clearSection">'+
+                                                 '<a id="'+result[0].Mobile_App_Contact_Number__c+'"class="DAR-contact-mode" href="Tel:'+result[0].Mobile_App_Contact_Number__c+'"+> '+result[0].Mobile_App_Contact_Number__c+'</a>&nbsp;'+
+                                                 ((result[0].Mobile_App_Contact_Number_Ext__c == null || result[0].Mobile_App_Contact_Number_Ext__c == '' || result[0].Mobile_App_Contact_Number_Ext__c == undefined)?'': '&nbsp;&nbsp;&nbsp;&nbsp;Ext.&nbsp;&nbsp;<a id="'+result[0].Mobile_App_Contact_Number_Ext__c+'"class="DAR-contact-mode" href="Tel:'+result[0].Mobile_App_Contact_Number_Ext__c+'"+>'+result[0].Mobile_App_Contact_Number_Ext__c+'</a>') +
+                                                 ' </li>';
+                                }
+                                /*
+                                //newly added priya
+                                if(typeof result[0].Mobile_App_Contact_Number_Ext__c !== 'undefined')
+                                {
+                                console.log('%%%%result[0].Mobile_App_Contact_Number_Ext__c'+result[0].Mobile_App_Contact_Number_Ext__c);
+                                contactFields +='<li class="DAR-phone DAR-clearSection"> <a id="'+result[0].Mobile_App_Contact_Number_Ext__c+'"class="DAR-contact-mode" href="Tel:'+result[0].Mobile_App_Contact_Number_Ext__c+'"+> '+result[0].Mobile_App_Contact_Number_Ext__c+' </a> </li>';
+                                }
+                                */
+                                /*else
+                                {
+                                contactFields +='<li class="DAR-phone DAR-clearSection"> <a id="'+result[0].Mobile_App_Contact_Number__c+'"class="DAR-contact-mode" href="Tel:'+result[0].Mobile_App_Contact_Number__c+'"+> No Data Found </a> </li>';                                
+                                }*/
+                                
+                                var s = $('[id$="TSEmailContact"]').text();
+                                contactFields +='<li class="DAR-email DAR-clearSection"> <a id="'+result[0].Email+'" class="DAR-contact-mode" href="mailto:'+s+'"> '+s+' </a> </li>';
+                                
+                                /*if(typeof result[0].Email !== 'undefined')
+                                {
+                                contactFields +='<li class="DAR-email DAR-clearSection"> <a id="'+result[0].Email+'" class="DAR-contact-mode" href="mailto:'+result[0].Email+'"> '+result[0].Email+' </a> </li>';
+                                }
+                                else
+                                {
+                                contactFields +='<li class="DAR-email DAR-clearSection"> <a id="'+result[0].Email+'" class="DAR-contact-mode" href="mailto:'+result[0].Email+'"> No Data Found </a> </li>';
+                                }*/
+                                contactFields +='</ul>';
+                                contactFields +='<span class="DAR-section-img DAR-tech-exp DAR-clearSection"> </span></article>';  
+                         }
+                         $DARContactContainer.append(contactFields);
+                         $DARContactContainer.siblings('section').hide(); 
+                         $("#DAR-aog-screen-Contact").show();  
+                         DAR.DARSpinner.init(false);
+                        });
+                        console.log('contactdetails1234567:'+checkBoolean)
+        }
+
+            function hideMethod(checkHide){
+                if(checkHide==true)
+                {
+                    console.log('back button enabled entered if'+checkHide);
+                    var $DARContactContainer = $("#DAR-aog-screen-Contact");
+                    $DARContactContainer.siblings('section').show();
+                    $("#DAR-aog-screen-Contact").hide();  
+                }
+                else
+                {
+                    console.log('back button enabled entered elseeeeeeeeee'+checkHide);
+                    $("#DAR-aog-screen-Contact").hide();                    
+                }
+            }
+            
+            if(checkBoolean==true)
+            {
+                console.log('entered CheckAsh if@@@@'+checkBoolean);
+                $("#DAR-aog-screen-Contact").onload=hideMethod(false);   
+            }      
+                              
+      
+</script>
+
+</body>
+</html>
+  
+ </apex:form>
+ 
+ <!-- added newly -->
+ 
+<site:googleAnalyticsTracking />
+<div class="mainForm" style="background-color: #303030;
+   color: #FFFFFF;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    left: 0;
+    height:15px">
+              <footer class="container">
+              <div class="row">
+                  <div class="form-group col-sm-7" >     
+                    
+                      <apex:outputLink style="color:#FFFFFF;" value="{!$Label.privacyLnk}"> Privacy Statement |</apex:outputLink>
+                      <apex:outputLink style="color:#FFFFFF;" value="{!$Label.optIn}"> Subscribe |</apex:outputLink> 
+                      <apex:outputLink style="color:#FFFFFF;" value="{!$Label.optOut}"> Unsubscribe |</apex:outputLink>  
+                      <apex:outputLink style="color:#FFFFFF;" value="{!$Label.GlobalOptout}"> Global Unsubscribe</apex:outputLink>  
+                  </div>
+                    <!--  <div class="col-sm-5 text-right">                 
+                          <apex:outputText style="color:#FFFFFF;" value="© 2017 Honeywell International Inc"/> 
+                      </div>-->
+                 </div>
+              </footer>
+          </div>  
+</apex:page>

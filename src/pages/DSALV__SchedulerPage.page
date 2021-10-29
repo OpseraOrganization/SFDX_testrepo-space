@@ -1,0 +1,152 @@
+<apex:page controller="DSALV.s_Scheduler_Controller" tabstyle="Scheduler__tab" showHeader="true" docType="html-5.0"> 
+    <apex:form >
+         <apex:image id="theImage" value="{!$Resource.DSALV__DSAL_Logo_Small}" /><br/><br/> 
+         <apex:pageMessages id="pageMessageBit" />
+         <apex:pageBlock title="Data Salvation - Scheduler">
+         <apex:outputPanel id="freq">   
+            <apex:pageblocksection title="Schedule a Configuration" collapsible="true" columns="1">
+            <!--***Configuration*** -->    
+                <apex:pageblocksectionitem >
+                    <apex:outputLabel value="Configuration To schedule"/>
+                    <apex:selectList id="listofconfig" value="{!ActiveConfiguration}" multiselect="false" size="1">
+                        <apex:selectOptions value="{!ConfigItems}"/>
+                    </apex:selectList>
+                </apex:pageblocksectionitem>
+            <!--***Repeat options*** -->    
+                <apex:pageblocksectionitem >
+                    <apex:outputLabel value="Repeats"/>
+                    <apex:selectList value="{!RepeatFreq}" multiselect="false" size="1">
+                        <apex:selectOptions value="{!Repeat}"/>
+                        <apex:actionSupport event="onchange" rerender="freq" />
+                    </apex:selectList>
+                </apex:pageblocksectionitem>
+                
+            <!--***Weekly day Checkboxes*** -->
+                <apex:pageblocksectionitem rendered="{!IF((RepeatFreq == 'Weekly'), TRUE, FALSE)}">
+                    <apex:outputLabel value="Days"/>
+                    <apex:selectCheckboxes value="{!DaysOfWeekValues}">
+                        <apex:selectOptions value="{!DaysOfWeekList}"/>
+                    </apex:selectCheckboxes>   
+                </apex:pageblocksectionitem>
+                
+                
+             <!--***Minutes past***-->     
+                <apex:pageblocksectionitem rendered="{!IF(OR((RepeatFreq == 'Hourly'), (RepeatFreq == 'Every Two Hours')), TRUE, FALSE)}">
+                    <apex:outputLabel value="Minutes Past Hour"/>
+                    <apex:outputPanel >
+                        <apex:selectList value="{!min}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!minOptions}"/>
+                        </apex:selectList>
+                    </apex:outputPanel>
+                </apex:pageblocksectionitem>
+                
+            <!--***Month options***-->  
+                <apex:pageblocksectionitem rendered="{!IF((RepeatFreq == 'Monthly'), TRUE, FALSE)}">
+                    <apex:outputLabel value="Monthly Repeat Options"/>
+                    <apex:selectList value="{!MonthRadioOptionsValue}" multiselect="false" size="1"> 
+                        <apex:selectOptions value="{!MonthRadioOptions}"/>
+                        <apex:actionSupport event="onchange" rerender="freq" />
+                    </apex:selectList>
+                </apex:pageblocksectionitem>
+                
+            <!--***Never option - date/time***-->       
+                <apex:pageblocksectionitem rendered="{!IF((RepeatFreq == 'Never'), TRUE, FALSE)}">
+                    <apex:outputLabel value="Start Date/Time"/>
+                    <apex:input type="datetime-local" value="{!SchedDateTime}" />
+                </apex:pageblocksectionitem>  
+                
+            <!--***nth day of every month***-->      
+                <apex:pageblocksectionitem rendered="{!IF(AND((RepeatFreq == 'Monthly'),(MonthRadioOptionsValue == 'day')), TRUE, FALSE)}">
+                    <apex:outputLabel value=""/>
+                    <apex:outputPanel >
+                        <apex:outputLabel value="On "/>
+                        <apex:selectList value="{!MonthDayNumberValue}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!MonthDayNumber}"/>
+                        </apex:selectList>
+                        <apex:selectList value="{!DaysOfWeekListValue}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!DaysOfWeekList}"/>
+                        </apex:selectList>
+                        <apex:outputLabel value=" of every month"/>
+                    </apex:outputPanel>
+                </apex:pageblocksectionitem>
+                
+            <!--***A Specific Date of Each Month***-->       
+                <apex:pageblocksectionitem rendered="{!IF(AND((RepeatFreq == 'Monthly'),(MonthRadioOptionsValue == 'date')), TRUE, FALSE)}">
+                    <apex:outputLabel value=""/>
+                    <apex:outputPanel >
+                        <apex:outputLabel value="On day "/>
+                        <apex:selectList value="{!DateOptionsValue}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!DateOptions}"/>
+                        </apex:selectList>
+                        <apex:outputLabel value=" of every month"/>
+                    </apex:outputPanel>
+                </apex:pageblocksectionitem>
+                
+             <!--***Time***-->     
+                <apex:pageblocksectionitem rendered="{!IF(OR((RepeatFreq == 'Daily'), (RepeatFreq == 'Weekly'), (RepeatFreq == 'Monthly')), TRUE, FALSE)}">
+                    <apex:outputLabel value="Time"/>
+                    <apex:outputPanel >
+                        <apex:selectList value="{!hour}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!hourOptions}"/>
+                        </apex:selectList>
+                        :
+                        <apex:selectList value="{!min}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!minOptions}"/>
+                        </apex:selectList>
+                    </apex:outputPanel>
+                </apex:pageblocksectionitem>
+                
+                
+            <!--***Schedule button*** -->   
+                <apex:pageblocksectionitem >
+                    <apex:outputtext value=""/>
+                    <apex:outputPanel >
+                    	<apex:commandButton action="{!schedule}" value="Schedule"/>
+                    	<apex:image title="Remeber when scheduling jobs that only 5 concurrent Apex Jobs can run at any one time." value="/img/alohaSkin/help_orange.png"/>
+                    </apex:outputPanel>
+                </apex:pageblocksectionitem>
+            </apex:pageblocksection>
+            
+            
+            <apex:pageblocksection title="Scheduled Jobs" collapsible="true" columns="1">
+                    
+            <apex:pageBlockTable value="{!AllScheduled}" var="sch" id="sch">
+            
+                <apex:column headerValue="" style="width:15px" >
+                    <apex:commandLink value="Cancel" status="Batchrefresh" action="{!Cancel}" reRender="freq" >
+                        <apex:param name="AbortID" value="{!sch.CT.ID}" assignTo="{!CronID}"/>
+                    </apex:commandLink> 
+                </apex:column> 
+
+                <apex:column headerValue="Configuration" style="width:15px" >
+                    <apex:outputtext value="{!sch.Config}"/>
+                </apex:column>  
+                
+                <!-- <apex:column headerValue="Name" style="width:15px" >
+                    <apex:outputtext value="{!sch.CT.CronJobDetail.name}"/>
+                </apex:column>  -->
+                
+                <apex:column headerValue="Schedule" style="width:15px" >
+                    <apex:outputtext value="{!sch.description}"/>
+                </apex:column> 
+                
+                <apex:column headerValue="Last fire time" style="width:15px" >
+                    <apex:outputtext value="{!sch.CT.PreviousFireTime}"/>
+                </apex:column> 
+                
+                <apex:column headerValue="Next fire time" style="width:15px" >
+                    <apex:outputtext value="{!sch.CT.NextFireTime}"/>
+                </apex:column> 
+                
+                <!--
+                <apex:column headerValue="Fire Code" style="width:15px" >
+                    <apex:outputtext value="{!sch.CT.CronExpression}"/>
+                </apex:column>  -->
+                
+            </apex:pageBlockTable>
+            </apex:pageblocksection>
+            
+            </apex:outputPanel>
+         </apex:pageBlock>
+    </apex:form>
+</apex:page>

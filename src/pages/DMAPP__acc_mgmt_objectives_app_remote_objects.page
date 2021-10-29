@@ -1,0 +1,161 @@
+<apex:page >
+     <apex:remoteObjects >
+
+        <apex:remoteObjectModel name="DMAPP__AM_Action__c" 
+            jsShorthand="AMAction" 
+            fields="
+                Id,
+                Name
+            "
+        >
+        	<apex:remoteObjectField name="DMAPP__Owner__c" jsShorthand="ownerId"/>
+        	<apex:remoteObjectField name="DMAPP__Sort_Order__c" jsShorthand="order"/>
+            <apex:remoteObjectField name="DMAPP__Account_Plan__c" jsShorthand="planId"/>
+            <apex:remoteObjectField name="DMAPP__Objective__c" jsShorthand="objectiveId"/>
+            <apex:remoteObjectField name="DMAPP__Open__c" jsShorthand="open"/>
+            <apex:remoteObjectField name="DMAPP__Text__c" jsShorthand="description"/>
+            <apex:remoteObjectField name="DMAPP__Due_Date__c" jsShorthand="dueDate"/>
+            
+        </apex:remoteObjectModel>
+    </apex:remoteObjects>
+
+    <script type="text/javascript">
+        
+    'use strict';
+
+    angular
+    	.module('acc_mgmt__objectives_remote_objects', ['ttg.VfRemoting'])
+    	.factory('ObjectiveRemoteObjects', [ '$q', 'VFRemoting', function($q, VFRemoting){
+    		function createNewTask(planId, task) {
+               function adapt(task) {
+    				return {
+    					planId: task.planid,
+    					objectiveId: task.objectiveId,
+    					open: true,
+    					description: task.description
+    				}
+    			}
+                var deferred = $q.defer();
+                var action = new SObjectModel.AMAction();
+                ttg.ttgQATracker.callStarted();
+                action
+                	.create(
+                		adapt(task),
+                		function(err, records) {
+                            ttg.ttgQATracker.callEnded();
+                            if (err) {
+                                remoteException(err);
+                                deferred.reject(err);
+                            } else {
+                                deferred.resolve(records);
+                            }
+                		} 
+                	)
+
+                return deferred.promise;
+    		}
+
+            function saveTaskStatus(task) {
+                var deferred = $q.defer();
+                var action = new SObjectModel.AMAction({
+                    Id: task.Id,
+                    open: !task.isOpen
+                });
+                ttg.ttgQATracker.callStarted();
+                action.update(
+                    function(err, records) {
+                        ttg.ttgQATracker.callEnded();
+                        if (err) {
+                            remoteException(err);
+                            deferred.reject(err);
+                        } else {
+                            deferred.resolve(records);
+                        }
+                    } 
+                )
+
+                return deferred.promise;
+            }
+
+            function assignObjectiveToAction(amAction) {
+                var deferred = $q.defer();
+                var action = new SObjectModel.AMAction({
+                    Id: amAction.Id,
+                    objectiveId: amAction.objective.id
+                });
+
+                ttg.ttgQATracker.callStarted();
+                action.update(
+                    function(err, records) {
+                        ttg.ttgQATracker.callEnded();
+                        if (err) {
+                            remoteException(err);
+                            deferred.reject(err);
+                        } else {
+                            deferred.resolve(records);
+                        }
+                    } 
+                )
+
+                return deferred.promise;
+            }
+
+            function remoteException(exception) {
+                var width = (jQuery(window).width() > 380 ? 380 : 300) ; 
+                var errorWidth = width - 50; 
+                ttg.ajaxErrorFunction(null, null, {
+                    dlgwidth : width.toString(),
+                    dlgerrorwidth : errorWidth.toString()
+                })({
+                    responseText : exception.message,
+                    event: exception
+                });
+            }
+
+            function editAmAction(amAction) {
+                var deferred = $q.defer();
+                var action = new SObjectModel.AMAction({
+                    Id: amAction.Id,
+                    description: amAction.description,
+                    // this could be a date or a long int
+                    dueDate: amAction.dueDateValue ? new Date(amAction.dueDateValue).getTime() : ''
+                });
+                if(amAction.owner) {
+                    action.set('ownerId', amAction.owner.Id);
+                } else {
+                    action.set('ownerId', '');
+                }
+                if(amAction.objective) {
+                    action.set('objectiveId', amAction.objective.id);
+                } else {
+                    action.set('objectiveId', '');
+                }
+
+                ttg.ttgQATracker.callStarted();
+
+                action.update(
+                    function(err, records) {
+                        ttg.ttgQATracker.callEnded();
+                        if (err) {
+                            remoteException(err);
+                            deferred.reject(err);
+                        } else {
+                            deferred.resolve(records);
+                        }
+                    } 
+                )
+                return deferred.promise;
+            }
+
+    		return {
+    			createNewTask: createNewTask,
+                saveTaskStatus: saveTaskStatus,
+                editAmAction: editAmAction,
+                assignObjectiveToAction: assignObjectiveToAction
+    		}
+    	}])
+    ;
+
+
+    </script>
+</apex:page>

@@ -1,0 +1,1794 @@
+<apex:page setup="{!isShowSetup}" showHeader="true" sidebar="{!isShowSetup}" action="{!redirectIfReadOnly}"   controller="NTTEAT.AllObjectpermissionsController"  id="obPage" lightningStylesheets="true">
+    <head>
+        <apex:slds /> 
+    </head>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>    
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"></link>
+  
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <!-- topology -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.css" rel="stylesheet" type="text/css"/>
+    <!--   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>  -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.js" crossorigin="anonymous"></script>
+
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<apex:includeScript value="{!URLFOR($Resource.NTTEAT__AutoComplete, 'JQueryUI/js/jquery-1.7.1.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.NTTEAT__AutoComplete, 'JQueryUI/js/jquery-ui-1.8.17.custom.min.js')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.NTTEAT__AutoComplete,'JQueryUI/css/ui-lightness/jquery-ui-1.8.17.custom.css')}"/>       
+            <style>
+            .ui-autocomplete { 
+                cursor:pointer; 
+                height:120px; 
+                overflow-y:scroll;
+                //   width:300px;
+                //   background-color:red;
+                z-index:9999;
+            }    
+			</style>
+
+
+
+
+<!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />  -->
+    
+    <style>
+    .custPopup{
+        background-color: white;
+        border-width: 1px;
+        border-style: solid;
+        z-index: 9999;
+        left: 35%;
+        padding:10px;
+        position: absolute;
+        /* These are the 3 css properties you will need to change so the popup 
+            displays in the center of the screen. First set the width. Then set 
+            margin-left to negative half of what the width is. You can add 
+            the height property for a fixed size pop up if you want.*/
+            width: 900px;
+            margin-left: -250px;
+            top:100px;
+        }
+.popupBackground{
+    background-color:black;
+    opacity: 0.20;
+    filter: alpha(opacity = 20);
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 9998;
+}
+.custHelpPopup{
+    background-color: white;
+    border-width: 1px;
+    border-style: solid;
+    z-index: 9999;
+    left: 35%;
+    padding:10px;
+    position: absolute;
+    /* These are the 3 css properties you will need to change so the popup 
+            displays in the center of the screen. First set the width. Then set 
+            margin-left to negative half of what the width is. You can add 
+            the height property for a fixed size pop up if you want.*/
+    width: 900px;
+    margin-left: -250px;
+    top:100px;
+}
+#fieldPermModal
+{
+    display:none;
+}
+
+.container
+{
+    //  margin:2%;  
+    min-height:400px;
+    border:1px solid #ccc;
+    border-radius:4px;
+    font-family:verdana !important;
+}
+.headerDiv
+{
+    // padding:5px;        
+    // height:50px;
+    text-align:left;
+    background:#31AFCD;   
+    border:0px;
+    padding:1.3%;
+}
+.headerDiv h3
+{
+    color:White;
+    font-size:1.5em;
+    
+}
+.filterDiv
+{
+    padding-top:45px;
+    //  padding:20px;
+    //    text-align:center;
+    font-family:verdana !important;
+    
+}
+.outputDiv
+{
+    
+    margin-top:2%;
+    padding:5px;
+    margin-left:10%;
+    margin-right:10%;
+    //  border:1px solid red;
+    font-family:verdana !important;
+    
+}
+#t2 td, th {
+border: 1px solid #ccc;
+}
+
+
+#t1 td, th {
+border: 1px solid #ccc;
+}
+
+.btnActive
+{
+    background:#31AFCD;
+    color:white;   
+    border: 1px solid #31AFCD;
+    border-radius:4px;
+    padding:5px;
+}
+.btnNormal
+{
+    background:white;
+    color:#31AFCD;   
+    border: 1px solid #31AFCD;
+    border-radius:4px;
+    padding:5px;
+}
+</style>
+<script type="text/javascript">
+    var selectedObj = '';
+var objType ;
+var seaType;
+var headerName;
+var buttonval='workflow';
+var isShowProfSec=true;
+$(document).ready(function()
+                  {
+                      
+                      var selectedObject = document.getElementById('obPage:formId:objectNameLabelHidden').value;
+                      if(selectedObject != '' && selectedObject != undefined && selectedObject != null)
+                      {
+                          document.getElementById('searchObjName').value = selectedObject;
+                      }
+                  });
+function showProfile(val)
+{
+    $('#profDiv').show();
+    isShowProfSec =true;
+    $('#permisDiv').hide();       
+    $('.btnActive').removeClass('btnActive').addClass('btnNormal');
+    $(val).removeClass('btnNormal').addClass('btnActive');
+    console.log('Search type &&&&'+seaType);
+   
+}
+function activeBtn(val)
+{        
+    $('.btnActive').removeClass('btnActive').addClass('btnNormal');
+    $(val).removeClass('btnNormal').addClass('btnActive');    
+    buttonval = $(val).val();
+    console.log('buttonval'+buttonval);
+}
+
+function showPerset(val)
+{
+    $('#profDiv').hide();
+    isShowProfSec =false;
+    $('#permisDiv').show();
+    $('.btnActive').removeClass('btnActive').addClass('btnNormal');
+    $(val).removeClass('btnNormal').addClass('btnActive');
+}
+function showObjProf(val)
+{
+    $('#permisDiv').hide();
+    $('#profDiv').hide();
+    $('#objDiv').show();
+    $('.btnActive').removeClass('btnActive').addClass('btnNormal');
+    $(val).removeClass('btnNormal').addClass('btnActive');
+}
+function showTabClick(check)
+{
+    var buttontype = check.value;
+    //$(val).addClass('btnActive'); 
+    //$('.btnActive').removeClass('btnActive');
+    alert(check);
+    if(buttontype == "permission"){
+        $('#profDiv').hide();
+        $('#permisDiv').show();
+    }
+    if(buttontype == "profile"){
+        $('#profDiv').show();
+        $('#permisDiv').hide();
+    }
+    if(buttontype =="Objects")
+    {
+        $('#objDiv').show();
+    }
+    
+    $('.btnActive').removeClass('btnActive').addClass('btnNormal');
+    $(check).addClass('btnActive');
+    
+}
+function filterByAccces(val)
+{
+    alert(val);
+    var xx='{!readCheck}';
+    alert('@@@'+xx);
+}
+function searchByType(val)
+{
+    //alert(val);
+}
+function BindControls() {
+    var Countries = ['ARGENTINA', 
+                     'AUSTRALIA', 
+                     'BRAZIL', 
+                     'BELARUS', 
+                     'BHUTAN',
+                     'CHILE', 
+                     'CAMBODIA', 
+                     'CANADA', 
+                     'CHILE', 
+                     'DENMARK', 
+                     'DOMINICA'];
+    
+    $('#searchId1').autocomplete({
+        source: Countries,
+        minLength: 2,
+        scroll: true       
+    });
+}
+function callObjShow(val)
+{
+    if(val.length>2)
+    {
+        callShowObj(val);
+    }
+}
+function updateObjType(val)
+{
+    objType =val;
+    if(objType == 'none')
+    {
+        $("#searchObjName").prop('disabled', true);
+    }
+    else
+    {
+        $("#searchObjName").prop('disabled', false);
+    }
+    console.log('>>>>>objType '+objType );
+    document.getElementById('searchObjName').value = '';
+    document.getElementById('obPage:formId:objectNameHidden').value = '';
+    document.getElementById('obPage:formId:objectNameLabelHidden').value = '';
+    
+    
+    //  objType  = $("#obPage:formId:objectType").val()
+    //  callObject(objType);
+}
+function clearAll()
+{
+    document.getElementById('searchObjName').value = '';
+    document.getElementById('obPage:formId:objectNameHidden').value = '';
+    document.getElementById('obPage:formId:objectNameLabelHidden').value = '';
+    
+}
+function updateSearchType(val)
+{
+    seaType =val;
+    if(seaType=='profile')
+    {
+        $("#searchObjName").prop('disabled', false);
+    }
+    
+    reloadSec();
+}
+function showObjectBySearch(val,stype,otype)
+{            
+    //    alert('val'+val+'stype'+stype+'otype'+otype);
+    var sObjects;
+    var queryTerm;
+    var searchType =stype;          
+    console.log('@@@val'+val);
+    console.log('@@@objType'+otype);
+    console.log('@@@searchType'+stype);
+    var selectedObjectType = otype;
+    if(objType != null && objType  != undefined && stype =='Object' )
+    {
+        selectedObjectType=  objType ;
+    }
+    $('#searchObjName').autocomplete({
+        minLength: 3,
+        source: function(request, response) {
+            queryTerm = request.term;
+            NTTEAT.AllObjectpermissionsController.showObjectList( request.term,selectedObjectType,searchType, function(result, event){
+                if(event.type == 'exception') 
+                {
+                    alert(event.message);
+                } 
+                else 
+                {
+                    sObjects = result;
+                    console.log('sObjects'+sObjects);
+                    response(sObjects);
+                }
+                
+            });
+            
+        },                
+        focus: function( event, ui ) {
+            return false;
+        },
+        
+        select: function( event, ui ) 
+        {
+            //  ui.item.Title = "\""+ui.item.objName+'-'+ui.item.objAPIName+"\"";
+            ui.item.Title = ui.item.objName+'-'+ui.item.objAPIName;
+            
+            // $('#searchObjName").val(ui.item.objAPIName);
+            //  $j('#acctId').val(ui.item.Id);
+            selectedObj = ui.item.objAPIName;
+            document.getElementById('searchObjName').value = ui.item.Title;
+            document.getElementById('obPage:formId:objectNameHidden').value = selectedObj;
+            document.getElementById('obPage:formId:objectNameLabelHidden').value = ui.item.Title;
+            
+            console.log('!@#$selectedObj '+selectedObj );
+            if (event.keyCode == 13) 
+            {
+                //redirect(document.getElementById('acctId').value);
+                console.log('success');
+            }                    
+            return false;
+        },
+        
+    }).data( "ui-autocomplete" )._renderItem = function( ul, item ) {
+        console.log('@@@@records'+item.objName);           
+        var entry = item.objName+'-'+item.objAPIName;
+        //alert(entry)
+        //      entry = entry.replace( new RegExp( "(" + queryTerm + ")" , "gi" ), "<strong>$1</strong>" );
+        return  $( "<li></li>" )
+        .data( "ui-autocomplete-item", item )
+        .append( "<a>" + entry + "</a>")
+        .appendTo( ul );
+        
+        
+    };
+    
+} 
+/*
+    function showObjectInAddAccess(val,sType,oType)
+    {            
+        console.log('$$$$'+sType);
+        console.log('$$$$'+oType);
+        var sObjects;
+        var queryTerm;
+        var searchType =sType;          
+        console.log('@@@val'+val);
+        console.log('@@@objType'+objType);
+        console.log('@@@searchType'+searchType);
+        var selectedObjectType = oType;
+        if(objType == null && objType == undefined && selectedObjectType != null && selectedObjectType  != undefined)
+        {
+            objType = selectedObjectType;  
+        }
+        $('#searchObjPopName').autocomplete({
+            minLength: 3,
+            source: function(request, response) {
+                queryTerm = request.term;
+                NTTEAT.AllObjectpermissionsController.showObjectList( request.term,objType,searchType, function(result, event){
+                    if(event.type == 'exception') 
+                    {
+                        alert(event.message);
+                    } 
+                    else 
+                    {
+                        sObjects = result;
+                        console.log('sObjects'+sObjects);
+                        response(sObjects);
+                    }
+                    
+                });
+                
+            },                
+            focus: function( event, ui ) {
+                return false;
+            },
+            
+            select: function( event, ui ) 
+            {
+                //  ui.item.Title = "\""+ui.item.objName+'-'+ui.item.objAPIName+"\"";
+                ui.item.Title = ui.item.objName+'-'+ui.item.objAPIName;
+                
+                // $('#searchObjName").val(ui.item.objAPIName);
+                //  $j('#acctId').val(ui.item.Id);
+                selectedObj = ui.item.objAPIName;
+                document.getElementById('searchObjPopName').value = ui.item.Title;
+                document.getElementById('obPage:addAccesspanel:objectNameHidden').value = selectedObj;               
+                
+                console.log('!@#$selectedObj '+selectedObj );
+                if (event.keyCode == 13) 
+                {
+                    //redirect(document.getElementById('acctId').value);
+                    console.log('success');
+                }                    
+                return false;
+            },
+            
+        }).data( "ui-autocomplete" )._renderItem = function( ul, item ) {
+            console.log('@@@@records'+item.objName);           
+            var entry = item.objName+'-'+item.objAPIName;
+            //alert(entry)
+            //      entry = entry.replace( new RegExp( "(" + queryTerm + ")" , "gi" ), "<strong>$1</strong>" );
+            return  $( "<li></li>" )
+            .data( "ui-autocomplete-item", item )
+            .append( "<a>" + entry + "</a>")
+            .appendTo( ul );
+            
+            
+        };
+        
+    } 
+    */
+
+function redirectPage()
+{
+    redirect();
+}  
+function showModal(objName,parentId,obj)
+{
+    console.log('@@parentId'+parentId);
+    headerName=objName;
+    getFieldPrms(parentId,obj);       
+}
+function enableModal()
+{
+    $('#fieldPermModal').show();
+    $('#objNameId').html(headerName);
+}
+function hideModal()
+{
+    $('#fieldPermModal').hide();
+}
+function showResponse()
+{
+    console.log(seaType);
+    if(seaType=="Profile")
+    {
+        $('#objDiv').show();
+        $('#permisDiv').hide();
+        $('#profDiv').hide();
+        
+        
+    }
+}
+
+function expandAccordion(val)
+{
+    $('#sec001').removeClass('slds-is-open');
+    $('#sec002').removeClass('slds-is-open');
+    $('#sec003').removeClass('slds-is-open');
+    $('#sec004').removeClass('slds-is-open');
+    $(val).addClass('slds-is-open');
+    
+}
+</script>
+<!-- header sec -->
+<body class="slds-scope">
+<div class="container" >
+<div class="headerDiv" >
+<!--  <img src="{!URLFOR($Asset.SLDS, 'assets/icons/standard/account_60.png')}" alt="Account Standard Icon" />  -->
+<apex:image url="{!$Resource.NTTEAT__SmartAdminLogo}" style="border-radius:25px;" />
+<h3>A place where all admin works</h3>
+<span style="float:right;color:white;" title="Help">  </span> 
+</div>
+<div class="resultsCont" >
+<apex:form id="formId" >
+
+<!-- ***************************************Actionfunction    Starts ********************************************** -->
+    
+    
+    <apex:actionFunction name="reloadSec" reRender="formId" />
+    <apex:actionFunction name="setupToggle" action="{!toggleSetup}"/>
+    <apex:actionFunction name="callRelList" action="{!fetchRelatedObjects}" reRender="relObjPanel" >
+        <apex:param name="objname" value=""  />
+        <apex:param name="type" value=""  />
+    </apex:actionFunction>
+    <apex:actionFunction name="getFieldPrms" oncomplete="openPopup('#popupsec001','#popupback001');" action="{!getFieldPermission}" reRender="fieldAccessPanel" status="actStatusId" >
+        <apex:param name="PARENTID" value=""  />
+        <apex:param name="OBJ" value=""  />
+    </apex:actionFunction>
+    <apex:actionFunction name="callShowWFList" action="{!fetchWorkflowRules}" reRender="WFlistPanel"   >
+        <apex:param name="objname" value=""  />
+        <apex:param name="type" value=""  />
+    </apex:actionFunction>
+    <!-- edit object permissions for permissionset -->
+    <apex:actionFunction action="{!showObjPermEdit}" name="showObjPermEdit" reRender="objeditform" >
+        <apex:param name="profileid" value=""  />
+        <apex:param name="objid" value=""  />
+    </apex:actionFunction>
+    
+    <apex:actionFunction action="{!fetchSetupEntities}" name="showSetupitems" reRender="setupEntityPanel" >
+        <apex:param name="permid" value=""  />   
+        <apex:param name="type" value=""  />  
+    </apex:actionFunction>
+    <!-- add object Access Panel -->
+    <apex:actionFunction action="{!showObjPermAdd}" name="addObjectAccess" reRender="objeditform,addAccesspanel" >                       
+        <apex:param name="isShowProf" value=""  />
+    </apex:actionFunction>
+    
+    <apex:actionFunction action="{!loadAddObjperms}" name="callfromAutoCom" reRender="" >
+        <apex:param name="val" value="" />
+        <apex:param name="type" value="" />
+    </apex:actionFunction>
+    
+    <apex:actionFunction action="{!removeSetupEntity}" name="removeSetupEntity" reRender="setupEntityPanel" >                       
+        <apex:param name="setupid" value=""  />
+        <apex:param name="type" value=""  />
+        <apex:param name="permid" value=""  />
+    </apex:actionFunction>
+    
+    
+    <apex:actionFunction action="{!addSetupEntity}" name="addSetupEntity" reRender="addSetupPanel" >
+        <apex:param name="val" value="" />
+        <apex:param name="type" value="" />
+        <apex:param name="permid" value=""  />
+    </apex:actionFunction>
+    
+    <apex:actionFunction action="{!toGetUsersforProfile}" name="dashboard" reRender="dashboard" />
+    
+    <apex:actionFunction action="{!showAddSetupEntity}" name="callShowAddSetup" reRender="addSetupPanel" />
+    
+    <!-- ***************************************Actionfunction    Ends ********************************************** -->                       
+    
+    <apex:actionStatus id="actStatusId" >
+        <apex:facet name="start" >
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.1; z-index: 1000; background-color: black;">
+                &nbsp;
+            </div>
+            <!--        <div style="position: fixed; left: 0; top: 0; bottom: 0; right: 0; z-index: 1001;opacity:1;  margin-left:45%; margin-top:10%;">
+<img width="100" height="100" src="{!$Resource.AccessPOC_Loading}" />  
+</div>   -->
+            <div class="demo-only" style="height: 6rem;margin-top:15%;position:fixed;margin-left:40%;">
+                <div role="status" class="slds-spinner slds-spinner_brand slds-spinner_medium">
+                    <span class="slds-assistive-text">Loading</span>
+                    <div class="slds-spinner__dot-a"></div>
+                    <div class="slds-spinner__dot-b"></div>
+                </div>
+            </div>
+        </apex:facet>
+        
+        
+    </apex:actionStatus>
+    <div class="filterDiv">      
+         <apex:pageMessages ></apex:pageMessages>
+        <apex:outputPanel layout="block" id="searchpanelId">
+            <div class="slds-grid">
+                <div class="slds-col" style="width:20%;">
+                    <apex:outputPanel rendered="{!isShowSetup && !isLightningEnabled}">
+                        <a onclick="setupToggle();" title="Hide setup" >  <img style="height:20px;width:20px;" src="{!URLFOR($Asset.SLDS, 'assets/icons/utility/chevronleft_60.png')}" alt="Hide Setup Menu" /> 
+                        </a>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!!isShowSetup && !isLightningEnabled}">
+                        <a onclick="setupToggle();" title="Show setup" >  <img style="height:20px;width:20px;" src="{!URLFOR($Asset.SLDS, 'assets/icons/utility/chevronright_60.png')}" alt="Show Setup Menu" /> 
+                        </a>
+                    </apex:outputPanel>
+                    
+                </div>
+                
+               
+                
+                <div class="slds-col" style="width:50%;">
+                    <div class="slds-form-element">
+                        <label class="slds-form-element__label" for="select-01">Search By</label>
+                        <div class="slds-form-element__control">
+                            <div class="slds-select_container">                                           
+                                <apex:selectList styleClass="slds-select" style="padding:4px;border-radius:4px;border:1px solid #00dbdb;"  multiselect="false" size="1"  id="objectType" value="{!selectedSearchType}">
+                                    <apex:selectOption ItemLabel="--Select--" Itemvalue="none"></apex:selectOption>                                    
+                                    <apex:selectOption ItemLabel="Object" Itemvalue="Object"></apex:selectOption>
+                                    <apex:selectOption ItemLabel="Profile" Itemvalue="Profile"></apex:selectOption>
+                                    <apex:selectOption ItemLabel="PermissionSet" Itemvalue="PermissionSet"></apex:selectOption>
+                                    <apex:actionSupport status="actStatusId" event="onchange" action="{!reloadObjType}" reRender="searchpanelId,outputPanel"  />
+                                </apex:selectList> 
+                            </div>
+                        </div>
+                    </div>
+                    <apex:outputPanel layout="block" >
+                        <div class="slds-form-element">
+                            <label class="slds-form-element__label" for="select-01">Object Type  </label>
+                            <div class="slds-form-element__control">
+                                <div class="slds-select_container">
+                                    <apex:selectList styleClass="slds-select" disabled="{!(selectedSearchType !='Object')}" style="padding:4px;border-radius:4px;border:1px solid #00dbdb;" id="objTypeId" multiselect="false" size="1" value="{!selectedObjectType}">
+                                        <apex:selectOption ItemLabel="--Select--" Itemvalue="none"></apex:selectOption>                                    
+                                        <apex:selectOption ItemLabel="Standard Object" Itemvalue="Standard Object"></apex:selectOption>
+                                        <apex:selectOption ItemLabel="Custom Object " Itemvalue="Custom Object"></apex:selectOption>                                      
+                                        <apex:actionSupport status="actStatusId" event="onchange" action="{!fetchObjSelectOption}" reRender="searchpanelId,outputPanel"  />
+                                    </apex:selectList> 
+                                   
+                                </div>
+                            </div>
+                        </div>   
+                    </apex:outputPanel>
+                    
+                    <div class="slds-form-element">
+                        <div class="slds-form-element">
+                            <apex:outputPanel rendered="{!(selectedSearchType =='Object' )}">
+                                <br/>
+                                
+                                <label class="slds-form-element__label">
+                                    Choose the object selection option
+                                </label>
+                                <apex:selectRadio value="{!inputMethod}">
+                                    <apex:selectOption itemLabel="Picklist" itemValue="picklist" ></apex:selectOption>
+                                    <apex:selectOption itemLabel="Search bar" itemValue="search" ></apex:selectOption>
+                                    <apex:actionSupport status="actStatusId" event="onchange"  reRender="searchpanelId,outputPanel"  />
+                                </apex:selectRadio>
+                            </apex:outputPanel>
+                           
+                        </div>
+                        
+	                        
+                        <div class="slds-form-element__control">
+                            <label class="slds-form-element__label" for="select-01">
+                                
+                                <apex:outputtext rendered="{!selectedSearchType =='Object' && inputMethod !=null}">
+                                    Object Name
+                                </apex:outputtext>
+                                <apex:outputtext rendered="{!(selectedSearchType =='Profile')}">
+                                    Profile Name
+                                </apex:outputtext>
+                                <apex:outputtext rendered="{!(selectedSearchType =='PermissionSet')}">
+                                    Permissionset Name
+                                </apex:outputtext>
+                            
+                        </label>
+                            <apex:outputPanel rendered="{!(inputMethod =='search' || selectedSearchType !='Object' )}">
+                               
+                                
+                                <input id="searchObjName" type="search" onkeyup="showObjectBySearch(this,'{!selectedSearchType}','{!selectedObjectType}');"  value="{!selectedObjectName}"  class="slds-input" placeholder="Search Object Name " style="border:1px solid #00dbdb !important;" />
+                                <input type="hidden" id="objectName" />
+                                <apex:inputHidden id="objectNameHidden" value="{!selectedObjectName}"/>
+                                <apex:inputHidden id="objectNameLabelHidden" value="{!objectNameLabelHidden}"/>                            
+                            </apex:outputPanel>
+                            <apex:selectList styleClass="slds-select" rendered="{!(selectedSearchType =='Object' && inputMethod=='picklist')}" style="padding:4px;border-radius:4px;border:1px solid #00dbdb;"  multiselect="false" size="1" value="{!selectedObjectName}">
+                                <apex:selectOption ItemLabel="--Select--" Itemvalue="none"></apex:selectOption>                                  
+                                <apex:selectOptions value="{!objectNameOptions}"></apex:selectOptions>
+                            </apex:selectList> 
+                        </div>
+                    </div>
+                    <br/>
+                    <apex:commandbutton Styleclass="slds-button slds-button_brand" value="Search" status="actStatusId" action="{!getAllAccess}" rerender=""  id="goButtonId" style="background:#31AFCD;border:1px solid #00dbdb !important;" />
+                    <apex:commandbutton Styleclass="slds-button slds-button_neutral" action="{!allReset}" value="Reset" onclick="clearAll();" style="font-color:#31AFCD;border:1px solid #00dbdb !important;"></apex:commandbutton>
+                </div>
+                <div class="slds-col" style="width:30%;">
+                    
+                </div>
+                
+            </div>
+        </apex:outputPanel>
+    </div>
+    <br/>
+    <apex:outputPanel layout="block" id="searchResultsPanelId">
+        <ul class="slds-accordion">
+            <li class="slds-accordion__list-item" style="border-top:1px solid #d8dde6 !important;">
+                <section id="sec001" class="slds-accordion__section slds-is-open">
+                    <div class="slds-accordion__summary">
+                        <button  onclick="expandAccordion('#sec001');return false;"  aria-controls="accordion-details-02" aria-expanded="true" class="slds-button slds-button_reset slds-accordion__summary-action">
+                            <h3 class="slds-text-heading_small slds-accordion__summary-heading">
+                                <div>
+                                    Object &amp; Field Permissions
+                                </div>
+                            </h3>   
+                        </button>
+                    </div>
+                    <div aria-hidden="false" class="slds-accordion__content" id="accordion-details-01">
+                        <apex:outputPanel id="outputPanel"> 
+                            <div class ="outputDiv" style="display:{!IF((selectedSearchType !=null && (profileAccessList.size>0 || pSetAccessList.size>0)),'block','none')};">
+                                <div>   
+                                     <apex:outputPanel rendered="{!(selectedSearchType =='Object' || selectedSearchType =='Profile')}" > 
+                                    <button class="btnActive" type="button" value ="profile" onclick="showProfile(this);return false;" >                          
+                                        <apex:outputtext rendered="{!selectedSearchType =='Object'}">
+                                            Profile [{!profileAccessList.size}] 
+                                        </apex:outputtext>
+                                        <apex:outputtext rendered="{!(selectedSearchType =='Profile')}">
+                                            Objects [{!profileAccessList.size}] 
+                                        </apex:outputtext>
+                                        
+                                    </button>
+                                    </apex:outputPanel>&nbsp; 
+                                    <apex:outputPanel rendered="{!(selectedSearchType =='Object' || selectedSearchType =='PermissionSet')}" > 
+                                        <button class="{!IF(selectedSearchType =='PermissionSet','btnActive','btnNormal')}" type="button"  value ="permission" onclick="showPerset(this);return false;"  >                                                                                        
+                                            <apex:outputtext rendered="{!selectedSearchType =='Object'}">
+                                                PermissionSet [{!pSetAccessList.size}] 
+                                            </apex:outputtext>
+                                            <apex:outputtext rendered="{!selectedSearchType =='PermissionSet'}">
+                                                Objects [{!pSetAccessList.size}] 
+                                            </apex:outputtext>
+                                        </button>
+                                    </apex:outputPanel>
+                                    <apex:actionFunction name="callexport"  action="{!redirectToexport}" />
+                                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <apex:outputPanel style="" rendered="{!selectedObjectName != null }">
+                                     <!--   <button style="padding:7px;background:#2a94d6;border:1px solid #2a94d6;color:#fff;" onclick="callexport();return false;"  target="_blank">Export Access</button> -->
+                                        <apex:commandLink styleClass="slds-button slds-button_brand" style="background:#2a94d6;border:1px solid #2a94d6;color:#fff;" value="Export Access" action="{!redirectToexport}" target="_blank" />
+                                    </apex:outputPanel>
+                                    
+                                    <apex:outputText rendered="{!userRole=='admin'}">
+                                        <a target="_blank" onclick="openPopup('#popupsec003','#popupback003');addObjectAccess(isShowProfSec);" class="btnActive" title="create new" style="padding:7px;color:white;border:1px solid #EC5291;background:#EC5291;" > 
+                                            <img style="height:20px;width:20px;" src="{!URLFOR($Asset.SLDS, 'assets/icons/utility/add_60.png')}" alt="Create new" /> 
+                                            Add New
+                                        </a>
+                                    </apex:outputText>
+                                    &nbsp;
+                                    <apex:outputPanel style="" rendered="{!selectedObjectName != null }">
+                                        <apex:commandbutton Styleclass="slds-button slds-button_brand" status="actStatusId" action="{!getAllAccess}" value="Refresh" rerender="outputPanel"  >
+                                           
+                                        </apex:commandbutton>
+                                    </apex:outputPanel>
+                                    <div style="float:right;">
+                                        <apex:inputCheckbox Label="Read" value="{!readCheck}">Read
+                                            <apex:actionSupport action="{!getFilterByCRUD}" event="onchange" status="actStatusId"  reRender="outputPanel" />                                                
+                                        </apex:inputCheckbox>
+                                        <apex:inputCheckbox Label="Create" value="{!createCheck}">Create
+                                            <apex:actionSupport action="{!getFilterByCRUD}" event="onchange" status="actStatusId"   reRender="outputPanel" />
+                                        </apex:inputCheckbox>
+                                        <apex:inputCheckbox Label="Edit" value="{!editCheck}">Edit
+                                            <apex:actionSupport action="{!getFilterByCRUD}" event="onchange" status="actStatusId"   reRender="outputPanel"  />
+                                        </apex:inputCheckbox>
+                                        <apex:inputCheckbox Label="Delete" value="{!deleteCheck}">Delete
+                                            <apex:actionSupport action="{!getFilterByCRUD}" event="onchange" status="actStatusId"   reRender="outputPanel"  />
+                                        </apex:inputCheckbox>
+                                        <apex:inputCheckbox Label="View All" value="{!viewCheck}">View All
+                                            <apex:actionSupport action="{!getFilterByCRUD}" event="onchange" status="actStatusId"   reRender="outputPanel"    />
+                                        </apex:inputCheckbox> 
+                                        <apex:inputCheckbox Label="Modify All" value="{!modifyCheck}">Modify All
+                                            <apex:actionSupport action="{!getFilterByCRUD}" event="onchange" status="actStatusId"  reRender="outputPanel"  />
+                                        </apex:inputCheckbox>
+                                    </div>
+                                    
+                                </div>
+                                <div id="profDiv" style="display:block;" >
+                                    <div style="color:#00006f;background:#A3DBE8;font-size:1.1em; margin-top:20px;padding:8px !important;">
+                                       
+                                        
+                                        <apex:outputtext rendered="{!selectedSearchType =='Object'}">
+                                            <b> Profiles &nbsp; [{!profileAccessList.size}] </b>
+                                        </apex:outputtext>
+                                        <apex:outputtext rendered="{!selectedSearchType =='Profile'}">
+                                            <b>Objects &nbsp; [{!profileAccessList.size}] </b>
+                                        </apex:outputtext>
+                                        <span style="float:right;">
+                                            Show 
+                                            <apex:selectList style="border-radius:4px;border:1px solid #00dbdb;"    multiselect="false" size="1"  id="objectName1" value="{!selectedRecCount }">                                    
+                                                <apex:selectOption ItemLabel="10" Itemvalue="10"></apex:selectOption>
+                                                <apex:selectOption ItemLabel="20" Itemvalue="20"></apex:selectOption>
+                                                <apex:selectOption ItemLabel="50" Itemvalue="50"></apex:selectOption>
+                                                <apex:selectOption ItemLabel="100" Itemvalue="100"></apex:selectOption>
+                                                <apex:actionSupport event="onchange" action="{!getAllAccess}" reRender="outputPanel,profilePanel" status="actStatusId" />
+                                            </apex:selectList>
+                                            &nbsp;
+                                            <apex:commandLink action="{!previous}" value="Prev" rendered="{!(pageNumber >0 && pageNumber <=totalPageSize)}" reRender="outputPanel" />
+                                            <apex:outputText rendered="{!!(pageNumber >0 && pageNumber <= totalPageSize)}">Prev</apex:outputText>
+                                            -
+                                            <apex:commandLink action="{!next}" value="Next" rendered="{!(pageNumber < totalPageSize)}" reRender="outputPanel" /> 
+                                            <apex:outputText rendered="{!(pageNumber >= totalPageSize)}">Next</apex:outputText>
+                                            &nbsp;
+                                            Viewing ({!(selectedRecCount*pageNumber)+1}-{!(selectedRecCount*pageNumber)+selectedRecCount}) of  {!profileAccessList.size} records 
+                                        </span> 
+                                    </div>
+                                    <apex:outputPanel id="profilePanel">
+                                        
+                                        
+                                        <table id="t1" width="100%" cellpadding="5px" cellspacing="0px" >
+                                            <tr width="100%">
+                                                <td width="5%" style="text-align:center;font-weight:bold;"> Action    </td>
+                                                <td width="20%" style="text-align:center;font-weight:bold;"> Profile Name    </td>
+                                                <td width="10%"  style="text-align:center;font-weight:bold;"> Object Name    </td>
+                                                <td width="9%"  style="text-align:center;font-weight:bold;"> Read </td>                                
+                                                <td width="9%"  style="text-align:center;font-weight:bold;">Create</td>                                
+                                                <td width="9%"  style="text-align:center;font-weight:bold;">Edit</td>                                
+                                                <td width="9%"  style="text-align:center;font-weight:bold;"> Delete</td>                                
+                                                <td width="9%"  style="text-align:center;font-weight:bold;">View All</td>                                
+                                                <td width="10%"  style="text-align:center;font-weight:bold;">Modify All</td>   
+                                                <td width="10%"  style="text-align:center;font-weight:bold;">Field Access</td>
+                                            </tr>
+                                            
+                                            <apex:repeat value="{!profileAccessList}" var="acc" rows="{!selectedRecCount}" first="{!selectedRecCount*pageNumber }" >                              
+                                                <!--   <apex:outputPanel rendered="{!acc.isProfile}">        -->                                                                
+                                                <tr width="100%">   
+                                                    <td width="5%"  style="text-align:center;"> 
+                                                        <apex:outputText rendered="{!userRole=='admin'}">
+                                                            <a onclick="openPopup('#popupsec002','#popupback002');showObjPermEdit('{!acc.permisSetId}','{!acc.ObjectId}')"> Edit</a> 
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td width="20%"  style="text-align:center;">  <apex:outputLink value="/{!acc.profileId }" target="_blank">  {!acc.profileName} </apex:outputLink>   </td>
+                                                    <td width="10%"  style="text-align:center;">
+                                                        <apex:outputPanel layout="block" rendered="{!selectedSearchType =='Object'}">
+                                                            {!SelectedObjectName} 
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel layout="block" rendered="{!selectedSearchType !='Object'}">
+                                                            {!acc.objSet.SObjectType} 
+                                                        </apex:outputPanel>
+                                                        
+                                                    </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isRead}" disabled="true"/> </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isCreate}" disabled="true"/>  </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isEdit}" disabled="true"/>   </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isDelete}" disabled="true"/>  </td>                                        
+                                                    <td width="9%"  style="text-align:center;">   <apex:inputCheckbox value="{!acc.isViewAll}" disabled="true"/> </td>
+                                                    <td width="10%"  style="text-align:center;">   <apex:inputCheckbox value="{!acc.isModifyAll}" disabled="true"/> </td>                                                                                
+                                                    <td width="10%"  style="text-align:center;"> 
+                                                        <apex:outputPanel layout="block" rendered="{!selectedSearchType =='Object'}">
+                                                            <a href="#" onclick="showModal('{!acc.profileName}','{!acc.permisSetId}','{!SelectedObjectName}')">View Fields</a> 
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel layout="block" rendered="{!selectedSearchType =='Profile'}">
+                                                            <a href="#" onclick="showModal('{!acc.ObjectId}','{!acc.permisSetId}','{!acc.ObjectId}')">View Fields</a> 
+                                                        </apex:outputPanel>
+                                                        
+                                                    </td>                                                                                
+                                                    
+                                                </tr>
+                                                <!--  </apex:outputPanel>     -->                           
+                                            </apex:repeat>                            
+                                        </table>
+                                    </apex:outputPanel>
+                                  
+                                    
+                                </div>
+                                
+                                <div id="permisDiv" style="display:none;" >                        
+                                    <div style="color:#00006f;background:#A3DBE8;font-size:1.1em; margin-top:20px;padding:8px !important;">                                        
+                                        
+                                        <apex:outputtext rendered="{!selectedSearchType =='Object'}">
+                                            <b> PermissionSets &nbsp; [{!pSetAccessList.size}] </b>
+                                        </apex:outputtext>
+                                        <apex:outputtext rendered="{!selectedSearchType =='PermissionSet'}">
+                                            <b>Objects &nbsp; [{!pSetAccessList.size}] </b>
+                                        </apex:outputtext>
+                                        <span style="float:right;">
+                                            Show 
+                                            <apex:selectList style="border-radius:4px;border:1px solid #00dbdb;"    multiselect="false" size="1"   value="{!selectedRecCount1}">                                    
+                                                <apex:selectOption ItemLabel="10" Itemvalue="10"></apex:selectOption>
+                                                <apex:selectOption ItemLabel="20" Itemvalue="20"></apex:selectOption>
+                                                <apex:selectOption ItemLabel="50" Itemvalue="50"></apex:selectOption>
+                                                <apex:selectOption ItemLabel="100" Itemvalue="100"></apex:selectOption>
+                                                <apex:actionSupport event="onchange" reRender="outputPanel,psetPanel" status="actStatusId" />
+                                            </apex:selectList>
+                                            &nbsp;
+                                            <apex:commandLink action="{!previous1}" rendered="{!(pageNumber1 < totalPageSize1)}" value="Prev"  reRender="outputPanel,psetPanel" />
+                                            <apex:outputText rendered="{!!(pageNumber1 < totalPageSize1)}">Prev</apex:outputText>
+                                            -
+                                            <apex:commandLink action="{!next1}" value="Next" rendered="{!(pageNumber1 < totalPageSize1)}" reRender="outputPanel,psetPanel" /> 
+                                            <apex:outputText value="Next" rendered="{!!(pageNumber1 < totalPageSize1)}"  /> 
+                                            &nbsp;
+                                            Viewing ({!(selectedRecCount1*pageNumber1)+1}-{!(selectedRecCount1*pageNumber1)+selectedRecCount1}) of  {!pSetAccessList.size} records 
+                                        </span> 
+                                    </div>
+                                    <apex:outputPanel id="psetPanel">
+                                        <table id="t2" width="100%" cellpadding="0px" cellspacing="0px" >
+                                            <tr width="100%">
+                                                <td width="5%" style="text-align:center;font-weight:bold;"> Action</td>
+                                                <td width="20%" style="text-align:center;font-weight:bold;"> PermissionSet Name    </td>
+                                                <td width="10%"  style="text-align:center;font-weight:bold;"> Object Name    </td>
+                                                <td width="9%"  style="text-align:center;font-weight:bold;"> Read </td>                                
+                                                <td width="9%"  style="text-align:center;font-weight:bold;">Create</td>                                
+                                                <td width="9%"  style="text-align:center;font-weight:bold;">Edit</td>                                
+                                                <td width="9%"  style="text-align:center;font-weight:bold;"> Delete</td>                                
+                                                <td width="9%"  style="text-align:center;font-weight:bold;">View All</td>                                
+                                                <td width="10%"  style="text-align:center;font-weight:bold;">Modify All</td>  
+                                                <td width="10%"  style="text-align:center;font-weight:bold;">Field Access</td>
+                                            </tr>
+                                            <apex:repeat value="{!pSetAccessList}" var="acc" rows="{!selectedRecCount1}" first="{!selectedRecCount1*pageNumber1}">
+                                                
+                                                
+                                                <tr width="100%">     
+                                                    <td width="5%"  style="text-align:center;"> 
+                                                        <apex:outputText rendered="{!userRole=='admin'}">
+                                                            <a onclick="openPopup('#popupsec002','#popupback002');showObjPermEdit('{!acc.permisSetId}','{!acc.ObjectId}')"> Edit</a> 
+                                                        </apex:outputText>
+                                                    </td>
+                                                    <td width="20%"  style="text-align:center;"> <apex:outputLink value="/{!acc.permisSetId}" target="_blank"> {!acc.permisSetName}</apex:outputLink>     </td>
+                                                    <td width="10%"  style="text-align:center;"> 
+                                                        <apex:outputPanel layout="block" rendered="{!selectedSearchType =='Object'}">
+                                                            {!SelectedObjectName} 
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel layout="block" rendered="{!selectedSearchType !='Object'}">
+                                                            {!acc.objSet.SObjectType}  
+                                                        </apex:outputPanel>
+                                                        
+                                                    </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isRead}" disabled="true"/> </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isCreate}" disabled="true"/>  </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isEdit}" disabled="true"/>   </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isDelete}" disabled="true"/>  </td>                                        
+                                                    <td width="9%"  style="text-align:center;">  <apex:inputCheckbox value="{!acc.isViewAll}" disabled="true"/> </td>
+                                                    <td width="10%"  style="text-align:center;"> <apex:inputCheckbox value="{!acc.isModifyAll}" disabled="true"/> </td>                                                                                
+                                                    <td width="10%"  style="text-align:center;">                                                       
+                                                        
+                                                        <apex:outputPanel layout="block" rendered="{!selectedSearchType =='Object'}">
+                                                            <a href="#" onclick="showModal('{!acc.permisSetName}','{!acc.permisSetId}','{!SelectedObjectName}')">View Fields</a> 
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel layout="block" rendered="{!selectedSearchType =='PermissionSet'}">
+                                                            <a href="#" onclick="showModal('{!acc.ObjectId}','{!acc.permisSetId}','{!acc.ObjectId}')">View Fields</a> 
+                                                        </apex:outputPanel> 
+                                                    </td>                                                                                
+                                                    
+                                                </tr>
+                                                
+                                                
+                                            </apex:repeat>
+                                            
+                                        </table>
+                                    </apex:outputPanel>
+                                </div>
+                                
+                            </div>
+                            
+                        </apex:outputPanel>
+                    </div>
+                </section>
+            </li>
+            
+            <li class="slds-accordion__list-item" style="display:{!IF(selectedSearchType =='Object','block','none')};">
+                <section id="sec002" class="slds-accordion__section">
+                    <div class="slds-accordion__summary">
+                        <button  onclick="callRelList('{!SelectedObjectName}','standard'); expandAccordion('#sec002');return false;"  aria-controls="accordion-details-02" aria-expanded="true" class="slds-button slds-button_reset slds-accordion__summary-action">
+                            <h3 class="slds-text-heading_small slds-accordion__summary-heading">
+                                <div>
+                                    Related Objects
+                                </div>
+                            </h3>   
+                        </button>                                
+                    </div>
+                    <div aria-hidden="true" class="slds-accordion__content" id="accordion-details-02">
+                        
+                        
+                        
+                        <div class="outputDiv"  >                                              
+                            
+                            <button class="btnActive" type="button" value ="profile" onclick="activeBtn(this);callRelList('{!SelectedObjectName}','standard');return false;" >                                                                                                                         
+                                Show Standard                                                                                              
+                            </button> &nbsp; 
+                            <button class="btnNormal" type="button" value ="profile" onclick="activeBtn(this);callRelList('{!SelectedObjectName}','custom');return false;" >                                                                                                                         
+                                Show Custom                                                                                              
+                            </button>  
+                            
+                            <button class="btnNormal" type="button" value ="profile" onclick="openPopup('#popupsec005','#popupback005');draw('{!selectedObjectName}');" >                                                                                                                         
+                                Show Diagram                                                                                              
+                            </button> 
+                            <!--
+                            <button class="btnNormal" type="button" value ="profile" onclick="openPopup('#popupsec006','#popupback006');dashboard();" >                                                                                                                         
+                                Show User Usage Dashboard                                                                                              
+                            </button> 
+                            -->
+                            <apex:outputPanel id="relObjPanel" >    
+                                <div style="display:{!IF(relatedObjList.size >0,'block','none')};" >
+                                    
+                                    
+                                    <div style="color:#00006f;background:#A3DBE8;font-size:1.1em;margin-top:20px; padding:8px !important;">
+                                        Related Objects [{!relatedObjList.size}] for {!SelectedObjectName}                                                
+                                    </div>
+                                    <table id="t1" width="100%" cellpadding="5px" cellspacing="0px" >
+                                        <tr width="100%">
+                                            
+                                            <td width="30%"  style="text-align:center;font-weight:bold;"> Object Name    </td>
+                                            <td width="20%"  style="text-align:center;font-weight:bold;"> Relationship Field Label    </td>
+                                            <td width="20%"  style="text-align:center;font-weight:bold;">Relationship Field Name</td>
+                                            <td width="15%"  style="text-align:center;font-weight:bold;">Relationship Name</td>
+                                            <td width="15%"  style="text-align:center;font-weight:bold;">Is Custom Object</td>
+                                        </tr>
+                                        
+                                        <apex:repeat value="{!relatedObjList}" var="acc" >                              
+                                            <!--   <apex:outputPanel rendered="{!acc.isProfile}">        -->                                                                
+                                            <tr width="100%" style="">                                        
+                                                <td width="30%"  style="text-align:center;">  <apex:outputLink value="/" target="_blank">  {!acc.objLabel} </apex:outputLink>   </td>
+                                                <td width="20%"  style="text-align:center;"> {!acc.fieldLabel}  </td>  
+                                                <td width="20%"  style="text-align:center;"> {!acc.fieldName}  </td>   
+                                                <td width="10%"  style="text-align:center;"> {!acc.relationshipName}  </td>
+                                                <td width="10%"  style="text-align:center;"> {!acc.isCustom}  </td>    
+                                            </tr>
+                                            
+                                            <!--  </apex:outputPanel>     -->                           
+                                        </apex:repeat>                            
+                                    </table>
+                                </div>
+                            </apex:outputPanel>
+                          
+                        </div>
+                        
+                    </div>
+                </section>
+            </li>
+            <li class="slds-accordion__list-item" style="display:{!IF(selectedSearchType !='Object','block','none')};">
+                <section id="sec003" class="slds-accordion__section">
+                    <div class="slds-accordion__summary">
+                        <button  onclick="showSetupitems('{!SelectedObjectName}','apexclass');expandAccordion('#sec003');return false;"  aria-controls="accordion-details-02" aria-expanded="true" class="slds-button slds-button_reset slds-accordion__summary-action">
+                            <h3 class="slds-text-heading_small slds-accordion__summary-heading">
+                                <div>
+                                   Other Permissions (Apps,Apex class, Visualforce )
+                                </div>
+                            </h3>   
+                        </button>                                
+                    </div>
+                    <div aria-hidden="true" class="slds-accordion__content" id="accordion-details-02">
+                        
+                        <div class="outputDiv"  >                                                                                          
+                            <button class="btnActive" type="button" value ="apexclass" onclick="activeBtn(this);showSetupitems('{!SelectedObjectName}','ApexClass');return false;" >                                                                                                                         
+                                Apex Class                                                                                         
+                            </button> &nbsp; 
+                            <button class="btnNormal" type="button"  value ="apexpages" onclick="activeBtn(this);showSetupitems('{!SelectedObjectName}','ApexPage');return false;"  >
+                                Visulaforce Pages
+                            </button> &nbsp; 
+                            <button class="btnNormal" type="button"  value ="tabs" onclick="activeBtn(this);showSetupitems('{!SelectedObjectName}','TabSet');return false;"  >
+                                Apps
+                            </button> &nbsp; 
+                            &nbsp;&nbsp;
+                            <apex:outputText rendered="{!userRole=='admin'}">
+                                <a target="_blank" onclick="openPopup('#popupsec004','#popupback004');callShowAddSetup();" class="btnActive" title="create new" style="padding:7px;color:white;border:1px solid #EC5291;background:#EC5291;" > 
+                                    <img style="height:20px;width:20px;" src="{!URLFOR($Asset.SLDS, 'assets/icons/utility/add_60.png')}" alt="Create new" /> 
+                                    Add New
+                                </a>
+                            </apex:outputText>
+                            <apex:outputPanel id="setupEntityPanel">
+                                <div style="display:{!IF(itemWrapperList.size >0,'block','none')};"  >                                                                                                   
+                                    
+                                    
+                                    <br/>
+                                    <div style="text-align:right;">
+                                      
+                                       
+                                        <apex:commandButton action="{!ent_Prev}" disabled="{!ent_PageNumber<1}" value="Prev" reRender="setupEntityPanel" /> 
+                                        <apex:variable value="{!((itemWrapperList.size)/25)}" var="totalPage" />
+                                        <apex:commandButton action="{!ent_Next}" disabled="{!totalPage<=(ent_PageNumber+1)}"  value="Next" reRender="setupEntityPanel" />  &nbsp;
+                                        Viewing ({!(25*ent_PageNumber)+1}-{!(25*ent_PageNumber)+25}) of  {!itemWrapperList.size} records 
+                                    </div>
+                                    <div style="color:#00006f;background:#A3DBE8;font-size:1.1em; margin-top:20px;padding:8px !important;">
+                                    </div>
+                                    <table id="t1" width="100%" cellpadding="5px" cellspacing="0px" >
+                                        <tr width="100%">
+                                            <td width="20%"  style="text-align:center;font-weight:bold;"> Action   </td> 
+                                            <td width="20%"  style="text-align:center;font-weight:bold;"> Type    </td> 
+                                            <td width="50%"  style="text-align:center;font-weight:bold;"> Item Name    </td>                                                        
+                                            
+                                        </tr>  
+                                     
+                                            <apex:repeat value="{!itemWrapperList}" var="acc" first="{!ent_PageNumber*25}"  rows="25" >                              
+                                                <!--   <apex:outputPanel rendered="{!acc.isProfile}">        onclick="IF(confirm('Are you sure to Remove?')){removeSetupEntity('{!acc.Id}');}"   -->                                                                
+                                                <tr width="100%">    
+                                                    <td width="20%"  style="text-align:center;">
+                                                        <apex:outputText rendered="{!userRole=='admin'}">
+                                                            <a onclick="removeEntity('{!acc.Id}','{!acc.itemType}','{!SelectedObjectName}')">Remove</a> 
+                                                        </apex:outputText>
+                                                        <apex:outputText rendered="{!userRole!='admin'}">
+                                                            Remove
+                                                        </apex:outputText>
+                                                    </td>                                                            
+                                                    <td width="20%"  style="text-align:center;"> {!acc.itemType}  </td>
+                                                    <td width="50%"  style="text-align:left;"> &nbsp; &nbsp; <apex:outputLink value="/{!acc.itemId}" target="_blank">  {!acc.itemName} </apex:outputLink>   </td>
+                                                    
+                                                </tr>
+                                                <!--  </apex:outputPanel>     -->                           
+                                            </apex:repeat> 
+                                      
+                                    </table>
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+                        
+                        
+                    </div>
+                </section>
+            </li>
+            <li class="slds-accordion__list-item" style="display:{!IF(selectedSearchType =='Object','block','none')};">
+                <section id="sec004" class="slds-accordion__section">
+                    <div class="slds-accordion__summary">
+                        <button  onclick="callShowWFList('{!SelectedObjectName}','workflow');expandAccordion('#sec004');return false;"  aria-controls="accordion-details-02" aria-expanded="true" class="slds-button slds-button_reset slds-accordion__summary-action">
+                            <h3 class="slds-text-heading_small slds-accordion__summary-heading">
+                                <div>
+                                    Workflow Rules
+                                </div>
+                            </h3>   
+                        </button>                                
+                    </div>
+                    <div aria-hidden="true" class="slds-accordion__content" id="accordion-details-02">
+                        
+                        
+                        <div class="outputDiv" style="display:{!IF(SelectedObjectName !=null,'block','none')};" >
+                            
+                            <button class="btnActive" type="button" value ="workflow" onclick="activeBtn(this);callShowWFList('{!SelectedObjectName}','workflow');return false;" >                                                                                                                         
+                                Workflow Rules                                                                                             
+                            </button> &nbsp; 
+                            <button class="btnNormal" type="button"  value ="fieldupdate" onclick="activeBtn(this);callShowWFList('{!SelectedObjectName}','fieldupdate');return false;"  >
+                                Field Updates
+                            </button> &nbsp; 
+                            <button class="btnNormal" type="button"  value ="tasks" onclick="activeBtn(this);callShowWFList('{!SelectedObjectName}','tasks');return false;"  >
+                                Tasks
+                            </button> &nbsp; 
+                       <!--     <button class="btnNormal" type="button"  value ="outbound" onclick="activeBtn(this);callShowWFList('{!SelectedObjectName}','outbound');return false;"  >
+                                Outbound Messages
+                            </button>  -->
+                            
+                            <br/>
+                            <div style="float:right;" >
+                                <apex:outputText rendered="{!userRole=='admin'}">
+                                    <a target="_blank" onclick="redirectToNew(buttonval,'{!SelectedObjectName}');" class="btnActive" title="create new" style="color:white;border:1px solid #EC5291;background:#EC5291;" > 
+                                        <img style="height:20px;width:20px;" src="{!URLFOR($Asset.SLDS, 'assets/icons/utility/add_60.png')}" alt="Create new" /> 
+                                        Add New
+                                    </a>
+                                </apex:outputText>
+                            </div>
+                            <br/>
+                            <apex:outputPanel id="WFlistPanel" >  
+                                <div style="color:#00006f;background:#A3DBE8;font-size:1.1em; margin-top:20px;padding:8px !important;">
+                                </div>
+                                <div style="display:{!IF(itemWrapperList.size >0,'block','none')};" >                                                
+                                    
+                                    
+                                  
+                                    <table id="t1" width="100%" cellpadding="5px" cellspacing="0px" >
+                                        <tr width="100%">
+                                            <td width="20%"  style="text-align:center;font-weight:bold;"> Type    </td> 
+                                            <td width="50%"  style="text-align:center;font-weight:bold;"> Item Name    </td>                                                        
+                                            <td width="30%"  style="text-align:center;font-weight:bold;">Object Name</td>
+                                        </tr>
+                                        
+                                        <apex:repeat value="{!itemWrapperList}" var="acc" >                              
+                                            <!--   <apex:outputPanel rendered="{!acc.isProfile}">        -->                                                                
+                                            <tr width="100%">    
+                                                <td width="20%"  style="text-align:center;"> {!acc.itemType}  </td>
+                                                <td width="50%"  style="text-align:center;">  <apex:outputLink value="/{!acc.itemId}" target="_blank">  {!acc.itemName} </apex:outputLink>   </td>
+                                                <td width="30%"  style="text-align:center;"> {!acc.itemObject}  </td>
+                                                
+                                                
+                                            </tr>
+                                            <!--  </apex:outputPanel>     -->                           
+                                        </apex:repeat>                            
+                                    </table>
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+                        
+                    </div>
+                </section>
+            </li>
+            
+        </ul>  
+    </apex:outputPanel>
+    
+</apex:form>
+
+</div>
+</div>
+<div id="fieldPermModal">
+    
+    <div class="popupBackground" />
+    <div class="custPopup">
+        
+    </div>
+    
+</div>
+<div id="helpPanel">
+    <!--  <div class="popupBackground" />
+<div class="custPopup">
+</div>
+-->
+</div>  
+
+<!-- Popups Panel --->
+
+
+<div class="demo-only" style="height: 640px;">
+    
+    <section id="popupsec001" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <button onclick="closePopup('#popupsec001','#popupback001',null);" class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                    X
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Field Level Access</h2>
+            </header>
+            <apex:form id="fieldAccessPanel" >  
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    
+                    
+                    <div style="background:#00dbdb;padding:5px;"> <h5>
+                        <span id="objNameId"></span>-Field Level Permissions
+                        
+                        </h5>
+                    </div>
+                     <apex:pageMessages />
+                    <div style="width:50%;float:left;height:350px;overflow:scroll;">
+                        <table width="100%">
+                            <tr>
+                                <td><b>FieldName(Standard)</b></td>
+                                <td><b>Read</b></td>
+                                <td><b>Edit</b></td>
+                            </tr>
+                            <apex:repeat value="{!stdFieldList}" var="fie">                                                    
+                                <tr>
+                                    <td>{!fie.fieldName}</td>
+                                    <td><apex:inputCheckbox value="{!fie.fieldPrms.PermissionsRead}" styleClass="slds-checkbox" disabled="{!IF(isFieldAccessEdit=='N',true,false)}" /> </td>
+                                    <td><apex:inputCheckbox value="{!fie.fieldPrms.PermissionsEdit}" styleClass="slds-checkbox" disabled="{!IF(isFieldAccessEdit=='N' || fie.isDisabled,true,false)}" /></td>
+                                </tr>                        
+                            </apex:repeat>
+                        </table>
+                    </div>
+                    <div style="width:50%;float:right;height:350px;overflow:scroll;">
+                        <table width="100%">
+                             <tr>
+                                 <td><b></b></td>
+                                 <td>
+                                     Select All
+                                     <apex:inputCheckbox value="{!selectAllFieldReadAccess}"  styleClass="slds-checkbox" disabled="{!IF(isFieldAccessEdit=='N',true,false)}" >                                         
+                                         <apex:actionSupport event="onchange" action="{!makeAllFieldSelect}" reRender="fieldAccessPanel" >
+                                             <apex:param name="SELECTED_PARAM" value="{!selectAllFieldReadAccess}" />
+                                             <apex:param name="FIELD_SELECTALL" value="read" />
+                                         </apex:actionSupport>
+                                     </apex:inputCheckbox>
+                                 </td>
+                                 <td> 
+                                     Select All
+                                     <apex:inputCheckbox value="{!selectAllFieldEditAccess}" styleClass="slds-checkbox" disabled="{!IF(isFieldAccessEdit=='N',true,false)}" >
+                                         <apex:actionSupport event="onchange" action="{!makeAllFieldSelect}" reRender="fieldAccessPanel" >
+                                             <apex:param name="SELECTED_PARAM" value="{!selectAllFieldEditAccess}" />
+                                             <apex:param name="FIELD_SELECTALL" value="edit" />
+                                         </apex:actionSupport>
+                                     </apex:inputCheckbox>
+                                 </td>
+                            </tr>
+                            <tr>
+                                <td><b>FieldName(Custom)</b></td>
+                                <td><b>Read</b></td>
+                                <td><b>Edit</b></td>
+                            </tr>
+                            <apex:repeat value="{!fieldList}" var="fie">
+                                
+                                <tr>
+                                    <td>{!fie.fieldName}</td>
+                                    <td><apex:inputCheckbox value="{!fie.fieldPrms.PermissionsRead}" styleClass="slds-checkbox" disabled="{!IF(isFieldAccessEdit=='N',true,false)}" /> </td>
+                                    <td><apex:inputCheckbox value="{!fie.fieldPrms.PermissionsEdit}" styleClass="slds-checkbox" disabled="{!IF(isFieldAccessEdit=='N' || fie.isDisabled,true,false)}"  /></td>
+                                </tr>  
+                                
+                            </apex:repeat>
+                        </table>
+                    </div> 
+                    
+                    
+                </div>
+                <footer class="slds-modal__footer">
+                    <div class="slds-modal__footer">
+                        
+                        <button onclick="closePopup('#popupsec001','#popupback001',null);" class="slds-button slds-button_neutral">Cancel</button>            &nbsp;                
+                        <apex:commandButton styleClass="slds-button slds-button_brand"  action="{!editFieldAccess}"  value="Edit" rendered="{!IF((isFieldAccessEdit=='N' && userRole=='admin'),true,false)}" reRender="fieldAccessPanel" />  &nbsp;   
+                        <apex:commandButton styleClass="slds-button slds-button_brand" action="{!saveFieldAccess}" value="Save" rendered="{!IF(isFieldAccessEdit=='Y',true,false)}" reRender="fieldAccessPanel,profilePanel,psetPanel"  oncomplete="closePopup('#popupsec001','#popupback001','{!isError}');" />
+                    </div>
+                </footer>
+            </apex:form>
+        </div>
+    </section>  
+    <div id="popupback001" class="slds-backdrop "></div>
+    
+</div>
+
+<!-- fields access Popup -->
+<div class="demo-only" style="height: 640px;">
+    <section id="popupsec002" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal">
+        
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <button onclick="closePopup('#popupsec002','#popupback002',null);" class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                    X
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Object Permissions Edit</h2>
+            </header>
+            <apex:form id="objeditform" >
+                <apex:pageMessages />
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <table width="100%">
+                        <tr>
+                            <td width="50%"><b>Object Name</b></td>
+                            <td width="50%">
+                                <apex:outputText value="{!objPerm.SObjectType}" > </apex:outputText>
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td width="50%"><b>Permissionset Name</b></td>
+                            <td width="50%">
+                                <apex:outputText rendered="{!objPerm.Parent.profileid ==null}" value="{!objPerm.parent.Name}" > </apex:outputText>
+                                <apex:outputText rendered="{!objPerm.Parent.profileid !=null}" value="{!objPerm.parent.Profile.Name}" > </apex:outputText>
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td width="50%"><b>Permission Read</b></td>
+                            <td width="50%">
+                                <apex:inputCheckbox value="{!objPerm.PermissionsRead}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission Create</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsCreate}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission Edit</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsEdit}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission Delete</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsDelete}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission View All</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsViewAllRecords}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission Modify All</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsModifyAllRecords}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                    </table> 
+                    
+                </div>
+                <footer class="slds-modal__footer">
+                    <div class="slds-modal__footer">
+                        <button onclick="closePopup('#popupsec002','#popupback002',null);return false;" class="slds-button slds-button_neutral">Cancel</button>     &nbsp;                        
+                        <apex:commandButton rendered="{!userRole=='admin'}" styleClass="slds-button slds-button_brand" action="{!saveEditObjperms}" value="Save"  oncomplete="closePopup('#popupsec002','#popupback002','{!isError}');" reRender="objeditform,profilePanel,psetPanel" />
+                    </div>
+                </footer>
+            </apex:form>
+        </div>
+        
+    </section>
+    <div id="popupback002" class="slds-backdrop "></div>
+</div>
+
+<!-- add new Access panel -->
+
+<div class="demo-only" style="height: 640px;">
+    
+    <section id="popupsec003" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-3" class="slds-modal">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <button onclick="closePopup('#popupsec003','#popupback003',null);" class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                    X
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Object Level Access</h2>
+            </header>
+            <apex:form id="addAccesspanel" >  
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <apex:pageMessages />
+                    <table width="100%">
+                        <tr>
+                            <td width="50%"><b>Object Name</b></td>
+                            <td width="50%">
+                                <apex:outputPanel rendered="{!(selectedSearchType!='Object')}" Styleclass="slds-form-element__control">
+                                    
+                                    
+                                    <c:AutoCompleteComponent id="objautocom" compId="objautocom" searchType="Object" formId="addAccesspanel" selectedobj="{!objPerm.SObjectType}" objectType="Standard Object"></c:AutoCompleteComponent>
+                                    
+                                </apex:outputPanel>
+                                
+                                <apex:outputText rendered="{!(selectedSearchType=='Object')}" value="{!objPerm.SObjectType}" > </apex:outputText>
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td width="50%"><b>Permissionset Name</b></td>
+                            <td width="50%">
+                                <apex:outputPanel rendered="{!(selectedSearchType=='Object')}" Styleclass="slds-form-element__control">
+                                    <c:AutoCompleteComponent id="profautocom" compId="profautocom" searchType="Profile" formId="addAccesspanel" selectedobj="{!objPerm.parentId}" ></c:AutoCompleteComponent>
+                                </apex:outputPanel>
+                                <apex:outputText rendered="{!(selectedSearchType!='Object')}" value="{!objPerm.parent.Name}" > </apex:outputText>
+                                <apex:outputText rendered="{!(selectedSearchType!='Object')}" value="{!objPerm.parent.Profile.Name}" > </apex:outputText>
+                                <apex:outputText rendered="{!(selectedSearchType!='Object')}" value="{!objPerm.parentId}" > </apex:outputText>
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td width="50%"><b>Permission Read</b></td>
+                            <td width="50%">
+                                <apex:inputCheckbox value="{!objPerm.PermissionsRead}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission Create</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsCreate}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission Edit</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsEdit}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission Delete</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsDelete}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission View All</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsViewAllRecords}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td><b>Permission Modify All</b></td>
+                            <td>
+                                <apex:inputCheckbox value="{!objPerm.PermissionsModifyAllRecords}" label="Permission Read" />
+                            </td>                                
+                        </tr>
+                    </table> 
+                                       
+                    
+                </div>
+                <footer class="slds-modal__footer">
+                    <div class="slds-modal__footer">
+                        <button onclick="closePopup('#popupsec003','#popupback003',null);return false;" class="slds-button slds-button_neutral">Cancel</button>     &nbsp;                        
+                        <apex:commandButton rendered="{!userRole=='admin'}" styleClass="slds-button slds-button_brand" action="{!saveAddObjperms}" value="Save"  oncomplete="closePopup('#popupsec003','#popupback003','{!isError}');" reRender="addAccesspanel,outputPanel,objeditform,profilePanel,psetPanel" />
+                    </div>
+                </footer>
+            </apex:form>
+        </div>
+    </section>  
+    <div id="popupback003" class="slds-backdrop "></div>
+    
+</div>
+
+<!-- add new SetupEntity panel -->
+
+<div class="demo-only" style="height: 640px;">
+    
+    <section id="popupsec004" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-3" class="slds-modal">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <button onclick="closePopup('#popupsec004','#popupback004',null);" class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                    X
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Setup Entity</h2>
+            </header>
+            <apex:form id="addSetupPanel" >  
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <apex:pageMessages />
+                    <table width="100%">
+                        <tr>
+                            <td width="50%"><b>Entity Type</b></td>
+                            <td width="50%">
+                                <div class="slds-form-element__control">
+                                    <div class="slds-select_container">                                           
+                                        <apex:selectList styleClass="slds-select" style="padding:4px;border-radius:4px;border:1px solid #00dbdb;"  multiselect="false" size="1"  id="objectType" value="{!setupEntityType}">
+                                            <apex:selectOption ItemLabel="--Select--" Itemvalue="none"></apex:selectOption>                                                                                        
+                                            <apex:selectOption ItemLabel="Apex Class" Itemvalue="apexclass"></apex:selectOption>
+                                            <apex:selectOption ItemLabel="Visualforce Pages" Itemvalue="apexpage"></apex:selectOption>
+                                             <apex:selectOption ItemLabel="Apps" Itemvalue="TabSet"></apex:selectOption>
+                                            <apex:actionSupport event="onchange" action="{!addSetupEntity}" reRender="addSetupPanel"  />
+                                        </apex:selectList> 
+                                    </div>
+                                </div>
+                                <br/>
+                            </td>                                
+                        </tr>
+                        <tr>
+                            <td width="50%"><b>Select entity </b></td>
+                            <td width="50%">
+                                <apex:selectList styleClass="slds-select" style="padding:4px;border-radius:4px;border:1px solid #00dbdb;"  multiselect="true" size="15"  value="{!setupEntityList}">
+                                    <apex:selectOptions value="{!setupEntityOption}"></apex:selectOptions>
+                                </apex:selectList> 
+                            </td>                                
+                        </tr>
+                        
+                    </table> 
+                    
+                    
+                    
+                </div>
+                <footer class="slds-modal__footer">
+                    <div class="slds-modal__footer">
+                        <button onclick="closePopup('#popupsec004','#popupback004',null);return false;" class="slds-button slds-button_neutral">Cancel</button>     &nbsp;                        
+                        <apex:commandButton styleClass="slds-button slds-button_brand" action="{!saveNewSetupEntity}" value="Save"  oncomplete="closePopup('#popupsec004','#popupback004','{!isError}');" reRender="addSetupPanel,outputPanel,objeditform,setupEntityPanel" />
+                    </div>
+                </footer>
+            </apex:form>
+        </div>
+    </section>  
+    <div id="popupback004" class="slds-backdrop "></div>
+    
+</div>
+
+
+
+<div class="demo-only" > 
+    
+    <section id="popupsec005" role="dialog"  tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-3" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" >
+            <header class="slds-modal__header">
+                <button onclick="closePopup('#popupsec005','#popupback005',null);" class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                    X
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Visual View</h2>
+            </header>
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                <div class="row" id="MainBlock" >
+                    <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8" id="LeftPanelContainer">                                              
+                        
+                        <input type="hidden" id='direction' value="UD"/>  
+                        <div id="mynetwork" class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="height:600px;border:1px solid #ccc;">                            
+                            <div class="vis-navigation"><div class="vis-button vis-up" style="touch-action: pan-y;display='none';-webkit-user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div><div class="vis-button vis-down" style="touch-action: pan-y; -webkit-user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div><div class="vis-button vis-left" style="touch-action: pan-y; -webkit-user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div><div class="vis-button vis-right" style="touch-action: pan-y; -webkit-user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div><div class="vis-button vis-zoomIn" style="touch-action: pan-y; -webkit-user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div><div class="vis-button vis-zoomOut" style="touch-action: pan-y; -webkit-user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div><div class="vis-button vis-zoomExtends" style="touch-action: pan-y; -webkit-user-select: none; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"></div></div>                            
+                        </div>                                                 
+                        <script language="JavaScript">
+                        var directionInput = document.getElementById("direction");
+                        </script>
+                        
+                    </div>  
+                </div>
+            </div>
+            
+        </div>
+    </section>  
+    <div id="popupback005" class="slds-backdrop "></div>
+    
+</div>
+
+    
+    <!-- user usage dashboards -->
+
+<div class="demo-only" style="height: 640px;">
+    
+ <!--   <section id="popupsec006" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-3" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <button onclick="closePopup('#popupsec006','#popupback006',null);" class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                    X
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Object Usage Chart</h2>
+            </header>
+            
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                <apex:outputPanel id="dashboard" style="margin-left:100px;">
+                    
+                        <apex:chart height="350" width="450" data="{!objUsageChart}">
+                            <apex:pieSeries dataField="data" labelField="name"/>
+                            <apex:legend position="right"/>
+                        </apex:chart>
+                   
+                </apex:outputPanel>
+            </div>
+            <footer class="slds-modal__footer">
+                <div class="slds-modal__footer">
+                    <button onclick="closePopup('#popupsec006','#popupback006',null);return false;" class="slds-button slds-button_neutral">Cancel</button>     &nbsp;                                           
+                </div>
+            </footer>
+           
+        </div>
+    </section>    -->
+    <div id="popupback006" class="slds-backdrop "></div>
+    
+</div>
+</body>
+<script>
+function removeEntity(val,typ,perm)
+{
+    var r =confirm('Are you sure to Remove?');
+    if(r==true)
+    {
+        removeSetupEntity(val,typ,perm);
+    }
+    
+}
+function closePopup(id1,id2,errr)
+{
+   
+    // alert(errr);
+    if(errr !='true')
+    {
+        $(id1).removeClass('slds-fade-in-open');
+        $(id2).removeClass('slds-backdrop_open');  
+    }
+    
+    
+}
+function openPopup(id1,id2)
+{
+    $(id1).addClass('slds-fade-in-open');
+    $(id2).addClass('slds-backdrop_open');
+}
+function redirectToNew(val,obj)
+{
+    if(val=='fieldupdate')
+    {
+        window.open('/04Y/e?SourceTableEnumOrId='+obj,'_blank');
+    }
+    else if(val=='workflow')
+    {
+        window.open('/01Q/e?TableEnumOrId='+obj,'_blank');
+    }
+        else if(val=='tasks')
+        {
+            window.open('/01V/e?TableEnumOrId='+obj,'_blank');
+        }
+            else if(val=='emailalert')
+            {
+                window.open('/01W/e?TableEnumOrId='+obj,'_blank');
+            }
+}
+
+
+</script>
+
+<script type="text/javascript">
+
+window.onload = expandWidth;
+
+function expandWidth(){
+    $('#LeftPanelContainer').removeClass('col-lg-8');
+    $('#LeftPanelContainer').addClass('col-lg-9');
+    $('#RightPanelContainer').removeClass('col-lg-4');
+    $('#RightPanelContainer').addClass('col-lg-3');
+    
+}
+
+var nodes = null;
+var edges = null;
+var network = null;
+var directionInput = document.getElementById("direction");
+
+function destroy() {
+    if (network !== null) {
+        network.destroy();
+        network = null;
+    }
+}
+
+function draw(objname) {
+    nodes = [];
+    edges = [];
+    var rawData,recId,acctId;          
+    recId='{!selectedObjectName}';            
+    
+    var options = {
+        "nodes": {
+            "color": {
+                "background": "rgba(255,255,255,1)",
+                "highlight": {
+                    "border": "rgba(48,233,101,0.74)",
+                    "background": "rgba(247,249,255,1)"
+                },
+                "hover": {
+                    "background": "rgba(246,249,255,1)"
+                }
+            },
+            "font": {
+                "size": 12
+            },
+            "physics": false,
+            "shadow": {
+                "enabled": true,
+                "color": "rgba(0,0,0,0.3)",
+                "size": 7,
+                "x": 3,
+                "y": 3
+            },
+            "shape": "box",
+            "size": 34
+        },
+        "edges": {
+            "arrows": {
+                "to": {
+                    "enabled": true,
+                    "scaleFactor": 0.25
+                },
+                "from": {
+                    "enabled": true,
+                    "scaleFactor": 0.25
+                }
+            },
+            "color": {
+                "color": "rgba(61,143,255,0.49)",
+                "highlight": "rgba(96,226,91,0.67)",
+                "hover": "rgba(61,143,255,0.49)",
+                "inherit": false
+            },
+            "shadow": {
+                "enabled": true,
+                "color": "rgba(0,0,0,0.2)",
+                "size": 7,
+                "x": 3,
+                "y": 3
+            },
+            "smooth": {
+                "type": "horizontal",
+                "forceDirection": "none"
+            }
+        },
+        "layout": {
+            "hierarchical": {
+                "enabled": true,
+                "levelSeparation": 100,
+                "sortMethod": "directed"
+            }
+        },
+        "interaction": {
+            "hideEdgesOnDrag": true,
+            "hover": true,
+            "navigationButtons": true,
+            "tooltipDelay": 175
+        },
+        "physics": {
+            "enabled": false,
+            "hierarchicalRepulsion": {
+                "centralGravity": 0
+            },
+            "minVelocity": 0.75,
+            "solver": "hierarchicalRepulsion"
+        }
+    };
+    NTTEAT.AllObjectpermissionsController.loadAllData(objname, 
+                                               function(result,event){
+                                                   if(event.status){                                                                                                                        
+                                                       console.log('@@@errorCome inside'+result);
+                                                       var outResult = result.replace(/(&quot\;)/g,"\"");
+                                                       var container = document.getElementById('mynetwork');
+                                                       //  console.log('@@'+outResult);
+                                                       var resultObject = jQuery.parseJSON(outResult);                                                            
+                                                       
+                                                       for (i = 0; i < resultObject.length; i++){
+                                                           var obj = resultObject[i];
+                                                           //  console.log('@@@result  '+obj.nodeLevel+'@@@lable  '+obj.nodeLabel);   
+                                                           nodes.push({id:obj.nodeId , label: obj.nodeLabel, level: obj.nodeLevel});  
+                                                           if(obj.edgesList.length>0 && obj.edgesList !=null)
+                                                           {
+                                                               for(j=0; j< obj.edgesList.length ; j++){
+                                                                   var ed =obj.edgesList[j];
+                                                                   edges.push({from: ed.fromId, to: ed.destinationId});
+                                                               }
+                                                           }
+                                                       }
+                                                       var data = {
+                                                           nodes: nodes,
+                                                           edges: edges
+                                                       };
+                                                       network = new vis.Network(container,data,options);    
+                                                       network.on( 'click', function(properties) {
+                                                           console.log( JSON.stringify(properties, null, 4));
+                                                           var IdOfNodeClicked = properties.nodes[0];
+                                                           console.log ('::test:::'+IdOfNodeClicked); 
+                                                           draw(IdOfNodeClicked);
+                                                           //  window.top.location='/hpsservice/IBT_AssetListViewPage?AssetId={!$CurrentPage.Parameters.SystemId}&AccId={!$CurrentPage.Parameters.AccId}&multiaccs={!$CurrentPage.Parameters.multiaccs}&load='+IdOfNodeClicked;
+                                                           
+                                                       });
+                                                       
+                                                   }else{
+                                                       console.log('@@@error'+event.message);
+                                                   }
+                                               }
+                                               ,{escape: true}
+                                              );                                                                 
+}
+</script>  
+
+</apex:page>

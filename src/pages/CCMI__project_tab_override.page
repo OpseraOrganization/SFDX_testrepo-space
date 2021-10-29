@@ -1,0 +1,129 @@
+<apex:page standardController="CCMI__Milestone_Project__c" recordSetVar="projects" extensions="CCMI.ProjectListExtension,CCMI.GanttRemoting,CCMI.MSAExtension" sidebar="false" title="Projects - {!viewName}" action="{!redirectToProjectAppList}">
+    <c:ng_module modules="gantt" includeCharts="true" includeExt="true">
+        <script>
+            var GANTT_FIELD_SETS = JSON.parse('{!JSENCODE(fieldSets)}');
+        </script>
+        <div ng-app="gantt" class="ccl cc-license--{!license.name}">
+            <div class="slds-page-header slds-m-bottom--medium">
+                <div class="slds-grid">
+                    <div class="slds-col slds-has-flexi-truncate">
+                        <div class="slds-media">
+                            <div class="slds-media__figure">
+                                <svg aria-hidden="true" class="slds-icon slds-icon--large {!license.icon.cls}">
+                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.lightning, '/icons/' + license.icon.type + '-sprite/svg/symbols.svg#' + license.icon.svg)}"></use>
+                                </svg>
+                            </div>
+                            <div class="slds-media__body">
+                                <p class="slds-text-heading--label slds-p-bottom--xx-small">Cross Project Gantt View</p>
+                                <apex:outputPanel layout="block" id="viewSelect" styleClass="slds-grid" rendered="{!type != 'related'}">
+                                    <div class="cc-list-view-select slds-dropdown-trigger slds-picklist slds-m-right--small slds-align-middle">
+                                        <div class="slds-type-focus slds-picklist__label slds-text-heading--medium" style="width:auto;">
+                                            <span class="slds-truncate">{!viewName}</span>
+                                            <svg aria-hidden="true" class="slds-icon">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.lightning, '/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                                            </svg>
+                                        </div>
+                                        <ul class="slds-dropdown slds-dropdown--left" style="max-height: 510px; max-width: none; width: 598px; font-size: 13px; overflow-y: auto">
+                                            <li class="slds-dropdown__header" style="margin: 0;">
+                                                <div class="slds-text-heading--label slds-truncate">List Views</div>
+                                            </li>
+                                            <apex:repeat var="option" value="{!viewOptions}">
+                                                <li class="slds-dropdown__item slds-picklist__item slds-has-icon--left {!IF(option.value == viewId, 'slds-is-selected', '')}">
+                                                    <apex:outputLink value="{!URLFOR($Page.CCMI__project_tab_override, $ObjectType.CCMI__Milestone_Project__c, IF(option.value == 'viewed', [hotlist_mode=3], [fcf=option.value]))}" rel="noreferrer">
+                                                        <p class="slds-truncate">
+                                                            <svg aria-hidden="true" class="slds-icon slds-icon--left slds-icon--x-small slds-icon-text-default slds-m-right--x-small {!IF(option.value != viewId, 'slds-hidden', '')}">
+                                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.lightning, '/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+                                                            </svg>{!option.label}
+                                                        </p>
+                                                    </apex:outputLink>
+                                                </li>
+                                            </apex:repeat>
+                                        </ul>
+                                    </div>
+                                    <div class="slds-col slds-shrink-none">
+                                        <div class="slds-dropdown-trigger">
+                                            <button class="slds-button slds-button--icon-more slds-button--small">
+                                                <svg aria-hidden="true" class="slds-button__icon">
+                                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.lightning, '/icons/utility-sprite/svg/symbols.svg#settings')}"></use>
+                                                </svg>
+                                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon--small">
+                                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.lightning, '/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                                                </svg>
+                                            </button>
+                                            <ul class="slds-dropdown slds-dropdown--left">
+                                                <li class="slds-dropdown__header" style="margin: 0;">
+                                                    <div class="slds-text-heading--label slds-truncate">List View Controls</div>
+                                                </li>
+                                                <li class="slds-dropdown__item">
+                                                    <apex:outputLink value="/ui/list/FilterEditPage" styleClass="slds-truncate">
+                                                        New
+                                                        <apex:param name="ftype" value="{!LEFT(fTypeId, 15)}" />
+                                                        <apex:param name="retURL" value="{!$CurrentPage.URL}" />
+                                                    </apex:outputLink>
+                                                </li>
+                                                <apex:outputPanel layout="none" rendered="{!type != 'recent'}">
+                                                    <li class="slds-dropdown__item">
+                                                        <apex:outputLink value="/ui/list/FilterEditPage" styleClass="slds-truncate">
+                                                            Edit
+                                                            <apex:param name="id" value="{!filterId}" />
+                                                            <apex:param name="retURL" value="{!$CurrentPage.URL}" />
+                                                            <apex:param name="cancelURL" value="{!$CurrentPage.URL}" />
+                                                        </apex:outputLink>
+                                                    </li>
+                                                </apex:outputPanel>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel layout="block" rendered="{!type == 'related'}" styleClass="slds-grid">
+                                    <h1 class="slds-truncate slds-text-heading--medium slds-m-right--small slds-align--middle">Projects related to {!viewName}</h1>
+                                </apex:outputPanel>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-no-flex slds-grid slds-align-bottom">
+                        <apex:outputPanel layout="block" styleClass="slds-m-right--x-small slds-dropdown-trigger" rendered="{!type != 'related'}">
+                            <apex:outputLink value="/{!$ObjectType.CCMI__Milestone_Project__c.keyPrefix}" styleClass="slds-button slds-button--icon-border" style="padding: 9px;" rendered="{!type == 'listview'}">
+                                <svg aria-hidden="true" class="slds-button__icon">
+                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.lightning, '/icons/utility-sprite/svg/symbols.svg#table')}"></use>
+                                </svg>
+                                <apex:param name="fcf" value="{!LEFT(filterId, 15)}" />
+                            </apex:outputLink>
+                            <apex:outputLink value="/{!$ObjectType.CCMI__Milestone_Project__c.keyPrefix}/o" styleClass="slds-button slds-button--icon-border" style="padding: 9px;" rendered="{!type == 'recent'}">
+                                <svg aria-hidden="true" class="slds-button__icon">
+                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.lightning, '/icons/utility-sprite/svg/symbols.svg#table')}"></use>
+                                </svg>
+                                <apex:param name="hotlist_mode" value="{!viewMode}" />
+                                <apex:param name="nooverride" value="1" />
+                            </apex:outputLink>
+                            <div style="position: absolute; right: 0; bottom: calc(100% + 0.5rem); left: 0; text-align: center;">
+                                <div class="tooltip top slds-dropdown" style="position: relative; display: inline-block; margin: 0 -1000px; padding: 0; box-shadow: none; transform: none; border: none; left: auto; float: none">
+                                    <div class="tooltip-inner">Table View</div>
+                                    <div class="tooltip-arrow"></div>
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel layout="block" styleClass="slds-m-right--x-small slds-dropdown-trigger" rendered="{!type == 'related'}">
+                            <apex:outputLink value="/{!viewId}" styleClass="slds-button slds-button--icon-border" style="padding: 9px;">
+                                <svg aria-hidden="true" class="slds-button__icon">
+                                    <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.lightning, '/icons/utility-sprite/svg/symbols.svg#back')}"></use>
+                                </svg>
+                                <apex:param name="fcf" value="{!LEFT(filterId, 15)}" />
+                            </apex:outputLink>
+                            <div style="position: absolute; right: 0; bottom: calc(100% + 0.5rem); left: 0; text-align: center;">
+                                <div class="tooltip top slds-dropdown" style="position: relative; display: inline-block; margin: 0 -1000px; padding: 0; box-shadow: none; transform: none; border: none; left: auto; float: none">
+                                    <div class="tooltip-inner">Return to {!viewName}</div>
+                                    <div class="tooltip-arrow"></div>
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                        <div class="slds-button-group">
+                            <a href="{!newProjectUrl}" target="_blank" class="slds-button slds-button--neutral">New Project</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <gantt-full view-id="{!viewId}" view-type="CrossProject"></gantt-full>
+        </div>
+    </c:ng_module>
+</apex:page>

@@ -1,0 +1,83 @@
+<apex:page contenttype="{!ContentType}"  standardstylesheets="{!if(exporttoexcel,'false','true')}" controller="DSALV.s_ReportController"  sidebar="false" showheader="false" readonly="true" title="Unique Field Values" action="{!s_GetUniqueData}">
+ <!-- // ******* Copyright Data Salvation Ltd December 2013. 
+         // ******* Contact john.jordan@datasalvation.co.uk
+         // ******* WARNING! Commercial Software, All Use Must Be Licensed)
+         // ******* This software is protected by copyright Law and International Treaties. Unauthorized use, modification, duplication, 
+         // ******* reverse engineering, any form of redistribution, or use in part or in whole other than by prior, express, 
+         // ******* printed and signed license for use is subject to civil and criminal prosecution. This notice includes code & 
+         // ******* any related objects, sub functions or classes pertaining to or dependent on this code. 
+         // ******* If you have received this code in error, please notify copyright holder and destroy this and any other copies as instructed. 
+    
+        // **** Written 25/11/2013 by JJ to display Unique values data          
+        --> 
+
+<!--//V1.8.2 encodeURIComponent will escape & and other spcecial characters -->
+<script>
+function BuildUniqueValuesURL(desc,config,uniqueField,UniqueValue,CurrentURL) {
+    //readCell(recordId);
+    //alert(desc+config+uniqueField+UniqueValue+CurrentURL);
+
+    var TheSource = "/apex/s_reportdrilldown?UniqueValues=Y&CellName=" + encodeURIComponent(desc) + '&ConfigSelected=' + encodeURIComponent(config) + '&RowCat=' + encodeURIComponent(uniqueField) + '~' + encodeURIComponent(UniqueValue) + '&returnURL=' + encodeURIComponent(CurrentURL);  
+
+    //alert(TheSource);
+    window.location.href = TheSource;
+}
+</script>
+
+
+ <apex:pageBlock title="Unique Field Values" rendered="{!if(exporttoexcel,'false','true')}"> 
+
+    <!-- *********** SCREEN VERSION ********************* -->
+    <apex:pageBlockSection collapsible="false"> 
+    <apex:pageBlockSectionItem >
+            <apex:outputtext value="Configuration"/>
+            <apex:outputtext value="{!ConfigSelected}"/>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem >
+            <apex:outputtext value="Field Selected"/>
+            <apex:outputtext value="{!UniqueField}"/>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem >
+            <apex:outputtext value="Date Time"/>
+            <apex:outputtext value="{!UniqueDateTime}"/> 
+        </apex:pageBlockSectionItem>
+        
+        <apex:form >
+            <apex:commandButton action="{!ExportUniqueValues}" title="Export Records To Excel" value="Export" />    
+        </apex:form>  
+
+   </apex:pageBlockSection>
+   
+
+    <apex:pageBlockTable value="{!UniqueRecords}" var="n" align="center">
+        <apex:column headervalue="Unique Value" value="{!n.DSALV__Unique_Value__c}" width="640"/>
+        <apex:column headervalue="Record Counter" value="{!n.DSALV__Counter__c}" width="100"/>   
+        <apex:column headervalue="" width="100" rendered="{!ShowDrillDown_Unique}">
+            <apex:form >
+                <apex:commandLink value="[View Data]" id="drillCommand" onclick="BuildUniqueValuesURL('{!JSENCODE(UniqueFieldDesc)}','{!ConfigSelected}','{!JSENCODE(UniqueField)}','{!JSENCODE(n.DSALV__Unique_Value__c)}','{!CurrentURL}'); return false;"/>
+            </apex:form> 
+            
+           <!--<apex:outputLink value="/apex/s_reportdrilldown?UniqueValues=Y&CellName={!UniqueFieldDesc}&ConfigSelected={!ConfigSelected}&RowCat={!UniqueField}~{!n.DSALV__Unique_Value__c}&returnURL={!CurrentURL}" id="theLink" >[View Data OLD]</apex:outputLink>
+           -->
+        </apex:column>   
+
+    </apex:pageBlockTable>
+
+   
+</apex:pageBlock>
+
+
+    <!-- *********** EXCEL VERSION ********************* -->
+    <apex:outputPanel rendered="{!if(exporttoexcel,'true','false')}">
+    <b><apex:outputtext value="Data Salvation Unique Values Export"/></b><br/>
+    <apex:outputtext value="{!'Configuration :'+ConfigSelected}"/><br/>
+    <apex:outputtext value="{!'Field :'+UniqueField}"/><br/>
+    <apex:outputtext value="{!'Batch Date :'+UniqueDatetime}"/><br/>
+    <apex:dataTable value="{!UniqueRecords}" var="n" >
+        <apex:column headervalue="Unique Value" value="{!n.DSALV__Unique_Value__c}"/>
+        <apex:column headervalue="Record Counter" value="{!n.DSALV__Counter__c}"/>   
+    </apex:dataTable>
+    </apex:outputPanel>
+    
+   
+</apex:page>

@@ -1,0 +1,601 @@
+<!-------------------------
+Created By: NTTDATA
+Use: This is used for editing M&PM SIM Licensing Opportunities.
+LastModified By:NTT DATA- M&PM phase2 Changes,
+LastModified Date: 29May2017
+----------------------------->
+<apex:page standardController="Opportunity" extensions="MPMSIMLICENSEOppCloneCls" >
+    <style>
+        .custPopup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 9999;
+            left: 50%;
+            padding:10px;
+            position: absolute;
+            width: 50px;
+            margin-left: -50px;
+            top:100px;          
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity=50); 
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;           
+        }
+        #editPage .pbSubsection, .editPage .pbSubsection {
+            margin-top: 7px;
+            padding: 0px 0px;
+        }
+        div#page:form1:CasePB:sec1:OTHERPRICING1
+        {
+            padding-left: 115px !important;
+        }
+        #page:form1:CasePB:sec1:OTHERPRICING1
+        {
+            padding-left: 115px !important;
+        }
+        .bPageBlock .detailList .dataCol {
+            width: 0% !important;
+        }
+        th.labelCol.vfLabelColTextWrap.first.last {
+            width: 27%;
+        }
+        div.tooltip {
+            width: 20px;
+            float: right;
+            display:inline;
+        }
+        div.tooltip span {
+            display: none;
+            font-weight:normal;
+            text-align:left;
+            padding: 3px 5px;
+            margin-left: 8px;
+            width: 250px;
+        }
+        div.tooltip:hover span {
+            display: inline;
+            position: absolute;
+            border: 1px solid #cccccc;
+            background: #FFC;
+            color: #000000;
+            z-index:10000;
+        }       
+    </style>
+     <apex:actionstatus id="loadStatus" starttext="Loading">
+            <apex:facet name="start">
+           <div class="waitingSearchDiv" id="el_loading" style="background-color: Black; height: 100%;opacity:0.5;filter: alpha(opacity=50);  -ms-filter:progid:DXImageTransform.Microsoft.Alpha(Opacity=50);width:100%;">
+                <div class="waitingHolder" style="top: 75px; width: 91px;">
+                    <img src="../resource/1455003255000/BGAMob_JQueryMobile_zip/images/ajax-loader.gif" class="custPopup" title="Please Wait..." />
+                    <span class="waitingDescription">Please Wait...</span>
+                </div>
+            </div>
+            </apex:facet>
+        </apex:actionstatus> 
+    <apex:pagemessages /> 
+    <apex:form id="form1">
+        <apex:sectionheader title="Opportunity Edit" subtitle="{!Opp.Name}"></apex:sectionheader>
+        <apex:pageblock mode="edit" id="Oppsec" title="Opportunity Edit">
+            <apex:pageblockbuttons >   
+            <apex:commandButton value="Save" action="{!CustomSave}" id="theButton"  /> 
+            <apex:commandbutton action="{!saveandnew}" value="Save&New" ></apex:commandbutton>
+            <apex:commandbutton action="{!cancel}" value="Cancel" ></apex:commandbutton>
+            </apex:pageblockbuttons>
+            <apex:pageblocksection title="Opportunity Information" id="sec" >                
+                <apex:pageblocksectionItem id="AccountName">         
+                    <apex:outputLabel value="AccountName" /> 
+                    <apex:outputPanel id="AccountName1" >
+                    <apex:inputfield value="{!Opp.HIPI_Accounts__c}"  id="HIPIAccount" style="color:blue;font-size:15px;"/>
+                    <apex:actionSupport event="onchange" action="{!changelicensee}" status="loadStatus" rerender="form1" />
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>
+                <apex:inputfield value="{!Opp.Licensee__c}" required="true" id="licensee1" style="color:blue;font-size:15px;"/>
+                <apex:pageblocksectionItem id="DealDescription1">         
+                    <apex:outputLabel value="Deal Description" >
+                        <div class="helpOrb tooltip" style="position:relative;left:10px">
+                            <span>
+                                Must include prior to Submit to Licensing:<br/>
+                                Aircraft plaform<br/>
+                                Customer Device Type<br/>
+                                Product Description<br/>
+                                Qty of Devices<br/>
+                                Proj/Job/Serial #<br/>
+                                TS Agreement License # 
+                            </span>
+                        </div>
+                    </apex:outputLabel> 
+                    <apex:outputPanel id="DealDescription2" >
+                    <apex:inputfield value="{!Opp.Name}" required="true" id="dealDesc" />
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>          
+                <apex:inputfield value="{!Opp.Licensor__c }" required="true" style="color:blue;font-size:15px;"/>            
+                <apex:inputfield value="{!Opp.If_Licensor_Other_Please_Specify__c}" />
+                <apex:inputfield value="{!Opp.Attorney_SBG__c}" required="true"/>               
+                <apex:inputfield value="{!Opp.HON_Lead_IP_Attorney__c}"  required="true"/>
+                <apex:inputfield value="{!Opp.Contract_Type__c}" required="true" style="color:blue;font-size:15px;"/>
+                <apex:inputfield value="{!Opp.If_Other_Enter_the_Name_of_Attorney__c}" />                
+                <apex:inputfield value="{!Opp.Contract_Sub_Type__c}" required="true" style="color:blue;font-size:15px;"/>
+                  <apex:pageblockSectionItem ></apex:pageblockSectionItem> 
+                <apex:pageblocksectionItem id="bussinesscontact">
+                  <apex:outputLabel value="Business Contact" />
+                  <apex:outputPanel id="bussinesscontact1" >
+                    <apex:inputfield value="{!Opp.BusinessContact__c}" required="true" style="color:blue;font-size:15px;"/>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>  
+                 <apex:pageblockSectionItem ></apex:pageblockSectionItem>                       
+                <!-- <apex:inputfield value="{!Opp.Contract_Number__c}"></apex:inputfield> -->
+                <apex:inputfield value="{!Opp.HIPI_CONTRACT_NUMBER__c}" style="color:blue;font-size:15px;"/>
+                <apex:inputfield value="{!Opp.If_Restated_Prior_Contract_Number__c}" /> 
+                <apex:inputfield value="{!Opp.Request_Contract_Number__c}" style="color:blue;font-size:15px;"></apex:inputfield>
+                <apex:inputfield value="{!Opp.ATN_Approval_Required__c}" />
+                <apex:inputfield value="{!Opp.ATN_Approval_Date__c}" />
+                <apex:pageblocksectionItem id="Dealphase">         
+                    <apex:outputLabel value="Deal Phase" />
+                    <apex:actionRegion >                                     
+                        <apex:inputfield value="{!Opp.StageName }" id="stagename" required="true" style="color:blue;font-size:15px;">
+                        </apex:inputfield>
+                    </apex:actionRegion>                                            
+                </apex:pageblocksectionItem> 
+                <apex:inputfield value="{!Opp.Agmt_Subject_to_Export_Control__c}" />   
+                     
+                             
+               <!-- <apex:inputfield value="{!Opp.DOS_Approval_Required__c}" /> -->
+                <apex:inputfield value="{!Opp.Deal_Status__c}" required="true" style="color:blue;font-size:15px;"></apex:inputfield>
+                
+                <!--<apex:inputfield value="{!Opp.DOS_Expiration_Date__c}" /> -->
+                <apex:inputfield value="{!Opp.DOS_Number__c}" />
+                <apex:inputfield value="{!Opp.Win_Loss_Reason_Text__c}" ></apex:inputfield> <br/>
+                <!--<apex:outputfield value="{!Opp.Process_Step1__c}"/> -->
+                <apex:outputfield value="{!Opp1.Process_Step__c}"/>
+                <apex:inputfield value="{!Opp.Win_Loss_Reason_Code__c}" ></apex:inputfield> <br/>
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="Closedatesec">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.CloseDate.label}" />
+                    <apex:outputPanel id="closedatepanel">        
+                    <apex:inputfield value="{!Opp.CloseDate}" id="closeddateid" style="color:blue;font-size:15px;"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>       
+                
+                <apex:pageblocksectionItem id="Country">
+                    <apex:outputLabel value="Country of Licensee" />
+                    <apex:outputPanel id="Country1" >
+                       <apex:inputfield value="{!Opp.Country__c}" required="true" style="color:blue;font-size:15px;"/>
+                    </apex:outputPanel>
+                </apex:pageblocksectionItem>
+                <apex:inputfield value="{!Opp.Automatic_Renewal__c}" />
+                <apex:inputfield value="{!Opp.Region1__c}" required="true" style="color:blue;font-size:15px;"/>
+                <apex:inputfield value="{!Opp.Notice_Period_in_Days__c}" />
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:inputfield value="{!Opp.Owner_SBG__c}" id="sbg1" />
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:inputfield value="{!Opp.Quote__c}" id="Quote" />
+                 <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:inputfield value="{!Opp.Quote_Date__c}" id="QuoteDate" />
+                <apex:inputfield value="{!Opp.Quote_Follow_up_Date__c}" id="Quote_Follow_up_Date" />               
+                <apex:inputfield value="{!Opp.Quote_Expiration_Date__c}" id="Quote_Expiration_Date" />                 
+                <apex:inputfield value="{!Opp.CBT_HIPI__c}" style="color:blue;font-size:15px;"/><br/> 
+                <apex:inputfield value="{!Opp.CBT_Team_HIPI__c}" style="color:blue;font-size:15px;"/>   
+                <apex:inputfield value="{!Opp.Deal_Requires_Hardware__c   }" />   
+                <apex:inputfield value="{!Opp.Hardware_PO__c}" />   
+              <!--  <apex:inputfield value="{!Opp.ATN_Approval_Required__c }" />   -->                                                        
+            </apex:pageblocksection> 
+            <apex:pageblocksection title="Deal Description" id="sec1" >
+                <apex:pageBlockSectionItem id="licenseadd">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.LICENSEE_ADDRESS__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.LICENSEE_ADDRESS__c }"  >
+                            <apex:actionSupport event="onchange"  reRender="Otherlicense"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                
+                 <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Aircraft_Platform__c.label}" />                                                     
+                           <apex:actionRegion >                            
+                            <apex:inputfield value="{!Opp.Aircraft_Platform__c }" required="true">
+                             <apex:actionSupport event="onchange" action="{!changelicenseePlatform}" rerender="OEM1,OTHERAircraft,OTHEROEM"/>
+                               </apex:inputfield>
+                            </apex:actionRegion>                         
+                    </apex:pageBlockSectionItem> 
+                    
+                    <apex:pageblockSectionItem ></apex:pageblockSectionItem>
+                  
+                     <apex:outputPanel id="OTHERAircraft" >             
+                         <apex:pageBlockSection columns="4" id="OTHERAircraftPF" rendered="{!IF(contains(Opp.Aircraft_Platform__c ,'OTHER'), true, false)}">
+                            <apex:inputfield value="{!Opp.OTHER_Aircraft_Platform__c}"  required="true" />
+                        </apex:pageBlockSection>
+                     </apex:outputPanel> 
+                   
+                     
+                     
+                     
+               <!--  <apex:pageBlockSectionItem id="ACPLATFORM">
+                
+                  <apex:outputLabel value="A/C PLATFORM" >
+                        <div class="helpOrb tooltip" style="position:relative;left:10px">
+                            <span>
+                                If license requires specific a/c platform (737-800) select from the menu; otherwise, select more inclusive one (Boeing 737-600/700/800/900).<br/>If simulator is convertible or the exact platform is not in the menu, include specifics in the Description of the Deal field.
+                            </span>
+                        </div>
+                    </apex:outputLabel> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.Platform__c}" required="true"  >
+                            <apex:actionSupport event="onchange" action="{!changelicenseePlatform}" rerender="OEM1"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem> -->
+                <!-- <apex:outputPanel id="Otherlicense" > 
+                    <apex:pageBlockSection columns="2" id="Otherlicense1" rendered="{!IF(Opp.LICENSEE_ADDRESS__c = 'Other', true, false)}">
+                        <apex:inputfield value="{!Opp.OTHER_LICENSEE_ADDRESS__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <apex:outputPanel id="OTHERACPLATFORM" >                
+                    <apex:pageBlockSection columns="2" id="OTHERACPLATFORM1" rendered="{!IF(Opp.Platform__c = 'OTHER', true, false)}">
+                        <apex:inputfield value="{!Opp.OTHER_A_C_PLATFORM__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel> -->                   
+                <apex:pageBlockSectionItem id="hondevicetype">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.HON_DEVICE_TYPE__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.HON_DEVICE_TYPE__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHERHONDEVICE"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="OEM">
+                        <apex:outputLabel value="{!$ObjectType.Opportunity.fields.OEM__c.label}" /> 
+                        <apex:actionRegion >                                         
+                            <!--<apex:inputfield value="{!Opp.OEM__c}"  >
+                                <apex:actionSupport event="onchange"  reRender="OTHEROEM"/>
+                            </apex:inputfield>--->
+                            <apex:outputText value="{!OEM}" id="OEM1" />
+                        </apex:actionRegion>
+                    </apex:pageBlockSectionItem>                                       
+                <apex:outputPanel id="OTHERHONDEVICE" > 
+                    <apex:pageBlockSection columns="2" id="OTHERHONDEVICE1" rendered="{!IF(Opp.HON_DEVICE_TYPE__c = 'OTHER', true, false)}">
+                        <apex:inputfield value="{!Opp.OTHER_HON_DEVICE_TYPE__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <apex:outputPanel id="OTHEROEM" > 
+                        <apex:pageBlockSection columns="2" id="OTHEROEM1" rendered="{!IF(isOtherOEM, true, false)}">
+                            <apex:inputfield value="{!Opp.OTHER_OEM__c}"  required="true" />
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>                   
+                 <apex:pageBlockSectionItem id="cusdevicetype">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.CUSTOMER_DEVICE_TYPE__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.CUSTOMER_DEVICE_TYPE__c}" required="true"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHERCUSDEVICE"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="ACPRODUCTFORM">
+                        <apex:outputLabel value="{!$ObjectType.Opportunity.fields.A_C_Product_Status__c.label}" /> 
+                        <apex:actionRegion >                                         
+                            <apex:inputfield value="{!Opp.A_C_Product_Status__c}"  >
+                                <apex:actionSupport event="onchange"  reRender="OTHERACPRODUCTFORM"/>
+                            </apex:inputfield>
+                        </apex:actionRegion>
+                    </apex:pageBlockSectionItem>
+                <apex:outputPanel id="OTHERCUSDEVICE" >
+                    <div id="customstyle1"> 
+                        <table>
+                        <tr>
+                            <td >
+                            <apex:outputLabel value="{!$ObjectType.Opportunity.fields.OTHER_CUSTOMER_DEVICE_TYPE__c.label}" rendered="{!IF(Opp.CUSTOMER_DEVICE_TYPE__c = 'OTHER', true, false)}" style="font-weight:bold;color: #4a4a56;font-size: 91%;"/>
+                            </td>
+                            <td  style="padding-left: 5px !important;">
+                            <apex:inputfield value="{!Opp.OTHER_CUSTOMER_DEVICE_TYPE__c}"  required="true" rendered="{!IF(Opp.CUSTOMER_DEVICE_TYPE__c = 'OTHER', true, false)}"/>
+                            </td>
+                        </tr>
+                        </table>
+                    </div> 
+                </apex:outputPanel>
+                <apex:outputPanel id="OTHERACPRODUCTFORM" > 
+                    <div id="customstyle1"> 
+                        <table>
+                        <tr>
+                            <td>
+                            <apex:outputLabel value="{!$ObjectType.Opportunity.fields.OTHER_A_C_Product_Status__c.label}"  rendered="{!IF(Opp.A_C_Product_Status__c = 'OTHER', true, false)}" style="font-weight:bold;color: #4a4a56;font-size: 91%;"/>
+                            </td>
+                            <td style="padding-left: 5px !important;">
+                            <apex:inputfield value="{!Opp.OTHER_A_C_Product_Status__c}"  required="true" rendered="{!IF(Opp.A_C_Product_Status__c = 'OTHER', true, false)}" />
+                            </td>
+                        </tr>
+                        </table>
+                    </div>
+                </apex:outputPanel>
+                <apex:inputfield value="{!Opp.SIM_DEVICE_OWNER__c}" />
+                <apex:inputfield value="{!Opp.SIM_DEVICE_OWNER_ADDRESS__c}" />                  
+                <apex:inputfield value="{!Opp.SIM_DEVICE_OPERATOR__c}" />                       
+                <apex:inputfield value="{!Opp.SIM_DEVICE_OPERATOR_ADDRESS__c}" />                                                                                                               
+                <apex:pageBlockSectionItem id="PRICINGAPP">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.PRICING_APPROVAL_ON_FILE__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.PRICING_APPROVAL_ON_FILE__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHERPRICING"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>                              
+                <apex:inputfield value="{!Opp.PROJ_JOB_SER__c}" />
+                <apex:inputfield value="{!Opp.QTY_OF_DEVICES__c}" required="true" />                  
+                
+                                 
+                <apex:inputfield value="{!Opp.CUSTOMER_POC__c}" />
+                <apex:inputfield value="{!Opp.DEVICE_IDENTIFIER__c}" />                                                                                        
+                <apex:inputfield value="{!Opp.LICENSE_FEE__c}" />                   
+                
+                
+                <apex:pageBlockSectionItem id="Agreementtype">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.AGREEMENT_TYPE__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.AGREEMENT_TYPE__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHERAgreementtype"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="Licensecategory">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.LICENSE_CATEGORY__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.LICENSE_CATEGORY__c}"  required="true">
+                            <apex:actionSupport event="onchange"  reRender="OTHERLicensecategory"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:outputPanel id="OTHERAgreementtype" >             
+                    <apex:pageBlockSection columns="2" id="OTHERAgreementtype1" rendered="{!IF(Opp.AGREEMENT_TYPE__c = 'OTHER', true, false)}">
+                        <apex:inputfield value="{!Opp.OTHER_AGREEMENT_TYPE__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <apex:outputPanel id="OTHERLicensecategory" >
+                    <div id="customstyle1"> 
+                        <table>
+                        <tr>
+                            <td>
+                            <apex:outputLabel value="{!$ObjectType.Opportunity.fields.OTHER_LICENSE_CATEGORY__c.label}"  rendered="{!IF(Opp.LICENSE_CATEGORY__c = 'OTHER', true, false)}" style="font-weight:bold;color: #4a4a56;font-size: 91%;"/>
+                            </td>
+                            <td style="padding-left: 5px !important;">
+                            <apex:inputfield value="{!Opp.OTHER_LICENSE_CATEGORY__c}"  required="true" rendered="{!IF(Opp.LICENSE_CATEGORY__c = 'OTHER', true, false)}" />
+                            </td>
+                        </tr>
+                        </table>
+                    </div>
+                </apex:outputPanel>
+                <apex:pageBlockSectionItem id="DEVICE">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.DEVICE__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.DEVICE__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHERDEVICE"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem id="Simulator">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Simulator_HW_Config__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.Simulator_HW_Config__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHERSimulator"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:outputPanel id="OTHERDEVICE" > 
+                    <apex:pageBlockSection columns="2" id="OTHERDEVICE1" rendered="{!IF(Opp.DEVICE__c = 'OTHER', true, false)}">
+                        <apex:inputfield value="{!Opp.OTHER_DEVICE__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <apex:outputPanel id="OTHERSimulator" > 
+                    <div id="customstyle1"> 
+                        <table>
+                        <tr>
+                            <td>
+                            <apex:outputLabel value="{!$ObjectType.Opportunity.fields.OTHER_Simulator_HW_Config__c.label}"  rendered="{!IF(Opp.Simulator_HW_Config__c = 'OTHER', true, false)}" style="font-weight:bold;color: #4a4a56;font-size: 91%;"/>
+                            </td>
+                            <td style="padding-left: 5px !important;">
+                            <apex:inputfield value="{!Opp.OTHER_Simulator_HW_Config__c}"  required="true" rendered="{!IF(Opp.Simulator_HW_Config__c = 'OTHER', true, false)}" />
+                            </td>
+                        </tr>
+                        </table>
+                    </div>
+                </apex:outputPanel>                  
+                <apex:inputfield value="{!Opp.License_fee_Breakdown__c}" /> 
+                <apex:pageBlockSectionItem id="INVOICE">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.TYPE_OF_INVOICE__c.label}" /> 
+                    <apex:actionRegion >                                      
+                        <apex:inputfield value="{!Opp.TYPE_OF_INVOICE__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHERINVOICE"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+               <apex:pageblockSectionItem ></apex:pageblockSectionItem>   
+                <apex:outputPanel id="OTHERINVOICE" > 
+                    <apex:pageBlockSection columns="2" id="OTHERINVOICE1" rendered="{!IF(Opp.TYPE_OF_INVOICE__c = 'OTHER', true, false)}">
+                        <apex:inputfield value="{!Opp.OTHER_TYPE_OF_INVOICE__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                  <!-- Added PO Revision Date for INC000010514146 -->
+                <apex:inputfield value="{!Opp.PO__c}" id="PO" /> 
+                <apex:inputfield value="{!Opp.Revision_Date__c}" id="Revision_Date" />                                       
+                <apex:inputfield value="{!Opp.LICENSE_PO_DATE__c}" />               
+                <apex:inputfield value="{!Opp.License_Need_date_per_PO__c}"/>
+                <apex:inputfield value="{!Opp.PO_Received__c}" id="issuedate" /> 
+                <apex:inputfield value="{!Opp.CUSTOMER_LICENSE_NEED_DATE__c}" />
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:inputfield value="{!Opp.Date_Critical_Data_Delivery_Ship_RFT__c}" id="RFTdate" />              
+                <!-- <apex:inputfield value="{!Opp.PRODUCT_DESCRIPTION__c}" />-->
+                
+                 <!-- New Product Information-->
+                     <apex:pageBlockSectionItem id="Producttype">
+                        <apex:outputLabel value="{!$ObjectType.Opportunity.fields.Products__c.label}">                     
+                        <div class="helpOrb tooltip" style="position:relative;left:10px">
+                                <span>
+                                    what Honeywell a/c product is being simulated?                                 
+                                </span>
+                            </div>
+                        </apex:outputLabel> 
+                        <apex:actionRegion >                                         
+                            <apex:inputfield value="{!Opp.Products__c}"  >
+                                <apex:actionSupport event="onchange"  reRender="OTHERProducttype"/>
+                            </apex:inputfield>
+                        </apex:actionRegion>                      
+                    </apex:pageBlockSectionItem>  
+                     <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                     <apex:outputPanel id="OTHERProducttype" >             
+                        <apex:pageBlockSection columns="2" id="OTHERProducttype1" rendered="{!IF(contains(Opp.Products__c,'Other'), true, false)}">
+                            <apex:inputfield value="{!Opp.Other_Products__c}"  required="true" />
+                        </apex:pageBlockSection>
+                     </apex:outputPanel>
+                      <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                      <!-- ENd Product Information-->
+                      <apex:pageBlockSectionItem id="EPIC">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.EPIC__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.EPIC__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHEREPIC"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem> <br/>
+                <apex:outputPanel id="OTHEREPIC" > 
+                    <apex:pageBlockSection columns="2" id="OTHEREPIC1" rendered="{!IF(contains(Opp.EPIC__c,'Other'),true, false)}">
+                        <apex:inputfield value="{!Opp.Other_category_of_IP__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                <apex:pageBlockSectionItem id="EGP">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.EGPWSim_details__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.EGPWSim_details__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHEREGP"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                <apex:pageblockSectionItem ></apex:pageblockSectionItem>   
+                <apex:outputPanel id="OTHEREGP" > 
+                    <apex:pageBlockSection columns="2" id="OTHEREGP1" rendered="{!IF(Opp.EGPWSim_details__c = 'OTHER', true, false)}">
+                        <apex:inputfield value="{!Opp.OTHER_EGPWSim_details__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                 
+                <apex:inputfield value="{!Opp.Host_Volume_ID_MAC_Address__c}" />                         
+                <apex:inputfield value="{!Opp.SOFTWARE_LOAD_VERSION__c}" />
+                <apex:inputfield value="{!Opp.TECHNICAL_SUPPORT_Hrs__c}" />               
+                <apex:inputfield value="{!Opp.PART_NUMBER__c}" />
+                <apex:inputfield value="{!Opp.Description_of_the_Deal__c}" id="Description_of_the_Deal" />          
+                <apex:inputfield value="{!Opp.TS_Agreement_License__c}" />
+                <apex:inputfield value="{!Opp.Special_Terms__c}" id="Special_Terms" />
+                <!-- <apex:inputfield value="{!Opp.HIPI_CONTRACT_NUMBER__c}" /> -->                          
+                <!-- <apex:inputfield value="{!Opp.SBU__c}"  /> -->
+                <apex:inputfield value="{!Opp.Accountt_Manager_Review_Comments__c}" />                            
+                <apex:pageblockSectionItem ></apex:pageblockSectionItem> 
+                <apex:inputfield value="{!Opp.EXPIRATION_DATE__c}" />               
+            </apex:pageBlockSection>
+            <apex:pageBlock mode="edit">
+                <apex:pageBlockSection id="sec123" title="Appendices Required">
+                    <apex:pageBlockSectionItem id="ALICENSE">
+                        <apex:outputLabel value="{!$ObjectType.Opportunity.fields.A_LICENSED_SW__c.label}" /> 
+                        <apex:actionRegion >                                         
+                            <apex:inputfield value="{!Opp.A_LICENSED_SW__c}"  />
+                        </apex:actionRegion>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem id="BLICENSE">
+                        <apex:outputLabel value="{!$ObjectType.Opportunity.fields.B_LICENSED_DATA__c.label}" /> 
+                        <apex:actionRegion >                                         
+                            <apex:inputfield value="{!Opp.B_LICENSED_DATA__c}"  />
+                        </apex:actionRegion>
+                    </apex:pageBlockSectionItem>                       
+                    <apex:pageBlockSectionItem id="CLICENSE">
+                        <apex:outputLabel value="{!$ObjectType.Opportunity.fields.C_CONFIG_LIST__c.label}" /> 
+                        <apex:actionRegion >                                         
+                            <apex:inputfield value="{!Opp.C_CONFIG_LIST__c}"  />
+                        </apex:actionRegion>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem id="Dother">
+                        <apex:outputLabel value="{!$ObjectType.Opportunity.fields.D_other__c.label}" /> 
+                        <apex:actionRegion >                                         
+                            <apex:inputfield value="{!Opp.D_other__c}" />
+                        </apex:actionRegion>
+                    </apex:pageBlockSectionItem>                        
+                                      
+                     <apex:inputfield value="{!Opp.Information_for_Engg__c}" />                          
+                     <apex:pageblocksectionItem id="Enggreview">
+                     <apex:outputLabel value="Appendix Review Engineer" />
+                     <apex:outputPanel id="Enggreview1" >
+                     <apex:inputfield value="{!Opp.Record_Data_Owner__c}" />
+                      </apex:outputPanel>
+                      </apex:pageblocksectionItem>
+                      <apex:inputfield value="{!Opp.Engineer_Manager_Review__c}" />
+                    
+                    
+                    <apex:inputfield value="{!Opp.Engg_Review_Comments__c}" /> 
+                </apex:pageBlockSection>
+            </apex:pageblock>           
+            <apex:pageblocksection title="Financial Information" columns="2" id="Finance" >  
+                <apex:inputfield value="{!Opp.Contract_Term_In_Years__c}" id="f7" style="color:blue;font-size:15px;"/>
+                <apex:inputfield value="{!Opp.Value_in_Q1_K_Text__c}" id="f2" style="color:blue;font-size:15px;"/>
+                <apex:inputfield value="{!Opp.License_Fee_Waived_K_Text__c}" id="f9"/>
+                <apex:inputfield value="{!Opp.Value_in_Q2_K_Text__c}" id="f4"  style="color:blue;font-size:15px;"/>
+                <apex:inputfield value="{!Opp.Value_in_Current_Year_Jan_Dec_K__c}" id="f10" style="color:blue;font-size:15px;"/>
+                <apex:inputfield value="{!Opp.Value_in_Q3_K_Text__c}" id="f6" style="color:blue;font-size:15px;"/>
+                <apex:outputText >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Include Fees, Timing, Min Guarantee, Royalties. </b></apex:outputText>
+                <apex:inputfield value="{!Opp.Value_in_Q4_K_Text__c}" id="f8" style="color:blue;font-size:15px;"/>
+                <apex:inputfield value="{!Opp.Revenue_Structure__c}" />   
+                <apex:inputfield value="{!Opp.Year_2__c}" id="y2" style="color:blue;font-size:15px;"/><br/>
+                <apex:inputfield value="{!Opp.Year_3__c}" id="y3" style="color:blue;font-size:15px;"/><br/>
+                <apex:inputfield value="{!Opp.Year_4__c}" id="y4" style="color:blue;font-size:15px;"/><br/>                  
+                <apex:inputfield value="{!Opp.Year_5__c}" id="y5" style="color:blue;font-size:15px;"/>                                        
+            </apex:pageblocksection>
+            <apex:pageblocksection title="Additional Report Information"  id="updatesec"> 
+                <apex:inputfield value="{!Opp.Workstop_Issue__c}" />               
+                <apex:inputfield value="{!Opp.Issue_Other_Than_Review__c}" id="reviewissuedate" />
+                <apex:inputfield value="{!Opp.Workstop_Issue_Cleared__c}" />                 
+                <apex:inputfield value="{!Opp.SFDC_Entry_Initiated__c}" id="SFDCEntryInitiated" />
+                
+                <apex:pageBlockSectionItem id="IP">
+                    <apex:outputLabel value="{!$ObjectType.Opportunity.fields.IP_Ownership_Outside_Honeywell_Intl__c.label}" /> 
+                    <apex:actionRegion >                                         
+                        <apex:inputfield value="{!Opp.IP_Ownership_Outside_Honeywell_Intl__c}"  >
+                            <apex:actionSupport event="onchange"  reRender="OTHEREIP"/>
+                        </apex:inputfield>
+                    </apex:actionRegion>
+                </apex:pageBlockSectionItem>
+                
+                <apex:outputPanel id="OTHEREIP" > 
+                    <apex:pageBlockSection columns="2" id="OTHEREIP1" rendered="{!IF(Opp.IP_Ownership_Outside_Honeywell_Intl__c = 'YES', true, false)}">
+                        <apex:inputfield value="{!Opp.Other_IPOwnershipOutsideHoneywellIntl__c}"  required="true" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+                
+                <apex:inputfield value="{!Opp.WorkbookComplete__c}" id="workbookcomplete" />
+                <apex:outputField value="{!Opp.Workbook_Complete__c}"/>                                           
+                <apex:inputfield value="{!Opp.LicenseDraft__c}" id="LicenseDraft" />
+                <apex:outputField value="{!Opp.License_Draft__c}"/>
+                <apex:inputfield value="{!Opp.License_Drafter__c}" id="LicenseDrafter" />  <br/>
+                <!-- <apex:inputfield value="{!Opp.Date_Drafted__c}" id="DateDrafted" /> -->                  
+                <apex:inputfield value="{!Opp.Account_manager_review__c}" id="Accountmanagerreview" />                                
+                <apex:inputfield value="{!Opp.License_Review_Issue__c}" id="LicenseReviewIssue" />
+                <apex:inputfield value="{!Opp.Final_Reviewer__c}" id="FinalReviewer" /> 
+                <apex:inputfield value="{!Opp.Review_issue__c}" />
+                <apex:inputfield value="{!Opp.Final_Review__c}" id="LicenseReview" />
+                <apex:inputfield value="{!Opp.Final_review_comments__c }" id="Final_review_comments" />                
+                <apex:inputfield value="{!Opp.License_to_Customer__c}" id="LicensetoCustomer" />                                                       
+                <apex:inputfield value="{!Opp.License_Back_From_Customer__c}" id="LicenseBackFromCustomer" />
+                <apex:inputfield value="{!Opp.License_Signed_Lic_CoE__c}" id="LicenseSignedLicCoE" />
+                <apex:inputfield value="{!Opp.Data_Shipped_ECM__c}" id="DataShippedECM" />
+                <apex:inputfield value="{!Opp.InvoiceRequested__c }" id="InvoiceRequested" />
+                <apex:inputfield value="{!Opp.Invoice__c}" id="Invoice" />
+                <apex:inputfield value="{!Opp.Revenue_Recognition_Expected__c}" id="RevenueRecognitionExpected" /> 
+                <apex:inputfield value="{!Opp.Revenue_Recognized__c}" id="RevenueRecognized" />
+            </apex:pageblocksection> 
+            <apex:pageblocksection title="System Information"  id="systemsec">  
+               <apex:inputfield value="{!Opp.Comments__c}" id="ccomm" style="width:430px;height:60px;" ></apex:inputfield><br/>
+               <apex:inputfield value="{!Opp.Ownerid}" id="Ownerid" />
+                <apex:outputtext value="{!Opp.Owner.Name}" Label="Opportunity Owner"> {!firstname}&nbsp;{!lastname}</apex:outputtext>              
+            </apex:pageblocksection>            
+        </apex:pageblock>     
+    </apex:form>
+</apex:page>

@@ -1,0 +1,551 @@
+<!--
+        Apttus Config & Pricing
+        Cart
+        Angular JS UI for CPQ
+        @2015-2016 Apttus Inc. All rights reserved.
+ -->
+<apex:page controller="Apttus_Config2.RemoteCPQController"
+            extensions="Apttus_Config2.ServiceCPQController"
+                        title="Cart"
+                        docType="html-5.0"
+                        showHeader="false"
+                        sidebar="false"
+                        standardStylesheets="false">
+
+	<title>Apttus</title>
+    <apex:stylesheet value="{!URLFOR(IF(devMode, $Resource.Apttus_Config2__cpqSM, $Resource.Apttus_Config2__ngCPQ), '/angularMaterial.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__vendor, '/vendor.css')}"/>
+    <apex:stylesheet value="{!URLFOR(IF(devMode, $Resource.Apttus_Config2__cpqSM, $Resource.Apttus_Config2__ngCPQ), '/aptCPQUI.css')}"/>
+    <apex:stylesheet value="{!IF(IsNovaTheme, URLFOR(IF(devMode, $Resource.Apttus_Config2__cpqSM, $Resource.Apttus_Config2__ngCPQ), '/novaTheme.css'),'')}"/>
+
+	<apex:outputPanel rendered="{!NOT(ISNULL(CSSOverride))}">
+		<apex:dynamicComponent componentValue="{!CSSOverrideComponent}"/>
+	</apex:outputPanel>
+
+    <!-- USE WEBPACK OUTPUT -->
+	<apex:includeScript value="{!URLFOR($Resource.Apttus_Config2__vendor, '/vendor.js')}"/>
+
+    <!-- Apex Error -->
+    <div id="idErrorMsg">
+        <apex:pageMessages />
+    </div>
+    <!-- Translation of Custom Label and Fields -->
+    <apex:include pageName="Apttus_Config2__Translation"/>
+
+    <!-- Section for binding visualforce template values from controller -->
+    <div id="idUserSettingsSection" style="display:none;">
+        <div id="idCurrencyTemplate">
+            <apex:outputField value="{!templateLineItem.Apttus_Config2__BasePrice__c}"/>
+        </div>
+        <div id="idCurrencyLocaleTemplate">
+            <span><apex:outputText value="{!CurrencyLocaleTemplate}"/></span>
+        </div>
+        <div id="idQuantityTemplate">
+            <apex:outputField value="{!templateLineItem.Apttus_Config2__Quantity__c}"/>
+        </div>
+        <div id="idDateTemplate">
+            <apex:outputField value="{!templateLineItem.Apttus_Config2__StartDate__c}"/>
+        </div>
+        <!-- Wrap output text in span tag to match outputField behavior  -->
+        <div id="idQuantityPrecision">
+            <span><apex:outputText value="{!SystemSettings['quantity']}"/></span>
+        </div>
+        <div id="idCurrencyPrecision">
+            <span><apex:outputText value="{!SystemSettings['currency']}"/></span>
+        </div>
+        <div id="idDefaultIconId">
+            <span><apex:outputText value="{!SystemSettings['defaultIconId']}"/></span>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+		Visualforce.remoting.timeout = 120000;
+        /**
+         * Anonymous blocks for configuring the different modules.
+         * These config blocks need to be defined within the page to take
+         *  advantage of visualforce binding for initializing the app with
+         *  constant pieces of data.
+         */
+        (function() {
+            //Create System Properties constant
+            globalConfiguration.baseUrl = "{!URLFOR(IF(devMode, $Resource.cpqSM, $Resource.ngCPQ), '/aptCPQUI')}";
+            globalConfiguration.vendorResourceUrl = "{!URLFOR($Resource.vendor, '/aptCPQUI')}";
+
+            var baseFileUrl = '';
+            //Special visualforce condition for when there is no icon id
+            <apex:outputPanel layout="none" rendered="{!SystemSettings['defaultIconId'] != 'none'}">
+                baseFileUrl = formatAttachmentUrl("{!URLFOR($Action.Attachment.Download, SystemSettings['defaultIconId'])}");
+            </apex:outputPanel>
+            //End VF conditionally rendered code.
+            globalConfiguration.systemConstants = {
+                    "baseUrl": globalConfiguration.baseUrl,
+                    "vendorResourceUrl": globalConfiguration.vendorResourceUrl,
+                    "baseFileUrl": baseFileUrl,
+                    "salesforceUrl": "{!SystemSettings['salesforceUrl']}",
+                    "sitePrefix": "{!$Site.Prefix}",
+                    "nsPrefix": "{!SystemSettings['namespacePrefix']}",
+                    "isFieldExpressionsEnabled": "{!SystemSettings['isFieldExpressionsEnabled']}",
+                    "msecPerDay": 86400000,
+                    exceptions: {
+                        UNABLE_TO_LOCK_ROW: 'UNABLE_TO_LOCK_ROW'
+                    },
+                    "pageParams": JSON.parse('{!JSENCODE(pageParams)}'),
+                    "customSettings": JSON.parse('{!JSENCODE(CustomSettings)}'),
+                    "picklistMetadata": JSON.parse('{!JSENCODE(PicklistMetadata)}'),
+                    "headerHeight": {!IF(IsNovaTheme, '128','69')},
+                    configOptionSteps: {
+                        attributes: "attributes",
+                        options: "options",
+                        redirectAttributePage: "redirectAttributePage"
+                    }
+            };
+
+			//Format the attachment file url
+			function formatAttachmentUrl(sfdcString) {
+				var pos = sfdcString.indexOf('FileDownload');
+				if (pos != -1) {
+					sfdcString = sfdcString.substring(0, pos) + 'FileDownload?file=';
+				}
+				return sfdcString;
+
+			}
+
+            // Overriding the SFDC navigateToUrl for this page as we need custom action to be performed on the click of the button. ( ctrl/cmd + click - should open the link in new tab)
+            navigateToUrl = function (url) {
+                var event = window.event || navigateToUrl.caller.arguments[0]; // window.event will not be returning the event object in mozilla so getting it from the callee arguments
+                if (event.ctrlKey || event.metaKey) {
+                    window.open(url, '_blank');
+                } else {
+                    window.location = url;
+                }
+            }
+
+	        globalConfiguration.dataConfig = function (ConfigurationDataServiceProvider) {
+                var cartId = "{!cartId}";
+                var configRequestId = "{!configRequestId}";
+                var priceListId = "{!priceListId}";
+                var pageParams = JSON.parse('{!JSENCODE(pageParams)}');
+                ConfigurationDataServiceProvider.setRequestBase(cartId, configRequestId, priceListId, pageParams);
+
+			};
+			globalConfiguration.dataConfig.$inject = ['ConfigurationDataServiceProvider'];
+
+			globalConfiguration.baseConfig = function(RemoteServiceProvider, i18nServiceProvider) {
+				// Extracting user locale preference from visualforce.
+				var userSettings = {};
+				try {
+					userSettings = getUserSettings();
+					// If any properties are undefined, the provider will use en_US defaults.
+					i18nServiceProvider.setDateTemplate(userSettings.dateTemplate);
+					i18nServiceProvider.setCurrencyTemplate(userSettings.currencyTemplate);
+					i18nServiceProvider.setQuantityTemplate(userSettings.quantityTemplate);
+					i18nServiceProvider.setPrecision(userSettings.precisionMap);
+					i18nServiceProvider.setLocale(userSettings.locale);
+					i18nServiceProvider.setDateFormat(userSettings.dateFormat);
+
+				} catch (ex) {
+					if (console && typeof console.info === 'function') {
+						console.info('Could not extract user locale settings. Defaulting to en_US');
+
+					}
+
+                }
+
+                /**
+                 * Resolve VF remote names and configure their behavior.
+                 * Each key in this object is used to reference a VF remote aciton.
+                 * Each can be:
+                 *  - String: the resolved name of the remote action;
+                 *  - Object with properties:
+                 *          actionName: the resolved name of the remote action,
+                 *          skipLoader: if true, action does affect progress-indicator. Default false.
+                 *
+                 */
+                var remoteActions = {
+                    // affected lineitems for config revalidation
+                    getAffectedProducts: '{!$RemoteAction.RemoteCPQController.getAffectedProducts}',
+                    applyConfigurationChanges: '{!$RemoteAction.RemoteCPQController.doApplyConfigurationChanges}',
+                    applyRevalidation: '{!$RemoteAction.RemoteCPQController.applyRevalidation}',
+                    getRevalidationLineItems: '{!$RemoteAction.RemoteCPQController.getRevalidationLineItems}',
+                    // Configuration Data
+                    getConfigurationData: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getConfigurationData}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    // Catalog operations
+                    getCategories: '{!$RemoteAction.RemoteCPQController.getCategories}',
+                    searchProducts: '{!$RemoteAction.RemoteCPQController.searchProducts}',
+                    compareProducts: '{!$RemoteAction.RemoteCPQController.compareProducts}',
+                    getProductsByIds: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getProductsByIds}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getProductDetails: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getProductDetails}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getConstraintRuleProducts: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getConstraintRuleProducts}',
+                        skipLoader: true
+                    },
+                    // Get the default field values for a line item rollup
+                    getDefaultLineItemRollup: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getDefaultLineItemRollup}',
+                        skipLoader: true
+                    },
+                    getProductGroups: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getProductGroups}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    // Get line item information
+                    getCart: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getCart}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getCartLineItems: '{!$RemoteAction.RemoteCPQController.getCartLineItems}',
+                    getCartLineItems2: '{!$RemoteAction.RemoteCPQController.getCartLineItems2}',
+                    getLineItemDetails: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getLineItemDetails}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getLineItemAdvancedApprovalURL: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getLineItemAdvancedApprovalURL}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getGuidePageUrl: '{!$RemoteAction.RemoteCPQController.getGuidePageUrl}',
+                    // Submit items to server
+                    performAction: '{!$RemoteAction.RemoteCPQController.performAction}',
+                    deleteLineItems: '{!$RemoteAction.RemoteCPQController.deleteLineItems}',
+                    cloneBundleLineItem: '{!$RemoteAction.RemoteCPQController.cloneBundleLineItem}',
+                    cloneOptionLineItem: '{!$RemoteAction.RemoteCPQController.cloneOptionLineItem}',
+                    getTemplateAdjustmentLine: '{!$RemoteAction.RemoteCPQController.getTemplateAdjustmentLine}',
+                    // Call to start or continue pricing
+                    updatePrice: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.updatePrice}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    updateAdHocGroup: '{!$RemoteAction.RemoteCPQController.updateAdHocGroup}',
+                    // Mark a constraint rule as ignored
+                    getLineItemDetails: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getLineItemDetails}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    performAction: '{!$RemoteAction.RemoteCPQController.performAction}',
+                    performActionQuietly: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.performAction}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    ignoreRuleAction: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.ignoreRuleAction}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    // Checking constraint rules for excluded products for cart
+                    getExcludedProductIds: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getExcludedProductIds}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getExcludedOptionIds: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getExcludedOptionIds}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    // Asset Based Ordering operations
+                    getAssetLineItems: '{!$RemoteAction.RemoteCPQController.getAssetLineItems}',
+                    getAssetFilters: '{!$RemoteAction.RemoteCPQController.getAssetFilterFields}',
+                    getRelatedAssetLineItems: '{!$RemoteAction.RemoteCPQController.getRelatedAssetLineItems}',
+                    performAssetActions: '{!$RemoteAction.RemoteCPQController.performAssetActions}',
+                    getReplacementProducts: '{!$RemoteAction.RemoteCPQController.getReplacementProducts}',
+                    getAttributeRules: '{!$RemoteAction.RemoteCPQController.getAttributeRules}',
+                    calculateMetricsForAssets: '{!$RemoteAction.RemoteCPQController.calculateMetricsForAssets}',
+                    getReferenceObjects: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getReferenceObjects}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getObjectForSummary: '{!$RemoteAction.RemoteCPQController.getObjectForSummary}',
+                    doReplaceProduct: '{!$RemoteAction.RemoteCPQController.doReplaceProduct}',
+                    getRecommendedProducts: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getRecommendedProducts}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getAnalyticsRecommendedProducts: '{!$RemoteAction.RemoteCPQController.getAnalyticsRecommendedProducts}',
+                    getPriceBreakups: '{!$RemoteAction.RemoteCPQController.getPriceBreakups}',
+                    // typeahead functionality with solr
+                    getTypeaheadResults: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getTypeaheadResults}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    // Incentives
+                    getIncentivesList: '{!$RemoteAction.RemoteCPQController.getIncentivesList}',
+                    applyIncentives: '{!$RemoteAction.RemoteCPQController.applyIncentives}',
+                    toggleExpressionLock: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.toggleExpressionLock}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    getIncentivesForCart: '{!$RemoteAction.RemoteCPQController.getIncentivesForCart}',
+                    setIncentivesForCart: '{!$RemoteAction.RemoteCPQController.setIncentivesForCart}',
+                    // Quote Collaboration
+                    createNewCollabRequest : {
+                        actionName: '{!$RemoteAction.RemoteCPQController.createNewCollabRequestSO}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    saveCollaborationRequest: '{!$RemoteAction.RemoteCPQController.saveCollaborationRequest}',
+                    getCollaborationRequest: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.getCollaborationRequestSO}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    updateCollaborationRequest: '{!$RemoteAction.RemoteCPQController.updateCollaborationRequest}',
+                    updateAttachmentToCollabReq: '{!$RemoteAction.RemoteCPQController.uploadAttachmentToCollaborationRequest}',
+                    mergeCollaborationRequest: '{!$RemoteAction.RemoteCPQController.mergeCollaborationRequest}',
+                    cancelCollaborationRequest: '{!$RemoteAction.RemoteCPQController.cancelCollaborationRequest}',
+                    deleteAttachments: '{!$RemoteAction.RemoteCPQController.deleteAttachments}',
+                    getLineItemFieldsMetaData: '{!$RemoteAction.RemoteCPQController.getLineItemFieldsMetaData}',
+                    getUsagePriceTiers: '{!$RemoteAction.RemoteCPQController.getUsagePriceTiers}',
+                    updateUsagePriceTiers: '{!$RemoteAction.RemoteCPQController.updateUsagePriceTiers}',
+                    addFavoriteToCart: '{!$RemoteAction.RemoteCPQController.addFavoriteToCart}',
+                    searchFavoriteConfigurations: '{!$RemoteAction.RemoteCPQController.searchFavoriteConfigurations}',
+                    deleteFavoriteConfiguration: '{!$RemoteAction.RemoteCPQController.deleteFavoriteConfiguration}',
+                    getPublishedPriceLists: '{!$RemoteAction.RemoteCPQController.getPublishedPriceLists}',
+                    publishFavoriteConfiguration: '{!$RemoteAction.RemoteCPQController.publishFavoriteConfiguration}',
+                    saveFavoriteConfiguration: '{!$RemoteAction.RemoteCPQController.saveFavoriteConfiguration}',
+                    getAssetLineItemsForPage: '{!$RemoteAction.RemoteCPQController.getAssetLineItemsForPage}',
+                    getCosts: '{!$RemoteAction.RemoteCPQController.getCosts}',
+                    updateCosts: '{!$RemoteAction.RemoteCPQController.updateCosts}',
+                    updateLineSequence: {
+                        actionName: '{!$RemoteAction.RemoteCPQController.updateLineSequence}',
+                        skipLoader: {!IsLoaderOptimized}
+                    },
+                    autoCreateRampLines: '{!$RemoteAction.RemoteCPQController.autoCreateRampLines}',
+                    autoUpdateRampLines: '{!$RemoteAction.RemoteCPQController.autoUpdateRampLines}',
+                    autoDeleteRampLines: '{!$RemoteAction.RemoteCPQController.autoDeleteRampLines}',
+                    saveViewSettings: '{!$RemoteAction.RemoteCPQController.saveViewSettings}',
+                    // Option filters
+                    getOptionFilterExcludedOptionIds: '{!$RemoteAction.RemoteCPQController.getOptionFilterExcludedOptionIds}',
+                    getAllCartViews: '{!$RemoteAction.RemoteCPQController.getAllCartViews}',
+                    createCartViewSettings: '{!$RemoteAction.RemoteCPQController.createCartViewSettings}',
+                    deleteCartView : '{!$RemoteAction.RemoteCPQController.deleteCartView}',
+                    updateCartViewSettings :'{!$RemoteAction.RemoteCPQController.updateCartViewSettings }',
+                    getFurthestAssetLine: '{!$RemoteAction.RemoteCPQController.getFurthestAssetLine}',
+
+                    // Service CPQ Methods
+                    getSelectedAssetsDisplayColumns: '{!$RemoteAction.ServiceCPQController.getSelectedAssetsDisplayColumns}',
+                    getRelatedLineColumns: '{!$RemoteAction.ServiceCPQController.getRelatedLineColumns}',
+                    getSelectedAssetsWithDisplayColumns: '{!$RemoteAction.ServiceCPQController.getSelectedAssetsWithDisplayColumns}',
+                    searchServiceProducts: '{!$RemoteAction.ServiceCPQController.searchServiceProducts}',
+                    updateRelatedLineItems: '{!$RemoteAction.ServiceCPQController.updateRelatedLineItems}',
+                    createRelatedLineItems: '{!$RemoteAction.ServiceCPQController.createRelatedLineItems}',
+                    deleteRelatedLineItems: '{!$RemoteAction.ServiceCPQController.deleteRelatedLineItems}',
+                    getAccountHierarchy: '{!$RemoteAction.RemoteCPQController.getAccountHierarchy}'
+
+                };
+                RemoteServiceProvider.setRemoteActions(remoteActions);
+                // Need retURL or other url for redirect. Default is to redirect to '/'.
+                RemoteServiceProvider.setRedirectLocation('{!JSENCODE($CurrentPage.parameters.retURL)}');
+                // Set flag true to overrides skipLoader flags of RemoteActions and show loader all remoteServiceCalls.
+                RemoteServiceProvider.setTrackAllRemoteCalls(false);
+            };
+
+			globalConfiguration.baseConfig.$inject = ['aptBase.RemoteServiceProvider', 'aptBase.i18nServiceProvider'];
+
+            /**
+             * Extract VF-resolved date and currency formatting according to user preference
+             * @return {Object}
+             */
+            function getUserSettings() {
+                var userSettings = {
+                    currencyTemplate: getCurrencyTemplate(),
+                    quantityTemplate: getQuantityTemplate(),
+                    dateTemplate: getDateTemplate(),
+                    precisionMap: getPrecisionMap()
+                };
+                if (typeof UserContext !== 'undefined') {
+                    userSettings.locale = UserContext.locale;
+                    userSettings.dateFormat = UserContext.dateFormat;
+
+                }
+                return userSettings;
+
+                //Helper function to get text from output field by id.
+                function getOutputFieldText(fieldId) {
+                    var fieldElement = document.querySelector('#' + fieldId + ' span');
+                    if (fieldElement) {
+                        return fieldElement.textContent;
+                    }
+                    return void 0;
+
+                }
+
+                function getCurrencyTemplate () {
+                    var currencyTemplate = '$1,234.56';
+                    var templateText = getOutputFieldText('idCurrencyTemplate');
+                    var localeTemplateText = getOutputFieldText('idCurrencyLocaleTemplate');
+                    if (!templateText) {
+                        return currencyTemplate;
+
+                    }
+                    // Isolate multi-currency section: SFDC uses "USD 1.23 (OTH 4.56)" format,
+                    // use regex to break that into ["USD 1.23 (OTH 4.56)", "USD 1.23", "OTH 4.56"]
+                    var multiMatch = templateText.match(/([^\(]*)\(?([^\)]*)\)?/);
+                    if (multiMatch && multiMatch[1]) {
+                        templateText = multiMatch[1];
+
+                    }
+
+                    // correct the template text. Parser fails when decimal precision is zero.
+                    templateText = templateText.replace(/(?=1).*/, localeTemplateText);
+
+                    //Check if formatted text is a valid template
+                    if (templateText.length > 2) {
+                        currencyTemplate = templateText;
+
+                    }
+                    return currencyTemplate;
+
+                }
+
+                function getQuantityTemplate() {
+                    var quantityTemplate = '1,234.56';
+                    var templateText = getOutputFieldText('idQuantityTemplate');
+                    if (!templateText) {
+                        return quantityTemplate;
+
+                    }
+                    //Check if formatted text is a valid template
+                    if (templateText.length > 2) {
+                        quantityTemplate = templateText;
+
+                    }
+                    return quantityTemplate;
+
+                }
+
+                function getDateTemplate() {
+                    var dateTemplate = '01/23/45';
+                    var templateText = getOutputFieldText('idDateTemplate');
+                    if (!templateText) {
+                        return dateTemplate;
+
+                    }
+                    dateTemplate = templateText;
+                    return dateTemplate;
+
+                }
+
+                function getPrecisionMap() {
+                    var quantity = Number(getOutputFieldText('idQuantityPrecision')),
+                        currency = Number(getOutputFieldText('idCurrencyPrecision'));
+                    var precision = {
+                        quantity: quantity,
+                        currency: currency
+                    };
+                    return precision;
+
+                }
+
+            }
+
+        })();
+
+    </script>
+
+    <script type="text/javascript">
+        /**
+         * remove css files added by VF page in lightning mode
+         */
+        var vfCSSLinks = document.querySelectorAll('link[href^="/sCSS/"]');
+        for (var len = vfCSSLinks.length, i=0; i<len; ++i) {
+            var oneLink = vfCSSLinks[i];
+            oneLink.parentNode.removeChild(oneLink);
+        }
+
+        /**
+         * recieve message from custom action dialog
+         * WARNING: limit exposure to functions to maintain better backward compatibility.
+         * TODO: move this to a javascript file
+         */
+        function receiveDialogMessage(event) {
+            var origin = event.origin || event.originalEvent.origin; // For Chrome, the origin property is in the event.originalEvent object.
+            var actionDialog = document.querySelector("custom-action-dialog");
+            if (actionDialog && event.data && event.data.action) {
+                if (event.data.action == 'reloadCart') {
+                    angular.element(actionDialog).injector().get('CartDataService').reloadCart();
+                }
+
+                if (event.data.action == 'closeDialog') {
+                    var scope = angular.element(document.querySelector("custom-action-dialog")).scope();
+                    scope.customAction.close();
+                    scope.$apply();
+                }
+
+                if (event.data.action == 'reloadPage') {
+                    //first close the dialog
+                    var scope = angular.element(document.querySelector("custom-action-dialog")).scope();
+                    scope.customAction.close();
+                    //show progress bar
+                    var service = angular.element(document.querySelector("custom-action-dialog")).injector().get("ActionHandlerService");
+                    service.isServerActionInProgress = true;
+
+                    scope.$apply();
+                    window.location.reload();
+
+                }
+
+            }
+
+        }
+        window.addEventListener("message", receiveDialogMessage, false);
+
+
+    </script>
+
+    <script>
+        var ie10 = navigator.userAgent.indexOf('MSIE') !== -1 || navigator.appVersion.indexOf('Trident/') > 0,
+            ie11 = window.MSInputMethodContext && document.documentMode;
+        if (!ie10 && !ie11) {
+            window.onkeydown=function() {
+                window.focus();
+            }
+        }
+
+    </script>
+
+    <!-- Application  -->
+
+    <!--[if lt IE 8]>
+    <p class="browsehappy">
+        You are using an <strong>outdated</strong> browser.
+        Please <a href="http://browsehappy.com/">upgrade your browser</a>
+        to improve your experience.
+    </p><![endif]-->
+    <div ng-app="aptCPQUI" class="main-ng-app-container">
+        <div class="header-global">
+            <div ui-view="globalHeader"></div>
+        </div>
+        <div class="process-trail">
+            <div ui-view="processTrail"></div>
+        </div>
+	    <div class="header-gap-filler"></div>
+        <div class="system-notification">
+            <div ui-view="systemNotification"></div>
+        </div>
+        <div class="content-container">
+            <div ui-view="layout"></div>
+        </div>
+        <constraint-dialog></constraint-dialog>
+        <product-summary-dialog></product-summary-dialog>
+        <favorite-summary-dialog></favorite-summary-dialog>
+        <search-lookup-dialog></search-lookup-dialog>
+        <custom-action-dialog></custom-action-dialog>
+        <div class="display-actions">
+            <div ui-view="displayActions"></div>
+        </div>
+    </div>
+	<script src="{!URLFOR(IF(devMode, $Resource.cpqSM, $Resource.ngCPQ), '/aptBase.js')}"></script>
+	<script src="{!URLFOR(IF(devMode, $Resource.cpqSM, $Resource.ngCPQ), '/aptData.js')}"></script>
+	<script src="{!URLFOR(IF(devMode, $Resource.cpqSM, $Resource.ngCPQ), '/aptCPQUI.js')}"></script>
+
+	<style type="text/css">
+        {!IF(IsNovaTheme,
+            '.header-gap-filler, .angular-material-fixed div .header-gap-filler { height: 8rem; }',
+            '.grid-cart-breakup-banner, .action-summary-margin-bottom { background-color: #334A60; color: #fff; }')}
+        {!IF(!IsNovaTheme, '.angular-material-fixed div .system-notification { top: 2rem; }','')}
+    </style>
+</apex:page>

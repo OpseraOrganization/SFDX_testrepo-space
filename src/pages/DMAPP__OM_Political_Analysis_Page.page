@@ -1,0 +1,559 @@
+<apex:page standardController="opportunity" extensions="DMAPP.OMStandardController,DMAPP.SummaryTabController,DMAPP.MaxNotificationController,DMAPP.SummaryController,DMAPP.StandardControllerPPTExtension,DMAPP.PrimeActionController" action="{!logPoliticalMapUsage}" 
+    sidebar="false" 
+    showHeader="{!NOT(fullScreen || $CurrentPage.parameters.hide_summary == 'true')}"
+    docType="html-5.0"
+    >
+    
+    <title>{!HTMLENCODE($Label.dmapp__resource_political_map)}</title>
+    
+     <c:Translations common_labels="true"
+       is_jquery_app="true"
+       om_labels="true"
+    />
+ 
+    <script src="{!URLFOR($Resource.DMAPP__AltifyAll, 'js/OMRelMap.bundle.js')}" type="text/javascript"> </script>
+
+    <c:PPTExportModal renderAngularApp="true"/>
+
+    <c:jQueryStyles chosen="true"
+        jQueryUI="true"
+        touchPunch="true"
+        tableDnD="true"
+        tooltip="true" 
+        paging="true"
+        cookies="true"
+     />
+
+    <c:MobileRedirect smartOM="true" notWebpack="false"/>
+    <c:AttachmentUploader notWebpack="false"/>
+    <c:PolMapLastModifiedHelper />
+    <c:OrgChartAPI ></c:OrgChartAPI>
+
+    <c:CustomLabelJSBridge alignContext="om"/>
+
+    
+<!--  Perf: included here for full screen as SummaryTab2.page is not loaded -->
+    <c:salesforce_design_system_helper rendered="{!fullScreen}" />
+
+    <style>
+
+        /*@import url("{!URLFOR($Resource.AltifyAll, 'AltifyAll.css')}");*/
+    
+        @import url("{!URLFOR($Resource.Chosen, 'chosen.min.css')}");
+   
+        @import url("{!URLFOR($Resource.ttgcss,          'ttgcss/layout.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/ttg_orgchart.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/miniclicker.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/search-widget/searchWidget.css')}");
+        @import url("{!URLFOR($Resource.ttgcss,          'ttgcss/jquery.pulse.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/political_side_panel.css')}"); 
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/political_map.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/icons.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/tooltip.css')}");
+        
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/glyphs/style.css')}");
+
+        @import url("{!URLFOR($Resource.SmartOM,         'css/summarytab.css')}");
+            
+        /* start of additions for Chatter */
+
+        /* end of additions for Chatter */
+
+        {!IF(fullScreen,'html { height: 100%; } html body.sfdcBody{padding: 0; overflow: hidden;}','')}        
+        
+        #filterAccordion .chosen-container .chosen-choices { /* DMPS-1457 */
+            min-width: 225px;
+        }        
+        
+        div#ttg_pol_map_watermark {
+            color: #888;
+        }
+        
+        .fadedDialog {
+            opacity: 0.1;
+            filter: alpha(opacity=10); 
+        }
+        
+        div.draggableOpportunityHelper  {
+            z-index: 5;
+            border : 1px outset black;
+            background: url('{!URLFOR($Resource.TAM, 'images/icon_drag.png')}') 5px center no-repeat;            
+        }
+        
+        .contactname  {
+            padding-left: 25px;
+            background: url('{!URLFOR($Resource.TAM, 'images/icon_drag.png')}') 5px center no-repeat;        
+        }
+        
+        .contacttitle {
+            margin-left: 5px;
+            color: #999;
+        }
+        
+        div#sidePanelDiv {
+            z-index: 10;
+        }
+        
+        div.ttg-oc-dragging-helper {
+            z-index: 17;
+        }
+
+        div.ttg-oc-dragging-helper.fromBench {
+            margin-top: 40px;
+        }
+        
+        div.side_panel_rule_advice {
+            margin-top : 5px;
+            padding-bottom : 5px;
+        }
+
+        body {
+            font-family: Arial,Helvetica,Sans-Serif !important;
+        }
+        
+        div.smartOMOpportunitySummary div.smartOMBackLink {
+           margin-top: 0;
+        }
+        
+        /* Restores AJAX spinner size to normal (AMOF-813) */
+        .spinner {
+            height: auto;
+            width: auto;
+        }
+            #legendDiv { min-width: 715px; }
+        
+                    #legendDiv .ttg_org_chart_legend_box_panel ul {
+                        height: auto; 
+                        min-height: 193px;
+                    } 
+
+        .hideTab {
+            height: 0 !important;
+            padding: 0 !important;
+        }
+        
+        div#buyingroleedit_chosen { display: block; width: 150px !important; }
+        
+        div.tasZoomControl { z-index: 8 !important; }
+        
+        /* Reposition legend for iPad (AMOF-1057) */ 
+        
+        @media only screen 
+        and (min-device-width: 768px) 
+        and (max-device-width: 1024px)  {
+        
+            #legendDiv {
+                background-color: rgb(255, 255, 255); 
+                border: 2px solid rgb(156, 156, 156);
+                border-radius: 4px;
+                font-size: 8px;
+                left: 100px; 
+                padding: 3px;  
+                position: absolute;
+                z-index: 25;                    
+            }
+        } 
+
+        /* DMPS-1497 IE specific media queries*/
+        @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) and (min-width: 943px) and (orientation:portrait) {
+            
+            .salesforce1 div.canvasDiv{
+                height: 1423px !important; /* required to overwrite inline styles on rotation*/
+                width: 943px !important; /* required to overwrite inline styles on rotation*/
+            }
+            
+            .salesforce1 div.canvas {
+                max-width: none;
+                height: 100%;
+                width: 100%;
+            }
+        }
+
+        @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) and (min-width: 1423px) and (orientation:landscape) {
+            
+            .salesforce1 div.canvasDiv {
+                height: 943px !important; /* required to overwrite inline styles on rotation*/
+                width: 1423px !important; /* required to overwrite inline styles on rotation*/
+            }
+            
+            .salesforce1 div.canvas {
+                max-width: none;
+                height: 100%;
+                width: 100%;
+            }
+        }
+    </style>
+    
+    <apex:include pageName="DMAPP__CRUD" />
+    
+    <div id="TAS" class="">
+        <apex:include pageName="DMAPP__SummaryTab2" 
+            rendered="{!NOT(fullScreen)}"
+            />
+            
+        <c:OpportunityBanner id="OpportunityBanner" 
+            rendered="{!fullScreen}"
+            helpURLBase="{!helpURLBase}"
+            selectedPage="{!selectedPage}"
+            enableMaxInSOM="{!enableMaxInSOM}"
+            opportunityid="{!opportunity.id}"
+            opportunityname="{!opportunity.Name}" 
+            isPRIMEActionsEnabled="{!isPRIMEActionsEnabled}"
+            showPPTLink="{!ShowPPTLink}"
+            isTAS120Editable="{!isTAS120Editable}"
+            isLicensedForPPT="{!isLicensedForPPT}" 
+            hidePRIMETypeColumn="{!hidePRIMETypeColumn}"
+            listAllActions="{!listAllActions}"
+            jQueryUIDateFormat="{!jQueryUIDateFormat}"
+            currencyISO="{!currencyISO}"
+            isPPTLightingPopupEnabled="{!isPPTLightingPopupEnabled}"
+        	isOmAddOverviewEnabled="{!isOmAddOverviewEnabled}"
+        	isOmAddPoliticalMapEnabled="{!isOmAddPoliticalMapEnabled}"
+        	isOmAddPoliticalMapDetailEnabled="{!isOmAddPoliticalMapDetailEnabled}"
+        	isOmAddPlaybookEnabled="{!isOmAddPlaybookEnabled}"
+       		isOmAddAssessmentEnabled="{!isOmAddAssessmentEnabled}"
+        	isOmAddAssessmentNotesEnabled="{!isOmAddAssessmentNotesEnabled}"
+        	isOmAddCompetitorsEnabled="{!isOmAddCompetitorsEnabled}"
+        	isOmAddCompetitiveStrategyEnabled="{!isOmAddCompetitiveStrategyEnabled}"
+        	isOmAddInsightMapsEnabled="{!isOmAddInsightMapsEnabled}"
+        	isOmAddDecisionCriteriaEnabled="{!isOmAddDecisionCriteriaEnabled}"
+        	isOmAddPrimeActionsEnabled="{!isOmAddPrimeActionsEnabled}"
+        	isOmAddTandIEnabled="{!isOmAddTandIEnabled}"
+            />  
+        
+        <div class="all">       
+            <div id="ttgCanvasDiv" class="canvasDiv" style="overflow:hidden; position:relative;">       
+                <div id="ttgCanvas" class="canvas"></div>
+            </div>                 
+        </div>
+    </div>
+    
+    
+      <!-- some images that the code makes use of -->
+<!-- Perf: Required? -->
+    <div style="display:none">
+  
+        <img id="ttg_oc_img_unknown"                                src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_unknown.png')}"/>
+        <img id="ttg_oc_img_not_set"                                src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/not_set.gif')}"/>      
+        <img id="ttg_oc_img_attention"                              src="{!URLFOR($Resource.ttgomjs, 'ttg/graph/feimages/icon_approved.png')}"/>      
+        <img id="ttg_oc_img_grey_x"                                 src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/grey_x.png')}"/>        
+        <img id="ttg_oc_img_influences"                             src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/down_alt.png')}"/>      
+        <img id="ttg_oc_img_influencedby"                           src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/up_alt.png')}"/>      
+        <img id="ttg_oc_img_key_player"                             src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_key_decision.png')}"/>       
+        <img id="ttg_oc_influence_drag"                             src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_influence_drag.png')}"/>       
+        <img id="ttg_oc_selected"                                   src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_selected.png')}"/>       
+    
+        <img id="ttg_graph_img_expand"                              src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_expand.png')}"/>       
+        <img id="ttg_graph_img_collapse"                            src="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/images/icon_collapse.png')}"/>       
+        <img id="ttg_graph_img_loading"                             src="{!URLFOR($Resource.ttgomjs, 'ttg/graph/images/loading_icon.gif')}"/>     
+        <img id="ttg_graph_img_open_contact"                        src="{!URLFOR($Resource.ttgomjs, 'ttg/graph/feimages/icon_contact_info.png')}"/>     
+        <img id="ttg_graph_img_linkedin"                            src="{!URLFOR($Resource.Assessment, 'common/images/linkedIn.png')}"/>     
+     
+    </div>
+    
+    
+    
+    <!-- l10n data -->
+    <!-- <apex:includeScript value="{!$Resource.l10njs}" /> Perf: removed as it is included by SummaryTab2 -->
+    
+<!-- Perf: moved to Webpack Bundle
+    <apex:includeScript value="{!URLFOR($Resource.Underscore, 'underscore-min.js')}"/>      
+-->
+    <script>
+    
+    var $j = jQuery.noConflict();
+        
+    $j.ajaxSetup({
+        jsonp: null,
+        jsonpCallback: null,
+        async: true
+    });
+
+      if(typeof jQuery == 'function' && jQuery.datepicker) {
+        jQuery.datepicker.setDefaults({
+          closeText: '{!JSENCODE($Label.DMAPP__COMMON_CLOSE)}',
+          prevText: '{!JSENCODE($Label.DMAPP__COMMON_PREV)}',
+          nextText: '{!JSENCODE($Label.DMAPP__COMMON_NEXT)}',
+          monthNames: '{!JSENCODE($Label.DMAPP__COMMON_MONTH_NAMES)}'.split('_'),
+          monthNamesShort: '{!JSENCODE($Label.DMAPP__MOMENTJS_MONTHS_SHORT)}'.split('_'),
+          dayNamesMin: '{!JSENCODE($Label.DMAPP__COMMON_DAYS_MIN)}'.split('_'),
+          dayNames: '{!JSENCODE($Label.DMAPP__COMMON_DAYS_NAME)}'.split('_'),
+        });
+      }
+    
+    </script>
+    
+<!-- Perf: moved to Webpack Bundle
+    <apex:includeScript value="{!URLFOR($Resource.excanvas)}"/> 
+    <apex:includeScript value="{!URLFOR($Resource.ftk, 'forcetk.js')}"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.Raphael, 'raphael-min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.Raphael, 'rgbcolor.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.Raphael, 'canvg.js')}"/>
+-->    
+    <!-- these are org chart specific js pages -->
+    
+    
+    <!--[if lt IE 9]>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/ie.js')}"/> 
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/json2.js')}"/> 
+    <!--[endif]-->
+
+<!-- Perf: moved to Webpack Bundle
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/modernizr.js')}"/>
+-->
+    <!-- <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/jquery-ui-touch-patch.js')}"/> Perf: Removed as it is include by JQuery component-->
+     
+   <!--  <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/ttgutils.js')}"/> Perf: Removed as it is include by JQuery component -->
+
+<!-- Perf: moved to Webpack Bundle
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/simple_context.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/entity_editor.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/simple_printer.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/ttgservice.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/simple_events.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/graph.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/graph_layout_config.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/graph_layout.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/base_renderer.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/graph_renderer.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/graph_updater.js')}"/>    
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/graphic_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/link_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/slds_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/input_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/add_node_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/zoom_in_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/zoom_out_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/zoom_manager.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/pan_manager.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/lightning_styled_components.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/nav_control.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/contact_menu.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/tappit.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/graph_validator.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/gesture_observer.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/activity_info.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/left_right_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/compass_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/simple_ui.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/add_menu_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/options_menu_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/print_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/trash_bin.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/simple_title.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/chatter_button.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/graph/js/empty_message.js')}"/>
+    
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/js/org_chart_node_renderer.js')}"/>   
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/js/org_chart_node_updater.js')}"/> 
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/js/edit_contact.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/js/side_panel_editor.js') }" />    
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/orgchart/js/org_chart_metadata.js')}"/>
+    -->
+
+    <apex:include pageName="DMAPP__PoliticalMapCoachRules"/>
+    
+    <script>
+    
+        /* 
+         * Copyright � {! JSENCODE($Setup.Company_Information__c.Company_Name__c)}. All rights reserved.
+         *  
+         */         
+    ttg.context.orgchartbase =  '{!JSENCODE($Resource.ttgomjs)}' ;
+    ttg.context.decision_criteria_base =  '{!JSENCODE($Resource.DecisionCriteria)}' ;
+    ttg.context.orgId = 'RANDOM_ORG_ID';
+    ttg.context.sessionId = '{!JSENCODE($Api.Session_ID)}';
+    ttg.context.url = 'RANDOM_URL';
+     
+    var daGraph; 
+        
+    jQuery(document).ready(function() { 
+
+        var polMap = (function() {
+            function addSubMap(submap, planunitid, success, error, complete) {
+                if(!complete) {
+                    complete = function() {};
+                }
+            
+                var succ = function(data) { try {success(data)} finally { complete(); } };
+                var err = ttg.ajaxErrorFunction(error,complete); 
+                
+                ttgInvoker.invokeVFR(
+                    '{!$RemoteAction.OMStandardController.addSubMap}',
+                    submap, 
+                    function(result, event) { 
+                        if (event.type == 'exception') { 
+                            err(result,event);
+                        } else {
+                            succ(result); 
+                        }
+                    }, {escape: false}
+                ) 
+            }
+            
+            function addSubMaps(submaps, planunitid, success, error, complete) {
+                if(!complete) {
+                    complete = function() {};
+                }
+            
+                var succ = function(data) { try {success(data)} finally { complete(); } };
+                var err = ttg.ajaxErrorFunction(error,complete); 
+                
+                ttgInvoker.invokeVFR(
+                    '{!$RemoteAction.OMStandardController.addSubMaps}',
+                    submaps, 
+                    function(result, event) { 
+                        if (event.type == 'exception') { 
+                            err(result,event);
+                        } else {
+                            succ(result); 
+                        }
+                    }, {escape: false}
+                ) 
+            }
+    
+            function deleteSubMap(nodeid, planunitid, success, error, complete) {
+                if(!complete) {
+                    complete = function() {};
+                }
+            
+                var succ = function(data) { try {success(data)} finally { complete(); } };
+                var err = ttg.ajaxErrorFunction(error,complete); 
+                
+                ttgInvoker.invokeVFR(
+                    '{!$RemoteAction.OMStandardController.deleteSubMap}',
+                    nodeid, 
+                    function(result, event) { 
+                        if (event.type == 'exception') { 
+                            err(result,event);
+                        } else {
+                            succ(result); 
+                        }
+                    }, {escape: false}
+                ) 
+            }
+
+
+            function deleteMultipleSubMaps(nodeids, planunitid, success, error, complete) {
+                if(!complete) {
+                    complete = function() {};
+                }
+            
+                var succ = function(data) { try {success(data)} finally { complete(); } };
+                var err = ttg.ajaxErrorFunction(error,complete); 
+                
+                ttgInvoker.invokeVFR(
+                   '{!$RemoteAction.OMStandardController.deleteMultipleSubMaps}',
+                    nodeids, 
+                    function(result, event) { 
+                        if (event.type == 'exception') { 
+                            err(result,event);
+                        } else {
+                            succ(result); 
+                        }
+                    }, {escape: false}
+                ) 
+            }
+    
+            var that = {};
+            that.deleteMultipleSubMaps = deleteMultipleSubMaps;
+            that.deleteSubMap = deleteSubMap;
+            that.addSubMap = addSubMap;
+            that.addSubMaps = addSubMaps;
+
+            return that;
+        })();
+
+        var apiSpec = { 
+            sessionid : '{!JSENCODE($Api.Session_ID)}', 
+            graphId : '{!JSENCODE(opportunityExtra.id)}',
+            disableCreateContact : {!IF(disableCreationOfContacts, true, false)} 
+        }
+
+        var apilayer = jQuery.extend({}, ttg.apiLayer.orgchartapi(apiSpec), polMap, ttg.apiLayer.crud(apiSpec));
+        
+        ttg.fetch.metadata('Account', apilayer);
+        ttg.fetch.metadata('Contact', apilayer);
+        
+        var loadIt = function() {
+            
+            var graphId = 'orgChartId'
+            
+            spec = {
+                    graphId                         :   '{!JSENCODE(opportunityExtra.id)}',
+                    orgId                           :   ttg.context.orgId,
+                    sessionId                       :   ttg.context.sessionId,
+                    sessionid                       :   ttg.context.sessionId,
+                    url                             :   ttg.context.url,
+                    orgChartType                    :   'opportunity',
+                    orgChartName                    :   '{!JSENCODE(opportunity.name)}',
+                    opportunityid                   :   '{!JSENCODE(opportunity.id)}',
+                    opp_extra_id                    :   '{!JSENCODE(opportunityExtra.id)}',
+                    readonly                        :   {!IF(editable == false, true, false)},
+                    printUrl                        :   'OM_Political_Analysis_Page_Print?id={!JSENCODE(opportunity.id)}&',
+                    associatedAccountId             :   '{!JSENCODE(opportunity.account.id)}',
+                    associatedAccountName           :   '{!JSENCODE(opportunity.account.name)}',
+                    userName                        :   '{!JSENCODE(currentUserName)}',
+                    userId                          :   '{!JSENCODE(currentUserId)}',
+                    metadataOptions :   {
+                        skipAttributes              :   ['decisionorientation','approval'],
+                        allowMultipleValues         :   ['buyingrole']
+                    },
+                    disableCreateContact            :   {!IF(disableCreationOfContacts, true, false)},
+                    displayTitle                    :   [
+                                                 '{!JSENCODE(opportunity.name)}'
+                                                 , '{!JSENCODE(opportunity.owner.name)}'
+                                                 ],
+                    apiMetadataTimestamp            :   'apiMetadataTimestamp',    
+                    isStandaloneCRM                 :   false,
+                    ttgApi                          :   apilayer,
+                    add_contact_def_search_field    : 'AccountId',
+                    hasAM                           : {!IF(isLicensedForAccountManager, true, false)},
+                    hasOM                           : {! OR( isLicensedForOppManager, isLicensedForPoliticalMapExpress ) },
+                    hasPoliticalMapExpress          : {!IF(isLicensedForPoliticalMapExpress, true, false)} && !{!IF(isLicensedForOppManager, true, false)},
+                    nodeHeight                      :   150, //70,
+                    nodeWidth                       :   130, //100
+                    dateFormat                      :   '{!JSENCODE(jQueryUIDateFormat)}',
+                    disableContactCreation          : {!IF(disableCreationOfContacts, true, false)},
+                    hideActions                     : {!IF(hideActions, true, false)},
+                    hideIssues                      : {!IF(hideIssues, true, false)},
+                    hideDecisionCriteria            : {!IF(hideDecisionCriteria, true, false)},
+                    skin                            : '{!JSENCODE(politicalMapSkin)}',
+                    socialSettings                  : '{!JSENCODE(socialMediaSettings)}',
+                    disableCoaching                 : {!IF(disableCoaching, true, false)},
+                    politicalMapCoachRules          : {
+                        contact_coaching_rules  : ttg.coach_political_map_contact_rules,
+                        contact_profile_rules   : ttg.coach_political_map_contact_profile_rules,
+                        map_rules               : ttg.coach_political_map_rules
+                    },                    fullscreen                        : {!IF(fullScreen, true, false)},
+                    showInfluenceLines              : {!IF(showInfluenceLines, true, false)},
+                    viewModeInfluenceLines          : {!IF(viewInfluenceLines, true, false)},
+                    isoCode                         : '{!JSENCODE(currencyISO)}',
+                    hideCreateMsg                   : true,
+                    // Hides the print button if Salesforce1 is present
+                    hidePrintButton: ttg.urlServiceInstance.isSalesforce1(),
+                    // this generates the url used to render attachment images on the page
+                    areContactImagesDisabled : {!IF(areContactImagesDisabled, true, false)},
+                    attachmentFileServletUrl: '{! JSENCODE(attachmentFileServletUrl)}'
+             }
+                
+             daGraph = ttg.displayGraph(spec)         
+        }
+                 
+        loadIt();
+    });
+
+
+    function openit() {
+        ttg.legendBox(daGraph.getConfig(), daGraph.getOrgChartMetadata());
+    }
+
+
+
+
+    </script>   
+    
+
+
+</apex:page>

@@ -1,0 +1,1170 @@
+<apex:page showHeader="true" sidebar="false" title="Case Merge Premium Configuration" controller="csmrgp.CsMrgConfigCtrl" action="{!loadPreferences}" tabStyle="Settings__tab">
+    <apex:includeScript value="/support/console/42.0/integration.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/action-overlays.js')}"/>    
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/navigation-tabs.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/remove-console-padding.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/string-utils.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/script/icon-util.js')}"/>
+    <script type="text/javascript">
+        if(sforce.console.isInConsole()) {
+            sforce.console.setTabTitle('Configuration - Case Merge Premium');
+            removeConsolePadding();
+        }
+    </script>
+    <!-- SLDS Version 2.3.1 -->
+    <apex:stylesheet value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/style/slds/assets/styles/salesforce-lightning-design-system-vf.min.css')}"/>
+    <style>
+        .sldsc-select-container_inline-block {
+            display: inline-block;
+        }
+
+        #set-field-on-merged-case .slds-form-element {
+            width: 100%;
+            display: flex;
+            display: -ms-flexbox;
+        }
+
+        #set-field-on-merged-case .slds-select_container {
+            width: 100%;
+        }
+
+        #set-field-on-merged-case .slds-form-element label {
+            align-self: center;
+        }
+
+        #options-nav-tabs {
+            background-color: white;
+        }
+
+        #options-nav-tabs.hasMotif {
+            margin: 0 10px !important;
+        }
+
+        #classic-alert.hasMotif {
+            margin: 0 10px !important;
+        }
+
+        #next-button::after {
+            content:' - ' attr(data-nextStep);
+        }
+
+        #previous-button::after {
+            content:' - ' attr(data-prevStep);
+        }
+
+        /* Modal */
+        #searchPagePreviewModalContent {
+            text-align: center;
+        }
+
+        #searchPagePreviewImage {
+            border: 1px solid #EAEAEA;
+        }
+
+        .modalContainerSearchPagePreviewImage__criteria {
+            max-width: 100% !important;
+            width: 95% !important;
+        }
+
+        .modalContainerSearchPagePreviewImage__recent {
+            max-width: 100% !important;
+            width:40% !important;
+        }
+
+        .modalContainerSearchPagePreviewImage__text {
+            max-width: 100% !important;
+            width: 60% !important;
+        }
+
+        .unhighlightable {
+            cursor: default;
+            user-select: none;
+        }
+
+        .underline {
+            text-decoration: underline;
+        }
+
+        .sticky {
+            position: fixed;
+            left: 0;
+            right: 0;
+            z-index: 5;
+        }
+
+        /* Mobile */
+        @media (min-width:1445px) {
+            .child-object-table {
+                width: 50%;
+            }
+
+            .child-object-tables-wrapper {
+                display: flex;
+                display: -ms-flexbox;
+            }
+        }
+        
+    </style>
+    <apex:stylesheet value="{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/style/csmrgp-style.css')}"/>
+    <script type="text/javascript">
+        function exists(aVar) {
+            return typeof(aVar) !== 'undefined' && aVar !== null;
+        }
+
+        function isEmpty(aVar) {
+            if(Array.isArray(aVar)) {
+                return aVar.length === 0;
+            }
+            return typeof(aVar) === 'undefined' || aVar === null || aVar === '';
+        }
+    </script>
+    <apex:outputPanel rendered="{!$User.UIThemeDisplayed == 'Theme4u'}">
+        <style type="text/css">
+            html body.sfdcBody {
+                overflow: hidden !important;
+            }
+        </style>
+    </apex:outputPanel>
+    <apex:form id="frm" styleClass="bg-white">
+        <apex:actionFunction name="save" action="{!save}" rerender="savingStatus" status="savingStatus"/>
+
+        <div id="pg" class="slds-scope">
+            <apex:actionStatus id="savingStatus" onstart="disableBackgroundListeners();" onstop="enableBackgroundListeners(); triggerLWCToasts();">
+                <apex:facet name="start">
+                    <apex:outputPanel >
+                        <div class="slds-backdrop slds-backdrop_open slds-backdrop_white" style="display:flex;">
+                            <div class="slds-align_absolute-center">
+                                <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                                    <span class="slds-assistive-text">Loading</span>
+                                    <div class="slds-spinner__dot-a"></div>
+                                    <div class="slds-spinner__dot-b"></div>
+                                </div>
+                                <div><div class="slds-text-heading_large" style="font-weight:700;">Saving</div></div>
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                </apex:facet>
+            </apex:actionStatus>
+
+            <div id="loading-spinner" class="slds-backdrop slds-backdrop_open" style="display:flex; background-color: #FFFFFF;">
+                <div class="slds-align_absolute-center">
+                    <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="searchPagePreview">
+                <section id="searchPagePreviewModal" role="dialog" tabindex="-1" aria-label="Image preview of the search page with the selected default tab" aria-modal="true" aria-describedby="searchPagePreviewModalContent" class="slds-modal">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header slds-modal__header_empty">
+                            <button id="modal-close-button" class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick="hideModal();return false;">
+                                <img class="slds-button__icon slds-button__icon_large" src="{!URLFOR($Resource.CaseMergePremiumAssets, 'case-merge-premium-assets/img/custom-icons/icons/utility/close_white_60.png')}"/>
+                            </button>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="searchPagePreviewModalContent">
+                            <img id="searchPagePreviewImage" src="#" alt="Preview Image"/>
+                        </div>
+                    </div>
+                </section>
+                <div id="searchPagePreviewModalBackdrop" class="slds-backdrop slds-backdrop_open" style="display:none;"></div>
+            </div>
+
+            <div id="sticky-header" class="sticky hasMotif">
+                <c:CsMrgPageHeader title="Preferences Configuration" iconName="settings"/>
+            </div>
+
+            <div id="options-nav" class="slds-tabs_default">
+                <ul id="options-nav-tabs" class="slds-tabs_default__nav sticky hasMotif">
+                    <apex:repeat value="{!tabNames}" var="tab">
+                        <li class="slds-tabs_default__item" onclick="switchNavigationTab(this)" data-navigation-id="options-nav" data-tab-name="{!LOWER(tab)}">
+                            <a id="tab-{!SUBSTITUTE(LOWER(tab), ' ', '_')}__item" class="slds-tabs_default__link" href="javascript:void(0);" tabindex="0">{!tab}</a>
+                        </li>
+                    </apex:repeat>
+                </ul>
+                <div id="classic-alert" class="sticky hasMotif">
+                    <c:PageAlert />
+                </div>
+
+                <!-- 
+                    The content wrappers of each tab. Right now they are empty divs that will be appeneded to via javascript.
+                    The exception being 'Additional Setup' which has an alert.
+                -->
+                <apex:repeat value="{!tabNames}" var="tab">
+                    <div id="tab-{!SUBSTITUTE(LOWER(tab), ' ', '_')}" class="slds-tabs_default__content slds-hide tab_content_wrapper" data-tab-name="{!LOWER(tab)}" data-navigation-id="options-nav">
+                        <apex:outputPanel layout="none" rendered="{!LOWER(tab) != 'child objects'}">
+                            <div class="slds-box slds-m-horizontal_small">
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+                </apex:repeat>
+
+                <!--
+                    The content of each tab.
+                -->
+                <!-- General-->
+                <div class="tab_content slds-hide" data-tab-name="general">
+                    <div id="duplicate-label">
+                        <label class="slds-form-element__label bold" for="{!$Component.duplicateLabelInput}">Duplicates Label</label>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Set the label that will be used on the inline duplicate alert when one or more duplicates are found."/>
+                        </div>
+                        <div class="slds-size_1-of-2 slds-m-top_xx-small">
+                            <div class="slds-m-horizontal_small">
+                                <apex:inputText id="duplicateLabelInput" styleClass="slds-input" value="{!duplicatesLabel}"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="duplicate-case-description" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Duplicate Case Description(s)" for="{!$Component.dupeCaseDesc}"/>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="The text in the Description field of merged cases may either be added as a case comment, merged into the Description, or added as a Chatter post on the primary case."/>
+                        </div>
+                        <div class="slds-size_1-of-2">
+                            <div class="slds-select_container slds-m-horizontal_small">
+                                <apex:selectList id="dupeCaseDesc" styleClass="slds-select slds-m-top_xx-small" value="{!mergeBodyAsComment}" size="1" multiselect="false">
+                                    <apex:selectOption itemLabel="Add as Private Comment on Primary" itemValue="true,private"/>
+                                    <apex:selectOption itemLabel="Add as Public Comment on Primary" itemValue="true,public"/>
+                                    <apex:selectOption itemLabel="Append to Description Field on Primary" itemValue="false,append"/>
+                                    <apex:selectOption itemLabel="Add as Chatter Post on Primary" itemValue="false,chatter"/>
+                                    <apex:selectOption itemLabel="Do not merge Description" itemValue="false,none"/>
+                                </apex:selectList>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="merged-case-status" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Merged Case Status" for="{!$Component.mergedCaseStatus}"/>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Select the Case Status you created in step 1 on the setup page (ordinarily Closed as Duplicate) to use for merged cases. If any Emails, Comments or Attachments are added to a case with this status, they will be re-associated to the primary (parent) case if one is specified."/>
+                        </div>
+                        <div class="slds-size_1-of-2 slds-m-top_xx-small">
+                            <div class="slds-select_container slds-m-horizontal_small">
+                                <apex:selectList id="mergedCaseStatus" styleClass="slds-select" value="{!mergedCaseStatus}" multiselect="false" size="1" title="Status" required="true">
+                                    <apex:selectOptions value="{!statusItems}"/>
+                                </apex:selectList>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="set-field-on-merged-case" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Set Field on Merged Case"/>
+                        <p class="slds-m-left_small">Select a picklist field of your choice for which to set a specific value on the merged cases.  (For example, you could choose to set a Reason on a merged case that may better describe it after it's been closed as a duplicate).</p>
+                        <div class="slds-m-top_xx-small slds-m-left_small" style="display:flex;">
+                            <div class="slds-form-element">
+                                <apex:outputLabel styleClass="slds-form-element__label bold" value="Field" for="{!$Component.fieldOnCase}"/>
+                                <div class="slds-select_container sldsc-select-container_inline-block slds-m-right_medium">
+                                    <apex:selectList id="fieldOnCase" styleClass="slds-select" value="{!mergedPicklistFld}" multiselect="false" size="1" title="Picklist fields">
+                                        <apex:selectOptions value="{!picklistFields}"/>
+                                        <apex:actionSupport event="onchange" rerender="valueOnCase" status="picklistStatus"/>
+                                    </apex:selectList>
+                                </div>
+                            </div>
+                            <div class="slds-form-element">
+                                <apex:outputLabel styleClass="slds-form-element__label bold" value="Value" for="{!$Component.valueOnCase}"/>
+                                <div class="slds-select_container sldsc-select-container_inline-block slds-m-right_medium">
+                                    <apex:actionStatus id="picklistStatus">
+                                        <apex:facet name="stop">
+                                            <apex:selectList id="valueOnCase" styleClass="slds-select" value="{!mergedPicklistVal}" size="1" title="Set field value">
+                                                <apex:selectOptions value="{!fieldPicklistValues}"/>
+                                            </apex:selectList>
+                                        </apex:facet>
+                                        <apex:facet name="start">
+                                            <apex:selectList styleClass="slds-select" size="1" disabled="true">
+                                                <apex:selectOption itemValue="Refreshing..." itemDisabled="true" />
+                                            </apex:selectList>
+                                        </apex:facet>
+                                    </apex:actionStatus>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                   
+                </div>
+
+                <!-- Duplicate Criteria -->
+                <apex:inputHidden value="{!enableDuplicateCriteriaByRecordType}" id="hiddenDupeRecordtype"/>
+                <apex:actionFunction name="setEnableDuplicateCriteriaByRecordType" rerender="hiddenDupeRecordtype"></apex:actionFunction>
+
+                <div class="tab_content slds-hide" data-tab-name="duplicate criteria">
+                    <apex:includeLightning /> 
+                    <div id="CriteriaManagerContainer"></div> 
+                    <script> 
+                        let errorToast;
+
+                        document.addEventListener("updatedcriteria", (event)=>{
+                            PAGE_ALERT.hideAlert();
+                            document.getElementById("{!$Component.hiddenDupeRecordtype}").value = event.detail.enableByRecordType;
+                            setEnableDuplicateCriteriaByRecordType();
+                        });
+
+                        document.addEventListener("alertclassic", (event)=>{
+                            PAGE_ALERT.hideAlert();
+                            errorToast = event;                           
+                        });
+
+                        document.addEventListener("savecomplete", (event)=>{
+                            save();                      
+                        });
+
+                        $Lightning.use("csmrgp:CriteriaManagerAppContainer", function() { 
+                            $Lightning.createComponent("csmrgp:criteriaManager",{},"CriteriaManagerContainer",function(cmp) {
+                                cmp.setRecordTypeCriteriaEnabled("{!enableDuplicateCriteriaByRecordType}", "{!hasRecordTypesEnabled}");
+                            }); 
+                        }); 
+
+                        function triggerLWCToasts(){
+                            if(errorToast != null){
+                                triggerAlert(errorToast.detail.title, errorToast.detail.message, errorToast.detail.type); 
+                            }
+                            errorToast = null;
+                        }
+
+                        function triggerAlert(alertTitle, alertMessage, alertType){
+                            if("{!inLightning}" == "true"){
+                                sforce.one.showToast({
+                                    "title": alertTitle,
+                                    "message": alertMessage,
+                                    "type": alertType
+                                });
+                            }
+                            else{
+                                switch(alertType) {
+                                    case 'error':
+                                        PAGE_ALERT.setTheme(PAGE_ALERT.THEMES.ERROR);
+                                        break;
+                                    case 'success':
+                                        PAGE_ALERT.setTheme(PAGE_ALERT.THEMES.SUCCESS);
+                                        break;
+                                    case 'warning':
+                                        PAGE_ALERT.setTheme(PAGE_ALERT.THEMES.WARNING);
+                                        break;
+                                    default:
+                                        //console.error('Invalid alert type "' + alertType + '". Valid types are "error","success"," & "warning".');
+                                        PAGE_ALERT.hideAlert();
+                                        return;
+                                }
+                                PAGE_ALERT.setMessages([alertMessage]);
+                                PAGE_ALERT.showAlert();
+                            }
+                        }
+                    </script> 
+                </div>
+
+                <!-- Search Page -->
+                <div class="tab_content slds-hide" data-tab-name="search page">
+                    <div id="default-search-tab">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Default Search Tab" for="{!$Component.defaultSearchTab}"/>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Set which search tab automatically displays when the search page is opened."/>
+                            <span class="slds-m-left_small">
+                                <!-- <apex:actionStatus id="linkStatus">
+                                    <apex:facet name="start">
+                                        (Loading...)
+                                    </apex:facet>
+                                    <apex:facet name="stop">
+                                        <!-- <apex:outputLink id="previewLink" target="_blank" value="/apex/CsMrgFind?previewTab={!defaultSearchTab}">Click here to view the Search Page with the selected default search tab</apex:outputLink>
+                                    </apex:facet>
+                                </apex:actionStatus>-->
+                                <a href="#" onclick="previewImage();">Click here to view the Search Page with the selected default search tab</a>
+                            </span>
+                        </div>
+                        <div class="slds-size_1-of-2 slds-m-top_xx-small">
+                            <div class="slds-select_container slds-m-horizontal_small">
+                                <apex:selectList id="defaultSearchTab" styleClass="slds-select" value="{!defaultSearchTab}" multiselect="false" size="1">
+                                    <apex:selectOption itemLabel="Search by Criteria" itemValue="criteria"/>
+                                    <apex:selectOption itemLabel="Search by Text" itemValue="text"/>
+                                    <apex:selectOption itemLabel="Recent Cases" itemValue="recent"/>
+                                    <!-- <apex:actionSupport event="onchange" status="linkStatus" reRender="previewLink"/>-->
+                                </apex:selectList>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="max-results" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Maximum Number of Results"/>
+                        <div class="slds-m-left_small">
+                            <div class="slds-select_container slds-select_container-inline" style="width: 4rem;">
+                                <apex:selectList styleClass="slds-select slds-m-top_xx-small" value="{!maxResults}" multiselect="false" size="1" id="maxResults">
+                                    <apex:selectOption itemLabel="10" itemValue="10"/>
+                                    <apex:selectOption itemLabel="25" itemValue="25"/>
+                                    <apex:selectOption itemLabel="50" itemValue="50"/>
+                                    <apex:selectOption itemLabel="100" itemValue="100"/>
+                                </apex:selectList>
+                            </div>
+                            <apex:outputText style="vertical-align: center;" styleClass="slds-m-left_x-small" value="Cases will be displayed when searching for duplicates" />
+                        </div>
+                    </div>
+                    <div id="case-merge-limit" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Case Merge Limit" for="caseMergeNum"/>
+                        <div class="slds-m-left_small">
+                            <div class="slds-select_container slds-select_container-inline" style="width: 4rem;">
+                                <apex:selectList styleClass="slds-select slds-m-top_xx-small" value="{!caseMergeLimit}" multiselect="false" size="1" id="caseMergeNum">
+                                    <apex:selectOption itemLabel="2" itemValue="2"/>
+                                    <apex:selectOption itemLabel="3" itemValue="3"/>
+                                    <apex:selectOption itemLabel="4" itemValue="4"/>
+                                    <apex:selectOption itemLabel="5" itemValue="5"/>
+                                    <apex:selectOption itemLabel="6" itemValue="6"/>
+                                    <apex:selectOption itemLabel="7" itemValue="7"/>
+                                    <apex:selectOption itemLabel="8" itemValue="8"/>
+                                    <apex:selectOption itemLabel="9" itemValue="9"/>
+                                </apex:selectList>
+                            </div>
+                            <apex:outputText style="vertical-align: center;" styleClass="slds-m-left_x-small" value="Cases may be merged at a time"/>
+                        </div>
+                    </div>  
+                    <div id="restrict-by-record-type" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Restrict by Record Type"/>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Only allow cases of the same record type to be merged.  This setting will be automatically disabled if no record types for Case are found in this org."/>
+                            <div class="slds-m-top_xx-small">
+                                <span class="slds-checkbox">
+                                    <apex:inputCheckbox value="{!restrictByRecordtype}" id="recordTypeRestrict" disabled="{!DISABLE_RT_BOX}"/>
+                                    <apex:outputLabel styleClass="slds-checkbox__label" for="{!$Component.recordTypeRestrict}">
+                                        <span class="slds-checkbox_faux"></span>
+                                        <apex:outputText styleClass="slds-m-left_x-small bold" value="{! IF(DISABLE_RT_BOX,'Not Applicable','Enable Record Type Restriction')}"/>
+                                    </apex:outputLabel>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Merge Page -->
+                <div class="tab_content slds-hide" data-tab-name="merge page">
+                    <div id="show-errors-when-merging">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Show Errors When Merging" for="{!$Component.errorHandling}"/>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Select which error level should halt a merge. If halted, the errors will be displayed on the Merge page rather than added as a comment on the case."/>
+                        </div>
+                        <div class="slds-size_1-of-2 slds-m-top_xx-small">
+                            <div class="slds-select_container slds-m-horizontal_small">
+                                <apex:selectList id="errorHandling" styleClass="slds-select" value="{!errorHandling}" size="1">
+                                    <apex:selectOption itemLabel="Never Halt" itemValue="never"/>
+                                    <apex:selectOption itemLabel="Halt on Validation Error" itemValue="validation"/>
+                                    <apex:selectOption itemLabel="Halt on Any Error" itemValue="always"/>
+                                </apex:selectList>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="restrict-master-case" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" style="margin-right: 0;" value="Primary Case Selection" for="{!$Component.masterUpdate}"/>
+                        <span class="bold slds-text-color_error"><sup class="unhighlightable">NEW</sup></span>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="By default, Case Merge Premium automatically selects the oldest case as the Primary case. However, your specific business process may suggest more flexibility in choosing the Primary case. Case Merge Premium provides the following options:"/>
+                        </div>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <apex:inputHidden id="h__masterUpdateField" value="{!restrictMasterUpdate}"/>
+                                <div class="slds-size_1-of-2 slds-m-top_xx-small" style="margin-left: 10px;">
+                                    <div class="slds-grid slds-grid_vertical">
+                                        <div class="slds-col">
+                                            <span class="slds-radio">
+                                                <input id="master-all" type="radio" value="true" name="masterUpdate" onchange="handleMasterLevelRadioChange(event)"/>
+                                                <label class="slds-radio__label" for="master-all">
+                                                    <span class="slds-radio_faux"></span>
+                                                    <span class="slds-form-element__label">
+                                                        <span class="bold">Allow Selection of the Primary Case (Default)</span>
+                                                        <p style="margin-left: 1.75rem;">The user performing the merge can select a different case as the Primary case.</p>
+                                                    </span>
+                                                </label>
+                                            </span>
+                                        </div>
+                                        <div class="slds-col">
+                                            <span class="slds-radio">
+                                                <input id="master-specific" type="radio" value="false" name="masterUpdate" onchange="handleMasterLevelRadioChange(event)"/>
+                                                <label class="slds-radio__label" for="master-specific">
+                                                    <span class="slds-radio_faux"></span>
+                                                    <span class="slds-form-element__label">
+                                                        <span class="bold">Permission Required to Select Primary Case</span>
+                                                        <p style="margin-left: 1.75rem;">The user performing the merge that has the "Can Select Primary Case" custom permission can select a different Primary case.</p>
+                                                    </span>
+                                                </label>
+                                            </span>
+                                        </div>
+                                        <div class="slds-col">
+                                            <span class="slds-radio">
+                                                <input id="master-none" type="radio" value="false" name="masterUpdate" onchange="handleMasterLevelRadioChange(event)"/>
+                                                <label class="slds-radio__label" for="master-none">
+                                                    <span class="slds-radio_faux"></span>
+                                                    <span class="slds-form-element__label">
+                                                        <span class="bold">Restrict the Oldest Case as Primary</span>
+                                                        <p style="margin-left: 1.75rem;">The user performing the merge cannot select a different Primary case.</p>
+                                                    </span>
+                                                </label>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="clean-merge" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Clean Merge" />
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Provide the option of merging cases without cloning their fields and child objects. A Clean Merge will simply close duplicate cases and relate them to the primary case without merging any data."/>
+                            <div class="slds-m-top_xx-small">
+                                <span class="slds-checkbox">
+                                    <apex:inputCheckbox value="{!enableCleanMerge}" id="enableCleanMerge" onchange="handleCleanMergeCheckboxOnChange(event)"/>
+                                    <apex:outputLabel styleClass="slds-checkbox__label" for="{!$Component.enableCleanMerge}">
+                                        <span class="slds-checkbox_faux"></span>
+                                        <apex:outputText styleClass="slds-m-left_x-small bold" value="Enable Clean Merge"/>
+                                    </apex:outputLabel>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="slds-m-left_small">
+                            <div class="slds-m-left_small">
+                                <div id="exceed-limit" class="slds-m-top_medium">
+                                    <apex:outputLabel styleClass="slds-form-element__label bold" style="margin-right: 0;" value="Case Limit Bypass for Clean Merge"/>
+                                    <span class="bold slds-text-color_error"><sup class="unhighlightable">NEW</sup></span>
+                                    <div class="slds-m-left_small">
+                                        <span>
+                                            Allows the user to merge more cases than specified in the "Case Merge Limit" setting using clean merge.
+                                        </span>
+                                        <div class="slds-m-top_xx-small">
+                                            <span class="slds-checkbox">
+                                                <apex:inputCheckbox value="{!enableExceedLimit}" id="enableExceedLimit"/>
+                                                <apex:outputLabel styleClass="slds-checkbox__label" for="{!$Component.enableExceedLimit}">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <apex:outputText styleClass="slds-m-left_x-small bold" value="Enable Case Limit Bypass for Clean Merge"/>
+                                                </apex:outputLabel>
+                                            </span>                                    
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="object-cloning" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Object Cloning Selection"/>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Allow the user to specify child objects of Case (such as Task and Event) to include or exclude from the merge."/>
+                            <div class="slds-m-top_xx-small">
+                                <span class="slds-checkbox">
+                                    <apex:inputCheckbox value="{!enableAdHocObjPrefs}" id="enableObjectCloning"/>
+                                    <apex:outputLabel styleClass="slds-checkbox__label" for="{!$Component.enableObjectCloning}">
+                                        <span class="slds-checkbox_faux"></span>
+                                        <apex:outputText styleClass="slds-m-left_x-small bold" value="Enable Object Cloning Selection"/>
+                                    </apex:outputLabel>
+                                </span>                                        
+                            </div>
+                        </div>
+                    </div>
+                    <div id="fields-to-display" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Fields to Display in Case Pages" />
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Case Merge Premium uses Salesforce Field Sets to allow you to select which fields are displayed in the Find and Select pages."/>
+                            <div class="slds-m-top_xx-small">
+                                <a href="/p/setup/custent/FieldSetListUI/d?tableEnumOrId=Case&setupid=CaseFieldSets" target="_blank" >Edit fieldsets for Find and Select pages</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="editable-fields" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" style="margin-right:0;" value="Edit Fields on Primary Case"/>
+                        <span class="bold slds-text-color_error"><sup class="unhighlightable">NEW</sup></span>
+                        <div class="slds-m-left_small">
+                            <p>
+                                Users can edit field values on the Primary Case when merging. Review and select which fields users should be able to edit when merging.
+                            </p>
+                            <p>
+                                <span class="bold">Note: Users will NOT have access to edit a field that they cannot otherwise edit due to existing profile permissions / sharing rules.</span>
+                            </p>
+
+                            <apex:outputPanel id="editFieldsSection">
+                                <div style="width: 780px;">
+                                    <div class="slds-m-top_small">
+                                        <!-- NOTE: Uncomment when url param for field set is supported on the select page -->
+                                        <!--<div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="fieldSetSelect">Field Set</label>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-grid">
+                                                    <div class="fieldset-select">
+                                                        <div class="slds-select_container">
+                                                            <apex:selectList id="fieldSetSelect" value="{!currentFieldSetName}" styleClass="slds-select" size="1" multiselect="false">
+                                                                <apex:selectOptions value="{!fieldSetOptions}"/>
+                                                                <apex:actionSupport event="onchange" action="{!refreshEditSettings}" reRender="editableFieldsTable" status="refreshingTable"/>
+                                                            </apex:selectList>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div> -->
+                                    </div>
+                                    
+                                    <div class="slds-m-top_medium slds-m-left_small">
+                                        <apex:outputPanel id="editableFieldsTable">
+                                            <div class="slds-is-relative">
+                                                <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-no-row-hover">
+                                                    <thead>
+                                                        <tr class="slds-text-title_caps">
+                                                            <th scope="col">
+                                                                <div class="slds-truncate">Field</div>
+                                                            </th>
+                                                            <th>
+                                                                <div class="slds-truncate slds-text-align_center">{!$ObjectType.csmrgp__Case_Merge_Field_Editability_Settings__c.fields.csmrgp__Editable__c.Label}</div>
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <apex:repeat value="{!editSettings}" var="setting">
+                                                            <tr class="slds-hint-parent">
+                                                                <th data-label="Field" scope="row">
+                                                                    <div class="slds-truncate" title="{!setting.label}">
+                                                                        {!setting.label}
+                                                                    </div>
+                                                                </th>
+                                                                <th data-label="Can Edit?">
+                                                                    <div class="slds-truncate">
+                                                                        <span class="slds-checkbox slds-align_absolute-center">
+                                                                            <apex:inputCheckbox id="canEditSetting" styleClass="slds-hide" value="{!setting.setting.csmrgp__Editable__c}" disabled="{!setting.neverEditable}"/>
+                                                                            <apex:outputLabel styleClass="slds-checkbox__label" for="canEditSetting" title="{!IF(setting.neverEditable, 'This field is not available for inline field editing', '')}">
+                                                                                <span class="slds-checkbox_faux"></span>
+                                                                            </apex:outputLabel>
+                                                                        </span>
+                                                                    </div>
+                                                                </th>
+                                                            </tr>
+                                                        </apex:repeat>
+                                                    </tbody>
+                                                </table>
+                                                <apex:actionStatus id="refreshingTable">
+                                                    <apex:facet name="stop"></apex:facet>
+                                                    <apex:facet name="start">
+                                                        <div class="slds-spinner_container">
+                                                            <div role="status" class="slds-spinner slds-spinner_medium">
+                                                                <span class="slds-assistive-text">Loading</span>
+                                                                <div class="slds-spinner__dot-a"></div>
+                                                                <div class="slds-spinner__dot-b"></div>
+                                                            </div>
+                                                        </div>
+                                                    </apex:facet>
+                                                </apex:actionStatus>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </div>
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Child Objects -->
+                <div class="tab_content slds-hide" data-tab-name="child objects">
+                    <p class="slds-p-horizontal_small">These settings affect the handling of child objects on merged cases.  Select the appropriate options for each object.  If 'Clone' is checked, the object will be cloned to the primary case from the other merged cases.  If 'Delete Original' is checked, the object will be deleted from the non-primary cases upon merge.  If 'Ignore Insert Errors' is checked, errors regarding prohibited duplicates (e.g. Case Team Members) will be suppressed.</p>
+                    <div class="child-object-tables-wrapper">
+                        <apex:outputPanel id="StandardObj_EditPanel" layout="block" styleClass="slds-p-horizontal_small child-object-table">
+                            <div class="slds-section slds-is-open">
+                                <h3 class="slds-section__title slds-theme_shade">
+                                    <span class="slds-truncate slds-p-horizontal_small">Standard Objects</span>
+                                </h3>
+                                <div aria-hidden="false" class="slds-section__content">
+                                    <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                                        <thead>
+                                            <tr class="slds-text-title_caps">
+                                                <th scope="col">
+                                                    <div class="slds-truncate" style="font-weight:bold;" title="Child Object">Child Object</div>
+                                                </th>
+                                                <th scope="col">
+                                                    <div class="slds-truncate slds-text-align_center" style="font-weight:bold;" title="Clone">Clone</div>
+                                                </th>
+                                                <th scope="col">
+                                                    <div class="slds-truncate slds-text-align_center" style="font-weight:bold;" title="Delete Original">Delete Original</div>
+                                                </th>
+                                                <th scope="col">
+                                                    <div class="slds-truncate slds-text-align_center" style="font-weight:bold;" title="Ignore Insert Errors">Ignore Insert Errors</div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <apex:outputPanel rendered="{!standardObjPrefs.size == 0}">
+                                                <tr>
+                                                    <td colspan="4" class="slds-text-align_center">
+                                                        <apex:outputText value="There are no standard objects related to cases." />
+                                                    </td>
+                                                </tr>
+                                            </apex:outputPanel>
+                                            
+                                            <apex:repeat value="{!standardObjPrefs}" var="std_pref" id="rptStandardChildObjects">
+                                                <tr>
+                                                    <th scope="row" data-label="Child Object">
+                                                        <div class="slds-truncate" title="{!std_pref.objLabel}">{!std_pref.objLabel}</div>
+                                                    </th>
+                                                    <td >
+                                                        <span class="slds-checkbox slds-align_absolute-center">
+                                                            <apex:inputCheckbox id="CLONE_OBJECT_checkbox" required="false" value="{!std_pref.cDef.reParent}"                                                                 onClick="toggleCheckboxes(this,'{!$Component.CLONE_OBJECT_checkbox}', '{!$Component.DELETE_ORIGINAL_checkbox}','{!$Component.IGNORE_INS_ERRS_checkbox}');"/>
+                                                            <apex:outputLabel styleClass="slds-checkbox__label" for="CLONE_OBJECT_checkbox">
+                                                                <span class="slds-checkbox_faux"></span>
+                                                            </apex:outputLabel>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="slds-checkbox slds-align_absolute-center">
+                                                            <apex:inputCheckbox id="DELETE_ORIGINAL_checkbox" required="false" value="{!std_pref.cDef.deleteOrig}"                                                                 onClick="toggleCheckboxes(this,'{!$Component.CLONE_OBJECT_checkbox}', '{!$Component.DELETE_ORIGINAL_checkbox}','{!$Component.IGNORE_INS_ERRS_checkbox}');"/>
+                                                            <apex:outputLabel styleClass="slds-checkbox__label" for="DELETE_ORIGINAL_checkbox">
+                                                                <span class="slds-checkbox_faux"></span>
+                                                            </apex:outputLabel>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="slds-checkbox slds-align_absolute-center">
+                                                            <apex:inputCheckbox id="IGNORE_INS_ERRS_checkbox" required="false" value="{!std_pref.cDef.ignoreInsErrs}"                                                                 onClick="toggleCheckboxes(this,'{!$Component.CLONE_OBJECT_checkbox}', '{!$Component.DELETE_ORIGINAL_checkbox}','{!$Component.IGNORE_INS_ERRS_checkbox}');"/>
+                                                            <apex:outputLabel styleClass="slds-checkbox__label" for="IGNORE_INS_ERRS_checkbox">
+                                                                <span class="slds-checkbox_faux"></span>
+                                                            </apex:outputLabel>
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </table>
+                                </div>                        
+                            </div>
+                        </apex:outputPanel>
+                        <apex:outputPanel id="CustomObj_EditPanel" layout="block" styleClass="slds-p-horizontal_small child-object-table">
+                            <div class="slds-section slds-is-open">
+                                <h3 class="slds-section__title slds-theme_shade">
+                                    <span class="slds-truncate slds-p-horizontal_small">Custom Objects</span>
+                                </h3>
+                                <div aria-hidden="false" class="slds-section__content">
+                                    <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                                        <thead>
+                                            <tr class="slds-text-title_caps">
+                                                <th scope="col">
+                                                    <div class="slds-truncate bold" title="Child Object">Child Object</div>
+                                                </th>
+                                                <th scope="col">
+                                                    <div class="slds-truncate slds-text-align_center bold" title="Clone">Clone</div>
+                                                </th>
+                                                <th scope="col">
+                                                    <div class="slds-truncate slds-text-align_center bold" title="Delete Original">Delete Original</div>
+                                                </th>
+                                                <th scope="col">
+                                                    <div class="slds-truncate slds-text-align_center bold" title="Ignore Insert Errors">Ignore Insert Errors</div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <apex:outputPanel rendered="{!customObjPrefs.size == 0}">
+                                                <tr>
+                                                    <td colspan="4" class="slds-text-align_center">
+                                                        <apex:outputText value="There are no custom objects related to cases." />
+                                                    </td>
+                                                </tr>
+                                            </apex:outputPanel>
+                                            
+                                            <apex:repeat value="{!customObjPrefs}" var="cust_pref" id="rptCustomChildObjects">
+                                                <tr>
+                                                    <th scope="row" data-label="Child Object">
+                                                        <div class="slds-truncate" title="{!cust_pref.objLabel}">{!cust_pref.objLabel}</div>
+                                                    </th>
+                                                    <td >
+                                                        <span class="slds-checkbox slds-align_absolute-center">
+                                                            <apex:inputCheckbox id="CLONE_OBJECT_checkbox" required="false" value="{!cust_pref.cDef.reParent}" onClick="toggleDisableCheckbox('{!$Component.CLONE_OBJECT_checkbox}', '{!$Component.DELETE_ORIGINAL_checkbox}');" />
+                                                            <apex:outputLabel styleClass="slds-checkbox__label" for="CLONE_OBJECT_checkbox">
+                                                                <span class="slds-checkbox_faux"></span>
+                                                            </apex:outputLabel>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="slds-checkbox slds-align_absolute-center">
+                                                            <apex:inputCheckbox id="DELETE_ORIGINAL_checkbox" required="false" value="{!cust_pref.cDef.deleteOrig}" />
+                                                            <apex:outputLabel styleClass="slds-checkbox__label" for="DELETE_ORIGINAL_checkbox">
+                                                                <span class="slds-checkbox_faux"></span>
+                                                            </apex:outputLabel>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="slds-checkbox slds-align_absolute-center">
+                                                            <apex:inputCheckbox id="IGNORE_INS_ERRS_checkbox" required="false" value="{!cust_pref.cDef.ignoreInsErrs}" />
+                                                            <apex:outputLabel styleClass="slds-checkbox__label" for="IGNORE_INS_ERRS_checkbox">
+                                                                <span class="slds-checkbox_faux"></span>
+                                                            </apex:outputLabel>
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+                </div>
+
+                <!-- Power User -->
+                <div class="tab_content slds-hide" data-tab-name="power user">
+                    <div id="bypass-sharing">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Bypass Sharing"/>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="If you have a private sharing model for any object(s) related to Case, this setting will give Case Merge Premium visibility to your data."/>
+                            <div class="slds-m-top_xx-small">
+                                <span class="slds-checkbox">
+                                    <apex:inputCheckbox value="{!bypassSharing}" id="enableBypassSharing"/>
+                                    <apex:outputLabel styleClass="slds-checkbox__label" for="{!$Component.enableBypassSharing}">
+                                        <span class="slds-checkbox_faux"></span>
+                                        <apex:outputText styleClass="slds-m-left_x-small bold" value="Enable Bypass Sharing" />
+                                    </apex:outputLabel>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="duplicate-tracking" class="slds-m-top_medium">
+                        <apex:outputLabel styleClass="slds-form-element__label bold" value="Duplicate Tracking"/>
+                        <div class="slds-m-left_small">
+                            <apex:outputText value="Enable this feature to automatically track duplicate case creation for reporting with the included reports and dashboard."/>
+                            <div class="slds-m-top_xx-small">
+                                <span class="slds-checkbox">
+                                    <apex:inputCheckbox id="enableGroups" value="{!enableDuplicateGroups}"/>
+                                    <apex:outputLabel styleClass="slds-checkbox__label" for="{!$Component.enableGroups}">
+                                        <span class="slds-checkbox_faux"></span>
+                                        <apex:outputText styleClass="slds-m-left_x-small bold" value="Enable Duplicate Tracking"/>
+                                    </apex:outputLabel>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 
+                    Add content to corresponding content wrappers.
+                -->
+                <script type="application/javascript">
+                    var optionNavigationContentWrappers = document.querySelectorAll('#options-nav .tab_content_wrapper');
+                    var optionNavigationContent = document.querySelectorAll('#options-nav .tab_content');
+                    for(var i = 0; i < optionNavigationContent.length; i++) {
+                        var onc = optionNavigationContent[i];
+                        var oncTabName = onc.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR);
+                        for(var j = 0; j < optionNavigationContentWrappers.length; j++) {
+                            var oncw = optionNavigationContentWrappers[j];
+                            if(oncw.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR) === oncTabName) {
+                                if(oncTabName !== 'child objects') {
+                                    oncw.querySelector('.slds-box').appendChild(onc);
+                                }
+                                else {
+                                    oncw.appendChild(onc);
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    var activeTabIndex = 0;
+                    var hashString = window.location.hash.substr(1);
+                    if(hashString.length > 0) {
+                        var foundTab = false;
+                        for(var i =0; i < optionNavigationContentWrappers.length && !foundTab; i++) {
+                            var oncw = optionNavigationContentWrappers[i];
+                            if(hashString === removeSpaces(toTitleCase(oncw.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR)))) {
+                                activeTabIndex = i;
+                                foundTab = true;
+                            }
+                        }
+                    }
+                    NAVIGATION_TABS.showTabContent(optionNavigationContentWrappers[activeTabIndex]);
+                    document.querySelectorAll('#options-nav .' + NAVIGATION_TABS.TAB_ITEM_CLASS)[activeTabIndex].classList.add(NAVIGATION_TABS.ACTIVE_TAB_CLASS);
+                    var tabContentDivs = document.querySelectorAll('#options-nav div.tab_content');
+                    for(var i = 0; i < tabContentDivs.length; i++) {
+                        tabContentDivs[i].classList.remove(NAVIGATION_TABS.HIDE_CLASS);
+                    }
+                </script>
+            </div>
+            <div style="width:100%; display:flex; justify-content: center" class="slds-border_top slds-p-top_large slds-p-bottom_small">
+                <div id="navigationButtonsWrapper">
+                    <button id='previous-button' data-prevStep='' class='slds-button slds-button_neutral' style='display:none;' onclick="previousTab(); return false;">Previous</button>
+                    <button id='next-button' data-nextStep="{!tabNames[1]}" class='slds-button slds-button_brand' onclick="nextTab(); return false;">Next</button>
+                </div>
+            </div>
+        </div>
+    </apex:form>
+    <script type="application/javascript">
+        window.addEventListener("load", handlePageOnLoad);
+        document.addEventListener("scroll", handlePageOnScroll);
+
+        var INITIAL_HEADER_OFFSET = document.getElementById("sticky-header").offsetTop;
+
+        function handlePageOnLoad(e) {
+            positionStickyElements();
+            updateExceedMergeCheckbox();
+            setMasterPermissionsOnLoad();
+            if((sforce && sforce.one) || (sforce && sforce.console && sforce.console.isInConsole())) {
+                document.getElementById("sticky-header").classList.remove("hasMotif");
+                document.getElementById("options-nav-tabs").classList.remove("hasMotif");
+                document.getElementById("classic-alert").classList.remove("hasMotif");
+            }
+
+            document.getElementById("loading-spinner").style.display = 'none';
+        }
+
+        function handlePageOnScroll(e) {
+            positionStickyElements();
+        }
+
+        function positionStickyElements() {
+            var header = document.getElementById("sticky-header");
+            var navigationTabs = document.getElementById("options-nav-tabs");
+            var alertBox = document.getElementById("classic-alert");
+            var tabContent = document.getElementById("options-nav");
+
+            var heightOffset = Math.max(0, INITIAL_HEADER_OFFSET - window.scrollY);
+            header.style.top = heightOffset-1 + "px";
+            navigationTabs.style.top = heightOffset + header.getBoundingClientRect().height-2 + "px";
+            alertBox.style.top = heightOffset + navigationTabs.getBoundingClientRect().height+60 + "px";
+            tabContent.style.paddingTop = (header.getBoundingClientRect().height + navigationTabs.getBoundingClientRect().height) - 2 + "px";
+        }
+
+        NAVIGATION_TABS.IN_LIGHTNING_CONSOLE = {!$User.UIThemeDisplayed == 'Theme4u'};
+
+        // Prevents auto focus of the first focusable element.
+        function setFocusOnLoad() {}
+
+        function toggleCheckboxes(box,cloneID,deleteID,ignoreID) {
+            var boxId = box.id
+            var cloneBox = document.getElementById(cloneID);
+            var deleteBox = document.getElementById(deleteID);
+            var ignoreBox = document.getElementById(ignoreID);
+            if((deleteBox.checked || ignoreBox.checked) && boxId !== cloneID) {
+                cloneBox.checked = true;
+            }
+            if(!cloneBox.checked) {
+                deleteBox.checked = false;
+                ignoreBox.checked = false;
+            }
+        }
+
+        function triggerWebComponentSave(){
+            try{
+                let auraContainer = document.querySelector('csmrgp-criteria-manager');
+                auraContainer.saveCriteriaManager();
+                triggerLWCToasts();
+            }
+            catch(exception){
+                if(errorToast != null){
+                    triggerLWCToasts();
+                }
+                else{
+                    triggerAlert('Error', 'An Unknown Error Occurred when Saving Record Type Data.', 'error');
+                }
+            }
+
+        }
+
+        // Add the save button to each tab
+        function createSaveButtons() {
+            var tabs = document.querySelectorAll('.slds-tabs_default__content');
+            var saveButton = document.createElement('button');
+            saveButton.type = 'button';
+            saveButton.className = 'slds-button slds-button_brand slds-m-top_medium';
+            saveButton.innerText = 'Save';
+            for(var i = 0; i < tabs.length; i++) {
+                var clnBtn = saveButton.cloneNode(true);
+                clnBtn.onclick = function() {
+                    triggerWebComponentSave();
+                    return false;
+                };
+                var container = tabs[i].querySelector('.slds-box');
+                // Child Objects Tab has no box
+                if(container == null) {
+                    container = tabs[i];
+                    clnBtn.className += ' slds-m-horizontal_small'
+                }
+                container.appendChild(clnBtn);
+            }
+        }
+        createSaveButtons();
+
+        /* Preview Page Modal */
+        function displayModal(doShow) {
+            var modal = document.getElementById('searchPagePreviewModal');
+            var backdrop = document.getElementById('searchPagePreviewModalBackdrop');
+            var modalEffect = 'slds-slide-up-open';
+            if(doShow) {
+                modal.classList.add(modalEffect)
+                backdrop.style.display = 'block';
+                disableBackgroundListeners();
+                ACTION_OVERLAYS.setEnableTabsForDiv(true,'searchPagePreview');
+            }
+            else {
+                modal.classList.remove(modalEffect)
+                backdrop.style.display = 'none';
+                enableBackgroundListeners();
+            }
+        }
+
+        function showModal() {
+            displayModal(true);
+            enableModalListeners();
+            // Prevent Navigation tabs from going left and right using arrow keys.
+            document.getElementById('options-nav').setAttribute('arrows-disabled','true');
+            document.activeElement.blur();
+        }
+
+        function hideModal() {
+            displayModal(false);
+            disableModalListeners();
+            document.getElementById('options-nav').removeAttribute('arrows-disabled');
+        }
+
+        function updateModalImage() {
+            var image = document.getElementById('searchPagePreviewImage');
+            var selectedTab = document.getElementById('{!$Component.frm.defaultSearchTab}').value;
+            switch(selectedTab) {
+                case 'recent':
+                    image.src = "{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/preview-images/temp-prev-recent.png')}";
+                    break;
+                case 'text':
+                    image.src = "{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/preview-images/temp-prev-text.png')}";
+                    break;
+                default:
+                    image.src = "{!URLFOR($Resource.csmrgp__CaseMergePremiumAssets,'case-merge-premium-assets/img/preview-images/temp-prev-criteria.png')}";
+                    selectedTab = 'criteria';
+            }
+            var modalContainer = document.getElementById('searchPagePreviewModal').querySelector('.slds-modal__container');
+            modalContainer.classList.remove('modalContainerSearchPagePreviewImage__criteria', 'modalContainerSearchPagePreviewImage__recent', 'modalContainerSearchPagePreviewImage__text');
+            modalContainer.classList.add('modalContainerSearchPagePreviewImage__'+selectedTab);
+        }
+
+        function previewImage() {
+            updateModalImage();
+            showModal();
+        }
+
+        function enableModalListeners() {
+            document.addEventListener('keydown',handleModalKeyDown, false);
+        }
+
+        function disableModalListeners() {
+            document.removeEventListener('keydown',handleModalKeyDown, false);
+        }
+
+        function handleModalKeyDown(e) {
+            var escKeyCode = 27;
+            var tabKeyCode = 9;
+
+            if(e.keyCode === escKeyCode) {
+                hideModal();
+            }
+            else if(e.keyCode === tabKeyCode) {
+                // close button is only focusable element.
+                e.preventDefault();
+                document.getElementById('modal-close-button').focus();
+            }
+        }
+
+        function switchNavigationTab(newActiveNavigationTab) {
+            NAVIGATION_TABS.switchNavigationTab(newActiveNavigationTab);
+            postChangeTab();
+        }
+
+        function postChangeTab() {
+            setCurrentTabInHash();
+            updateNavigationButtonLabels();
+        }
+
+        function setCurrentTabInHash() {
+            var newTabName = NAVIGATION_TABS.getActiveTab().getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR);
+            var baseUrl = window.location.href.split('#')[0];
+            window.location.replace(baseUrl + '#' + removeSpaces(toTitleCase(newTabName)));
+        }
+
+        // Ignore Tabs and Arrow Keys to change navigation tabs.
+        function disableBackgroundListeners() {
+            ACTION_OVERLAYS.setEnableTabsForPage(false);
+            NAVIGATION_TABS.disableArrowMovement();
+        }
+
+        function enableBackgroundListeners() {
+            ACTION_OVERLAYS.setEnableTabsForPage(true);
+            NAVIGATION_TABS.enableArrowMovement();
+        }
+
+        function previousTab() {
+            NAVIGATION_TABS.moveToAdjacentTab(NAVIGATION_TABS.DIRECTION_PREVIOUS);
+            postChangeTab();
+        }
+
+        function nextTab() {
+            NAVIGATION_TABS.moveToAdjacentTab(NAVIGATION_TABS.DIRECTION_NEXT);
+            postChangeTab();
+        }
+
+        function updateNavigationButtonLabels() {
+            var activeTab = NAVIGATION_TABS.getActiveTab();
+            var prevButton = document.getElementById('previous-button');
+            var nextButton = document.getElementById('next-button');
+
+            var nextTab = activeTab.nextElementSibling;
+            var prevTab = activeTab.previousElementSibling;
+
+            var bothButtonsShowing = true;
+
+            if(nextTab === null) {
+                nextButton.style.display = 'none';
+                bothButtonsShowing = false;
+            }
+            else {
+                nextButton.style.display = 'block';
+                nextButton.setAttribute('data-nextStep', toTitleCase(nextTab.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR)));
+            }
+
+            if(prevTab === null) {
+                prevButton.style.display = 'none';
+                bothButtonsShowing = false;
+            }
+            else {
+                prevButton.style.display = 'block';
+                prevButton.setAttribute('data-prevStep', toTitleCase(prevTab.getAttribute(NAVIGATION_TABS.TAB_NAME_ATTR)));
+            }
+
+            var navigationButtonsWrapper = document.getElementById('navigationButtonsWrapper');
+            navigationButtonsWrapper.className = (bothButtonsShowing) ? 'slds-button-group' : '';
+        }
+
+        postChangeTab();
+
+        function handleCleanMergeCheckboxOnChange(e) {
+            var exceedLimitCheckbox = document.getElementById("{!$Component.frm.enableExceedLimit}");
+            exceedLimitCheckbox.disabled = !e.currentTarget.checked;
+            if(e.currentTarget.checked) {
+                exceedLimitCheckbox.checked = (exceedLimitCheckbox.getAttribute("data-last-value") === "true");
+            }
+            else {
+                exceedLimitCheckbox.checked = exceedLimitCheckbox.setAttribute("data-last-value", exceedLimitCheckbox.checked);
+            }
+        }
+
+        function updateExceedMergeCheckbox() {
+            if(!document.getElementById("{!$Component.frm.enableCleanMerge}").checked) {
+                document.getElementById("{!$Component.frm.enableExceedLimit}").disabled = true;
+            }
+        }
+
+        function setMasterPermissionsOnLoad(){
+            var selectedElement = document.getElementById("{!$Component.frm.h__masterUpdateField}").value;
+            if(selectedElement == 'all'){
+                document.getElementById("master-all").checked = true;
+            }
+            else if(selectedElement == 'specific'){
+                document.getElementById("master-specific").checked = true;
+            }
+            else{
+                document.getElementById("master-none").checked = true;
+            }
+        }
+
+        function handleMasterLevelRadioChange(event){
+            document.getElementById("{!$Component.frm.h__masterUpdateField}").value = event.currentTarget.id.split("-")[1];
+        }
+
+        function toggleSection(sectionToggleButton) {
+            var sectionContent = document.getElementById(sectionToggleButton.getAttribute('aria-controls'));
+            var buttonParent = sectionToggleButton.parentNode;
+            while(!buttonParent.classList.contains('slds-section') && buttonParent !== null) {
+                buttonParent = buttonParent.parentNode;
+            }
+
+            var section = buttonParent;
+            section.classList.toggle('slds-is-open');
+        }
+    </script>   
+</apex:page>

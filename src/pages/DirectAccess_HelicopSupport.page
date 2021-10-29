@@ -1,0 +1,809 @@
+<apex:page cache="true" showHeader="false" standardController="Skills2__c" extensions="BGATechserre,BGAMob_Offline_Controller,skils_testpage,BGACSM,BGAMobCustomWebtocase"  docType="html-5.0" standardStylesheets="false">
+ <apex:form >
+ <html lang="en" manifest="/bgadir/DirectAccess_appcache"> <!-- added newly -->
+ <head>
+    <meta charset="utf-8"></meta>
+    
+    <meta name="viewport" content="width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable = no"></meta>
+    
+    <title> DirectAccess Costumer Support </title>
+    
+    <meta name="description" content="DAR aero app"></meta>
+   <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcDk05hQ7DPSeuUOOUOAUVzvSHPSYBXxU"></script> -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIfAm8knTqIxs6WyscHYRAGSHQp0WPQxE"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/lib/jquery-3.2.1.min.js')}"></script>    
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/DAR-ui-interaction-scripts.js')}"></script>   
+    <!-- <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/DAR-scripts.js')}"></script> -->
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.DirectAccess_Assets, 'css/bootstrap.min.css')}"></link>
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.DirectAccess_Assets, 'css/DAR-styles.css')}"></link>
+    
+    <script type="text/javascript">
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    
+    ga('create', 'UA-107361529-2', 'auto');
+    ga('send', 'pageview');
+    </script>
+    <script type='async' src="https://www.googletagmanager.com/gtag/js?id=UA-107361529-2"></script>
+    <script type="text/javascript">
+        var flagBool = false;
+        $(document).ready(function() {
+
+            DAR.DARSpinner.init(true);
+            var presentLat = localStorage.getItem('latituteval-Local');
+            var presentLong = localStorage.getItem('longitudeval-Local');
+            var presentState = localStorage.getItem('stateval-Local');
+            var presentCountry = localStorage.getItem('countryval-Local');  
+            var defaultSet = localStorage.getItem('isDefault-Local');
+
+            if(((presentLat != null && presentLong != null) || presentState != null || presentCountry != null) && defaultSet == null)
+            {
+                showPositionFurther();
+                showPosition1Further();
+            }
+            else
+            {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError, {enableHighAccuracy: true,timeout: 20000,maximumAge: 0});
+                } else {
+                    x.innerHTML = "Geolocation is not supported by this browser.";
+                }
+
+                navigator.geolocation.getCurrentPosition(showPosition1, showError1);
+            }
+
+            window.onload = $('#locselector').hide();
+
+            $("#asm-country-choice").append("<option value='None'>None</option>");
+
+
+
+            $("#asm-country-choice").change(function() {
+                DAR.DARSpinner.init(true);
+                $("#asm-state-choice").html('');
+                $('#DAR-state-choice').hide();
+                var doc = $('#asm-country-choice option:selected').val();
+                DAR.DARSpinner.init(false);
+                $("#asm-state-choice").append("<option value='None'>None</option>").attr('selected', 'true');
+
+                if (doc == "Area Covered US" || doc == "Areas Covered Canada") {
+                    DAR.DARSpinner.init(true);
+                    $('#DAR-state-choice').show();
+                    BGACSM.getStatevalues(doc, function(result, event) {
+                        if (event.status) {
+
+                            if (result.length != 0) {
+                                for (var i = 0; i < result.length; i++) {
+                                    $("#asm-state-choice").append("<option value='" + result[i] + "'>" + result[i] + "</option>");
+                                    DAR.DARSpinner.init(true);
+                                }
+                                DAR.DARSpinner.init(false);
+                                //$('#asm-state-choice').selectmenu("refresh", true).selectmenu('enable');
+
+                            }
+                        } else {
+                            //mobile.loading( "hide" );
+                            $(".bga-loader").hide(); // To Hide loader                      
+                            // alert('Please try again after sometime');
+
+                        }
+                    });
+
+                }
+
+            });
+
+            $('#SubHome').click(function() {
+
+                DAR.DARSpinner.init(true);
+
+                $('#locselector').hide();
+                $('#AOG').show();
+
+                DAR.DARSpinner.init(false);
+
+            });
+
+
+
+            $('#mapholder').click(function() {
+                DAR.DARSpinner.init(true);
+                if ($('#asm-country-choice').val() == "None")
+                    $('#DAR-state-choice').hide();
+
+                BGACSM.getASMCountryvalues(function(result, event) {
+                    if (event.status) {
+                        if (result.length != 0) {
+
+                            $("#asm-country-choice").append("<option value='Area Covered US'>USA</option>");
+                            $("#asm-country-choice").append("<option value='Areas Covered Canada'>CANADA</option>");
+
+                            for (var i = 0; i < result.length; i++) {
+                                $("#asm-country-choice").append("<option value='" + result[i] + "'>" + result[i] + "</option>");
+                                DAR.DARSpinner.init(true);
+                            }
+                            DAR.DARSpinner.init(false);
+
+                        }
+                    } else {
+
+                    }
+                });
+
+
+                //if ($('#asm-country-choice').val() == "None")
+                //  navigator.geolocation.getCurrentPosition(showPosition1, showError1);
+                //else   
+
+                DAR.DARSpinner.init(false);
+
+
+                $('#AOG').hide();
+
+                $("#locselector").show();
+
+
+                var s = localStorage.getItem('stateval-Local');
+                var c = localStorage.getItem('countryval-Local');
+
+                if (s != null || c != null) {
+
+                    google.maps.event.trigger(map2, 'resize');
+                    map2.setZoom(3);
+
+                }
+
+                else{
+
+                    google.maps.event.trigger(map1, 'resize');
+                    map1.setZoom(10);
+
+                }
+
+            });
+
+
+            $('#Thisismylocation').click(function() {
+                DAR.DARSpinner.init(true);
+                if ($("#asm-country-choice").val() == 'None') {
+                    alert('Please Select a Country');
+                } 
+                else {
+                    DAR.DARSpinner.init(true);
+                    if ($('#asm-state-choice').val() == 'None' && $("#asm-country-choice").val() != 'None') {
+                        console.log('2');
+                        var map1 = new google.maps.Map(document.getElementById('mapholder1'), {
+                            zoom: 2,
+                            disableDefaultUI: true
+                        });
+
+                        var geocoder = new google.maps.Geocoder();
+
+                        geocodeAddress(geocoder, map1);
+                        localStorage.setItem('countryval-Local', $('#asm-country-choice').val());
+                        localStorage.removeItem('stateval-Local');
+                        localStorage.removeItem('latituteval-Local');
+                        localStorage.removeItem('longitudeval-Local');
+
+                    } else if ($('#asm-state-choice').val() != 'None' && $("#asm-country-choice").val() != 'None') {
+                        console.log('4');
+                        var map1 = new google.maps.Map(document.getElementById('mapholder1'), {
+                            zoom: 4,
+                            disableDefaultUI: true
+                        });
+
+                        var geocoder = new google.maps.Geocoder();
+
+                        geocodeAddress(geocoder, map1);
+                        localStorage.setItem('countryval-Local', $('#asm-country-choice').val());
+                        localStorage.setItem('stateval-Local', $('#asm-state-choice').val());
+                        localStorage.removeItem('latituteval-Local');
+                        localStorage.removeItem('longitudeval-Local');
+                    }
+                    localStorage.removeItem('isDefault-Local');
+                    $('.DAR-sale-support-person').remove();
+                    flagBool = false;
+                    searchgpsresults($("#asm-country-choice").val(), $('#asm-state-choice').val());
+
+                    // new
+
+                    $('#locselector').hide();
+                    $('#AOG').show();
+
+
+                    if ($('#asm-country-choice').val() != 'None') {
+                        console.log('test' + $('#asm-country-choice').val());
+                        var map2 = new google.maps.Map(document.getElementById('mapholder'), {
+                            zoom: 4,
+                            disableDefaultUI: true
+                        });
+
+                        var geocoder = new google.maps.Geocoder();
+
+                        geocodeAddress(geocoder, map2);
+                    }
+                    //DAR.DARSpinner.init(false);
+
+                }
+                DAR.DARSpinner.init(false);
+
+            });
+
+
+            $('#currentlocation').click(function() {
+
+                DAR.DARSpinner.init(true);
+
+                localStorage.removeItem('latituteval-Local');
+                localStorage.removeItem('longitudeval-Local');
+                localStorage.removeItem('stateval-Local');
+                localStorage.removeItem('countryval-Local');  
+                localStorage.removeItem('isDefault-Local');
+
+                location.reload();
+
+            });
+
+        });
+
+        var map2;
+        var map1;
+
+        function showPosition(position) {
+
+            var latlon = position.coords.latitude + "," + position.coords.longitude;
+
+            var lati = position.coords.latitude;
+
+            var lngi = position.coords.longitude;
+
+            localStorage.setItem('latituteval-Local', lati);
+            localStorage.setItem('longitudeval-Local', lngi);
+            localStorage.removeItem('isDefault-Local');
+            localStorage.removeItem('stateval-Local');
+            localStorage.removeItem('countryval-Local');
+            timeoutBool = true;
+
+            var myLatLng = {
+                lat: lati,
+                lng: lngi
+            };
+
+            var map = new google.maps.Map(document.getElementById('mapholder'), {
+                zoom: 15,
+                center: myLatLng,
+                disableDefaultUI: true
+
+            });
+
+            var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+
+            var marker = new google.maps.Marker({
+                position: myLatLng,
+                map: map,
+                title: 'Current location',
+                icon: icon
+            });
+
+            var geocoder = new google.maps.Geocoder;
+
+            geocoder.geocode({
+                'location': myLatLng
+            }, function(results, status) {
+
+                if (status === 'OK') {
+                    if (results[0]) {
+
+                        var arrAddress = results[0].address_components;
+
+                        var itemLocality = '';
+                        var itemCountry = '';
+
+
+                        $.each(arrAddress, function(i, address_component) {
+
+                            if (address_component.types[0] == "administrative_area_level_1") {
+                                console.log("town:" + address_component.long_name);
+                                itemLocality = address_component.long_name;
+                            }
+
+                            if (address_component.types[0] == "country") {
+                                console.log("country:" + address_component.long_name);
+                                itemCountry = address_component.long_name;
+                            }
+
+                        });
+
+                        var s = localStorage.getItem('stateval-Local');
+                        var c = localStorage.getItem('countryval-Local');
+
+                        if (s != null || c != null) {
+
+                            var map2 = new google.maps.Map(document.getElementById('mapholder'), {
+                                zoom: 4,
+                                disableDefaultUI: true
+                            });
+
+                            var geocoder = new google.maps.Geocoder();
+                            geocodeAddress(geocoder, map2);
+                            searchgpsresults(c, s);
+
+                        } else {
+
+                            searchgpsresults(itemCountry, itemLocality);
+
+                        }
+
+                    } else {
+                        window.alert('No results found');
+                    }
+                } else {
+                    window.alert('Geocoder failed due to: ' + status);
+                }
+            });
+
+        }
+
+        function showError1(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    x.innerHTML = "User denied the request for Geolocation."
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    x.innerHTML = "Location information is unavailable."
+                    break;
+                case error.TIMEOUT:
+                    x.innerHTML = "The request to get user location timed out."
+                    break;
+                case error.UNKNOWN_ERROR:
+                    x.innerHTML = "An unknown error occurred."
+                    break;
+            }
+        }
+
+
+        function showPositionFurther() {
+
+            var lati = localStorage.getItem('latituteval-Local');
+            var lngi = localStorage.getItem('longitudeval-Local');
+            var s = localStorage.getItem('stateval-Local');
+            var c = localStorage.getItem('countryval-Local');
+
+            if((lati != null) && (lngi != null))
+            {
+                var myLatLng = {
+                    lat: parseFloat(lati),
+                    lng: parseFloat(lngi)
+                };
+
+                var map = new google.maps.Map(document.getElementById('mapholder'), {
+                    zoom: 15,
+                    center: myLatLng,
+                    disableDefaultUI: true
+
+                });
+
+                var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+
+                var marker = new google.maps.Marker({
+                    position: myLatLng,
+                    map: map,
+                    title: 'Current location',
+                    icon: icon
+                });
+
+                var geocoder = new google.maps.Geocoder;
+
+                geocoder.geocode({
+                    'location': myLatLng
+                }, function(results, status) {
+
+                    if (status === 'OK') {
+                        if (results[0]) {
+                            var arrAddress = results[0].address_components;
+                            var itemLocality = '';
+                            var itemCountry = '';
+
+
+                            $.each(arrAddress, function(i, address_component) {
+
+                                if (address_component.types[0] == "administrative_area_level_1") {
+                                    console.log("town:" + address_component.long_name);
+                                    itemLocality = address_component.long_name;
+                                }
+
+                                if (address_component.types[0] == "country") {
+                                    console.log("country:" + address_component.long_name);
+                                    itemCountry = address_component.long_name;
+                                }
+
+                            });
+
+                            var s = localStorage.getItem('stateval-Local');
+                            var c = localStorage.getItem('countryval-Local');
+
+                            if (s != null || c != null) {
+
+                                map2 = new google.maps.Map(document.getElementById('mapholder'), {
+                                    zoom: 4,
+                                    disableDefaultUI: true
+                                });
+
+                                var geocoder = new google.maps.Geocoder();
+                                geocodeAddress(geocoder, map2);
+                                searchgpsresults(c, s);
+
+                            } else {
+
+                                searchgpsresults(itemCountry, itemLocality);
+
+                            }
+
+                        } else {
+                            window.alert('No results found');
+                        }
+                    } else {
+                        window.alert('Geocoder failed due to: ' + status);
+                    }
+
+                }
+
+                                );
+            }
+
+            else if(s != null || c != null)
+            {
+                map2 = new google.maps.Map(document.getElementById('mapholder'), {
+                    zoom: 4,
+                    disableDefaultUI: true
+                });
+
+                var geocoder = new google.maps.Geocoder();
+                geocodeAddress(geocoder, map2);
+                searchgpsresults(c, s);
+            }
+        }
+
+        function showPosition1Further() {
+            DAR.DARSpinner.init(true);
+            var s = localStorage.getItem('stateval-Local');
+            var c = localStorage.getItem('countryval-Local');
+            var lati = localStorage.getItem('latituteval-Local');
+            var lngi = localStorage.getItem('longitudeval-Local');
+
+            if (s != null || c != null) {
+
+                map2 = new google.maps.Map(document.getElementById('mapholder1'), {
+                    zoom: 4,
+                    disableDefaultUI: true
+                });
+
+                var geocoder = new google.maps.Geocoder();
+                geocodeAddress(geocoder, map2);
+                searchgpsresults(c, s);
+                DAR.DARSpinner.init(false);
+
+            } else {
+
+                var myLatLng = {
+                    lat: parseFloat(lati),
+                    lng: parseFloat(lngi)
+                };
+
+                map1 = new google.maps.Map(document.getElementById('mapholder1'), {
+                    zoom: 15,
+                    center: myLatLng,
+                    disableDefaultUI: true
+
+                });
+
+                var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+
+                var marker = new google.maps.Marker({
+                    position: myLatLng,
+                    map: map1,
+                    title: 'Current location',
+                    icon: icon
+                });
+
+            }
+            DAR.DARSpinner.init(false);
+        }  
+
+
+        function geocodeAddress(geocoder, resultsMap) {
+
+            var s = localStorage.getItem('stateval-Local');
+            var c = localStorage.getItem('countryval-Local');
+            if ($('#asm-state-choice').val() == null || $('#asm-state-choice').val() == 'None') {
+
+                if ($('#asm-country-choice').val() != null && $('#asm-country-choice').val() != 'None')
+                    var address = document.getElementById('asm-country-choice').value;
+                else if (s != null && s != 'None') {
+                    var address = s;
+                } else if (c != null && c != 'None') {
+                    var address = c;
+                }
+
+            } else {
+                var address = document.getElementById('asm-state-choice').value;
+            }
+
+            geocoder.geocode({
+                'address': address
+            }, function(results, status) {
+                if (status === 'OK') {
+                    resultsMap.setCenter(results[0].geometry.location);
+
+                    var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+
+                    var marker = new google.maps.Marker({
+                        map: resultsMap,
+                        position: results[0].geometry.location,
+                        icon: icon
+                    });
+
+                } else {
+                    alert('Geocode was not successful for the following reason: ' + status);
+                }
+            });
+        }
+
+        function showPosition1(position) {
+
+            var s = localStorage.getItem('stateval-Local');
+            var c = localStorage.getItem('countryval-Local');
+
+            if (s != null || c != null) {
+
+                map2 = new google.maps.Map(document.getElementById('mapholder1'), {
+                    zoom: 4,
+                    disableDefaultUI: true
+                });
+
+                var geocoder = new google.maps.Geocoder();
+                geocodeAddress(geocoder, map2);
+                searchgpsresults(c, s);
+            } else {
+                var lati = position.coords.latitude;
+
+                var lngi = position.coords.longitude;
+
+                var myLatLng = {
+                    lat: lati,
+                    lng: lngi
+                };
+
+                map1 = new google.maps.Map(document.getElementById('mapholder1'), {
+                    zoom: 15,
+                    center: myLatLng,
+                    disableDefaultUI: true
+
+                });
+
+                var icon = new google.maps.MarkerImage("/bgadir/resource/1505374497000/DirectAccess_Assets/images/svg/DirectAccess_Sprite_v2.svg", new google.maps.Size(14, 23), new google.maps.Point(233, 329));
+
+                var marker = new google.maps.Marker({
+                    position: myLatLng,
+                    map: map1,
+                    title: 'Current location',
+                    icon: icon
+                });
+                DAR.DARSpinner.init(false);
+            }
+        }
+
+        function showError(error) {
+            timeoutBool = true;
+
+            localStorage.setItem('stateval-Local', 'Arizona');
+            localStorage.setItem('countryval-Local', 'United States');
+            localStorage.setItem('isDefault-Local', 'Yes');
+            console.log('arizona run');
+            showPositionFurther();
+            showPosition1Further();
+        }
+
+        function searchgpsresults(country, state) {
+            if(!flagBool)
+            {
+                flagBool = true;
+                DAR.DARSpinner.init(true);
+                console.log('inside');
+                if (country != 'undefined' && state != 'undefined') {
+                    if (country == 'United States' || country == 'Area Covered US') {
+                        doc = 'Area Covered US';
+                    } else if (country == 'Canada' || country == 'Areas Covered Canada') {
+                        doc = 'Areas Covered Canada';
+                    } else {
+                        doc = country;
+                        state = '--None--';
+                    }
+
+                    DAR.DARSpinner.init(true);
+
+                    DAR.DARSpinner.init(true);
+                    BGACSM.gethelisupport(doc, state, function(result, event) {         
+                        if (event.status) {
+                            if (result.length > 0) {
+                                if (result.length > 0) {
+                                    for (var n = 0; n < result.length; n++) {                           
+                                        getASMContactDetails1(result[n].Id, result[n].contactid);
+                                        DAR.DARSpinner.init(true);                          
+                                    }
+                                } else {
+
+                                }
+                            } else {
+                                var contactTemplate = "<section class='DAR-sale-support-person'><p> No Managers found </p></section>";
+                                $('.DAR-sale-support-contact').append(contactTemplate);
+                                DAR.DARSpinner.init(false);
+                            }
+                        } else {
+                            alert('Please try again after sometime');
+                        }
+                    });   
+                    DAR.DARSpinner.init(false);
+                }
+            }
+        }
+
+        function getASMContactDetails1(indata, contdata) {
+            BGACSM.getASM(indata, contdata, function(result, event) {
+                if (event.status) {
+                    DAR.DARSpinner.init(true);
+                    var contactTemplate = "<section>";
+                    var contactTemplate = "<section class='DAR-sale-support-person'>";
+                    console.log(JSON.stringify(result[0]));
+                    if (result[0].Contact__r.Name != 'undefined') {
+                        contactTemplate += "<h3> <b id='Cname'>" + result[0].Contact__r.Name + "</b> </h3>";
+                    }
+                    if (result[0].Contact__r.Mobile_App_Role__c != 'undefined') {
+                        contactTemplate += "<p id='Crole' >" + result[0].Contact__r.Mobile_App_Role__c + "</p>";
+                    }
+                    contactTemplate += "<ul class='DAR-contact-list list-unstyled' data-corners='false' data-inset='true' data-role='listview' data-shadow='false'>"
+                    if (result[0].Contact__r.Sites__c != 'undefined') {
+                        contactTemplate += "<li class='DAR-location'> <a class='DAR-contact-mode' id='Clocation'> </a>" + result[0].Skill_Value__c + "</li>";
+                    }
+                    if (result[0].Contact__r.Phone_5__c != 'undefined') {
+                        contactTemplate += "<li class='DAR-phone'> <a class='DAR-contact-mode' href='tel:" + result[0].Contact__r.Phone_5__c + "' id='Cphone'>" + result[0].Contact__r.Phone_5__c + "</a> </li>";
+                    }
+                    if (result[0].Contact__r.Email != 'undefined' || result[0].Contact__r.Email != null) {
+                        contactTemplate += "<li class='DAR-email'> <a  class='DAR-contact-mode' href='mailto:" + result[0].Contact__r.Email + "' id='Cemail' >" + result[0].Contact__r.Email + "</a> </li> ";
+                    }
+                    contactTemplate += "</ul> </section>"
+                    $('.DAR-sale-support-contact').append(contactTemplate);
+                    DAR.DARSpinner.init(false);
+                }
+            });
+        }
+
+        /* function addURL(element) {
+
+            $(element).attr('href', function() {
+                var state = $('#asm-state-choice').val();
+                var country = $('#asm-country-choice').val();
+                if (state != 'NONE')
+                    var str1 = '?state=' + state;
+                if (state == 'NONE') {
+                    var str1 = '';
+                    var str2 = '?country=' + country;
+                } else
+                    var str2 = '&country=' + country;
+                if (state == null || country == 'NONE') {
+                    var str1 = '?state=' + getParameterByName('state');
+                    var str2 = '&country=' + getParameterByName('country');
+                }
+                var qs = str1.concat(str2);
+                if ((str1 == '?state=null' && str2 == '&country=null') || (str1 == '?state=None' && str2 == '&country=None'))
+                    return this.href;
+                else
+                    return this.href + qs;
+            });
+        }
+
+        function addurlhome(element) {
+
+            $(element).attr('href', function() {
+                var s = getParameterByName('state');
+                var c = getParameterByName('country');
+                if (s != null)
+                    var str1 = '?state=' + s;
+                if (s == null) {
+                    var str1 = '';
+                    var str2 = '?country=' + c;
+                } else
+                    var str2 = '&country=' + c;
+                if (s == null && c == null) {
+                    var str1 = '';
+                    var str2 = '';
+                }
+                var qs = str1.concat(str2);
+                return this.href + qs;
+            });
+        }
+
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }  */
+
+    </script>
+    
+    <!--[if IE]>
+        <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <!-- Consolidated JS 
+    
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/DirectAccess_HelicopSupportScript.js')}"></script>
+    
+    Consolidated JS -->
+    
+ </head>
+ <body>
+    <div id="DAR-wrapper">
+        <div class="DAR-content"> 
+            <!-- page related content -->           
+            <div id="AOG" layout="block" > 
+            <section id="DAR-aog-screen" class="container DAR-subcontent">
+            
+                <figure id="mapholder" class="row DAR-map-socket">   </figure>
+                <a onclick="addURL(this);" href="/bgadir/DirectAccess_Homepage"> <span class="DAR-back-nav"></span> </a>
+                <article class="row DAR-contact-block">
+                    <h2 class="DAR-contact-heading"> Commercial Helicopters </h2>
+                    <p class="DAR-contact-note"> Have a question? We are here to help.  </p>
+                    <div class="DAR-sale-support-contact">
+                    <div class="DAR-sale-support-person"></div>
+                    <ul id="Cussupplist" class="DAR-contact-list list-unstyled" data-role="listview" data-shadow="false" data-inset="true" data-corners="false">        
+                    </ul>
+                    </div>
+                    <span class="DAR-section-img DAR-commercial-helicopter"> </span>
+                </article>
+                
+            </section>
+           </div>
+           <div id="locselector" style="display : none;">
+           <section id="DAR-location" class="container DAR-subcontent">
+                <h4 class="row text-center"> Location </h4>
+                <div class="row DAR-location-form">
+                    <div class="DAR-location-form-content">
+                        <div id="fse-region-search-content"  class="form-group">
+                            <div class="DAR-dm-container">
+                                <select class="form-control input-lg" name="asm-country-choice" id="asm-country-choice"> </select>
+                            </div>
+                        </div>
+                        <div id="fse-region-search-content" class="form-group">
+                            <div ID="DAR-state-choice" class="DAR-dm-container">
+                                <select id="asm-state-choice" class="form-control input-lg"> </select>
+                            </div>
+                        </div> 
+                        <div class="form-group map-action">
+                        <button class="btn btn-primary btn-lg" id="Thisismylocation" type="button"> SET AS MY LOCATION </button>
+                        <span class="DAR-location-resetter" id="currentlocation"></span>
+                        </div> 
+                        </Div>                         
+                        <div id="mapholder1"  class="row DAR-map-socket">
+                    </div>                   
+                </div>
+                <span id="SubHome" class="DAR-back-nav"></span>
+              </section>
+            </div>
+        </div>
+    </div>   
+   <div class="DAR-spinner-wrapper"> <span class="DAR-spinner"> </span> </div>
+ </body>
+ </html> 
+ </apex:form>
+ <apex:insert name="footer">
+        <c:honeywellFooter />
+</apex:insert>
+
+ </apex:page>

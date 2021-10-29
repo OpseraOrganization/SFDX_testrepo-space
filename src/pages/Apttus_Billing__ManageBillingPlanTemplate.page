@@ -1,0 +1,165 @@
+<!--  
+ --  Apttus Billing management
+ --  ManageBillingPlanTemplate
+ --   
+ --  @2014-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Config2__BillingPlanTemplate__c"
+    		extensions="Apttus_Billing.ManageBillingPlanTemplateController" 
+    		action="{!doPrepare}">
+	
+    <apex:form >
+        <apex:outputPanel id="idBillingPanel">
+            <apex:pageBlock title="{!currentStep}">
+                <apex:pageMessages />
+                <apex:pageBlockButtons >
+                    <apex:commandButton value="{!$Label.apttus_config2__cancel}"
+                        				action="{!doReturn}"
+                        				rendered="{!NOT(isViewMode)}"
+                        				immediate="true" />
+                        				
+       				<apex:commandButton value="{!$Label.apttus_config2__return}"
+                        				action="{!doReturnToHome}"
+                        				rendered="{!isViewMode}" />
+                        
+					<apex:commandButton value="{!$Label.apttus_config2__next}"
+                        				action="{!doRedirectLineItemSetUp}" 
+										rendered="{!AND(stageInitialiseTemplate, NOT(isViewMode))}"
+                        				rerender="idBillingPanel" />
+					    				
+					<apex:commandButton value="{!$Label.apttus_config2__previous}"
+										action="{!doRedirectPlanSetUp}" 
+										rendered="{!AND(stageInitialiseTemplateItems, NOT(isViewMode))}"
+                        				rerender="idBillingPanel"
+                        				immediate="true" />
+					
+					<apex:commandButton value="{!$Label.apttus_config2__save}"
+                        				action="{!doSavePlanTemplate}" 
+										rendered="{!AND(stageInitialiseTemplateItems, NOT(isViewMode))}"
+                        				rerender="idBillingPanel" />
+                    
+                    <apex:commandButton value="{!$Label.apttus_billing__edit}" 
+                    					action="{!doEdit}"
+                    					rendered="{!isViewMode}"
+										rerender="idBillingPanel" />
+                    					
+                	<apex:commandButton value="{!$Label.apttus_billing__delete}" 
+                    					action="{!doDelete}"
+                    					rendered="{!isViewMode}" />
+                    					
+                	<!--  <apex:commandButton value="{!$Label.Apttus__Activate} / {!$Label.Deactivate}" 
+                    					action="{!doinActivateTemplate}"
+                    					rendered="{!isViewMode}" /> -->
+                </apex:pageBlockButtons>
+                
+                <apex:pageBlockSection rendered="{!(AND(NOT(isViewMode), stageInitialiseTemplate))}" id="idTemplateDetailSection">
+                	<apex:pageBlockSectionItem >
+                		<apex:outputlabel value="{!$ObjectType.Apttus_Config2__BillingPlanTemplate__c.fields.Name.label}" />
+                		<apex:outputPanel >
+		                	<apex:inputField id="templatename" value="{!planTemplateSO.Name}"
+		                					 required="true" />
+							<script>
+								var isAddMode = '{!isAddMode}';
+								if(isAddMode == 'false')
+									document.getElementById('{!$Component.templatename}').disabled = true; 
+							</script>
+						</apex:outputPanel>
+					</apex:pageBlockSectionItem>
+                    <apex:inputField value="{!planTemplateSO.Apttus_Config2__PlanType__c}" />
+                	<apex:inputField value="{!planTemplateSO.Apttus_Config2__NumOfInstallments__c}" />
+                	<apex:inputField value="{!planTemplateSO.Apttus_Config2__Description__c}" />
+                	<apex:inputField value="{!planTemplateSO.Apttus_Config2__StartType__c}" />
+                	<apex:inputField value="{!planTemplateSO.Apttus_Config2__BillingMethod__c}" />
+                	<!-- <apex:inputField value="{!planTemplateSO.Active__c}" /> -->
+                </apex:pageBlockSection>
+                
+                <apex:pageBlockSection rendered="{!(OR(isViewMode, stageInitialiseTemplateItems))}" id="idTemplateItemDetailSectionView">	
+                	<apex:outputField value="{!planTemplateSO.Name}" />
+                    <apex:outputField value="{!planTemplateSO.Apttus_Config2__PlanType__c}" />
+                	<apex:outputField value="{!planTemplateSO.Apttus_Config2__NumOfInstallments__c}" />
+                	<apex:outputField value="{!planTemplateSO.Apttus_Config2__Description__c}" />
+                	<apex:outputField value="{!planTemplateSO.Apttus_Config2__StartType__c}" />
+                	<apex:outputField value="{!planTemplateSO.Apttus_Config2__BillingMethod__c}" />
+                	<!-- <apex:outputField value="{!planTemplateSO.Active__c}" /> -->
+                </apex:pageBlockSection>
+                <br />
+                <apex:variable var="sr" value="{!0}"/>
+                <apex:pageBlockTable id="templateItemTable" 
+                					 value="{!planTemplateItems}" var="planTemplateItemSO" 
+                					 rendered="{!stageInitialiseTemplateItems}">
+                	<apex:column >
+                        <apex:variable var="sr" value="{!sr + 1}"/>
+                    </apex:column>
+                	<apex:column >
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanTemplateItem__c.Fields.Apttus_Config2__PlanItemName__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planTemplateItemSO.Apttus_Config2__PlanItemName__c}"
+                            			 rendered="{!NOT(isViewMode)}" />
+                        <apex:outputField value="{!planTemplateItemSO.Apttus_Config2__PlanItemName__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column rendered="{!NOT(isBillingMethodSplitEvenly)}">
+                        <apex:facet name="header">
+                                {!$ObjectType.Apttus_Config2__BillingPlanTemplateItem__c.Fields[percentFieldAPIName].Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planTemplateItemSO[percentFieldAPIName]}"
+                            			 rendered="{!NOT(isViewMode)}"
+                            			 required="true" />
+                        <apex:outputField value="{!planTemplateItemSO[percentFieldAPIName]}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column >
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanTemplateItem__c.Fields.Apttus_Config2__OffsetType__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planTemplateItemSO.Apttus_Config2__OffsetType__c}"
+                            			 rendered="{!NOT(isViewMode)}"
+                            			 required="true" />
+                        <apex:outputField value="{!planTemplateItemSO.Apttus_Config2__OffsetType__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column >
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanTemplateItem__c.Fields.Apttus_Config2__Offset__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planTemplateItemSO.Apttus_Config2__Offset__c}"
+                            			 rendered="{!NOT(isViewMode)}"
+                            			 required="true">
+                        </apex:inputField>
+                        <apex:outputField value="{!planTemplateItemSO.Apttus_Config2__Offset__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column >
+                        <apex:facet name="header">
+                        	{!$Label.apttus_billing__startdatehint}
+                       	</apex:facet>
+                        <apex:outputLabel value="{!if(sr == 1, planTemplateSO.Apttus_Config2__StartType__c, 
+                        									   if(planTemplateItems[sr-2].Apttus_Config2__PlanItemName__c != null, 
+                        									   		planTemplateItems[sr-2].Apttus_Config2__PlanItemName__c + ' ' + $Label.Apttus_Config2__StartDate, 
+                        									   		$Label.Previous +' '+ $Label.Apttus_Config2__Item + ' ' + $Label.Apttus_Config2__StartDate)
+                       									   		)} 
+                     							{!if(planTemplateItemSO.Apttus_Config2__Offset__c > 0 ,'+ ', null)}
+                     							{!if(planTemplateItemSO.Apttus_Config2__Offset__c > 0 ,planTemplateItemSO.Apttus_Config2__Offset__c, null)}
+                     							{!if(planTemplateItemSO.Apttus_Config2__Offset__c > 0 ,planTemplateItemSO.Apttus_Config2__OffsetType__c, null)}"
+                        				  rendered="{!if(planTemplateItemSO.Apttus_Config2__Offset__c != null, true, false)}" />
+                    </apex:column>
+                    
+                    <apex:column >
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanTemplateItem__c.Fields.Apttus_Config2__PaymentTermId__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planTemplateItemSO.Apttus_Config2__PaymentTermId__c}"
+                            			 rendered="{!NOT(isViewMode)}" />
+                        <apex:outputField value="{!planTemplateItemSO.Apttus_Config2__PaymentTermId__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlock>
+        </apex:outputPanel>
+    </apex:form>
+</apex:page>

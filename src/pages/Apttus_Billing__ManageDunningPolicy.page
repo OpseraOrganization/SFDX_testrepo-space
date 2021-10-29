@@ -1,0 +1,154 @@
+<!--  
+ --  Apttus Billing management
+ --  ManageDunningPolicy
+ --   
+ --  @2017-2018 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Billing__DunningPolicy__c" extensions="Apttus_Billing.ManageDunningPolicyController" action="{!doPrepare}">
+  
+  <script>
+    // Salesfoce script to open pop up for delete record confirmation
+    function confirmDelete(input){
+       input || (input = LC.getLabel("Global", "are_you_sure"));
+       return Modal.confirm(input);
+    };
+  </script>
+  
+  <apex:sectionHeader title="{!$ObjectType.Apttus_Billing__DunningPolicy__c.label} {!$Label.apttus_billing__edit}" 
+                      subtitle="{!If(dunningPolicySO.Id == null, $Label.apttus_billing__new + ' ' + $ObjectType.Apttus_Billing__DunningPolicy__c.label, dunningPolicySO.Name)}"/>
+  
+  <apex:form id="dunningProcessForm">
+      
+      <apex:pageMessages escape="false" />
+      
+      <!-- Display Dunning Policy Line Item detail section -->
+      <apex:pageBlock title="{!If(displayPolicyLineItem, $ObjectType.Apttus_Billing__DunningPolicyLineItem__c.labelPlural, $ObjectType.Apttus_Billing__DunningPolicy__c.label)}">
+          
+          <!-- Display Action buttons -->
+         <apex:pageBlockButtons >
+             <apex:commandButton value="{!$Label.apttus_config2__next}"
+                                 action="{!nextAction}" 
+                                 rendered="{!!displayPolicyLineItem && !viewMode}" 
+                                 reRender="dunningProcessForm"/>
+                                 
+             <apex:commandButton value="{!$Label.apttus_config2__back}"
+                                 action="{!backAction}" 
+                                 rendered="{!displayPolicyLineItem && !viewMode}" 
+                                 reRender="dunningProcessForm"/>
+                                 
+             <apex:commandButton value="{!$Label.apttus_config2__save}"
+                                 rendered="{!displayPolicyLineItem && !viewMode}" 
+                                 action="{!saveDunningPolicyAndLineItems}"/>
+                                 
+             <apex:commandButton value="{!$Label.apttus_config2__cancel}" 
+                                 immediate="true" 
+                                 rendered="{!!viewMode}" 
+                                 action="{!cancelAction}"/>
+             
+             <apex:commandButton value="{!$Label.apttus_config2__return}" 
+                                 rendered="{!viewMode}" 
+                                 action="{!returnAction}"/>
+                                 
+             <apex:commandButton value="{!$Label.apttus_config2__edit}"
+                                 action="{!editAction}" 
+                                 rendered="{!viewMode}" 
+                                 reRender="dunningProcessForm"/>
+                                 
+             <apex:commandButton value="{!$Label.apttus_config2__delete}" 
+                                 rendered="{!viewMode}" 
+                                 action="{!deleteAction}"
+                                 onclick="return confirmDelete();"/>
+         </apex:pageBlockButtons>
+     
+          <!-- Display Dunning Policy detail section -->
+          <apex:pageBlockSection >
+       
+              <apex:inputField value="{!dunningPolicySO.Name}" 
+                               required="true" 
+                               rendered="{!!displayPolicyLineItem && !viewMode}"/>
+                               
+              <apex:outputField value="{!dunningPolicySO.Name}" 
+                                rendered="{!displayPolicyLineItem || viewMode}"/>
+       
+              <apex:inputField value="{!dunningPolicySO.Apttus_Billing__Active__c}" 
+                               rendered="{!!displayPolicyLineItem && dunningPolicySO.Id != null}"/>
+                               
+              <apex:outputField value="{!dunningPolicySO.Apttus_Billing__Active__c}" 
+                                rendered="{!displayPolicyLineItem || dunningPolicySO.Id == null}"/>
+       
+              <apex:inputField value="{!dunningPolicySO.Apttus_Billing__NumberOfReminders__c}" 
+                               required="true" 
+                               rendered="{!!displayPolicyLineItem && !viewMode}"/>
+                               
+              <apex:outputField value="{!dunningPolicySO.Apttus_Billing__NumberOfReminders__c}" 
+                                rendered="{!displayPolicyLineItem  || viewMode}"/>
+       
+              <apex:inputField value="{!dunningPolicySO.Apttus_Billing__Default__c}" 
+                               rendered="{!!displayPolicyLineItem && !viewMode}"/>
+                               
+              <apex:outputField value="{!dunningPolicySO.Apttus_Billing__Default__c}" 
+                                rendered="{!displayPolicyLineItem  || viewMode}"/>
+       
+          </apex:pageBlockSection>
+          <BR/><BR/>
+          
+          <!-- Display Dunning Policy Line Item detail section -->
+          <apex:pageBlockSection columns="1" rendered="{!displayPolicyLineItem}">
+              <apex:pageBlockTable value="{!dunningPolicyLineItems}" var="dunningPolicyLineItemSO">
+                  
+                  <!-- Name -->
+                  <apex:column headerValue="{!$ObjectType.Apttus_Billing__DunningPolicyLineItem__c.Fields.Name.Label}">
+                    <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!!viewMode}">
+                        <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                        <apex:inputField value="{!dunningPolicyLineItemSO.Name}"/>
+                    </apex:outputPanel>
+                    <apex:outputField value="{!dunningPolicyLineItemSO.Name}" rendered="{!viewMode}"/>
+                  </apex:column>
+                  
+                  <!-- Interval Value -->
+                  <apex:column headerValue="{!$ObjectType.Apttus_Billing__DunningPolicyLineItem__c.Fields.Apttus_Billing__IntervalValue__c.Label}">
+                    <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!!viewMode}">
+                       <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                       <apex:inputField value="{!dunningPolicyLineItemSO.Apttus_Billing__IntervalValue__c}"/>
+                    </apex:outputPanel>
+                    <apex:outputField value="{!dunningPolicyLineItemSO.Apttus_Billing__IntervalValue__c}" rendered="{!viewMode}"/>
+                  </apex:column>
+                  
+                  <!-- Interval Type -->
+                  <apex:column headerValue="{!$ObjectType.Apttus_Billing__DunningPolicyLineItem__c.Fields.Apttus_Billing__IntervalType__c.Label}">
+                    <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!!viewMode}">
+                       <apex:outputPanel styleClass="requiredBlock" layout="block"/>  
+                       <apex:inputField value="{!dunningPolicyLineItemSO.Apttus_Billing__IntervalType__c}"/>
+                     </apex:outputPanel>
+                     <apex:outputField value="{!dunningPolicyLineItemSO.Apttus_Billing__IntervalType__c}" rendered="{!viewMode}"/>
+                  </apex:column>
+                  
+                  <!-- Baseline -->
+                  <apex:column headerValue="{!$ObjectType.Apttus_Billing__DunningPolicyLineItem__c.Fields.Apttus_Billing__Baseline__c.Label}">
+                     <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!!viewMode}">
+                       <apex:outputPanel styleClass="requiredBlock" layout="block"/>
+                       <apex:inputField value="{!dunningPolicyLineItemSO.Apttus_Billing__Baseline__c}"/>
+                    </apex:outputPanel>
+                    <apex:outputField value="{!dunningPolicyLineItemSO.Apttus_Billing__Baseline__c}" rendered="{!viewMode}"/>
+                  </apex:column>
+                  
+                  <!-- Email Template -->
+                  <apex:column headerValue="{!$ObjectType.Apttus_Billing__DunningPolicyLineItem__c.Fields.Apttus_Billing__EmailTemplate__c.Label}">
+                     <apex:outputPanel styleClass="requiredInput" layout="block" rendered="{!!viewMode}">
+                       <apex:outputPanel styleClass="requiredBlock" layout="block"/> 
+                       <apex:inputField value="{!dunningPolicyLineItemSO.Apttus_Billing__EmailTemplate__c}"/>
+                     </apex:outputPanel>
+                     <apex:outputField value="{!dunningPolicyLineItemSO.Apttus_Billing__EmailTemplate__c}" rendered="{!viewMode}"/>
+                  </apex:column>
+                  
+                  <!-- Attach Invoice PDF -->
+                  <apex:column headerValue="{!$ObjectType.Apttus_Billing__DunningPolicyLineItem__c.Fields.Apttus_Billing__AttachInvoicePDF__c.Label}">
+                      <apex:inputField value="{!dunningPolicyLineItemSO.Apttus_Billing__AttachInvoicePDF__c}" rendered="{!!viewMode}"/>
+                      <apex:outputField value="{!dunningPolicyLineItemSO.Apttus_Billing__AttachInvoicePDF__c}" rendered="{!viewMode}"/>
+                  </apex:column>
+                  
+              </apex:pageBlockTable>
+          </apex:pageBlockSection>
+      </apex:pageBlock>
+  </apex:form>
+</apex:page>

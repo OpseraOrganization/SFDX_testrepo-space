@@ -1,0 +1,423 @@
+<!--  
+ --  Apttus Billing management
+ --  ManageBillingPlan
+ --   
+ --  @2014-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Config2__BillingPlan__c"
+    extensions="Apttus_Billing.ManageBillingPlanController" action="{!doPrepare}">
+    <apex:includeScript value="{!URLFOR($Resource.Apttus_Billing__BillingChartsLib, 'js/jquery.min.js')}" />
+    <!-- <apex:includeScript value="{!URLFOR($Resource.Apttus_Config2__JQueryUILibrary19, 'js/jquery-1.8.3.min.js')}" /> -->
+    <apex:includeScript value="{!URLFOR($Resource.Apttus_Config2__JQueryUILibrary19, 'js/jquery-ui-1.9.2.custom.min.js')}" />
+    
+    <script type="text/javascript">
+        function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");                  
+            for(var i=0; i<inputCheckBox.length; i++){          
+                if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){                                     
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+        }
+    </script>
+    <apex:form >
+    
+        <apex:outputPanel id="idBillingPanel">
+            <apex:pageBlock title="{!currentStep}">
+                <apex:pageMessages />
+                <apex:pageBlockButtons >
+
+                    <apex:commandButton value="{!$Label.apttus_config2__cancel}"
+                        				action="{!doReturn}" 
+                        				immediate="true"
+                        				rendered="{!NOT(isViewMode)}" />
+                        				
+                    <apex:commandButton value="{!$Label.apttus_config2__return}"
+                        				action="{!doReturn}" immediate="true" 
+                        				rendered="{!isViewMode}" />
+
+                    <apex:commandButton value="{!$Label.apttus_config2__previous}"
+                        				action="{!doReturnShowLineItemStep}" 
+                        				rendered="{!stageEditPlan}"
+                        				rerender="idBillingPanel" 
+                        				immediate="true" />
+
+                    <apex:commandButton value="{!$Label.apttus_config2__previous}"
+                        				action="{!doReturnEditPlanStep}" 
+                        				rendered="{!stageEditPlanItems}"
+                        				rerender="idBillingPanel" 
+                        				immediate="true" />
+
+                    <apex:commandButton value="{!$Label.apttus_config2__next}"
+                        				action="{!doSelectLines}" 
+                        				rendered="{!stageSelectLines}"
+                        				rerender="idBillingPanel" />
+
+                    <apex:commandButton value="{!$Label.apttus_config2__next}"
+                        				action="{!doEditPlanItems}" 
+                        				rendered="{!stageEditPlan}"
+                        rerender="idBillingPanel" />
+
+                    <apex:commandButton value="{!$Label.apttus_config2__save}"
+                        action="{!doSavePlanItems}"
+                        rendered="{!AND(stageEditPlanItems, NOT(isViewMode))}" />
+                        
+                    <apex:actionStatus id="idRefreshingStatus" 
+                    					style="font-style:bold;" 
+                        				startText="{!$Label.apttus__refreshing}" />
+                </apex:pageBlockButtons>
+
+                <!--  quote/proposal info -->
+                <apex:pageBlockSection >
+                	<apex:inputField value="{!planSO.Apttus_QPConfig__ProposalId__c}"
+                					 onchange="populateProposalWithLineItems();"
+                    				 rendered="{!if(planSO.Apttus_QPConfig__ProposalId__c == null, true, false)}" />
+                    <apex:outputField value="{!planSO.Apttus_QPConfig__ProposalId__c}"
+                    				  rendered="{!if(planSO.Apttus_QPConfig__ProposalId__c != null, true, false)}" />
+                    <apex:outputField value="{!planParentSO.Apttus_Proposal__Account__c}" />
+                    <apex:outputField value="{!planParentSO.Apttus_Proposal__Opportunity__c}" />
+                    <apex:pageBlockSectionItem rendered="{!AND(stageSelectLines, Not(isViewMode))}">
+                    	<apex:outputLabel value="{!$ObjectType.Apttus_Config2__BillingPlan__c.fields.Apttus_Config2__BillingPlanTemplateId__c.Label}"></apex:outputLabel>
+                    	<apex:panelGroup >
+	                    	<apex:inputField value="{!planSO.Apttus_Config2__BillingPlanTemplateId__c}"
+		                    				 onChange="getBillingPlanTemplateDetail();" /> <br />
+		                    <apex:commandLink value="Create new Template" 
+											  id="createTemplateLink"
+											  onclick="var url='{!newPlanTemplateURL}'; window.open(url);" />
+	                	</apex:panelGroup>
+                	</apex:pageBlockSectionItem>
+                	<apex:outputField value="{!planSO.Apttus_Config2__BillingPlanTemplateId__c}"
+                					  rendered="{!OR(Not(stageSelectLines), isViewMode)}" />											                  	
+                </apex:pageBlockSection>
+                
+                &nbsp;&nbsp;
+
+                <!--  filter by price-type -->
+
+                <apex:outputPanel id="idLineItems" rendered="{!Not(OR(stageEditPlanItems, stageEditPlan))}">
+
+                    <table style="width:100%;">
+                        <tr>
+                            <td style="width:30%;"><b><apex:outputText value="{!$Label.apttus_billing__filterbypricetype}" rendered="{!NOT(isViewMode)}"/></b> &nbsp; 
+                            	<apex:selectList value="{!priceTypeOption}" size="1" rendered="{!NOT(isViewMode)}">
+                                    <apex:selectOptions value="{!priceTypeOptions}" />
+                                </apex:selectList>
+                            &nbsp;
+                                    
+                           		<apex:commandButton action="{!doFilterLineItems}" rerender="idBillingPanel"
+                                	   				value="{!$Label.apttus_billing__filter}" status="idRefreshingStatus" 
+                                	   				rendered="{!NOT(isViewMode)}"/>
+                            </td>
+                            <td style="width:20%;">
+                            	<b>
+                            		<apex:actionStatus id="idRefreshingStatus"
+                                				   	   startText="{!$Label.apttus__refreshing}" />
+                             	</b>
+							</td>
+							<td style="width: 38%; text-align:right;">
+                                    <div>
+                                    &lt;<apex:outputLabel rendered="{!Not(hasPreviousQuoteLineItems)}">{!$Label.apttus_billing__first}</apex:outputLabel>
+                                	<apex:commandLink rendered="{!hasPreviousQuoteLineItems}" 
+                                                      action="{!firstQuoteLineItems}" 
+                                                      reRender="idLineItems">
+                                        {!$Label.apttus_billing__first}
+                                   	</apex:commandLink>
+                            		&nbsp;|&nbsp;
+                            		<apex:outputLabel rendered="{!Not(hasPreviousQuoteLineItems)}">{!$Label.apttus_config2__previous}</apex:outputLabel>
+                                        <apex:commandLink rendered="{!hasPreviousQuoteLineItems}" 
+                                                          action="{!previousQuoteLineItems}" reRender="idLineItems">
+                                            {!$Label.apttus_config2__previous}
+                                        </apex:commandLink>
+                                        &nbsp;|&nbsp;
+                                        <apex:outputLabel rendered="{!Not(hasNextQuoteLineItems)}">{!$Label.apttus_config2__next}</apex:outputLabel>
+                                        <apex:commandLink rendered="{!hasNextQuoteLineItems}" 
+                                                          action="{!nextQuoteLineItems}" reRender="idLineItems">
+                                            {!$Label.apttus_config2__next}
+                                    </apex:commandLink>
+                                    &nbsp;|&nbsp;
+                                    <apex:outputLabel rendered="{!Not(hasNextQuoteLineItems)}">{!$Label.apttus_billing__last}</apex:outputLabel>
+                                    <apex:commandLink rendered="{!hasNextQuoteLineItems}" 
+                                                      action="{!lastQuoteLineItems}" 
+                                                      reRender="idLineItems">
+                                        {!$Label.apttus_billing__last}
+                                        </apex:commandLink>&gt;                            
+                                    </div>
+                                </td>
+                            <td style="width:12%; text-align:right;">
+                            	<div>
+                            		<b><apex:outputText value="Page Size : "/></b> &nbsp;
+                            		<apex:selectList value="{!pageSize}" size="1" 
+                           							 rendered="{!NOT(isViewMode)}"
+                           							 onchange="resetQuoteLineItemPageSize()">
+	                                    <apex:selectOptions value="{!pageSizeOptions}" />
+	                                </apex:selectList>
+                            	</div>
+							</td>
+                            </tr>
+                    </table>
+                
+                    <!--  proposal line item list -->
+
+                    <apex:pageBlockTable id="idLineItemList" value="{!quoteLineItems}"
+                     					 var="quoteLineItem" rendered="{!stageSelectLines}">
+
+                        <apex:column >
+                        	<apex:facet name="header">
+                        		<apex:inputCheckbox onclick="selectAllCheckboxes(this,'inputId')"/> 
+                        	</apex:facet>
+                        	<apex:outputPanel rendered="{!Not(quoteLineItem.disableSelect)}">
+                        		<apex:inputCheckbox value="{!quoteLineItem.selected}" id="inputId"/>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!quoteLineItem.disableSelect}">
+                            	<apex:inputCheckbox value="{!quoteLineItem.selected}" 
+                            						selected="{!quoteLineItem.selected}" 
+                            						disabled="{!quoteLineItem.disableSelect}"/>
+                            </apex:outputPanel>
+                        </apex:column>
+
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c}"
+                            rendered="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c != null}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_Proposal__Product__c}"
+                            rendered="{!quoteLineItem.lineItemSO.Apttus_QPConfig__OptionId__c == null}" />
+
+                        <apex:column >
+                            <apex:facet name="header">{!$Label.apttus_billing__isoption}</apex:facet>
+                            <apex:image value="{!$Resource.Apttus_Billing__CheckboxChecked}"
+                                rendered="{!quoteLineItem.IsOption}" />
+                        </apex:column>
+
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__NetPrice__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__ChargeType__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__SellingFrequency__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__Frequency__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__BillingFrequency__c}" />
+                        <apex:column value="{!quoteLineItem.lineItemSO.Apttus_QPConfig__BillingPlanId__c}"
+                            rendered="{!NOT(isViewMode)}" />
+
+                    </apex:pageBlockTable>
+
+                </apex:outputPanel>
+
+                <!--  bill plan definition -->
+                <apex:outputPanel id="idPlanDetail">
+                    <apex:pageBlockSection rendered="{!AND(stageEditPlan, NOT(isViewMode))}" id="idPlanDetailSection">
+                        <apex:inputField value="{!planSO.Name}"/>
+                        <apex:pageBlockSectionItem >
+                        	<apex:outputLabel value="{!$Label.apttus_billing__totalamount}" />
+                        	<apex:outputText value="{!totalLineItemAmount}" />
+                    	</apex:pageBlockSectionItem>
+                        <apex:inputField value="{!planSO.Apttus_Config2__BillingMethod__c}" 
+                        				 rendered="{!!isBillingPlanByTemplate}" />
+                     	<apex:outputField value="{!planSO.Apttus_Config2__BillingMethod__c}" 
+                        				 rendered="{!isBillingPlanByTemplate}" />
+                        <apex:inputField value="{!planSO.Apttus_Config2__BillingStartDate__c}" 
+                        				 rendered="{!!IsMilestoneBased}"
+                        				 required="{!enabledStartDate}" />
+                		<apex:outputField value="{!planSO.Apttus_Config2__BillingStartDate__c}" 
+                       					  rendered="{!IsMilestoneBased}" />
+						<apex:inputField value="{!planSO.Apttus_Config2__PlanType__c}"
+										 rendered="{!!isBillingPlanByTemplate}" >
+						<apex:actionSupport event="onchange"
+                                			action="{!verifyBillingPlanType}"
+                                			rerender="idPlanDetailSection" />						
+                     	</apex:inputField>
+						<apex:outputField value="{!planSO.Apttus_Config2__PlanType__c}" 
+                        				  rendered="{!isBillingPlanByTemplate}" />
+                        <apex:inputField value="{!planSO.Apttus_Config2__BillingEndDate__c}" 
+                        				 rendered="{!!IsMilestoneBased}"
+                        				 required="{!enabledStartDate}" />
+                        <apex:outputField value="{!planSO.Apttus_Config2__BillingEndDate__c}" 
+                        				  rendered="{!IsMilestoneBased}" />
+                        <apex:inputField value="{!planSO.Apttus_Config2__NumOfInstallments__c}" 
+                        				 rendered="{!!isBillingPlanByTemplate}" />
+                     	<apex:outputField value="{!planSO.Apttus_Config2__NumOfInstallments__c}" 
+                        				 rendered="{!isBillingPlanByTemplate}" />
+                        <apex:inputField value="{!planSO.Apttus_Config2__Description__c}" />
+                    </apex:pageBlockSection>
+                </apex:outputPanel>
+
+                <apex:pageBlockSection rendered="{!OR(stageEditPlanItems, AND(stageEditPlan, isViewMode))}">
+                    <apex:outputField value="{!planSO.Name}" />
+                    <!-- <apex:outputField value="{!planSO.Apttus_QPConfig__ProposalId__c}" />  -->
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="{!$Label.apttus_billing__totalamount}" />
+                        <apex:outputText value="{!totalLineItemAmount}" />
+                    </apex:pageBlockSectionItem>
+                    <apex:outputField value="{!planSO.Apttus_Config2__BillingMethod__c}" />
+                    <apex:outputField value="{!planSO.Apttus_Config2__BillingStartDate__c}" />
+                    <apex:outputField value="{!planSO.Apttus_Config2__PlanType__c}" />
+                    <apex:outputField value="{!planSO.Apttus_Config2__BillingEndDate__c}" />
+                    <apex:outputField value="{!planSO.Apttus_Config2__NumOfInstallments__c}" />
+                    <apex:outputField value="{!planSO.Apttus_Config2__Description__c}" />
+                </apex:pageBlockSection>
+
+                <!--  billing plan item entries -->
+                <apex:outputPanel id="idBPLineItems" rendered="{!if(billingPlanItemMilestoneWrapperList.size > 0, true, false)}">
+
+                    <table style="width:100%; text-align: right;">
+                        <tr>
+							<td style="width: 88%; text-align:right;">
+                            	<div>
+                                	&lt;<apex:outputLabel rendered="{!Not(hasPreviousPlanLineItems)}">{!$Label.apttus_billing__first}</apex:outputLabel>
+                                    	<apex:commandLink rendered="{!hasPreviousPlanLineItems}" 
+                                                          action="{!firstPlanLineItems}" 
+                                                          reRender="idBPLineItems">
+                                            {!$Label.apttus_billing__first}
+                                       	</apex:commandLink>
+                                		&nbsp;|&nbsp;
+                                		<apex:outputLabel rendered="{!Not(hasPreviousPlanLineItems)}">{!$Label.apttus_config2__previous}</apex:outputLabel>
+                                    	<apex:commandLink rendered="{!hasPreviousPlanLineItems}" 
+                                                          action="{!previousPlanLineItems}" 
+                                                          reRender="idBPLineItems">
+                                            {!$Label.apttus_config2__previous}
+                                        </apex:commandLink>
+                                        &nbsp;|&nbsp;
+                                        <apex:outputLabel rendered="{!Not(hasNextPlanLineItems)}">{!$Label.apttus_config2__next}</apex:outputLabel>
+                                        <apex:commandLink rendered="{!hasNextPlanLineItems}" 
+                                                          action="{!nextPlanLineItems}" 
+                                                          reRender="idBPLineItems">
+                                            {!$Label.apttus_config2__next}
+                                        </apex:commandLink>
+                                        &nbsp;|&nbsp;
+                                        <apex:outputLabel rendered="{!Not(hasNextPlanLineItems)}">{!$Label.apttus_billing__last}</apex:outputLabel>
+                                        <apex:commandLink rendered="{!hasNextPlanLineItems}" 
+                                                          action="{!lastPlanLineItems}" 
+                                                          reRender="idBPLineItems">
+                                            {!$Label.apttus_billing__last}
+                                        </apex:commandLink>&gt;                            
+								</div>
+							</td>
+							<td style="width:12%; text-align:right;">
+                            	<div>
+                            		<b><apex:outputText value="Page Size : "/></b> &nbsp;
+                            		<apex:selectList value="{!pageSize}" size="1" 
+                           							 rendered="{!NOT(isViewMode)}"
+                           							 onchange="resetPlanLineItemPageSize()">
+	                                    <apex:selectOptions value="{!pageSizeOptions}" />
+	                                </apex:selectList>
+                            	</div>
+							</td>
+						</tr>
+                    </table>
+
+	                <apex:pageBlockTable value="{!setbillingPlanItemMilestoneWrapperList}" var="planItemSO" rendered="{!stageEditPlanItems}">
+
+                    <apex:column >
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__PlanItemName__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planItemSO.billingPlanItem.Apttus_Config2__PlanItemName__c}"
+                            			 rendered="{!NOT(isViewMode)}" />
+                        <apex:outputField value="{!planItemSO.billingPlanItem.Apttus_Config2__PlanItemName__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column rendered="{!NOT(OR(isBillingMethodAmount, isBillingMethodSplitEvenly))}" width="10px">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__Percent__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planItemSO.billingPlanItem.Apttus_Config2__Percent__c}"
+                        			     rendered="{!NOT(isViewMode)}" style="width:100px;" />
+                        <apex:outputField value="{!planItemSO.billingPlanItem.Apttus_Config2__Percent__c}"
+                            rendered="{!isViewMode}" />
+                    </apex:column>
+
+                    <apex:column rendered="{!OR(isBillingMethodAmount, isBillingMethodSplitEvenly)}">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__Amount__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planItemSO.billingPlanItem.Apttus_Config2__Amount__c}"
+                        			     rendered="{!AND(NOT(isViewMode),isBillingMethodAmount)}" />
+                        <apex:outputField value="{!planItemSO.billingPlanItem.Apttus_Config2__Amount__c}"
+                            rendered="{!OR(isViewMode, isBillingMethodSplitEvenly)}" />
+                    </apex:column>
+
+                    <apex:column rendered="{!Not(IsMilestoneBased)}">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__PeriodStartDate__c.Label}
+                        </apex:facet>
+                        <apex:inputField value="{!planItemSO.billingPlanItem.Apttus_Config2__PeriodStartDate__c}"
+                            			 rendered="{!NOT(isViewMode)}"  required="true"/>
+                        <apex:outputField value="{!planItemSO.billingPlanItem.Apttus_Config2__PeriodStartDate__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column rendered="{!Not(IsMilestoneBased)}">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__PeriodEndDate__c.Label}
+                        </apex:facet>
+                        <apex:inputField value="{!planItemSO.billingPlanItem.Apttus_Config2__PeriodEndDate__c}"
+                            			 rendered="{!NOT(isViewMode)}"  required="true"/>
+                        <apex:outputField value="{!planItemSO.billingPlanItem.Apttus_Config2__PeriodEndDate__c}"
+                           				  rendered="{!isViewMode}" />
+                    </apex:column>
+
+                    <apex:column rendered="{!IsMilestoneBased}">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__Milestone2__c.Fields.Apttus_Config2__ExpectedDate__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planItemSO.milestone.Apttus_Config2__ExpectedDate__c}"
+                        			     rendered="{!NOT(isViewMode)}" required="true"/>
+                        <apex:outputField value="{!planItemSO.milestone.Apttus_Config2__ExpectedDate__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column rendered="{!IsMilestoneBased}">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__Milestone2__c.Fields.Apttus_Config2__ActualDate__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planItemSO.milestone.Apttus_Config2__ActualDate__c}"
+                        			     rendered="{!NOT(isViewMode)}" />
+                        <apex:outputField value="{!planItemSO.milestone.Apttus_Config2__ActualDate__c}"
+                            rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column rendered="{!Not(IsMilestoneBased)}">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__ReadyForInvoiceDate__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planItemSO.billingPlanItem.Apttus_Config2__ReadyForInvoiceDate__c}"
+                        			     rendered="{!NOT(isViewMode)}" required="true"/>
+                        <apex:outputField value="{!planItemSO.billingPlanItem.Apttus_Config2__ReadyForInvoiceDate__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column >
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__BillingPlanItem__c.Fields.Apttus_Config2__PaymentTermId__c.Label}
+                       	</apex:facet>
+                        <apex:inputField value="{!planItemSO.billingPlanItem.Apttus_Config2__PaymentTermId__c}"
+                        			     rendered="{!NOT(isViewMode)}" />
+                        <apex:outputField value="{!planItemSO.billingPlanItem.Apttus_Config2__PaymentTermId__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                    
+                    <apex:column rendered="{!IsMilestoneBased}">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__Milestone2__c.Fields.Apttus_Config2__Status__c.Label}
+                       	</apex:facet>
+                        <apex:outputField value="{!planItemSO.milestone.Apttus_Config2__Status__c}" />
+                    </apex:column>
+                    
+                    <apex:column rendered="{!IsMilestoneBased}">
+                        <apex:facet name="header">
+                        	{!$ObjectType.Apttus_Config2__Milestone2__c.Fields.Apttus_Config2__Comments__c.Label}
+                       	</apex:facet>
+                 		<apex:inputTextarea value="{!planItemSO.milestone.Apttus_Config2__Comments__c}"
+                 						 	rendered="{!NOT(isViewMode)}" rows="2"/>
+                        <apex:outputField value="{!planItemSO.milestone.Apttus_Config2__Comments__c}"
+                            			  rendered="{!isViewMode}" />
+                    </apex:column>
+                </apex:pageBlockTable>
+                </apex:outputPanel>
+
+            </apex:pageBlock>
+
+        </apex:outputPanel>
+        <apex:actionFunction name="populateProposalWithLineItems" action="{!doPrepare}" rerender="idBillingPanel" />        
+        <apex:actionFunction name="getBillingPlanTemplateDetail" action="{!doGetBillingPlanTemplateDetail}" rerender="idBillingPanel" />        
+        <apex:actionFunction name="resetQuoteLineItemPageSize" action="{!doResetQuoteLineItemPageSize}" rerender="idLineItems" />
+        <apex:actionFunction name="resetPlanLineItemPageSize" action="{!doResetPlanLineItemPageSize}" rerender="idBPLineItems" />
+                
+    </apex:form>
+</apex:page>

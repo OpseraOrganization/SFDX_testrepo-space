@@ -1,0 +1,231 @@
+<apex:page id="thePage" tabStyle="OpportunityLineItem" lightningStylesheets="true" standardController="Opportunity" extensions="AddOpportunityProduct_ATR" action="{!Editpage}"  >
+
+<apex:pageMessages id="messagesPanel"/> 
+
+<apex:sectionHeader Title="Manage {!$ObjectType.Product2.LabelPlural}" subtitle="{!opportunity.Name}"/>
+   <!-- <apex:messages style="color:red"/>-->
+      
+   <apex:outputText value="{!fieldExceptionMessage}" rendered="{!fieldException}" escape="false" style="color:red"/>
+
+    <style>
+        .search{
+            font-size:14pt;
+            margin-right: 20px;    
+        }
+        .fyi{
+            color:red;
+            font-style:italic;
+        }
+        .label{
+            margin-right:10px;
+            font-weight:bold;
+        }
+    </style>
+     <style type="text/css">
+        .custPopup{
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            z-index: 9999;
+            left: 50%;
+            padding:10px;
+            position: absolute;
+            /* These are the 3 css properties you will need to change so the popup 
+            displays in the center of the screen. First set the width. Then set 
+            margin-left to negative half of what the width is. You can add 
+            the height property for a fixed size pop up if you want.*/
+            width: 500px;
+            margin-left: -250px;
+            top:100px;
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.20;
+            filter: alpha(opacity = 20);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+
+    </style>
+       
+    <script type='text/javascript'>
+    
+        // This script assists the search bar functionality
+        // It will execute a search only after the user has stopped typing for more than 1 second
+        // To raise the time between when the user stops typing and the search, edit the following variable:
+        
+        var waitTime = 1;
+        
+    
+        var countDown = waitTime+1;
+        var started = false;
+        
+        function resetTimer(){
+        
+            countDown=waitTime+1;
+            
+            if(started==false){
+                started=true;
+                runCountDown();
+            }
+        }
+        
+        function runCountDown(){
+        
+            countDown--;
+            
+            if(countDown<=0){
+                fetchResults();
+                started=false;
+            }
+            else{
+                window.setTimeout(runCountDown,1000);
+            }
+        }
+    
+    </script>
+    
+ <apex:form id="theFrm"> 
+         
+ <apex:pageBlock id="selected" tabStyle="OpportunityLineItem" title="Opportunity Product Edit">
+     <span align="center"><font color="red"></font></span>
+<!--     <apex:pageMessages />-->
+     <apex:pageBlockButtons >
+         <apex:commandButton action="{!onSave}" value="Save" reRender="messagesPanel"/>
+           <apex:commandButton action="{!onSave1}" value="Save & New" />
+           
+         <apex:commandButton action="{!onCancel}" value="Cancel" immediate="true"/>
+         
+     </apex:pageBlockButtons> 
+     <br></br>
+     
+     <apex:outputLabel styleClass="label">PriceBook : </apex:outputLabel>
+            <!--<apex:outputText value="{!theBook.Name}"/>&nbsp;
+            <apex:commandLink action="{!changePricebook}" value="Change" immediate="true"/>-->
+            <apex:selectList value="{!selectedItem}" size="1" id="selection">
+                 <apex:actionSupport event="onchange" action="{!updateAvailableList}"/>
+                <apex:selectOptions value="{!options}"/>
+            </apex:selectList><p/>
+          <br/>
+            <br/>
+            
+            
+     <apex:pageBlockSection id="pblkSct" columns="2" title="Product Information" collapsible="false">
+             <apex:inputcheckbox id="active" value="{!olItem.Active__c}" selected="true"/>
+             <br/>
+             <apex:outputField value="{!olItem.Opportunityid}"/> 
+             <apex:inputField style="border-left: 2px solid red;" value="{!olItem.ServiceDate}"/>            
+             <apex:outputField value="{!olItem.Type__c}"/>
+             <apex:inputField style="border-left: 2px solid red;" value="{!olItem.UnitPrice}" id="unitPrice"/>
+             <apex:inputField value="{!olItem.M_PM_Product__c}" id="mpmproduct"/>
+             <apex:inputField style="border-left: 2px solid red;" value="{!olItem.Quantity}" required="false"/>
+             <apex:inputField style="border-left: 2px solid red;" value="{!olItem.Revenue_Type__c}"/>
+             <apex:inputField style="border-left: 2px solid red;" value="{!olItem.Solution_Type__c}" rendered="{!!OERecordType}"/>
+             <apex:inputField value="{!olItem.Solution_Type__c}" rendered="{!OERecordType}"/>
+             <apex:inputField value="{!olItem.Description}"/>
+             <apex:inputField value="{!olItem.Blanket_Forecast__c}"/>
+             <!-- Going forward the Probability field will be filled with ATR_Probability__c from Opportunity-->
+             <!--<apex:inputField required="true" value="{!olItem.Probability__c}"/>-->
+             <apex:inputField style="border-left: 2px solid red;" value="{!olItem.Plant__c}" id="plant"/>
+             <apex:inputField value="{!olItem.Product_Incumbent__c}"/>       
+     </apex:pageBlockSection>
+     
+     <apex:pageBlockSection title="Product" collapsible="false" id="ProductSection">
+             <apex:pageBlockSectionItem >
+           <apex:outputLabel >Product specified from Price Book</apex:outputLabel>
+                    
+
+           <apex:inputField value="{!olItem.PricebookEntry.product2id}" id="prodName">
+           <apex:actionStatus id="productStatus" style="align:center;" >
+            <apex:facet name="start" >
+            Populating Value. Please Wait... <apex:image url="{!$Resource.loading}" alt=" Populating Value. Please Wait..." height="10" width="30" />                       
+        </apex:facet>
+        </apex:actionStatus>
+
+           </apex:inputfield>
+           </apex:pageBlockSectionItem>
+           <apex:pageBlockSectionItem >
+           <apex:outputLabel >Product Description</apex:outputLabel>
+           <apex:outputField value="{!olItem.PricebookEntry.product2.description}"/>
+
+</apex:pageBlockSectionItem>
+    </apex:pageBlockSection>
+            
+            </apex:pageBlock>
+         
+ 
+            <apex:pageBlock id="productSearchBlock">
+            <apex:actionregion >
+            <apex:outputPanel styleClass="search">
+                    Search for {!$ObjectType.Product2.LabelPlural}:
+                </apex:outputPanel>
+
+                <apex:actionRegion renderRegionOnly="false" immediate="true">
+
+                    <apex:inputText value="{!searchString}" style="width:300px"/>
+                    &nbsp;&nbsp;
+                    <i>
+                
+                        <apex:actionStatus id="searchStatus" startText="Searching..." stopText=" "/>
+                    </i>
+                    
+                <apex:commandLink action="{!updateAvailableList}"  reRender="searchResults" Style="text-decoration:none"  status="searchStatus"> 
+                    <apex:commandButton value="Search" />
+                
+                    </apex:commandLink> 
+                </apex:actionRegion>
+            
+                <br/>
+                <br/>
+        
+                <apex:outputPanel id="searchResults">
+
+
+                    <apex:pageBlockTable value="{!AvailableProducts }" var="a">
+                    
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.Name.Label}" >
+                        <apex:commandLink action="{!matchProduct}" rerender="ProductSection,unitPrice,mpmproduct,plant"  value="{!a.Product2.Name}"  id="theCommandLink"   immediate="true" status="productStatus">                        
+                        
+                        <apex:param value="{!a.Id}" assignTo="{!toSelect1}" name="toSelect1"/>
+                        </apex:commandLink>
+                       
+                        </apex:column>
+                                            
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.Description.Label}" value="{!a.Product2.Description}"/>
+                        
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.Family.Label}" value="{!a.Product2.Family}"/>
+                        
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.CanUseQuantitySchedule.Label}" value="{!a.Product2.CanUseQuantitySchedule}"/>
+                        
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.CanUseRevenueSchedule.Label}" value="{!a.Product2.CanUseRevenueSchedule}"/>
+                        
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.Comments__c.Label}" value="{!a.Product2.Comments__c}"/>
+                        
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.Product_Line__c.Label}" value="{!a.Product2.Product_Line__c}"/>
+                        
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.Product_Number__c.Label}" value="{!a.Product2.Product_Number__c}"/>
+                        
+                        <apex:column headerValue="{!$ObjectType.Product2.Fields.RMU__c.Label}" value="{!a.Product2.RMU__c}"/>
+                        
+                    </apex:pageBlockTable>
+                    
+                    <!-- We put up a warning if results exceed 500 rows -->
+                    <apex:outputPanel styleClass="fyi" rendered="{!overLimit}">
+                        <br/>
+                        Your search returned over 500 results, use a more specific search string if you do not see the desired {!$ObjectType.Product2.Label}.
+                        <br/>
+                    </apex:outputPanel>
+                    
+                </apex:outputPanel>
+            </apex:actionregion>
+            </apex:pageBlock>
+                         
+ <script language="javascript">
+    //document.getElementById('thePage:theFrm:selected:pblkSct:pblkSctItm:active').focus();
+ </script>
+ </apex:form>
+</apex:page>

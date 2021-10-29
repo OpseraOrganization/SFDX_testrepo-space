@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>49.0</apiVersion>
+    <assignments>
+        <description>Assign Case Extension Name and Case Id to New Extension Record</description>
+        <name>Assign_New_instance_of_Case_Extension</name>
+        <label>Assign New instance of Case Extension</label>
+        <locationX>50</locationX>
+        <locationY>398</locationY>
+        <assignmentItems>
+            <assignToReference>VarCaseExt.Name</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>{!varCase.CaseNumber}-EXT</stringValue>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>VarCaseExt.Case_object__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>varCase.Id</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>VarCaseExt.Update__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>UpdatesWhetherGreenorRed</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Create_New_Case_Extension</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <description>Assing Formula field value to Existing Case Extension Record</description>
+        <name>CaseExtension_Is_Found</name>
+        <label>CaseExtension Is Found</label>
+        <locationX>314</locationX>
+        <locationY>398</locationY>
+        <assignmentItems>
+            <assignToReference>VarCaseExt.Update__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>UpdatesWhetherGreenorRed</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Updating_Extension_Record</targetReference>
+        </connector>
+    </assignments>
+    <decisions>
+        <name>If_Case_Extension_Found</name>
+        <label>If Case Extension Not Found</label>
+        <locationX>182</locationX>
+        <locationY>278</locationY>
+        <defaultConnector>
+            <targetReference>CaseExtension_Is_Found</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>Extension_Not_Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>VarCaseExt</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Assign_New_instance_of_Case_Extension</targetReference>
+            </connector>
+            <label>Extension Not Found</label>
+        </rules>
+    </decisions>
+    <description>Fix for flow error - removed condition on record Name field while fetching existing Case Extension</description>
+    <formulas>
+        <name>UpdatesWhetherGreenorRed</name>
+        <dataType>String</dataType>
+        <expression>If(({!varCase.RecordType.DeveloperName}== &apos;Repair_Overhaul&apos; || {!varCase.RecordType.DeveloperName}==&apos;Quotes&apos; || {!varCase.RecordType.DeveloperName}==&apos;Orders&apos; || 
+{!varCase.RecordType.DeveloperName}==&apos;Internal_Escalations&apos; || {!varCase.RecordType.DeveloperName}==&apos;Returns&apos;  || {!varCase.RecordType.DeveloperName}==&apos;ReturnsPRO&apos;), 
+IF(AND(NOT(ISBLANK( {!varCase.TSLI_DateTime__c})) , NOT(ISBLANK({!varCase.Due_Date__c}))),(IF(AND(({!varCase.RecordType.DeveloperName} == &apos;Repair_Overhaul&apos;|| 
+{!varCase.RecordType.DeveloperName} == &apos;Returns&apos; ||  {!varCase.RecordType.DeveloperName} == &apos;ReturnsPRO&apos; || {!varCase.RecordType.DeveloperName} == &apos;Quotes&apos;),
+(NOW() - {!varCase.TSLI_DateTime__c})*24 &lt; 24), &apos;&apos;,(IF(AND({!varCase.RecordType.DeveloperName} == &apos;Orders&apos;,(NOW() - {!varCase.TSLI_DateTime__c})*24 &lt; 12),
+&apos;&apos;,(IF(AND({!varCase.RecordType.DeveloperName}  == &apos;Internal_Escalations&apos;,(NOW() - {!varCase.TSLI_DateTime__c})*24 &lt; 8),&apos;&apos;,
+&apos;Cust Comm Reqd&apos;)))))),
+&apos;&apos;),&apos;&apos;)</expression>
+    </formulas>
+    <interviewLabel>Create Case Extension when Due date Changes in Case Record {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Create Case Extension when Due date Changes in Case Record</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordCreates>
+        <name>Create_New_Case_Extension</name>
+        <label>Create New Case Extension</label>
+        <locationX>50</locationX>
+        <locationY>518</locationY>
+        <inputReference>VarCaseExt</inputReference>
+    </recordCreates>
+    <recordLookups>
+        <name>Find_Case_Extension_if_its_there</name>
+        <label>Find Case Extension if its there</label>
+        <locationX>182</locationX>
+        <locationY>158</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>If_Case_Extension_Found</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Case_object__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>varCase.Id</elementReference>
+            </value>
+        </filters>
+        <object>Case_Extension__c</object>
+        <outputReference>VarCaseExt</outputReference>
+        <queriedFields>Id</queriedFields>
+    </recordLookups>
+    <recordUpdates>
+        <description>Saving the Extension Record</description>
+        <name>Updating_Extension_Record</name>
+        <label>Updating Extension Record</label>
+        <locationX>314</locationX>
+        <locationY>518</locationY>
+        <inputReference>VarCaseExt</inputReference>
+    </recordUpdates>
+    <start>
+        <locationX>56</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Find_Case_Extension_if_its_there</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <description>Will be setting this value from Process Builder</description>
+        <name>varCase</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <name>VarCaseExt</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Case_Extension__c</objectType>
+    </variables>
+</Flow>

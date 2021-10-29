@@ -1,0 +1,155 @@
+<apex:page standardController="DMAPP__DM_Account_Plan__c" extensions="DMAPP.TAMStandardController,DMAPP.AM_CustomTabController" showHeader="{! NOT( $CurrentPage.parameters.hide_summary == 'true' ) }" sidebar="false" docType="html-5.0" tabStyle="Account_Plans__tab">
+
+    <c:jQuery jQueryUI="true"
+    	underscore="true"
+        cookies="true"
+        tooltip="true"
+        validate="true"
+        paging="true"
+        jqGrid="true"
+        textareaMaxlength="true"
+        dropdown="true"
+        chosen="true"
+    />
+
+    <c:MobileRedirect TAM="true" />
+   
+    <c:CRUD />    
+    <apex:include pageName="DMAPP__Quicklinks" />
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/ttgutils.js')}"/>
+
+
+    <apex:includeScript value="{! URLFOR($Resource.prefix) }" />
+	<script type="text/javascript" src="{! $Resource.l10njs }"></script>
+	<apex:include pageName="DMAPP__tmpCommoncss" />
+
+	<script type="text/javascript" src="{! URLFOR($Resource.ttgomjs, 'ttg/lib/ttgservice.js') }"></script>
+	<script type="text/javascript" src="{! URLFOR($Resource.OpportunityMapConfiguration) }"></script>
+	<script type="text/javascript" src="{! URLFOR($Resource.ttgomjs, 'ttg/lib/jquery-ui-touch-patch.js') }"></script>
+	<script type="text/javascript" src="{! URLFOR($Resource.ftk, 'forcetk.js') }"></script>
+
+
+    <apex:includeScript value="{! URLFOR($Resource.prefix) }" />
+	<script type="text/javascript" src="{! $Resource.l10njs } "></script>	
+
+  <!-- Perf: Added Includes -->
+  <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/modernizr.js')}"/>
+  <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/visualforce_error_handler.js')}"/> 
+  <!-- Perf: end -->		
+
+	<apex:include pageName="DMAPP__tmpCommoncss" />
+
+  <apex:include pageName="DMAPP__OpportunityMapConfiguration" />
+
+    <style>
+/* DMDEV-10011
+        @import url("{! URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_side_panel.css') }");
+        @import url("{! URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_post.css') }");
+        @import url("{! URLFOR($Resource.ttgomjs,         'ttg/graph/css/glyphs/style.css') }");
+        @import url("{! URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_summary.css') }");
+*/
+        @import url("{! URLFOR($Resource.TAM,             'css/common.css') }");
+        @import url("{! URLFOR($Resource.TAM,             'css/solutionTooltip.css') }");
+        
+        .dropdown {
+			margin-left: -47px !important;
+		}
+		
+		.dropdown-menu{
+			min-width: 83px !important;
+		}
+    </style>
+    
+    <div id="TAS">
+        <apex:include pageName="DMAPP__TAMSummaryTab" />
+        <div id="SPINNER"></div>
+    </div>
+
+    <div style="display: none;" id="userPageLink">
+        <apex:outputLink value="/{!$User.Id}" >SF Base URL Link</apex:outputLink>
+    </div>
+
+
+	<script>
+       	
+       	var isTouchScreen = ttg.isTouchScreen();
+        var isWindows8Tab = ttg.isWindows8Tab();
+        var ttg_salesforce1 = ((typeof window.sforce != 'undefined') && (typeof window.sforce.one != 'undefined')) ? true : false; 
+
+        
+       	
+       	var height = .70*jQuery(window).height();
+       	var s1_height = .85*jQuery(window).height();
+       	
+       	var iFrame = jQuery('<iframe/>').css({
+       		width: 		'98%',
+       		'z-index':	'10000',
+       		height: 	ttg_salesforce1 ? s1_height : height,
+       		margin:		'0 auto',
+       		display:	'block',
+            border:     'none' 		
+       	})
+       	//.attr('src', baseURL + '{!JSENCODE(tabSrc)}?id={!JSENCODE(plan.Id)}')
+       	.attr('id', 'consumption_iframe');
+       	
+       	iFrame.appendTo('.outerNoSidebar');
+       	
+       	if(ttg_salesforce1 || {!JSENCODE($CurrentPage.parameters.hide_summary) == 'true'} ){
+       		iFrame.appendTo('#TAS');
+       	}
+    	
+		var the_url = document.URL;
+		
+		if (the_url.indexOf("tabIndex=1") > -1){
+			jQuery('.am_customTab1 .am_custom_tab_text').addClass('altify-nav-tab-selected');
+		} else if (the_url.indexOf("tabIndex=2") > -1){
+			jQuery('.am_customTab2 .am_custom_tab_text').addClass('altify-nav-tab-selected');
+		} else if (the_url.indexOf("tabIndex=3") > -1){
+			jQuery('.am_customTab3 .am_custom_tab_text').addClass('altify-nav-tab-selected');
+		}
+
+        var amConfiguration;
+
+        jQuery(document).ready(function() {
+
+                jQuery('iframe#consumption_iframe').attr('src', 'c__{!JSENCODE(tabSrc)}?id={!JSENCODE(plan.Id)}');
+                    
+                var spec = {
+                    sessionid : '{!JSENCODE($Api.Session_ID)}',
+                    userId: '{!JSENCODE($User.id)}',
+                    ttgApi: ttg.apiLayer.crud( { sessionid : '{!JSENCODE($Api.Session_ID)}' } ),
+                    planId: '{!JSENCODE(accountPlan.Id)}',
+                    planname: '{!JSENCODE(accountPlan.Name)}',
+                    spinnerURL: '{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}',
+                    calendarURL: "{!URLFOR($Resource.Common, 'images/icon_calendar.png')}",
+                    title: '{!JSENCODE($Label.AM_PLAN_SETTINGS)}',
+                    readonly: {!PlanRecordEditable == false},
+                    candelete: {!Candelete},
+                    inactive: {!inactive},
+                    onDelete: function() { top.location.href = '/apex/AccountPlan'; },
+                    hideScorecard: {!NOT(isLicensedForAccountManagerAndIsScorecardEnabled)},
+                    fiscalYearStartMonth: {!fiscalYearStartMonth},
+                    usesStartDateAsFiscalYearName: {!usesStartDateAsFiscalYearName},
+                    isoCode: '{!JSENCODE(currencyISO)}',
+                    showAutoPostOption: {!showAutoPostOption},
+                    annualRevenueTargets: '{!JSENCODE($Label.resource_AnnualRevenueTarget)}',
+                    editRevenueTargets: '{!JSENCODE($Label.resource_EditRevenueTarget)}',
+                    planTarget: '{!JSENCODE($Label.resource_PlanTarget)}'
+                };
+                
+    
+                amConfiguration = ttg.am.configuration(spec);
+    
+                var specClone = spec;
+                specClone['clone'] = true;
+                
+                var hasCreateAccess = {!planObjectCreateable};
+                
+                var amConfigurationClone = ttg.am.configuration(specClone);
+
+            }
+        )  
+
+	</script>
+
+</apex:page>

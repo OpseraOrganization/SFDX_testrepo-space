@@ -1,0 +1,594 @@
+<apex:page renderas="{!RenderAs}" controller="DSALV.s_ReportController" standardStylesheets="false" sidebar="false" contenttype="{!ContentType}" id="mainPage" cache="true" readonly="true">
+    <!-- // ******* Copyright Data Salvation Ltd December 2012. 
+         // ******* Contact john.jordan@datasalvation.co.uk
+         // ******* WARNING! Commercial Software, All Use Must Be Licensed)
+         // ******* This software is protected by copyright Law and International Treaties. Unauthorized use, modification, duplication, 
+         // ******* reverse engineering, any form of redistribution, or use in part or in whole other than by prior, express, 
+         // ******* printed and signed license for use is subject to civil and criminal prosecution. This notice includes code & 
+         // ******* any related objects, sub functions or classes pertaining to or dependent on this code. 
+         // ******* If you have received this code in error, please notify copyright holder and destroy this and any other copies as instructed. 
+         
+         // ******* 25/11/2013 JJ Added links to unique values report. -->
+                     
+                     
+<!-- ********************************************** -->
+<!-- ************ Styles Bit ********************* --> 
+<!-- ********************************************** -->
+<head>
+<style type="text/css" media="print" >
+@page {
+    size: A4 landscape;
+    margin:5px; 
+}
+td {font-size:6.5px;font-family: Arial Unicode MS; }
+th {font-size:6.5px;font-family: Arial Unicode MS; }
+</style>
+
+
+
+<style type="text/css" >
+@media screen
+{
+.MainTable
+{
+    padding-right:2px;
+}
+
+.MainTable th
+{
+    background-color: rgb(42,150,195);
+    color: white;
+    text-align: center;
+    vertical-align: bottom;
+    height: 250px;
+    padding-bottom: 3px;
+    padding-left: 5px;
+    padding-right: 5px;
+    border-color:rgb(255,255,255);
+}
+
+.MainTable td.dataCell
+{
+    border-bottom : 0px solid grey;
+    width:50px;
+    padding-left : 5px;
+    padding-right:5px;
+    padding-top:2px;
+    padding-bottom:2px;
+    text-align:right;    
+}
+.MainTable td.GreenCell
+{
+    border-bottom : 0px solid grey;
+    width:50px;
+    background-color:#d7fecd;
+    padding-left : 5px;
+    padding-right:5px;
+    padding-top:2px;
+    padding-bottom:2px;
+    text-align:right;
+}
+.MainTable td.RedCell
+{
+    border-bottom : 0px solid grey;
+    width:50px;
+    background-color:#fecdd5;
+    padding-left : 5px;
+    padding-right:5px;
+    padding-top:2px;
+    padding-bottom:2px;
+    text-align:right;
+}
+.MainTable td.YellowCell
+{
+    border-bottom : 0px solid grey;
+    width:50px;
+    background-color:#fefecd;
+    padding-left : 5px;
+    padding-right:5px;
+    padding-top:2px;
+    padding-bottom:2px;
+    text-align:right;
+}
+
+.verticalText
+{
+                text-align: center;
+                vertical-align: middle;
+                width: 20px;
+                margin: 0px;
+                padding: 0px;
+                padding-left: 3px;
+                padding-right: 3px;
+                padding-top: 10px;
+                white-space: nowrap;
+                -webkit-transform: rotate(-90deg); 
+                -moz-transform: rotate(-90deg);                 
+};
+
+.NewDataRow
+{
+    border-bottom : 1px solid grey;
+    background-color: rgb(208,238,249);
+}
+.xdataCell
+{
+    border-bottom : 5px solid grey;
+
+    width:50px;
+    background-color: rgb(208,238,249);
+}
+
+.MainTable tr.splitrow td
+{
+    border-bottom : 1px solid grey;
+    width:50px;
+    background-color: rgb(208,238,249);
+}
+
+
+.BiggerColumn
+{
+    width:150px;
+}
+
+
+#Main tr.splitrow td
+{
+    border-bottom : 1px solid grey;
+    width:50px;
+    background-color: rgb(208,238,249);
+}
+
+
+}   
+</style>
+</head>
+
+
+<!-- **************************************************** -->
+<!-- ************ Popup Filters Bit ********************* --> 
+<!-- *************************************************** --> 
+<div id="inline2" style="width:650px;height:400px;display: none;">
+    <apex:pageblock title="Filters" rendered="{!if(RenderAsExcel==false && renderAsPDF==false,true,false)}">
+        <apex:form >
+            <apex:pageblocksection columns="2">
+    
+                <apex:pageblocksectionitem id="PBS1"> 
+                    <apex:outputtext value="Configuration" />
+                    <apex:selectList value="{!ConfigSelected}" multiselect="false" size="1" tabIndex="0" id="ConfigSelector">
+                         <apex:selectOptions value="{!ConfigSelect}"/>
+                         <apex:actionSupport event="onchange" action="{!s_RefreshSearchVals}" rerender="CatSelector,ObjectSelector,BatchSelector" status="showstatus" immediate="false" />                           
+                     </apex:selectList>  
+                     
+                </apex:pageblocksectionitem>
+                
+                <apex:pageblocksectionitem > 
+                    <apex:outputtext value="Salesforce Object"/>
+                    <apex:inputtext value="{!ObjectSelected}" id="ObjectSelector" disabled="true"/>
+                </apex:pageblocksectionitem>
+                
+                
+                <apex:pageblocksectionitem id="PBS3">
+                    <apex:outputtext value="Results Set"/>
+                    <apex:selectList value="{!BatchSelected}" multiselect="false" size="1" tabIndex="0" id="BatchSelector" disabled="{!NOT(renderResultSet)}">
+                         <apex:selectOptions value="{!BatchSelect}"/>
+                         <apex:actionSupport event="onchange" action="{!s_RefreshCategories}" rerender="CatSelector" status="showstatus" immediate="false" />                           
+                     </apex:selectList> 
+                </apex:pageblocksectionitem>
+                
+                <apex:pageblocksectionitem id="PBS2"> 
+                    <apex:outputtext value="Category"/>
+                    <apex:selectList value="{!CatSelected}" multiselect="false" size="1" tabIndex="0" id="CatSelector" disabled="{!NOT(renderCat)}">
+                         <apex:selectOptions value="{!CatSelect}"/>
+                     </apex:selectList> 
+                </apex:pageblocksectionitem>
+                            
+                
+                
+                <apex:pageblocksectionitem > 
+                        <apex:actionStatus id="showstatus"  stopText="">
+                            <apex:facet name="start">
+                                <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+                            </apex:facet>
+                        </apex:actionStatus>
+                </apex:pageblocksectionitem>
+                
+                <apex:pageblocksectionitem >  
+                    <br/>
+                </apex:pageblocksectionitem>
+ 
+                <script>var ConfigDropDownID="{!$Component.PBS1.ConfigSelector}";</script>  
+                <script>var CatDropDownID="{!$Component.PBS2.CatSelector}";</script>
+                <script>var BatchDropDownID="{!$Component.PBS3.BatchSelector}";</script>                
+
+                 
+
+            </apex:pageblocksection>
+            <apex:commandbutton value="Display Results" action="{!GoRefresh}"  rerender="Results,SpareBlock" status="showstatus2"/>&nbsp;&nbsp;
+            <apex:commandbutton value="Download Results As Excel" onClick="OpenWindowURL('Excel');return false;"  />
+         
+         	<!-- Removed for v1.8 as this does not work properly -->
+         	<!--  <apex:commandbutton value="Download Results As PDF" onClick="OpenWindowURL('PDF');return false;" /><br/>    -->
+            
+            <!-- Trial message -->
+            <apex:outputText value="{!TrialMessage}" style="font-size:14px; color:red" />
+            
+            <apex:actionStatus id="showstatus2"  stopText="">
+                <apex:facet name="start">
+                    <apex:image width="20" height="20" url="{!URLFOR($Resource.DSALV__TimerImage)}"/>
+                </apex:facet>
+            </apex:actionStatus>
+
+            <!-- <apex:pageMessages id="pageMessageBit" /> -->
+ 
+        </apex:form>
+    </apex:pageblock> 
+</div>
+ <!-- ****************************************************************************************************************** --> 
+ 
+<apex:pageblock rendered="{!if(RenderAsExcel==false && renderAsPDF==false,true,false)}" id="ParentPB">
+<apex:form >
+
+
+
+<apex:actionFunction name="getChartData" action="{!s_GetChartData}" rerender="ReLoadBackendValues,SpareBlock" immediate="true" status="showstatusChart">
+    <apex:param name="firstParam" assignTo="{!ChartCategory}" value=""  />
+</apex:actionFunction>
+
+
+<script >
+//Attempt to override JavaScript that is setting focus on Date field
+function setFocusOnLoad() {} // nasty fudge
+</script>
+
+
+<!-- // ******************************************************************************************************************************************* -->
+<!-- // ********************************** Charts and Fancy Box Stuff (FancyBox is a LightWindow) ************************************************* -->
+<!-- // ******************************************************************************************************************************************* -->
+<script type="text/javascript" src="{!URLFOR($Resource.DSAL_FBox,'fancyapps-fancyBox-0ffc358/lib/jquery-1.9.0.min.js')}"/>
+<script type="text/javascript" src="{!URLFOR($Resource.DSAL_FBox,'fancyapps-fancyBox-0ffc358/lib/jquery.mousewheel-3.0.6.pack.js')}"/>
+<link rel="stylesheet" href="{!URLFOR($Resource.DSAL_FBox,'fancyapps-fancyBox-0ffc358/source/jquery.fancybox.css?v=2.1.4')}" type="text/css" media="screen" />
+<script type="text/javascript" src="{!URLFOR($Resource.DSAL_FBox,'fancyapps-fancyBox-0ffc358/source/jquery.fancybox.pack.js?v=2.1.4')}"/>
+
+<script type="text/javascript" src="https://www.google.com/jsapi"/>
+<script type="text/javascript">
+    var DDParam1;
+    var DDParam2;
+    var DDParam3;
+    var DDParam4;
+     google.load("visualization", "1", {packages:["corechart"]});
+      //google.setOnLoadCallback(drawChart);
+      function drawChart(CatVal,FieldVal,Desc) 
+      {
+        ChartData = new google.visualization.DataTable();
+        ChartData.addColumn('string', 'Time');
+        ChartData.addColumn('number', 'Data Quality (' + FieldVal + ')');
+        //reRenderAction();
+        getChartData(CatVal + '#~#' + FieldVal + '#~#' + Desc); 
+        return false;      
+      }
+      
+     
+</script>
+
+
+<a style='display:none;' id="fbx3" href="#inline3" title="Drill Down" >xx</a>
+<a id="fbx2" href="#inline2" title="Report Filtering" ><!-- <img style="margin-left:10px;" src="{!$Resource.Filter}" width="40" height="40"/> --><img src="/img/icon/forecasts32.png" title=""/></a>
+<a id="fbx4" href="#inline4" title="Unique Values" style="display:none;"><!-- <img style="margin-left:10px;" src="{!$Resource.Filter}" width="40" height="40"/> -->[unique values]</a>
+
+
+<a style='display:none;' id="fbx" href="#inline1" title="Progress Charting"><img style="margin-left:10px;" src="{!$Resource.DSAL_Chart_Logo}" width="40" height="40"/></a> 
+
+
+<div id="inline1" style="width:700px;height:390px;display: none;">
+<h3>Progress Chart</h3>
+<br/>
+
+ 
+&nbsp;&nbsp;&nbsp;
+<apex:outputpanel id="ReLoadBackendValues">
+ <script>
+    TheReturnedChartData = "{!ReturnedChartData}";
+    if (typeof ChartData!='undefined')
+    {
+
+    if (TheReturnedChartData.indexOf('~'))
+    {
+        DSplit = TheReturnedChartData.split('~');
+        for(xxx=0;xxx<DSplit.length;xxx++)
+        {
+            MoreSplit = DSplit[xxx].split('###');
+             ChartData.addRow([MoreSplit[0],parseInt(MoreSplit[1])]) 
+        }
+        var options = {
+          title: 'Data Quality Progress',
+          width:650,
+          height:350,
+          series:{
+             0:{targetAxisIndex:0},
+             1:{targetAxisIndex:1}
+                },
+          vAxes: {0: {maxValue:100,minValue:0,title:'%'}},
+          legend:{position:'bottom'},
+          chartArea: {width: '80%', height: '60%'}
+        };
+        var chart = new google.visualization.LineChart(document.getElementById('ChartDiv'));
+        document.getElementById('ChartDiv').style.display='';
+        chart.draw(ChartData, options);
+    }
+    }
+    //return false;
+</script>
+ </apex:outputpanel>
+ 
+<apex:outputpanel id="SpareBlock"> 
+            <apex:commandbutton value="View Data" onclick="DrillDownReadCellWindow(DDParam1,DDParam2,DDParam3,DDParam4);return false;" rendered="{!ShowDrillDown}"/>
+            <!-- Trial message -->
+            <apex:outputText value="{!TrialMessage}" style="font-size:14px; color:red" />
+    
+</apex:outputpanel>
+
+<div id='ChartDiv'></div>      
+</div>
+    
+    
+<script>
+var AllData;
+var SkipSearch = {!SkipSearch}; 
+    
+$(document).ready(function() {
+    //Fancy Box 4 is Unique values;
+    $("#fbx4").fancybox({
+        width       : '840px', 
+        height      : '700px',
+        autoSize    : false,
+        closeClick  : false,
+        closeEffect : 'fade',
+        closeBtn:true,
+        fitToView:false,
+        openEffect:'elastic',
+        openSpeed  : 400,
+        closeSpeed : 200,
+        autoCenter : true
+      });
+      
+    // Fancybox 3 is drill down  
+    $("#fbx3").fancybox({
+        width       : '840px', 
+        height      : '700px',
+        autoSize    : false,
+        closeClick  : false,
+        closeEffect : 'fade',
+        closeBtn:true,
+        fitToView:false,
+        openEffect:'elastic',
+        openSpeed  : 400,
+        closeSpeed : 200,
+        autoCenter : true
+      });
+  
+    // Fancy Box 2 is Report Filtering
+    $("#fbx2").fancybox({
+        width       : '700px', 
+        height      : '400px',
+        autoSize    : false,
+        closeClick  : false,
+        closeEffect : 'fade',
+        closeBtn:true,
+        fitToView:false,
+        openEffect:'elastic',
+        openSpeed  : 400,
+        closeSpeed : 200,
+        autoCenter : true
+      });
+      
+    // Fancy Box 1 is Charting  
+    $("#fbx").fancybox({
+        width       : '700px', 
+        height      : '400px',
+        autoSize    : false,
+        closeClick  : false,
+        closeEffect : 'fade',
+        closeBtn:true,
+        fitToView:false,
+        openEffect:'elastic',
+        openSpeed  : 400,
+        closeSpeed : 200,
+        autoCenter : true
+      });
+      
+      if (SkipSearch == false){
+      
+      $("#fbx2").trigger('click');
+      }
+});
+
+function s_ChartDropDownChanged()
+{
+    CatVal = Chart_CatSelect[Chart_CatSelect.selectedIndex].value;
+    FieldVal = Chart_FieldSelect[Chart_FieldSelect.selectedIndex].value;
+    if (FieldVal != '' && CatVal != '') drawChart(CatVal,FieldVal);
+}
+
+
+<!-- ***** Format The New Table Before It Is Visible ************ -->
+function s_FormatTable()
+{
+    mt  = document.getElementsByClassName('MainTable');
+    // hide the fancy box window if it is open
+    $.fancybox.close();
+
+
+    if (mt[0]==undefined) {return;} // we won't always have table yet
+    mt[0].className = 'MainTable';
+    mt[0].rows[0].cells[0].className = 'BiggerColumn';
+    mt[0].rows[0].cells[1].className = 'BiggerColumn';
+
+    // put the divs in the title actually into DIVS as at the moment they are just in text  
+    for(xx=0;xx<mt[0].rows[0].cells.length;xx++)
+    {
+        ThisCell = mt[0].rows[0].cells[xx];
+    
+        
+        if (ThisCell.textContent.length>4)
+        {
+            if (ThisCell.textContent.substr(0,4).toLowerCase()=='<div') ThisCell.innerHTML = ThisCell.textContent; // take HTML that APEX generated and actually make it HTML
+        }
+    }
+    // now loop through rows looking for summary rows and adding formatting
+    for(xx=0;xx<mt[0].rows.length;xx++)
+    {
+        ThisRow = mt[0].rows[xx];
+        if (xx>0)
+        {
+            if (ThisRow.cells[0].innerHTML != '')
+            {
+                ThisRow.className='NewDataRow';
+                //for(yy=0;yy<ThisRow.cells.length;yy++) ThisRow.cells[yy].className = 'NewDataRow';
+            }
+        }
+        
+    }
+    mt[0].style.display=''; // make it visible only after everything has been sorted 
+    
+    
+}
+
+// ***** Open Excel or PDF Window
+function OpenWindowURL(WinType)
+{
+    NewURL = '/apex/ProgressReport?&immediaterender=true';
+    if(WinType=='Excel') NewURL = NewURL + '&RenderAsExcel=true';
+    if(WinType=='PDF') NewURL = NewURL + '&RenderAsPDF=true';
+
+    DateFormat = getShortDateFormat().toUpperCase();
+
+    ConfigDropDown = document.getElementById(ConfigDropDownID);
+    if (ConfigDropDown.selectedIndex==0)
+    {
+        alert('A configuration must be selected prior to exporting results.')
+        return;
+    }
+    NewURL = NewURL + '&ConfigSelected=' + encodeURIComponent(ConfigDropDown[ConfigDropDown.selectedIndex].value); //V1.8.2 encodeURIComponent will escape & and other spcecial characters
+    
+    
+    BatchDropDown = document.getElementById(BatchDropDownID)
+    if (BatchDropDown.selectedIndex==0)
+    {
+        alert('A result set must be selected prior to exporting results.')
+        return;
+    }
+    NewURL = NewURL + '&BatchDate=' + encodeURIComponent(BatchDropDown[BatchDropDown.selectedIndex].value); //V1.8.2 encodeURIComponent will escape & and other spcecial characters
+    
+
+    CatDropDown = document.getElementById(CatDropDownID)
+    if (CatDropDown.selectedIndex>0)
+    {
+        NewURL = NewURL + '&CatSelected=' + encodeURIComponent(CatDropDown[CatDropDown.selectedIndex].value);   //V1.8.2 encodeURIComponent will escape & and other spcecial characters
+    }
+    
+    window.open(NewURL)
+    return;
+}
+
+ function getShortDateFormat() {
+    var d = new Date(1992, 0, 7);
+    var s = d.toLocaleDateString();
+
+    function formatReplacer(str) {
+        var num = parseInt(str);
+        switch (num % 100) {
+            case 92:
+                return str.replace(/.{1}/g, "Y");
+            case 1:
+                return str.length == 1 ? "mM" : "MM"
+            case 7:
+                return str.length == 1 ? "dD" : "DD"
+        }
+    }
+
+    shortDateFormat = s.replace(/\d+/g, formatReplacer);
+    return shortDateFormat;
+}
+
+// ************************************************************************************************************
+// *********************************** Drill Down *************************************************************
+// ************************************************************************************************************
+function readCellWindow(TheDDParam1,TheDDParam2,TheDDParam3,TheDDParam4)
+{ 
+    document.getElementById('ChartDiv').style.display='none';
+    DDParam1 = TheDDParam1; // config
+    DDParam2 = TheDDParam2; // category
+    DDParam3 = TheDDParam3; // desc
+    DDParam4 = TheDDParam4; // field
+    
+    theIframe = document.getElementById('drilldown');
+    TheSource = "/apex/s_reportdrilldown?&ConfigSelected=" + encodeURIComponent(TheDDParam1) + '&RowCat=' + encodeURIComponent(TheDDParam2) + '&CellName=' + encodeURIComponent(TheDDParam3);   //V1.8.2 encodeURIComponent will escape & and other spcecial characters
+    //alert(TheSource);
+    theIframe.src = TheSource;  
+    $("#fbx").trigger('click');
+    drawChart(TheDDParam2,TheDDParam4, TheDDParam3)
+}
+function DrillDownReadCellWindow(TheDDParam1,TheDDParam2,TheDDParam3, TheDDParam4)
+{ 
+    $.fancybox.close(false)
+    $("#fbx3").trigger('click');
+return true;  
+    
+}
+
+
+// ************************************************************************************************************
+// *********************************** Unique Values ***********************************************************
+// ************************************************************************************************************
+function readCellWindow_UV(TheDDParam1,TheDDParam2,TheDDParam3, TheDDParam4)
+{ 
+    theIframe = document.getElementById('uniquevalues');
+    TheSource = "/apex/uniquevaluesreport?&ConfigSelected=" + encodeURIComponent(TheDDParam1) + '&Description=' + encodeURIComponent(TheDDParam2) + '&FieldName=' + encodeURIComponent(TheDDParam3) + '&BatchDate=' + encodeURIComponent(TheDDParam4);  //V1.8.2 encodeURIComponent will escape & and other spcecial characters
+    theIframe.src = TheSource; 
+    $("#fbx4").trigger('click');
+
+}
+function UV_CellWindow(TheDDParam1,TheDDParam2,TheDDParam3, TheDDParam4)
+{ 
+    $.fancybox.close(false)
+    $("#fbx4").trigger('click');
+return true;  
+    
+}
+
+
+</script>  
+<div id="inline3" style="width:840px;height:700px;display: none;"><iframe name="DrillDownIframe" id='drilldown' width="100%" height="100%" src=""></iframe></div>
+<div id="inline4" style="width:840px;height:700px;display: none;"><iframe name="UniqueValuesIFrame" id='uniquevalues' width="100%" height="100%" src=""></iframe></div>
+ 
+
+
+<!-- // ******************************************************************************************************************************************* -->
+<!-- // ******************************************************************************************************************************************* -->
+<!-- // ******************************************************************************************************************************************* -->
+    
+</apex:form>     
+
+
+</apex:pageblock>
+
+
+<!-- ********************************************** -->
+<!-- ************ Results Bit ********************* --> 
+<!-- ********************************************** -->
+<apex:pageblock id="Results" title="Results {!if(BatchSelected!='','(' + ConfigSelected + '-' + BatchSelectedFriendly + ')','')}">
+    <!-- Trial message -->
+    <apex:outputText value="{!TrialMessage}" style="font-size:14px; color:red" />
+    <apex:pageMessages id="pageMessageBitResults" />
+    <apex:dynamicComponent componentValue="{!MyPageBlockTable}"/>
+    <apex:outputpanel rendered="{!if(RenderAsExcel==false&&RenderAsPDF==false,true,false)}">
+    <script type="text/javascript">
+        s_FormatTable();
+    </script>
+    </apex:outputpanel>
+</apex:pageBlock>
+
+
+</apex:page>

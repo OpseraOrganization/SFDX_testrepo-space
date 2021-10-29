@@ -1,0 +1,779 @@
+<apex:page id="pg" controller="E2CP.Config3" action="{!loadPreferences}" tabStyle="settings__tab" title="Email to Case Premium Inbound Configuration">
+    <apex:includeScript value="/soap/ajax/29.0/connection.js"/>
+    
+    <style>
+        !div.pbSubheader{color:#000000 !important;}
+    </style>
+    
+    <style type="text/css">
+        .primaryPalette {background-color:#D36D00 !important;}
+        .brdPalette, .secondaryPalette {border-top-color:#D36D00 !important;}
+        
+        .pbSubheader {
+            background: #e96e25 !important; /* Fallback to solid color for older browsers */
+            background-image: linear-gradient(to top, #b95e15, #f97e35) !important;
+            border-radius: 4px;
+            text-shadow: -1px 0 #b95e15, 0 1px #b95e15,1px 0 #b95e15, 0 -1px #b95e15;
+        }
+        
+        .pageTitleIcon {
+            background-image: url(/img/icon/wrench32.png) !important; /* Change this URL to point to the icon you want to use */
+        }
+
+        select {
+            padding-bottom: 1px;
+        }
+        
+        .owner-cell .requiredBlock {
+            top: 0px !important;
+            bottom: 2px !important;
+        }
+
+        .owner-cell select {
+            margin-right: 2px;
+        }
+    </style>
+
+    <apex:sectionHeader title="Email to Case Premium" subtitle="Preferences Configuration" help="https://kb.internetcreations.com/pkb_Home?l=en_US&c=Products%3AEmail_to_Case_Premium"/>
+    <apex:form id="c3F">
+        <apex:pageMessages showDetail="false" id="pgmsgs"/>
+        <apex:pageMessage severity="warning" strength="3" title="No Organization Wide Email Addresses Exist" summary="The New Comment page will not function properly and will not send outbound emails." rendered="{!numOrgWides == 0}"/>
+        
+        <apex:pageBlock title="Step 2: Inbound Configuration" id="c3PB">
+            <apex:facet name="header">
+                <apex:outputpanel >
+                <table width="100%">
+                <tr>
+                
+                <td style="width:75%; text-align:center;">
+                    <apex:commandButton action="{!previous}" value="Previous"/>
+                    <apex:actionStatus id="quickStatus">
+                        <apex:facet name="start">
+                            <apex:outputPanel >
+                                <div style="z-index:99; position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:silver; opacity:.30; filter: alpha(opacity = 30);"></div>
+                                <apex:commandButton value="Saving..." disabled="true"/>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:facet name="stop">
+                            <apex:commandButton id="quickSave" action="{!quick}" value="Quick Save" rerender="quickStatus,pgmsgs,pgmsgs2,ExtConAcctField" status="quickStatus" oncomplete="handleQuickSaveOnComplete()"/>
+                        </apex:facet>
+                    </apex:actionStatus>
+                    <apex:commandButton action="{!next}" value="Finish"/>
+                </td>
+                
+                <td style="text-align:right;">
+                    <!--PageJumper start-->
+                    <apex:outputPanel >
+                         <apex:actionStatus id="pjStatus">
+                            <apex:facet name="start">
+                                <apex:outputtext value="{!pj.statusText}"/>
+                            </apex:facet>
+                            <apex:facet name="stop">
+                                <apex:outputpanel >
+                                    <apex:outputLabel for="pagejump" value="Jump to "/>
+                                    <apex:selectList value="{!pj.currentPage}"  id="pagejump" size="1">
+                                        <apex:selectOptions value="{!pj.allPages}"/>
+                                        <apex:actionSupport event="onchange" action="{!jumpToPage}" status="pjStatus"/>
+                                    </apex:selectList>
+                                </apex:outputpanel>
+                            </apex:facet>
+                        </apex:actionStatus>
+                    </apex:outputpanel>
+                    <!--PageJumper end-->
+                </td>
+                
+                </tr>
+                </table>
+                </apex:outputPanel>
+            </apex:facet>
+            
+            <apex:facet name="footer">
+                <apex:outputpanel >
+                <table width="100%">
+                <tr>
+                <td style="width:75%; text-align:center;">
+                    <apex:commandButton action="{!previous}" value="Previous"/>
+                    <apex:actionStatus id="quickStatus2">
+                        <apex:facet name="start">
+                            <apex:outputPanel >
+                                <div style="z-index:99; position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:silver; opacity:.30; filter: alpha(opacity = 30);"></div>
+                                <apex:commandButton value="Saving..." disabled="true"/>
+                            </apex:outputPanel>
+                        </apex:facet>
+                        <apex:facet name="stop">
+                            <apex:commandButton action="{!quick}" value="Quick Save" rerender="quickStatus2,pgmsgs,pgmsgs2,ExtConAcctField" status="quickStatus2" oncomplete="handleQuickSaveOnComplete()"/>
+                        </apex:facet>
+                    </apex:actionStatus>
+                    <apex:commandButton action="{!next}" value="Finish"/>
+                </td>
+                <td>
+                </td>
+                </tr>
+                </table>
+                </apex:outputPanel>
+            </apex:facet>
+            
+            <apex:actionFunction name="quickSave" action="{!quick}" status="quickStatus"/>
+            
+            <apex:pageBlockSection collapsible="false" title="Page Description" columns="1" id="prefDescPBS" showHeader="false">
+            These settings affect how inbound emails are processed for both new and existing cases.</apex:pageBlockSection>
+            
+            <apex:pageBlockSection rendered="{!conf0.ExistingAddress.size != 0 && conf0.SupportsAPI}" columns="1">
+            Primary Forwarding Address: <b><font color="green">{!conf0.ExistingAddress[0].LocalPart}@{!conf0.ExistingAddress[0].EmailDomainName}</font></b>
+            </apex:pageBlockSection>
+            
+            
+            <!-- ///////////General Settings//////////// -->
+
+            <apex:pageBlockSection title="General Settings" columns="1" id="basicPrefPBS">
+                            
+                <apex:pageBlockSectionItem id="USE_DEFAULT_RULE_PBSI"
+                helpText="When checked, the active Assignment Rule is used for new cases. Assignment Rules are configured in Setup: Customize: Cases: Assignment Rules. Uncheck this option if you prefer to use Workflow to assign cases.">
+                    <apex:outputLabel value="Use Active Assignment Rule" for="USE_DEFAULT_RULE_Checkbox" />
+                    <apex:inputCheckbox value="{!USE_DEFAULT_RULE}" selected="{!USE_DEFAULT_RULE}" id="USE_DEFAULT_RULE_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="TRIGGER_AUTO_RESPONSE_EMAIL_PBSI"
+                helpText="When checked, the active Auto-Response Rule is used for new cases. Auto-Response Rules are configured in Setup: Customize: Cases: Auto-Response Rules. Uncheck this field if you prefer to use Workflow to send auto-responses.">
+                    <apex:outputLabel value="Use Active Auto-response Rule" for="TRIGGER_AUTO_RESPONSE_EMAIL_Checkbox" />
+                    <apex:inputCheckbox value="{!TRIGGER_AUTO_RESPONSE_EMAIL}" selected="{!TRIGGER_AUTO_RESPONSE_EMAIL}" id="TRIGGER_AUTO_RESPONSE_EMAIL_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="TRIGGER_USER_EMAIL_PBSI"
+                helpText="Indicates whether to trigger emails that are sent to the case owner when a new message is added to a case, or when an assignment rule is configured to send an email to the assignee. You must also configure these emails throughout Setup: Customize: Cases. Uncheck this option if you would prefer to use Workflow which allows for greater flexibility in the content of the email.">
+                    <apex:outputLabel value="Trigger User Emails" for="TRIGGER_USER_EMAIL_Checkbox" />
+                    <apex:inputCheckbox value="{!TRIGGER_USER_EMAIL}" selected="{!TRIGGER_USER_EMAIL}" id="TRIGGER_USER_EMAIL_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="EMAIL_LOOP_PROTECTION"
+                helpText="Specify a value of 1-99 (minutes) to indicate the window of time in which an inbound email with the same subject as a previous inbound email is considered a duplicate.  [Email Loop Protection] will be pre-pended to the subject to flag the case as a suspected duplicate.  Configure Workflow or Auto Response Rules to not send an acknowledgement when [Email Loop Protection] is contained in the subject of the case to break the loop. Specify 0 to disable this feature.">
+                    <apex:outputLabel value="Email Loop Protection" for="EMAIL_LOOP_PROTECTION_Text"/>
+                    <apex:selectList id="EMAIL_LOOP_PROTECTION_Text" required="true" value="{!EMAIL_LOOP_PROTECTION}" multiselect="false" size="1">
+                        <apex:selectOptions value="{!emailLoopProtectionOptions}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="HOURS_CLOSED_UNTIL_NEW_CASE"
+                helpText="Email to Case Premium will automatically open a new case if an incoming email references an existing case which has been closed for more than the specified length of time.">
+                    <apex:outputLabel value="Time Closed Until New Case Creation" for="HOURS_CLOSED_UNTIL_NEW_CASE_Text"/>
+                    <apex:selectList id="HOURS_CLOSED_UNTIL_NEW_CASE_Text" required="true" value="{!HOURS_CLOSED_UNTIL_NEW_CASE}" multiselect="false" size="1">
+                        <apex:actionSupport event="onchange" rerender="REFERENCE_TO_ORIGINAL_CASE_Panel"/>
+                        <apex:selectOptions value="{!hoursClosedUntilNewCaseOptions}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="REFERENCE_TO_ORIGINAL_CASE"
+                helpText="Determine how you would like the New Case to make reference to the Original Case.">
+                    <apex:outputPanel layout="none">
+                        <apex:outputLabel style="color: red; font-size:smaller;" value="New!"/>
+                        <apex:outputLabel value="Reference to Original Case" for="REFERENCE_TO_ORIGINAL_CASE_Text"/>
+                    </apex:outputPanel>
+                    <apex:outputPanel id="REFERENCE_TO_ORIGINAL_CASE_Panel" layout="none">
+                        <apex:selectList id="REFERENCE_TO_ORIGINAL_CASE_Text" value="{!REFERENCE_TO_ORIGINAL_CASE}" multiselect="false" size="1" disabled="{!HOURS_CLOSED_UNTIL_NEW_CASE < 0}">
+                            <apex:selectOption itemValue="none" itemLabel="No References"/>
+                            <apex:selectOption itemValue="parent" itemLabel="Set Parent Case field to Original Case"/>
+                            <apex:selectOption itemValue="comment" itemLabel="Add Case Comment on New Case Referencing Original Case"/>
+                            <apex:selectOption itemValue="both" itemLabel="Both References"/>
+                        </apex:selectList>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="INSERT_CASE_DESC_AS_CMT" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="When an inbound email creates a case, the subject and body of the email are stored in the subject and description fields of the case, respectively.  You may also wish to create a comment out of the body of the email just as future inbound emails ordinarily would.  Comments can hold up to 4,000 bytes (while descriptions can contain up to 32,000 bytes) and the comment insertion may trigger an email notification, depending on how your org is configured.">
+                    <apex:outputLabel value="Add Comment from Initial Email" for="INSERT_CASE_DESC_AS_CMT_Checkbox"/>
+                    <apex:inputCheckbox value="{!INSERT_CASE_DESC_AS_CMT}" selected="{!INSERT_CASE_DESC_AS_CMT}" id="INSERT_CASE_DESC_AS_CMT_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ATTACHMENT_PLACEMENT"
+                helpText="Attachments on incoming emails can be stored on the case itself, the child email message, or both. Note that both will double the storage usage for attachments. If Case with link on Email is selected 'Disallow HTML documents and attachments' must be disabled.">
+                    <apex:outputLabel value="Incoming Attachment Placement" for="ATTACHMENT_PLACEMENT_Text"/>
+                    <apex:selectList id="ATTACHMENT_PLACEMENT_Text" required="true" value="{!ATTACHMENT_PLACEMENT}" multiselect="false" size="1" onchange="showHideWarning(this.value)">
+                        <apex:selectOptions value="{!attachmentPlacementOptions}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="INSERT_INBOUND_FILE_AS"
+                helpText="Determines which object attachments included on inbound emails will be inserted into, either Salesforce Files or Attachments.">
+                    <apex:outputLabel value="Insert New Inbound Files As" for="INSERT_INBOUND_FILE_AS_Select"/>
+                    <apex:selectList id="INSERT_INBOUND_FILE_AS_Select" required="true" value="{!INSERT_INBOUND_FILE_AS}" size="1">
+                        <apex:selectOption itemLabel="Attachments" itemValue="attachment"/>
+                        <apex:selectOption itemLabel="Salesforce Files" itemValue="file"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="SHARE_INBOUND_FILES_GLOBALLY" helpText="When enabled, inbound files will be shared with the entire organization instead of just those users with access to the case they're attached to.">
+                    <apex:outputLabel value="Share Inbound Files Globally" for="SHARE_INBOUND_FILES_GLOBALLY_Checkbox"/>
+                    <apex:inputCheckbox id="SHARE_INBOUND_FILES_GLOBALLY_Checkbox" value="{!SHARE_INBOUND_FILES_GLOBALLY}"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="MAXIMUM_COMMENT_SIZE_PBSI" rendered="false"
+                helpText="The Salesforce.com maximum field size is 4000 characters. If you wish to restrict the size of the comments your users can enter on the New Comment page, you may choose a value of less than 4000. This does not affect the comments added by inbound emails.">
+                    <apex:outputLabel value="Maximum Comment Size" for="MAXIMUM_COMMENT_SIZE_Text"/>
+                    <apex:inputText size="5" maxlength="32200" value="{!MAXIMUM_COMMENT_SIZE}" id="MAXIMUM_COMMENT_SIZE_Text" required="true" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="SHOW_RECIPIENTS_IN_COMMENT_INBOUND" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="When an inbound email creates a comment, the recipients of that email can be documented at the top of the resulting comment for easy reference.">
+                    <apex:outputLabel value="Show To and CC Recipients at the Top of Comments from Inbound Emails" for="SHOW_RECIPIENTS_IN_COMMENT_INBOUND_Checkbox"/>
+                    <apex:inputCheckbox value="{!SHOW_RECIPIENTS_IN_COMMENT_INBOUND}" selected="{!SHOW_RECIPIENTS_IN_COMMENT_INBOUND}" id="SHOW_RECIPIENTS_IN_COMMENT_INBOUND_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="SHOW_RECIPIENTS_IN_CASE_DESCRIPTION"
+                helpText="When an inbound email creates a Case, the recipients of that email can be documented at the top of the Case description for easy reference.">
+                    <apex:outputLabel value="Show From, To and CC Recipients at the Top of the Case Description from Initial Inbound Email" for="SHOW_RECIPIENTS_IN_CASE_DESCRIPTION_Checkbox"/>
+                    <apex:inputCheckbox value="{!SHOW_RECIPIENTS_IN_CASE_DESCRIPTION}" selected="{!SHOW_RECIPIENTS_IN_CASE_DESCRIPTION}" id="SHOW_RECIPIENTS_IN_CASE_DESCRIPTION_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="INBOUND_EMAIL_STATUS"
+                helpText="All inbound emails will be created with this default status.">
+                    <apex:outputLabel value="Default Inbound Email Status" for="INBOUND_EMAIL_STATUS_text"/>
+                    <apex:selectList value="{!INBOUND_EMAIL_STATUS}" size="1" id="INBOUND_EMAIL_STATUS_text">
+                        <apex:selectOption itemLabel="New" itemValue="0"/>
+                        <apex:selectOption itemLabel="Read" itemValue="1"/>
+                        <apex:selectOption itemLabel="Replied" itemValue="2"/>
+                        <apex:selectOption itemLabel="Sent" itemValue="3"/>
+                        <apex:selectOption itemLabel="Forwarded" itemValue="4"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="SAVE_HEADERS"
+                helpText="Headers from inbound messages can be saved on the Email Message attached to the Case. Note that enabling this will increase the storage requirements of the Email Message object.">
+                    <apex:outputLabel value="Save Inbound Email Headers" for="SAVE_HEADERS_Checkbox"/>
+                    <apex:outputPanel id="EMAIL_HEADER_SETTINGS">
+                        <apex:inputCheckbox value="{!SAVE_HEADERS}" selected="{!SAVE_HEADERS}" id="SAVE_HEADERS_Checkbox">
+                            <apex:actionSupport event="onchange" reRender="EMAIL_HEADER_SETTINGS"/>
+                        </apex:inputCheckbox>
+                        
+                        <apex:outputPanel layout="block" style="margin-top:10px;" rendered="{!SAVE_HEADERS}">
+                            <apex:outputLabel for="EMAIL_HEADERS_Textarea">
+                                Enter header keywords to be saved, one per line. If left blank, all headers will be saved.
+                            </apex:outputLabel>
+                            <br/>
+                            <apex:inputTextarea id="EMAIL_HEADERS_Textarea" style="width:600px; height:100px;" value="{!EMAIL_HEADERS}"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_MULTI_EMAIL_SUPPORT"
+                helpText="Search custom email fields when matching sender and additional email addresses.">
+                    <apex:outputLabel value="Search Custom Email Fields" for="ENABLE_MULTI_EMAIL_SUPPORT_Checkbox"/>
+                    <apex:outputPanel id="ENABLE_MULTI_EMAIL_SUPPORT_Input">
+                        <apex:inputCheckbox value="{!ENABLE_MULTI_EMAIL_SUPPORT}" selected="{!ENABLE_MULTI_EMAIL_SUPPORT}" id="ENABLE_MULTI_EMAIL_SUPPORT_Checkbox">
+                            <apex:actionSupport event="onchange" reRender="ENABLE_MULTI_EMAIL_SUPPORT_Input"/>
+                        </apex:inputCheckbox>
+                        <apex:pageMessage title="Warning" severity="warning" strength="1" rendered="{!ENABLE_MULTI_EMAIL_SUPPORT}">
+                            Organizations with large quantities of contacts may receive errors regarding query selectivity when searching email fields that are not indexed. See <a href="https://ic.secure.force.com/e2cpdocs" target="_blank">documentation</a> for more infomation.
+                        </apex:pageMessage>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="COLLAPSE_WHITESPACE"
+                helpText="When enabled, whitespace consisting of three or more line breaks will be collapsed to two line breaks and therefore display one blank line.">
+                    <apex:outputLabel value="Automatically Collapse Whitespace" for="COLLAPSE_WHITESPACE_Checkbox"/>
+                    <apex:inputCheckbox id="COLLAPSE_WHITESPACE_Checkbox" value="{!COLLAPSE_WHITESPACE}"/>
+                </apex:pageBlockSectionItem>
+            </apex:PageBlockSection>
+            
+            
+            <!-- ///////////Case Creation Settings//////////// -->
+            <apex:pageBlockSection title="Case Creation Settings" columns="1" id="caseCreationPBS">
+                <apex:pageBlockSectionItem >
+                    <apex:outputLabel value="Set Forwarding Address for Each Inbound Email Address"/>
+                    <apex:outputPanel >
+                        <apex:inputCheckbox value="{!ENABLE_ROUTING_SERVICE_ADDRESSES}" selected="{!ENABLE_ROUTING_SERVICE_ADDRESSES}" id="ENABLE_ROUTING_SERVICE_ADDRESSES_Checkbox" disabled="{!conf0.ExistingService == null || conf0.ExistingService.size == 0 || conf0.RunAsId == null}">
+                            <apex:actionSupport event="onchange" reRender="caseCreationPBS"/>
+                        </apex:inputCheckbox>
+                        <apex:outputPanel rendered="{!conf0.ExistingService == null || conf0.ExistingService.size == 0}">
+                            An Email Service must be created before this setting can be enabled. <a href="/apex/Config0" target="_blank">Click here</a> to create one now.
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="E2C_EMAIL_CASE_ORIGIN_ROUTING_PBSI"
+                helpText="When a new case is created via Email to Case Premium, you can select values for the Case Origin field, the Priority field, and the Record Type based upon the To address the sender uses. For example: support@mycompany.com = Email and Normal priority, goldsupport@mycompany.com = Email (Gold Support) and High priority. Note that Record Types are not available in Professional Edition or if your organization is not configured to use them for cases.">
+                    <apex:outputLabel value="Inbound Email Addresses" for="E2C_EMAIL_CASE_ORIGIN_ROUTING_Panel"/>
+                    <apex:outputPanel id="E2C_EMAIL_CASE_ORIGIN_ROUTING_Panel" >
+                        <apex:outputPanel id="E2C_EMAIL_CASE_ORIGIN_ROUTING_EditPanel">
+                            <table>
+                                <tr >
+                                    <th style="vertical-align:middle" >To Address</th>
+                                    <th style="vertical-align:middle">Origin</th>
+                                    <th style="vertical-align:middle">Priority</th>
+                                    <th style="vertical-align:middle">Record Type&nbsp;&nbsp;</th>
+                                    <th style="vertical-align:middle">Owner</th>
+                                    <th style="vertical-align:middle">
+                                        <apex:outputPanel rendered="{!ENABLE_ROUTING_SERVICE_ADDRESSES && NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0}">
+                                            <apex:outputText value="Forwarding Address"/>&nbsp;&nbsp;
+                                            <input type="button" class="btn"  onclick="generateEmailServiceAddresses(); this.disabled = true;" value="Generate Addresses"/>
+                                        </apex:outputPanel>
+                                    </th>
+                                </tr>
+                                <apex:repeat value="{!lstInner}" var="e1" id="therepeat">
+                                    <tr>
+                                        <td><apex:inputText size="50" maxlength="32200" value="{!e1.prefKey}" required="false" id="ROUTING_ADDRESS_Text" styleClass="pref-key"/></td>
+                                        <td><apex:selectList id="ROUTING_ORIGIN_Text" required="false" value="{!e1.prefValue}" multiselect="false" size="1" styleClass="pref-val">
+                                                <apex:selectOptions value="{!routingOriginOptions}" />
+                                            </apex:selectList>
+                                        </td>
+                                        <td>
+                                            <apex:selectList id="ROUTING_PRIORITY_Text" required="false" value="{!e1.prefPriority}" multiselect="false" size="1">
+                                                <apex:selectOptions value="{!casePriorityOptions}" />
+                                            </apex:selectList>
+                                        </td>
+                                        <td>
+                                            <apex:outputPanel >
+                                                <apex:selectList rendered="{!caseRecordTypeOptions.size > 0}" id="ROUTING_RECTYPE_Text" required="false"  value="{!e1.prefRectype}" multiselect="false" size="1">
+                                                    <apex:selectOptions value="{!caseRecordTypeOptions}" />
+                                                </apex:selectList>
+                                                <apex:outputText rendered="{!caseRecordTypeOptions.size <= 0}">N/A</apex:outputText>
+                                            </apex:outputPanel>
+                                        </td>
+                                        <td class="owner-cell">
+                                            <apex:inputField required="false" value="{!e1.prefOwner.OwnerId}"/>
+                                        </td>
+                                        <td>
+                                            <apex:outputPanel id="esa" rendered="{!ENABLE_ROUTING_SERVICE_ADDRESSES}" style="white-space:nowrap;">
+                                                <a href="mailto:{!e1.prefESAName}" target="_blank">{!e1.prefESAName}</a>
+                                                <apex:inputText style="height:0;width:0;visibility:hidden;" styleClass="pref-esa" value="{!e1.prefESA}"/>
+                                            </apex:outputPanel>
+                                        </td>
+                                    </tr>
+                                </apex:repeat>
+                            </table>
+                            <apex:commandbutton value="Add Row" action="{!AddMore}" rerender="E2C_EMAIL_CASE_ORIGIN_ROUTING_EditPanel"/>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!!ENABLE_CASE_FEED_EXTENSION}" helpText="Emails related to an existing case, sent to this address will be processed into private (public = false) comments.">
+                    <apex:outputLabel value="Private Comment Address" for="PrivateOrgWideText" />
+                    <apex:outputText value="{!PrivateOrgWideText}" id="PrivateOrgWideText" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem rendered="{!!ENABLE_CASE_FEED_EXTENSION && ENABLE_ROUTING_SERVICE_ADDRESSES && NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0}" >
+                    <apex:outputLabel value="Private Comment Forwarding Address"/>
+                    <a id="privateForwardingAddr" href="mailto:{!PrivateForwardingAddress}" target="_blank">{!PrivateForwardingAddress}</a>
+                </apex:pageBlockSectionItem>
+                
+            </apex:PageBlockSection>
+
+            <!-- ///////////Voicemail Processing//////////// -->
+
+            <apex:PageBlockSection collapsible="true" title="Voicemail Processing" columns="1" id="voicemailProcessingPrefPBS">
+
+                <apex:pageBlockSectionItem id="E2C_ENABLE_PHONE_LOOKUP_PBSI"
+                helpText="A trigger is included to help lookup accounts and contacts based upon caller ID.  This is particularly helpful if your voicemail system sends emails.">
+                    <apex:outputLabel value="Enable Voicemail Processing" for="E2C_ENABLE_PHONE_LOOKUP_Checkbox" />
+                    <apex:inputCheckbox value="{!E2C_ENABLE_PHONE_LOOKUP}" selected="{!E2C_ENABLE_PHONE_LOOKUP}" id="E2C_ENABLE_PHONE_LOOKUP_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="E2C_PHONE_LOOKUP_CASE_ORIGIN_PBSI"
+                helpText="Only cases of this origin will activate the Voicemail Processing trigger.">
+                    <apex:outputLabel value="Case Origin for Voicemails" for="E2C_PHONE_LOOKUP_CASE_ORIGIN_Text"/>
+                    <apex:selectList id="E2C_PHONE_LOOKUP_CASE_ORIGIN_Text" required="false" value="{!E2C_PHONE_LOOKUP_CASE_ORIGIN}" multiselect="false" size="1">
+                        <apex:selectOptions value="{!routingOriginOptions}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="E2C_SHOW_PHONE_LOOKUP_RESULTS_PBSI"
+                helpText="If checked, you will receive debug information from the Voicemail Processing trigger in the case description field.">
+                    <apex:outputLabel value="Show Phone Lookup Results" for="E2C_SHOW_PHONE_LOOKUP_RESULTS_Checkbox" />
+                    <apex:inputCheckbox value="{!E2C_SHOW_PHONE_LOOKUP_RESULTS}" selected="{!E2C_SHOW_PHONE_LOOKUP_RESULTS}" id="E2C_SHOW_PHONE_LOOKUP_RESULTS_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+            </apex:PageBlockSection>
+            
+            
+            <!-- ///////////New Comment Recognition//////////// -->
+
+            <apex:PageBlockSection collapsible="true" title="Customer Response Recognition" columns="1" id="newCommentRecognitionPrefPBS" rendered="{!!ENABLE_CASE_FEED_EXTENSION}">
+            
+                <apex:pageBlockSectionItem id="E2C_TOP_MARKER_PBSI"
+                helpText="You can change the format of these markers, but be sure to update your email template(s) to match precisely.  If you do not want to use this feature, remove it from your email template, but leave it here.  Do not clear this field.">
+                    <apex:outputLabel value="Top Marker" for="E2C_TOP_MARKER_Text"/>
+                    <apex:inputText size="70" maxlength="32200" value="{!E2C_TOP_MARKER}" id="E2C_TOP_MARKER_Text" required="false" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="E2C_BOTTOM_MARKER_PBSI"
+                helpText="You can change the format of these markers, but be sure to update your email template(s) to match precisely.  If you do not want to use this feature, remove it from your email template, but leave it here.  Do not clear this field.">
+                    <apex:outputLabel value="Bottom Marker" for="E2C_BOTTOM_MARKER_Text"/>
+                    <apex:inputText size="70" maxlength="32200" value="{!E2C_BOTTOM_MARKER}" id="E2C_BOTTOM_MARKER_Text" required="false" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="E2C_EMAIL_DELIMITERS_PBSI"
+                helpText="These strings identify the start of the original message.  All of the text above the first delimiter encountered is treated as the new message and inserted into a comment.  If text is found between the top and bottom markers, that text is used exclusively and the delimiters are not used. If a top marker is present in a message without a corresponding bottom marker, the text below the top marker to the end of the message is used.">
+                    <apex:outputLabel value="Email Delimiters" for="E2C_EMAIL_DELIMITERS_Text"/>
+                    <apex:inputTextArea style="width:600px; height:100px;" value="{!E2C_EMAIL_DELIMITERS}" id="E2C_EMAIL_DELIMITERS_Text" required="false" />
+                </apex:pageBlockSectionItem>
+
+            </apex:PageBlockSection>
+            
+            
+            <!-- ///////////Additional Recipients//////////// -->
+
+            <apex:PageBlockSection collapsible="true" title="Additional Recipients" columns="1" id="additionalRecipientsPrefPBS">
+                
+                <apex:pageBlockSectionItem id="E2C_CC_TO_CONTACT_ROLE_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="If a Contact or User in your Org is CCed on an inbound email, the system can automatically add them as a Contact Role.">
+                    <apex:outputLabel value="Auto Add Contact Roles" for="E2C_CC_TO_CONTACT_ROLE_Checkbox" />
+                    <apex:inputCheckbox value="{!E2C_CC_TO_CONTACT_ROLE}" selected="{!E2C_CC_TO_CONTACT_ROLE}" id="E2C_CC_TO_CONTACT_ROLE_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="E2C_CC_TO_CONTACT_ROLE_ROLE_NAME_PBSI" rendered="{!!ENABLE_CASE_FEED_EXTENSION}"
+                helpText="The name of the Contact Role you would like Contacts and Users automatically added as.  For example, Supervisor.">
+                    <apex:outputLabel value="Contact Role for Auto Add" for="E2C_CC_TO_CONTACT_ROLE_ROLE_NAME_Text"/>
+                    <apex:selectList id="E2C_CC_TO_CONTACT_ROLE_ROLE_NAME_Text" required="false" value="{!E2C_CC_TO_CONTACT_ROLE_ROLE_NAME}" multiselect="false" size="1">
+                        <apex:selectOptions value="{!e2cCcToContactRoleNameOptions}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="E2C_CC_TO_TEAM_MEMBER_PBSI" rendered="{!SUPPORTS_CASETEAMS}"
+                helpText="If a Contact or User in your Org is CCed on an inbound email, the system can automatically add them as a Case Team Member.">
+                    <apex:outputLabel value="Auto Add Case Team Members" for="E2C_CC_TO_TEAM_MEMBER_Checkbox" />
+                    <apex:inputCheckbox value="{!E2C_CC_TO_TEAM_MEMBER}" selected="{!E2C_CC_TO_TEAM_MEMBER}" id="E2C_CC_TO_TEAM_MEMBER_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="E2C_CC_TO_TEAM_MEMBER_ROLE_ID_PBSI" rendered="{!SUPPORTS_CASETEAMS}"
+                helpText="Select the role you would like Users and Contacts added as.  Tip: You may want to add this to the Unchecked Team Member Roles on the previous page.">
+                    <apex:outputLabel value="Team Member Role for Auto Add" for="E2C_CC_TO_TEAM_MEMBER_ROLE_ID_Text"/>
+                    <apex:selectList id="E2C_CC_TO_TEAM_MEMBER_ROLE_ID_Text" required="false" value="{!E2C_CC_TO_TEAM_MEMBER_ROLE_ID}" multiselect="false" size="1">
+                        <apex:selectOptions value="{!e2cCcToTeamMemberRoleIdOptions}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="EXCLUDE_LIST_PBSI"
+                helpText="You can block certain email addresses from being added as contact roles or team members while allowing all others to be added. Specify email addresses and domains separated by commas.  For example: support@yourcompany.com, entiredomain.com, info@yourcompany.com">
+                    <apex:outputLabel value="Exclude List" for="EXCLUDE_LIST_TextArea" />
+                    <apex:inputTextArea value="{!EXCLUDE_LIST}" id="EXCLUDE_LIST_TextArea" cols="80" rows="3" required="false" />
+                </apex:pageBlockSectionItem>
+                
+            </apex:pageBlockSection>
+            
+            
+            <!--- /////// External Contacts //// -->
+
+            <apex:PageBlockSection collapsible="true" title="Auto Add New Contacts / Leads" columns="1" id="externalContactsPrefPBS">
+            
+                <apex:pageBlockSectionItem id="ENABLE_EXTERNAL_CONTACTS_PBSI"
+                helpText="Contacts will be created for email addresses included on incoming emails which do not match a contact already in your organization.">
+                    <apex:outputLabel value="Enable Auto Add New Contacts" for="ENABLE_EXTERNAL_CONTACTS_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_EXTERNAL_CONTACTS}" selected="{!ENABLE_EXTERNAL_CONTACTS}" id="ENABLE_EXTERNAL_CONTACTS_Checkbox" onchange="handleAutoAddContactsCheckboxOnChange(event)" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ExtConRecordType_PBSI" rendered="{!NOT(externalContactRecordTypeOptions.size = 0)}"
+                    helpText="Optional. Newly created contacts can be given a specific record type.  You must first create a record type under Setup: Customize: Contacts to select one here.  See Salesforce.com Help & Training for more information.">
+                    <apex:outputLabel value="Record Type" for="ExtConRecordType_Text"/>
+                    <apex:outputPanel >
+                        <apex:selectList rendered="{!externalContactRecordTypeOptions.size > 1}" id="ExtConRecordType_Text" required="false" value="{!EXTERNAL_CONTACT_RECORD_TYPE}" multiselect="false" size="1">
+                            <apex:selectOptions value="{!externalContactRecordTypeOptions}" />
+                        </apex:selectList>
+                        <apex:outputText rendered="{!externalContactRecordTypeOptions.size <= 1}">There are no contact record types.</apex:outputText>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_AUTOCONTACT_ACCOUNT_LOOKUP_PBSI"
+                    helpText="If the domain portion of the email address matches a single account's Website address, that account will be used when the new contact is created. This functionality may cause problems in organizations with more than 100,000 acounts due to Salesforce governor limits. ">
+                    <apex:outputLabel value="Enable Account Lookup" for="ENABLE_AUTOCONTACT_ACCOUNT_LOOKUP_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_AUTOCONTACT_ACCOUNT_LOOKUP}" selected="{!ENABLE_AUTOCONTACT_ACCOUNT_LOOKUP}" id="ENABLE_AUTOCONTACT_ACCOUNT_LOOKUP_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="IGNORE_EMAIL_SUBDOMAINS_PBSI"
+                    helpText="If the domain portion of the email address includes a subdomain, it will be ignored when checking for a matching account. For example, email@sub.domain.com will be matched to an account with the Website set to http://domain.com">
+                    <apex:outputLabel value="Ignore Email Subdomains" for="IGNORE_EMAIL_SUBDOMAINS_Checkbox" />
+                    <apex:inputCheckbox value="{!IGNORE_EMAIL_SUBDOMAINS}" selected="{!IGNORE_EMAIL_SUBDOMAINS}" id="IGNORE_EMAIL_SUBDOMAINS_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_EXTERNAL_LEADS_PBSI" rendered="{!hasLeadField}"
+                    helpText="When enabled, if no accounts or multiple accounts are matched then a Lead will be created rather than a Contact.">
+                    <apex:outputLabel value="Enable Auto Add New Lead" for="ENABLE_EXTERNAL_LEADS_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_EXTERNAL_LEADS}" selected="{!ENABLE_EXTERNAL_LEADS}" id="ENABLE_EXTERNAL_LEADS_Checkbox" />
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="NEW_LEAD_SOURCE_PBSI" rendered="{!hasLeadField}"
+                    helpText="Optional. Newly created leads can be given a specific Lead Source.">
+                    <apex:outputLabel value="Lead Source" for="NEW_LEAD_SOURCE_Text"/>
+                    <apex:selectList id="NEW_LEAD_SOURCE_Text" required="false" value="{!NEW_LEAD_SOURCE}" multiselect="false" size="1">
+                        <apex:selectOptions value="{!newLeadSourceOptions}" />
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ExtConAcct_PBSI"
+                    helpText="If no matches are found or multiple matches are found, newly created contacts will be placed in a single default account where they can later be reviewed and re-associated if desired. If Account Lookup is disabled then this default will be used for all new contacts.">
+                    <apex:outputLabel value="Default Account" for="ExtConAcct_Text"/>
+                    <apex:outputPanel id="ExtConAcctField" >
+                        <apex:inputField value="{!AcctHolder.ParentId}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+            </apex:pageBlockSection>
+            
+            
+            <!--- /////// Forward to Case //// -->
+            
+            <apex:PageBlockSection collapsible="true" title="Forward to Case" columns="1" id="fwdToCasePBS">
+            
+                <apex:pageBlockSectionItem id="ENABLE_FORWARD_CHECK_PBSI" helpText="This feature associates forwarded messages with the original sender's contact by using their email address instead of message's From address.">
+                    <apex:outputLabel value="Enable Forward to Case" for="ENABLE_FORWARD_CHECK_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_FORWARD_CHECK}" selected="{!ENABLE_FORWARD_CHECK}" id="ENABLE_FORWARD_CHECK_Checkbox"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ENABLE_FORWARD_TO_EXISTING_PBSI" helpText="Include the full Case Number in parentheses after the forward marker and the email will be added to the existing case rather than open a new one.">
+                    <apex:outputLabel value="Enable Forward to Existing Case by Case Number" for="ENABLE_FORWARD_TO_EXISTING_Checkbox" />
+                    <apex:inputCheckbox value="{!ENABLE_FORWARD_TO_EXISTING}" selected="{!ENABLE_FORWARD_TO_EXISTING}" id="ENABLE_FORWARD_TO_EXISTING_Checkbox"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="INCLUDE_FORWARDED_CC_PBSI" helpText="When enabled, email addresses that were CC'd on the original email will be added to the Additional CC Case field. If Auto Add Case Team Members is enabled, those addresses will be used to search for Contacts which will be added as Case Team Members. If Auto Add New Contacts is enabled, those addresses will have Contacts created if none exist.">
+                    <apex:outputLabel value="Include Forwarded CC Addresses" for="INCLUDE_FORWARDED_CC_Checkbox" />
+                    <apex:inputCheckbox value="{!INCLUDE_FORWARDED_CC}" selected="{!INCLUDE_FORWARDED_CC}" id="INCLUDE_FORWARDED_CC_Checkbox"/>
+                </apex:pageBlockSectionItem>
+                
+                <!--apex:pageBlockSectionItem id="FORWARD_CHECK_MARKER_PBSI"  helpText="A text marker that end users can prepend to the email subject line to indicate that the message should be processed by Forward to Case.">
+                    <apex:outputLabel value="Forward to Case Marker" for="FORWARD_CHECK_MARKER_Text"/>
+                    <apex:inputText size="2" maxlength="20" value="{!FORWARD_CHECK_MARKER}" id="FORWARD_CHECK_MARKER_Text" disabled="{!!ENABLE_FORWARD_CHECK}"/>
+                </apex:pageBlockSectionItem>-->
+                
+                <apex:pageBlockSectionItem id="FORWARD_MARKERS_PBSI"
+                    helpText="Text markers that end users can prepend to the email subject line to indicate that the message should be processed by Forward to Case.">
+                    <apex:outputLabel value="Forward to Case Markers" for="FORWARD_MARKERS_op" />
+                    <apex:outputPanel id="FORWARD_MARKERS_op">
+                        <apex:variable var="ind" value="{!0}"/>
+                        <apex:repeat var="marker" value="{!FORWARD_MARKERS}">
+                            <apex:variable var="ind" value="{!ind+1}"/>
+                            <apex:inputText value="{!marker.Dom}" size="10"/>
+                            <apex:outputPanel rendered="{!ind - 3 == 0}" >
+                                <br/>
+                                <apex:variable var="ind" value="{!0}"/>
+                            </apex:outputPanel>
+                        </apex:repeat>
+                        <apex:commandButton value="Add Three" action="{!addMarker}" reRender="FORWARD_MARKERS_op" />
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="PRIVATE_COMMENT_DOMAINS_PBSI" rendered="{!ENABLE_CASE_FEED_EXTENSION}"
+                    helpText="Specify domain names like yourorganization.com. Forward to Case will trigger when an inbound email is sent only to email addresses at the domains listed here.">
+                    <apex:outputLabel value="Internal Domains" for="PRIVATE_COMMENT_DOMAINS_op" />
+                    <apex:outputPanel id="PRIVATE_COMMENT_DOMAINS_op">
+                        <apex:variable var="ind" value="{!0}"/>
+                        <apex:repeat var="pcd" value="{!PRIVATE_COMMENT_DOMAINS}">
+                            <apex:variable var="ind" value="{!ind+1}"/>
+                            <apex:inputText value="{!pcd.Dom}" size="30"/>
+                            <apex:outputPanel rendered="{!ind - 3 == 0}" >
+                                <br/>
+                                <apex:variable var="ind" value="{!0}"/>
+                            </apex:outputPanel>
+                        </apex:repeat>
+                        <apex:commandButton value="Add Three" action="{!addPcd}" reRender="PRIVATE_COMMENT_DOMAINS_op" />
+                    </apex:outputPanel>
+                    
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ADD_FROM_ADDRESS_AS_CTM_PBSI" rendered="{!SUPPORTS_CASETEAMS}" helpText="When enabled the email address forwarding in the original email will be added as a Case Team Member if a user is found with the same email address.">
+                    <apex:outputLabel value="Add From Address as Case Team Member" for="ADD_FROM_ADDRESS_AS_CTM_Checkbox" />
+                    <apex:inputCheckbox value="{!ADD_FROM_ADDRESS_AS_CTM}" selected="{!ADD_FROM_ADDRESS_AS_CTM}" id="ADD_FROM_ADDRESS_AS_CTM_Checkbox"/>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="ADD_FROM_ADDRESS_AS_CTM_ROLE_PBSI" rendered="{!SUPPORTS_CASETEAMS}" helpText="The role that the from address will be added to the Case Team as.">
+                    <apex:outputLabel value="Case Team Role for From Address" for="ADD_FROM_ADDRESS_AS_CTM_ROLE_Select" />
+                    <apex:selectList id="ADD_FROM_ADDRESS_AS_CTM_ROLE_Select" value="{!ADD_FROM_ADDRESS_AS_CTM_ROLE}" size="1">
+                        <apex:selectOptions value="{!e2cCcToTeamMemberRoleIdOptions}"/>
+                    </apex:selectList>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            <!--- /////// Private Comments Based on Recipients //// -->
+            
+            <apex:pageBlockSection collapsible="true" title="Private Comments Based on Recipients" columns="1" id="privateCommentsPBS">
+                <apex:pageBlockSectionItem id="INBOUND_PRIVATE_COMMENT"
+                helpText="If the sender is an internal domain, there are multiple recipients, and all recipients are either internal domains or an Inbound Email Address then the comment will be created as private.">
+                    <apex:outputLabel value="Enable" for="INBOUND_PRIVATE_COMMENT_Checkbox"/>
+                    <apex:inputCheckbox id="INBOUND_PRIVATE_COMMENT_Checkbox" value="{!INBOUND_PRIVATE_COMMENT}">
+                        <apex:actionSupport event="onchange" reRender="INBOUND_PRIVATE_ROUTING_ONLY_Panel"/>
+                    </apex:inputCheckbox>
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem id="INBOUND_PRIVATE_ROUTING_ONLY"
+                helpText="If the sender is an internal domain, there is a single recipient, and that recipient is an Inbound Email Address then the comment will be created as private.">
+                    <apex:outputLabel value="Inbound Email Address Privacy Override" for="INBOUND_PRIVATE_ROUTING_ONLY_Checkbox"/>
+                    <apex:outputPanel id="INBOUND_PRIVATE_ROUTING_ONLY_Panel">
+                        <apex:inputCheckbox id="INBOUND_PRIVATE_ROUTING_ONLY_Checkbox" value="{!INBOUND_PRIVATE_ROUTING_ONLY}" disabled="{!!INBOUND_PRIVATE_COMMENT}"/>
+                    </apex:outputPanel>
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+            
+            <apex:pageMessages showDetail="false" id="pgmsgs2" />
+            
+        </apex:pageBlock>
+        
+    </apex:form>
+    <script>
+        function logDebug(txt) {
+            if (window.console) console.log(txt);
+        }
+        
+        twistSection(document.getElementById("{!$Component.c3F.c3PB.privateCommentsPBS}").firstChild.firstChild);
+        
+        function updateText(elem,text,add) {
+            if (elem.innerText) {
+                if (add) elem.innerText += text
+                else elem.innerText = text;
+            } else {
+                if (add) elem.textContent += text;
+                else elem.textContent = text;
+            }
+        }
+        
+        //overwrite help
+        var hlinks = document.getElementsByClassName('links')[0];
+        updateText(hlinks,'',false);
+        hlinks.appendChild(createLink('Documentation','https://ic.secure.force.com/e2cpdocs'));
+        hlinks.appendChild(createTextElement('span',' | '));
+        hlinks.appendChild(createLink('Knowledge Base','https://kb.internetcreations.com/pkb_Home?l=en_US&c=Products%3AEmail_to_Case_Premium'));
+        hlinks.appendChild(createTextElement('span',' | '));
+        hlinks.appendChild(createLink('e2cpremium@internetcreations.com','mailto:e2cpremium@internetcreations.com'));
+        hlinks.appendChild(createTextElement('span',' '));
+        hlinks.appendChild(createHelpIcon());
+        hlinks.appendChild(createTextElement('span','\r\n'));
+        //hlinks.appendChild(createTextElement('div','Free implementation assistance is available.'));
+        
+        hlinks.style.fontSize = 'larger';
+        hlinks.style.position = 'absolute';
+        hlinks.style.float  = 'right';
+        hlinks.style.right = '0%';
+
+        function createLink(text,ref) {
+            var link = document.createElement('a');
+            updateText(link,text,false);
+            link.href = ref;
+            link.target = '_blank';
+            return link;
+        }
+        
+        function createTextElement(tag,text) {
+            var elem = document.createElement(tag);
+            updateText(elem,text,false);
+            if (tag == 'div')
+                elem.style.fontSize = 'smaller';
+            elem.style.color = 'black';
+            elem.style.textDecoration = 'none';
+            return elem;
+        }
+        
+        function createHelpIcon() {
+            var icon = document.createElement('img');
+            icon.src = '/s.gif';
+            icon.alt = 'Help';
+            icon.className = 'helpIcon';
+            icon.title = 'Help';
+            return icon;
+        }
+        
+        function generateEmailServiceAddresses() {
+            sforce.connection.sessionId = '{!$Api.Session_ID}';
+            var newEsas = [];
+            
+            var addrs = document.getElementsByClassName('pref-key');
+            var origins = document.getElementsByClassName('pref-val');
+            var esas = document.getElementsByClassName('pref-esa');
+            for (var i = 0;i < addrs.length;i++) {
+                if (!esas[i].value && origins[i].value) {
+                    var esa = new sforce.SObject("EmailServicesAddress");
+                    esa.FunctionId = "{!IF(NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0,conf0.ExistingService[0].Id,'')}";
+                    var local = addrs[i].value.replace('@','.');
+                    esa.LocalPart = local.substring(0,local.lastIndexOf('.'));
+                    esa.IsActive = true;
+                    esa.RunAsUserId = "{!conf0.runAsId}";
+                    esa.AuthorizedSenders = "";
+                    newEsas.push(esa);
+                }
+            }
+            
+            var privateAddr = '{!JSENCODE(PrivateOrgWideText)}';
+            var privateForward = '{!JSENCODE(PrivateForwardingAddress)}';
+            
+            var needsPrivate = (privateAddr != '' && {!!ENABLE_CASE_FEED_EXTENSION && ENABLE_ROUTING_SERVICE_ADDRESSES && NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0} && privateForward == '');
+            if (needsPrivate) {
+                for (var i = 0;i < addrs.length;i++) {
+                    if (addrs[i].value == privateAddr) {
+                        needsPrivate = false;
+                        break;
+                    }
+                }
+            }
+            if (needsPrivate) {
+                var esa = new sforce.SObject("EmailServicesAddress");
+                esa.FunctionId = "{!IF(NOT(ISBLANK(conf0.ExistingService)) && conf0.ExistingService.size > 0,conf0.ExistingService[0].Id,'')}";
+                var local = privateAddr.replace('@','.');
+                esa.LocalPart = local.substring(0,local.lastIndexOf('.'));
+                esa.IsActive = true;
+                esa.RunAsUserId = "{!conf0.runAsId}";
+                esa.AuthorizedSenders = "";
+                newEsas.push(esa);
+            }
+            
+            if (newEsas.length > 0)
+                var result = sforce.connection.create(newEsas, {onSuccess : success, onFailure : failure});
+        }
+        
+        function success(result) {
+            logDebug(result);
+            
+            result.reverse();
+            var esas = document.getElementsByClassName('pref-esa');
+            for (var i = 0;i < esas.length;i++) {
+                if (!esas[i].value)
+                    esas[i].value = result.pop().id;
+            }
+            quickSave();
+        }
+        
+        function failure(error) {
+            logDebug(error);
+        }
+
+        function handleAutoAddContactsCheckboxOnChange(e) {
+            updateAutoAddContactsRelatedInputs(e.currentTarget);
+        }
+
+        function  updateAutoAddContactsRelatedInputs(autoAddContactsCheckbox) {
+            if(autoAddContactsCheckbox) {
+                var ids = 
+                [ 
+                    "{!$Component.pg.c3F.c3PB.externalContactsPrefPBS.ExtConRecordType_PBSI.ExtConRecordType_Text}",
+                    "{!$Component.pg.c3F.c3PB.externalContactsPrefPBS.ENABLE_AUTOCONTACT_ACCOUNT_LOOKUP_PBSI.ENABLE_AUTOCONTACT_ACCOUNT_LOOKUP_Checkbox}",
+                    "{!$Component.pg:c3F:c3PB:externalContactsPrefPBS:IGNORE_EMAIL_SUBDOMAINS_PBSI:IGNORE_EMAIL_SUBDOMAINS_Checkbox}",
+                    "{!$Component.pg.c3F.c3PB.externalContactsPrefPBS.ENABLE_EXTERNAL_LEADS_PBSI.ENABLE_EXTERNAL_LEADS_Checkbox}",
+                    "{!$Component.pg.c3F.c3PB.externalContactsPrefPBS.NEW_LEAD_SOURCE_PBSI:NEW_LEAD_SOURCE_Text}",
+                    "{!$Component.pg.c3F.c3PB.externalContactsPrefPBS.ExtConAcct_PBSI.ExtConAcctField}"
+                ]
+                for(var i = 0; i < ids.length; i++) {
+                    var input = document.getElementById(ids[i]);
+                    if(input) {
+                        if(ids[i] === "{!$Component.pg.c3F.c3PB.externalContactsPrefPBS.ExtConAcct_PBSI.ExtConAcctField}") {
+                            var linkBtn = input.querySelector('.lookupInput a');
+                            if(linkBtn) {
+                                linkBtn.style.display = (autoAddContactsCheckbox.checked) ? '' : 'none';
+                            }
+                            input = input.querySelector('.lookupInput input');
+                        }
+                        input.disabled = !autoAddContactsCheckbox.checked;
+                        input.title = (input.disabled) ? 'Auto Add New Contacts must be enabled prior to enabling this feature.' : '';
+                    }                    
+                }
+            }
+        }
+
+        function handleQuickSaveOnComplete() {
+            updateAutoAddContactsRelatedInputs(document.getElementById("{!$Component.pg.c3F.c3PB.externalContactsPrefPBS.ENABLE_EXTERNAL_CONTACTS_PBSI.ENABLE_EXTERNAL_CONTACTS_Checkbox}"));
+        }
+
+        updateAutoAddContactsRelatedInputs(document.getElementById("{!$Component.pg.c3F.c3PB.externalContactsPrefPBS.ENABLE_EXTERNAL_CONTACTS_PBSI.ENABLE_EXTERNAL_CONTACTS_Checkbox}"));
+        
+        //Bill - ctrl + s to quick save
+        addEventListener('keydown', function(e) {
+            if(e.ctrlKey && e.keyCode == 83) {
+                document.querySelector('input[id$=\':quickSave\']').click();
+                e.preventDefault();
+            }
+        });
+    </script>
+</apex:page>

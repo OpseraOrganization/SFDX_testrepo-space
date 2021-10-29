@@ -1,0 +1,116 @@
+<apex:page controller="DMMAX.BuilderController"
+	readOnly="true"
+	cache="true"
+	expires="1"
+	showChat="false"
+	showHeader="false"
+	showQuickActionVfHeader="false"
+	sidebar="false"
+>
+
+<style>
+	body {
+		margin: 2%;
+	}
+
+	#output h1,
+	#output h2 {
+		display:block;
+	}
+
+	#output h1 {
+		font-size: 1.5em;
+		padding-bottom: 10px;
+	}
+
+	#output h2 {
+		font-size: 1em;
+	}
+
+	#output table {
+		border: 1px solid #c0c0c0;
+		width: 100%;
+		margin-bottom: 20px;
+		border-collapse: collapse;
+	}
+
+		#output table tr td {
+			padding: 10px;
+			border: 1px solid #c0c0c0;
+		}
+			#output table tr td:first-child {
+				width: 20%;
+			}
+
+	#output .capitalize {
+		text-transform: capitalize;
+	}
+</style>
+<apex:includeScript value="{!URLFOR($Resource.DMMAX__generated_resource, 'scripts/vendor.js')}"/>
+<script type="text/javascript">
+	function process() {
+		Visualforce.remoting.Manager.invokeAction(
+			'{!$RemoteAction.BuilderController.getMetadataReport}',
+			function(result, event){
+
+				function values(filter) {
+					var ret = $('<div>');
+
+					filter.values = _.sortBy(filter.values);
+
+					_.each(filter.values, function(v) {
+						ret.append($('<div>').text(v));
+					});
+					return ret;
+				}
+
+				_.each(result.classes, function(cls) {
+					if (cls.active) {
+						$('#output').append(
+							$('<h1>').text('Signal set for: ' + cls.name)
+						);
+
+						var filterMap = result.filterMap[cls.id] || [];
+						filterMap = _.sortBy(filterMap, function(f) { return f.label; });
+
+						_.each(filterMap, function(filter) {
+							$('#output').append(
+								$('<br/>'),
+								$('<h2>').text(filter.label),
+								$('<table border="1", cellpadding="2" cellspacing="0" width="100%">').append(
+									$('<tr>').append(
+										$('<td width="20%">').text('Description'),
+										$('<td>').text(filter.description)
+									),
+									$('<tr>').append(
+										$('<td width="20%">').text('Type'),
+										$('<td>').text(filter.type).addClass('capitalize')
+										// $('<td>').text((filter.values || []).length == 0 ? filter.type : 'picklist').addClass('capitalize')
+									),
+									((filter.values || []).length == 0 ?
+										''
+										:
+										$('<tr>').append(
+											$('<td width="20%">').text('Values'),
+											$('<td>').append(values(filter))
+										)
+									),
+									$('<tr>').append(
+										$('<td width="20%">').text('Ref'),
+										$('<td>').text(filter.id)
+									)
+
+								)
+							);
+						})
+					}
+				})
+			},
+			{escape: false}
+		);
+	}
+
+	process();
+</script>
+<div id="output"></div>
+</apex:page>

@@ -1,0 +1,211 @@
+<!-- 
+    Apttus Billing 
+    PreviewInvoicesPaidVsUnpaid
+ 
+    @2013-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Account" extensions="Apttus_Billing.PreviewInvoicesPaidVsUnpaidController" tabStyle="Account" readOnly="true">
+   <style type="text/css">
+      .col0 { width:25%; text-align:left; }
+      .col1 { width:25%; text-align:center; }
+      .col2 { width:25%; text-align:center; } 
+      .col3 { width:25%; text-align:center; }           
+   </style>
+   <script type="text/javascript"> 
+      function tipOnclickRendererForInvChart(klass, item) {
+        var type = item.storeItem.get('name');
+        var val = '';
+        var yField = item.yField;
+        var tempStatus = '';
+        if (yField === 'paidInvoicedAmount') {
+           val = item.storeItem.get('paidInvoicedAmount');
+           tempStatus = 'Paid';
+        } else if (yField === 'unpaidInvoicedAmount') {
+           val = item.storeItem.get('unpaidInvoicedAmount');
+           tempStatus = 'Unpaid';
+        }
+        
+        var e = window.event;
+        if(e) {
+	        var t = e.target || e.srcElement;
+	        t.onclick=function(event){       
+	           //alert('clicked');
+	           var tempPeriod = getPeriodStr(type);
+	           //var tempStatus = getStatusFromYField(yField);
+	           refreshTableOnGraphClick(tempPeriod, tempStatus);
+	           //alert('called');
+	        };
+        }
+        this.setTitle(type + " : " + val);
+      }
+      
+      function getStatusFromYField(yFieldName) {
+        var tempStr = yFieldName.substring(0, yFieldName.indexOf('Amount'));
+        var statusStr = '';
+        if (tempStr.indexOf('pending') > -1) {
+          var firstWrd = tempStr.substring(tempStr.indexOf('pending'), 7);
+          var secondWrd = tempStr.substring(7, tempStr.length);
+          statusStr =  initcapitalize(firstWrd) + ' ' + secondWrd;
+        } else {
+          statusStr =  initcapitalize(tempStr);
+        }
+        return statusStr;
+      }
+      
+      function initcapitalize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+      }
+      
+      function getPeriodStr(name) {
+        var retStr = name;
+        switch (name.substring(0, 3)) {
+          case 'Jan':
+             retStr = retStr.replace('Jan', '01');
+             break;
+          case 'Feb':
+             retStr = retStr.replace('Feb', '02');
+             break;
+          case 'Mar':
+             retStr = retStr.replace('Mar', '03');
+             break;
+          case 'Apr':
+             retStr = retStr.replace('Apr', '04');
+             break;
+          case 'May':
+             retStr = retStr.replace('May', '05');
+             break;
+          case 'Jun':
+             retStr = retStr.replace('Jun', '06');
+             break;
+          case 'Jul':
+             retStr = retStr.replace('Jul', '07');
+             break;
+          case 'Aug':
+             retStr = retStr.replace('Aug', '08');
+             break;
+          case 'Sep':
+             retStr = retStr.replace('Sep', '09');
+             break;
+          case 'Oct':
+             retStr = retStr.replace('Oct', '10');
+             break;
+          case 'Nov':
+             retStr = retStr.replace('Nov', '11');
+             break;
+          case 'Dec':
+             retStr = retStr.replace('Dec', '12');
+             break;                                                    
+        }
+        return retStr;      
+      }   
+   </script>
+   <apex:sectionHeader title="{!$Label.apttus_billing__payments} {!$Label.apttus_billing__overview} {!$Label.apttus_billing__for}" subtitle="{!Account.Name}" />   
+   <apex:pageBlock id="bsOverview" title="{!$ObjectType.Apttus_Billing__Invoice__c.label} {!$Label.apttus_billing__payments} {!$Label.apttus_billing__overview}" tabStyle="InvoiceRun__c">
+      <apex:pageBlockSection showHeader="false" columns="1">
+         <apex:panelGrid columns="4" id="theInvGrid" columnClasses="col0, col1, col2, col3" width="100%" cellpadding="5" cellspacing="5">
+            <apex:outputText id="theZeroth" value="" />
+            <apex:outputText style="color:#006600; font-weight: bold;" value="{!$Label.apttus_billing__paid}" id="theFirst"/>
+            <apex:outputText style="color:#00A; font-weight: bold;" value="{!$Label.apttus_billing__unpaid}" id="theSecond"/>
+            <apex:outputText style="font-weight: bold;" value="{!$Label.apttus_billing__total}" id="theThird"/>
+            <apex:outputText style="font-weight: bold;" value="{!$Label.apttus_billing__accounttotals}"/>            
+            <apex:outputText style="color:#006600;" value="{0, number, {!acctCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!invoicedAmountPaid}"/>
+            </apex:outputText> 
+            <apex:outputText style="color:#00A;" value="{0, number, {!acctCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!invoicedAmountUnpaid}"/>
+            </apex:outputText>
+            <apex:outputText value="{0, number, {!acctCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!totalAmount}"/>
+            </apex:outputText>
+            <apex:outputText style="font-weight: bold;" value="{!$Label.apttus_billing__accounttotals} ({!$Label.apttus_billing__filtered})"/>            
+            <apex:outputText style="color:#006600;" value="{0, number, {!acctCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!invoicedAmountPaidFiltered}"/>
+            </apex:outputText> 
+            <apex:outputText style="color:#00A;" value="{0, number, {!acctCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!invoicedAmountUnpaidFiltered}"/>
+            </apex:outputText>
+            <apex:outputText value="{0, number, {!acctCurrencyCode} ###,###,###,###,##0.00}">
+               <apex:param value="{!totalAmountFiltered}"/>
+            </apex:outputText> 
+         </apex:panelGrid>      
+      </apex:pageBlockSection>   
+   </apex:pageBlock>
+   <apex:form id="invPaidVsUnpaidForm">
+      <apex:actionFunction action="{!doGraphClickFilter}" name="refreshTableOnGraphClick" reRender="theInvGrid, invPgBlk">
+         <apex:param name="periodStr" value=""/>
+         <apex:param name="clkdStatus" value=""/>
+      </apex:actionFunction>   
+      <apex:outputPanel style="float:right;">
+         <apex:outputText value="{!$Label.apttus_billing__commonfilters}: "/>            
+         <apex:selectList id="yearPkLst" style=" margin-bottom:4px;" value="{!fltrYearStr}" size="1" multiselect="false">
+            <apex:selectOptions value="{!yearValues}" />
+            <apex:actionSupport event="onchange" reRender="invPgBlk, invChrtBlk, theInvGrid" action="{!doFilter}"/>
+         </apex:selectList>                               
+      </apex:outputPanel>  
+      <br /> 
+      <br />
+      <div style="margin-left: auto; margin-right: auto">
+         <apex:chart height="450" width="90%" data="{!invoiceChartData}" id="invChrtBlk">
+            <apex:axis type="Category" position="bottom" fields="name" title="{!$Label.apttus_billing__monthinitcaps}" >
+               <apex:chartLabel rotate="315"/>
+            </apex:axis>   
+            <apex:axis type="Numeric" position="left" fields="paidInvoicedAmount,unpaidInvoicedAmount"
+                       title="{!$Label.apttus_billing__amount}" grid="true">
+               <apex:chartLabel rotate="315"/>
+            </apex:axis>
+            <apex:barSeries colorSet="#006600,#00A" orientation="vertical" axis="bottom" xField="name"
+                    yField="paidInvoicedAmount,unpaidInvoicedAmount" 
+                    title="Paid, Unpaid"
+                    stacked="true" >
+               <apex:chartTips height="35" width="120" rendererFn="tipOnclickRendererForInvChart"/>
+            </apex:barSeries>          
+            <apex:legend position="left"/>
+         </apex:chart>          
+      </div> 
+      <apex:pageBlock title="{!$ObjectType.Apttus_Billing__Invoice__c.labelPlural}" id="invPgBlk" tabStyle="InvoiceRun__c">
+         <apex:outputPanel style="float:right;">
+            <apex:outputText value="{!$Label.apttus_billing__filter}: "/>
+            <apex:selectList id="monthYearPkLst" style=" margin-bottom:4px;" value="{!fltrPeriodStr}" size="1" multiselect="false">
+               <apex:selectOptions value="{!monthYearValues}" />
+               <apex:actionSupport event="onchange" reRender="theInvGrid, invPgBlk" action="{!doTableFilter}"/>
+             </apex:selectList>              
+         </apex:outputPanel>
+         <br/>
+        <apex:outputPanel rendered="{!IF(invoices.size == 0, true, false)}">
+           <apex:outputText value=" {!$Label.apttus_billing__norecordsfound}. "/>
+        </apex:outputPanel>                           
+        <apex:pageBlockTable title="Invoices" value="{!invoices}" var="invc" id="invcTable" rendered="{!IF(invoices.size > 0, true, false)}">
+           <apex:column value="{!invc.Apttus_Billing__InvoiceDate__c}"/>
+           <apex:column value="{!invc.Name}"/>
+           <apex:column value="{!invc.PaymentTermId__r.Name}"/>
+           <apex:column value="{!invc.Apttus_Billing__DueDate__c}"/>
+           <!-- <apex:column value="{!invc.PeriodEndDate__c}"/>  -->
+           <apex:column value="{!invc.Apttus_Billing__TotalFeeAmount__c}"/>
+           <apex:column value="{!invc.Apttus_Billing__TotalTaxAmount__c}"/>
+        </apex:pageBlockTable> 
+        <apex:outputPanel layout="none" rendered="{!IF(invoices.size > 0, true, false)}">
+           <apex:outputPanel style="float:left;">  
+              <apex:outputText value=" {!$Label.apttus_billing__view} "/>
+              <apex:selectList id="limitPkLst" style="margin-bottom:4px;" value="{!limitSize}" size="1" multiselect="false">
+                 <apex:selectOptions value="{!pageSizeValues}" />
+                 <apex:actionSupport event="onchange" reRender="invPgBlk" action="{!doPageSizeChange}"/>
+              </apex:selectList>
+              <apex:outputText value=" {!$Label.apttus_billing__recordsperpage}." />
+           </apex:outputPanel> 
+         <apex:outputPanel >
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+         </apex:outputPanel>
+         <apex:commandButton value="{!$Label.apttus_billing__first}" rerender="invPgBlk" action="{!firstPage}" disabled="{!IF(offsetSize == 0, true, false)}"/>
+         <apex:commandButton value="{!$Label.apttus_billing__previous}" rerender="invPgBlk" action="{!previousPage}" disabled="{!IF(offsetSize == 0, true, false)}"/>
+         <apex:outputText value=" {!$Label.apttus_billing__showingpage}  {!currentPage}   {!$Label.apttus_billing__of}   {!numPages}  " />
+         <apex:commandButton value="{!$Label.apttus_billing__next}" rerender="invPgBlk" action="{!nextPage}" disabled="{!IF(offsetSize + limitSize > totalRecs, true, false)}"/>
+         <apex:commandButton value="{!$Label.apttus_billing__last}" rerender="invPgBlk" action="{!lastPage}" disabled="{!IF(offsetSize + limitSize > totalRecs, true, false)}"/>  
+         <apex:outputPanel style="float:right;">
+           <apex:outputText style="valign:top;" value="  {!$Label.apttus_billing__totalnumberofrecords}: {!totalRecs}  " />
+         </apex:outputPanel>                    
+        </apex:outputPanel>    
+      </apex:pageBlock>                
+   </apex:form>                           
+</apex:page>

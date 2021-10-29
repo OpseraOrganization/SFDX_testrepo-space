@@ -1,0 +1,632 @@
+<apex:page sidebar="false" controller="AreaASMChartController">
+
+<head>
+    <title>BGA Aftermarket Contacts Around The Globe</title>
+    <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+    <style type="text/css">
+        .custPopup{
+            background-color: white;
+            border-width: 1px;
+            border-style: solid;
+            z-index: 9999;
+            left: 50%;
+            padding:10px;
+            position: fixed;
+            /* These are the 3 css properties you will need to change so the popup
+            displays in the center of the screen. First set the width. Then set
+            margin-left to negative half of what the width is. You can add
+            the height property for a fixed size pop up if you want.*/
+            width: 500px;
+            margin-left: -250px;
+            top:120px;
+        }
+        .popupBackground{
+            background-color:black;
+            opacity: 0.30;
+            filter: alpha(opacity = 30);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+    </style>
+    <script type='text/javascript'>
+          var geomap_us;
+          var dataUS;
+       
+          
+          function loadWorldMap_US(){
+                    google.load('visualization', '1', {'packages': ['geochart']});
+                    google.setOnLoadCallback(drawMap);
+                    function drawMap() {
+                              dataUS = google.visualization.arrayToDataTable([
+                                    ['Area', 'Sales Manager'],
+                                    <apex:variable var="cntA" value="1" />
+                                    <apex:repeat value="{!asmListUS}" var="asmDetl">
+                                    {!IF(cntA == "1" ,'',',')}['{!asmDetl.StateCode__c}','{!asmDetl.State__c+': '+asmDetl.Name__c}']
+                                    <apex:variable var="cntA" value="2"/>
+                                    </apex:repeat>                              
+                              ]);
+                              
+                              var container = document.getElementById('map_canvas_us');
+                              geomap_us = new google.visualization.GeoChart(container);
+                              google.visualization.events.addListener(
+                                    geomap_us, 'regionClick', function(e){
+                                       selectHandlerUS(e['region']);
+                                    }); 
+                              geomap_us.draw(dataUS, 
+                                                  {
+                                                        width: 350, 
+                                                        height: 300,
+                                                        region:'US',
+                                                        resolution: 'provinces',
+                                                        enableRegionInteractivity:true,
+                                                        colorAxis: {colors: ['#FFFFFF', '#FFFFFF']}
+                                                  }
+                              );
+                              
+                     
+                            };
+                           
+                    }
+                
+                 
+                    
+                    function selectHandlerUS(regn){
+                            
+                            if(regn == null || regn == "" || regn == "US" || regn == "CA"){
+                                return;
+                            }
+                            
+                            var stateName, cntryName;
+                            if(regn.indexOf("-") >= 0){
+                                stateName = regn.split('-')[1];
+                                cntryName = regn.split('-')[0];
+                            }
+                            else{
+                                stateName   = 'All';
+                                cntryName   = regn;
+                                //alert(cntryName);
+                            }
+                            
+                            showPopUp();
+                            Visualforce.remoting.Manager.invokeAction(
+                                                                            '{!$RemoteAction.AreaASMChartController.getContactDetails}', 
+                                                                            {'apexType':'c.AreaASMChartController.ReturnDataSet', 'asmState':stateName ,'asmCountry':cntryName },
+                                                                            function(result, event){
+                                                                                                        if (event.status) {
+                                                                                                            
+                                                                                                            setASMDetailView(result.asmName,result.asmEmail,result.asmPhone,result.asmMobile,result.asmPhoneExtn,result.asmFax,result.asmPhoto,result.asmState,result.asmCountry);
+                                                                                                            setASM2DetailView(result.asm2Name,result.asm2Email,result.asm2Phone,result.asm2Mobile,result.asm2PhoneExtn,result.asm2Fax,result.asm2Photo,result.asm2State,result.asm2Country,result.secialMsg);
+                                                                                                            setTechMgrDetailView(result.techName,result.techEmail,result.techPhone,result.techMobile,result.techPhoneExtn,result.techFax,result.techPhoto,result.techState,result.techCountry);
+                                                                                                        
+                                                                                                        } else if (event.type === 'exception') {
+                                                                                                           // document.getElementById("asmPicAreaView").innerHTML = "No Record Found";
+                                                                                                            document.getElementById('asmNameView').innerHTML = "Please contact <a href='mailTo:sales.marketing.news@honeywell.com'>sales.marketing.news@honeywell.com</a>";
+                                                                                                            document.getElementById('asmPicAreaView').innerHTML = "";
+                                                                                                        } else {
+                                                                                                           // document.getElementById("asmPicAreaView").innerHTML = "No Record Found";
+                                                                                                            document.getElementById('asmNameView').innerHTML = "Please contact <a href='mailTo:sales.marketing.news@honeywell.com'>sales.marketing.news@honeywell.com</a>";
+                                                                                                            document.getElementById('asmPicAreaView').innerHTML = "";
+                                                                                                        }
+                                                                            }, 
+                                                                            {escape: true}
+                                                                        );                          
+                    
+                    }
+                          
+                    
+          
+                    
+          var geomap_Other;
+          function loadWorldMap_Other(){
+                    google.load('visualization', '1', {'packages': ['geochart']});
+                    google.setOnLoadCallback(drawMap);
+                    function drawMap() {
+                              var data = google.visualization.arrayToDataTable([
+                                ['Area', 'Sales Manager'],
+                                //['India', 'India: Varun Nirala'],
+                                    <apex:variable var="cntA" value="1" />
+                                    <apex:repeat value="{!asmListOthers}" var="asmDetl">
+                                    {!IF(cntA == "1" ,'',',')}['{!asmDetl.Country__c}','{!asmDetl.Country__c+': '+asmDetl.Name__c}']
+                                    <apex:variable var="cntA" value="2"/>
+                                    </apex:repeat>                              
+                                
+                              ]);
+                              var container = document.getElementById('map_canvas_others');
+                              geomap_Other = new google.visualization.GeoChart(container);
+                              
+                              google.visualization.events.addListener(
+                                    geomap_Other, 'regionClick', function(e){
+                                       selectHandlerUS(e['region']);
+                                    }); 
+                                                                  
+                              //google.visualization.events.addListener(geomap_Other, 'select', selectHandlerOther);
+                              geomap_Other.draw(data, {width: 800, height: 500,showLegend:false,region:'world',minValue: 0, maxValue: 0});                             
+                            };
+                    }
+                    function selectHandlerOther()
+                    {
+                            var selection = geomap_Other.getSelection();
+                            var item = selection[0];
+                            alert(item.row);
+                            
+                    } 
+                    
+                    
+         <!--Canada- adding this section based on Alejandra Lopez's requirement-->
+                            
+          var geomap_ca;
+          var dataCA;
+          function loadWorldMap_CA(){
+                    google.load('visualization', '1', {'packages': ['geochart']});
+                    google.setOnLoadCallback(drawMap);
+                    function drawMap() {
+                              dataCA = google.visualization.arrayToDataTable([
+                                    ['Area', 'Sales Manager'],
+                                   // ['Nunavut', 'Nunavut: Karl Summers'],
+                                    <apex:variable var="cntA" value="1" />
+                                    <apex:repeat value="{!asmListCA}" var="asmDetl">
+                                    {!IF(cntA == "1" ,'',',')}['{!asmDetl.State__c}','{!asmDetl.State__c+': '+asmDetl.Name__c}']
+                                    <apex:variable var="cntA" value="2"/>
+                                    </apex:repeat>                              
+                              ]);
+                              
+                              var container = document.getElementById('map_canvas_ca');        
+                              geomap_ca = new google.visualization.GeoChart(container);
+                              google.visualization.events.addListener(
+                                    geomap_ca, 'regionClick', function(e){
+                                       selectHandlerUS(e['region']);
+                                    }); 
+                              geomap_ca.draw(dataCA, 
+                                                  {
+                                                        width: 350, 
+                                                        height: 300,
+                                                        region:'CA',
+                                                        resolution: 'provinces',
+                                                        enableRegionInteractivity:true,
+                                                        colorAxis: {colors: ['#FFFFFF', '#FFFFFF']}
+                                                  }
+                              ); 
+                            };
+                    }
+    
+                              <!--Canada- adding this section based on Alejandra Lopez's requirement-->      
+                    
+    </script>
+    
+    <script>
+        function closePopUp(){
+            document.getElementById('tstpopup').style.display = 'none';
+            return;
+        }
+        function showPopUp(){
+            clearASMDetailView();
+            document.getElementById('asmPicAreaView').innerHTML = "<img src='{!$Resource.loading}' alt='loading...'/>";     
+            document.getElementById('tstpopup').style.display = 'block';
+            return;
+        }
+        
+        function setASMDetailView(name,email,phone,mobile,extension,fax,photo,state,country){
+    
+            if(phone != null){
+                document.getElementById('asmPhoneView').innerHTML = "Phone: "+phone+" " + (extension != null? " Extn: "+extension:"");
+            }
+            if(email != null){
+                document.getElementById('asmEmailView').innerHTML = "<a style='color:#0b75b2;' href='mailTo:"+email+"'>"+email+"</a>";
+            }
+            if(mobile != null){
+                document.getElementById('asmMobileView').innerHTML = "Mobile: "+mobile+"";
+            }
+            if(fax != null){
+                document.getElementById('asmFaxView').innerHTML = "Fax: "+fax+"";
+            }
+            if(state != null){
+                document.getElementById('asmStateView').innerHTML = ""+state+", ";
+            }
+            if(country != null){
+                document.getElementById('asmCountryView').innerHTML = ""+country+"";
+            }
+            if(name != null){
+                document.getElementById('asmNameView').innerHTML = "<b>"+name+"</b> (Area Sales Manager)";
+            }
+            else{
+                document.getElementById('asmNameView').innerHTML = "Please contact <a href='mailTo:sales.marketing.news@honeywell.com'>sales.marketing.news@honeywell.com</a>";
+            }
+            if(photo != null){
+                document.getElementById('asmPicAreaView').innerHTML = "<img style='height:90px;width:110px' src='"+photo+"' alt='"+name+"'/>";
+            }
+            else{
+                document.getElementById('asmPicAreaView').innerHTML = "";
+            }
+            
+        }   
+        function setASM2DetailView(name,email,phone,mobile,extension,fax,photo,state,country,splMsg){
+    
+            if(phone != null){
+                document.getElementById('asm2PhoneView').innerHTML = "Phone: "+phone+" " + (extension != null? " Extn: "+extension:"");
+            }
+            if(email != null){
+                document.getElementById('asm2EmailView').innerHTML = "<a style='color:#0b75b2;' href='mailTo:"+email+"'>"+email+"</a>";
+            }
+            if(mobile != null){
+                document.getElementById('asm2MobileView').innerHTML = "Mobile: "+mobile+"";
+            }
+            if(fax != null){
+                document.getElementById('asm2FaxView').innerHTML = "Fax: "+fax+"";
+            }
+            /*if(state != null){
+                document.getElementById('asm2StateView').innerHTML = ""+state+", ";
+            }
+            if(country != null){
+                document.getElementById('asm2CountryView').innerHTML = ""+country+"";
+            }*/
+            if(name != null){
+                document.getElementById('asm2NameView').innerHTML = "<b>"+name+"</b> (Area Sales Manager)";
+            }
+            else{
+                //document.getElementById('asm2NameView').innerHTML = "Please contact <a href='mailTo:sales.marketing.news@honeywell.com'>sales.marketing.news@honeywell.com</a>";
+            }
+            if(photo != null){
+                document.getElementById('asm2PicAreaView').innerHTML = "<img style='height:90px;width:110px' src='"+photo+"' alt='"+name+"'/>";
+            }
+            else{
+                document.getElementById('asm2PicAreaView').innerHTML = "";
+            }
+            
+            if(splMsg != null){
+                document.getElementById('asm2SplMsg').innerHTML = splMsg;
+            }
+            
+        }   
+        
+    function setTechMgrDetailView(name,email,phone,mobile,extension,fax,photo,state,country){
+    
+            if(phone != null){
+                document.getElementById('techPhoneView').innerHTML = "Phone: "+phone+" " + (extension != null? " Extn: "+extension:"");
+            }
+            if(email != null){
+                document.getElementById('techEmailView').innerHTML = "<a style='color:#0b75b2;' href='mailTo:"+email+"'>"+email+"</a>";
+            }
+            if(mobile != null){
+                document.getElementById('techMobileView').innerHTML = "Mobile: "+mobile+"";
+            }
+            if(fax != null){
+                document.getElementById('techFaxView').innerHTML = "Fax: "+fax+"";
+            }
+            /*
+            if(state != null){
+                document.getElementById('techStateView').innerHTML = ""+state+", ";
+            }
+            if(country != null){
+                document.getElementById('techCountryView').innerHTML = ""+country+"";
+            }
+            */
+            if(name != null){
+                document.getElementById('techNameView').innerHTML = "<b>"+name+"</b> (Field Service Engineer)";
+            }
+            else{
+                //document.getElementById('techNameView').innerHTML = "Please contact <a href='mailTo:sales.marketing.news@honeywell.com'>sales.marketing.news@honeywell.com</a>";
+            }
+            if(photo != null){
+                document.getElementById('techPicAreaView').innerHTML = "<img style='height:90px;width:110px' src='"+photo+"' alt='"+name+"'/>";
+            }
+            else{
+                document.getElementById('techPicAreaView').innerHTML = "";
+            }
+            
+        }   
+                
+    function clearASMDetailView(){
+            document.getElementById('asmNameView').innerHTML        =   "";
+            document.getElementById('asmPhoneView').innerHTML       =   "";
+            document.getElementById('asmEmailView').innerHTML       =   "";
+            document.getElementById('asmMobileView').innerHTML      =   "";
+            document.getElementById('asmFaxView').innerHTML         =   "";
+            document.getElementById('asmPicAreaView').innerHTML     =   "";
+
+            document.getElementById('asm2NameView').innerHTML       =   "";
+            document.getElementById('asm2PhoneView').innerHTML      =   "";
+            document.getElementById('asm2EmailView').innerHTML      =   "";
+            document.getElementById('asm2MobileView').innerHTML     =   "";
+            document.getElementById('asm2FaxView').innerHTML        =   "";
+            document.getElementById('asm2PicAreaView').innerHTML    =   "";
+            document.getElementById('asm2SplMsg').innerHTML         =   "";
+                        
+            document.getElementById('techNameView').innerHTML       =   "";
+            document.getElementById('techPhoneView').innerHTML      =   "";
+            document.getElementById('techEmailView').innerHTML      =   "";
+            document.getElementById('techMobileView').innerHTML     =   "";
+            document.getElementById('techFaxView').innerHTML        =   "";
+            document.getElementById('techPicAreaView').innerHTML    =   "";
+            
+            document.getElementById('asmStateView').innerHTML       =   "";
+            document.getElementById('asmCountryView').innerHTML     =   "";
+    }                       
+    </script>
+
+</head>
+
+<body>
+
+<apex:form >
+        <apex:pageBlock >
+            <div id="tstpopup" style="display:none;">
+                <div class="popupBackground"/>
+                        <div class="custPopup">
+                            <div id="asmDisplayInformation" style="height:250px;">
+                                <table width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td colspan="2" style="border-bottom: 1px dotted #DDDDDD;">
+                                            <b>BGA After Market contact for <span id="asmStateView"></span><span id="asmCountryView"></span></b>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                            <td id="asmPicAreaView" style="padding-top: 10px;" valign="top">
+                                                ASM Photo
+                                            </td>
+                                            <td align="left" valign="top" style="padding-top: 10px;color:#0b75b2;">
+                                                    <div id="asmNameView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="asmEmailView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="asmPhoneView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="asmMobileView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="asmFaxView" style="padding-bottom: 3px;">?</div>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                            <td id="asm2PicAreaView" style="padding-top: 10px;" valign="top">
+                                                ASM Photo
+                                            </td>
+                                            <td align="left" valign="top" style="padding-top: 10px;color:#0b75b2;">
+                                                    <div id="asm2NameView" style="padding-bottom: 3px">?</div>
+                                                    <div id="asm2SplMsg" style="padding-bottom: 2px;font-size: 8px;">?</div>
+                                                    <div id="asm2EmailView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="asm2PhoneView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="asm2MobileView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="asm2FaxView" style="padding-bottom: 3px;">?</div>
+                                            </td>
+                                    </tr>                                   
+                                    <tr>
+                                            <td id="techPicAreaView" style="padding-top: 10px;" valign="top">
+                                            Tech Mgr Photo
+                                            </td>
+                                            <td align="left" valign="top" style="padding-top: 10px;color:#0b75b2;">
+                                                    <div id="techNameView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="techEmailView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="techPhoneView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="techMobileView" style="padding-bottom: 3px;">?</div>
+                                                    <div id="techFaxView" style="padding-bottom: 3px;">?</div>
+                                            </td>
+                                    </tr>                                   
+                                </table>
+                                
+                            </div>
+                            <table width="100%">
+                                <tr>
+                                    <td align="right"><input type="button" name="Close"
+                                        onclick="closePopUp();" value="Close" /></td>
+                                </tr>
+                            </table>
+
+            </div>
+            </div>
+            
+            <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="border-bottom: 1px dotted #DDDDDD;" valign="top" width="4%">
+                    <span><img src="{!$Resource.globe}" height="32px" width="32px"></img></span>
+                </td>
+                <td style="font-weight: bold;size: 20px;border-bottom: 1px dotted #DDDDDD;" valign="middle" align="left">   
+                    BGA Aftermarket Contacts Around The Globe &nbsp;&nbsp;&nbsp;&nbsp;<span style="font-weight:normal"><a href="/servlet/servlet.FileDownload?file=015a0000002313c">Tails and Service Centers Maps</a></span>
+                </td>
+            </tr>
+            </table>
+    
+    <table width="100%" style="background-color: #FFFFFF">
+    <tr>
+        <td valign="top" align="center" style="font-weight: bold;size: 14px">
+            USA 
+        </td>
+        <td valign="top" align="center" style="font-weight: bold;size: 14px">
+            Canada 
+        </td>
+        <td valign="top" align="center" style="font-weight: bold;size: 14px">           
+            Other Countries
+        </td>
+    </tr>
+    <tr>
+            <td align="left" valign="top">
+            
+                <div  id='map_canvas_us'>
+                </div>
+            
+                <table width="100%" cellpadding="3" cellspacing="0" border="0" style="border-bottom: 1px dotted #000;">
+                                    <tr>
+                                        <td colspan="3" style="font-weight: bold;border-bottom: 1px dotted #000;">
+                                        USA
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                    <td style="font-weight: bold;">
+                                    State
+                                    </td>
+                                    <td style="font-weight: bold;">
+                                    Area Sales Manager
+                                    </td>
+                                    <td style="font-weight: bold;">
+                                    Customer Data Sheet
+                                    </td>
+                                    <!--  
+                                    
+                                    <!--  Excel-->
+                                    <!--
+                                    <td style="font-weight: bold;">
+                                    Customer Data Sheet in Excel
+                                    </td>
+                                    -->
+                                    <!--  Excel-->
+                                    <!--
+                                    <td style="font-weight: bold;">
+                                    Technical
+                                    </td>
+                                    -->
+                                    
+                                    </tr>
+                                    <apex:variable var="rowNum" value="1" />
+                                    <apex:repeat value="{!asmListUS}" var="asmDetl">
+                                            <tr>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;" >
+                                                {!asmDetl.State__c} - {!asmDetl.StateCode__c}
+                                                </td>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;" >
+                                                        <a href="javascript:selectHandlerUS('{!asmDetl.Country__c}-{!asmDetl.StateCode__c}');" >{!asmDetl.Name__c}</a>
+                                                    <br/>
+                                                    <span style="font-size: 8px;">
+                                                        {!IF(asmDetl.specialMessage__c != '' ,'* '+asmDetl.specialMessage__c,'')}
+                                                    </span>
+                                                </td>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;width:20%;">
+                                                <a href="/apex/tearsheet?state={!asmDetl.StateCode__c}"><img src="{!$Resource.pdf_icon}" style="border:0px solid white;"/></a>
+                                                <a href="/apex/exceldatasheet?state={!asmDetl.StateCode__c}"><img src="{!$Resource.Excel_icon}" style="border:0px solid white;"/></a>
+                                                </td>
+                                                
+                                                
+                                                  <!--  Excel-->
+                                                  <!--
+                                                  <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;width:20%;">
+                                                <a href="/apex/exceldatasheet?state={!asmDetl.StateCode__c}"><img src="{!$Resource.Excel_icon}" style="border:0px solid white;"/></a>
+                                                </td>
+                                                -->
+                                                 <!-- Excel-->
+                                                
+                                                <!--  
+                                                <td valign="top" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:15px;">
+                                                    ?
+                                                </td>
+                                                -->
+                                            </tr>   
+                                        <apex:variable var="rowNum" value="{!IF(VALUE(rowNum) ==0,1,0)}"/>
+                                    </apex:repeat>
+                                    </table>                                                                      
+            </td>
+                        <!--Canada- adding this section based on Alejandra Lopez's requirement-->  
+         <td align="center" valign="top">
+            
+                <div  id='map_canvas_ca'>
+                </div>            
+                       <table width="100%" cellpadding="3" cellspacing="0" border="0" style="border-bottom: 1px dotted #000;">
+                                    <tr>
+                                        <td colspan="3" style="font-weight: bold;border-bottom: 1px dotted #000;">
+                                        Canada
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                    <td style="font-weight: bold;">
+                                    State
+                                    </td>
+                                    <td style="font-weight: bold;">
+                                    Area Sales Manager
+                                    </td>
+                                    <td style="font-weight: bold;">
+                                    Customer Data Sheet
+                                    </td>
+                                        
+                                    <!--  
+                                    <td style="font-weight: bold;">
+                                    Technical
+                                    </td>
+                                    -->
+                                    
+                                    </tr>
+                                    <apex:variable var="rowNum" value="1" />
+                                    <apex:repeat value="{!asmListCA}" var="asmDetl">
+                                            <tr>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;" >
+                                                {!asmDetl.State__c} - {!asmDetl.StateCode__c}
+                                                </td>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;" >
+                                                        <a href="javascript:selectHandlerUS('{!asmDetl.Country__c}-{!asmDetl.StateCode__c}');" >{!asmDetl.Name__c}</a>
+                                                    <br/>
+                                                    <span style="font-size: 8px;">
+                                                        {!IF(asmDetl.specialMessage__c != '' ,'* '+asmDetl.specialMessage__c,'')}
+                                                    </span>
+                                                </td>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;width:20%;">
+                                                <a href="/apex/tearsheet?state={!asmDetl.StateCode__c}"><img src="{!$Resource.pdf_icon}" style="border:0px solid white;"/></a>
+                                               <a href="/apex/exceldatasheet?state={!asmDetl.StateCode__c}"><img src="{!$Resource.Excel_icon}" style="border:0px solid white;"/></a>
+                                                </td>
+                                                
+                                                <!--  
+                                                <td valign="top" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:15px;">
+                                                    ?
+                                                </td>
+                                                -->
+                                            </tr>   
+                                        <apex:variable var="rowNum" value="{!IF(VALUE(rowNum) ==0,1,0)}"/>
+                                    </apex:repeat>
+                                    </table>    
+            </td>             
+                     <!--Canada- adding this section based on Alejandra Lopez's requirement-->
+                    
+            <td valign="top" align="right">
+                <div  id='map_canvas_others'></div>
+                                <table width="80%" cellpadding="3" cellspacing="0" border="0" style="border-bottom: 1px dotted #000;">
+                                    <tr>
+                                        <td colspan="3" style="font-weight: bold;border-bottom: 1px dotted #000;" align="left">
+                                        Other Countries
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                    <td style="font-weight: bold;" align="left">
+                                    Country
+                                    </td>
+                                    <td style="font-weight: bold;" align="left">
+                                    Area Sales Manager
+                                    </td>
+                                    <td style="font-weight: bold;" align="left">
+                                    Customer Data Sheet
+                                    </td>
+                                    
+                                    <!-- 
+                                    <td style="font-weight: bold;" align="left">
+                                    Technical
+                                    </td>
+                                     -->
+                                    </tr>
+                                    <apex:variable var="rowNum" value="1" />
+                                    <apex:repeat value="{!asmListOthers}" var="asmDetl">
+                                            <tr>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;" >
+                                                {!asmDetl.Country__c}
+                                                </td>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;" >
+                                                 <a href="javascript:selectHandlerUS('{!asmDetl.Country_Code__c}');" >{!asmDetl.Name__c}</a>
+                                                    <br/>
+                                                    <span style="font-size: 8px;">
+                                                        {!IF(asmDetl.specialMessage__c != '' ,'* '+asmDetl.specialMessage__c,'')}
+                                                    </span>                                              
+                                                </td>
+                                                <td valign="middle" align="left" style="background-color: {!IF(VALUE(rowNum)==1,'#EEEEEE','')};height:25px;width:20%;" >
+                                                <a href="/apex/tearsheet?country={!asmDetl.Country__c}"><img src="{!$Resource.pdf_icon}" style="border:0px solid white;"/></a>
+                                                <a href="/apex/exceldatasheet?state={!asmDetl.StateCode__c}"><img src="{!$Resource.Excel_icon}" style="border:0px solid white;"/></a>
+                                                </td>
+                                                
+                                            </tr>   
+                                        <apex:variable var="rowNum" value="{!IF(VALUE(rowNum) ==0,1,0)}"/>
+                                    </apex:repeat>
+                                    </table>             
+            </td>
+    </tr>
+    </table>    
+    </apex:pageBlock>
+</apex:form> 
+    <script>
+        loadWorldMap_US();
+        loadWorldMap_CA();
+        loadWorldMap_Other();
+    </script>
+</body>
+
+</apex:page>

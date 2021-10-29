@@ -1,0 +1,1017 @@
+<apex:page standardController="DMAPP__DM_Account_Plan__c" 
+    extensions="DMAPP.AccountPlanCreateController,DMAPP.BrandOverrideController" 
+    sidebar="false"
+    showHeader="false"
+    action="{!logAMSettingsUsage}"
+>
+
+     <c:jQuery chosen="true"
+        jQueryUI="true" 
+        touchPunch="true"
+        tableDnD="true"
+        tooltip="true" 
+        paging="true"
+        underscore="true"
+        cookies="true"
+        angular="true"
+        angularext="true"
+        twbootstrap="true"
+        moment="true"
+     />
+     
+    <c:MobileRedirect TAM="true" />
+    <c:Translations include_all="true" />
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/ttgservice.js')}"/>
+
+    <apex:panelGroup rendered="{!isIPad}">
+        <apex:includeScript value="{!URLFOR($Resource.DMAPP__jQueryUI, 'js/mobile-html5-drag-and-drop-shim.js')}"/>
+    </apex:panelGroup>
+
+    <c:CRUD />
+    <style type="text/css">
+
+
+    html body.sfdcBody{
+        padding: 0px
+    }
+
+
+        @media only screen 
+        and (min-device-width : 768px) 
+        and (max-device-width : 1024px)  { 
+            #acc_mgmt__plan_settings_app {
+                overflow: visible !important;
+            }
+
+            .acc_mgmt__plan_settings_app {
+                overflow: visible !important;
+            }
+        }
+
+        :-ms-input-placeholder {
+            color: #54698d !important;
+            /*color: #CCC !important;*/
+            font-weight: 400 !important;
+        }
+
+        _:-ms-fullscreen, :root div.team_stage_chatter_grp {
+            vertical-align: top;
+        }
+
+        .ui-dialog.altify_salesforce_server_error {
+            z-index: 100001;
+        }
+
+        [ttgid="AddAccounts_dialog"] {
+            z-index: 10001;
+        }
+    </style>
+
+    <script type="text/javascript">
+        var accPlanId = "{!JSENCODE(DM_Account_Plan__c.Id)}" || null;
+    </script>
+
+    <c:acc_mgmt_plan_settings_app planId="accPlanId"
+        dontLoadVendor="true"
+    />
+
+    <script type="text/javascript">
+
+        var fetchapi = ttg.apiLayer.crud( { sessionid : '{!JSENCODE($Api.Session_ID)}' } );
+        ttg.fetch.metadata('Account', fetchapi);
+
+        var goEdit = '{!isEditable}';
+
+        var planTypes = [];
+        <apex:repeat value="{!planTypeLabels}" var="label">
+            planTypes.push({id: '{!JSENCODE(label.value)}', name: '{!JSENCODE(label.label)}'});
+        </apex:repeat>
+
+        angular
+            .module('acc_mgmt__plan_settings_remote', ['ttg.VfRemoting', 'ui.altify'])
+            .factory(
+                'plan_settings_remote_service',
+                [
+                    '$timeout',
+                    'VFRemoting',
+                    '$q',
+                    'UtilsDate',
+                    'showSolutionFamilies',
+                    function($timeout, VFRemoting, $q, UtilsDate, showSolutionFamilies) {
+
+                        function adaptAccounts(accs) {
+                            var result = _.map(accs, function(acc) {
+                                acc.id = acc.Id;
+                                acc.name = acc.Name;
+                                acc.owner = acc.Owner ? {name: acc.Owner.Name} : null;
+                                acc.parent = acc.Parent ? {name: acc.Parent.Name} : null;
+
+                                return acc;
+                            });
+                            return result;
+                        }
+
+                        function advancedAccountSearch(currentaccids) {
+                            var deferred = $q.defer();
+                            var accountSearchSpec = {};
+                            var sentCallback = false;
+                            accountSearchSpec.ttgApi = ttg.apiLayer.crud( { sessionid : '{!JSENCODE($Api.Session_ID)}' } );
+                            accountSearchSpec.autosearch = false;
+                            accountSearchSpec.title = ttg.Labels.COMMON_ADD_account;
+                            accountSearchSpec.ttgid = 'Add Accounts';
+                            accountSearchSpec.enableShowIncluded = true;
+                            accountSearchSpec.alwaysShowIncluded = true;                    
+                            accountSearchSpec.lookup = { 
+                                    layout: {
+                                        'account': [ 
+                                            { key: 'Parent.Name', label: 'Parent', searchViewableField: true }
+                                        ]
+                                    },
+                                    postClose: function() {
+                                        if(!sentCallback) {
+                                            deferred.resolve([]);  
+                                        }
+                                    },
+                                    overallCallback: function(accounts) {
+                                        _.each(accounts, function(elem, idx) {
+                                            if(elem['Owner']) {
+                                                elem.ownerid = elem['Owner'].Id;
+                                                elem.ownername = elem['Owner'].Name;
+                                            }
+                                        });
+                                        
+                                        sentCallback = true;
+                                        deferred.resolve(adaptAccounts(accounts));
+                                    } 
+                            };
+                            accountSearchSpec.isoCode = '{!JSENCODE(currencyISO)}';
+                            
+                            accountSearchSpec.prePopulateFields = function(dlg) {
+                                /*if(!graphConfig.associatedAccountNames || graphConfig.associatedAccountNames.length === 0) {
+                                        dlg.find('#SEARCHTEXT_Account_Name').val(graphConfig.associatedAccountName);
+                                }*/
+                            };
+
+                            accountSearchSpec.showIncludedCallback = function(account) {
+                                return currentaccids.indexOf(account.Id) > -1;
+                            }
+                            accountSearchSpec.postProcessMetadata = function(mydata) {
+                                jQuery.each(mydata.metadata.fields, function(key, value) {
+                                });
+                            }
+
+                            var accountMetadataControl = ttg.metadata(accountSearchSpec);       
+
+                            var filterResultCallback = function(account) {
+                                if(currentaccids.indexOf(account.Id) > -1) {
+                                    account.included = true;
+                                }
+
+                                return false;
+                            };
+
+                            accountMetadataControl.lookup.call(jQuery('#accountsAdvancedSearchBtn'), filterResultCallback, null, true, null, null, accountSearchSpec.ttgid);
+                            
+                            return deferred.promise;
+                        }
+
+                        function getPlanSettings(planid) {
+                            function adaptUnits(units){       
+                                var newUnits = function (units, root) {
+                                    var r = [], o = {};
+                                    units.forEach(function (unit) {
+
+                                        if( 
+                                            unit.accountId != undefined && 
+                                            unit.accountName != undefined &&
+                                            unit.memberAccounts.length == 0
+                                        ){
+                                            unit.memberAccounts.push({
+                                                accountId: unit.accountId,
+                                                accountName: unit.accountName,
+                                                parentName: unit.accountParentName,
+                                                parentId: unit.accountParentId,
+                                                ownerName: unit.accountOwnerName,
+                                                ownerId: unit.accountOwnerId
+                                               })
+                                        }
+
+                                        unit.accounts = _.map(unit.memberAccounts, function(acc) {
+                                            return {
+                                                id: acc.accountId,
+                                                name: acc.accountName,
+                                                accountFields: acc.accountFields,
+                                                sortedAccountFields: acc.sortedAccountFields,
+                                                parent: {
+                                                    name: acc.parentName,
+                                                    id : acc.parentId
+                                                },
+                                                owner:{
+                                                    name: acc.ownerName,
+                                                    id : acc.ownerId     
+                                                }
+                                            }
+                                        })
+
+                                        if(o[unit.id]) {
+                                            var children = o[unit.id].children || [];
+                                            o[unit.id] = _.extend(o[unit.id], unit);
+                                            o[unit.id].children = children;
+                                        } else {
+                                            o[unit.id] = unit;
+                                        }
+
+                                        if (unit.parentUnitId === root) {
+                                            r.push(o[unit.id]);
+                                        } else {
+                                            var unittouse = o[unit.id];
+
+                                            o[unittouse.parentUnitId] = o[unittouse.parentUnitId] || { id: unittouse.parentUnitId};
+                                            o[unittouse.parentUnitId].children = o[unittouse.parentUnitId].children || [];
+                                            o[unittouse.parentUnitId].children.push(o[unittouse.id]);
+                                            unittouse.parent = o[unittouse.parentUnitId];
+
+                                            if(unittouse.accounts.length === 0 && unittouse.parent.id){
+                                                unittouse.useParent = true;
+                                            } else {
+                                                unittouse.useParent = false;
+                                            }
+                                        }
+                                    });
+                                    return r;
+                                }(units, undefined);
+                                return newUnits;
+                            }
+
+                            function sortUnits(units) {
+                                if(units.children && units.children.length) {
+                                    units.children = sortUnits(units.children);
+                                }
+                                return _.sortBy(units, 'sortOrder');
+                            }
+
+                            function adapt(plan) {
+                                plan.name = plan.planname;
+                                plan.targets = _.map(plan.revenueTargets, function(target) {
+                                    var adaptedTarget = {
+                                        id: target.id,
+                                        startperiodvalue: new Date(target.fromDate + new Date(target.fromDate).getTimezoneOffset() * 60000),
+                                        endperiodvalue: new Date(target.toDate + new Date(target.toDate).getTimezoneOffset() * 60000),
+                                        target: target.revenueTarget || 0
+                                    };
+                                    //console.log('getPlanSettings(): adaptedTarget = ' + JSON.stringify(adaptedTarget));
+                                    
+                                    return adaptedTarget;
+                                });
+
+                                plan.chatterGroups = _.filter(plan.chatterGroups, function(chatGroup) {
+                                    return chatGroup.archived == false;
+                                });
+                                plan.chattergroup = _.find(plan.chatterGroups, function(chatGroup) {
+                                     return chatGroup.id === plan.chattergroupid;
+                                });
+                                plan.type = plan.plantype ? _.find(plan.planTypes, function(plantype) {
+                                    return plan.plantype == plantype.id;
+                                }) : null;
+                                
+                                plan.createdatelabel = moment(plan.createdDate)
+                                    .format(UtilsDate.getLocaleDatePattern().toUpperCase())
+                                ;
+
+                                plan.rownames = _.pluck(plan.units, 'name');
+
+                                plan.units = adaptUnits(plan.units);
+
+                                plan.units = sortUnits(plan.units);
+                                plan.enablemonthlychat = plan.autopostchatter;
+                                plan.selectedSolutions = _.map(plan.selectedSolutions, function(sol) {
+                                    sol.name = sol.basename;
+                                    return sol;
+                                })
+
+                                plan.availableSolutions = _.map(plan.availableSolutions, function(sol) {
+                                    sol.basename = sol.basename ? sol.basename : sol.name;
+                                    return sol;
+                                });
+
+                                if(plan.planStatus === 'open'){
+                                    plan.planStatus = {
+                                        label : ttg.Labels.COMMON_ACTIVE,
+                                        value : plan.planStatus
+                                    }
+                                }else if(plan.planStatus === 'closed'){
+                                    plan.planStatus = {
+                                        label : ttg.Labels.COMMON_INACTIVE,
+                                        value : "closed"
+                                    };
+                                }
+
+                                plan.states = [
+                                    {
+                                        label : ttg.Labels.COMMON_ACTIVE,
+                                        value : "open"
+                                    },{
+                                        label : ttg.Labels.COMMON_INACTIVE,
+                                        value : "closed"
+                                    }
+                                ]
+
+                                _.each(plan.members, function(member) {
+                                    member.access = {
+                                                label : ttg.Labels.AP_PLAN_OWNER,
+                                                value : "Plan Owner"
+                                            }
+                                    switch(member.permission) {
+                                        case 'Edit':
+                                            member.access = {
+                                                label : ttg.Labels.PLAN_SETUP_TEAM_ACCESS_EDIT,
+                                                value : "Can View & Edit"
+                                            }
+                                            break;
+                                        case 'Read':
+                                            member.access = {
+                                                label : ttg.Labels.PLAN_SETUP_TEAM_ACCESS_READ_ONLY,
+                                                value : "Can View"
+                                            };
+                                            break;
+                                        case 'Default':
+                                            member.access = {
+                                                label : ttg.Labels.PLAN_SETUP_TEAM_ACCESS_READ_ONLY,
+                                                value : "Can View"
+                                            };
+                                            break;
+                                    }
+                                    member.photo = member.photoUrl;
+                                    if(member.access.value == "Plan Owner"){
+                                        member.iscurrentplanowner = true;
+                                    }
+                                })
+
+                                if(showSolutionFamilies) {
+                                    //build up hierarchy
+                                    plan.availableSolutions = _.map(
+                                        _.groupBy(plan.availableSolutions, function(sols) {
+                                            return sols.familyname;
+                                        }),
+                                        function(val, key) {
+                                            return {
+                                                family: key,
+                                                members: _.map(val, function(sol) {
+                                                    sol.family = sol.familyname;
+                                                    return sol;
+                                                })
+                                            }
+                                        }
+                                    );
+                                    plan.selectedSolutions = _.map(
+                                        _.groupBy(plan.selectedSolutions, function(sols) {
+                                            return sols.familyname;
+                                        }),
+                                        function(val, key) {
+                                            return {
+                                                family: key,
+                                                members: _.map(val, function(sol) {
+                                                    sol.family = sol.familyname;
+                                                    return sol;
+                                                })
+                                            }
+                                        }
+                                    );
+                                }
+                                
+                                return plan;
+                            }
+                            
+                            var deferred = $q.defer();
+                            ttg.ttgQATracker.callStarted();
+
+                            VFRemoting.invoke(
+                                '{!$RemoteAction.AccountPlanCreateController.getPlanSettings}',
+                                [accPlanId],
+                                function(result, event){
+                                    ttg.ttgQATracker.callEnded();
+                                    if (event.type == 'exception') {
+                                        deferred.reject(result);
+                                    } else {
+                                        deferred.resolve(adapt(result));
+                                    }
+                                }, true
+                            );
+                            return deferred.promise;
+                            
+                        }
+
+                        function cancelEdit() {
+
+                            var path = decodeURIComponent('{!JSENCODE($CurrentPage.parameters.retURL)}');
+                            if(!path) {
+                                path = "{!JSENCODE('/' + $ObjectType.DM_Account_Plan__c.keyPrefix)}";
+                            }
+
+                            if(ttg.isSalesforce1()) {
+                                sforce.one.navigateToURL(path);
+                            } else {
+                                top.location.href = path;
+                            }
+                        }
+
+                        function createChatterGroup(chatterGroup) {
+
+                            function adapt(chatterGroup) {
+                                return {
+                                    CollaborationType: chatterGroup.access.value,
+                                    Name: chatterGroup.name,
+                                    OwnerId: chatterGroup.owner.id,
+                                    Description: chatterGroup.description
+                                };
+                            }
+
+                            var deferred = $q.defer();
+                            ttg.ttgQATracker.callStarted();
+                            
+                            VFRemoting.invoke(
+                                '{!$RemoteAction.AccountPlanCreateController.createChatterGroup}',
+                                [adapt(chatterGroup)],
+                                function(result, event){
+                                    ttg.ttgQATracker.callEnded();
+                                    if (event.type == 'exception') {
+                                        deferred.reject(result);
+                                    } else {
+                                        chatterGroup.id = result.Id;
+                                        deferred.resolve(chatterGroup);
+                                    }
+                                }, true
+                            );
+                            
+                            return deferred.promise;
+                        }
+
+                        function saveAccountPlan(plan) {
+
+                            var todaysDate = !(_.isUndefined(plan.planId) || _.isNull(plan.planId)) ?
+                                jQuery.datepicker.parseDate(plan.dateFormat, plan.fromDate) :
+                                new Date();
+
+                            todaysDate = new Date(todaysDate - new Date(todaysDate).getTimezoneOffset() * 60000).toUTCString();
+
+                            function adaptUnits(roots) {
+
+                                function stampUid(arr, parentUid, nextIdx) {
+                                    
+                                    _.each(arr, function(unit, idx) {
+                                        unit.uid = nextIdx;
+                                        nextIdx = nextIdx + 1;
+                                        unit.parentUnitId = parentUid;
+                                        nextIdx = stampUid(unit.children, unit.uid, nextIdx);
+                                    })
+                                    return nextIdx
+                                }
+
+                                function flatten(arr, collector) {
+
+                                    return _.reduce(
+                                            arr,
+                                            function(memo, val) {
+                                                memo.push(val);
+
+                                                if (val.children && val.children.length > 0) {
+                                                    flatten(val.children, memo);
+                                                    delete val.children;
+                                                }
+
+                                                if (val.children && val.children.length === 0) {
+                                                    delete val.children;
+                                                }
+
+                                                return memo;
+                                            },
+                                            collector
+                                        );
+
+                                }
+
+                                stampUid(roots, null, 0);
+                                return flatten(roots, []);
+                            }
+                            plan.units = adaptUnits(plan.units);
+                            _.each(
+                                plan.units,
+                                function(elem, idx) {
+                                    elem.sortOrder = idx;
+                                }
+                            );
+
+                            function adaptMember(mem){
+                                var res = _.map(mem, function(m){
+                                    return{
+                                        accountId: m.id || m.accountId,
+                                        accountName: m.name || m.accountName
+                                    }
+                                });
+                                return res;
+                            }
+
+                            function adaptPlan(plan) {
+                                plan.units = _.map(plan.units, function(unit){
+                                    var result = {};
+                                    result.memberAccounts = adaptMember(unit.accounts);
+                                    result.targeted = unit.targeted || false;
+                                    result.id = unit.id;
+                                    result.uid = unit.uid;
+                                    result.name = unit.name;
+                                    result.accountName = unit.accountName;
+                                    result.accountId = unit.accountId;
+                                    result.parentUnitId = unit.parentUnitId;
+                                    result.sortOrder = unit.sortOrder;
+
+                                    return result;
+                                });
+                                plan.revenueTargets = _.map(plan.targets, function(target) {
+                                    return {
+                                        id: target.id,
+                                        fromDate: new Date(target.startperiodvalue - new Date(target.startperiodvalue).getTimezoneOffset() * 60000).toUTCString(),
+                                        toDate: new Date(target.endperiodvalue - new Date(target.endperiodvalue).getTimezoneOffset() * 60000).toUTCString(),
+                                        revenueTarget: target.target || 0
+                                    }
+                                });
+
+                                var addedSolutions = [];
+                                var removedSolutions = [];
+                                if(showSolutionFamilies) {
+                                    addedSolutions = _.flatten(
+                                        _.map(plan.selectedSolutions, function(family) {
+                                            return family.members
+                                        })
+                                    );
+
+                                    removedSolutions = _.map(
+                                        _.flatten(
+                                            _.map(plan.availableSolutions, function(family) {
+                                                return _.pluck(family.members, 'id');
+                                            })
+                                        ),
+                                        function(ids) {
+                                            return {
+                                                id: ids
+                                            }
+                                        }
+                                    );
+
+
+                                } else {
+                                    addedSolutions = plan.selectedSolutions;
+                                    removedSolutions = _.map(plan.availableSolutions, function(sol) {
+                                        return {id: sol.id};
+                                    });
+                                }
+                                addedSolutions = _.map(addedSolutions, function(sol, idx) {
+                                    return {
+                                        id: sol.id,
+                                        sortOrder: idx,
+                                        targeted: sol.targeted || false
+                                    }
+                                });
+
+                                var result = {
+                                    plantype : plan.type.id,
+                                    planname : plan.name,
+                                    planStatus : plan.planStatus.value,
+                                    autopostchatter: plan.enablemonthlychat ? true : false,
+                                    chattergroupid: plan.chattergroup ? plan.chattergroup.id : '',
+                                    fromDate: todaysDate,
+                                    toDate: null,
+                                    units: plan.units,
+                                    revenueTargets: plan.revenueTargets,
+                                    removedSolutions: removedSolutions,
+                                    addedSolutions: addedSolutions,
+                                    members: 
+                                        _.map(plan.members, function(owner) {
+                                            var permission = 'All';
+                                            switch(owner.access.value) {
+                                                case 'Can View':
+                                                    permission = 'Read';
+                                                    break;
+                                                case 'Can View & Edit':
+                                                    permission = 'Edit';
+                                                    break;
+                                            }
+
+                                            return {
+                                                ownerId: owner.ownerId,
+                                                permission: permission
+                                            }
+                                        }),
+                                    ownerId: _.find(plan.members, function(member) {
+                                        return member.access.value == 'Plan Owner'
+                                    }).ownerId
+                                };
+
+                                return result;
+                            }
+
+                            var deferred = $q.defer();
+
+                            ttg.ttgQATracker.callStarted();
+
+                            if(accPlanId === null){
+                                accPlanId = '';
+                            }
+                           
+                            VFRemoting.invoke(
+                                '{!$RemoteAction.AccountPlanCreateController.putPlanSettings}',
+                                [accPlanId, adaptPlan(plan)],
+                                function(result, event){
+                                    ttg.ttgQATracker.callEnded();
+                                    if (event.type == 'exception') {
+                                        deferred.reject(result);
+                                    } else {
+                                        // var path = '/' + result.planId;
+                                        // if(ttg.isSalesforce1()) {
+                                        //     sforce.one.navigateToURL(path);
+                                        // } else {
+                                        //     top.location.href = path;
+                                        // }
+                                        deferred.resolve(result);
+                                    }
+                                }, true
+                            );
+                           
+                            return deferred.promise;
+                        }
+
+                        function searchForAccounts(term, owner, filterByAccounts, hiddenAccountsCountFromParent) {
+                            term = term || '';
+                            term = term.replace(/\\/g,'\\\\');                            
+                            term = term.replace(/\'/g,'\\\'');
+                            term = term.replace(/%/g,'\\%');
+                            term = term.replace(/_/g,'\\_');
+
+                            function adaptAccounts(accs) {
+                            
+                                var result = _.each(accs, function(acc) {
+                                        acc.id = acc.Id;
+                                        acc.name =  acc.Name;
+                                        acc.owner =  acc.Owner ? {name: acc.Owner.Name, id: acc.Owner.Id} : null;
+                                        acc.parent =  acc.Parent ? {name: acc.Parent.Name} : null;
+                                });
+
+                                return result;
+                            }
+
+                            var extra = '';
+                            if(filterByAccounts && filterByAccounts.length > 0) {
+                                extra = _.map(filterByAccounts, function(id) {
+                                    return "'" + id + "'";
+                                }).join(',')
+                            }
+
+                            var ownerid = owner ? owner.id : '';
+                            var deferred = $q.defer();
+
+                            ttg.ttgQATracker.callStarted();
+                            
+                            VFRemoting.invoke(
+                                '{!$RemoteAction.AccountPlanCreateController.searchForAccounts}',
+                                [term, ownerid, extra, hiddenAccountsCountFromParent || 0],
+                                function(result, event){
+                                    ttg.ttgQATracker.callEnded();
+                                    if (event.type == 'exception') {
+                                        deferred.reject(result);
+                                    } else {
+                                        if(result) {
+                                            deferred.resolve(adaptAccounts(result.records));
+                                        } else {
+                                            deferred.resolve([]);
+                                        }
+                                        
+                                    }
+                                }, true
+                            );
+                           
+                            return deferred.promise;
+
+                        }
+
+                        function searchForUsers(name, title, existingmembers, type, reverse) {
+                            reverse = reverse == true ? true : false;
+                            type = type || '';
+                            if(type === 'manager'){
+                                type = 'Manager.Name';
+                            }
+
+                            name = name || '';
+                            name = name.replace(/\\/g,'\\\\');  
+                            name = name.replace(/\'/g,'\\\'');
+                            name = name.replace(/%/g,'\\%');
+                            name = name.replace(/_/g,'\\_');
+
+                            title = title || '';
+                            title = title.replace(/\\/g,'\\\\');  
+                            title = title.replace(/\'/g,'\\\'');
+                            title = title.replace(/%/g,'\\%');
+                            title = title.replace(/_/g,'\\_');
+
+                            function adaptUsers(users) {
+                                var result = _.map(users, function(user) {
+                                    return {
+                                        id: user.Id,
+                                        name: user.Name,
+                                        photo: user.SmallPhotoUrl,
+                                        title: user.Title,
+                                        email: user.Email,
+                                        reportsto: user.Manager ? user.Manager.Name : ''
+                                    }
+                                });
+                                return result;
+                            }
+
+                            var deferred = $q.defer();
+                            var extra = '';
+                            ttg.ttgQATracker.callStarted();
+
+                            if(existingmembers) {
+                                existingmembers = _.map(
+                                    _.pluck(existingmembers, 'ownerId'),
+                                    function(id) {
+                                        return "'" + id + "'";
+                                    }
+                                );
+                                extra = existingmembers.join(',')
+                            }
+                            
+                            VFRemoting.invoke(
+                                '{!$RemoteAction.AccountPlanCreateController.searchForUsers}',
+                                [name, title, extra, type, reverse],
+                                function(result, event){
+                                    ttg.ttgQATracker.callEnded();
+                                    if (event.type == 'exception') {
+                                        deferred.reject(result);
+                                    } else {
+                                        deferred.resolve(adaptUsers(result.records));
+                                    }
+                                }, true
+                            );
+                           
+                            return deferred.promise;
+                        }
+
+                        function postToChatter(groupId, msg){
+
+                            var deferred = $q.defer();
+                            ttg.ttgQATracker.callStarted();
+
+
+                            if(groupId != undefined){
+
+                                VFRemoting.invoke(
+                                    '{!$RemoteAction.AccountPlanCreateController.postToGroupsFeed}',
+                                    [groupId, msg],
+                                    function(result, event){
+                                        ttg.ttgQATracker.callEnded();
+                                        if (event.type == 'exception') {
+                                            deferred.reject(result);
+                                        } else {
+                                            deferred.resolve(result);
+                                        }
+                                    }, true
+                                );
+
+                            }else{
+
+                                VFRemoting.invoke(
+                                    '{!$RemoteAction.AccountPlanCreateController.postToUsersFeed}',
+                                    [msg],
+                                    function(result, event){
+                                        ttg.ttgQATracker.callEnded();
+                                        if (event.type == 'exception') {
+                                            deferred.reject(result);
+                                        } else {
+                                            deferred.resolve(result);
+                                        }
+                                    }, true
+                                );
+                            }
+                            
+                            return deferred.promise;
+                        }
+
+                        function deletePlan(planId){
+
+                            var deferred = $q.defer();
+                            ttg.ttgQATracker.callStarted();
+                            var path;
+
+                            if({!useStandardListPage}){
+                                path = '/' + "{!JSENCODE($ObjectType.DM_Account_Plan__c.keyPrefix)}";
+                            }else{
+                                path = "{! URLFOR($Page.AccountPlan) }";
+                            }
+
+                            if(planId != undefined){
+                                VFRemoting.invoke(
+                                    '{!$RemoteAction.AccountPlanCreateController.deletePlan}',
+                                    [planId, path],
+                                    function(result, event){
+                                        ttg.ttgQATracker.callEnded();
+                                        if (event.type == 'exception') {
+                                            deferred.reject(result);
+                                        } else {
+                                            deferred.resolve(result);
+                                        }
+                                    }, true
+                                );
+
+                            }
+                            return deferred.promise;
+                        }
+
+                        function getChatterPrivileges(planId) {
+
+                            var deferred = $q.defer();
+                   
+                            VFRemoting.invoke(
+                                '{!$RemoteAction.AccountPlanCreateController.getChatterPostDetails}',
+                                [planId],
+                                function(result, event){
+                                    if (event.type == 'exception') { 
+                                        deferred.reject(result);
+                                    } else {
+                                        deferred.resolve(result);
+                                    }
+                                }
+                            );
+
+                            return deferred.promise;
+                        }
+
+
+                        return {
+                            saveAccountPlan: saveAccountPlan, //ttgQATracker
+                            searchForUsers: searchForUsers, //ttgQATracker
+                            searchForAccounts: searchForAccounts, //ttgQATracker
+                            createChatterGroup: createChatterGroup, //ttgQATracker
+                            cancelEdit: cancelEdit,
+                            getPlanSettings: getPlanSettings, //ttgQATracker
+                            advancedAccountSearch: advancedAccountSearch,
+                            postToChatter: postToChatter, //ttgQATracker
+                            deletePlan: deletePlan, //ttgQATracker
+                            getChatterPrivileges: getChatterPrivileges
+                        }
+
+                    }
+                ]
+            )
+            .constant('User', {
+                        userid : '{! JSENCODE(currentUser.id) }',
+                        id : '{! JSENCODE(currentUser.id) }',
+                        name : '{! JSENCODE(currentUser.name) }',
+                        title : '{! JSENCODE(currentUser.title) }',
+                        photo : '{! JSENCODE(currentUser.smallPhotoUrl) }',  
+                        access: 'Plan Owner',
+                        userType: '{! JSENCODE(currentUser.userType) }',
+                        ProfileId: '{! JSENCODE(currentUser.ProfileId) }',
+                        isAdministrator: {!IF(isAdministrator, true, false)}
+                    })
+            .constant('DECIMAL_SEP', '{!JSENCODE(decimalSeparator)}')
+            .constant('GROUP_SEP', '{!JSENCODE(currencySeperator)}')
+            .constant('planId', accPlanId)
+            .constant('readOnly', {!IF(isEditable, false, true)})
+            .constant('plan_settings_plan_types', planTypes)
+            .constant('chatterDisabled', {!IF(disableChatter, true, false)})
+            .constant('showSolutionFamilies', {!IF(showSolutionFamilies, true, false)})
+            .constant('showAutoPostOption', {!IF(showAutoPostOption, true, false)})
+            .constant('plan_settings_ccy', '{!JSENCODE(currencyISO)} ')
+            .constant('candelete', {!Candelete})
+            .constant('isLicensedForAM', {!isLicensedForAccountManager})           
+            .config(function (UtilsDateProvider) {
+              UtilsDateProvider.setDefaultLocale('{!JSENCODE(userLocale)}');
+            })
+            .run(function($locale) {
+                $locale.NUMBER_FORMATS.GROUP_SEP = '{!JSENCODE(currencySeperator)}';
+                $locale.NUMBER_FORMATS.DECIMAL_SEP = '{!JSENCODE(decimalSeparator)}';
+            })
+            ;
+
+
+    </script>
+    
+    <style>
+        @import url("{!URLFOR($Resource.TAM,         'css/common.css')}");
+        
+        @import url("{! URLFOR($Resource.TAM,    'css/solutionTooltip.css') }");
+        
+        div#smartAM {
+            background-color: #FFF;
+            border: 1px solid #CCC;
+            border-radius: 8px;
+            -moz-border-radius: 8px;
+            -webkit-border-radius: 8px;            
+            cursor: default;
+            padding: 49px 14px 9px;
+            position: relative;
+            display:none;
+        }
+
+        div#smartAM table {
+            width:100%; 
+        }
+        div#smartAMBranding {
+            clear: both;
+            background: url('{!URLFOR($Resource.Common, 'panel/images/bg_pad_header.png')}') left bottom repeat-x;
+            position:absolute;
+            width:100%;
+            display:block;
+            left:0px;
+            top:0px;
+            border-radius:8px 8px 0px 0px;
+            -moz-border-radius:8px 8px 0px 0px;
+            -webkit-border-radius:8px 8px 0px 0px;
+        }
+        
+        div#smartAMBrandingLeft {
+            float: left;
+        }
+        
+        div#smartAMBrandingLeft span {
+            float: right;
+            margin-left: 10px;
+            font-size:1.4em;
+            line-height:30px;
+        }
+        div#smartAMBrandingLeft div strong {
+            display: block;
+        }
+        div#smartAMBrandingRight {
+            float: right;
+            margin-left: 30px;
+        }
+        
+        div#smartAMBrandingRight img {
+            margin-right: 10px;
+        }
+        
+        body .apexp .bPageBlock.apexDefaultPageBlock div.pbHeader {
+            display: none;
+        }
+        
+        .apexp .bPageBlock.apexDefaultPageBlock div.pbBody {
+            margin: 0 !important;
+        }
+        
+        body .individualPalette div.secondaryPalette.bPageBlock {
+            border-top-color: #236FBD; /**#EAEAEA;**/
+            border-top-width: 3px;/**1px;**/
+        }
+
+        body .bPageBlock .pbBody td.data2Col {
+            padding: 5px;
+        }
+        
+        .inactiveCell, a.inactiveCell, a.inactiveCell span {
+            color: #999999;
+        }
+        
+        th.headerCell, body .pbBody table.list tr.headerRow td, body .pbBody table.list tr.headerRow th.headerCell {
+            background-image: url('{!URLFOR($Resource.TAM, 'images/bg_table_header.jpg')}'); 
+            color: #FFFFFF;
+            padding-right: 5px;
+        }
+        
+        .headerLeft {
+            border-radius: 4px 0px 0px 0px;
+        }
+        
+        .headerRight {
+            border-radius: 0px 4px 0px 0px;
+        }
+        
+        th.headerCell a, th.headerCell, body .pbBody table.list tr.headerRow td, body .pbBody table.list tr.headerRow th.headerCell a {
+            color: #FFFFFF;
+        } 
+        
+        .settingsCell, body .pbBody table.list tr.dataRow th, body .pbBody table.list tr.dataRow td.settingsCell {
+            padding-left: 10px;
+        }       
+        
+        div.smartOMHelpLink {
+            float:right;    
+            margin: 8px 4px 0 0;
+        }
+        
+        div.smartOMHelpLink a {
+            float:left;
+            display:block;
+            background: url('{!URLFOR($Resource.SmartOM, 'tabs/icon_help.png')}') left center no-repeat;
+            font-weight: normal;
+            padding: 0 0 0 20px;
+            text-decoration:none;
+            color:#405773;
+            cursor: pointer; 
+        }
+        
+        html.salesforce1 { height: auto; }
+        
+        .salesforce1 body { background: transparent !important; } 
+    </style>
+    
+</apex:page>

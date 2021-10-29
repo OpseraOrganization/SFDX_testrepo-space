@@ -1,0 +1,125 @@
+<!--
+* (c) 2015 TEKsystems Global Services
+*
+* Name              : SHMap
+* Created Date      : 11 July, 2016
+* Created By        : Manjunath Holekade (TEKSystems)
+* Purpose           : Page to display stakeholder hierarchy up to 10 levels and is triggered from "Stakeholder Map" button on 'Stakeholder' related list of 'HON Account Plan'.
+* Last Updated By   : Prabuvasan (Aero)
+* Last Updated Date : 28th April, 2021
+-->
+
+<apex:page showHeader="false" standardController="HON_Account_Plan__c" extensions="SHMapCtrl">
+    <html>
+        <head>            
+            <script type='text/javascript' src='https://www.google.com/jsapi'> </script> 
+            <script type='text/javascript'>
+                google.load('visualization', '1', {packages:['orgchart']});  
+                google.setOnLoadCallback(drawChart);  
+                function drawChart() {  
+                    var data = new google.visualization.DataTable();  
+                    data.addColumn('string', 'Node');  
+                    data.addColumn('string', 'Parent');
+                    data.addColumn('string', 'Id');
+                    
+                    
+                    var finalNodeList = JSON.parse('{!finalNodeList}');
+                    var finalParentList = JSON.parse('{!finalParentList}');
+                    var finalSupportList = JSON.parse('{!finalSupportList}');
+                    var finalTitleList = JSON.parse('{!finalTitleList}');
+                    var finalcredList = JSON.parse('{!finalcredList}');
+                    var finalcontSHIDsList = JSON.parse('{!finalcontSHIDsList}');
+                    var finalDecMaker = JSON.parse('{!finalDecMaker}');
+                    var finalList = new Array(); <!-- Array of node name+value+contact/sh --> 
+                    for(var i = 0; i < finalNodeList.length; i++) { 
+                        if(finalSupportList[i] == 'Anti-Sponsor'){
+                            finalList.push([{v:finalNodeList[i],f:'<div style="color:white; background-color:#FF0020;font-size:10px;font-weight:bold">'+finalNodeList[i]
+                            +'<div style="color:rgba(248, 248, 248, 0.94);font-size:10px;font-style:italic">'+finalTitleList[i]
+                            +'</div><div style="color:yellow;font-size:10px">'+finalcredList[i]+'</div><div style="color:white; font-size:10px;font-style:italic">'+finalDecMaker[i]+'</div></div>'}
+                            ,finalParentList[i],finalcontSHIDsList[i]]);
+                        }else if(finalSupportList[i] == 'Neutral'){
+                            finalList.push([{v:finalNodeList[i],f:'<div style="color:brown;background-color:#F0E68C;font-size:10px;font-weight:bold">'+finalNodeList[i]
+                            +'<div style="color:#0c0c0b;font-size:10px;font-style:italic">'+finalTitleList[i]
+                            +'</div><div style="color:black;font-size:10px;">'+finalcredList[i]+'</div><div style="color:white; font-size:10px;font-style:italic">'+finalDecMaker[i]+'</div></div>'}
+                            ,finalParentList[i],finalcontSHIDsList[i]]);                                                   
+                        }else if(finalSupportList[i] == 'Sponsor'){
+                            finalList.push([{v:finalNodeList[i],f:'<div style="color:rgba(42, 50, 165, 0.85);background-color:rgba(107, 239, 129, 0.83);font-size:10px;font-weight:bold">'+finalNodeList[i]
+                            +'<div style="color:green;color:#666;font-size:10px;font-style:italic">'+finalTitleList[i]
+                            +'</div><div style="color:yellow;font-size:10px">'+finalcredList[i]+'</div><div style="color:white; font-size:10px;font-style:italic">'+finalDecMaker[i]+'</div></div>'}
+                            ,finalParentList[i],finalcontSHIDsList[i]]);
+                        }else if(finalSupportList[i] == 'Coach'){
+                            finalList.push([{v:finalNodeList[i],f:'<div style="color:#0c0c0b;background-color:rgba(107, 160, 239, 0.87);font-size:10px;font-weight:bold">'+finalNodeList[i]
+                            +'<div style="color:green;color:white;font-size:10px;font-style:italic">'+finalTitleList[i]
+                            +'</div><div style="color:yellow;font-size:10px">'+finalcredList[i]+'</div><div style="color:white; font-size:10px;font-style:italic">'+finalDecMaker[i]+'</div></div>'}
+                            ,finalParentList[i],finalcontSHIDsList[i]]);
+                        }else{
+                            finalList.push([{v:finalNodeList[i],f:'<div style="font-size:10px;font-weight:bold">'+finalNodeList[i]
+                            +'<div style="color:green; font-size:10px;font-style:italic">'+finalTitleList[i]+'</div></div>'}
+                            ,finalParentList[i],finalcontSHIDsList[i]]);           
+                        }                
+                    }
+                    data.addRows(finalList);
+                    var chart = new google.visualization.OrgChart(document.getElementById('chart_div'));  
+                    chart.draw(data,{allowHtml:true, selectionColor:'white'});
+                    google.visualization.events.addListener(chart, 'select', function() {
+                        var splitIDArray= data.getValue(chart.getSelection()[0].row, 2).split("-");
+                       
+                        if(splitIDArray[0] == 'SH')
+                            window.open('{!sfdcBaseURL}/'+splitIDArray[1]); /* Redirect to stakeholder record */
+                        else
+                             window.open('{!sfdcBaseURL}/{!objPrefix}/e?{!labelhonaccountplanid}={!honaccountplanName}&{!labelhonaccountplanlkpid}={!honaccountplanID}&{!labelcontactid}='+splitIDArray[0]+'&{!labelcontactlkpid}='+splitIDArray[1]+'&saveURL=%2F{!honaccountplanID}&retURL=%2F{!honaccountplanID}');     /* Redirect to new "Stakeholder create" page */
+                    })
+                }
+                window.onload =   function attachFunc(){
+                    html2canvas(document.body,{
+                        onrendered: function(canvas) {  
+                            var imageBlob= canvas.toDataURL();
+                            attachAF(imageBlob);
+                        },allowTaint: true
+                    });
+                }
+                
+                function backFunc(){
+                    window.top.close();
+                }                         
+            </script>
+            <script src="//cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.js"></script>          
+            <script>
+           
+            </script>                         
+            <style type="text/css">
+                .google-visualization-orgchart-node {
+                    min-width: 40px;
+                }                
+            </style>  
+            <style>
+                .right{
+                    float:right;
+                }
+            </style>
+        </head>
+        <body> 
+            <div style="background-color:grey;padding-top:8px;padding-bottom:8px;">
+                <apex:form id="frm1">
+              <div style="display:inline-block" data-html2canvas-ignore="true">
+                    <apex:commandButton value="Close" onclick="backFunc()" style="padding:8px;width:80px;margin-left: 40px;"/> 
+                    </div>
+                    <div style="display:inline-block;float:right;padding-right:10px;height:5px">                         
+                        <apex:image url="{!$Resource.SponsorIcon}" width="20" height="20"/> &nbsp;&nbsp; <label style="color:white"> Sponsor </label>&nbsp;&nbsp;
+                        <apex:image url="{!$Resource.NeutralIcon}" width="20" height="20"/> &nbsp;&nbsp; <label style="color:white"> Neutral </label>&nbsp;&nbsp;
+                        <apex:image url="{!$Resource.AntiSponsorIcon}" width="20" height="20"/> &nbsp;&nbsp; <label style="color:white">Anti-Sponsor </label>
+                    </div>
+                </apex:form>
+                 </div>
+                <div>      
+                <!--<apex:form id="frm2">
+                    <apex:actionFunction action="{!attach}" name="attachAF" rerender="frm1">
+                       <apex:param assignTo="{!strImageBlob}" name="imageBlob" value=""/>
+                    </apex:actionFunction>                
+                </apex:form>-->
+                </div>
+           
+            <div id='chart_div'></div>               
+        </body>       
+    </html>
+</apex:page>

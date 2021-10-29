@@ -1,0 +1,181 @@
+<!-- 
+    Apttus Billing 
+    CreateCreditMemo
+ 
+    @2013-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Billing__Invoice__c" extensions="Apttus_Billing.CreateCreditMemoController" 
+            standardStylesheets="true" action="{!loadRelatedInvoiceLineItems}" 
+            tabstyle="Apttus_Billing__Invoice__c">
+
+    <script type="text/javascript">
+        function selectAllCheckboxes(obj,receivedInputID){
+            var inputCheckBox = document.getElementsByTagName("input");                  
+            for(var i=0; i<inputCheckBox.length; i++){          
+                if(inputCheckBox[i].disabled == true){
+                    continue;
+                }
+                if(inputCheckBox[i].id.indexOf(receivedInputID)!=-1){                                     
+                    inputCheckBox[i].checked = obj.checked;
+                }
+            }
+            enableDisableCreditAmount();
+        }
+        
+    </script>
+    
+    <apex:sectionHeader title="{!$ObjectType.Apttus_Billing__CreditMemo__c.label}"/>
+    <apex:form >
+        <apex:pageBlock id="idHeader" mode="detail" title="{!$ObjectType.Apttus_Billing__CreditMemo__c.Label} {!$Label.apttus_billing__creation}">
+            <apex:pageMessages id="messages" />
+            
+            <apex:pageBlockButtons id="buttonSection" location="both">
+                <apex:commandButton value="{!$Label.apttus_billing__create} {!$ObjectType.Apttus_Billing__CreditMemo__c.Label}" 
+                                    action="{!createCreditMemo}" 
+                                    disabled="{!disableCreateButton}"
+                                    rerender="idHeader"
+                                    oncomplete="calculateTaxForCreditMemo();"
+                                    status="approvalStatus" />
+                    <apex:commandButton value="{!$Label.apttus_billing__redirecttocreditmemo}" 
+                                        action="{!redirectToCreditMemo}" 
+                                        disabled="{!disableRedirectButton}" />
+                <apex:commandButton value="{!$Label.apttus_billing__cancel}" action="{!backToInvoice}" />
+                <apex:actionStatus id="approvalStatus" >
+                    <apex:facet name="start">
+                        <img src="{!URLFOR($Resource.Apttus_Config2__Image_LoadingIcon)}"/>  
+                    </apex:facet>
+                </apex:actionStatus>
+                <apex:actionStatus id="spinner">
+                    <apex:facet name="start">
+                    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.75; z-index: 1000; background-color: black;">
+                        &nbsp;
+                    </div>
+                    <div style="position: fixed; left: 0; top: 0; bottom: 0; right: 0; z-index: 1001; margin: 30% 50%">
+                        <img src="{!URLFOR($Resource.Apttus_Config2__Image_LoadingIcon)}"/>
+                    </div>
+                    </apex:facet>
+                </apex:actionStatus>
+            </apex:pageBlockButtons>
+            
+            <apex:outputPanel id="idMainPanel">
+	            <apex:pageBlockSection >
+	            	<apex:outputField value="{!creditMemoSO.Apttus_Billing__InvoiceID__c}" />
+	            	<apex:outputField value="{!creditMemoSO.Apttus_Billing__BillToAccountId__c}" />
+	            	<apex:outputField value="{!creditMemoSO.Apttus_Billing__LocationId__c}" />
+                    <apex:outputField value="{!creditMemoSO.Apttus_Billing__Status__c}" />
+                    <apex:inputField value="{!creditMemoSO.Apttus_Billing__ReasonCode__c}"/>
+                    <apex:inputField value="{!creditMemoSO.Apttus_Billing__Description__c}" />
+                    <apex:outputField value="{!creditMemoSO.Apttus_Billing__TotalCreditAmount__c}" id="idTotalCreditAmount"/>
+                    
+                </apex:pageBlockSection>
+            </apex:outputPanel>
+            <br/> <br/>
+            <apex:outputPanel id="idFilterPanel">
+               <apex:outputText value="{!$Label.apttus_billing__commonfilters}: " style="font-weight:bold;"/>
+                    &nbsp;
+                    <apex:selectList id="productTypeBox" value="{!filterProductType}" size="1">
+                        <apex:selectOptions value="{!productTypeOptions}"/>
+                        <apex:actionSupport event="onchange" reRender="lineItemPageBlock,paginationOnLineItem" action="{!doFilter}" status="spinner"/>
+                    </apex:selectList>
+                    &nbsp;
+                    <apex:selectList id="lineTypeBox" value="{!filterLineType}" size="1">
+                        <apex:selectOptions value="{!lineTypeOptions}"/>
+                        <apex:actionSupport event="onchange" reRender="lineItemPageBlock, paginationOnLineItem" action="{!doFilter}" status="spinner"/>
+                    </apex:selectList>   
+                    &nbsp;
+                    <apex:selectList id="priceTypeBox" value="{!filterPriceType}" size="1">
+                        <apex:selectOptions value="{!priceTypeOptions}"/>
+                        <apex:actionSupport event="onchange" reRender="lineItemPageBlock, paginationOnLineItem" action="{!doFilter}" status="spinner"/>
+                    </apex:selectList>
+                    &nbsp;
+                    <apex:selectList id="chargeTypeBox" value="{!filterChargeType}" size="1">
+                        <apex:selectOptions value="{!chargeTypeOptions}"/>
+                        <apex:actionSupport event="onchange" reRender="lineItemPageBlock, paginationOnLineItem" action="{!doFilter}" status="spinner"/>
+                    </apex:selectList>
+            </apex:outputPanel>
+            <br/> <br/>
+            <apex:outputPanel id="lineItemPageBlock">
+            <apex:pageBlockTable id="idLineItemList" 
+                                 value="{!invoiceLineItems}"
+                                 var="invoiceLineItem">
+                <apex:column >
+                    <apex:facet name="header">
+                        <apex:inputCheckbox onclick="selectAllCheckboxes(this,'inputId')"/> 
+                    </apex:facet>
+                    <apex:inputCheckbox id="inputId" 
+                                        value="{!invoiceLineItem.selected}"
+                                        disabled="{!invoiceLineItem.disableSelect}"
+                                        onchange="enableDisableCreditAmount('{!invoiceLineItem.lineItemSO.Id}');"/>
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">{!$ObjectType.Apttus_Billing__InvoiceLineItem__c.Label}</apex:facet>
+                    <apex:outputLink value="/{!invoiceLineItem.lineItemSO.Id}">{!invoiceLineItem.lineItemSO.Name}</apex:outputLink>
+                </apex:column> 
+                <apex:column value="{!invoiceLineItem.lineItemSO.Apttus_Billing__AssetLineItemId__c}" />
+                <apex:column value="{!invoiceLineItem.lineItemSO.AssetLineItemId__r.Apttus_Config2__LineType__c}"/>
+                <apex:column value="{!invoiceLineItem.lineItemSO.AssetLineItemId__r.Apttus_Config2__ChargeType__c}"/>
+                <apex:column value="{!invoiceLineItem.lineItemSO.AssetLineItemId__r.Apttus_Config2__PriceType__c}"/>
+                <apex:column value="{!invoiceLineItem.lineItemSO.AssetLineItemId__r.Apttus_Config2__ProductType__c}"/>  
+                <apex:repeat value="{!creditMemoDisplayFields}" var="creditMemoField">
+                    <apex:column value="{!invoiceLineItem.lineItemSO[creditMemoField]}"/>
+                </apex:repeat>
+                <apex:column >
+                    <apex:facet name="header">{!$Label.apttus_billing__linkedcreditmemolineitems}</apex:facet>
+                    <apex:repeat value="{!invoiceLineItem.linkedCreditMemoLineItems}" var="creditMemoLineItem">
+                        <apex:outputLink value="/{!creditMemoLineItem.Id}">{!creditMemoLineItem.Name}</apex:outputLink> <br /> 
+                    </apex:repeat>                       
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">{!$Label.apttus_billing__totalamount}</apex:facet>
+                    <apex:outputLabel value="{!invoiceLineItem.totalAmount}" /> 
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">{!$Label.apttus_billing__availablecreditamount}</apex:facet>
+                    <apex:outputLabel value="{!invoiceLineItem.availableCreditAmount}" /> 
+                </apex:column>
+                <apex:column >
+                    <apex:facet name="header">{!$ObjectType.Apttus_Billing__CreditMemo__c.fields.Apttus_Billing__CreditAmount__c.Label}</apex:facet>
+                    <apex:outputPanel Id="creditAmountPanel">
+                    <apex:inputText id="idCreditAmount"
+                                    value="{!invoiceLineItem.creditAmount}" 
+                                    onchange="calcCreditMemoTotalAmount()" 
+                                    rendered="{!!invoiceLineItem.disableCreditAmount}"/>
+                    <apex:outputText id="idCreditAmount2"
+                                     value="{!invoiceLineItem.creditAmount}"
+                                     rendered="{!invoiceLineItem.disableCreditAmount}"/>               
+                    </apex:outputPanel>
+                </apex:column>
+            </apex:pageBlockTable>
+           </apex:outputPanel>
+            <br/>
+        <apex:outputPanel layout="none" id="paginationOnLineItem">
+            <apex:outputPanel style="float:left;">  
+              <apex:outputText value=" {!$Label.apttus_billing__view} "/>
+            <apex:selectList id="limitPkLst" value="{!limitSize}" size="1">
+                 <apex:selectOptions value="{!pageSizeValues}" />
+                  <apex:actionSupport event="onchange" action="{!doPageSizeChange}" status="spinner" reRender="lineItemPageBlock,paginationOnLineItem"/> 
+            </apex:selectList> 
+              <apex:outputText value=" {!$Label.apttus_billing__recordsperpage}."/>
+           </apex:outputPanel> 
+            <div align="center">
+            <apex:outputPanel style="margin-left:-15rem;">
+                <apex:commandButton value="<< {!$Label.apttus_billing__first}" action="{!first}" status="spinner" disabled="{!DisablePrevious}" reRender="lineItemPageBlock,paginationOnLineItem" />
+                <apex:commandButton value="< {!$Label.apttus_billing__previous}" action="{!previous}" status="spinner" disabled="{!DisablePrevious}" reRender="lineItemPageBlock,paginationOnLineItem"/>
+                <apex:outputText id="pageOfIndex" value=" {!$Label.apttus_billing__showingpage}  {!currentPage}   {!$Label.apttus_billing__of}   {!numPages}  " />
+                <apex:commandButton value="{!$Label.apttus_billing__next} >" action="{!next}" status="spinner" disabled="{!DisableNext}" reRender="lineItemPageBlock,paginationOnLineItem"/>
+                <apex:commandButton value="{!$Label.apttus_billing__last} >>" action="{!last}" status="spinner" disabled="{!DisableNext}" reRender="lineItemPageBlock,paginationOnLineItem"/>
+            </apex:outputPanel>    
+            </div>
+            <apex:outputPanel style="float:right;margin-top: -1.5rem;" id="totalRecordsCount">
+                <apex:outputText value=" {!$Label.apttus_billing__totalnumberofrecords}: {!totalSize}  " />
+            </apex:outputPanel>
+       </apex:outputPanel>
+        </apex:pageBlock>
+        <apex:actionFunction name="enableDisableCreditAmount" action="{!enableDisableCreditAmount}" reRender="idLineItemList,idTotalCreditAmount">
+            <apex:param name="invoiceLineItemID" value="" />                                                    
+        </apex:actionFunction>   
+        <apex:actionFunction name="calcCreditMemoTotalAmount" action="{!calcCreditMemoTotalAmount}" reRender="idMainPanel">                                                 
+        </apex:actionFunction>   
+        <apex:actionFunction name="calculateTaxForCreditMemo" action="{!doCalculateTaxForCreditMemo}" />
+    </apex:form>
+</apex:page>

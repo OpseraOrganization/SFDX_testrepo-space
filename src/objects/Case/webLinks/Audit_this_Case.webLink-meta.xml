@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Audit_this_Case</fullName>
+    <availability>online</availability>
+    <displayType>button</displayType>
+    <linkType>javascript</linkType>
+    <masterLabel>Audit this Case</masterLabel>
+    <openType>onClickJavaScript</openType>
+    <protected>false</protected>
+    <url>{!REQUIRESCRIPT(&quot;/soap/ajax/30.0/connection.js&quot;)}
+{!REQUIRESCRIPT(&quot;/soap/ajax/24.0/apex.js&quot;)} 
+
+var relatedchildorders = sforce.connection.query(&quot;Select id from Case_Quality_Audit__c where Case__c = &apos;{!Case.Id}&apos;&quot;); 
+var records = relatedchildorders.getArray(&quot;records&quot;);
+if((&apos;{!Case.Status}&apos; == &apos;Closed&apos;||&apos;{!Case.Status}&apos; == &apos;Done&apos;||&apos;{!Case.Status}&apos; == &apos;Completed&apos; ||
+&apos;{!Case.Status}&apos; == &apos;Re-Closed&apos; || &apos;{!Case.Status}&apos; == &apos;Closed-Approved&apos; || &apos;{!Case.Status}&apos; == &apos;Closed-No response&apos;) &amp;&amp; (records == null || records == &apos;&apos;) ){
+var cs = new sforce.SObject(&quot;Case_Quality_Audit__c&quot;);
+cs.Case__c  =&apos;{!Case.Id}&apos;;
+cs.Audit_By__c  =&apos;{!$User.Id}&apos;;
+if(&apos;{!Case.Origin}&apos; == &apos;Email&apos;)
+    cs.Subject_Description__c = &apos;10&apos;;
+var result = sforce.connection.create([cs]);
+window.location.href = &quot;/&quot; + result[0].id ;
+}
+
+else if(records != null &amp;&amp; records != &apos;&apos; &amp;&amp; (records[0] != null || records[0] != &apos;undefined&apos;)){
+alert(&apos;You already have a Case Quality&apos;);
+window.location.href = &quot;/&quot; + records[0].Id ;
+}
+
+else{
+alert(&apos;Case should be closed to create Case Quality&apos;);
+window.location.reload();
+}</url>
+</WebLink>

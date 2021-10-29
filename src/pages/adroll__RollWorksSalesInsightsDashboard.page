@@ -1,0 +1,96 @@
+<apex:page standardStylesheets="false"
+        tabStyle="RollWorksSalesInsightsDashboard__tab"
+        lightningStylesheets="false"
+        sidebar="false"
+        docType="html-5.0"
+        applyHtmlTag="true"
+        showHeader="true"
+        controller="adroll.RollWorksOauth2TokenUpdateController"
+>
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <title>Rollworks Sales Insights Dashboard</title>
+    </head>
+    <style type="text/css">
+        html, body {
+            padding: 0px;
+            margin: 0px;
+            height: 100%;
+        }
+
+        body {
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -moz-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-orient: vertical;
+            -webkit-box-direction: normal;
+            -webkit-flex-direction: column;
+            -moz-box-orient: vertical;
+            -moz-box-direction: normal;
+            -ms-flex-direction: column;
+            flex-direction: column;
+        }
+
+        #sales-insights-dashboard-container {
+            -webkit-box-flex: 1;
+            -webkit-flex: 1;
+            -moz-box-flex: 1;
+            -ms-flex: 1;
+            flex: 1;
+        }
+    </style>
+    <script>
+        // Init Heap
+        window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var r=document.createElement("script");r.type="text/javascript",r.async=!0,r.src="https://cdn.heapanalytics.com/js/heap-"+e+".js";var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(r,a);for(var n=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["addEventProperties","addUserProperties","clearEventProperties","identify","resetIdentity","removeEventProperty","setEventProperties","track","unsetEventProperty"],o=0;o<p.length;o++)heap[p[o]]=n(p[o])};
+        window.heap.load('4099292633');  // Heap project id
+        window.heap.identify('{!JSENCODE($User.id)}');
+        window.heap.addUserProperties({
+            'Name': '{!JSENCODE($User.firstName)} {!JSENCODE($User.lastName)}',
+            'email': '{!JSENCODE($User.Email)}',
+        });
+        window.heap.addEventProperties({
+            'SIPlatform': 'SFDC',
+            'SIComponent': 'Dashboard',
+        });
+
+        // Redirect to lightning experience when in lightning, otherwise stays in classic
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('ref') && urlParams.get('ref') === 'email_report') {
+            window.heap.track('si-dashboard-load-from-email-report');
+
+            if (typeof sfdcPage === 'undefined') {
+                // When on SFDC Lightning, redirect to full SFDC interface URL
+                let dashboardFilename = window.location.pathname.split('/').pop();
+
+                // In some cases, SFDC might remove the namespace from the dashboard filename.
+                // Without this namespace, the redirect would take the user to a non existing page.
+                if (typeof adroll !== 'undefined' && !dashboardFilename.startsWith('adroll__')) {
+                    dashboardFilename = `adroll__${ dashboardFilename }`
+                };
+
+                if (!window.location.pathname.includes('/lightning/n/')) {
+                    window.location.href = `/lightning/n/${ dashboardFilename }`;
+                };
+            }
+        };
+
+        // The data on this environment is used to setup the sales insights dashboard
+        window.sfdcEnvironment = {
+            // variable global $User
+            user: {
+                id: '{!JSENCODE($User.id)}',
+                firstName: '{!JSENCODE($User.firstName)}',
+                lastName: '{!JSENCODE($User.lastName)}',
+                email: '{!JSENCODE($User.Email)}',
+            },
+            visualForcePageUrl: '{!JSENCODE($CurrentPage.URL)}',
+        };
+    </script>
+    <body>
+        <div id="sales-insights-dashboard-container"></div>
+        <script src="{!URLFOR($Resource.Rollworks_Sales_Insights_Dashboard, 'bundle.js')}" />
+    </body>
+</apex:page>

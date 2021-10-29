@@ -1,0 +1,557 @@
+<apex:page standardController="Opportunity"
+            showHeader="true"
+            sidebar="false"
+            docType="html-5.0"
+            extensions="DMAPP.DealReviewPageController"
+            standardStylesheets="false"
+            action="{!logTANDIHit}"
+            >
+
+    <c:salesforce_design_system_helper slds_version="2.0.2"/>
+
+    <apex:outputPanel rendered="{! $CurrentPage.parameters.mobile == 'true' }">
+        <apex:include pageName="DMAPP__NavTabMobile" rendered="{! $CurrentPage.parameters.mobile == 'true' }" />
+        <apex:stylesheet value="{!URLFOR($Resource.DMAPP__generated_resource2, 'styles/om_decision_criteria_app_all.css')}"/>
+    </apex:outputPanel>
+    
+    <style>
+        /* Fix for MAX to show in Lightning, if we don't set the height then Max gets cut off and looks broken*/
+
+        #TAS {
+            min-height: 480px;
+        }
+
+        html body.sfdcBody {
+            padding: 0px;
+        }
+
+        #actionSpan {
+            text-align: right;
+        }
+
+        .altify .slds-truncate.dealReviewEditLink {
+            text-align: right;
+        }
+
+        .altify .slds-table tr>td.dealReviewEditLink {
+            padding-left: 24px;
+            padding-right: 8px;
+        }
+
+        .altify .dealReviewEditLink a {
+            margin-top: 0px;
+        }
+        
+        .altify td.dealReviewEditLink {
+            min-width: 70px
+        }
+
+        .text{
+            color: red;
+            text-decoration: bold;
+        }
+        
+        .altify #notes-col {
+            display: table-cell;
+        }
+
+        .altify .showMoreSection {
+            display: none;
+        }
+
+        @media only screen and (min-device-width: 768px) and (max-device-width: 1024px){
+            .altify #notes-col {
+                display: block;
+            }            
+        }
+
+
+        @media only screen and (max-width: 767px), only screen and (max-device-width: 767px) {
+            .altify .slds-truncate.dealReviewEditLink {
+                display:none;
+            }
+
+            #dealReviewTable {
+                background-color: transparent;
+            }
+
+            #dealReviewTable tr {
+                background-color: #fff;
+            }
+
+            .altify #notes-col {
+                display: block;
+            }
+
+            .altify .showMoreSection{
+                display: inline;
+            }
+        }
+        
+    </style>
+
+    <!-- Perf: added includes -->    
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__AltifyAll, 'js/OM.bundle.js')}"/>
+    <!-- Perf: End added includes -->    
+
+<!-- Perf: Moved to Webpack Bundle 
+    <c:Translations include_all="true"/>
+
+    <c:jQuery cookies="true"
+        jQueryUI="true"
+        underscore="true"
+        tooltip="true"
+        paging="true"
+        chosen="true"
+    />
+-->
+    <c:jQueryStyles cookies="true"
+        jQueryUI="true"
+        underscore="true"
+        tooltip="true"
+        paging="true"
+        chosen="true"
+    />
+        
+    <c:MobileRedirect smartOM="true" applyLightning="true" notWebpack="false"/>
+    
+<!-- Perf: Moved to Webpack Bundle 
+    <script type="text/javascript" src="{!$Resource.l10njs}"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.ttgomjs, 'ttg/lib/ttgservice.js')}"></script>
+-->    
+    <apex:include pageName="DMAPP__Debug" />
+    
+<!-- Perf: Moved to Webpack Bundle 
+    <script type="text/javascript" src="{!URLFOR($Resource.ftk, 'forcetk.js')}"></script>
+    <apex:includeScript value="{!URLFOR($Resource.ttgomjs, 'ttg/lib/modernizr.js')}"/>  
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/ttgutils.js')}"/>       
+    <script type="text/javascript" src="{!URLFOR($Resource.dvls, 'js/flowplayer-3.2.6.js')}"></script>
+-->
+
+    <apex:include pageName="DMAPP__Quicklinks" />
+    
+           
+    <div id="TAS">
+        <apex:include pageName="DMAPP__SummaryTab2" rendered="{! NOT($CurrentPage.parameters.mobile == 'true') }"  />
+        
+        <apex:outputPanel rendered="{! NOT($CurrentPage.parameters.mobile == 'true') }">
+            <div id="buttonDiv">
+                <div id="createDealReview">Schedule</div>
+            </div>
+        </apex:outputPanel>
+        
+        <c:AddDealReview opportunityId="{!JSENCODE(shadowOpportunity.id)}"/>
+
+
+        <div class='altify'>
+
+            <apex:form id="DealReviewPageTable" rendered="true" styleClass="DealReviewPageTable">
+
+
+                <apex:actionFunction name="reloadDealReviews" 
+                    action="{!reloadDealReviews}" 
+                    rerender="DealReviewPageTable"
+                    oncomplete="reloadComplete()"
+                    />         
+                
+                <table id="dealReviewTable" class="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal">
+                    <thead>
+                        <tr class="slds-text-heading--label">
+                            <th class="slds-cell-shrink">
+                                <div class="slds-truncate">
+                                    Date
+                                </div>
+                            </th>
+                            <th class="slds-cell-shrink">
+                                <div class="slds-truncate">
+                                    Location
+                                </div>
+                            </th>
+                            <th  class="">
+                                <div class="slds-truncate">
+                                    Notes
+                                </div>
+                            </th>
+                            <th class="slds-cell-shrink">
+                                <div class="slds-truncate">
+                                    Status
+                                </div>
+                            </th>
+                            <th class="slds-cell-shrink">
+                                <div class="slds-truncate">
+                                    Duration
+                                </div>
+                            </th>
+                            <th class="">
+                                <div class="slds-truncate">
+                                    Summary
+                                </div>
+                            </th>
+                            <th class="slds-cell-shrink">
+                                <div class="slds-truncate">
+
+                                </div>
+                            </th>
+                            <th class="slds-cell-shrink">
+                                <div class="slds-truncate">
+
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <apex:repeat value="{!dealReviews}" var="dealReview" id="dealReview-repeat">
+                            <tr class="slds-m-top--medium">
+
+                                <td class="slds-truncate" data-label="Date">
+                                    <apex:outputText value="{!dealReview.effectiveDateFormatted}" />
+                                </td>
+
+                                <td class="slds-truncate" data-label="Location">
+                                    <apex:outputText escape="true" value="{! dealReview.location}" />
+                                </td>
+                                <!--
+                                <td id="notes-col" class="slds-truncate" data-label="Notes">
+                                    <apex:outputText escape="true" value="{! dealReview.notes}" />
+                                </td>
+                                -->
+                                <td id="notes-col" class="slds-truncate {! dealReview.id}" data-label="Notes">
+                                    <apex:outputText escape="true" value="{! dealReview.truncatedNotes}" />
+                                    <apex:outputPanel styleClass="showMoreSection" rendered="{! NOT( ISBLANK( dealReview.notesMore ) ) }">
+                                        <span class="ellipsis">...</span>
+                                        <a class="view-more">View More</a>
+                                        <span class="more-text">
+                                            {! dealReview.notesMore }
+                                            <a class="view-less">View Less</a>
+                                         </span>
+                                    </apex:outputPanel>
+                                </td>
+
+                                <td class="slds-truncate" data-label="Status">
+                                    <apex:outputText value="{!dealReview.status}" />
+                                </td>
+
+                                <td class="slds-truncate" data-label="Duration">
+                                    <apex:outputText value="{!dealReview.durationFormatted}"/>
+                                </td>
+
+                                <td class="slds-truncate" data-label="Summary">
+                                    <apex:outputText rendered="{!dealReview.questionCount != null}">
+                                                {!dealReview.questionCount} Questions,  
+                                        <span class="slds-assistive-text">Questions</span>
+
+                                    </apex:outputText>
+                                     <apex:outputText rendered="{!dealReview.vulnerabilityCount != null}">
+                                        {!dealReview.vulnerabilityCount} Vulnerabilities,
+                                        <span class="slds-assistive-text">Vulnerabilities</span>                        
+                                        
+                                     </apex:outputText>
+                                     <apex:outputText rendered="{!dealReview.actionCount != null}">
+                                        {!dealReview.actionCount} Recommendations
+                                        <span class="slds-assistive-text">Recommendations</span>
+                                     
+                                     </apex:outputText>
+                                </td>
+                                
+                                <td class="slds-truncate">
+                                    <apex:outputLink value="{! $Page.tas_tandi_app }?id={! shadowOpportunity.opportunity__c }&tandiid={! dealReview.id }" id="theLink">
+                                        <apex:outputText escape="true" 
+                                            value="{! IF( dealReview.status == 'Completed', 'Review', 
+                                                IF(dealReview.status == 'Started', 'Join', 'Launch')) } " />
+                                    </apex:outputLink>
+                                </td>
+
+                                <td class="slds-truncate dealReviewEditLink">
+                                    <apex:outputText rendered="{! isEditable && dealReview.status != 'Completed'}">
+                                        <a 
+                                            href="#" 
+                                            class="edit_link" 
+                                            onclick="javascript: ttg_dealreview.editDealReview('{!JSENCODE(dealReview.Id)}');"
+                                            />
+                                    </apex:outputText>
+
+                                    <apex:outputText rendered="{! isEditable && dealReview.status != 'Completed' && dealReview.status != 'Started'}">
+                                        <a 
+                                            href="#" 
+                                            class="del_link" 
+                                            onclick="javascript: ttg_dealreview.deleteDealReview('{!JSENCODE(dealReview.Id)}');"
+                                            />
+                                    </apex:outputText>
+                                </td>
+
+                            </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+                
+                <!--
+                <apex:dataTable value="{!dealReviews}" 
+                    var="dealReview"
+                    id="dealReviewsList"
+                    styleClass="slds-table slds-table--bordered slds-max-medium-table--stacked-horizontal"
+                    headerClass="slds-text-heading--label"
+                    rowClasses="slds-hint-parent"
+                    >
+                    <apex:column styleClass="slds-cell-shrink" rendered="{!isEditable && !isMobile}">
+                        <apex:facet name="header"></apex:facet>
+                        <apex:outputText rendered="{!dealReview.status != 'Completed'}">
+                            <a 
+                                href="#" 
+                                class="edit_link" 
+                                onclick="javascript: ttg_dealreview.editDealReview('{!JSENCODE(dealReview.Id)}');"
+                                />
+                            </apex:outputText>
+                    </apex:column>
+                    <apex:column styleClass="slds-cell-shrink">
+                        <apex:facet name="header">Date</apex:facet>
+                        <apex:outputText value="{!dealReview.effectiveDateFormatted}" />
+                    </apex:column>
+                    <apex:column styleClass="slds-cell-shrink">
+                        <apex:facet name="header">Location</apex:facet>
+                        <apex:outputText escape="true" value="{!IF(LEN(dealReview.location) > 80, RPAD(LEFT(dealReview.location, 80), 83, '...'), dealReview.location)}" />
+                    </apex:column>
+                    <apex:column styleClass="slds-cell-wrap">
+                        <apex:facet name="header">Notes</apex:facet>
+                        <apex:outputText escape="true" value="{!IF(LEN(dealReview.notes) > 297, RPAD(LEFT(dealReview.notes, 297), 300, '...'), dealReview.notes)}" />
+                    </apex:column>
+                    <apex:column styleClass="slds-cell-wrap">
+                        <apex:facet name="header">Status</apex:facet>
+                        <apex:outputText value="{!dealReview.status}" />
+                    </apex:column>
+                    
+                    <apex:column styleClass="slds-cell-shrink">
+                        <apex:facet name="header">Duration</apex:facet>
+                        <apex:outputText value="{!dealReview.durationFormatted}"/>
+                    </apex:column>
+                   
+                    <apex:column styleClass="slds-cell-wrap">
+                        <apex:facet name="header">Summary</apex:facet>
+                        <apex:outputText rendered="{!dealReview.questionCount != null}">
+                            {!dealReview.questionCount} Questions,  
+                            <span class="slds-assistive-text">Questions</span>
+
+                        </apex:outputText>
+                         <apex:outputText rendered="{!dealReview.vulnerabilityCount != null}">
+                            {!dealReview.vulnerabilityCount} Vulnerabilities,
+                            <span class="slds-assistive-text">Vulnerabilities</span>                        
+                            
+                         </apex:outputText>
+                         <apex:outputText rendered="{!dealReview.actionCount != null}">
+                            {!dealReview.actionCount} Recommendations
+                            <span class="slds-assistive-text">Recommendations</span>
+                         
+                         </apex:outputText>
+                    </apex:column>
+                    
+                   
+                    <apex:column >
+                        <apex:outputLink value="{! $Page.tas_tandi_app }?id={! shadowOpportunity.opportunity__c }&tandiid={! dealReview.id }" id="theLink">Launch</apex:outputLink>
+                    </apex:column>
+                </apex:dataTable>
+                -->
+
+
+            </apex:form>
+
+        </div>
+
+    </div>
+    
+    <style>
+        @import url("{!URLFOR($Resource.SmartOM,         'css/summarytab.css')}");
+                
+        /* start of additions for Chatter */
+    
+/* DMDEV-10612
+        @import url("{!URLFOR($Resource.SmartOM,         'css/chatterpost.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_side_panel.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_post.css')}");
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/chatter/css/chatter_summary.css')}");
+*/
+        @import url("{!URLFOR($Resource.ttgomjs,         'ttg/graph/css/glyphs/style.css')}");        
+
+        /* end of additions for Chatter */
+        
+        /* Restores AJAX spinner size to normal (AMOF-813) */
+        .spinner {
+            height: auto;
+            width: auto;
+        }
+        
+        #messageDiv{
+            float: left;
+        }
+        
+        #buttonDiv{
+            border: 1px solid darkblue;
+            float: right;
+            padding: 8px 11px 8px 45px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            color: #fff;
+            margin-top: 10px;
+            cursor: pointer;
+            background: #4a6688 url('{! URLFOR($Resource.Common, 'images/schedule@2x.png')}') no-repeat 15px center;
+            background-size: 16%;
+        }
+        
+        #buttonDiv a{
+            color: #fff;
+        }
+
+        .more-text {
+            display: none;
+        }
+    </style> 
+ 
+     <script>
+        var spec = {};
+     
+        var ttg = ttg || {};
+        
+        spec = {
+             ttgApi: ttg.apiLayer.crud( { sessionid : '{!JSENCODE($Api.Session_ID)}', opportunityid : '{!JSENCODE(Opportunity.id)}' } ) // added by alex
+        }   
+     
+        var ttg_dealreview = (function(_spec){
+            
+            var that = {};
+            var myAjaxSpinnerCnt = 0;
+            var mySpinner;
+            var dlg = null;
+            var ttgApi = _spec.ttgApi;
+            
+            function editDealReview(dealReviewId){
+                dlg = ttg.dealReviewMgr.newDealReviewDialog(dealReviewId, true, successFunc, failFunc);
+            }
+
+            function deleteDealReview(dealReviewId){
+                var dealReviewTextShort =  '{!JSENCODE($Label.DMAPP__resource_launchpad_deal_review)}';
+                var dealReviewTextLong = '{!JSENCODE($Label.DMAPP__resource_deal_review)}';
+                var confirmDialog = jQuery('<div/>', {id: 'deleteDealReviewDialog'}).
+                                            append(jQuery('<span/>').text('Are you sure you want to delete this ' + dealReviewTextLong + ' session?'));
+                        confirmDialog.dialog({
+                            modal: true,
+                            title: 'Delete ' + dealReviewTextLong, 
+                            buttons: {
+                                'Yes' : function()  {   
+                                
+                                    var succDelete = function() { 
+                                        reloadDealReviews();
+                                        showAjaxSpinner2(false);
+                                    };
+                                    showAjaxSpinner2(true);
+                                    ttgApi.deleteDealReview(dealReviewId, succDelete );
+
+                                    confirmDialog.dialog('close');
+                                },
+                                'No' : function() { 
+                                    confirmDialog.dialog('close'); 
+                                }
+                            }
+                        });
+
+            }
+            
+            function successFunc(_data){
+                showAjaxSpinner(true);
+                noMoreEditsFlag = true;
+                reloadDealReviews();
+            }
+            
+            function failFunc(_data){
+                showAjaxSpinner(false);
+                bindClick();
+            }
+
+            function showAjaxSpinner(show) {
+                dlg.showAjaxSpinner(show);            
+            }        
+
+            
+            function createDealReviewDialog(){
+                dlg = ttg.dealReviewMgr.newDealReviewDialog(null, null, successFunc, failFunc);
+            }
+
+
+            var ajaxSpinnerCnt = 0;
+            var spinner;
+            
+            function showAjaxSpinner2(show) {
+                
+                if (show) { 
+                    ajaxSpinnerCnt++;
+                    if (ajaxSpinnerCnt == 1) {
+    
+                        spinner = jQuery('<div>').css('position', 'absolute').css('z-index', '1000002');
+    
+                        jQuery('body').append(spinner);
+                        
+                        spinner.append(jQuery('<img>').attr('id', 'tas_ajax_spinner').addClass('spinner').attr('src', '{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}'));
+                        spinner.css("top", ( jQuery(window).height() - spinner.height() ) / 2+jQuery(window).scrollTop() + "px");
+                        spinner.css("left", ( jQuery(window).width() - spinner.width() ) / 2+jQuery(window).scrollLeft() + "px");
+                    }                 
+                }
+                else {
+    
+                    ajaxSpinnerCnt--;
+                    if (ajaxSpinnerCnt <= 0) {              
+                        spinner.remove();
+                        ajaxSpinnerCnt = 0;
+                    }
+    
+                }
+            }
+            
+            that.createDealReviewDialog = createDealReviewDialog;
+            that.showAjaxSpinner = showAjaxSpinner;
+            that.editDealReview = editDealReview;
+            that.deleteDealReview = deleteDealReview;
+            return that;
+        
+        })(spec);
+     
+        function reloadComplete() {
+            ttg_dealreview.showAjaxSpinner(false);
+            bindClick();
+        }
+
+        var showCRUD = function(){
+            ttg_dealreview.createDealReviewDialog();
+        }
+
+        var bindClick = function(){
+            jQuery("#buttonDiv").click(showCRUD);   
+        }
+
+
+        jQuery(document).ready(function(){
+            
+            var isEditable = '{!isEditable}';
+            if(!('true' == isEditable)){
+                jQuery('#buttonDiv').hide();
+            }
+            
+            jQuery("#buttonDiv").click(showCRUD);
+        });
+
+        </script>
+        <apex:repeat value="{!dealReviews}" var="dealReview" id="dealReview-repeat">
+            <script type="text/javascript">
+                jQuery('.{!JSENCODE(dealReview.id)} .view-more').on('click', function() {
+                    jQuery(this).hide();
+                    jQuery('.{!JSENCODE(dealReview.id)} .ellipsis').hide();
+                    jQuery('.{!JSENCODE(dealReview.id)} .more-text').addClass('show').slideDown();
+                });
+                        
+                jQuery('.{!JSENCODE(dealReview.id)} .view-less').on('click', function() {
+                    jQuery('.{!JSENCODE(dealReview.id)} .view-more').show();
+                    jQuery('.{!JSENCODE(dealReview.id)} .ellipsis').show();
+                    jQuery('.{!JSENCODE(dealReview.id)} .more-text').hide().removeClass('show');
+                });
+
+
+            </script>
+        </apex:repeat>
+
+</apex:page>

@@ -1,0 +1,220 @@
+<apex:page standardController="DMAPP__DM_Market_View_Report__c"
+    extensions="DMAPP.MarketViewStandardController"
+>
+    <apex:slds />  
+    <!-- Perf: Added for outputlink component -->
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/ttgutils.js')}" />
+
+    <apex:includeScript value="{!$Resource.DMAPP__l10njs}"/>
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__prefix)}"/>
+
+    <c:salesforce_design_system_helper slds_version="2.0.2"/>
+    <c:SldsIcons />
+
+    <style>
+
+        .smartOMPanel {
+            top: -16px;
+            z-index: 45; /* Needed to make chatter popups display fine on IE7 */
+        }
+
+        .smartOMOpportunitySummary {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            line-height: 150%;
+            float:left;
+        }
+
+        .smartOMOpportunitySummary a {
+            text-decoration: none;
+        }
+
+        .smartOMOpportunitySummary a:hover {
+            text-decoration: underline;
+        }
+
+        .chatterContainer {
+            float: right;
+        }
+
+        .smartOMTabContainer {
+            clear: both;
+            float: left;
+            width: 100%;
+        }
+
+        .smartOMTab {
+            background: #405773 url('{!URLFOR($Resource.SmartOM, 'tabs/bg_nav_off.jpg')}') left top repeat-x;
+            border: 1px solid  #374A61;
+            border-radius: 5px 5px 0px 0px;
+            -moz-border-radius: 5px 5px 0px 0px;
+            -webkit-border-radius: 5px 5px 0px 0px;
+            bottom: -1px;
+            float: left;
+            line-height: 1.5em;
+            margin-right: 5px;
+            padding: 5px 20px;
+            position: relative;
+            text-align: center;
+            color: #FFFFFF;
+            text-shadow: 0px -1px 0px rgba(0,0,0,0.8);
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset;
+        }
+
+        .smartOMTabSelected {
+            background: #FFFFFF none !important;
+            border-bottom: 1px solid #FFFFFF;
+            color:  #374A61;
+            text-shadow:0px 1px 0px rgba(255,255,255,0.8);
+        }
+        .smartOMTab strong {
+            display: block;
+        }
+        .smartOMTab .smartOMTabInfo {
+            visibility: visible;
+            font-size:0.85em;
+            color:#C8D1DA;
+        }
+        .smartOMTabSelected .smartOMTabInfo {
+            visibility: hidden;
+        }
+
+        .smartOMLink {
+            text-decoration: none;
+            font-size: 1.2em;
+        }
+
+        .smartOMLink:hover .smartOMTab {
+            background: #4A6688 url('{!URLFOR($Resource.SmartOM, 'tabs/bg_nav_hover.jpg')}') left top repeat-x;
+            text-decoration: none;
+        }
+
+        .smartOMTabContainerBottom {
+            background-color:  #374A61;
+            clear: both;
+            height: 1px;
+            margin-bottom: 10px;
+        }
+
+        div.smartOMBackLink {
+            float:left;
+            margin:10px;
+        }
+
+            div.smartOMBackLink a {
+                float:left;
+                display:block;
+                text-indent: -999em;
+                width:24px;
+                height:24px;
+                background: url('{!URLFOR($Resource.SmartOM, 'tabs/btn_back_link.png')}') center center no-repeat;
+            }
+
+        div.TAMAdminLink {
+            float:right;
+        }
+
+        div.TAMAdminLink a,
+        div.TAMAdminLink span{
+            vertical-align: middle;
+        }
+
+        div.smartOMHelpLink {
+            margin-top: 0;
+            float:right;            
+        }
+
+        div.smartOMHelpLink .slds-button--icon-border {
+            height: 33px;
+        }
+
+        div.smartOMPPTLink {
+            float:right;
+            margin:10px;
+        }
+
+        .readOnlyText {
+            color: red;
+        }
+
+        .smartOMLink {
+            float: left;
+        }
+
+        div.marketViewsListLinkContainer {
+            display: inline-block;
+        }
+
+        .marketViewsListLinkContainer a.breadcrumb {
+            color : #00396b;
+            text-decoration: underline;
+        }
+
+
+    </style>
+
+
+    <apex:variable var="reportSelected" value="{!IF(CONTAINS(selectedPage,'marketview'),true,false)}"/>
+
+    <div class="smartOMPanel slds-scope">
+        <div class="smartOMTabContainer">
+
+            <div class="smartOMOpportunitySummary">
+                <span class="breadcrumb_altify_logo"></span>
+                <div class="marketViewsListLinkContainer">
+                    <c:outputLink target="_top" value="{! URLFOR($Page.MarketViews, null)}" styleClass="breadcrumb">{!JSENCODE($Label.dmapp__am_market_views)}</c:outputLink></div> &nbsp;-&nbsp;{!report.Name}
+            </div>
+
+            <div class="smartOMHelpLink">
+            
+                <c:help_dropdown_button />
+
+            </div> 
+            <apex:outputPanel layout="block" styleClass="TAMAdminLink" rendered="{!isLicensedForAccountManager}">
+                <button type="button" id="TAMADMINLINK" class="slds-button slds-button_neutral">
+                    <span class="sldsico-settings"></span>
+                    <span>{!JSENCODE($Label.DMAPP__common_settings)}</span>
+                </button>                
+            </apex:outputPanel>
+
+
+        </div>
+
+        <div class="smartOMTabContainerBottom"></div>
+    </div>
+
+    <script>
+
+        /*
+         * Copyright © {! JSENCODE($Setup.DMAPP__Company_Information__c.DMAPP__Company_Name__c)}. All rights reserved.
+         *
+         */
+
+        /**
+        * Checks if we're on an iPad AND in S1.
+        *
+        * Back link will be hidden in S1 on iPad only.
+        * It should still display in Lightning and Aloha
+        */
+        if (ttg.urlServiceInstance.isSalesforce1()) {
+            jQuery('div.marketViewsListLinkContainer').hide();
+        }
+
+        help.showHelp = function() {
+
+            var url = '{!JSENCODE(helpURLBase)}' + '/Default.htm#AM/';
+
+            if ({!reportSelected}) {
+                url += 'Market_View_Report/Market_View_Report.htm';
+            }
+            else {
+                alert('Sorry, help not available')
+            }
+
+            var testwindow = window.open(url, "TAS", "resizable=1,location=1,status=1,scrollbars=1,width=600,height=600");
+
+        }
+
+    </script>
+
+</apex:page>

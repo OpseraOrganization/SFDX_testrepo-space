@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fieldUpdates>
+        <fullName>BGA_Skill_Value_Change</fullName>
+        <description>SR#425182</description>
+        <field>BGA_Skill_Value_Change__c</field>
+        <literalValue>1</literalValue>
+        <name>BGA Skill Value Change</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Check_Duplicate_Skill</fullName>
+        <description>Workflow created for Certido Ticket# 316577, to prevent duplicate Skill records for a Contact (Employee)</description>
+        <field>Check_Duplicate_Skill__c</field>
+        <formula>Contact__c +&apos;&apos;+ Skill_Type__c +&apos;&apos;+ Skill_Value__c +&apos;&apos;+ Skill_Value_Comments__c +&apos;&apos;+ TEXT(Expertise__c) +&apos;&apos;+ TEXT(Primary_Secondary__c) +&apos;&apos; + Supported_Products__c +&apos;&apos;+ Product_Types__c +&apos;&apos;+ Catalog_Product_Groups__c</formula>
+        <name>Update Check Duplicate Skill</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_skill_expertise_field</fullName>
+        <field>Expertise__c</field>
+        <literalValue>1-Basic</literalValue>
+        <name>Update skill expertise field</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <rules>
+        <fullName>BGA FSE%2FASM%2FCSM Skill Value Changes</fullName>
+        <actions>
+            <name>BGA_Skill_Value_Change</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <active>true</active>
+        <description>SR#425182</description>
+        <formula>AND(ISCHANGED( Skill_Type__c ) ||  ISCHANGED( Skill_Value_Comments__c )  ||  ISCHANGED( Skill_Value__c ),IF( 
+	(ISPICKVAL( Contact__r.Mobile_App_Role__c ,&apos;Customer Support Manager&apos;)) 
+	|| (ISPICKVAL( Contact__r.Mobile_App_Role__c ,&apos;Area Sales Manager&apos;))
+	|| (ISPICKVAL( Contact__r.Mobile_App_Role__c ,&apos;Field Service Engineer - Mechanical&apos;))
+	|| (ISPICKVAL( Contact__r.Mobile_App_Role__c ,&apos;Field Service Engineer - Electrical&apos;))
+	,true, false
+))</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>Check Duplicate Skill Record for a Contact or Employee</fullName>
+        <actions>
+            <name>Update_Check_Duplicate_Skill</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <active>true</active>
+        <description>Workflow created for Certido Ticket# 316577, to prevent duplicate Skill records for a Contact (Employee)</description>
+        <formula>Name  &lt;&gt; &apos;&apos;</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>Update the Skill expertise field%2E</fullName>
+        <active>true</active>
+        <criteriaItems>
+            <field>Skills2__c.Expertise__c</field>
+            <operation>equals</operation>
+            <value>10 - Recently took training</value>
+        </criteriaItems>
+        <description>Update the expertise field to 1-Basic.</description>
+        <triggerType>onCreateOnly</triggerType>
+        <workflowTimeTriggers>
+            <actions>
+                <name>Update_skill_expertise_field</name>
+                <type>FieldUpdate</type>
+            </actions>
+            <offsetFromField>Skills2__c.CreatedDate</offsetFromField>
+            <timeLength>90</timeLength>
+            <workflowTimeTriggerUnit>Days</workflowTimeTriggerUnit>
+        </workflowTimeTriggers>
+    </rules>
+</Workflow>

@@ -1,0 +1,250 @@
+<apex:page >
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/modernizr.js')}"/>	
+    <apex:includeScript value="{!URLFOR($Resource.DMAPP__ttgomjs, 'ttg/lib/ttgutils.js')}"/>		
+	<script>
+	
+		var ttg = ttg || {};
+		ttg.am = ttg.am || {};
+
+		ttg.am.planactivity = function(_spec) {
+		
+			var that = {};
+			
+			var localization = {
+				completenessLabel:						'{!JSENCODE($Label.resource_Completeness)}',
+				activityLabel:							'{!JSENCODE($Label.AM_ACTIVITY)}',
+				planDetailsAttainment: 					'{!JSENCODE($Label.AM_PLAN_DETAILS_COMPLETION)}',
+				segmentationCompletion: 				'{!JSENCODE($Label.AM_SEGMENTATION_COMPLETION)}',
+				whiteSpace: 							'{!JSENCODE($Label.AM_WHITE_SPACE_COVER)}',
+				LORCompletion: 							'{!JSENCODE($Label.AM_LOR_COMPLETION)}',
+				strategyMapLevel: 						'{!JSENCODE($Label.resource_InsightMap)}',
+				politicalMapLevel: 						'{!JSENCODE($Label.resource_Political_Maps)}',
+				valueMapCompletion: 					'{!JSENCODE($Label.AM_VALUE_MAP_COMPLETION)}',
+				objectivesLevel: 						'{!JSENCODE($Label.resource_Objectives)}',
+				teamAccess: 							'{!JSENCODE($Label.AM_TEAM_PLAN_ACCESS)}',
+				actions: 								'{!JSENCODE($Label.COMMON_ACTIONS)}',
+
+				planDetailsAttainmentHelp: 				'{!JSENCODE($Label.AM_COMPLETENESS_ATTAINEMNT_HELP)}',
+				segmentationCompletionHelp: 			'{!JSENCODE($Label.AM_COMPLETENESS_SEGMENTATION)}',
+				whiteSpaceHelp: 						'{!JSENCODE($Label.AM_COMPLETNESS_WHITE_SPACE_HELP)}',
+				LORCompletionHelp: 						'{!JSENCODE($Label.AM_COMPLETENESS_LOR_HELP)}',
+	
+				strategyMapLevelHelp: 					'{!JSENCODE($Label.AM_COMPLETNESS_STRATEGY_P1)}',
+	
+				politicalMapLevelHelp: 					'{!JSENCODE($Label.AM_COMPLETENESS_POL_MAP_LEVEL)}',
+                
+				valueMapCompletionHelp:					'{!JSENCODE($Label.AM_COMPLETENESS_VALUE_MAP_HELP)}',
+				objectivesLevelHelp: 					'{!JSENCODE($Label.AM_COMPLETNESS_OBJECTIVES_LEVEL_HELP)}',
+				teamAccessHelp:  						'{!JSENCODE($Label.AM_COMPLETENESS_TEAM_ACCESS_HELP)}',
+				actionsHelp: 							'{!JSENCODE($Label.AM_COMPLETENESS_ACTIONS_HELP)}'
+			}
+			
+			var ttgApi = _spec.ttgApi;
+			var planId = _spec.planId;
+			var hideSegmentation = _spec.hideSegmentation;
+			
+			var previousSelection = 'planDetailsAttainment';
+			
+			var data = {};
+		
+			function render() {
+				setupPlanActivity();
+			}
+			
+			function handleGetResponse(result) {
+
+				var summaryData = jQuery("#SCORECARD_SUMMARY_DATA").empty()
+					.append(jQuery('<div>').addClass('title-left')
+						.append(jQuery('<span>').addClass('completenessTitle').text(localization.completenessLabel)))
+					.append(jQuery('<div>').addClass('title-right')
+						.append(jQuery('<span>').addClass('activityTitle').text(localization.activityLabel)));
+				
+				var completenessSection = jQuery('<div/>', {id: 'completenessSection'});
+						
+				var completenessScoreTable = jQuery('<table/>', {id: 'COMPLETENESS_SUMMARY_TABLE'}).addClass('metricTable');
+				if(hideSegmentation) {
+				    completenessScoreTable.addClass('segmentless');
+				}
+				
+				var firstRow = jQuery('<tr/>');
+				var secondRow = jQuery('<tr/>');
+				
+				var current = result.completenessScore;
+				
+				var planDetailsAttainmentCell = renderCurrentScoreCell('planDetailsAttainment', localization.planDetailsAttainment, current.planDetailsAttainment.score, current.planDetailsAttainment.formattedScore);
+				
+				var segmentationCompletionCell = hideSegmentation ? null : renderCurrentScoreCell('segmentationCompletion', localization.segmentationCompletion, current.segmentationCompletion.score,  current.segmentationCompletion.formattedScore);
+				
+				var whiteSpaceCell = renderCurrentScoreCell('whiteSpace', localization.whiteSpace, current.whiteSpace.score, current.whiteSpace.formattedScore);
+				var LORCompletionCell = renderCurrentScoreCell('LORCompletion', localization.LORCompletion, current.LORCompletion.score, current.LORCompletion.formattedScore);
+				
+                var strategyMapLevelCell = renderCurrentScoreCell('strategyMapLevel', localization.strategyMapLevel, current.strategyMapLevel.score, current.strategyMapLevel.formattedScore);
+                var politicalMapLevelCell = renderCurrentScoreCell('politicalMapLevel', localization.politicalMapLevel, current.politicalMapLevel.score, current.politicalMapLevel.formattedScore);
+                var valueMapCompletionCell = renderCurrentScoreCell('valueMapCompletion', localization.valueMapCompletion, current.valueMapCompletion.score, current.valueMapCompletion.formattedScore);
+                var objectivesLevelCell = renderCurrentScoreCell('objectivesLevel', localization.objectivesLevel, current.objectivesLevel.score, current.objectivesLevel.formattedScore);
+                
+				if(hideSegmentation) {
+                    firstRow.append(planDetailsAttainmentCell).append(whiteSpaceCell).append(LORCompletionCell).append(strategyMapLevelCell);
+                    secondRow.append(politicalMapLevelCell).append(valueMapCompletionCell).append(objectivesLevelCell);    				
+				} else {
+				    firstRow.append(planDetailsAttainmentCell).append(segmentationCompletionCell).append(whiteSpaceCell).append(LORCompletionCell);
+				    secondRow.append(strategyMapLevelCell).append(politicalMapLevelCell).append(valueMapCompletionCell).append(objectivesLevelCell);    
+				}
+
+				completenessScoreTable.append(firstRow).append(secondRow);
+				
+				summaryData.append(completenessSection.append(completenessScoreTable));
+				
+				var activitySection = jQuery('<div/>', {id: 'activitySection'});
+				
+				var activityScoreTable = jQuery('<table/>', {id: 'ACTIVITY_SUMMARY_TABLE'}).addClass('metricTable');
+				var activity = result.activityScore;
+				
+				var actionsCell = renderCurrentScoreCell('actions', localization.actions, activity.actions.score, activity.actions.formattedScore);
+				activityScoreTable.append(jQuery('<tr/>').append(actionsCell));
+				
+				var teamAccessCell = renderCurrentScoreCell('teamAccess', localization.teamAccess, activity.teamAccess.score, activity.teamAccess.formattedScore);
+				activityScoreTable.append(jQuery('<tr/>').append(teamAccessCell));
+				
+				summaryData.append(activitySection.append(activityScoreTable));
+				
+				
+				jQuery('#' + previousSelection + 'currentCell').addClass('selected');
+				
+				/*
+				var helpText = jQuery('<div/>').addClass('metricHelpText msg_container text_left').append(jQuery('<span/>').addClass('msg_text').text(localization[previousSelection + 'Help']));
+				*/
+				
+				var myTitle = localization[previousSelection];
+				var myHelpText = localization[previousSelection + 'Help'];
+				
+				var helpText = jQuery('<div/>').addClass('metricHelpText2 msg_container text_left').append(jQuery('<div/>').addClass('msg_text2')
+												.append(jQuery('<b id="myTitle"/>')
+												.html(myTitle.replace(/^\s+|\s+$/g, "")))  // trim the title string, otherwise newlines are added
+												.append(jQuery('<br /><br />'))
+												.append(jQuery('<div id="myHelpText"/>')
+												.text(myHelpText)));
+				
+				summaryData.append(helpText);				
+				
+				function renderCurrentScoreCell(id, label, score, formattedScore) {
+				
+					var cell = jQuery('<td/>').attr('id', id + 'currentCell');
+					cell.append(jQuery('<div/>').addClass('badge'));
+					cell.append(jQuery('<div/>').addClass('scoreLabel').text(label));
+					
+					var progressLabel = jQuery('<div/>').addClass('scoreProgressLabel').text(formattedScore);
+					
+					cell.append(jQuery('<div/>').addClass('scoreValue').append(progressLabel).progressbar({value: score}));
+					cell.on('click', function() {
+						completenessScoreTable.find('td.selected').removeClass('selected');
+						activityScoreTable.find('td.selected').removeClass('selected');
+						cell.addClass('selected');					
+						//helpText.find('.msg_text').text(localization[id + 'Help']);
+						
+						var myNewTitle = localization[id];
+						var myNewHelpText = localization[id + 'Help'];
+						
+						helpText.find('#myTitle').html(myNewTitle);
+						helpText.find('#myHelpText').text(myNewHelpText);
+						
+						previousSelection = id;
+					});					
+					return cell;
+				}				
+
+			}
+			
+		
+			function setupPlanActivity() {
+				wrapGet(planId, handleGetResponse ) 
+			}
+			
+			function wrapGet (planid, callback) {
+
+				addSerialiseCalls('get', planid, callback);
+
+			}
+			
+			var stack = [];
+			function addSerialiseCalls(method, params, callback) {
+
+				stack.push({ method: method, params: params, callback: callback });
+				if (processing == 0) {
+					processSerialiseCalls();
+				}
+			}
+
+			var processing = 0;
+			
+			function processSerialiseCalls() {
+
+				
+				var obj = stack.shift();
+
+				if (obj == undefined) {
+					// Finished
+				}
+				else if (obj.method == 'get') {
+
+					processing++;
+					_wrapGet(obj.params, function (result) { try {obj.callback(result);}finally{ processedSerialiseCalls();} });
+
+				}
+				
+			}
+
+			function processedSerialiseCalls() {
+				processing--;
+				processSerialiseCalls();
+			}				
+
+			function _wrapGet (planId, callback) {
+
+				showAjaxSpinner(true);
+				
+				var ret = function (result) { showAjaxSpinner(false); callback(data); }
+
+				ttgApi.getPlanActivityDetails(planId, updateRawData, undefined, ret);
+
+			}
+
+			function updateRawData(d) {
+				
+				data = d;
+
+			}
+			
+			var ajaxSpinnerCnt = 0;
+			
+			function showAjaxSpinner(show) {
+				
+				if (show) { 
+					ajaxSpinnerCnt++;
+					if (ajaxSpinnerCnt == 1) {
+
+						jQuery('#SPINNER').append(jQuery('<img>').attr('id', 'tas_ajax_spinner').addClass('spinner').attr('src', '{!JSENCODE(URLFOR($Resource.ttgomjs, '/ttg/graph/images/loader.gif'))}'));
+						jQuery('#SPINNER').css("top", ( jQuery(window).height() - jQuery('#SPINNER').height() ) / 2+jQuery(window).scrollTop() + "px");
+						jQuery('#SPINNER').css("left", ( jQuery(window).width() - jQuery('#SPINNER').width() ) / 2+jQuery(window).scrollLeft() + "px");
+
+					}				  
+				}
+				else {
+
+					ajaxSpinnerCnt--;
+					if (ajaxSpinnerCnt <= 0) {				
+						jQuery('#SPINNER').html('');
+						ajaxSpinnerCnt = 0;
+					}
+
+				}
+			}
+		
+			that.render = render;
+			
+			return that;
+		
+		};
+		
+	</script>
+</apex:page>

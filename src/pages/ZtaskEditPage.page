@@ -1,0 +1,224 @@
+<apex:page standardController="Z_Task__c" extensions="ZtaskEditPageCls" id="page">
+    <apex:pagemessages />
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>    
+    <style>
+    .input-disabled{background-color:#EBEBE4;border:1px solid #ABADB3;padding:2px 1px;}
+    </style>
+    <script src="{!URLFOR($Resource.TSSCommunityRes,'js/jquery-1.11.0.min.js')}"></script>
+    <script>
+        $(document).ready(function()
+        {         
+            var othersubtype=document.getElementById("page:form:Editsec:sec:subtype:OTHERshorttext1").value;
+            var subtype=document.getElementById("page:form:Editsec:sec:subtype").value;
+            //alert(othersubtype);
+            //if(othersubtype != 'undefined' && othersubtype != '' &&  othersubtype != null && subtype == 'Other')
+            if( subtype == 'Other')
+            {
+                //alert('inside if1');
+                document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext1').style.display = 'block';
+                document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext2').style.display = 'none';
+                document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext2').value = "";
+            }
+            else
+            {
+               //alert('inside else1');
+               document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext1').style.display = 'none';
+            }
+            var pageurl=window.location.href;
+            //alert('pageurl------'+pageurl);
+            if(window.location.href.indexOf("Cloneid") > -1) {
+                //alert("your url contains the name Cloneid");
+                var status=document.getElementById("page:form:Editsec:sec:j_id41");
+                //alert('status---'+status.length);
+                status.remove(2); 
+            }       
+        });
+        function changeshorttext()
+        {           
+            var subtype=document.getElementById("page:form:Editsec:sec:subtype").value;
+            //alert(subtype);
+            if(subtype != 'Other')       
+            {   
+              //alert('inside if');
+              CallApexMethod1();
+              document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext1').style.display = 'none';
+              document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext1').value = "";            
+            }
+            else
+            {         
+              //alert('inside else');
+              CallApexMethod1();
+              document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext2').innerHTML = "";
+              document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext2').style.display = 'none';
+              document.getElementById('page:form:Editsec:sec:subtype:OTHERshorttext1').style.display = 'block';
+            }
+        }
+        function closesavevalidation()
+        {           
+            var Followuptask=document.getElementById("page:form:Editsec:sec:followuptask").value;
+            //alert('Followuptask'+Followuptask);
+            var taskstatus=document.getElementById("page:form:Editsec:sec:status").value;
+            console.log(taskstatus);
+            if(taskstatus == 'Open' && (Followuptask == 'No Followup Task' || Followuptask == ''))
+            {
+                console.log('inside open');
+                CallApexMethod() ; 
+            }
+            else if((taskstatus == 'Closed' || taskstatus == 'Open') && (Followuptask != 'No Followup Task' || Followuptask == 'No Followup Task'))
+            {
+                console.log('inside closed');
+                var taskid= '{!$currentpage.parameters.id}';
+                console.log('id---'+taskid);
+                ZtaskEditPageCls.getstatuslst(taskid,function(result, event){                   
+                   var re = result.length;  
+                   //alert('result---'+re); 
+                   var userstatusclose='{!$Label.ZtaskClose}';
+                   //alert('label---'+userstatusclose);
+                   var z136='{!$Label.z136task}';
+                   var z146='{!$Label.z146task}';
+                   var z156='{!$Label.z156task}';
+                   //alert('Followuptask---'+Followuptask);                   
+                    if(result.length != 0 && (userstatusclose == 'ON'))
+                    {
+                       //alert('inside if');
+                       //alert('task---'+result[0].Task_Activities__c);                    
+                       if(Followuptask == z136 )
+                       {
+                           //alert('inside Z136');
+                           CallApexMethod() ; 
+                       }
+                       else if(Followuptask ==z146)
+                       {
+                            //alert('inside Z136');
+                            CallApexMethod() ; 
+                       }
+                       else if(Followuptask ==z156 )
+                       {
+                            //alert('inside Z136');
+                            CallApexMethod() ; 
+                       }
+                       else
+                       {
+                            //alert('Task Will close when related userstatus are closed');
+                            alert('Customer hold statuses have been found on this order.  Please close the associated statuses or create a follow-up task of Z136/Z146/Z156 to proceed.');
+                       }
+                       
+                    }
+                    else
+                    {
+                        //alert('inside else');
+                        CallApexMethod() ; 
+                    }                   
+                });  
+            }
+            /*if(Followuptask != '')       
+            {   
+              CallApexMethod() ; 
+            }
+            else
+            {         
+              CallApexMethod() ; 
+            }*/
+        }
+        function changetype()
+        {           
+            var type=document.getElementById("page:form:Editsec:sec:j_id32").value;
+            alert(type); 
+            if(type != '')
+            {
+               alert('type value cannot be changes');
+            }           
+        }
+    </script>
+    <apex:form id="form">
+        <apex:outputPanel id="EditView" rendered="{!editlayout}" >  
+           <apex:actionFunction name="CallApexMethod" action="{!CloseSave}"  />
+            <apex:actionFunction name="CallApexMethod1" action="{!changeshorttext}"  />            
+            <apex:sectionheader title="Task" subtitle="{!ZTask.Type__c}"></apex:sectionheader>
+            <apex:pageblock mode="edit" id="Editsec" >
+                <apex:pageblockbuttons >   
+                    <!-- <apex:commandButton value="Save" action="{!CustomSave}" id="theButton"  />  -->
+                    <!-- <apex:commandbutton action="{!cancel}" value="Cancel" ></apex:commandbutton> -->
+                    <apex:commandButton value="Save " onclick="closesavevalidation();return false;"  id="CloseButton"  rendered="{!followuptask}"/>
+                    <apex:commandButton value="Save" action="{!CustomSave}" id="theButton"  rendered="{!Savefollowuptask}"/> 
+                    <apex:commandbutton action="{!cancel}" value="Cancel" ></apex:commandbutton>
+                </apex:pageblockbuttons>
+                <apex:pageblocksection title=" Information" id="sec" columns="1">                                
+                    <!-- <apex:inputfield value="{!ZTask.Type__c}" onchange="changetype();return false;"/> -->
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel >Type</apex:outputLabel>
+                            <apex:outputText >{!ZTask.Type__c}
+                            <apex:outputPanel style="display:none;visibility:hidden">
+                                <apex:inputField value="{!ZTask.Type__c}" />
+                            </apex:outputpanel>
+                        </apex:outputText>
+                    </apex:pageBlockSectionItem>                    
+                    <!-- <apex:inputfield value="{!ZTask.Sub_Type__c}"  > -->
+                    <!-- <apex:actionSupport event="onchange" action="{!changeshorttext}" reRender="OTHERshorttext"  /> -->
+                    <apex:inputfield value="{!ZTask.Sub_Type__c}"  id="subtype" onchange="changeshorttext();return false;" >
+                    <apex:actionSupport event="onchange" rerender="form"/> 
+                      <br/>
+                        <br/><apex:outputfield value="{!ZTask.Short_Text__c}" id="OTHERshorttext2"/>
+                        <apex:inputfield value="{!ZTask.Other_Short_Text__c}" id="OTHERshorttext1"/>                        
+                    </apex:inputfield>                                                        
+                    <apex:inputField rendered="{!IF(ZTask.Sub_Type__c='Request Re-quote' && ZTask.Type__c='Z141 Shop Action Required',true,false)}"
+                                   value="{!ZTask.Requote_Reason__c}"/>
+                    <apex:inputfield value="{!ZTask.Comments__c}" style="width: 30%;" /> 
+                    <apex:inputfield id="status" value="{!ZTask.Status__c}"  />                            
+                    <apex:inputfield value="{!ZTask.Followup_Task__c}"  id="followuptask"  rendered="{!followuptask}"/>               
+                </apex:pageblocksection>            
+                <apex:pageblocksection title="Long Text" id="info1" rendered="{!followuptask}">
+                    <apex:pageBlockSectionItem id="longtext">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <apex:outputfield value="{!ZTask.Long_Text__c}" />
+                    </apex:pageBlockSectionItem>              
+                </apex:pageblocksection>
+            </apex:pageblock> 
+        </apex:outputPanel>
+        <apex:outputPanel id="ViewLayout" rendered="{!viewlayout}" >  
+           <apex:sectionheader title="Z Task" subtitle="{!ZTask.Name}"></apex:sectionheader>
+            <apex:pageblock mode="edit"  title="Z Task Detail">
+                <apex:pageblocksection columns="1">                                
+                    <apex:outputfield value="{!ZTask.RelatedTo__c}"  />
+                    <apex:outputfield value="{!ZTask.Type__c}"  />
+                   <!--  <apex:outputfield value="{!ZTask.Sub_Type__c}"  >
+                        <br/>
+                        <br/><apex:outputfield value="{!ZTask.Short_Text__c}" /> 
+                    </apex:outputfield> -->
+                    <apex:outputfield value="{!ZTask.Short_Text__c}" />
+                    <apex:outputfield value="{!ZTask.Status__c}"  />                            
+                    <apex:outputfield value="{!ZTask.Followup_Task__c}"    />               
+                </apex:pageblocksection>            
+                <apex:pageblocksection title="Long Text" id="info1" >
+                    <apex:pageBlockSectionItem id="longtext">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <apex:outputfield value="{!ZTask.Long_Text__c}" />
+                    </apex:pageBlockSectionItem>              
+                </apex:pageblocksection>
+            </apex:pageblock> 
+        </apex:outputPanel>
+        <apex:outputPanel id="UserstatusLayout"  rendered="{!showuserstatus}">  
+            <apex:pageblock mode="edit"  title="User Status">
+                <apex:pageBlockButtons id="Closestatus" location="top">                                         
+                        <apex:commandButton value="Close status" action="{!closeuserstatus}" rerender="usertable"/>
+                </apex:pageBlockButtons>                                  
+                <apex:pageBlockTable value="{!UserstatusInnerlist}" var="uslst" id="usertable">
+                    <!--<apex:column headerValue="Action">                              
+                        <apex:commandLink >
+                            <apex:param value="{!uslst.Id}"  assignTo="{!paramval}" name="statusid"/>
+                        </apex:commandLink>
+                    </apex:column>-->
+                    <apex:column headerValue="Action">
+                       <apex:inputCheckbox value="{!uslst.selected}" id="inputId"/>
+                    </apex:column> 
+                    <apex:column headerValue="Name" value="{!uslst.acc.Name__c}"/>
+                    <apex:column headerValue="Description" value="{!uslst.acc.Description__c}"/>
+                    <apex:column headerValue="Status" value="{!uslst.acc.Status__c}"/>
+                    <apex:column headerValue="Notification Number" value="{!uslst.acc.Notification_Number__c}"/>                    
+                </apex:pageblocktable>
+            </apex:pageblock> 
+        </apex:outputPanel>         
+    </apex:form>
+</apex:page>

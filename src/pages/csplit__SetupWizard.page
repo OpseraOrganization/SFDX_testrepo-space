@@ -1,0 +1,641 @@
+<apex:page controller="csplit.SetupController" title="Case Split Setup Wizard" docType="html-5.0" sidebar="false">
+<!-- 10/25/17    SW    Updated API version from 40.0 to 41.0 -->
+<apex:includeScript value="/support/console/28.0/integration.js"/>
+<apex:includeScript value="{!$Resource.csplit__jQuery_v2_1_1}"/>
+<html>
+
+<apex:slds />
+<apex:stylesheet value="{!URLFOR($Resource.csplit__CaseSplitResources,'/css/CaseSplitStyle.css')}"/>
+<style>
+    .link {
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    
+    .nw{white-space:nowrap;}
+    
+    select {
+        min-width:230px;
+        width: 30% !important;
+    }
+    tr {
+        height:49px;
+    }
+    td {
+        vertical-align:middle;
+    }
+
+   .slds-section-title--divider {
+        cursor:pointer;
+        background-color: #ec7039 !important;
+        color:#FFFFFF !important;
+        border-radius:5px;
+   }
+    
+    .hiddenBox {
+        visibility: hidden;
+        margin-right: -15px;
+    }
+
+    .slds-icon-utility-chevrondown > .slds-icon, .slds-icon-utility-chevronright > .slds-icon {
+        fill: white !important;
+    }
+
+    .slds-text-heading_medium{
+        font-weight: bold !important;
+    }
+    
+    .overlay {
+        display: none;
+        background: rgba(0,0,0,0.5) !important;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    
+    $(document).ready(function() {
+        checkForObjsToDelete();
+        updateCheckall('cbStandard','checkAllStandard');
+        updateCheckall('cbDelStandard','checkAllDelStandard');
+        updateCheckall('cbCustom','checkAllCustom');
+        updateCheckall('cbDelCustom','checkAllDelCustom');
+        toggleCtmOptions();
+        $(".slds-section-title--divider").attr("onclick","toggleSiblings(this)");
+        $("thead").find("tr").attr("class","slds-text-title_caps");
+        $(document).keyup(function(e){
+            if(e.keyCode == 27)
+                hideOverlays();
+        });
+    });
+    
+    function hideOverlays() {
+        document.getElementById('screenshot1overlay').style.display = 'none';
+        document.getElementById('screenshot2overlay').style.display = 'none';
+    }
+    
+    function checkAll(styleclass, val){
+        $('.' + styleclass).prop('checked', val);
+    }
+    
+    function updateCheckall(thisclass, allsize, allid){
+        if($('.' + thisclass + ':checked').length == allsize)
+            $('#' + allid).prop('checked', true);
+        else
+            $('#' + allid).prop('checked', false);
+    }
+    
+    function cascadeSelection(checkbox, identifier){    //Bind the controlling setting to its subordinate
+        try {
+            if (identifier == "splitExisting" && checkbox.checked == false){
+                document.getElementById("updateExisting").firstChild.checked = false;
+            } else if (identifier == "updateExisting" && checkbox.checked == true){
+                document.getElementById("splitExisting").firstChild.checked = true;
+            }
+        } catch(e){}
+    }
+    
+    function toggleCtmOptions(){
+        if($("input[id*='ctm_enable']").prop("checked") == true){
+            $("input[id*='ctm_default']").prop("disabled", false);
+            $("select[id*='ctm_role']").removeAttr("disabled");
+        }
+        else if($("input[id*='ctm_enable']").prop("checked") == false){
+            $("input[id*='ctm_default']").prop("disabled", true);
+            $("select[id*='ctm_role']").attr("disabled", "disabled");
+        }
+    }
+
+    function toggleUpdateExisting(){
+        if($("input[id*='splitExisting']").prop("checked") == true){
+            $("input[id*='updateExisting']").prop("disabled",false);
+        } else if($("input[id*='splitExisting']").prop("checked") == false){
+            $("input[id*='updateExisting']").prop("disabled",true);
+        }
+    }
+
+    function toggleSiblings(el){
+        $(el).siblings().toggle();
+        $(el).find(".slds-icon_container").toggle();
+    }
+
+</script>
+<div class="slds-backdrop slds-backdrop_open overlay" id="screenshot1overlay"  onclick="hideOverlays();">
+    <div class="slds-align_absolute-center">
+        <apex:image value="{!URLFOR($Resource.csplit__CaseSplitResources,'/images/App-Setup_01.jpg')}" style="margin:auto"/>
+    </div>
+</div>
+<div class="slds-backdrop slds-backdrop_open overlay" id="screenshot2overlay" onclick="hideOverlays();">
+    <div class="slds-align_absolute-center">
+        <apex:image value="{!URLFOR($Resource.csplit__CaseSplitResources,'images/App-Setup_02.jpg')}" style="margin:auto"/>
+    </div>
+</div>
+<div class="slds-scope slds-tabs_default" id="instructions-nav"  >
+    
+    <apex:actionStatus id="quickStatus">
+        <apex:facet name="start">
+            <apex:outputPanel >
+                <div class="slds-backdrop slds-backdrop_open" style="display:flex;">
+                    <div class="slds-align_absolute-center">
+                        <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                            <span class="slds-assistive-text">Loading</span>
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                        <div><div class="slds-text-heading_large" style="font-weight:700;">Saving</div></div>
+                    </div>
+                </div>
+            </apex:outputPanel>
+        </apex:facet>
+    </apex:actionStatus>
+
+    <c:PageHeader title="Setup Wizard"/>
+    
+    <div id="instructions-nav" class="slds-tabs_default">
+        <ul class="slds-tabs_default__nav" role="tablist">
+            <li class="slds-tabs_default__item slds-is-active slds-has-focus" role="presentation" onclick="switchTabsInNav(this,'instructions-nav')"><a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="true" aria-controls="tab-salesforce-setup" id="tab-salesforce-setup__item">Salesforce Setup</a></li>
+            <li class="slds-tabs_default__item" role="presentation"  onclick="switchTabsInNav(this,'instructions-nav')"><a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="tab-app-setup" id="tab-app-setup__item">App Setup</a></li>
+            <li class="slds-tabs_default__item" role="presentation" onclick="switchTabsInNav(this,'instructions-nav')"><a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="tab-related-object-options" id="tab-related-object-options__item">Related Object Settings</a></li>
+            <li class="slds-tabs_default__item" role="presentation" onclick="switchTabsInNav(this,'instructions-nav')" style="{!IF(caseTeamEnabled,'','display:none')}CTMEnable"><a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="tab-case-team-settings" id="tab-case-team-settings__item">Case Team Settings</a></li>
+            <li class="slds-tabs_default__item" role="presentation" onclick="switchTabsInNav(this,'instructions-nav')"><a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="tab-additional-settings" id="tab-additional-settings__item">Additional Settings</a></li>
+        </ul>
+        <apex:form id="frm">
+            <apex:actionFunction name="checkForObjsToDelete" action="{!deleteBlacklistedObjects}" immediate="true" reRender="" />
+        <apex:pageMessages />
+
+        <div id="tab-salesforce-setup" class="slds-tabs_default__content slds-show" role="tabpanel" aria-labelledby="tab-salesforce-setup_item">
+            <div class="slds-p-horizontal_medium">
+                <div class="slds-box ">
+                    <div style="margin:10px;">
+                        Case Split is a purpose-built add-on for Salesforce that allows authorized users to clone any Case, with the added ability to bring along any related child object.
+                        It also gives you complete control over which Case fields are displayed as well as which allow editing on the Case Split page. 
+                    </div>
+                    <div style="margin:10px;">
+                        <div class="slds-text-heading_medium">Page Layout</div>
+                        In order to see the Split button on the Case page, you must add it to your page layout(s).
+                        <br/>
+                        <div style="margin-left:20px">
+                            1. Go to {!IF(inLightning,'Setup | Object Manager | Case | Case Page Layouts','Setup | Customize | Cases | Page Layouts.')}&nbsp; <apex:outputPanel rendered="{!inLightning}"><a class="link" onclick="openLink('/ui/setup/layout/PageLayouts?type=Case&setupid=CaseLayouts');">(click here to go there now)</a></apex:outputPanel><apex:outputPanel rendered="{!inLightning}"><a class="link" onclick="openLink('/one/one.app#/setup/object/Case/all/PageLayouts');">(click here to go there now)</a></apex:outputPanel><br/>
+                            2. Choose &quot;Edit&quot; next to the layout(s) you want to update. <br/>
+                            3. Choose the &quot;Buttons&quot; option under the layout name. <br/>
+                            4. Locate the &quot;Split&quot; button and drag it onto your layout. <br/>
+                        </div>
+                        <br/>
+                        <div class="slds-text-heading_medium">App Permissions</div>
+                        In order for users to have access to the Case Split page, you must add them to one of the included Permission Sets.
+                        <br/>
+                        <div style="margin-left:20px">
+                            1. Go to {!IF(inLightning,'Setup | Administration | Users','Setup | Manage Users | Users.')} <a class="link" onclick="openLink('/005');">(click here to go there now)</a><br/>
+                            2. Find the User you would like to grant access to and click on their name to access their detail page.<br/>
+                            3. Scroll down to the &quot;Permission Set Assignments&quot; related list and choose &quot;Edit Assignments&quot;.<br/>
+                            4. a. For a User who should have access to the Setup Wizard, find the Case Split Admin option in Available Permission Sets.<br/>
+                            4. b. For a User who should only have access to the Case Split page, find the Case Split End User option in Available Permission Sets.<br/>
+                            5. Select the appropriate Permission set and choose the &quot;Add&quot; button followed by the &quot;Save&quot; button.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-app-setup" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="tab-app-setup__item" >
+            <div class="slds-p-horizontal_medium">
+                <div class="slds-box" style="height:750px">
+                    <div style="float:left;width:50%">
+                        <div style="margin:10px;">
+                            <h2 class="slds-text-heading_medium">A. Case Fields</h2>
+                            In order to control the Case fields which display on the Case Split page, you must add them to the Case Split field set.
+                            <p/>
+                            <br/>
+                            <p style="margin-left:10px;">
+                            1.Go to Setup | Customize | Cases | Field Sets. <a class="link" onclick="openLink('/p/setup/custent/FieldSetListUI/d?setupid=CaseFieldSets&tableEnumOrId=Case')">(click here to go there now)</a><br/>
+                            2. Choose &quot;Edit&quot; next to the &quot;Case Split Fields&quot; field set. <br/>
+                            3. Add/remove fields by dragging them to/from the &quot;In The Field Set&quot; box. <br/>
+                            <br/>
+                            Optional: Select certain fields to be required in order to complete the split.
+                            <br/>
+                            1. Hover over the field you wish to make required and click the wrench on the right. <br/>
+                            2. Select the &quot;Required&quot; box and click &quot;OK&quot;. <br/>
+                            </p>
+                            <br/>
+                            <h2 class="slds-text-heading_medium">B. Field Defaults</h2>
+                            Go to&nbsp;<a class="link" onclick="navigateToFieldDefaultSettings();">this page</a> and select whether each field should use the value from the original case or default to a blank value.<br/><br/>
+                            <h2 class="slds-text-heading_medium">C. Child Objects</h2>
+                            Select the child objects which you would like to display on the Case Split page by checking the &quot;Include&quot; box next to each object in the &quot;Related Objects&quot; table in the Related Object Settings section on the next tab.<br/><br/>
+                            Attachments, Case Comments, and Email Messages are automatically included on the Case Split page and will be displayed using the standard related list layout.
+                            The option still exists to delete the original.<br/><br/>
+                            Each selected object will be displayed in a related list where the users will have the ability to select individual records of that object related to the Case being split.<br/><br/>
+                            For each object that you have chosen to include on the Case Split page, choose whether the original record should be deleted from the original Case or remain there as well as being cloned to the new Case.
+                            Check the 'Delete Original' box for any objects you want the original of deleted.<br/>
+                            <strong>Note:</strong> Some object records cannot be deleted from the original Case.<br/><br/>
+                            <h2 class="slds-text-heading_medium">D. Fields Displayed</h2>
+                            For each object that you have chosen to include on the Case Split page, select a field which will distinguish individual records in the related list.<br/><br/>
+                        </div>
+                    </div>
+                    <div style="float:left;width:50%">
+                        <apex:outputPanel >
+                            <p style="margin-left:20%;">
+                            Each instruction on the left controls the corresponding component in the end user experience pictured below.
+                            </p>
+                            <br/>
+                            <!-- <apex:image style="margin-left:20%;" value="{!URLFOR($Resource.CaseSplitResources, 'screenshot.png')}"/> -->
+                            <apex:image style="cursor:pointer; margin-left:20%;width:50%" value="{!URLFOR($Resource.csplit__CaseSplitResources,'/images/App-Setup_01.jpg')}" onclick="document.getElementById('screenshot1overlay').style.display = 'flex';"/>
+
+                            <apex:image style="cursor:pointer; margin-left:20%;width:50%" value="{!URLFOR($Resource.csplit__CaseSplitResources,'/images/App-Setup_02.jpg')}" onclick="document.getElementById('screenshot2overlay').style.display = 'flex';"/>
+                        </apex:outputPanel>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-related-object-options" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="tab-related-object-options__item">
+            <div class="slds-p-horizontal_medium">
+                <div class="slds-box">
+                    <div class="slds-grid">
+                        <div class="slds-col">
+                            <h1 class="slds-text-heading_medium">Related Object Settings</h1><br/>
+                        </div>
+<!--                         <div class="slds-col">
+                            <div >
+                                <apex:actionStatus id="quickStatus2">
+                                    <apex:facet name="start">
+                                        <apex:outputPanel >
+                                            <div style="z-index:99; position:absolute; top:0px; left:0px; width:100%; height:100%; background-color:silver; opacity:.30; filter: alpha(opacity = 30);"></div> 
+                                            <apex:commandButton value="Saving..." disabled="true"/>
+                                        </apex:outputPanel> 
+                                    </apex:facet>
+                                    <apex:facet name="stop">
+                                        <apex:commandButton action="{!saveObjectSettings}" value="Save" rerender="quickStatus" status="quickStatus" styleClass="slds-button slds-button_brand"/>
+                                    </apex:facet>
+                                </apex:actionStatus> 
+                            </div>
+                        </div> -->
+                    </div>
+                    <div>
+                        <div>
+                            <div>
+                                <apex:dataTable id="stnd" value="{!standardChildren}" var="sobj" style="width:800px;" styleClass="slds-table slds-table_bordered slds-table_cell-buffer" >
+                                    <apex:column style="min-width:250px;" value="{!sobj.label}" styleClass="nw">
+                                        <apex:facet name="header">
+                                            <div class="col-head">Standard Objects</div>
+                                        </apex:facet>
+                                    </apex:column>
+                                    <apex:column style="width:90px;">
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                            <label class="slds-checkbox">
+                                                <input id="checkAllStandard" type="checkbox" onclick="checkAll('cbStandard',this.checked);" styleClass="slds-checkbox"/><span class="slds-checkbox--faux"/> Include
+                                            </label>
+                                            </div>
+                                        </apex:facet>
+                                        <label class="slds-checkbox" style="{!IF(NOT(sobj.required),'','display:none')}">
+                                            <apex:inputCheckbox value="{!sobj.copy}" rendered="{!NOT(sobj.required)}" styleClass="cbStandard" onclick="updateCheckall('cbStandard','{!standardChildren.size - 3}','checkAllStandard');" />
+                                            <span class="slds-checkbox--faux"/>
+                                        </label>
+                                        <apex:outputText value="Required" rendered="{!sobj.required}"/>
+                                    </apex:column>
+                                    <apex:column style="width:110px;">
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                            <label class="slds-checkbox">
+                                                <input id="checkAllStandard" type="checkbox" onclick="checkAll('cbDelStandard',this.checked);" styleClass="slds-checkbox"/><span class="slds-checkbox--faux"/> Delete Original
+                                            </label>                        </div>
+                                        </apex:facet>
+                                        <label class="slds-checkbox" style="{!IF(sobj.deletable,'','display:none')}">
+                                            <apex:inputCheckbox value="{!sobj.delOrig}" rendered="{!sobj.deletable}" styleClass="cbDelStandard" onclick="updateCheckall('cbDelStandard','{!standardChildren.size}','checkAllDelStandard');" />
+                                            <apex:outputText value="Not Deletable" rendered="{!NOT(sobj.deletable)}"/>
+                                            <span class="slds-checkbox--faux"/>
+                                        </label>
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                                Field to Display 1
+                                            </div>
+                                        </apex:facet>
+                                        <apex:selectList style="margin-right:20px;" size="1" value="{!sobj.display1}" rendered="{!NOT(sobj.required)}"  styleClass="slds-select">
+                                            <apex:selectOptions value="{!sobj.fields}"/>
+                                        </apex:selectList>
+                                        <apex:outputText value="Standard Layout" rendered="{!sobj.required}"/>
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                                Field to Display 2
+                                            </div>
+                                        </apex:facet>
+                                        <apex:selectList style="margin-right:20px;" size="1" value="{!sobj.display2}" rendered="{!NOT(sobj.required)}" styleClass="slds-select">
+                                            <apex:selectOptions value="{!sobj.fields}"/>
+                                        </apex:selectList>
+                                        <apex:outputText value="Standard Layout" rendered="{!sobj.required}"/>
+                                    </apex:column>
+                                </apex:dataTable>
+                            </div>
+                            <br/><br/>
+                            <div style="{!IF(NOT(ISNULL(customChildren)),'','display:none')}">
+                                <apex:dataTable id="cstm" value="{!customChildren}" var="cobj" style="width:800px;" styleClass="slds-table slds-table_bordered slds-table_cell-buffer">
+                                    <apex:column style="min-width:250px;" value="{!cobj.label}" styleClass="nw">
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                                <input type="checkbox" class="hiddenBox"/>Custom Objects
+                                            </div>
+                                        </apex:facet>
+                                    </apex:column>
+                                    <apex:column style="width:90px;">
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                            <label class="slds-checkbox">
+                                                <input id="checkAllCustom" type="checkbox" onclick="checkAll('cbCustom',this.checked);"/><span class="slds-checkbox--faux"/>  Include 
+                                            </label>
+                                            </div>
+                                        </apex:facet>
+                                        <label class="slds-checkbox">
+                                            <apex:inputCheckbox value="{!cobj.copy}" styleClass="cbCustom" onclick="updateCheckall('cbCustom','{!customChildren.size}','checkAllCustom');" />
+                                            <span class="slds-checkbox--faux"></span>
+                                        </label>
+                                    </apex:column>
+                                    <apex:column style="width:110px;">
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                            <label class="slds-checkbox">
+                                                <input id="checkAllDelCustom" type="checkbox" onclick="checkAll('cbDelCustom',this.checked);" styleClass="slds-checkbox"/><span class="slds-checkbox--faux"/>  Delete Original 
+                                            </label>
+                                            </div>
+                                        </apex:facet>
+                                        <label class="slds-checkbox">
+                                            <apex:inputCheckbox value="{!cobj.delOrig}" rendered="{!cobj.deletable}" styleClass="cbDelCustom" onclick="updateCheckall('cbDelCustom','{!customChildren.size}','checkAllDelCustom');" />
+                                            <span class="slds-checkbox--faux"></span>
+                                        </label>
+                                        <apex:outputText value="Not Deletable" rendered="{!NOT(cobj.deletable)}"/>
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                                <input type="checkbox" class="hiddenBox"/>Field to Display 1
+                                            </div>
+                                        </apex:facet>
+                                        <apex:selectList style="margin-right:20px;" size="1" value="{!cobj.display1}" styleClass="slds-select">
+                                            <apex:selectOptions value="{!cobj.fields}"/>
+                                        </apex:selectList>
+                                    </apex:column>
+                                    <apex:column >
+                                        <apex:facet name="header">
+                                            <div class="col-head">
+                                                <input type="checkbox" class="hiddenBox"/>Field to Display 2
+                                            </div>
+                                        </apex:facet>
+                                        <apex:selectList style="margin-right:20px;" size="1" value="{!cobj.display2}" styleClass="slds-select">
+                                            <apex:selectOptions value="{!cobj.fields}"/>
+                                        </apex:selectList>
+                                    </apex:column>
+                                </apex:dataTable>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-p-around_medium">
+                        <apex:commandButton action="{!saveObjectSettings}" value="Save" rerender="quickStatus" status="quickStatus" styleClass="slds-button slds-button_brand"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-case-team-settings" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="tab-case-team-settings__item">
+            <div class="slds-p-horizontal_medium">
+                <div class="slds-box">
+                    <div style="{!IF(caseTeamEnabled,'','display:none')}CTMEnable">    
+
+                        <div class="slds-form-element">
+                           <div class="slds-form-element__control">
+                            <span class="slds-checkbox">
+                              <label class="slds-checkbox__label">
+                                <apex:inputCheckbox styleClass="slds-input" id="ctm_enable" value="{!CTMEnable.value}" onclick="toggleCtmOptions()"/>
+                                <span class="slds-checkbox_faux"></span>
+                                <span class="bold">{!CTMEnable.Name}</span>
+                              </label>
+                              <div class="slds-m-horizontal_large" style="padding-left:5px;">{!CTMEnable.Description}</div>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div class="slds-form-element">
+                           <div class="slds-form-element__control">
+                            <span class="slds-checkbox">
+                              <label class="slds-checkbox__label">
+                                <apex:inputCheckbox styleClass="slds-input" id="ctm_default" value="{!CTMAddByDefault.value}"/>
+                                <span class="slds-checkbox_faux"></span>
+                                <span class="bold">{!CTMAddByDefault.Name}</span>
+                              </label>
+                              <div class="slds-m-horizontal_large" style="padding-left:5px;">{!CTMAddByDefault.Description}</div>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div class="slds-form-element" style="padding-top:0px">
+                            <div class="slds-form-element__control" style="padding-left: 27px;">      
+                                <span class="bold" style="font-size:.8125rem;">{!CTMDefaultRole.Name}</span>
+
+                            </div>
+                            <div class="slds-m-horizontal_large" style="padding-left:5px;">{!CTMDefaultRole.Description}</div>
+                            <apex:selectList id="ctm_role" value="{!CTMRoleSelected}" size="1" styleClass="slds-select  slds-m-horizontal_large" >
+                                <apex:selectOptions value="{!CTMRoles}" />
+                            </apex:selectList>
+                        </div>
+                    </div>
+                    <div class="slds-p-around_medium">
+                        <apex:commandButton action="{!saveObjectSettings}" value="Save" rerender="quickStatus" status="quickStatus" styleClass="slds-button slds-button_brand"/>
+                    </div>
+                </div>
+            </div>
+            
+            <style type="text/css">
+
+                .slds-icon_container{
+                    position:relative;
+                }
+
+                .slds-icon_container .slds-popover {
+                    visibility: hidden;
+                    padding: 5px 5px;
+                    opacity: 0;
+                    transition: 0.3s;
+                    /* Position the tooltip */
+                    position: absolute;
+                    z-index: 1;
+                    bottom: 30px;
+                    left:-17px;
+                    width: 250px;
+                    font-size: 1 rem !important;
+
+                }
+                
+                .slds-icon_container:hover .slds-popover {
+                    opacity: 1;
+                    visibility:visible;
+                }
+
+                .slds-form-element{
+                    padding: 3px;
+                }
+
+            </style>
+            <br/>
+        </div>
+
+        <div id="tab-additional-settings" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="tab-additional-settings__item">
+            <div class="slds-p-horizontal_medium">
+                <div class="slds-box"> 
+                    <div class="slds-form-element">
+                       <div class="slds-form-element__control">
+                        <span class="slds-checkbox">
+                          <label class="slds-checkbox__label">
+                            <apex:inputCheckbox styleClass="slds-input" value="{!bypassSharing.value}"/>
+                            <span class="slds-checkbox_faux"></span>
+                            <span class="bold">{!bypassSharing.Name}</span>
+                          </label>
+                          <div class="slds-m-horizontal_large" style="padding-left:5px;">{!bypassSharing.Description}</div>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="slds-form-element">
+                       <div class="slds-form-element__control">
+                        <span class="slds-checkbox">
+                          <label class="slds-checkbox__label">
+                             <apex:inputCheckbox styleClass="slds-input" value="{!splitExisting.value}" id="splitExisting" onclick="toggleUpdateExisting();"/>
+                            <span class="slds-checkbox_faux"></span>
+                            <span class="bold">{!splitExisting.Name}</span>
+                          </label>
+                          <div class="slds-m-horizontal_large" style="padding-left:5px;">{!splitExisting.Description}</div>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="slds-form-element slds-m-horizontal_large" style="padding-left:5px;">
+                       <div class="slds-form-element__control">
+                        <span class="slds-checkbox">
+                          <label class="slds-checkbox__label">
+                          <apex:inputCheckbox styleClass="slds-input" value="{!updateExisting.value}" id="updateExisting"/>
+                            <span class="slds-checkbox_faux"></span>
+                            <span class="bold">{!updateExisting.Name}</span>
+                          </label>
+                          <div class="slds-m-horizontal_large" style="padding-left:5px;">{!updateExisting.Description}</div>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="slds-form-element">
+                       <div class="slds-form-element__control">
+                        <span class="slds-checkbox">
+                          <label class="slds-checkbox__label">
+                            <apex:inputCheckbox styleClass="slds-input" value="{!publicComments.value}"/>
+                            <span class="slds-checkbox_faux"></span>
+                            <span class="bold">{!publicComments.Name}</span>
+                          </label>
+                          <div class="slds-m-horizontal_large" style="padding-left:5px;">{!publicComments.Description}</div>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="slds-form-element">
+                       <div class="slds-form-element__control">
+                        <span class="slds-checkbox">
+                          <label class="slds-checkbox__label">
+                            <apex:inputCheckbox styleClass="slds-input" value="{!makeParent.value}"/>
+                            <span class="slds-checkbox_faux"></span>
+                            <span class="bold">{!makeParent.Name}</span>
+                          </label>
+                          <div class="slds-m-horizontal_large" style="padding-left:5px;">{!makeParent.Description}</div>
+                        </span>
+                      </div>
+                    </div>
+                    <!-- <div class="slds-form-element">
+                       <div class="slds-form-element__control">
+                        <span class="slds-checkbox">
+                            <apex:inputText styleClass="slds-input" value="{!relatedThreshold.numValue}" style="width:5rem"/>
+                            <span class="bold">{!relatedThreshold.Name}</span>
+                          <div class="slds-m-horizontal_large" style="padding-left:5px;">{!relatedThreshold.Description}</div>
+                        </span>
+                      </div>
+                    </div> -->
+                    <div class="slds-form-element">
+                       <div class="slds-form-element__control">
+                        <span class="slds-checkbox">
+                          <label class="slds-checkbox__label">
+                            <apex:inputCheckbox styleClass="slds-input" value="{!relatedThreshold.value}"/>
+                            <span class="slds-checkbox_faux"></span>
+                            <span class="bold">{!relatedThreshold.Name}</span>
+                          </label>
+                          <div class="slds-m-horizontal_large" style="padding-left:5px;">{!relatedThreshold.Description}</div>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="slds-p-around_medium">
+                        <apex:commandButton action="{!saveObjectSettings}" value="Save" rerender="quickStatus" status="quickStatus" styleClass="slds-button slds-button_brand"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slds-m-top_medium" style="display:flex; justify-content: center;">
+            <div>
+                <button id='previous-button' class='slds-button slds-button_neutral' style='display:none;' onclick="switchTabsInNav(getActiveTab('instructions-nav').previousElementSibling,'instructions-nav'); return false;">Back</button>
+                <button id='next-button' class='slds-button slds-button_neutral' onclick="switchTabsInNav(getActiveTab('instructions-nav').nextElementSibling,'instructions-nav'); return false;">Next - App Setup</button>
+ <!-- 
+                <apex:commandButton action="{!saveObjectSettings}" value="Save" rerender="quickStatus2" status="quickStatus2" styleClass="slds-button slds-button_brand"/> -->
+            </div>
+        </div>
+        <!-- TAB NAVIGATION -->
+        <script src="{!URLFOR($Resource.CaseSplitResources,'/js/TabNavigation.js')}" type="text/javascript"></script>
+        <script>
+            function navigateToFieldDefaultSettings() {
+                if (sforce.console.isInConsole())
+                    sforce.console.openPrimaryTab(undefined,'{!$Page.FieldDefaultSettings}',true);
+                else
+                    window.open('{!$Page.FieldDefaultSettings}');
+            }
+
+            var tabId;
+
+            var backToWizard = function backToWizard(result) {
+                tabId = result.id;
+                sforce.console.openPrimaryTab(tabId,'{!$Page.FieldDefaultSettings}',true,false,closeCurrentTab);
+            }
+
+            var closeCurrentTab = function closeCurrentTab(result) {
+                if (!result.success)
+                    sforce.console.closeTab(tabId);
+            }
+    
+
+            if (sforce.console.isInConsole())
+                sforce.console.setTabTitle("Case Split Setup Wizard");
+            
+            function openLink(url) {
+                if (sforce.console.isInConsole())
+                    sforce.console.openPrimaryTab(null,url,true);
+                else
+                    window.open(url,'_blank');
+            }
+
+            
+            function updateButtons() {
+                var listItem = getActiveTab();
+                var hasNext = listItem.nextElementSibling !== null;
+                var hasPrev = listItem.previousElementSibling !== null;
+
+                var nextButton = document.getElementById('next-button');
+                var prevButton = document.getElementById('previous-button')
+                var buttonsContainer = nextButton.parentElement;
+
+                buttonsContainer.classList.add('slds-button-group');
+                buttonsContainer.setAttribute('role','group');
+
+                nextButton.style.display = hasNext ? 'block' : 'none';
+                prevButton.style.display = hasPrev ? 'block' : 'none'
+
+                nextButton.innerHTML = hasNext ? 'Next - ' + listItem.nextElementSibling.querySelector('a.slds-tabs_default__link').innerHTML : '';
+                prevButton.innerHTML = hasPrev ? 'Previous - ' + listItem.previousElementSibling.querySelector('a.slds-tabs_default__link').innerHTML : '';
+            }
+            tabSwitchEventHandler = updateButtons;
+
+
+        </script>
+        </apex:form>
+    </div>
+</div>
+</html>
+</apex:page>

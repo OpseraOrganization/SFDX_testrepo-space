@@ -1,0 +1,234 @@
+<!-- 
+Apttus Contract Management
+LightningSendEmailOtherAttachments
+
+@2017 Apttus Inc. All rights reserved.
+
+-->
+<apex:page standardController="Apttus__APTS_Agreement__c"
+           extensions="Apttus.LightningSendEmailWizardController" >
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.Apttus__SLDS080, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.Apttus__LightningResource, 'css/sendemail.wizard.css')}" />
+        <style>
+        	html body.sfdcBody {
+                padding: 0px 0px 0 0px;
+            }
+            .slds input[type="checkbox"], .slds input[type="radio"]{
+            	width: 1.3em; height: 1.3em;
+            }
+
+        </style>
+    </head>
+    <body>
+        <apex:variable var="hasAttachments" value="{!attachments !=null && attachments.size >= 1 }" />
+        <apex:form >
+            <!-- hidden field(s) to be included by sf default query -->
+            <apex:inputHidden value="{!Apttus__APTS_Agreement__c.Apttus__Parent_Agreement__c}"/>
+            <apex:inputHidden value="{!Apttus__APTS_Agreement__c.Apttus__Status_Category__c}"/>
+            <apex:inputHidden value="{!Apttus__APTS_Agreement__c.Apttus__Status__c}"/>
+            <apex:inputHidden value="{!Apttus__APTS_Agreement__c.Apttus__FF_Agreement_Number__c}"/>
+            <apex:outputText value="{!Apttus__APTS_Agreement__c.Apttus__VersionAware__c}" rendered="false" />
+         
+            <!-- Wizard header -->
+            <div class="slds">
+            <div class="slds-page-header" role="banner">
+                <div class="slds-grid">
+                    <div class="slds-col slds-has-flexi-truncate">
+                        <div>
+                            <div>
+                                
+                            </div>
+                            <h2 class="slds-text-heading--medium slds-truncate slds-align-middle">
+                                {!stepTitle} 
+                            </h2>    
+                            
+                        </div>
+                        <div>
+                            <h3 class="slds-text-heading--small slds-m-right--small slds-truncate slds-align-middle">
+                                 {!Apttus__APTS_Agreement__c.Name}
+                            </h3>    
+                        </div>
+                        <div class="visibleeror"> 
+                            <h2 class="error">
+                                <apex:pageMessages />   
+                            </h2>    
+                        </div> 
+                        
+                    </div>
+                </div>
+            </div>
+            </div>
+            <!-- /use case header -->
+            <!-- Use case -->
+            <div class="slds">
+                <div class="slds-page-header" role="banner">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-wrap">
+                        	<!-- Display checkboxes -->
+                            <div class="slds-col">
+                                <div class="slds-box">
+                                    <div class="slds">
+                                        <div class="slds-col">
+                                            <apex:panelGrid columns="2">
+                                                <apex:inputCheckbox id="includeParent" 
+                                                                    value="{!includeParent}" 
+                                                                    rendered="{!hasParent}" />
+                                                <apex:outputLabel value="{!$Label.apttus__parentagreement}"
+                                                                  for="includeParent" 
+                                                                  rendered="{!hasParent}" />
+                                                <apex:actionSupport event="onclick" 
+                                                                    action="{!doAttachmentSearch}"
+                                                                    rerender="idAttachments" 
+                                                                    status="waitStatus" />
+                                            </apex:panelGrid>    
+                                        </div>
+                                        <div  class="slds-col">
+                                            <apex:panelGrid columns="2">
+                                                <apex:inputCheckbox id="includeRelated" 
+                                                                    value="{!includeRelated}" 
+                                                                    rendered="{!hasRelated}" />
+                                                <apex:outputLabel value="{!$Label.apttus__relatedagreements}"
+                                                                  for="includeRelated" 
+                                                                  rendered="{!hasRelated}" />
+                                                <apex:actionSupport event="onclick" 
+                                                                    action="{!doAttachmentSearch}"
+                                                                    rerender="idAttachments" 
+                                                                    status="waitStatus" />
+                                            </apex:panelGrid>
+                                        </div>
+                                        <div class="slds-col">
+                                            <apex:panelGrid columns="2">
+                                                <apex:inputCheckbox id="includeChildren" 
+                                                                    value="{!includeChildren}"
+                                                                    rendered="{!hasChildren}" />
+                                                <apex:outputLabel value="{!$Label.apttus__childagreements}"
+                                                                  for="includeChildren" 
+                                                                  rendered="{!hasChildren}" />
+                                                <apex:actionSupport event="onclick" 
+                                                                    action="{!doAttachmentSearch}"
+                                                                    rerender="idAttachments" 
+                                                                    status="waitStatus" />
+                                            </apex:panelGrid>
+                                        </div>
+                                        <div class="slds-col">
+                                            
+                                            <apex:panelGrid columns="2">
+                                                <apex:inputCheckbox id="includeAmendRenew" 
+                                                                    value="{!includeAmendRenew}"
+                                                                    rendered="{!hasAmendRenew}" />
+                                                <apex:outputLabel value="{!$Label.apttus__amendmentsandrenewals}"
+                                                                  for="includeAmendRenew" 
+                                                                  rendered="{!hasAmendRenew}" />
+                                                <apex:actionSupport event="onclick" 
+                                                                    action="{!doAttachmentSearch}"
+                                                                    rerender="idAttachments" 
+                                                                    status="waitStatus" />
+                                            </apex:panelGrid>
+                                        </div>
+                                        <div  class="slds-col">
+                                            <apex:panelGrid columns="2">
+                                                <apex:inputCheckbox id="includeSiblings" 
+                                                                    value="{!includeSiblings}"
+                                                                    rendered="{!hasSiblings}" />
+                                                <apex:outputLabel value="{!$Label.apttus__sibilingagreements}"
+                                                                  for="includeSiblings"  
+                                                                  rendered="{!hasSiblings}"/>
+                                                <apex:actionSupport event="onclick" 
+                                                                    action="{!doAttachmentSearch}"
+                                                                    rerender="idAttachments" 
+                                                                    status="waitStatus" />
+                                            </apex:panelGrid>
+                                        </div>
+                                    </div>                                     
+                                </div>
+                            </div>
+                            <!-- Display Attachments  -->
+                            <div class="slds-col">
+                            	<div class="slds-box">
+                                    <apex:outputPanel id="idAttachments">
+                                        <apex:dataTable value="{!attachments}" var="attachData" id="theTable"
+                                                        styleClass="slds-table slds-table--bordered slds-table--striped">
+                                            <apex:facet name="footer{!if(attachments == null || attachments.size == 0, '','1')}" >No Attachments available.</apex:facet>
+                                            <apex:column >
+                                                <apex:facet name="header">{!$Label.apttus__select}</apex:facet>
+                                                <apex:inputCheckbox selected="{!attachData.selected}"
+                                                                    value="{!attachData.selected}" />
+                                            </apex:column>
+                                            <apex:column >
+                                                <apex:facet name="header">{!$Label.apttus__filename}</apex:facet>
+                                                <apex:outputLink value="/{!attachData.attachment.Id}">{!attachData.attachment.Name}</apex:outputLink>
+                                            </apex:column>
+                                            <apex:column >
+                                                <apex:facet name="header">{!$Label.apttus__agreementname}</apex:facet>
+                                                <apex:outputLink value="/{!attachData.agmt.Id}">{!attachData.agmt.Name}</apex:outputLink>
+                                            </apex:column>agmtAssociationType
+                                            <apex:column >
+                                                <apex:facet name="header">{!$Label.apttus__relationship}</apex:facet>
+                                                <apex:outputText value="{!attachData.agmtAssociationType}" />
+                                            </apex:column>
+                                            <apex:column >
+                                                <apex:facet name="header">{!$Label.apttus__type}</apex:facet>
+                                                <apex:outputText value="{!attachData.agmt.Apttus__Status_Category__c}" />
+                                            </apex:column>
+                                            <apex:column value="{!attachData.agmt.Apttus__FF_Agreement_Number__c}" />
+                                            <apex:column value="{!attachData.agmt.Apttus__Status__c}" />
+                                            <apex:column >
+                                                <apex:facet name="header">{!$Label.apttus__size}</apex:facet>
+                                                <apex:outputText value="{!attachData.attachment.BodyLength}" />
+                                            </apex:column>
+                                            <apex:column >
+                                                <apex:facet name="header">{!$ObjectType.Attachment.Fields.LastModifiedDate.Label}</apex:facet>
+                                                <apex:outputField value="{!attachData.attachment.LastModifiedDate}" />
+                                            </apex:column>
+                                        </apex:dataTable>
+                                    </apex:outputPanel>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                <!-- Use case -->
+        <div class="slds">
+            <div class="slds-page-header" role="banner">
+                <div class="slds-grid">  
+                    <div class="slds-col"></div>
+                    <div class="slds-grid slds-grid_align-end">
+                        <apex:commandButton styleclass="slds-button slds-button--neutral"  value="{!$Label.apttus__cancel}"  action="{!doCancel}" />
+                        &nbsp;
+                        <apex:commandButton styleclass="slds-button slds-button--brand" action="{!onPrevious}" value="{!$Label.apttus__previous}"  />
+                        &nbsp;
+                        <apex:commandButton styleclass="slds-button slds-button--brand" action="{!onNext}" value="{!$Label.apttus__next}"  />
+                    </div>
+                </div>
+            </div>    
+        </div>
+            
+            <apex:actionFunction name="invokeDoEmailTemplateSearch"  
+                                 action="{!doEmailTemplateSearch}" 
+                                 status="waitStatus"
+                                 reRender="idTemplateTable, idButtonsTopPanel, idButtonsBottomPanel" />
+            
+            <apex:actionFunction name="invokeDoSelectEmailTemplate" 
+                                 action="{!doSelectEmailTemplate}" 
+                                 reRender="idTemplateTable, idButtonsTopPanel, idButtonsBottomPanel"
+                                 oncomplete="YAHOO.force.com.selectWaitPanel.hide();">
+                <apex:param name="param" assignTo="{!emailTemplateId}" value="" />
+            </apex:actionFunction>   
+            
+            <apex:actionFunction name="invokeDoDeleteTempEmailTemplate" 
+                                 action="{!doDeleteTempEmailTemplate}" 
+                                 reRender="dummy"> 
+                <apex:param name="param" assignTo="{!tempEmailTemplateId}" value="" />
+            </apex:actionFunction>    	
+            
+            <apex:actionFunction name="invokeDoDeleteTempObject" 
+                                 action="{!doDeleteTempObject}" 
+                                 reRender="dummy"> 
+                <apex:param name="param" assignTo="{!tempObjectId}" value="" />
+            </apex:actionFunction>    	
+
+        </apex:form>
+    </body>
+</apex:page>

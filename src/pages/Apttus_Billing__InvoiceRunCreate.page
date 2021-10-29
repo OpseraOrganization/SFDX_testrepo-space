@@ -1,0 +1,627 @@
+<!-- 
+    Apttus Billing 
+    InvoiceRunCreate
+ 
+    @2013-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Billing__InvoiceRun__c" extensions="Apttus_Billing.InvoiceRunController" tabstyle="Apttus_Billing__InvoiceRun__c">
+  <style>
+    .headerRow .TableTitle {
+       background-color: #F0F8FF !important;
+       background-image: none !important; //This is needed if you want to overwrite the header background
+       color: #CC0000 !important; 
+       font-size:100% !important; 
+    }
+    div.hideCurrDate span.dateInput span.dateFormat{
+       display:none;
+    }
+  </style>
+  <apex:sectionHeader title="{!$ObjectType.Apttus_Billing__InvoiceRun__c.label} {!$Label.apttus_billing__edit}" subtitle="{!$Label.apttus_billing__new} {!$ObjectType.Apttus_Billing__InvoiceRun__c.label}"/>
+  <apex:form id="MainForm">
+  <apex:pageMessages />  
+  <script type="text/javascript">              
+     function currentTimeCheckFn() {
+        var invRunType = '{!JSINHTMLENCODE(invoiceRun.RunType__c)}';
+        //alert(invRunType);
+        if(invRunType != null && invRunType == 'Scheduled') {
+           //alert('its scheduled1');
+           var prefStartDate = document.getElementById('{!$Component.MainForm.invRunPB.schedOptions.periodStartDate}').value;
+           //alert(prefStartDate);
+           var startHour = document.getElementById('{!$Component.MainForm.invRunPB.schedOptions.prefStrtBlk.prefStartHour}').value;
+           //alert(startHour); 
+           var startMinute = document.getElementById('{!$Component.MainForm.invRunPB.schedOptions.prefStrtBlk.prefStartMinute}').value;
+           //alert(startMinute);                                            
+           var chkResult = {!flagTimeCheck}; 
+           //alert(chkResult);
+           if(chkResult) {
+              return confirm('{!$Label.InvoiceRunSystemTimeCheckWarningMessage}');
+           }
+        }
+        return true;
+     }
+
+     function checkWarningOnSave() {
+        if('true'=='{!displayPopUp}') {
+          if(confirm('{!$Label.InvoiceRunSystemNoFilterWarningMessage}') == true){
+          //action
+          callSaveInvoiceMethod();
+          } else {
+            return null;
+          }
+        } else {
+          callSaveInvoiceMethod();
+        }
+     }
+     
+     function checkWarningOnSaveAndNew() {
+        if('true'=='{!displayPopUp}') {
+          if(confirm('{!$Label.InvoiceRunSystemNoFilterWarningMessage}') == true){
+            //action
+            callSaveAndNewInvoiceMethod();
+          } else {
+              return null;
+          }
+        } else {
+            callSaveAndNewInvoiceMethod();
+          }
+      }
+
+  </script>  
+  <apex:pageBlock id="invRunPB" title="{!$ObjectType.Apttus_Billing__InvoiceRun__c.label} {!$Label.apttus_billing__detail}">
+     <apex:actionFunction name="scheduleTypeChange" action="{!doRunTypeChange}" reRender="schedOptions" />
+     <apex:actionFunction name="invoiceDateTypeChange" action="{!doInvoiceDateTypeChange}" reRender="schedOptions" />
+     <apex:actionFunction name="callSaveInvoiceMethod" action="{!saveInvoiceRun}"/>
+     <apex:actionFunction name="callSaveAndNewInvoiceMethod" action="{!saveAndNew}"/>
+     <apex:pageBlockButtons >
+           <apex:commandButton id="saveBtn" value="{!$Label.apttus_billing__save}" onclick="if (!currentTimeCheckFn()) { return false; }" action="{!showPopUp}" oncomplete="checkWarningOnSave()" reRender="MainForm"/>
+           <apex:commandButton id="saveAndNewBtn" value="{!$Label.apttus_billing__saveandnew}" onclick="if (!currentTimeCheckFn()) { return false; }" action="{!showPopUp}" oncomplete="checkWarningOnSaveAndNew()" reRender="MainForm"/>
+           <apex:commandButton id="cancelBtn" value="{!$Label.apttus_billing__cancel}" action="{!cancel}" />
+     </apex:pageBlockButtons>     
+     <apex:pageBlockSection showHeader="false" columns="2">
+        <apex:inputField value="{!invoiceRun.Name}"/>
+     </apex:pageBlockSection>
+     <apex:pageBlockSection id="idPredicatesSection" 
+                                   title="{!$Label.apttus_billing__accountfiltercriteria}" 
+                                   columns="1">
+     <apex:tabPanel id="filterTabPanel" value="{!activeTab}" switchType="ajax">    
+      <apex:tab id="idAccountFiltersTab" label="{!$ObjectType.Account.label}">                                   
+                <apex:pageBlockTable value="{!predicates}" 
+                                     var="predicate" 
+                                     columns="8" 
+                                     rowClasses="oddRow,evenRow" >
+                    
+                    <apex:column width="5%" rendered="{!isAdvancedOptionsMode}" >
+                        <apex:outputText id="idRowNum" value="{!predicate.RowNum}. " />
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__field}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(predicate.FieldInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idField" size="1" value="{!predicate.FieldName}" >
+                                <apex:selectOptions value="{!FieldItems}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__operator}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(predicate.CompOperInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idCompOper" size="1" value="{!predicate.CompOper}" >
+                                <apex:selectOptions value="{!compOperItems}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__value}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(predicate.FieldValueInError, 'errorRow', '')}" layout="block" >
+                            <apex:inputText id="idFieldValue" size="25" value="{!predicate.FieldValue}" />
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column width="5%" >
+                        <apex:outputText id="idBoolOper" 
+                                         value="{!predicate.BoolOper}" 
+                                         rendered="{!NOT(isAdvancedOptionsMode) && NOT(ISBLANK(predicate.BoolOper))}" />
+                                         
+                        <apex:commandLink action="{!doAddRow}" 
+                                          value="{!$Label.apttus_billing__add}" 
+                                          reRender="idPredicatesSection, idAdvancedOptionsSection" 
+                                          rendered="{!NOT(isAdvancedOptionsMode) && ISBLANK(predicate.BoolOper)}" />
+                    </apex:column>
+                    <apex:column width="5%" >
+                    <apex:commandLink id="idDeleteRow" 
+                                      action="{!doDeleteRow}" 
+                                      value="{!$Label.apttus_billing__delete}" 
+                                      reRender="idPredicatesSection, idAdvancedOptionsSection">
+                        <apex:param name="rowNum" value="{!predicate.RowNum}" />          
+                    </apex:commandLink>
+                    </apex:column>
+                    <apex:column width="10%" >
+                        <apex:outputText value="{!predicate.ErrorMsg}" style="color:red;" />
+                    </apex:column>
+                   
+                </apex:pageBlockTable>
+                
+            <apex:pageBlockSectionItem >
+                    
+            <apex:pageBlockSection id="idAdvancedOptionsSection" columns="1" collapsible="false" >
+            
+                <apex:commandLink id="idShowAdvancedOptions" 
+                                  action="{!doShowAdvancedOptions}" 
+                                  value="{!$Label.apttus_billing__advancedoptions}" 
+                                  reRender="idAdvancedOptionsSection, idPredicatesSection" 
+                                  rendered="{!NOT(isAdvancedOptionsMode)}" />
+                
+                <apex:outputPanel rendered="{!isAdvancedOptionsMode}">
+                    <apex:commandLink id="idAddRow" 
+                                      action="{!doAddRow}" 
+                                      value="{!$Label.apttus_billing__addrow}" 
+                                      reRender="idAdvancedOptionsSection, idPredicatesSection" />
+                    <span>  </span>
+                    <apex:commandLink id="idRemoveRow" 
+                                      action="{!doRemoveRow}" 
+                                      value="{!$Label.apttus_billing__removerow}" 
+                                      reRender="idAdvancedOptionsSection, idPredicatesSection" 
+                                      rendered="{!OkToRemoveRow}" />
+                    <apex:outputPanel id="idRemoveRow2" styleClass="greyedLink" rendered="{!NOT(OkToRemoveRow)}" >{!$Label.apttus_billing__removerow}</apex:outputPanel>
+                    <p/>    
+                    <apex:commandLink id="idHideAdvancedOptions" 
+                                      action="{!doHideAdvancedOptions}" 
+                                      value="{!$Label.apttus_billing__clearadvancedoptions}" 
+                                      reRender="idAdvancedOptionsSection, idPredicatesSection" />
+                    <br/>
+                    <apex:outputText value="{!$Label.apttus_billing__advancedfiltercondition}" />
+                    <br/>
+                    <apex:inputText id="idAdvancedOptions" size="80" value="{!advancedOptions}" />
+                </apex:outputPanel>
+                </apex:pageBlockSection>
+                </apex:pageBlockSectionItem>
+     </apex:tab>
+     <apex:tab id="idAccountLocationFiltersTab" label="{!$ObjectType.Apttus_Config2__AccountLocation__c.label}">
+                <apex:pageBlockTable value="{!childPredicates}" 
+                                     var="childPredicate" 
+                                     columns="8" 
+                                     rowClasses="oddRow,evenRow" >
+                    
+                    <apex:column width="5%" rendered="{!isChildAdvancedOptionsMode}" >
+                        <apex:outputText id="idRowNum" value="{!childPredicate.RowNum}. " />
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__field}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(childPredicate.FieldInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idField" size="1" value="{!childPredicate.FieldName}" >
+                                <apex:selectOptions value="{!childFieldItems}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__operator}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(childPredicate.CompOperInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idCompOper" size="1" value="{!childPredicate.CompOper}" >
+                                <apex:selectOptions value="{!compOperItems}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__value}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(childPredicate.FieldValueInError, 'errorRow', '')}" layout="block" >
+                            <apex:inputText id="idFieldValue" size="25" value="{!childPredicate.FieldValue}" />
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column width="5%" >
+                        <apex:outputText id="idBoolOper" 
+                                         value="{!childPredicate.BoolOper}" 
+                                         rendered="{!NOT(isChildAdvancedOptionsMode) && NOT(ISBLANK(childPredicate.BoolOper))}" />
+                                         
+                        <apex:commandLink action="{!doAddChildRow}" 
+                                          value="{!$Label.apttus_billing__add}" 
+                                          reRender="idPredicatesSection, idChildAdvancedOptionsSection" 
+                                          rendered="{!NOT(isChildAdvancedOptionsMode) && ISBLANK(childPredicate.BoolOper)}" />
+                    </apex:column>
+                    <apex:column width="5%" >
+                    <apex:commandLink id="idDeleteChildRow" 
+                                      action="{!doDeleteChildRow}" 
+                                      value="{!$Label.apttus_billing__delete}" 
+                                      reRender="idPredicatesSection, idChildAdvancedOptionsSection">
+                        <apex:param name="childRowNum" value="{!childPredicate.RowNum}" />          
+                    </apex:commandLink>
+                    </apex:column>
+                    <apex:column width="10%" >
+                        <apex:outputText value="{!childPredicate.ErrorMsg}" style="color:red;" />
+                    </apex:column>
+                   
+                </apex:pageBlockTable>
+                
+            <apex:pageBlockSectionItem >
+                    
+            <apex:pageBlockSection id="idChildAdvancedOptionsSection" columns="1" collapsible="false" >
+            
+                <apex:commandLink id="idShowChildAdvancedOptions" 
+                                  action="{!doShowChildAdvancedOptions}" 
+                                  value="{!$Label.apttus_billing__advancedoptions}" 
+                                  reRender="idChildAdvancedOptionsSection, idPredicatesSection" 
+                                  rendered="{!NOT(isChildAdvancedOptionsMode)}" />
+                
+                <apex:outputPanel rendered="{!isChildAdvancedOptionsMode}">
+                    <apex:commandLink id="idAddChildRow" 
+                                      action="{!doAddChildRow}" 
+                                      value="{!$Label.apttus_billing__addrow}" 
+                                      reRender="idChildAdvancedOptionsSection, idPredicatesSection" />
+                    <span>  </span>
+                    <apex:commandLink id="idRemoveChildRow" 
+                                      action="{!doRemoveChildRow}" 
+                                      value="{!$Label.apttus_billing__removerow}" 
+                                      reRender="idChildAdvancedOptionsSection, idPredicatesSection" 
+                                      rendered="{!OkToRemoveChildRow}" />
+                    <apex:outputPanel id="idRemoveChildRow2" styleClass="greyedLink" rendered="{!NOT(OkToRemoveChildRow)}" >{!$Label.apttus_billing__removerow}</apex:outputPanel>
+                    <p/>    
+                    <apex:commandLink id="idHideChildAdvancedOptions" 
+                                      action="{!doHideChildAdvancedOptions}" 
+                                      value="{!$Label.apttus_billing__clearadvancedoptions}" 
+                                      reRender="idChildAdvancedOptionsSection, idPredicatesSection" />
+                    <br/>
+                    <apex:outputText value="{!$Label.apttus_billing__advancedfiltercondition}" />
+                    <br/>
+                    <apex:inputText id="idChildAdvancedOptions" size="80" value="{!childAdvancedOptions}" />
+                </apex:outputPanel>
+                </apex:pageBlockSection>
+                </apex:pageBlockSectionItem>     
+     </apex:tab>
+     <apex:tab id="idProductFiltersTab" label="{!$ObjectType.Product2.label}">
+                <apex:pageBlockTable value="{!childPredicatesProd}" 
+                                     var="prodPredicate" 
+                                     columns="8" 
+                                     rowClasses="oddRow,evenRow" >
+                    
+                    <apex:column width="5%" rendered="{!isChildAdvancedOptionsModeProd}" >
+                        <apex:outputText id="idRowNum" value="{!prodPredicate.RowNum}. " />
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__field}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(prodPredicate.FieldInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idProdField" size="1" value="{!prodPredicate.FieldName}" >
+                                <apex:selectOptions value="{!childFieldItemsProd}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__operator}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(prodPredicate.CompOperInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idProdCompOper" size="1" value="{!prodPredicate.CompOper}" >
+                                <apex:selectOptions value="{!compOperItems}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__value}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(prodPredicate.FieldValueInError, 'errorRow', '')}" layout="block" >
+                            <apex:inputText id="idProdFieldValue" size="25" value="{!prodPredicate.FieldValue}" />
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column width="5%" >
+                        <apex:outputText id="idBoolOper" 
+                                         value="{!prodPredicate.BoolOper}" 
+                                         rendered="{!NOT(isChildAdvancedOptionsModeProd) && NOT(ISBLANK(prodPredicate.BoolOper))}" />
+                                         
+                        <apex:commandLink action="{!doAddChildRowProd}" 
+                                          value="{!$Label.apttus_billing__add}" 
+                                          reRender="idPredicatesSection, idProductAdvancedOptionsSection" 
+                                          rendered="{!NOT(isChildAdvancedOptionsModeProd) && ISBLANK(prodPredicate.BoolOper)}" />
+                    </apex:column>
+                    <apex:column width="5%" >
+                    <apex:commandLink id="idDeleteChildRow" 
+                                      action="{!doDeleteChildRowProd}" 
+                                      value="{!$Label.apttus_billing__delete}" 
+                                      reRender="idPredicatesSection, idProductAdvancedOptionsSection">
+                        <apex:param name="childRowNumProd" value="{!prodPredicate.RowNum}" />          
+                    </apex:commandLink>
+                    </apex:column>
+                    <apex:column width="10%" >
+                        <apex:outputText value="{!prodPredicate.ErrorMsg}" style="color:red;" />
+                    </apex:column>
+                   
+                </apex:pageBlockTable>
+                
+            <apex:pageBlockSectionItem >
+                    
+            <apex:pageBlockSection id="idProductAdvancedOptionsSection" columns="1" collapsible="false" >
+            
+                <apex:commandLink id="idShowProductAdvancedOptions" 
+                                  action="{!doShowChildAdvancedOptionsProd}" 
+                                  value="{!$Label.apttus_billing__advancedoptions}" 
+                                  reRender="idProductAdvancedOptionsSection, idPredicatesSection" 
+                                  rendered="{!NOT(isChildAdvancedOptionsModeProd)}" />
+                
+                <apex:outputPanel rendered="{!isChildAdvancedOptionsModeProd}">
+                    <apex:commandLink id="idAddProductRow" 
+                                      action="{!doAddChildRowProd}" 
+                                      value="{!$Label.apttus_billing__addrow}" 
+                                      reRender="idProductAdvancedOptionsSection, idPredicatesSection" />
+                    <span>  </span>
+                    <apex:commandLink id="idRemoveProductRow" 
+                                      action="{!doRemoveChildRowProd}" 
+                                      value="{!$Label.apttus_billing__removerow}" 
+                                      reRender="idProductAdvancedOptionsSection, idPredicatesSection" 
+                                      rendered="{!OkToRemoveChildRowProd}" />
+                    <apex:outputPanel id="idRemoveChildRow2" styleClass="greyedLink" rendered="{!NOT(OkToRemoveChildRowProd)}" >{!$Label.apttus_billing__removerow}</apex:outputPanel>
+                    <p/>    
+                    <apex:commandLink id="idHideProductAdvancedOptions" 
+                                      action="{!doHideChildAdvancedOptionsProd}" 
+                                      value="{!$Label.apttus_billing__clearadvancedoptions}" 
+                                      reRender="idProductAdvancedOptionsSection, idPredicatesSection" />
+                    <br/>
+                    <apex:outputText value="{!$Label.apttus_billing__advancedfiltercondition}" />
+                    <br/>
+                    <apex:inputText id="idProductAdvancedOptions" size="80" value="{!childAdvancedOptionsProd}" />
+                </apex:outputPanel>
+                </apex:pageBlockSection>
+                </apex:pageBlockSectionItem>     
+     </apex:tab>
+     <apex:tab id="idBillingScheduleFiltersTab" label="{!$ObjectType.Apttus_Billing__BillingSchedule__c.label}">
+                <apex:pageBlockTable value="{!childPredicatesBillingSchedule}" 
+                                     var="billingSchedulePredicate" 
+                                     columns="8" 
+                                     rowClasses="oddRow,evenRow" >
+                    <apex:column width="5%" rendered="{!isChildAdvancedOptionsModeBillingSchedule}" >
+                        <apex:outputText id="idRowNum" value="{!billingSchedulePredicate.RowNum}. " />
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__field}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(billingSchedulePredicate.FieldInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idBillingScheduleField" size="1" value="{!billingSchedulePredicate.FieldName}" >
+                                <apex:selectOptions value="{!childFieldItemsBillingSchedule}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__operator}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(billingSchedulePredicate.CompOperInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idBillingScheduleCompOper" size="1" value="{!billingSchedulePredicate.CompOper}" >
+                                <apex:selectOptions value="{!compOperItems}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__value}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(billingSchedulePredicate.FieldValueInError, 'errorRow', '')}" layout="block" >
+                            <apex:inputText id="idBillingScheduleFieldValue" size="25" value="{!billingSchedulePredicate.FieldValue}" />
+                        </apex:outputPanel>
+                    </apex:column>
+
+                    <apex:column width="5%" >
+                        <apex:outputText id="idBoolOper" 
+                                         value="{!billingSchedulePredicate.BoolOper}" 
+                                         rendered="{!NOT(isChildAdvancedOptionsModeBillingSchedule) && NOT(ISBLANK(billingSchedulePredicate.BoolOper))}" />
+                                         
+                        <apex:commandLink action="{!doAddChildRowBillingSchedule}" 
+                                          value="{!$Label.apttus_billing__add}" 
+                                          reRender="idPredicatesSection, idBillingScheduleAdvancedOptionsSection" 
+                                          rendered="{!NOT(isChildAdvancedOptionsModeBillingSchedule) && ISBLANK(billingSchedulePredicate.BoolOper)}" />
+                    </apex:column>
+                    <apex:column width="5%" >
+                    <apex:commandLink id="idDeleteChildRow" 
+                                      action="{!doDeleteChildRowBillingSchedule}" 
+                                      value="{!$Label.apttus_billing__delete}" 
+                                      reRender="idPredicatesSection, idBillingScheduleAdvancedOptionsSection">
+                        <apex:param name="childRowNumBillingSchedule" value="{!billingSchedulePredicate.RowNum}" />          
+                    </apex:commandLink>
+                    </apex:column>
+                    <apex:column width="10%" >
+                        <apex:outputText value="{!billingSchedulePredicate.ErrorMsg}" style="color:red;" />
+                    </apex:column>
+          </apex:pageBlockTable>
+            
+            <apex:pageBlockSectionItem >
+                    
+            <apex:pageBlockSection id="idBillingScheduleAdvancedOptionsSection" columns="1" collapsible="false" >
+            
+                <apex:commandLink id="idShowBillingScheduleAdvancedOptions" 
+                                  action="{!doShowChildAdvancedOptionsBillingSchedule}" 
+                                  value="{!$Label.apttus_billing__advancedoptions}" 
+                                  reRender="idBillingScheduleAdvancedOptionsSection, idPredicatesSection" 
+                                  rendered="{!NOT(isChildAdvancedOptionsModeBillingSchedule)}" />
+                
+                <apex:outputPanel rendered="{!isChildAdvancedOptionsModeBillingSchedule}">
+                    <apex:commandLink id="idAddBillingScheduleRow" 
+                                      action="{!doAddChildRowBillingSchedule}" 
+                                      value="{!$Label.apttus_billing__addrow}" 
+                                      reRender="idBillingScheduleAdvancedOptionsSection, idPredicatesSection" />
+                    <span>  </span>
+                    <apex:commandLink id="idRemoveBillingScheduleRow" 
+                                      action="{!doRemoveChildRowBillingSchedule}" 
+                                      value="{!$Label.apttus_billing__removerow}" 
+                                      reRender="idBillingScheduleAdvancedOptionsSection, idPredicatesSection" 
+                                      rendered="{!OkToRemoveChildRowBillingSchedule}" />
+                    <apex:outputPanel id="idRemoveChildRow2" styleClass="greyedLink" rendered="{!NOT(OkToRemoveChildRowBillingSchedule)}" >{!$Label.apttus_billing__removerow}</apex:outputPanel>
+                    <p/>    
+                    <apex:commandLink id="idHideBillingScheduleAdvancedOptions" 
+                                      action="{!doHideChildAdvancedOptionsBillingSchedule}" 
+                                      value="{!$Label.apttus_billing__clearadvancedoptions}" 
+                                      reRender="idBillingScheduleAdvancedOptionsSection, idPredicatesSection" />
+                    <br/>
+                    <apex:outputText value="{!$Label.apttus_billing__advancedfiltercondition}" />
+                    <br/>
+                    <apex:inputText id="idBillingScheduleAdvancedOptions" size="80" value="{!ChildAdvancedOptionsBillingSchedule}" />
+                </apex:outputPanel>
+                </apex:pageBlockSection>
+                </apex:pageBlockSectionItem>                                     
+     </apex:tab>
+     </apex:tabPanel> 
+    </apex:pageBlockSection>   
+     <apex:pageBlockSection id="ProcessingSection" title="{!$Label.apttus_billing__processingoptions}" columns="2" collapsible="true">
+      <!-- <apex:inputField value="{!invoiceRun.OverrideTemplate__c}"/> -->
+        <apex:pageBlockSectionItem >
+                <apex:outputLabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__OverrideTemplate__c.Label}"></apex:outputLabel>
+                  <apex:selectList value="{!selectedOverrideTemplate}" size="1">
+            <apex:selectOptions value="{!OverrideTemplateOptions}"></apex:selectOptions>
+          </apex:selectList>   
+        </apex:pageBlockSectionItem>
+        <!-- <apex:pageBlockSectionItem rendered="{!invoiceRun.Apttus_Billing__AutoApproveInvoices__c}">
+         <apex:outputLabel value=" "/>
+         <apex:outputPanel >&nbsp;</apex:outputPanel>
+        </apex:pageBlockSectionItem> -->        
+        <apex:inputField value="{!invoiceRun.Apttus_Billing__AutoApproveInvoices__c}" >
+           <apex:actionSupport event="onclick" reRender="ProcessingSection" action="{!doShowAutoApproveOperator}"/>
+        </apex:inputField>                 
+        <apex:pageblocksectionItem rendered="{!invoiceRun.Apttus_Billing__AutoApproveInvoices__c}">
+           <apex:outputlabel value="{!$Label.apttus_billing__autoapprovethreshold}" />
+           <apex:outputPanel id="autoapprvInvConditionBlk" layout="block">
+              <apex:inputField value="{!invoiceRun.Apttus_Billing__AutoApproveOperator__c}"/>&nbsp;
+              <apex:inputField value="{!invoiceRun.Apttus_Billing__AutoApproveAmount__c}"/>
+           </apex:outputPanel>
+        </apex:pageblocksectionItem> 
+        <apex:pageblocksectionItem rendered="{!invoiceRun.Apttus_Billing__AutoApproveInvoices__c}">
+           <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__AutoSendInvoiceEmail__c.label}" />
+           <apex:outputPanel id="autosendInvConditionBlk" layout="block">
+              <apex:inputField value="{!invoiceRun.Apttus_Billing__AutoSendInvoiceEmail__c}"/>
+           </apex:outputPanel>
+        </apex:pageblocksectionItem>        
+        <apex:inputField value="{!invoiceRun.Apttus_Billing__AutoApproveCreditMemos__c}" >
+           <apex:actionSupport event="onclick" reRender="ProcessingSection" action="{!doShowAutoApproveOperator}"/>
+        </apex:inputField> 
+        <apex:inputField value="{!invoiceRun.Apttus_Billing__AutoSendCreditMemoEmail__c}" rendered="{!invoiceRun.Apttus_Billing__AutoApproveCreditMemos__c}" />                                                           
+        <apex:inputField value="{!invoiceRun.Apttus_Billing__SplitInvoicesByOrder__c}"/>
+        <apex:pageblocksectionItem >
+           <apex:outputlabel value="{!$Label.apttus_billing__suppressinvoices}" />
+           <apex:outputPanel id="supressInvBlk" layout="block">
+              <apex:inputField value="{!invoiceRun.Apttus_Billing__SuppressInvoicesOperator__c}"/>&nbsp;
+              <apex:inputField value="{!invoiceRun.Apttus_Billing__SuppressInvoicesAmount__c}"/>
+           </apex:outputPanel>
+        </apex:pageblocksectionItem> 
+        <apex:pageBlockSectionItem >
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__CreditMemoCreationOption__c.label}" />
+          <apex:outputPanel id="cmCreateOptPnl" layout="block">
+                <apex:selectList style="margin-bottom:4px;" value="{!invoiceRun.Apttus_Billing__CreditMemoCreationOption__c}" size="1" multiselect="false">
+                   <apex:selectOptions value="{!creditMemoCreationOptions}"/>
+                </apex:selectList>            
+          </apex:outputPanel>       
+        </apex:pageBlockSectionItem>                                    
+     </apex:pageBlockSection> 
+     <apex:pageBlockSection id="customOptions" title="{!$Label.apttus_billing__customoptions}" columns="2" collapsible="true" rendered="{!invoiceFilterCallBackClass != ''}">
+      <apex:inputField value="{!invoiceRun.Apttus_Billing__Category__c}"/>
+      <apex:inputField value="{!invoiceRun.Apttus_Billing__SubCategory__c}"/>
+     </apex:pageBlockSection>
+     <apex:pageBlockSection id="schedOptions" title="{!$Label.apttus_billing__schedulingoptions}" columns="2" collapsible="true">     
+       <apex:pageblocksectionItem >
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__RunType__c.label}" />
+          <apex:selectRadio style="margin-bottom:4px;" value="{!invoiceRun.Apttus_Billing__RunType__c}">
+             <apex:actionSupport event="onchange" action="{!doRunTypeChange}"  rerender="schedOptions"/>
+             <apex:selectOptions value="{!runTypeOptions}"/>
+          </apex:selectRadio>
+       </apex:pageblocksectionItem>
+       <apex:pageBlockSectionItem >
+         <apex:outputLabel value=" "/>
+         <apex:outputPanel >&nbsp;</apex:outputPanel>
+       </apex:pageBlockSectionItem>
+       <apex:pageblocksectionItem rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}">
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__ScheduleType__c.label}" />
+          <apex:outputPanel id="invoiceDates" layout="block">             
+                <apex:selectList style="margin-bottom:4px;" value="{!invoiceRun.Apttus_Billing__ScheduleType__c}" onchange="scheduleTypeChange()" size="1" multiselect="false">
+                   <apex:selectOptions value="{!scheduleTypeOptions}"/>
+                </apex:selectList>
+          </apex:outputPanel>
+       </apex:pageBlockSectionItem>
+       <apex:pageBlockSectionItem id="prefStrtBlk" rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}">
+          <apex:outputlabel value="{!$Label.apttus_billing__preferredstarttime}" />
+          <apex:outputPanel id="prefStart" layout="block">   
+             <apex:inputField id="prefStartHour" value="{!invoiceRun.Apttus_Billing__PreferredStartHour__c}"/>&nbsp;
+             <apex:inputField id="prefStartMinute" value="{!invoiceRun.Apttus_Billing__PreferredStartMinute__c}">
+               <apex:actionSupport event="onchange" reRender="schedOptions" action="{!doCheckPreferredStartTimeLessthanSystemTime}"/>
+             </apex:inputField>
+          </apex:outputPanel>
+       </apex:pageBlockSectionItem>       
+       <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Weekly' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__WeekDay__c.label}" />
+          <apex:outputPanel id="weekDays" layout="block">
+                <apex:selectCheckboxes value="{!choices}" layout="PageDirection">
+                   <apex:selectOptions value="{!weekDayOptions}"/>
+                </apex:selectCheckboxes>            
+          </apex:outputPanel>       
+       </apex:pageBlockSectionItem>             
+       <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Monthly by date' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">
+          <apex:outputlabel value="Schedule" />
+          <apex:outputPanel id="monthlyByDate" layout="block">
+             <apex:outputlabel value="{!$Label.apttus_billing__onthe} " />
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__MonthlyDate__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!monthlyDateOptions}"/>
+             </apex:selectList>
+             <apex:outputlabel value=" {!$Label.apttus_billing__day} {!$Label.apttus_billing__everymonth}" />            
+          </apex:outputPanel>
+       </apex:pageBlockSectionItem>
+       <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Monthly by day' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">
+          <apex:outputlabel value="{!$Label.apttus_billing__schedule}" />
+          <apex:outputPanel id="monthlyByDay" layout="block">
+             <apex:outputlabel value="{!$Label.apttus_billing__onthe} " />
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__MonthlyWeek__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!monthlyWeekOptions}"/>
+             </apex:selectList>
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__MonthlyWeekDay__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!monthlyWeekDayOptions}"/>
+             </apex:selectList>
+             <apex:outputlabel value=" {!$Label.apttus_billing__everymonth}" />            
+          </apex:outputPanel>          
+       </apex:pageBlockSectionItem>
+       <apex:pageBlockSectionItem rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}">
+         <apex:outputLabel value=" "/>
+         <apex:outputPanel >&nbsp;</apex:outputPanel>
+       </apex:pageBlockSectionItem>
+       <apex:pageblocksectionItem rendered="{!(invoiceRun.Apttus_Billing__RunType__c == 'Immediate' || invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__InvoiceDateType__c.label}" />
+          <apex:outputPanel id="invDateType" layout="block">             
+                <apex:selectList style="margin-bottom:4px;" value="{!invoiceRun.Apttus_Billing__InvoiceDateType__c}" onchange="invoiceDateTypeChange()" size="1" multiselect="false">
+                   <apex:selectOptions value="{!invoiceDateTypeOptions}"/>
+                </apex:selectList>
+          </apex:outputPanel>
+       </apex:pageBlockSectionItem>       
+       <apex:pageBlockSectionItem >
+         <apex:outputLabel value=" "/>
+         <apex:outputPanel >&nbsp;</apex:outputPanel>
+       </apex:pageBlockSectionItem>       
+       <apex:inputField value="{!invoiceRun.Apttus_Billing__InvoiceDate__c}" rendered="{!(invoiceRun.Apttus_Billing__RunType__c == 'Immediate' && invoiceRun.Apttus_Billing__InvoiceDateType__c == 'User Defined')}"/>
+       <apex:inputField value="{!invoiceRun.Apttus_Billing__ProcessthruDate__c}" rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Immediate'}"/>       
+       <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Weekly' && invoiceRun.Apttus_Billing__InvoiceDateType__c == 'User Defined' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__InvoiceDateOffset__c.label}" />
+          <apex:outputPanel id="invDaysOffset" layout="block">
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__InvoiceDateOffset__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!weeklyInvDateOffsetOptions}"/>
+             </apex:selectList>
+             <apex:outputlabel value=" {!$Label.apttus_billing__days}" />       
+          </apex:outputPanel>       
+       </apex:pageBlockSectionItem> 
+       <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Weekly' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__ProcessthruDateOffset__c.label}" />
+          <apex:outputPanel id="processthruDaysOffset" layout="block">
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__ProcessthruDateOffset__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!weeklyInvDateOffsetOptions}"/>
+             </apex:selectList>
+             <apex:outputlabel value=" {!$Label.apttus_billing__days}" />         
+          </apex:outputPanel>      
+       </apex:pageBlockSectionItem>
+       <apex:pageBlockSectionItem rendered="{!((invoiceRun.ScheduleType__c == 'Monthly by day' || invoiceRun.ScheduleType__c == 'Monthly by date')
+                                                             && invoiceRun.InvoiceDateType__c == 'User Defined' && invoiceRun.RunType__c == 'Scheduled')}">
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__InvoiceDate__c.label}" />
+          <apex:outputPanel id="invDateMonthByDay" layout="block">
+             <apex:outputlabel value="{!$Label.apttus_billing__the} " />
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__MonthlyInvoiceDay__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!monthlyInvoiceDayOptions}"/>
+             </apex:selectList>
+             <apex:outputlabel value=" {!$Label.apttus_billing__day} {!$Label.apttus_billing__of} "/>
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__InvoiceDayMonthOption__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!invoiceDayMonthOptions}"/>
+             </apex:selectList>
+             <apex:outputlabel value=" {!$Label.apttus_billing__month}" />            
+          </apex:outputPanel>          
+       </apex:pageBlockSectionItem>
+       <apex:pageBlockSectionItem rendered="{!((invoiceRun.ScheduleType__c == 'Monthly by day' || invoiceRun.ScheduleType__c == 'Monthly by date')
+                                                                                                          && invoiceRun.RunType__c == 'Scheduled')}">
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__ProcessthruDate__c.label}" />
+          <apex:outputPanel id="processthruDateMonthByDay" layout="block">
+             <apex:outputlabel value="{!$Label.apttus_billing__the} " />
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__MonthlyProcessthruDay__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!monthlyInvoiceDayOptions}"/>
+             </apex:selectList>
+             <apex:outputlabel value=" {!$Label.apttus_billing__day} {!$Label.apttus_billing__of} "/>
+             <apex:selectList value="{!invoiceRun.Apttus_Billing__ProcessthruDayMonthOption__c}" size="1" multiselect="false">
+                <apex:selectOptions value="{!invoiceDayMonthOptions}"/>
+             </apex:selectList>
+             <apex:outputlabel value=" {!$Label.apttus_billing__month}" />            
+          </apex:outputPanel>          
+       </apex:pageBlockSectionItem> 
+       <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__RunType__c == 'Scheduled' && NOT(invoiceRun.Apttus_Billing__InvoiceDateType__c == 'User Defined'))}">
+         <apex:outputLabel value=" "/>
+         <apex:outputPanel >&nbsp;</apex:outputPanel>
+       </apex:pageBlockSectionItem>                                  
+       <apex:inputField id="periodStartDate" value="{!invoiceRun.Apttus_Billing__PeriodStartDate__c}" rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}">
+            <apex:actionSupport event="onblur" reRender="schedOptions" action="{!doCheckPreferredStartTimeLessthanSystemTime}"/>
+            <apex:actionSupport event="onchange" reRender="schedOptions" action="{!doCheckPreferredStartTimeLessthanSystemTime}"/>
+       </apex:inputField>
+       <apex:inputField id="periodEndDate" value="{!invoiceRun.Apttus_Billing__PeriodEndDate__c}" rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}"/>            
+     </apex:pageBlockSection>     
+  </apex:pageBlock> 
+  </apex:form> 
+</apex:page>

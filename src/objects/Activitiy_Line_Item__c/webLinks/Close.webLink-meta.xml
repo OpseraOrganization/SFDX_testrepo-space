@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebLink xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Close</fullName>
+    <availability>online</availability>
+    <displayType>massActionButton</displayType>
+    <linkType>javascript</linkType>
+    <masterLabel>Close Status</masterLabel>
+    <openType>onClickJavaScript</openType>
+    <protected>false</protected>
+    <requireRowSelection>true</requireRowSelection>
+    <url>{!REQUIRESCRIPT(&quot;/soap/ajax/13.0/connection.js&quot;)} 
+{!REQUIRESCRIPT(&quot;/soap/ajax/31.0/connection.js&quot;)}  
+{!REQUIRESCRIPT(&quot;/soap/ajax/31.0/apex.js&quot;)} 
+var url = parent.location.href; //string for the URL of the current page 
+
+var records = {!GETRECORDIDS($ObjectType.Activitiy_Line_Item__c)}; //grabs the User Status records that the user is requesting to update 
+//alert(&quot;Number of User Statuses assigned are:&quot; +records.length); 
+if (records[0] == null)
+{ 
+	//if the button was clicked but there was no record selected 
+	alert(&quot;Please select at least one record to close.&quot;); //alert the user that they didn&apos;t make a selection 
+} 
+else 
+{ 
+	//alert(&quot;Inside record close&quot;);
+	var Result =&apos;&apos;;
+	var r = &apos;&apos;;
+	for (var a=0; a&lt;records.length; a++) 
+	{ 
+		var UserstatusToUpdate = new sforce.SObject(&quot;Activitiy_Line_Item__c&quot;); 
+		UserstatusToUpdate.Id=records[a]; 
+		UserstatusToUpdate.set(&quot;Status__c&quot;, &apos;Closed&apos;); 
+		UserstatusToUpdate.set(&quot;Task_Status_Close__c&quot;, true);
+		var Result = sforce.connection.update([UserstatusToUpdate]); 
+		//alert(Result);
+		r=r+ &apos;\&apos;&apos;+records[a]+&apos;\&apos;,&apos;;
+		//alert(r);
+	} 
+	if(Result[0].getBoolean(&quot;success&quot;)) 
+	{ 
+	    //alert(&quot;result&quot;);
+		//alert(&apos;status id&apos;+r);	  
+        var Result1 = sforce.apex.execute(&quot;SI_UserstatusStatustoSAP&quot;, &quot;SendTaskStatus&quot;,{Userstatusid:r}); 	
+		window.location.reload(); 
+	} 
+	else 
+	{ 
+	    //alert(&quot;inside else result&quot;);
+		//alert(&quot;Error : &quot;+result);
+		// alert(&quot;Case owner cannot be changed&quot;); 
+	}   
+}</url>
+</WebLink>

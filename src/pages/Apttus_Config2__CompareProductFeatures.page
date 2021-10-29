@@ -1,0 +1,262 @@
+<!-- 
+    Apttus Config & Pricing
+    CompareProductFeatures
+     
+    @2010-2013 Apttus Inc. All rights reserved. 
+
+ -->
+
+<apex:page controller="Apttus_Config2.ProductComparisonController"
+           showHeader="{!ShowHeader}" 
+           sidebar="true" 
+           title="{!$Label.apttus_config2__pagecomparename}"
+           standardStylesheets="true" 
+           cache="false" 
+           tabStyle="Product2">
+  <head>
+    <apex:outputPanel rendered="{!NOT(ShowHeader)}">      
+        <title>{!$Label.apttus_config2__pagecomparename}</title>      
+    </apex:outputPanel>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    
+    <link rel="stylesheet"  href="{!URLFOR($Resource.jQueryMobile, 'css/themes/default/jquery.mobile.css')}"/>
+    <link rel="stylesheet" href="{!URLFOR($Resource.jQueryMobile, '_assets/css/jqm-demos.css')}"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700"/>
+    <script src="{!URLFOR($Resource.jQueryMobile, 'js/jquery.js')}"></script>
+    <script src="{!URLFOR($Resource.jQueryMobile, '_assets/js/')}"></script>
+    <script src="{!URLFOR($Resource.jQueryMobile, 'js/jquery.mobile-1.3.1.js')}"></script>
+    
+    <!-- CPQ CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__CPQPageResources,'CPQCommon.css')}" />    
+    
+    <apex:outputPanel layout="none" rendered="{!isUsingEnhancedCSS}">
+		<apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__CPQPageResources, 'CPQEnhanced.css')}"/>	  
+	</apex:outputPanel>	
+	
+    <apex:outputPanel rendered="{!NOT(ISNULL(CSSOverride))}">
+        <apex:dynamicComponent componentValue="{!CSSOverrideComponent}"/>
+    </apex:outputPanel>
+
+    <style>
+      /*These apply across all breakpoints because they are outside of a media query */
+      table.phone-compare thead th {
+        background-color: #fff;
+      }
+      table.phone-compare thead th h4 {
+        text-transform: uppercase;
+        font-size: 0.6em;
+        margin: 0;
+      }
+      table.phone-compare thead th h3 {
+        font-size: .9em;
+        margin: -.4em 0 .8em 0;
+      }
+      table.phone-compare th.label {
+        text-transform: uppercase;
+        font-size: 0.8em;
+        opacity: 0.5;
+        padding: 1.2em .8em;
+        background-color: #ddd;
+      }
+      table.phone-compare tbody tr.photos td {
+        background-color: #fff;
+        padding: 0;
+      }
+      table.phone-compare tbody tr.photos img {
+        max-width: 100%;
+        min-width: 60px;
+      }
+      /*  Use the target selector to style the column chooser button */
+      a[href="#phone-table-popup"] {
+        margin-bottom: 1.2em;
+      }
+      /* Show priority 1 at 320px (20em x 16px) */
+      @media screen and (min-width: 20em) {
+        .phone-compare th.ui-table-priority-1,
+        .phone-compare td.ui-table-priority-1 {
+          display: table-cell;
+        }
+      }
+      /* Show priority 2 at 560px (35em x 16px) */
+      @media screen and (min-width: 35em) {
+        .phone-compare th.ui-table-priority-2,
+        .phone-compare td.ui-table-priority-2 {
+          display: table-cell;
+        }
+      }
+      /* Show priority 3 at 720px (45em x 16px) */
+      @media screen and (min-width: 45em) {
+        .phone-compare th.ui-table-priority-3,
+        .phone-compare td.ui-table-priority-3 {
+          display: table-cell;
+        }
+      }
+      /* Manually hidden */
+      .phone-compare th.ui-table-cell-hidden,
+      .phone-compare td.ui-table-cell-hidden {
+        display: none;
+      }
+      /* Manually shown */
+      .phone-compare th.ui-table-cell-visible,
+      .phone-compare td.ui-table-cell-visible {
+        display: table-cell;
+      }
+
+      .ui-mobile [data-role=page], .ui-page {
+        position:relative !important;
+      }
+
+
+    </style>
+
+    <script>
+      var j$ = jQuery.noConflict();
+
+      j$(document).ready(function() {
+
+
+        j$('a.ui-table-columntoggle-btn').before('<a id="backButton" data-theme="b" data-mini="true" data-shadow="true" data-iconshadow="true" data-wrapperels="span" class="ui-table-columntoggle-btn" style="float:left;" href="#" onclick="doGoBack();">{!$Label.Back}</a>');
+        
+        if({!hasFatalErrors}) {
+          j$('span[id*="errMsg"]').before('<a id="backButton" data-theme="b" data-mini="true" data-shadow="true" data-iconshadow="true" data-wrapperels="span" class="ui-table-columntoggle-btn" style="float:left;" href="#" onclick="doGoBack();">{!$Label.Back}</a><br/><br/><br/>');
+        }
+
+        j$('#backButton').button(); 
+
+      });
+
+      /**
+       * Escape SFDC style Id's
+       *
+       * @return escaped id
+       */
+      function esc( myid ) {
+          return "#" + myid.replace( /(:|\.|\[|\])/g, "\\$1" );
+      }
+
+      /**
+       * Return to catalog
+       */
+      function doGoBack() {
+        var deSelectedProdIds = '';
+        j$.each(j$('.ui-table-cell-hidden'), function() {
+          var prodId = j$(this).attr('prodId');
+
+          if(prodId) {
+            deSelectedProdIds += prodId + ';';
+          }      
+
+        });
+
+        invokeGoBack(deSelectedProdIds);
+      }
+
+    </script>
+
+  </head>
+  <body>  
+    <apex:outputPanel >      
+      <apex:form >
+        <div id="cartHeaderDiv">
+            <!--  Cart Header  -->
+            <apex:outputPanel id="cartTopContainer" rendered="{!NOT(IsHideCartHeader)}">
+              <c:CartHeader id="idCartHeader" 
+                        cartId="{!ConfigurationId}" 
+                        requestId="{!RequestId}" />
+            </apex:outputPanel> 
+        </div>      
+        <div data-role="page" style="" id="mainPage">
+          <apex:outputPanel id="errMsg" rendered="{!hasFatalErrors}" ><apex:pageMessages /></apex:outputPanel>
+
+          <apex:outputPanel layout="block" rendered="{!NOT(hasFatalErrors)}" styleClass="jqm-content jqm-fullwidth">
+                <div class="aptProductHeader" />                
+                <h1>{!$Label.CompareProducts}</h1>
+                <br/>
+            <!-- <div > -->
+              <table data-role="table" id="phone-table" data-mode="columntoggle" data-column-btn-text="{!$Label.CompareProducts}" data-column-btn-theme="b" class="phone-compare ui-shadow table-stroke">
+                      <thead>
+                        
+                        <tr>
+                          <th class="label">{!$Label.Product}</th>
+
+                          <apex:repeat var="product" value="{!productIds}">
+                            
+                            <th data-priority="1" prodId="{!product}">
+                              <h3>{!compareProducts[product].Name}</h3><br/>                      
+                            </th>                          
+                          </apex:repeat>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="photos">
+                          <th class="label">{!$Label.Photo}</th>
+                          <apex:repeat var="product" value="{!productIds}">
+                            <td><a href="#img-{!product}" data-rel="popup" data-position-to="window">
+                            <apex:image value="{!URLFOR($Action.Attachment.Download, compareProducts[product].IconId__c)}"
+                            			style="{!productIconCSS[product]}"
+                                    	rendered="{!(compareProducts[product].IconId__c != null)}" />
+                            <apex:image value="{!URLFOR($Action.Attachment.Download, defaultProductIcon)}"
+                        				style="{!productIconCSS[product]}"   
+                                 		rendered="{!(compareProducts[product].IconId__c == null && defaultProductIcon != null)}" />        	
+                        	<apex:image value="{!$Resource.Apttus_Config2__Image_Blank}"
+                        				style="{!productIconCSS[product]}"   
+                                 		rendered="{!(compareProducts[product].IconId__c == null && defaultProductIcon == null)}" />
+                            </a></td>
+                          </apex:repeat>                      
+                        </tr>                
+                        <tr><td colspan="{!colSpan}">&nbsp;</td></tr>
+                        <apex:repeat var="featureSetName" value="{!compareFeatureSets}">
+                          <tr>
+                            <th data-priority="1" colspan="{!colSpan}"><h4>{!featureSetName}</h4></th>
+                          </tr>
+                          <apex:repeat var="featureValue" value="{!compareFeatureSets[featureSetName][0].productFeatureSet.features}">                          
+                            <apex:outputPanel layout="none" rendered="{!hasIncludedProduct[compareFeatureSets[featureSetName][0].productFeatureSet.featureSetSOId]}">
+                              <tr>
+                                <th class="label">{!featureValue.Name}</th>
+                                <apex:repeat var="product" value="{!productIds}">
+                                  <apex:repeat var="prodFeatureInfo" value="{!productFeatureInfos[product]}">
+                                    <apex:outputPanel layout="none" rendered="{!prodFeatureInfo.productFeatureSet.Name == featureSetName}" >
+                                      <apex:repeat var="prodFeatureValue" value="{!prodFeatureInfo.productFeatureSet.features}">
+                                        <apex:outputPanel layout="none" rendered="{!prodFeatureValue.featureSOId == featureValue.featureSOId && prodFeatureValue.isIncluded}" >
+                                          <td style="border: 1px #CCCCCC solid;">{!prodFeatureValue.Value}</td>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel layout="none" rendered="{!prodFeatureValue.featureSOId == featureValue.featureSOId && NOT(prodFeatureValue.isIncluded)}" >
+                                          <td style="border: 1px #CCCCCC solid;">--</td>
+                                        </apex:outputPanel>
+                                      </apex:repeat>
+                                    </apex:outputPanel>
+                                  </apex:repeat>
+                                </apex:repeat>
+                              </tr>
+                            </apex:outputPanel>
+                          </apex:repeat>
+                          <tr><td colspan="{!colSpan}">&nbsp;</td></tr>
+                        </apex:repeat>                                
+                      </tbody>
+                    </table>
+                    <!-- Popups for lightbox images -->
+                    <apex:repeat var="product" value="{!productIds}">
+                      <div id="img-{!product}" data-role="popup" data-overlay-theme="a">
+                      	<apex:image value="{!URLFOR($Action.Attachment.Download, compareProducts[product].IconId__c)}"
+                                rendered="{!(compareProducts[product].IconId__c != null)}" />
+                        <apex:image value="{!URLFOR($Action.Attachment.Download, defaultProductIcon)}"
+                           		rendered="{!(compareProducts[product].IconId__c == null && defaultProductIcon != null)}" />        	
+                       	<apex:image value="{!$Resource.Apttus_Config2__Image_Blank}"
+                           		rendered="{!(compareProducts[product].IconId__c == null && defaultProductIcon == null)}" />
+                      </div>
+                    </apex:repeat>
+
+            <!-- </div> -->
+          </apex:outputPanel><!-- /content -->
+        </div><!-- /page -->
+
+        <apex:actionFunction name="invokeGoBack" 
+               action="{!doGoBack}"
+               rerender="dummy">
+               <apex:param name="param" assignTo="{!deSelectedProdIds}" value="" />
+        </apex:actionFunction>
+      </apex:form>
+    </apex:outputPanel>
+  </body>
+</apex:page>

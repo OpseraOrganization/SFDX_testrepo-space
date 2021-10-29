@@ -1,0 +1,98 @@
+<!-- 
+    Apttus Billing 
+    SendInvoiceEmail
+ 
+    @2013-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Billing__Invoice__c" tabStyle="Apttus_Billing__Invoice__c" extensions="Apttus_Billing.SendInvoiceEmailController">
+   <apex:messages />
+   <script type="text/javascript">
+     var selAttchArry = [];
+    function setSelectedAttchments(chkBx) {
+       selectOnlyCurrentAttachment(chkBx);
+       //alert(chkBx.checked);
+       if(chkBx.checked) {
+         selAttchArry.push(chkBx.value);
+         //console.log(selAttchArry);
+         setSelectedAtchmntsFn(chkBx.checked, chkBx.value);
+       } else if(!chkBx.checked) {
+         var index = selAttchArry.indexOf(chkBx.value);
+         //alert(index);
+         if(index != -1) {
+            selAttchArry.splice(index, 1);
+            //console.log(selAttchArry);
+            setSelectedAtchmntsFn(chkBx.checked, chkBx.value);
+         }
+       }
+       //alert(selAttchArry);
+    }
+     
+    function checkAttchmntIsSelected() {
+       if(selAttchArry.length <= 0 ) {
+         return confirm('{!$Label.SendEmailWithoutAttachment}');
+        // if(userConfrm) {
+           //setSelectedAtchmntsAndSend('');
+        // }
+        // return userConfrm;
+       }
+       //setSelectedAtchmntsAndSend(selAttchArry.join(', '));
+       return true;
+    }
+     
+    // Function to select only one attachment at a time
+    function selectOnlyCurrentAttachment(checkbox) {
+        if (checkbox.checked){
+            var inputs = document.getElementsByTagName('input');            
+            for (var i=0; i<inputs.length; i++) {
+                if (inputs[i].type == "checkbox" && inputs[i].checked && inputs[i] != checkbox){
+                    inputs[i].checked = false;
+                }  
+            }
+            selAttchArry = [];
+        }
+    }
+   </script>
+   <apex:sectionHeader title="{!$ObjectType.Apttus_Billing__Invoice__c.label}" subtitle="{!$Label.apttus_billing__send} {!$Label.apttus_billing__email}"/>
+   <apex:form id="MainForm">
+   <apex:pageMessages /> 
+     <apex:actionFunction name="setSelectedAtchmntsFn" action="{!setSelctedAttchments}" reRender="dummyPB">
+       <apex:param name="isChked" value="" />
+       <apex:param name="attchmntId" value="" />
+     </apex:actionFunction>
+     <apex:pageBlock id="blngInvEmailTmpltPB" title="{!$Label.apttus_billing__send} {!$ObjectType.Apttus_Billing__Invoice__c.label} {!$Label.apttus_billing__email}">
+         <apex:pageBlockButtons >
+               <apex:commandButton id="saveBtn" value="{!$Label.apttus_billing__send} {!$Label.apttus_billing__email}" action="{!sendInvoiceEmail}" onclick="return checkAttchmntIsSelected();" disabled="{!IF(invEmailContactSize > 0, false, true)}"/>
+               <apex:commandButton id="cancelBtn" value="{!$Label.apttus_billing__cancel}" action="{!cancel}" />
+         </apex:pageBlockButtons>
+         <apex:pageBlockSection showHeader="false" columns="2">
+            <apex:pageBlockSectionItem >
+            <apex:outputlabel value="{!$ObjectType.Account.fields.Apttus_Config2__InvoiceEmailTemplate__c.label}" /> 
+            <apex:outputPanel > 
+               <apex:selectList value="{!selectedInvEmailTmplt}" size="1" multiselect="false">
+                  <apex:selectOptions value="{!invEmailTemplates}"/>
+               </apex:selectList>         
+            </apex:outputPanel>
+            </apex:pageBlockSectionItem>
+            <apex:outputField value="{!invSO.Name}" />
+            <apex:outputField value="{!invSO.Apttus_Billing__BillToAccountId__c}" />
+            <apex:outputField value="{!invSO.Apttus_Billing__LocationId__c}" />
+         </apex:pageBlockSection> 
+         <apex:pageBlockSection title="Select Email Attachment(s)" columns="1">
+            <apex:outputPanel rendered="{!IF(invoiceAttachments.size == 0, true, false)}">
+               <apex:outputText value=" {!$Label.apttus_billing__norecordsfound}. "/>
+            </apex:outputPanel>                           
+            <apex:pageBlockTable title="Invoice Attachments" value="{!invoiceAttachments}" var="invAttch" id="bsTable" rendered="{!IF(invoiceAttachments.size > 0, true, false)}">
+               <apex:column >
+                  <input type="checkbox" class="clsselectAll" id="checkeId" name="checkId" value="{!invAttch.Id}" onclick="setSelectedAttchments(this)"/>
+               </apex:column>
+               <apex:column value="{!invAttch.Name}"/>
+               <apex:column value="{!invAttch.ContentType}"/>
+               <apex:column value="{!invAttch.CreatedDate}"/>
+            </apex:pageBlockTable>          
+         </apex:pageBlockSection>
+     </apex:pageBlock>
+     <apex:outputPanel id="dummyPB">
+       &nbsp;&nbsp;
+     </apex:outputPanel>
+   </apex:form> 
+</apex:page>

@@ -1,0 +1,387 @@
+<apex:page standardController="Voice_of_Customer__c" sidebar="false" extensions="VoiceofcustomersearchClass" showHeader="false" docType="html-5.0" >
+<apex:form >
+<html lang="en" style="height:100%">
+<head>
+  <meta HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE" />
+  <meta charset="utf-8" />
+  <meta content="900" http-equiv="refresh" />
+  <title>Aero VOC - Search</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Honeywell VOC" />
+
+  <!-- styles -->
+
+  <link href="{!URLFOR($Resource.VOC_bootstrap_zip, 'css/bootstrap.min.css')}" rel="stylesheet" type="text/css" />
+  <style>
+    body {padding-top: 60px;}
+    .autoCompleteBoxScrolling{display:none !important;}
+  </style>
+  <link href="{!URLFOR($Resource.VOC_bootstrap_zip, 'css/bootstrap-responsive.min.css')}" rel="stylesheet" type="text/css" />
+  <link href="{!URLFOR($Resource.VOC_bootstrap_zip, 'css/voc-responsive.css')}" rel="stylesheet" type="text/css" />
+
+  <!-- resources -->
+  <link rel="apple-touch-startup-image" href="{!URLFOR($Resource.VOC_bootstrap_zip, 'images/apple-startup.png')}" media="screen and (max-device-width: 320)" />
+  <link rel="apple-touch-startup-image" href="{!URLFOR($Resource.VOC_bootstrap_zip, 'images/apple-startup-640x920.png')}" sizes="640x920" />
+
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{!URLFOR($Resource.VOC_bootstrap_zip, 'ico/apple-touch-icon-144-precomposed.png')}" />
+  <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{!URLFOR($Resource.VOC_bootstrap_zip, 'ico/apple-touch-icon-114-precomposed.png')}" />
+  <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{!URLFOR($Resource.VOC_bootstrap_zip, 'ico/apple-touch-icon-72-precomposed.png')}" />
+  <link rel="apple-touch-icon-precomposed" href="{!URLFOR($Resource.VOC_bootstrap_zip, 'ico/apple-touch-icon-57-precomposed.png')}" />
+  
+  <script type="text/javascript" src="{!URLFOR($Resource.autocompletejs)}" />
+  <apex:stylesheet value="{!$Resource.autocomplete}"/>
+  
+  <script type="text/javascript">
+      str = window.location.href;
+      if(str.charAt(str.length-1)=='/') window.location.href='../voc';
+  </script>
+    
+</head>
+<body>
+
+<div class="navbar navbar-fixed-top">
+
+  <div class="navbar-inner">
+
+      <div class="container" style="text-align: center;margin-top: 5px;">
+
+      
+        <apex:commandLink action="{!redirect}" styleClass="pull-left">
+          <img alt="Back" src="{!URLFOR($Resource.VOC_bootstrap_zip, 'img/icon-voc-back.png')}" style="width:30px; height: 30px;" />
+        </apex:commandLink>
+
+        <img alt="Honeywell" src="{!URLFOR($Resource.VOC_bootstrap_zip, 'img/honeywell-logo.png')}" style="max-width: 240px; width: 50%;" />
+
+       <a href="VocStartPage" class="pull-right">
+          <img alt="Home" src="{!URLFOR($Resource.VOC_bootstrap_zip, 'img/icon-voc-home.png')}" style="width:30px; height: 30px;" />
+        </a>
+        
+        <!--<a href="/secur/logout.jsp" class="pull-right"> 
+          <img alt="Logout" src="{!URLFOR($Resource.VOC_bootstrap_zip, 'img/icon-voc-logout.png')}" style="width:30px; height: 30px;" /> 
+        </a>-->
+
+      </div> 
+
+  </div>
+        
+</div> 
+
+<!-- navbar -->
+
+<div class="container-fluid main">
+
+<!-- Search Fields -->
+<apex:outputPanel rendered="{!(!showresult)}" layout="none">
+
+    <div class="row-fluid">
+        <div class="span12">
+            <h3 class="main-header clearfix"><img src="{!URLFOR($Resource.VOC_bootstrap_zip, 'img/search-voc.png')}" class="pull-left" />Search VOC</h3>
+        </div>
+    </div>
+       <apex:messages styleClass="alert alert-info" rendered="{!daterange}"/>
+   
+    <apex:outputPanel id="src1" rendered="{!if((objCuslist.size=0)&& daterange==false,true,false)}" layout="none">
+      <div class="alert alert-info">
+          <button data-dismiss="alert" class="close" type="button">×</button>
+          <strong>No Records to Display</strong> Try a different search.
+      </div>
+    </apex:outputPanel>
+    
+    <div class="row-fluid">
+        <div class="span12">
+            <a>Keywords</a>
+            <apex:inputText id="keywords" value="{!Keywords}" styleClass="span12" />
+        </div>
+    </div>
+    
+    <!-- Accordion -->
+    <div id="accordionSearch" class="accordion">
+    
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <div class="plus-icon"></div>
+          <a href="#collapseDate" data-toggle="collapse" class="accordion-toggle collapsed">
+            Date Range of VOC
+          </a>
+        </div>
+        <div class="accordion-body collapse" id="collapseDate" style="height: 0px;">
+          <div class="accordion-inner row-fluid">
+            
+            <input type="date" name="init-date" data-hdn=".vocStartDate_hidden" placeholder="From Date" class="input-block-level" />
+            <input type="date" name="init-date" data-hdn=".vocEndDate_hidden" placeholder="To Date" class="input-block-level" />
+            
+            <apex:inputField value="{!ExceptionRecord.StartDateval__c}" styleClass="vocStartDate_hidden" />
+            <apex:inputField value="{!ExceptionRecord.Enddate__c}" styleClass="vocEndDate_hidden" />
+
+          </div>
+        </div>
+      </div>
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <div class="plus-icon"></div>
+          <a href="#collapseType" data-toggle="collapse" class="accordion-toggle">
+            VOC Type
+          </a>
+        </div>
+        <div class="accordion-body collapse" id="collapseType">
+          <div class="accordion-inner row-fluid">
+            
+            <apex:inputField value="{!ExceptionRecord.VOC_Type__c }" styleClass="input-block-level" />
+
+          </div>
+        </div>
+      </div>
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <div class="plus-icon"></div>
+          <a href="#collapseSrc" data-toggle="collapse" class="accordion-toggle">
+            Source
+          </a>
+        </div>
+        <div class="accordion-body collapse" id="collapseSrc">
+          <div class="accordion-inner row-fluid">
+            
+            <apex:actionRegion >
+             <apex:inputField value="{!ExceptionRecord.Source__c}" styleClass="input-block-level" >
+                 <apex:actionSupport event="onchange" action="{!checkforaccount}" rerender="account"/>
+             </apex:inputField>
+            </apex:actionRegion>
+
+          </div>
+        </div>
+      </div>
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <div class="plus-icon"></div>
+          <a href="#collapseLead" data-toggle="collapse" class="accordion-toggle">
+            Honeywell Lead
+          </a>
+        </div>
+        <div class="accordion-body collapse" id="collapseLead">
+          <div class="accordion-inner row-fluid">
+            
+           <apex:inputField id="leadid" value="{!ExceptionRecord.Honeywell__c}" styleClass="sbu-sel inp-flds input-block-level">
+               <c:Autocomplete id="item2" AutoCompleteId="leadid" inputId="{!$Component.leadid}" ClassName="autocomplete autoMyCls" ObjectName="user" width="0"></c:Autocomplete>
+           </apex:inputField>
+
+          </div>
+        </div>
+      </div>
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <div class="plus-icon"></div>
+          <a href="#collapseSBU" data-toggle="collapse" class="accordion-toggle">
+            SBU / OEM
+          </a>
+        </div>
+        <div class="accordion-body collapse" id="collapseSBU">
+          <div class="accordion-inner row-fluid oem-select">
+            
+            <apex:inputField value="{!ExceptionRecord.SBU__c}" styleClass="input-block-level" />
+            
+            <apex:inputField value="{!ExceptionRecord.OEM__c}" styleClass="input-block-level"/> 
+
+          </div>
+        </div>
+      </div>
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <div class="plus-icon"></div>
+          <a href="#collapsePlatform" data-toggle="collapse" class="accordion-toggle">
+            Platform
+          </a>
+        </div>
+        <div class="accordion-body collapse" id="collapsePlatform">
+          <div class="accordion-inner row-fluid">
+            
+            <apex:inputField id="platformid" value="{!ExceptionRecord.Platform__c}"  styleClass="input-block-level" >
+              <c:Autocomplete id="item" AutoCompleteId="platformid" inputId="{!$Component.platformid}" ClassName="autocomplete autoMyCls" ObjectName="Platform__c" width="0"></c:Autocomplete>
+            </apex:inputField>
+
+          </div>
+        </div>
+      </div>
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <div class="plus-icon"></div>
+          <a href="#collapseAccount" data-toggle="collapse" class="accordion-toggle">
+            Account Name
+          </a>
+        </div>
+        <div class="accordion-body collapse" id="collapseAccount">
+          <div class="accordion-inner row-fluid">
+            
+            <apex:inputField id="Accid" value="{!ExceptionRecord.VOC_Account__c}" styleClass="input-block-level">
+             <c:Autocomplete id="item" AutoCompleteId="accACid" inputId="{!$Component.Accid}" ClassName="autocomplete autoMyCls " ObjectName="VOC_Accounts__c" width="0"></c:Autocomplete>       
+            </apex:inputField>
+
+          </div>
+        </div>
+      </div>
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <div class="plus-icon"></div>
+          <a href="#collapseFamily" data-toggle="collapse" class="accordion-toggle">
+            Product Family
+          </a>
+        </div>
+        <div class="accordion-body collapse" id="collapseFamily">
+          <div class="accordion-inner row-fluid">
+            
+            <apex:selectList styleClass="multiselect oemClass input-block-level" id="product" multiselect="true" value="{!ExceptionRecord.Product_Family__c}" size="4">
+               <apex:selectOptions value="{!productfamily}"/>          
+            </apex:selectList>
+
+          </div>
+        </div>
+      </div>
+      
+    </div>
+    <!-- / Accordion -->
+  
+  <apex:commandButton action="{!searchform}" value="Search" status="closer" styleClass="btn btn-large btn-block btn-danger" />
+  <apex:commandButton styleClass="btn btn-large btn-block" value="Reset" action="{!clearform}" immediate="true"/>
+ <!-- <input type="reset" class="btn btn-large btn-block" value="Reset" />-->
+  
+</apex:outputPanel>
+
+<!-- / Search Fields -->
+
+<!-- Search Results -->
+<apex:outputPanel id="innerresult" rendered="{!(showresult && (!showdetail))}">
+
+  <apex:actionFunction name="detailpage" action="{!detailpage}" reRender="detailsection,result" >
+     <apex:param name="vocid" value="" />
+  </apex:actionFunction>
+  
+<h3 class="main-header"><img src="{!URLFOR($Resource.VOC_bootstrap_zip, 'img/list-voc.png')}" class="pull-left" /> VOC Results</h3>
+<br/>
+
+    <apex:repeat value="{!objCuslist}" var="c">
+    
+    <!-- <apex:outputPanel onclick="detailpage('{!c.id}');"  > -->
+    
+    <apex:inputHidden value="{!c.id}" id="vocid"/>
+    
+    <div class="row-fluid">
+      <div class="span12 result-item">
+        
+        <apex:commandLink action="{!detailpage}" styleClass="details-arrow">
+            <apex:param value="{!c.id}" name="vocid"/>
+            <img src="{!URLFOR($Resource.VOC_bootstrap_zip, 'img/icon-voc-arrow.png')}" />
+        </apex:commandLink>
+        
+        <small><i class="icon-date"></i>
+        <apex:outputText value="{0,date,MM'/'dd'/'yyyy}" >
+            <apex:param value="{!c.Date_of_VOC__c}" />
+        </apex:outputText></small>
+        <small><i class="icon-num"></i>{!c.name}</small>
+        <div><strong>Title: </strong>
+        <apex:commandLink action="{!detailpage}" >
+            <apex:param value="{!c.id}" name="vocid"/>{!c.Title__c}
+        </apex:commandLink></div>
+        <div><strong>Creator: </strong><apex:outputField value="{!c.createdById}"/></div>
+        <div><strong>Key Observations:</strong></div>
+        <em>
+          &ldquo;{!c.Key_Takeaways1__c}&rdquo;
+        </em>
+
+      </div>      
+    </div>
+    
+    <!-- </apex:outputPanel> -->
+    
+    </apex:repeat>
+
+</apex:outputPanel>
+<!-- / Search Results -->
+
+<!-- Details Page -->
+
+<apex:outputPanel id="detailsection">
+    <apex:outputPanel id="innnerdetailsection" rendered="{!showdetail}">
+    
+    <h3 class="main-header"><img src="{!URLFOR($Resource.VOC_bootstrap_zip, 'img/list-voc.png')}" class="pull-left" /> VOC Details</h3>
+    <br/>
+    <apex:messages id="error"/>
+    
+    <dl class="dl-horizontal result-item">
+      <small><i class="icon-date"></i> <apex:outputField value="{!ExceptionRecord.Date_of_VOC__c}" /></small>
+      <small><i class="icon-num"></i> <apex:outputField value="{!ExceptionRecord.name}" /></small>
+      <dt>Title:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.Title__c}" /></dd>
+      <dt>Type:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.RecordtypeId}" /></dd>
+      <dt>Record Owner:</dt>
+      <dd><apex:outputText value="{!ExceptionRecord.Owner_Name__c}" /></dd>
+      <dt>Source:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.Source__c}" /></dd>
+      <dt>Account Name:</dt>
+      <dd><apex:outputText value="{!ExceptionRecord.VOC_Account__r.Name}" /></dd>
+      <dt>SBU:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.SBU__c}" /></dd>
+      <dt>OEM:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.OEM__c}" /></dd>
+      <dt>Honeywell Lead:</dt>
+      <dd><apex:outputText value="{!ExceptionRecord.Created_By_Name__c}" /></dd>
+      <dt>Platform:</dt>
+      <dd><apex:outputText value="{!ExceptionRecord.Platform__r.Name}" /></dd>      
+      <dt>Product Family:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.Product_Family__c}" /></dd>
+      <dt>Product Name:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.Product_Name__c}" /></dd>
+      <dt>Sensitive Info?</dt>
+      <dd>
+      <apex:outputField id="textarea1" value="{!ExceptionRecord.Sensitive__c}" />
+        <apex:outputText >  <small style="color: #C19600;">
+        {!$ObjectType.Voice_of_Customer__c.fields.Sensitive__c.inlineHelpText}</small>
+        </apex:outputText>
+        
+      </dd>
+      <dt>Competitive Info?</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.Competitor__c}" /></dd>      
+      <dt>Key Observations:</dt>
+      <dd><em>&ldquo;<apex:outputField id="textarea" value="{!ExceptionRecord.Key_Takeaways1__c}" />&rdquo;</em></dd>
+      <dt>Disposition:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.Disposition__c}" /></dd>
+      <dt>Key Action Items:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.Key_Action_Items__c}" /></dd>
+      <dt>Action Tracking:</dt>
+      <dd><apex:outputField value="{!ExceptionRecord.Action_Tracking__c}" /></dd>
+      <dt>Attachment(s):</dt>
+      <dd>
+          <apex:repeat value="{!attach}" var="attch">
+          <apex:outputLink target="_BLANK" value="/servlet/servlet.FileDownload?file={!attch.id}">{!attch.name}</apex:outputLink><br/>
+          </apex:repeat>
+      </dd>
+    </dl>
+        
+    </apex:outputPanel>
+</apex:outputPanel>
+
+<!-- / Details Page -->
+
+</div>
+<br/>
+<script src="{!URLFOR($Resource.VOC_bootstrap_zip, 'js/jquery.js')}" type="text/javascript"></script>
+<script src="{!URLFOR($Resource.VOC_bootstrap_zip, 'js/bootstrap.min.js')}" type="text/javascript"></script>
+<script src="{!URLFOR($Resource.VOC_bootstrap_zip, 'js/mobile.min.js')}" type="text/javascript"></script>
+<script type="text/javascript">
+$(document).ready( function() {
+    $('#vocDate').val(new Date().toJSON().slice(0,10));
+});
+$("input[type='date']").blur(function(){
+    var iosDate = $(this).val().split('-');
+    $( $(this).attr("data-hdn") ).val([iosDate[1],iosDate[2],iosDate[0]].join('/'));
+});
+$(".accordion-toggle").click(function(){
+  $(this).parent().toggleClass("on");
+});
+</script>
+</body>
+</html>
+
+</apex:form>
+</apex:page>

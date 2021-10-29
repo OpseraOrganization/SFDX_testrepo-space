@@ -1,0 +1,165 @@
+<!-- 
+    Apttus Billing 
+    InvoiceRunDetail
+ 
+    @2013-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Apttus_Billing__InvoiceRun__c" extensions="Apttus_Billing.InvoiceRunController" tabstyle="Apttus_Billing__InvoiceRun__c">
+  <style>
+    .headerRow .TableTitle {
+       background-color: #F0F8FF !important;
+       background-image: none !important; //This is needed if you want to overwrite the header background
+       color: #CC0000 !important; 
+       font-size:100% !important; 
+    }
+    div.hideCurrDate span.dateInput span.dateFormat{
+       display:none;
+    }
+  </style>
+  <apex:sectionHeader title="{!$ObjectType.Apttus_Billing__InvoiceRun__c.label}" subtitle="{!invoiceRun.Name}"/>
+  <apex:pageBlock title="{!$ObjectType.Apttus_Billing__InvoiceRun__c.label} {!$Label.apttus_billing__detail}">
+  
+
+     <apex:pageBlockButtons >
+        <apex:form >
+           <apex:commandButton action="{!edit}" value="{!$Label.apttus_billing__edit}"/>
+           <apex:commandButton action="{!delete}" value="{!$Label.apttus_billing__delete}" disabled="{!IF(invoiceRun.Apttus_Billing__ScheduledJobId__c != '', true, false)}"/>
+           <apex:commandButton action="{!URLFOR($Action.InvoiceRun__c.Clone, InvoiceRun__c.id)}" value="{!$Label.apttus_billing__clone}"/>
+           <apex:commandButton action="{!deactivateInvoiceRun}" value="{!$Label.apttus_billing__deactivate}" disabled="{!IF(invoiceRun.Apttus_Billing__ScheduledJobId__c == '', true, false)}"/>
+        </apex:form>
+     </apex:pageBlockButtons>
+     <apex:pageBlockSection showHeader="false" columns="2">
+        <apex:outputField value="{!invoiceRun.Name}"/>
+        <apex:pageBlockSectionItem >
+           <apex:outputLabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.label} {!$Label.apttus_billing__owner}"/>
+              <apex:outputPanel >
+                 <apex:outputField value="{!invoiceRun.OwnerId}"/>&nbsp;
+                 <a href="/{!invoiceRun.Id}/a?retURL=/{!invoiceRun.Id}">[{!$Label.Change}]</a>
+              </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__OverrideTemplate__c}"/>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__ScheduledJobId__c}"/>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__AutoApproveInvoices__c}"/>
+        <apex:pageBlockSectionItem rendered="{!invoiceRun.Apttus_Billing__AutoApproveInvoices__c}">
+          <apex:outputlabel value="{!$Label.apttus_billing__autoapprovethreshold}" />
+           <apex:outputPanel id="autoapprvInvConditionBlk" layout="block">
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__AutoApproveOperator__c}"/>&nbsp;
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__AutoApproveAmount__c}"/>
+           </apex:outputPanel>        
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem rendered="{!invoiceRun.Apttus_Billing__AutoApproveInvoices__c}">
+          <apex:outputlabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__AutoSendInvoiceEmail__c.label}" />
+           <apex:outputPanel id="autosendInvConditionBlk" layout="block">
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__AutoSendInvoiceEmail__c}"/>
+           </apex:outputPanel>        
+        </apex:pageBlockSectionItem>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__AutoApproveCreditMemos__c}"/> 
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__AutoSendCreditMemoEmail__c}" rendered="{!invoiceRun.Apttus_Billing__AutoApproveCreditMemos__c}"/>               
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__SplitInvoicesByOrder__c}"/>
+        <apex:pageBlockSectionItem >
+          <apex:outputlabel value="{!$Label.apttus_billing__suppressinvoices}" />
+           <apex:outputPanel id="supressInvBlk" layout="block">
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__SuppressInvoicesOperator__c}"/>&nbsp;
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__SuppressInvoicesAmount__c}"/>
+           </apex:outputPanel>        
+        </apex:pageBlockSectionItem> 
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__CreditMemoCreationOption__c}"/>         
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__RunType__c}"/>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__InvoiceDateType__c}" />
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__InvoiceDate__c}" rendered="{!(invoiceRun.Apttus_Billing__RunType__c == 'Immediate' && invoiceRun.Apttus_Billing__InvoiceDateType__c == 'User Defined')}"/>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__ProcessthruDate__c}" rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Immediate'}"/>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__Category__c}" rendered="{!invoiceFilterCallBackClass != ''}"/>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__SubCategory__c}" rendered="{!invoiceFilterCallBackClass != ''}"/>         
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__ScheduleType__c}" rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}"/>
+        <apex:pageBlockSectionItem rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}">   
+           <apex:outputLabel value="{!$Label.apttus_billing__preferredstarttime}"/>
+           <apex:outputPanel >
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__PreferredStartHour__c}"/>
+              <apex:outputlabel value=", " rendered="{!invoiceRun.Apttus_Billing__PreferredStartHour__c != null}"/>
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__PreferredStartMinute__c}"/>
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__WeekDay__c}" rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Weekly' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}"/>
+        <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Monthly by day' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">   
+           <apex:outputLabel value="{!$Label.apttus_billing__schedule}"/>
+           <apex:outputPanel >
+             <apex:outputlabel value="{!$Label.apttus_billing__onthe} " />
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__MonthlyWeek__c}"/>&nbsp;
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__MonthlyWeekDay__c}"/>
+              <apex:outputlabel value=" {!$Label.apttus_billing__everymonth}" />
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Monthly by date' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">   
+           <apex:outputLabel value="{!$Label.apttus_billing__schedule}"/>
+           <apex:outputPanel >
+             <apex:outputlabel value="{!$Label.apttus_billing__onthe} " />
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__MonthlyDate__c}"/>
+              <apex:outputlabel value=" {!$Label.apttus_billing__day} {!$Label.apttus_billing__everymonth}" />
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Weekly' && invoiceRun.Apttus_Billing__InvoiceDateType__c == 'User Defined' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">   
+           <apex:outputLabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__InvoiceDateOffset__c.label}"/>
+           <apex:outputPanel >
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__InvoiceDateOffset__c}"/>
+              <apex:outputlabel value=" {!$Label.apttus_billing__days}" />
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem rendered="{!(invoiceRun.Apttus_Billing__ScheduleType__c == 'Weekly' && invoiceRun.Apttus_Billing__RunType__c == 'Scheduled')}">   
+           <apex:outputLabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__ProcessthruDateOffset__c.label}"/>
+           <apex:outputPanel >
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__ProcessthruDateOffset__c}"/>
+              <apex:outputlabel value=" {!$Label.apttus_billing__days}" />
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem> 
+        <apex:pageBlockSectionItem rendered="{!((invoiceRun.ScheduleType__c == 'Monthly by day' || invoiceRun.ScheduleType__c == 'Monthly by date')
+                                                              && invoiceRun.InvoiceDateType__c == 'User Defined' && invoiceRun.RunType__c == 'Scheduled')}">   
+           <apex:outputLabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__InvoiceDate__c.label}"/>
+           <apex:outputPanel >
+              <apex:outputlabel value=" {!$Label.apttus_billing__the} " />
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__MonthlyInvoiceDay__c}"/>
+              <apex:outputlabel value=" {!$Label.apttus_billing__day} {!$Label.apttus_billing__of} "/>
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__InvoiceDayMonthOption__c}"/>
+              <apex:outputlabel value=" {!$Label.apttus_billing__month}" /> 
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem rendered="{!((invoiceRun.ScheduleType__c == 'Monthly by day' || invoiceRun.ScheduleType__c == 'Monthly by date')
+                                                                                                             && invoiceRun.RunType__c == 'Scheduled')}">   
+           <apex:outputLabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__ProcessthruDate__c.label}"/>
+           <apex:outputPanel >
+              <apex:outputlabel value=" {!$Label.apttus_billing__the} " />
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__MonthlyProcessthruDay__c}"/>
+              <apex:outputlabel value=" {!$Label.apttus_billing__day} {!$Label.apttus_billing__of} "/>
+              <apex:outputField value="{!invoiceRun.Apttus_Billing__ProcessthruDayMonthOption__c}"/>
+              <apex:outputlabel value=" {!$Label.apttus_billing__month}" /> 
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem>                                       
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__PeriodStartDate__c}" rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}"/>
+        <apex:outputField value="{!invoiceRun.Apttus_Billing__PeriodEndDate__c}" rendered="{!invoiceRun.Apttus_Billing__RunType__c == 'Scheduled'}"/>
+        <apex:pageBlockSectionItem >
+           <apex:outputLabel value="{!$ObjectType.Apttus_Billing__InvoiceRun__c.fields.Apttus_Billing__FilterCriteria__c.label}"/>
+           <apex:outputText value="{!criteriaExpression}"/>
+        </apex:pageBlockSectionItem>
+     </apex:pageBlockSection>
+     <apex:pageBlockSection showHeader="false" columns="2">
+        <apex:pageBlockSectionItem >
+           <apex:outputLabel value="{!$Label.apttus_billing__createdby}"/>
+           <apex:outputPanel >
+              <apex:outputField value="{!Apttus_Billing__InvoiceRun__c.CreatedById}"/>,&nbsp;
+              <apex:outputField value="{!Apttus_Billing__InvoiceRun__c.CreatedDate}"/>
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem>
+        <apex:pageBlockSectionItem >   
+           <apex:outputLabel value="{!$Label.apttus_billing__lastmodifiedby}"/>
+           <apex:outputPanel >
+              <apex:outputField value="{!Apttus_Billing__InvoiceRun__c.LastModifiedById}"/>,&nbsp;
+              <apex:outputField value="{!Apttus_Billing__InvoiceRun__c.LastModifiedDate}"/>
+           </apex:outputPanel>
+        </apex:pageBlockSectionItem>   
+     </apex:pageBlockSection>
+     <!--<apex:pageBlockSection showHeader="true" title="Custom Links" columns="3" >
+     </apex:pageBlockSection> -->
+  </apex:pageBlock>
+  <apex:relatedList subject="{!Apttus_Billing__InvoiceRun__c}" list="OpenActivities"/>     
+  <apex:relatedList subject="{!Apttus_Billing__InvoiceRun__c}" list="ActivityHistories" /> 
+  <apex:relatedList subject="{!Apttus_Billing__InvoiceRun__c}" list="Invoice_Run_Results__r" />  
+</apex:page>

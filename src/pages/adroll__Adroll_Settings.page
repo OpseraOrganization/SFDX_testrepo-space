@@ -1,0 +1,337 @@
+<apex:page tabStyle="AdRoll_Settings__tab" standardStylesheets="false" controller="adroll.AdRollSettingsController" sidebar="false"
+    docType="html-5.0" applyBodyTag="False" applyHtmlTag="true">
+
+    <head>
+        <title>AdRoll Settings</title>
+        <apex:slds />
+        <apex:stylesheet value="{!URLFOR($Resource.adroll__adroll_assets, 'main.css')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.adroll__adroll_assets, 'scripts/svg4everybody.min.js')}" />
+        <c:SentryScriptComponent />
+        <c:DataIngestionPopupComponent />
+        <c:ScheduledReportsActionsComponent />
+        <script>
+
+            var nextScheduledSyncRun = null;
+            var batchJobNameTrackingDataRollup = '{!batchJobNameTrackingDataRollup}';
+            var batchJobDetails = {};
+
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.AdRollSettingsController.nextScheduledSyncRun}', function (result, event) {
+                    if (event.status) {
+                        nextScheduledSyncRun = result;
+                    }
+                    reRenderSyncButton();
+                });
+
+            function refreshBatchJobDetails() {
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.AdRollSettingsController.getBatchJobDetails}', function (result, event) {
+                        if (event.status) {
+                            batchJobDetails = result;
+                        }
+                        reRenderBatchJobPanel();
+                    }
+                );
+            }
+
+            function redirect(myUrl) {
+                if ((typeof sforce != 'undefined') && (sforce != null)) {
+                    // Salesforce1 and lightning navigation
+                    sforce.one.navigateToURL(myUrl, true);
+                } else {
+                    // Set the window's URL
+                    window.location.href = myUrl;
+                }
+            }
+
+            function scheduleBatches() {
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.AdRollSettingsController.scheduleBatches}', function (result, event) {
+                        if (event.status) {
+                            nextScheduledSyncRun = result;
+                            reRenderSyncButton();
+                        }
+                    });
+
+            }
+
+            function abortBatches() {
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.AdRollSettingsController.abortBatches}', function (result, event) {
+                        if (event.status) {
+                            nextScheduledSyncRun = null;
+                            reRenderSyncButton();
+                        }
+                    });
+            }
+
+            function runTrackingDataBatch() {
+                Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.AdRollSettingsController.runBatchNow}', batchJobNameTrackingDataRollup, function (result, event) {
+                    if (event.status) {
+                        nextScheduledSyncRun = null;
+                        var ele = document.getElementById(batchJobNameTrackingDataRollup);
+                        ele.innerHTML = batchJobDetails[batchJobNameTrackingDataRollup].label + ' : Queued'
+                        queueBatchPanelRerender();
+                    }
+                });
+            }
+
+            function reRenderSyncButton() {
+                var elem = document.getElementById('syncButtonContainer');
+                if (elem != null) {
+                    if (nextScheduledSyncRun != null) {
+                        elem.innerHTML = '<p><button onclick="abortBatches();" class="slds-button slds-button--brand slds-m-bottom--medium">{!$Label.Settings_Stop_Sync}</button></p><p>{!$Label.Settings_Next_Run} ' + new Date(nextScheduledSyncRun).toLocaleString() + '</p>';
+                    }
+                    else {
+                        elem.innerHTML = '<p><button onclick="scheduleBatches();" class="slds-button slds-button--brand slds-m-bottom--medium">{!$Label.Settings_Start_Sync}</button></p><p>{!$Label.Settings_Batch_User_Requirements}</p>';
+                    }
+                }
+            }
+
+            function reRenderBatchJobPanel() {
+
+                var elem = document.getElementById('runningJobsContainer');
+                if (elem != null) {
+                    if (batchJobDetails != null) {
+
+                        var queueRerender = false;
+                        var getBatchText = function (batchJobName, batchJobFunctionName) {
+
+                            var batchFound = batchJobDetails.hasOwnProperty(batchJobName);
+                            var detail = batchJobDetails[batchJobName];
+                            var showRunNow = !batchFound || !detail.isRunning;
+                            var statusText = '';
+
+                            if (batchFound) {
+
+                                var runDate = new Date();
+                                runDate.setTime(detail.lastRun);
+                                queueRerender = queueRerender || detail.isRunning;
+                                statusText = detail.isRunning ? 'Processing ' + detail.itemsProcessed + ' of ' + detail.totalItems : 'Last Run ' + (detail.lastRun ? runDate.toDateString() : ' Never');
+                            }
+
+                            var buttonMarkup = !showRunNow ? '' : ' - <a onclick="' + batchJobFunctionName + '();return false;" >Run Now</a>';
+
+                            var markup = '<p id="' + batchJobName + '">' + (detail ? detail.label : batchJobName) + ': ' + statusText + ' ' + buttonMarkup + '</p>';
+
+                            if (detail.lastRun && detail.status) {
+                                var statusStr = detail.status + (detail.itemsFailed > 0 ? ' with ' + detail.itemsFailed + ' failure(s)' : '');
+                                markup += '<p>Last Run Status: ' + statusStr + '</p>';
+                            }
+
+                            return markup;
+                        }
+
+                        elem.innerHTML = '';
+                        elem.innerHTML += getBatchText(batchJobNameTrackingDataRollup, 'runTrackingDataBatch');
+
+                        if (queueRerender) {
+                            queueBatchPanelRerender();
+                        }
+                    }
+                    else {
+                        elem.innerHTML = '';
+                    }
+                }
+            }
+
+            function queueBatchPanelRerender() {
+                window.setTimeout(refreshBatchJobDetails, 5000);
+            }
+
+            refreshBatchJobDetails();
+            svg4everybody();
+        </script>
+    </head>
+    <div class="adroll-page-container">
+        <!-- Settings Page Header -->
+        <div class="slds-page-header slds-page-header--object-home">
+            <div class="slds-grid">
+                <div class="slds-col slds-has-flexi-truncate">
+                    <div class="slds-media slds-no-space slds-grow">
+                        <div class="slds-media__figure">
+                            <span class="slds-icon_container">
+                                <svg class="slds-icon slds-icon-standard-lead" aria-hidden="true">
+                                    <use href="{!URLFOR($Asset.SLDS, 'assets/icons/custom-sprite/svg/symbols.svg#custom67')}"></use>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <p class="slds-text-title--caps slds-line-height--reset">{!$Label.AdrollABM}</p>
+                            <h1 class="slds-page-header__title slds-p-right--x-small">
+                                <span class="slds-grid slds-has-flexi-truncate slds-grid--vertical-align-center">
+                                    <span class="slds-truncate">{!$Label.Settings_Title}</span>
+                                </span>
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-col slds-align-middle">
+                    <div class="slds-float--right">
+                        <apex:image url="{!URLFOR($Resource.adroll__adroll_assets, 'adroll-logo.png')}" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End of Settings Page Header -->
+
+        <apex:outputText rendered="{!(!RecentlyConnected)}">
+            <div id="contactToast" class="slds-notify_container slds-is-relative ">
+                <div class="slds-notify slds-notify_toast slds-theme_warning" role="alert">
+                    <span class="slds-assistive-text">no contact</span>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small ">The RollWorks API has not called into your Org for more than 2 days. Please check your RollWorks
+                            account to confirm there are no issues.</h2>
+                    </div>
+                </div>
+            </div>
+        </apex:outputText>
+
+        <!-- Settings Page Body -->
+        <div class="page-wrapper">
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size--8-of-12 slds-p-right--large">
+                    <div class="slds-grid">
+
+                        <!-- If in NOT-CONNECTED state remove slds-border bottom class -->
+                        <div class="slds-col slds-m-right--x-large slds-p-bottom--large slds-border--bottom icon-outside">
+
+                            <apex:outputText rendered="{!(!isAdvertisableDataSettingsEnabled)}">
+                                <!-- Adroll Settings NOT-CONNECTED State -->
+                                <h1 class="slds-text-heading--medium slds-p-bottom--x-small">
+                                    <span class="icon-outside--icon status-icon slds-icon_container slds-icon_container--circle">
+                                        <svg class="slds-icon slds-icon--small" aria-hidden="true">
+                                            <use href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#approval')}"></use>
+                                        </svg>
+                                    </span>
+                                    {!$Label.Settings_ConnectHeader}
+                                </h1>
+                                <p class="slds-p-bottom--medium">{!$Label.Settings_ConnectInstructions}</p>
+                                <button onclick="redirect('{!adRollAuthURL}')" class="slds-button slds-button--brand slds-m-bottom--medium">{!$Label.Settings_Authorize}</button>
+                                <!-- End of Adroll Settings NOT-CONNECTED State -->
+                            </apex:outputText>
+
+
+                            <apex:outputText rendered="{!isAdvertisableDataSettingsEnabled}" id="connectedState">
+                                <!-- Adroll Settings CONNECTED State -->
+                                <h1 class="slds-text-heading--medium">
+                                    <span class="icon-outside--icon status-icon connected slds-icon_container slds-icon_container--circle">
+                                        <svg class="slds-icon slds-icon--small" aria-hidden="true">
+                                            <use href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#approval')}"></use>
+                                        </svg>
+                                    </span>
+                                    {!$Label.Settings_Connected}
+                                </h1>
+                                <p>
+                                    <a href="#" onclick="redirect('{!editOAuthURL}')">{!$Label.Settings_Edit}</a>
+                                </p>
+                                <br/>
+                                <div id="syncButtonContainer">
+                                </div>
+                                <br />
+                                <div id="runningJobsContainer">
+                                </div>
+                            </apex:outputText>
+                        </div>
+                    </div>
+                    <div id="data-ingestion-app-container"></div>
+                    <script src="{!URLFOR($Resource.RollWorks_Data_Ingestion, 'bundle.js')}" />
+                </div>
+                <div class="slds-col slds-size--4-of-12">
+                    <div class="slds-grid slds-wrap">
+                        <div class="slds-col icon-outside slds-p-bottom--x-large">
+
+
+                            <!-- Adroll Settings CONNECTED State -->
+                            <h3 class="slds-text-heading--medium">
+                                <span class="icon-outside--icon slds-icon_container slds-icon-standard-feedback slds-icon_container--circle">
+                                    <svg class="slds-icon slds-icon--small" aria-hidden="true">
+                                        <use href="{!URLFOR($Asset.SLDS, 'assets/icons/custom-sprite/svg/symbols.svg#custom96')}"></use>
+                                    </svg>
+                                </span>
+                                {!$Label.Settings_SegmentManagerHeader}
+                            </h3>
+                            <p class="slds-p-bottom--medium">{!$Label.Settings_SegmentManagerInstructions}</p>
+                            <button onclick="redirect('{!segmentManagerURL}')" class="slds-button slds-button--brand">{!$Label.Settings_Manage}</button>
+
+
+                        </div>
+                        <div class="slds-col icon-outside slds-p-top--large slds-p-bottom--x-large">
+
+
+                            <!-- Adroll Settings CONNECTED State -->
+                            <h3 class="slds-text-heading--medium">
+                                <span class="icon-outside--icon slds-icon_container slds-icon-standard-lead slds-icon_container--circle">
+                                    <svg class="slds-icon slds-icon--small" aria-hidden="true">
+                                        <use href="{!URLFOR($Asset.SLDS, 'assets/icons/custom-sprite/svg/symbols.svg#custom101')}"></use>
+                                    </svg>
+                                </span>
+                                {!$Label.Settings_TargetingAttributesHeader}
+                            </h3>
+                            <p class="slds-p-bottom--medium">{!$Label.Settings_TargetingAttributesInstructions}</p>
+                            <button onclick="redirect('{!attributeManagerURL}')" class="slds-button slds-button--brand">{!$Label.Settings_Manage}</button>
+                            <!-- End of Adroll Settings CONNECTED State -->
+
+                        </div>
+                        <div class="slds-col icon-outside slds-p-top--large slds-p-bottom--x-large">
+                            <div id="schedule-reports-app-container"></div>
+                            <script src="{!URLFOR($Resource.RollWorks_Schedule_Reports, 'bundle.js')}" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End of Settings Page Body -->
+        <!-- Redirect Modal -->
+        <div style="height: 150px;">
+            <section role="dialog" id="Modal" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1"
+                class="slds-modal">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!$Label.Settings_Modal_Header}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        {!$Label.Settings_Modal_Body}
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_brand" onclick="closeModal()">Ok</button>
+                    </footer>
+                </div>
+            </section>
+            <div id="backdrop" class="slds-backdrop"></div>
+        </div>
+        <!-- End of Modal -->
+
+    </div>
+    <script>
+
+        var showModalBoolean = {!presentModalBool};
+        var advertisableId = '{!JSENCODE(advertisable)}';
+        var redirectURL = '{!JSENCODE($Site.BaseUrl + ' / apex / Adroll_Settings')}';
+
+        if (showModalBoolean && advertisableId != '') {
+            showModal();
+        }
+        function showModal() {
+            var modal = document.getElementById('Modal');
+            var backdrop = document.getElementById('backdrop');
+            modal.classList.add('slds-fade-in-open');
+            backdrop.classList.add('slds-backdrop_open');
+        }
+        function closeModal() {
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.AdRollSettingsController.updateCustomSetting}', advertisableId, function (result, event) {
+                if (event.status) {
+                    var modal = document.getElementById('Modal');
+                    var backdrop = document.getElementById('backdrop');
+                    modal.classList.remove('slds-fade-in-open');
+                    backdrop.classList.remove('slds-backdrop_open');
+                    window.location = redirectURL;
+                } else {
+                    alert(event.message);
+                }
+            },
+                { escape: true }
+            );
+        }
+    </script>
+</apex:page>

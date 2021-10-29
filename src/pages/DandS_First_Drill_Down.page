@@ -1,0 +1,762 @@
+<apex:page controller="DashboardHome" showheader="false" standardStylesheets="false">
+   <apex:form >
+   
+<html lang="en">
+    <head>
+    
+          <script type="text/javascript">
+        
+        function showtstPopup(){            
+            document.getElementById('Overlay').style.display='block';
+            document.getElementById('Overlay').scrollIntoView() ;
+
+        }
+        
+        function closetstPopup(){
+            document.getElementById('Overlay').style.display='none';
+        }
+    </script>
+    <style type="text/css">
+    .redPercent_box {
+    background-color: #ee3124;
+    border-radius: 5px;
+    clear: none;
+    float: right;
+    height: 60px;
+    left: 0;
+    margin: 0;
+    min-width: 0;
+    position: relative;
+    top: 0;
+    width: 60px;
+    z-index: 4;
+}
+.redPercent_box.yellow {
+    background-color: #ffc600;
+}
+.redPercent_box.green {
+    background-color: #058f0c; 
+}
+
+}
+</style>
+
+    <meta charset="utf-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<meta name="viewport" content="initial-scale = 1.0,maximum-scale = 1.0"/>
+<title>Customer Rating Dashboard</title>
+    !-- Bootstrap -->
+<link href="{!URLFOR($Resource.CRDCss, '/css/bootstrap/bootstrap.min.css')}" rel="stylesheet" type="text/css"/>
+<link href="{!URLFOR($Resource.CRDCss, '/css/responsiveView.css')}" rel="stylesheet" type="text/css"/>
+
+<!-- --------------------------------------------------------------------------------------------------------------TAB CONTENT -->
+
+<link href="{!URLFOR($Resource.CRDCss, '/css/responsive-tabs.css')}" rel="stylesheet" type="text/css" />
+<script src="{!URLFOR($Resource.CRDjs, '/js/responsive-tabs.js')}" type="text/javascript"></script>
+
+<!-- --------------------------------------------------------------------------------------------------------------TAB CONTENT -->
+
+    <apex:stylesheet value="{!$Resource.boilerplate}"/>
+    <apex:stylesheet value="{!$Resource.FirstdrillDownDS}"/>
+    
+
+
+<script type="text/javascript">
+    $(window).unload( function () { 
+        if($.cookie('toolbar') != $('#footerow').css("height") )
+            $.cookie('toolbar',$('#footerow').css("height"));
+    });
+    $(document).ready(function() {
+         var scroll = true;
+        if($.cookie('device') == 'tv') location.href="/AOGRealTimeReport/AOG_Dashboard_Samsung?id=24";
+    
+        if($.cookie('toolbar'))$('#footerow').css("height",$.cookie('toolbar'));
+    
+        $(".popup_details").fancybox();
+        
+        /*$(".trigger").toggle(
+            function() { 
+                $('#footerow').animate({height:'70px'}, 500);
+            }, 
+            function() { 
+                $('#footerow').animate({height:'35px'}, 500);
+            }
+        );*/
+        $(".trigger").click(function() {
+                $('#footerow').animate({height:($('#footerow').css("height")=='35px'?'70px':'35px')}, 500);
+        });
+        
+        if( window.location.search.length > 0){
+        
+            $('li a, .button').each(function(index) {/**/
+                /*var newVar = $(this).attr('href').replace("?","");*/
+                
+                if( $(this).hasClass("home") ) return;
+                
+                var newVar = $(this).attr('href');
+                if(newVar.lastIndexOf("&")!=-1)newVar = newVar.substring(newVar.lastIndexOf("?")+1,newVar.lastIndexOf("&"));
+                else newVar = newVar.substring(newVar.lastIndexOf("?")+1);
+                
+                var splitVar = newVar.split("=");
+                var expPatt = new RegExp("\\b"+splitVar[0]+"=\\b[a-zA-Z0-9_%]*");
+                var currentURL = window.location.search;
+                
+                if( currentURL.search(splitVar[0]+'=')==-1 ){//not found!
+                    currentURL += '&'+newVar;
+                    $(this).attr('href',currentURL);//Set New URL
+                }
+                else{
+                    currentURL = currentURL.replace(expPatt,newVar);
+                    $(this).attr('href',currentURL);//Set New URL
+                }
+                
+            });
+            
+         }
+    });
+</script>
+<script>
+function Productcat(){            
+            window.open('http://honeywellaero.force.com/Dashboards/Product_Category_drill_down');
+        }
+</script>
+<script>
+function SBUselect(){   
+if((document.getElementById("filter").value)== 'ATR') 
+{       
+    window.location='http://honeywellaero.force.com/Dashboards/ATR_First_Drill_Down?scroll=true';
+    }
+else if((document.getElementById("filter").value)== 'BGA')
+{
+    window.location='http://honeywellaero.force.com/Dashboards/BGA_First_Drill_Down?scroll=true';
+}
+else if((document.getElementById("filter").value)== 'ALL')
+{
+    window.location='http://honeywellaero.force.com/Dashboards/All_SBU?scroll=true';
+}
+    }
+        
+</script>
+
+<style type="text/css">
+a, a:hover {
+    text-decoration: none;
+}
+#headerow table {
+    width: 100%;
+    max-width: 1890px;
+}
+.totals {
+    font-family: Verdana,Geneva,sans-serif; 
+    font-size: 26px;
+    text-align: left;
+}
+.totals span {
+    color: #0084CA;
+}
+.datePicker {
+    display:none;
+}
+/*.datatable {
+    padding-bottom: 500px;
+}*/
+.datatable table { 
+    background-image: url({!$Resource.item_row_bg}); 
+    height: 160px;
+}
+.datatable tr td {
+    text-align: left;
+}
+.datatable table tr td.age.spex { 
+    background-image: url({!$Resource.spex});
+}
+.datatable table tr td.age.AcceleratedRepair { 
+    
+    background-image: url({!$Resource.AcceleratedRepair});
+ 
+}
+.datatable table tr td.age.tech{ 
+    background-image: url({!$Resource.tech});
+}
+
+#footerow {
+    background-image: url({!$Resource.footer_bg});
+    font-size: 18px;
+}
+#footerow .button {
+    background-image: url({!$Resource.dashboard_buttons});
+    background-repeat: no-repeat;
+    height: 25px;
+    width: 115px;
+    display: table-cell;
+    border: none;
+    padding: 0px;
+    text-decoration: none;
+}
+#footerow .button.home {
+    background-position: 0px -75px;
+}
+#footerow .button.scroll {
+    background-position: -115px 0px;
+}
+#footerow .button.stop {
+    background-position: -115px -25px;
+}
+
+
+
+</style>
+    </head>
+<body onload="doScroll();">
+
+    <div id="primaryContainer" class="primaryContainer clearfix">       
+        <div id="top-nav" class="clearfix">
+            <div id="box29" class="clearfix">
+                <a id="Layer_321" href="http://honeywellaero.force.com/Dashboards" class="clearfix">
+                    <p id="Home1">
+                    &#8249;&nbsp;
+                    </p>
+                    <p id="Home2">
+                    Home
+                    </p>
+                </a>
+                <p id="CUSTOMER_SERVICE_DASHBOARD">
+                CUSTOMER&nbsp;RATING&nbsp;DASHBOARD&nbsp;
+                </p> 
+            <div class="row-fluid"  align="right"> 
+                <span style="padding-right: 30px;">
+                 <span style="color:white"> Select SBU</span>
+              <select id="filter" onchange="SBUselect();">
+              <option value="D&S" selected="">D&amp;S</option>
+                                <option value="ALL">ALL SBU</option>
+                                <option value="ATR">ATR</option>
+                                <option value="BGA">BGA</option>
+               </select>
+                </span>
+                 
+                    <div id="box35" class="clearfix"> 
+                 <p id="Home2">              
+                         <input type="button" value="Drill Down by product type" id="Layer_321" style="color:white" onclick="Productcat();" /> 
+                </p>
+                
+                </div>
+                </div>               
+            </div>
+        </div>
+         <div id="row-fluid" class="clearfix">
+            <div id="box30" class="clearfix">
+                <img id="JET_ICON" src="{!$Resource.DSimg}" class="image" />
+                <div id="box31" class="clearfix">
+                    <p id="ATR_-_HEADER">
+                    Defense &amp; Space<br />
+                    </p>
+                    <a id="Text" href="http://honeywellaero.force.com/Dashboards/Customer_top_10_issues_SBUDS?scroll=true">
+                    Go to Top Issues for D&amp;S
+                    </a>
+                </div>
+            </div>
+            <div id="box32" class="clearfix">
+                <div class="{!TotalpercentageColorDS}">
+                    <p id="OVERALL_RANK">
+                    {!TotalpercentageDS}%
+                    </p>
+                </div>
+                <p id="OVERALL_RANK1">
+                Total SRs&#x3a; &nbsp;{!TotalSRDS}<br />Past Due&#x3a; &nbsp;&nbsp;{!PastDueSRDS}
+                </p>
+            </div>
+        </div>
+        <apex:repeat value="{!DSValues}" var="d"><br/>           
+            <div id="Airbus" class="clearfix">
+                <div id="box34" class="clearfix">
+                 <span style="color:white" id="chk" class='image'><font size="5">{!d}</font></span>
+                 <apex:outputPanel rendered="{!if(logoimg[d]=='stop',false,true)}">
+          <img src="/resource/{!logoimg[d]}" class="image"  /></apex:outputPanel>
+                    <div id="box35" class="clearfix">
+                        <p id="OVERALL_RANK2">
+                        <span id="textspan">SRs Past Due&#x3a;</span>&nbsp; &nbsp; {!SRValues[d]}
+                        </p>
+                        <p id="OVERALL_RANK3">
+                        Max Days Past Due&#x3a;&nbsp; {!SRDaysValues[d]}<br />
+                        </p>
+                    </div>
+                   <div>
+                <p id="text33">
+                   
+                <apex:commandLink action="{!TopSRDSRedirect}" >
+                <span style="color:white">  Go to Top Issues </span>
+                    <apex:param value="{!d}"  assignTo="{!TopSRAcc}"  name="{!d}"  />
+                    </apex:commandLink>
+               
+                </p>
+                
+                </div>
+                </div>
+                 <div id="TABLE" class="clearfix">
+                        <div id="TR" class="clearfix">
+                            <div id="TH" class="clearfix">
+                                <p id="OVERALL_RANK4">
+                                Overall Rating<br />&nbsp; &nbsp; &nbsp;
+                                </p>
+                            </div>
+                            <div id="TH1" class="clearfix">
+                                <p id="OVERALL_RANK5"> &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp;
+                               &nbsp;&nbsp;Survey rating<br />
+                                </p>
+                            </div>
+                             <div id="TH8" class="clearfix">
+                                <p id="OVERALL_RANK12">
+                             Product &#x2f;Fleet &#x2f;Site &nbsp; &nbsp;<br />
+                                </p>
+                            </div>
+                            <div id="TH2" class="clearfix">
+                                <p id="OVERALL_RANK6">
+                                Ranking
+                                </p>
+                            </div>
+                            <div id="TH3" class="clearfix">
+                                <p id="OVERALL_RANK7">
+                                Delivery
+                                </p>
+                            </div>
+                            <div id="TH4" class="clearfix">
+                                <p id="OVERALL_RANK8">
+                                Quality
+                                </p>
+                            </div>
+                            <div id="TH5" class="clearfix">
+                                <p id="OVERALL_RANK9">
+                                Reliability
+                                </p>
+                            </div>
+                            <div id="TH6" class="clearfix">
+                                <p id="OVERALL_RANK10">
+                                Development <br/>Programs 
+                                </p>
+                            </div>
+                            <div id="TH7" class="clearfix">
+                                <p id="OVERALL_RANK11">
+                                 &nbsp; Responsiveness   
+                                </p>
+                            </div>                      
+                            
+                        </div>
+                         <apex:repeat value="{!DSValues[d]}" var="v">
+                        <div id="TR1" class="clearfix">
+                            <div id="TD" class="clearfix">
+                                <div id="{!if(v.feed.Overall_Rating_Color__c=='Red','Red_Arrow7Overall',if(v.feed.Overall_Rating_Color__c=='Green','Red_Arrow9Overall',if(v.feed.Overall_Rating_Color__c=='Yellow','Red_Arrow10Overall','Red_Arrow12Overall')))}">
+                                </div>
+                            </div>
+                            <div id="TD1" class="clearfix">
+                            
+                                <apex:outputPanel id="ClickLinkId">
+                                    <p id="APU">   
+                                        <span style="float:left;">
+                                            <apex:outputPanel rendered="{!IF(v.overalltrend == 1, True, False)}">
+                                                <img id="Trend" src="{!If(v.overalltrend == 1, $Resource.Uparrow, If(v.overalltrend == 0, $Resource.downarrow,null))}" class="image" />
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!IF(v.overalltrend == 0, True, False)}">
+                                                <img id="Trend" src="{!If(v.overalltrend == 1, $Resource.Uparrow, If(v.overalltrend == 0, $Resource.downarrow,null))}" class="image" />
+                                            </apex:outputPanel>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                        </span>
+                                        <span style="float:right;">
+                                            &nbsp;&nbsp;&nbsp;&nbsp;                          
+                                            <apex:commandLink oncomplete="showtstPopup();" rerender="tstpopup,ClickLinkId"  >
+                                                {!v.feed.name}
+                                                <apex:param name="{!v.feed.id}" assignTo="{!FeedId}" value="{!v.feed.id}"  />                                        
+                                            </apex:commandLink>
+                                        </span>
+                                    </p>
+                                </apex:outputPanel>
+                            </div>
+                            <div id="TD8" class="clearfix">
+                                <p id="APU">
+                                    <span id="text1" style="float:right;">{!v.feed.Product_Category__c}</span>&nbsp;
+                                </p>
+                            </div>
+                            <div id="TD2" class="clearfix">
+                                <p id="APU1">
+                                    <span id="text1" style="float:left;">&nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp;{!v.feed.Ranking__c}</span>&nbsp;
+                                    <span style="float:right;">
+                                        <apex:outputPanel rendered="{!IF(v.trendStatus== 1, True, False)}">
+                                           <img id="Trend" src="{!If(v.trendStatus== 1, $Resource.downarrow, If(v.trendStatus== 0, $Resource.Uparrow,null))}" class="image" />
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!IF(v.trendStatus== 0, True, False)}">
+                                           <img id="Trend" src="{!If(v.trendStatus== 1, $Resource.downarrow, If(v.trendStatus== 0, $Resource.Uparrow,null))}" class="image" />
+                                        </apex:outputPanel>
+                                    </span>
+                                </p>
+                            </div>
+                            <div id="TD3" class="clearfix"><!--img id="Trend" src="{!If(v.trendStatus== 1, $Resource.Uparrow, If(v.trendStatus== 0, $Resource.downarrow,null))}" class="image" />-->
+                                <div id="{!if(v.feed.Delivery_Customer_Rating_color_CRD__c=='Red','Red_Arrow7',if(v.feed.Delivery_Customer_Rating_color_CRD__c=='Green','Red_Arrow9',if(v.feed.Delivery_Customer_Rating_color_CRD__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                                </div>
+                            </div>
+                            <div id="TD4" class="clearfix">
+                                <div id="{!if(v.feed.Quality_Rating_Color__c=='Red','Red_Arrow7',if(v.feed.Quality_Rating_Color__c=='Green','Red_Arrow9',if(v.feed.Quality_Rating_Color__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                                </div>
+                            </div>
+                            <div id="TD5" class="clearfix">
+                                <div id="{!if(v.feed.Reliability_Rating_Color__c=='Red','Red_Arrow7',if(v.feed.Reliability_Rating_Color__c=='Green','Red_Arrow9', if(v.feed.Reliability_Rating_Color__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                                </div>
+                            </div>
+                            <div id="TD6" class="clearfix">
+                                <div id="{!if(v.feed.Development_Program_Rating_Color__c=='Red','Red_Arrow7',if(v.feed.Development_Program_Rating_Color__c=='Green','Red_Arrow9', if(v.feed.Development_Program_Rating_Color__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                                </div>
+                            </div>
+                            <div id="TD7" class="clearfix">
+                                <div id="{!if(v.feed.Responsiveness_Rating_Color__c=='Red','Red_Arrow7',if(v.feed.Responsiveness_Rating_Color__c=='Green','Red_Arrow9', if(v.feed.Responsiveness_Rating_Color__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                                </div>
+                            </div>  
+                            <div id="TD15" class="clearfix">
+                            <p id="test">
+                               
+                           </p>
+                            </div>                       
+                        </div>
+                        </apex:repeat>
+           
+                    
+            <div id="Lufthansa" class="clearfix">
+            <div id="box40" class="clearfix">
+                <!--img id="EMRAER_LOGO" src="img/logo-dassault.svg" class="image" />-->
+                <p id="APU15">
+                   <!--a id="Text1">
+               <apex:outputLink value="/apex/ATR_VOC_Survey?acctname={!d}" rendered="{!VOCfeedrecordsDS[d]}" > View Industry Ratings for this Airline</apex:outputLink>
+
+                   </a>  -->
+                </p>
+            </div>
+            <div id="TABLE3" class="clearfix">
+            </div>
+        </div>
+          </div>    </div> 
+         </apex:repeat>
+
+    
+    <apex:outputPanel id="tstpopup">
+        <div id="Overlay" Class="clearfix"  >
+            <apex:repeat id="RecDispId" value="{!Recorddetails}" var="r" > 
+                <div id="Popup" class="clearfix" >
+                    <div id="Header" class="clearfix">
+                        <p id="text">
+                        APU
+                        </p>
+                        <img id="Airbus_Logo" src="img/logo-gulfstream.svg" class="image" />
+                    </div>
+                    <div id="box" class="clearfix">
+                        <div id="row" class="clearfix">
+                            <div id="col-md-3" class="clearfix">
+                                <p id="text1">
+                                FEE Number&#x3a;<br />
+                                </p>
+                            </div>
+                            <div id="col-md-9" class="clearfix">
+                                <p id="text2">
+                               {!r.name}<br />
+                                </p>
+                            </div>
+                        </div>
+                        <div id="row1" class="clearfix">
+                            <div id="col-md-31" class="clearfix">
+                                <p id="text3">
+                                Account&#x3a;<br />
+                                </p>
+                            </div>
+                            <div id="col-md-91" class="clearfix">
+                                <p id="text4">
+                                {!r.Account_Name__c}<br />
+                                </p>
+                            </div>
+                        </div>
+                        <div id="row2" class="clearfix">
+                            <div id="col-md-32" class="clearfix">
+                                <p id="text5">
+                                Survey Quarter&#x3a;<br />
+                                </p>
+                            </div>
+                            <div id="col-md-92" class="clearfix">
+                                <p id="text6">
+                                  {!r.Quarter__c}<br/>
+                                </p>
+                            </div>
+                        </div>
+                        <div id="row3" class="clearfix">
+                            <div id="col-md-33" class="clearfix">
+                                <p id="text7">
+                                Survey Year&#x3a;<br />
+                                </p>
+                            </div>
+                            <div id="col-md-93" class="clearfix">
+                                <p id="text8">
+                                {!r.Year__c}<br/>
+                                </p>
+                            </div>
+                        </div>
+                        <div id="row4" class="clearfix">
+                            <div id="col-md-34" class="clearfix">
+                                <p id="text9">
+                                Comments&#x3a;<br />
+                                </p>
+                            </div>
+                            <div id="col-md-94" class="clearfix">
+                                <p id="text10">
+                                {!r.Comments__c}<br/>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tr" class="clearfix">
+                        <div id="box1" class="clearfix">
+                            <p id="text11">
+                            Attribute<br />
+                            </p>
+                        </div>
+                        <div id="box2" class="clearfix">
+                            <p id="text12">
+                            Rating<br />
+                            </p>
+                        </div>
+                        <div id="box3" class="clearfix">
+                            <p id="text13">
+                            Color<br />
+                            </p>
+                        </div>
+                        <div id="box4" class="clearfix">
+                            <p id="text14">
+                            Comments<br />
+                            </p>
+                        </div>
+                    </div>
+                    <div id="tr1" class="clearfix">
+                        <div id="box5" class="clearfix">
+                            <p id="text15">
+                            Delivery<br />
+                            </p>
+                        </div>
+                        <div id="box6" class="clearfix">
+                            <p id="text16">
+                            {!r.Delivery_Customer_Rating_CRD__c}<br />
+                            </p>
+                        </div>
+                        <div id="box7" class="clearfix">
+                            <div id="{!if(r.Delivery_Customer_Rating_color_CRD__c=='Red','Red_Arrow7',if(r.Delivery_Customer_Rating_color_CRD__c=='Green','Red_Arrow9',if(r.Delivery_Customer_Rating_color_CRD__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                            </div>
+                        </div>
+                        <div id="box8" class="clearfix">
+                            <p id="text17">
+                           &nbsp;&nbsp; {!r.Delivery_Root_Cause_Context__c}<br />
+                            </p>
+                        </div>
+                    </div>
+                    <div id="tr2" class="clearfix">
+                        <div id="box9" class="clearfix">
+                            <p id="text18">
+                            Quality<br />
+                            </p>
+                        </div>
+                        <div id="box10" class="clearfix">
+                            <p id="text19">
+                            {!r.Quality_Customers_Rating__c}<br />
+                            </p>
+                        </div>
+                        <div id="box11" class="clearfix">
+                            <div id="{!if(r.Quality_Rating_Color__c=='Red','Red_Arrow7',if(r.Quality_Rating_Color__c=='Green','Red_Arrow9',if(r.Quality_Rating_Color__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                            </div>
+                        </div>
+                        <div id="box12" class="clearfix">
+                            <p id="text20">
+                            &nbsp;&nbsp; {!r.Quality_Root_Cause_Context__c}<br />
+                            </p>
+                        </div>
+                    </div>
+                    <div id="tr3" class="clearfix">
+                        <div id="box13" class="clearfix">
+                            <p id="text21">
+                            Reliability<br />
+                            </p>
+                        </div>
+                        <div id="box14" class="clearfix">
+                            <p id="text22">
+                            {!r.Reliability_Customer_Rating__c}<br />
+                            </p>
+                        </div>
+                        <div id="box15" class="clearfix">
+                            <div id="{!if(r.Reliability_Rating_Color__c=='Red','Red_Arrow7',if(r.Reliability_Rating_Color__c=='Green','Red_Arrow9', if(r.Reliability_Rating_Color__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                            </div>
+                        </div>
+                        <div id="box16" class="clearfix">
+                            <p id="text23">
+                            &nbsp;&nbsp; {!r.Reliability_Root_Cause_Context__c}<br />
+                            </p>
+                        </div>
+                    </div>
+                    <div id="tr4" class="clearfix">
+                        <div id="box17" class="clearfix">
+                            <p id="text24">
+                            Development   Programs<br />
+                            </p>
+                        </div>
+                        <div id="box18" class="clearfix">
+                            <p id="text25">
+                           {!r.Development_Program_Customer_Rating__c}<br />
+                            </p>
+                        </div>
+                        <div id="box19" class="clearfix">
+                            <div id="{!if(r.Development_Program_Rating_Color__c=='Red','Red_Arrow7',if(r.Development_Program_Rating_Color__c=='Green','Red_Arrow9', if(r.Development_Program_Rating_Color__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                            </div>
+                        </div>
+                        <div id="box20" class="clearfix">
+                            <p id="text26">
+                           &nbsp;&nbsp; {!r.Development_Root_Cause_Context__c}<br />
+                            </p>
+                        </div>
+                    </div>
+                    <div id="tr5" class="clearfix">
+                        <div id="box21" class="clearfix">
+                            <p id="text27">
+                            Responsiveness<br />
+                            </p>
+                        </div>
+                        <div id="box22" class="clearfix">
+                            <p id="text28">
+                           {!r.Responsiveness_Customers_Rating__c}<br />
+                            </p>
+                        </div>
+                        <div id="box23" class="clearfix">
+                            <div id="{!if(r.Responsiveness_Rating_Color__c=='Red','Red_Arrow7',if(r.Responsiveness_Rating_Color__c=='Green','Red_Arrow9', if(r.Responsiveness_Rating_Color__c=='Yellow','Red_Arrow10','Red_Arrow12')))}">
+                            </div>
+                        </div>
+                        <div id="box24" class="clearfix">
+                            <p id="text29">
+                            &nbsp;&nbsp; {!r.Responsiveness_Root_Cause_Context__c}<br />
+                            </p>
+                        </div>
+                    </div>
+                    <div id="tr6" class="clearfix">
+                    <div id="box25" class="clearfix">
+                        <p id="text30">
+                        Repair Performance<br />
+                        </p>
+                    </div>
+                    <div id="box26" class="clearfix">
+                        <p id="text31">
+                        {!r.Repairs_Perf_Customer_Rating__c}<br />
+                        </p>
+                    </div>
+                    <div id="box27" class="clearfix">
+                        <div id="{!if(r.Repairs_Perf_Rating_Color__c=='Red','Red_Arrow',if(r.Repairs_Perf_Rating_Color__c=='Green','Red_Arrow3',if(r.Repairs_Perf_Rating_Color__c=='Yellow','Red_Arrow2','Red_Arrow5')))}">
+                        </div>
+                    </div>
+                    <div id="box28" class="clearfix">
+                        <p id="text32">
+                        {!r.Repair_Performance_Customer_Feedback__c}.<br />
+                        </p>
+                    </div>
+                </div>
+                    <div id="Footer" class="clearfix">
+                       <p id="text33">
+                          
+                            <apex:commandLink action="{!Feedredirect}" target="_Blank">
+                           <span style="color:white">   Go to SalesForce for full details... </span>
+                                 <apex:param value="{!r.id}" assignTo="{!FeedId}"  name="{!r.id}"  />
+                              </apex:commandLink> 
+                                                  
+                       </p>
+                       <p id="Home">
+                        
+                         <a class="clearfix" >
+                         
+                         <input type="button" style="color:white" id="Layer_32" value="OK" onclick="closetstPopup();"/>
+                            </a>
+                            </p>
+                            
+                        
+                    </div>
+                </div> 
+             </apex:repeat>
+        </div>
+    </apex:outputPanel>
+</div>
+<div id="footerow">
+<div id="testdev2" > 
+    <table border="0" align="center" cellpadding="0" cellspacing="0"><tbody><tr><td valign="middle">
+
+    <div class="custom_dropdown">  
+      <ul class="main">
+      
+  <apex:outputpanel layout="none" rendered="{!IF((scroll=='true'),true,false)}" >
+      <td style="padding-left: 15px;">          
+          <a id="tggl_scroll" class="button stop" href="?scroll=false" title="Disable Scrolling">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;        </a>
+          
+      </td>
+  </apex:outputpanel>
+  <apex:outputpanel layout="none" rendered="{!IF((scroll!='true'),true,false)}" >
+      <td style="padding-left: 15px;">          
+              <a id="tggl_scroll" class="button scroll" href="?scroll=true" title="Enable Scrolling">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</a>
+          
+      </td>
+  </apex:outputpanel>
+  
+  </ul>
+    </div>
+    
+    
+</td></tr></tbody></table></div>
+</div>
+<span style="color:white">
+<marquee scrollamount="3">{!scrollcommentDS}</marquee>
+</span>
+    </body> 
+    <script type="text/javascript" src="{!$Resource.jQuery_js}"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script language="javascript" type="text/javascript" > 
+   
+   var scrollvalue = queryString("scroll"); 
+   var tggl_scroll = document.getElementById("tggl_scroll");
+   if(scrollvalue != ""){
+    tggl_hours.href += ("&scroll="+scrollvalue);
+}
+   
+    function doScroll() {
+    //alert(scroll);
+    if( scrollvalue=="true")
+     var interval = setInterval("startscrolling()",200);
+     
+}
+ function startscrolling(){
+ //alert(scroll);
+      window.scrollBy(0,2);
+ }
+               
+                    
+function queryString(parameter) { 
+
+var loc = location.search.substring(1, location.search.length);
+  
+  var param_value = false;
+  var params = loc.split("&");
+  for (i=0; i<params.length;i++) {
+      param_name = params[i].substring(0,params[i].indexOf('='));
+      if (param_name == parameter) {
+          param_value = params[i].substring(params[i].indexOf('=')+1)
+      }
+  }
+  if (param_value) {
+      return param_value;
+  }
+  else {
+      return false; 
+  }
+}
+        
+    </script>
+</html>
+
+
+</apex:form>
+<apex:insert name="footer">
+        <c:honeywellFooter />
+</apex:insert>
+
+</apex:page>

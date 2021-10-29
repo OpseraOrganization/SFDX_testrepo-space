@@ -1,0 +1,414 @@
+<!-- 
+Apttus Contract Management
+LightningSelectTemplate
+
+@2017-2017 Apttus Inc. All rights reserved.
+
+-->
+<apex:page showHeader="false" sidebar="false" cache="false" standardController="Apttus__APTS_Agreement__c"  
+           extensions="Apttus.LightningSelectTemplateController" action="{!initLightning}">
+    
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        
+        <head>
+            
+            <apex:stylesheet value="{!URLFOR($Resource.Apttus__SLDS080, 'assets/styles/salesforce-lightning-design-system-vf.css')}" /> 
+            <apex:stylesheet value="{!URLFOR($Resource.Apttus__LightningResource, 'css/generate-document.css')}" /> 
+            <apex:includeScript value="{!URLFOR($Resource.Apttus__LightningResource, 'js/generate-document.js')}" />
+            <apex:includeScript value="{!URLFOR($Resource.Apttus__JQuery112Library, 'jquery-1.12.3.js')}"/>        
+            <apex:include pageName="Apttus__ComplyJSLibInclude" />
+            
+            <style>
+                html body.sfdcBody {
+                padding:0 0 0 0;
+                }
+                .doc{
+                    padding-top:45Px;
+                    margin-left:10Px;
+                    background-image:url("{!URLFOR($Resource.Apttus__LightningResource,'images/doctype/doc.png')}");
+                }
+                .docx{
+                    padding-top:45Px;
+                    margin-left:10Px;
+                    background-image:url("{!URLFOR($Resource.Apttus__LightningResource,'images/doctype/docx.png')}"); 
+                }
+                .pdf{
+                    padding-top:45Px;
+                    margin-left:10Px;
+                    background-image:url("{!URLFOR($Resource.Apttus__LightningResource,'images/doctype/pdf.png')}"); 
+                }
+                .pdfa{	
+                    padding-top:45Px;
+                    margin-left:10Px;
+                    background-image:url("{!URLFOR($Resource.Apttus__LightningResource,'images/doctype/pdfa.png')}");
+                }
+                .inline-pdf{
+                    padding-top:45Px;
+                    margin-left:10Px;
+                    background-image:url("{!URLFOR($Resource.Apttus__LightningResource,'images/doctype/pdf-inline.png')}");
+                }
+                .rtf{
+                    padding-top:45Px;
+                    margin-left:10Px;
+                    background-image:url("{!URLFOR($Resource.Apttus__LightningResource,'images/doctype/rtf.png')}"); 
+                }
+                .downloadtable {
+                	font-family: arial, sans-serif;
+                	border-collapse: collapse;
+                	width: 50%;
+                	 
+                }
+            </style>       
+        </head>
+        
+        <body>
+            <apex:form id="generateDocument" >
+                <!-- Reqired field for API -->
+                <apex:outputText value="{!Apttus__APTS_Agreement__c.Apttus__AllowableOutputFormats__c}" rendered="false"/>
+                <apex:outputText value="{!Apttus__APTS_Agreement__c.Apttus__VersionAware__c}" rendered="false" />
+                <apex:outputText value="{!Apttus__APTS_Agreement__c.name}" rendered="false" />
+                <div class="slds">
+                    <!-- Spinner Object to Show lightning spinning -->
+                    <div class="spinner">
+                        <img class="slds-spinner--medium spinnerImg " src="https://www.lightningdesignsystem.com/assets/images/spinners/slds_spinner_brand.gif" alt="..." />
+                    </div>
+                    
+                    <div class="slds-page-header" role="banner">
+                        <!-- LAYOUT GRID -->
+                        <div class="slds-grid">
+                            <!-- GRID COL -->
+                            <div class="slds-col">
+                                <!-- Page Heading  -->
+                                <p class="slds-text">{!usecase}</p>
+                                <h1 class="slds-text-heading--medium">{!agreementSO.Name}</h1>
+                                <!-- display Error messages --->
+                                <apex:outputPanel rendered="{!hasError}" id="errorPanel" > 
+                                    <div id="errormessages" class="errors {!if( hasError ,'','hideoption')}" >
+                                        <div aria-labelledby="outputoptions">
+                                            <fieldset class="slds-box slds-theme--default slds-container--medium {!if(hasError,'','hideoption')}">
+                                                <div id="documentvenrationerrors" class="{!if(hasError,'','hideoption')}">
+                                                    <apex:pageMessages />
+                                                </div>
+                                                <div id="insufficientprevilageerror" class="{!if(!canEditAgreement,'','hideoption')}" >
+                                                    <apex:outputText value="{!$Label.apttus__insufficientprivileges}" 
+                                                                     style="font-family: Arial, Helvetica, sans-serif;font-weight: bold;font-size: 12pt;" /><p/>
+                                                    <apex:outputText value="{!$Label.apttus__insufficientprivilegesdetail}" /><br/>
+                                                </div>
+                                            </fieldset>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                        </div>
+                        <div class="myapp">
+                            <!-- Show generated Document -->
+                            <apex:outputPanel id="downloadFile" > 
+                                <div class="{!if(isDocumentGenerated,'','hideoption')}" >
+                                    
+                                   
+                                        <div tabindex="-1" class="slds-box">
+                                            <div class="slds" >
+                                                <div class="slds-box">
+                                                    <div class="slds-text-heading_medium">{!$Label.DocumentDetail}.</div>
+                                                </div>
+                                                <div class=" slds-p-around--medium">
+                                                    <div>
+														<div>
+                                                            
+                                                            <h3 >
+                                                                {!$Label.DocumentGenerationSuccess}
+                                                            </h3>
+                                                            <div>
+                                                                <table class="downloadtable">
+                                                                     
+                                                                    <tbody>
+                                                                        <tr>
+                                                                            <td style="height:30px">
+                                                                                <apex:outputLabel style="font-weight: bold;" 
+                                                                                                  value="{!$Label.apttus__filename}" 
+                                                                                                  for="idFileName" />  
+                                                                                &nbsp;:&nbsp;
+                                                                                <apex:outputText id="idFileName" value="{!docInfo.Name}" />
+                                                                            </td>
+                                                                            <td style="height:30px">   </td>
+                                                                        </tr>
+                                                                        
+                                                                        <tr>
+                                                                            <td style="height:30px">
+                                                                                <apex:outputLabel style="font-weight: bold;" 
+                                                                                                  value="{!$Label.apttus__size}" 
+                                                                                                  for="idFileSize" />
+                                                                                &nbsp;:&nbsp;
+                                                                                <apex:outputText id="idFileSize" 
+                                                                                                 style="font-weight: bold;" 
+                                                                                                 value="{!docInfo.body_length}KB" /> 
+                                                                            </td>
+                                                                            <td style="height:30px">  </td>
+                                                                        </tr>
+                                                                        
+                                                                        <tr class="tablecontent">
+                                                                            <td style="height:30px"> 
+                                                                                <apex:outputLabel value="" for="idFileLink" />
+                                                                                
+                                                                                <apex:outputLink id="idFileLink" 
+                                                                                                 value="{!docURL}" 
+                                                                                                 charset="UTF-8" 
+                                                                                                 type="{!docInfo.content_type}" 
+                                                                                                 title="{!$Label.apttus__viewdocument}"  
+                                                                                                 target="_blank" 
+                                                                                                 onclick="afterDownload()">{!$Label.apttus__viewfileinstruction}</apex:outputLink>
+                                                                            </td>
+                                                                            <td style="height:30px">  </td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                    
+                                                                </table>
+                                                            </div>
+                                                        </div>                                                         
+                                                    </div>
+                                                </div>
+                                                <div class="slds-modal__footer">
+                                                     <apex:commandButton value="{!$Label.apttus__return}" 
+                                                                        action="{!doReturn}"  
+                                                                        styleClass="slds-button slds-button--brand slds-m-top--medium"
+                                                                        immediate="true" />
+                                                     
+                                                </div>
+                                            </div>
+                                        </div>
+                                         
+                                            <apex:outputPanel rendered="{!isInLinePdf}" >
+                                                <script>
+                                                
+                                                
+                                                </script>
+                                            </apex:outputPanel>
+                                            
+                                         
+                                    
+                                </div>
+                            </apex:outputPanel>
+                            <!-- Show Options to generate Document -->
+                            <apex:outputPanel id="generateoptionpanel" > 
+                                <div aria-labelledby="outputoptions"  class="{!if(isDocumentGenerated,'hideoption','')}">
+                                    <fieldset class="slds-box slds-theme--default slds-container--medium {!if(showOutputFormats,'','hideoption')}">
+                                        <p class="slds-text-heading_medium">{!$Label.SelectOutputFormat}</p>
+                                        <br/>
+                                        <span>        
+                                            <apex:selectRadio id="idOutputFormat" value="{!outputFormat}" styleClass="outputFormats">
+                                                <apex:selectOptions value="{!outputFormats}" />
+                                            </apex:selectRadio>
+                                            
+                                        </span>
+                                    </fieldset>
+                                    <!-- Display Templates   -->                                                                                                                           
+                                    <fieldset class="slds-box slds-theme--default slds-container--medium {!if(showProtectionLevel,'','hideoption')}">
+                                        <p class="slds-text-heading_medium">{!$Label.SelectDocumentProtection}</p>
+                                        <br/>
+                                        <span class="slds-icon__container">
+                                            <apex:selectRadio id="idProtectionLevel" value="{!protectionLevel}"  >
+                                                <apex:selectOptions value="{!protectionLevels}" />
+                                            </apex:selectRadio>
+                                        </span>
+                                    </fieldset>
+                                    
+                                    <fieldset class="slds-box slds-theme--default slds-container--medium {!if(showWatermark,'','hideoption')}" >
+                                        <p class="slds-text-heading_medium">{!$Label.IncludeWatermark} </p>		
+                                        <br/>
+                                        <span>        
+                                            <span class="slds-icon__container">
+                                                <label class="slds-checkbox"  >
+                                                    <apex:inputCheckbox id="idWatermark" value="{!includeWatermark}"
+                                                                        selected="{!includeWatermark}" />
+                                                    <span class="slds-checkbox--faux"></span>
+                                                    <span class="slds-form-element__label">{!$Label.IncludeWatermark} </span>
+                                                </label>
+                                            </span>
+                                        </span>
+                                    </fieldset>
+                                    
+                                    <fieldset class="slds-box slds-theme--default slds-container--medium">
+                                        <legend id="ouputoptions" class="slds-text-heading--medium slds-p-vertical--medium"> </legend>
+                                        <b><p class="slds-text-heading_medium"> {!$Label.SelectTemplate}</p></b>
+                                        
+                                        <div id="accountList" class="slds-p-vertical--medium">
+                                            <div class="slds-scrollable--x">
+                                                <table class="slds-table slds-table--bordered">   
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col">{!$ObjectType.APTS_Template__c.fields.Name.label}</th>
+                                                            <th scope="col">{!$ObjectType.APTS_Template__c.fields.Guidance__c.label}</th>
+                                                            <th scope="col">{!$ObjectType.APTS_Template__c.fields.Category__c.label}</th>
+                                                            <th scope="col">{!$ObjectType.APTS_Template__c.fields.Subcategory__c.label}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    
+                                                    <tbody>
+                                                        <apex:repeat value="{!templates}" var="templateInfo" >
+                                                            <tr id="{!templateInfo.templateSO.id}" class="temContent" onclick="selectTemplateRow('{!templateInfo.templateSO.Id}')">
+                                                                <td>{!templateInfo.templateSO.Name}</td>
+                                                                <td>{!templateInfo.templateSO.Guidance__c}</td>
+                                                                <td>{!templateInfo.templateSO.Category__c}</td>
+                                                                <td>{!templateInfo.templateSO.Subcategory__c }</td>
+                                                            </tr>
+                                                        </apex:repeat>   
+                                                    </tbody>
+                                                </table>
+                                                <apex:outputText value="{!$Label.apttus__notemplatestodisplay}" rendered="{!NOT(hasTemplates)}" />
+                                            </div>
+                                        </div>
+                                        
+                                    </fieldset>
+                                    
+                                    <!-- Action Buttons  -->
+                                    <apex:outputPanel id="buttonsPanel"> 
+                                        <div class="slds-scope">
+                                            <fieldset class="slds-box slds-theme--default slds-container--medium">
+                                                <div class="slds-grid slds-grid_align-end">
+                                                    <div class="slds-col slds-col_bump-left" >&nbsp;</div>
+                                                    <div>
+                                                        &nbsp; <button class="slds-button slds-button--neutral slds-m-top--medium" type="button" onclick="doReturn();" >{!$Label.Cancel}</button>
+                                                    </div>
+                                                    <div>    
+                                                       &nbsp;
+                                                       <apex:commandButton value="{!$Label.apttus__submit}"  
+                                                                    styleclass="slds-button slds-button--brand slds-m-top--medium action-button"
+                                                                    onclick="onStartAsyncGenerate();" 
+                                                                    action="{!doSubmitDoc}" 
+                                                                    disabled=""
+                                                                    rendered="{!IsSubmitCallEnabled}" 
+                                                                    oncomplete="afterSubmitComplete();"
+                                                                    id="SubmitBtnAsync"/>
+                                                    </div>
+                                                    <div class="{!if(NOT(IsAsyncCallEnabled),'','slds-hide')}">    
+                                                      
+                                                        &nbsp;
+                                                        <apex:commandButton value="{!$Label.apttus__generate}"
+                                                                            styleclass="slds-button slds-button--brand slds-m-top--medium action-button"
+                                                                            onclick="showWaiting();" 
+                                                                            action="{!generateDocument}" 
+                                                                            rendered="{!NOT(IsAsyncCallEnabled)}"
+                                                                            oncomplete="endWaiting()"
+                                                                            rerender="errorPanel,downloadFile,generateoptionpanel"/>
+                                                    </div>
+                                                    <div class="{!if(IsAsyncCallEnabled,'','slds-hide')}">    
+                                                      	&nbsp;
+                                                        <apex:commandButton value="{!$Label.apttus__generate}"  
+                                                                    styleclass="slds-button slds-button--brand slds-m-top--medium action-button"
+                                                                    onclick="onStartAsyncGenerate();" 
+                                                                    action="{!doSubmitDoc}"
+                                                                    rendered="{!IsAsyncCallEnabled}" 
+                                                                    oncomplete="afterSubmitComplete();"
+                                                                    id="generateBtnAsync"/>
+                                                    </div>
+                                                </div>
+                                            </fieldset>
+                                        </div>
+                                    </apex:outputPanel>
+                                </div>
+                            </apex:outputpanel>
+                        </div>
+                        
+                    </div>     
+                </div>
+                
+                
+                <apex:actionFunction name="onSelectTemplate" 
+                                     action="{!onSelectTemplate}" 
+                                     oncomplete="endWaiting();" >
+                    <apex:param name="templateId" value="" />
+                </apex:actionFunction>    	
+                 <apex:actionFunction name="onSelectTemplate" 
+                                     action="{!onSelectTemplate}" 
+                                     oncomplete="endWaiting();" >
+                    <apex:param name="templateId" value="" />
+                </apex:actionFunction>
+                <apex:actionFunction name="generateDoc" 
+    						 action="{!generateDocument}" 
+    						 oncomplete="afterGenerateComplete()" 
+    						 timeout="{!CallTimeoutMillis}" />
+    	
+                <apex:actionFunction name="doInit" 
+                                     action="{!doInit}"/>  
+                <apex:actionFunction name="doReturn" 
+                                     action="{!doReturn}" />  	
+                
+                <script>
+                    initTableSelector();
+                    initDocumentoutputFormats();
+                    disableActionButtons();
+                		/**
+                         * Callback after generate is done
+                         */
+                        function afterGenerateComplete() {
+                            // cancel timeout
+                            cancelTimeout();
+                            
+                        }
+                
+                    /**
+                    * After Submit complete show message
+                    *
+                    */
+                    function  afterSubmitComplete(){
+                        //Show submit Action message
+                         var message = "{!JSENCODE($Label.SubmitDocStatusMessage)}";
+                        // show confirmation message
+                        alert(message);
+                        doReturn();
+                    }
+                    function onStartAsyncGenerate(){
+                        showWaiting();
+                    }
+                    /**
+                     * Generate the Document 
+                     */
+                    function onGenerateDocument() {
+                        showWaiting();
+                        
+                        var exception = null;
+                        
+                        try {
+                            var timeoutMillis = parseInt('{!CallTimeoutMillis}') - 2000;
+                            // delay to allow prepare step to run	
+                            setTimeout(function() {
+                                try {
+                                    // generate the document
+                                    console.log('Before Generate Doc');
+                                    generateDoc();
+                                     console.log('After Generate Doc');
+                                } catch (e) {
+                                    erroralert("generateDoc():", e);
+                                    // back to agreement detail page
+                                    goBack();
+                                } 
+                            }, 1000);
+                            
+                            // delay until timeout	
+                            gTimeoutId = setTimeout(function() {
+                                try {
+                                    // handle timeout
+                                    afterTimeout();
+                                } catch (e) {
+                                    erroralert("afterTimeout():", e);
+                                    // back to agreement detail page
+                                    goBack();
+                                } 
+                            }, timeoutMillis);
+                            
+                        } catch(ex) {
+                            exception = ex;
+                            // hide modal panel
+                            erroralert("generateDoc():", ex);
+                        } finally {
+                            if (exception != null) {
+                                // back to agreement detail page
+                                goBack();
+                            } 
+                        }
+                    }
+                </script>
+            </apex:form>
+        </body>  
+    </html>
+</apex:page>

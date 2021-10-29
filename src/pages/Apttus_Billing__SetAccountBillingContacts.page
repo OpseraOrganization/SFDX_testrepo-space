@@ -1,0 +1,129 @@
+<!-- 
+    Apttus Billing 
+    SetAccountBillingContacts
+ 
+    @2013-2015 Apttus Inc. All rights reserved.
+ -->
+<apex:page standardController="Account" tabStyle="Account" extensions="Apttus_Billing.AccountBillingContactsSetupController">
+   <apex:sectionHeader title="{!$ObjectType.Account.label}" subtitle="{!$Label.apttus_billing__setup} {!$Label.apttus_billing__billingcontacts}"/>
+   <apex:form id="MainForm">
+   <apex:pageMessages /> 
+     <apex:pageBlock id="blngContsPB" title="{!$Label.apttus_billing__billingcontacts}">
+         <apex:pageBlockButtons >
+               <apex:commandButton id="saveBtn" value="{!$Label.apttus_billing__save}" action="{!saveBillingContactCriteria}"/>
+               <apex:commandButton id="saveAndPreviewBtn" value="{!$Label.apttus_billing__saveandpreviewcontacts}" action="{!saveFilterAndPreviewContacts}"/>
+               <apex:commandButton id="previewBtn" value="{!$Label.apttus_billing__previewcontacts}" action="{!previewContacts}" />
+               <apex:commandButton id="cancelBtn" value="{!$Label.apttus_billing__cancel}" action="{!cancel}" />
+         </apex:pageBlockButtons>
+         <apex:pageBlockSection showHeader="false" columns="2">
+            <apex:pageBlockSectionItem >
+            <apex:outputlabel value="{!$ObjectType.Account.fields.Apttus_Config2__BillingContactFormat__c.label}" /> 
+            <apex:outputPanel > 
+               <apex:selectList value="{!bilngContactFormat}" size="1" multiselect="false">
+                  <apex:selectOptions value="{!billingContactFormatOptions}"/>
+                  <apex:actionSupport event="onchange" reRender="MainForm" action="{!doFormatChange}"/>
+               </apex:selectList>         
+               <!--<apex:inputField id="blngContactFormat" value="{!acc.Apttus_Config2__BillingContactFormat__c}">
+                  <apex:actionSupport event="onchange" reRender="MainForm" action="{!doFormatChange}"/>
+               </apex:inputField>-->
+            </apex:outputPanel>
+            </apex:pageBlockSectionItem>
+         </apex:pageBlockSection> 
+         <apex:pageBlockSection showHeader="false" columns="1" id="idcsvEmailSection" rendered="{!bilngContactFormat == 'Comma Separated Values'}">
+            <apex:pageBlockSectionItem >
+              <apex:outputlabel value="{!$Label.apttus_billing__emailidsincsvformat}" />
+              <apex:outputPanel >
+                 <apex:inputField value="{!acc.Apttus_Config2__BillingContactFilterCriteria__c}"/>
+              </apex:outputPanel>
+            </apex:pageBlockSectionItem>
+         </apex:pageBlockSection>    
+         <apex:pageBlockSection title="{!$Label.apttus_billing__accountfiltercriteria}" columns="1" id="idPredicatesSection" rendered="{!bilngContactFormat == 'Filter Criteria'}">
+                <apex:pageBlockTable value="{!predicates}" 
+                                     var="predicate" 
+                                     columns="8" 
+                                     rowClasses="oddRow,evenRow" >
+                    
+                    <apex:column width="5%" rendered="{!isAdvancedOptionsMode}" >
+                        <apex:outputText id="idRowNum" value="{!predicate.RowNum}. " />
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__field}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(predicate.FieldInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idField" size="1" value="{!predicate.FieldName}" >
+                                <apex:selectOptions value="{!FieldItems}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__operator}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(predicate.CompOperInError, 'errorRow', '')}" layout="block" >
+                            <apex:selectList id="idCompOper" size="1" value="{!predicate.CompOper}" >
+                                <apex:selectOptions value="{!compOperItems}"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column headerValue="{!$Label.apttus_billing__value}" width="25%" >
+                        <apex:outputPanel styleClass="{!IF(predicate.FieldValueInError, 'errorRow', '')}" layout="block" >
+                            <apex:inputText id="idFieldValue" size="25" value="{!predicate.FieldValue}" />
+                        </apex:outputPanel>
+                    </apex:column>
+                    <apex:column width="5%" >
+                        <apex:outputText id="idBoolOper" 
+                                         value="{!predicate.BoolOper}" 
+                                         rendered="{!NOT(isAdvancedOptionsMode) && NOT(ISBLANK(predicate.BoolOper))}" />
+                                         
+                        <apex:commandLink action="{!doAddRow}" 
+                                          value="{!$Label.apttus_billing__add}" 
+                                          reRender="idPredicatesSection, idAdvancedOptionsSection" 
+                                          rendered="{!NOT(isAdvancedOptionsMode) && ISBLANK(predicate.BoolOper)}" />
+                    </apex:column>
+                    <apex:column width="5%" >
+                    <apex:commandLink id="idDeleteRow" 
+                                      action="{!doDeleteRow}" 
+                                      value="{!$Label.apttus_billing__delete}" 
+                                      reRender="idPredicatesSection, idAdvancedOptionsSection">
+                        <apex:param name="rowNum" value="{!predicate.RowNum}" />          
+                    </apex:commandLink>
+                    </apex:column>
+                    <apex:column width="10%" >
+                        <apex:outputText value="{!predicate.ErrorMsg}" style="color:red;" />
+                    </apex:column>
+                   
+                </apex:pageBlockTable>
+                
+            <apex:pageBlockSectionItem >
+                    
+            <apex:pageBlockSection id="idAdvancedOptionsSection" columns="1" collapsible="false" >
+            
+                <apex:commandLink id="idShowAdvancedOptions" 
+                                  action="{!doShowAdvancedOptions}" 
+                                  value="{!$Label.apttus_billing__advancedoptions}" 
+                                  reRender="idAdvancedOptionsSection, idPredicatesSection" 
+                                  rendered="{!NOT(isAdvancedOptionsMode)}" />
+                
+                <apex:outputPanel rendered="{!isAdvancedOptionsMode}">
+                    <apex:commandLink id="idAddRow" 
+                                      action="{!doAddRow}" 
+                                      value="{!$Label.apttus_billing__addrow}" 
+                                      reRender="idAdvancedOptionsSection, idPredicatesSection" />
+                    <span>  </span>
+                    <apex:commandLink id="idRemoveRow" 
+                                      action="{!doRemoveRow}" 
+                                      value="{!$Label.apttus_billing__removerow}" 
+                                      reRender="idAdvancedOptionsSection, idPredicatesSection" 
+                                      rendered="{!OkToRemoveRow}" />
+                    <apex:outputPanel id="idRemoveRow2" styleClass="greyedLink" rendered="{!NOT(OkToRemoveRow)}" >{!$Label.apttus_billing__removerow}</apex:outputPanel>
+                    <p/>    
+                    <apex:commandLink id="idHideAdvancedOptions" 
+                                      action="{!doHideAdvancedOptions}" 
+                                      value="{!$Label.apttus_billing__clearadvancedoptions}" 
+                                      reRender="idAdvancedOptionsSection, idPredicatesSection" />
+                    <br/>
+                    <apex:outputText value="{!$Label.apttus_billing__advancedfiltercondition}" />
+                    <br/>
+                    <apex:inputText id="idAdvancedOptions" size="80" value="{!advancedOptions}" />
+                </apex:outputPanel>
+                </apex:pageBlockSection>
+                </apex:pageBlockSectionItem>         
+         </apex:pageBlockSection>
+     </apex:pageBlock>
+   </apex:form> 
+</apex:page>

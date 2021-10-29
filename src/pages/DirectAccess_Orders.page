@@ -1,0 +1,220 @@
+<apex:page cache="false" controller="OrdersListPageController" showHeader="false" standardStylesheets="false">
+ <apex:form >
+  
+  <html lang="en">
+<head>
+    <meta charset="utf-8"></meta>
+    <meta name="viewport" content="width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable = no"></meta>
+    <title> DRA Order Status </title>
+    <meta name="description" content="DAR aero app"></meta>
+    
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.DirectAccess_Assets, 'css/bootstrap.min.css')}"> </link>
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.DirectAccess_Assets, 'css/DAR-styles.css')}"> </link>
+    
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/lib/jquery-3.2.1.min.js')}"> </script>
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/lib/bootstrap.min.js')}"> </script>
+    <script type="text/javascript" src="{!URLFOR($Resource.DirectAccess_Assets, 'js/DAR-ui-interaction-scripts.js')}"></script> 
+    <script type="text/javascript" src="assets/js/DAR-scripts.js"></script>
+    
+    <link rel="stylesheet" href="{!URLFOR($Resource.hybridappResource, 'css/jquery.mobile.min.css')}" />
+    <script type="text/javascript" src="{!URLFOR($Resource.hybridappResource, 'js/jquery.mobile.min.js')}"></script>
+    <script type="text/javascript" src="https://localhost/cordova.js"></script>
+    <!--[if IE]>
+        <script src="https://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <style>
+     /*For Smaller device*/
+     @media only screen and (max-width: 736px) {
+     
+     #beta{
+     margin-left: 35px;
+     line-height: 1.75em;
+     }
+     }
+    
+    @media only screen and (min-width: 768px) {
+    #beta{
+    margin-left: 87px;
+    line-height: 2.15em;
+    }
+    }
+    </style>
+        <script>
+        
+        var setOrreSet;
+        var hId;
+        var i = 0;
+        var callmade = false;
+             
+        $(document).ready(function(){
+            DAR.DARSpinner.init(true);
+            setOrreSet = localStorage.getItem('presentHIDSetting-Local');
+            var timeNow = $.now().toString();
+            if(setOrreSet != null)
+            {
+                hId = localStorage.getItem('presentHID-Local');
+                $('[id$=apex_hid]').val(hId);
+                if((setOrreSet == "Set") && (hId != null) && (hId != ""))
+                {
+                    localStorage.setItem('presentHIDSetting-Local', "Reset");
+                    localStorage.setItem('presentHIDTime-local', timeNow);
+                }
+            }
+                
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.OrdersListPageController.SendRequest}', hId,'Open',
+                function(result, event){
+                    $("#openOrdersUL").html(renderList(result, 'Open'));
+                    DAR.DARSpinner.init(false);
+                }
+            );
+            
+            $('#shippedOrdersTab').click(function(){
+                if(!callmade){
+                    DAR.DARSpinner.init(true);
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.OrdersListPageController.SendRequest}', hId,'Shipped',
+                        function(result, event)
+                        {
+                            $("#shippedOrdersUL").html(renderList(result, 'Shipped'));
+                            callmade = true;
+                    DAR.DARSpinner.init(false);
+                        }
+                    );
+                }
+            });
+        });
+        
+        function toSort(firstVal, secondVal)
+        {
+            var frst = firstVal.custPO.toLowerCase();
+            var scnd = secondVal.custPO.toLowerCase();
+            
+            if(frst < scnd)
+            {
+                return -1;
+            }
+            else if(frst > scnd)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+            
+        function renderList(result, tabName)
+        {
+            var noResult = '<li><div class="panel-group" aria-multiselectable="true"><div class="panel panel-default"><div class="panel-heading" id="headingOne"><h4 class="panel-title"><span class="DAR-no-records"><i>No results to show.</i></span></h4></div></li>';
+            if(result != null)
+            {
+                //result.sort(toSort);
+                console.log(JSON.stringify(result));
+                console.log('Length is ' + result.length);
+                var returnList = '';
+                $.each(result, function() {
+                    i += 1;
+                    returnList += '<li><div class="panel-group" id="accordion-'+(i+1)+'" role="tablist" aria-multiselectable="true">'+
+                                    '<div class="panel panel-default '+(this).colourCode+'"><div class="panel-heading" role="tab" id="headingOne">'+
+                                    '<h4 class="panel-title"><a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion-'+(i+1)+'" href="#c'+i+'" aria-expanded="false" aria-controls="collapseOne">'+
+                                    '<span class="DAR-os-label"> PO Number </span><span class="DAR-os-id">'+(this).custPO+'</span></a></h4></div>'+
+                                    '<div id="c'+i+'" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne"><div class="panel-body">'+
+                                    '<div class="container DAR-os-details"><div class="row"><label> HON. Order </label><span> Spares - '+(this).orderNO+' </span></div>'+
+                                    '<div class="row  dispatch-status"><label> Status </label><span> '+(this).statusHDR+' </span></div>'+
+                                    '<div class="row"><label> Location </label><span> '+(this).plant+' </span></div>'+
+                                    '<div class="row"><label> Ordered on </label><span> '+(this).orderDATE+' </span></div><div class="row">';
+                                    
+                                    if(tabName.includes('Open'))
+                                    {
+                                        returnList += '<label> Estimated Ship Date  </label><span> '+ (((this).estShipDATE == null || (this).estShipDATE == '' || (this).estShipDATE == undefined)?'Not Available':(this).estShipDATE)+' </span>';
+                                    }
+                                    else if(tabName.includes('Shipped'))
+                                    {
+                                        returnList += '<label> Way Bill Number  </label><span> '+ (((this).wayBillNo== null || (this).wayBillNo== '' || (this).wayBillNo== undefined)?'Not Available':(this).wayBillNo)+' </span>';
+                                    }
+                                
+                         returnList +=   '</div></div></div></div></div></div></li>';
+                });
+                
+                if(returnList == '')
+                {
+                    returnList = noResult;
+                }
+            }
+            else
+            {
+            returnList = noResult;    
+            }
+            return returnList;
+        }
+        
+
+   
+    </script>
+    <script>
+    function Ameliapage()
+        {
+            window.location.href = 'https://amelia.honeywell.com/Amelia/ui/AmeliaCust/chat?processName=greetingBPN&domainCode=honeywell';
+        }
+    </script>
+    
+</head>
+<body>
+    <apex:inputHidden value="{!presentUserHId}" id="apex_hid"/>
+    <apex:outputText value="{!presentUserHId}" />
+    <div class="DAR-spinner-wrapper"> <span class="DAR-spinner DAR-spinner-active"> </span> </div>
+    <div id="DAR-wrapper">
+        <div class="DAR-content">
+            <!-- page related content -->
+            <section id="DAR-os-screen" class="container DAR-subcontent">
+                <!--<a onclick="addURL(this);" href="/bgadir/DirectAccess_Homepage"> <span class="DAR-back-nav"></span> </a> Comment: removed for IOS change-->
+                <figure class="row DAR-map-socket DAR-cloud-bg"> <img /> </figure>
+                <article class="row DAR-contact-block">
+                    <h2 class="DAR-contact-heading"> Order Status </h2>
+                    <span class="DAR-section-img DAR-order-status"> </span>
+                    <!--<span style="display: block;float: right;width:30%;" >
+                    <span id="beta"><i>Beta</i></span>
+                        <input type="button" value="Chat Now" onclick="Ameliapage()" class="btn btn-primary"/>
+                    </span>-->
+                </article>
+                <div class="row DAR-os-container ">
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs DAR-tab DAR-section-bg" id="DAR-tab" role="tablist">
+                        <li role="presentation" class="active"><a href="#open-orders" aria-controls="home" role="tab" data-toggle="tab"> Open Orders </a></li>
+                        <li role="presentation"><a href="#shipped-orders" id="shippedOrdersTab" aria-controls="profile" role="tab" data-toggle="tab"> Shipped Orders </a></li>
+                    </ul>
+
+                    <!-- Tab panes -->
+                    <div class="tab-content">
+                        <div role="tabpanel" class="tab-pane active" id="open-orders">
+                            <ul class="list-unstyled" id="openOrdersUL">
+                                
+                            </ul>
+                        </div>
+                        <div role="tabpanel" class="tab-pane" id="shipped-orders">
+                            <ul class="list-unstyled" id="shippedOrdersUL">
+                                
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <script>
+        (function(){
+            //DAR;
+        })();
+    </script>
+</body>
+</html>
+  
+  </apex:form>
+  <site:googleAnalyticsTracking />
+  <!--<apex:insert name="footer">
+        <c:honeywellFooter />
+</apex:insert>-->
+
+</apex:page>

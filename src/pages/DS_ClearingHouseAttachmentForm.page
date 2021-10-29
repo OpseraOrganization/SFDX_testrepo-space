@@ -1,0 +1,335 @@
+<apex:page standardcontroller="case" extensions="DS_CLS_UploadAttachment" >
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <apex:param assignTo="{!parentId}" value="{!case.id}"></apex:param>
+    <apex:form >
+        <apex:pageBlock >
+            <apex:pageMessages id="msg"/>
+    <style>
+        .editItem
+        {
+        display:none;
+        }
+        #drop_zone
+        {
+        border: 2px dashed #bbb;
+        border-radius: 5px;
+        padding: 15px;
+        text-align: center;
+        font-size: 1.5em;
+        font-weight:bold;
+        color: #bbb;
+        margin:8px;
+        }
+        table.list
+        {
+           width:100%;
+        }
+        .uploadButton{
+            margin-top:40%!important;
+        }
+        .overlay {
+            display: none;
+            height: 100%;
+            left: 0;
+            position: fixed;
+            top: 0;
+            opacity: 0.3;
+            -moz-opacity: 0.3;
+            width: 100%;
+            -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";
+            filter: alpha(opacity=30);
+            background: #000;
+            -khtml-opacity: 0.3;
+            z-index: 1000;
+        }
+ 
+        .loader {
+            background: url('/img/loading32.gif') scroll no-repeat 0 0;
+            width: 32px;
+            height: 32px;
+            position: absolute;
+            left: 50%;
+        }
+    </style>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var __sfdcSessionId = '{!GETSESSIONID()}'; 
+    </script>
+    <apex:includeScript value="{!$Resource.jquery}"/>
+    <script>
+        j$ = jQuery.noConflict();
+        j$(function() {
+        });
+    </script>
+    <script src="/soap/ajax/32.0/connection.js" type="text/javascript"></script>
+        
+        <span style="font-weight:bold;font-style: italic;color:red;margin-left;font-size: 15px">
+        Drag and Drop function will only work with the Chrome browser</span>
+       <!--  <br/><br/><br/>
+      <span style="font-weight:bold;color:red;    margin-left: 30%;">1. Select the File.
+    Click the Choose Files button to find the file or drag and drop the files below.</span><br/>
+<span style="font-weight:bold;color:red;    margin-left: 30%;">2.       Click the Upload button. 
+          Once the file(s) have been selected proceed to step3 </span><br/>
+<span style="font-weight:bold;color:red;    margin-left: 30%;">3.    Click the Submit button to process your request.
+         A case will be generated. </span><br/>
+          -->
+    <br/><br/><br/><br/>
+    <span style="font-weight:bold;">1. Select the File.<br/>
+    Click the <span style="font-style:italic">Choose Files</span> button to find the file or drag and drop the files below.</span><br/><br/> 
+    <apex:outputpanel id="atchmntForm"  >
+        <apex:outputPanel style="margin:10px 0;display:block" >  
+            <div >
+            File:<span class="tf-required">*</span>&nbsp;&nbsp;
+                <input type="file"   id="atchmntA" multiple="multiple"/>
+            &nbsp;&nbsp; &nbsp;&nbsp;     
+            <div class="slds-assistive-text" id="drop_zone">Drop files here and click Upload</div>
+            </div>
+            
+            <output id="list"></output>
+            
+           
+</apex:outputPanel>
+<!-- Action Functions to refresh the sections -->
+<apex:actionFunction name="rerenderAtchmntPanel" rerender="atchmntForm" />
+<apex:actionFunction name="rerenderAtmntsListPanel" rerender="atchmntsList" />
+<apex:outputPanel id="atchmntsList">
+    <apex:outputPanel rendered="{!ats.size > 0}">
+        <table class="list" cellpadding="0" cellspacing="0">
+            <tr class="headerRow" style="font-weight:bold">
+                <th ></th>
+                <th  style="min-width:200px">File Name</th>
+                <th  style="min-width:200px">Type</th>
+                <th style="min-width:100px">Uploaded On</th>
+                <th style="min-width:100px">Uploaded By</th>
+            </tr>
+            <apex:repeat value="{!ats}" var="att">
+                <tr class="dataRow">
+                    <!--<td>
+<apex:image url="{!URLFOR($Action.Attachment.Download, att)}" rendered="true"/>
+</td>-->
+                    <td>
+                        <img src="{!URLFOR($Resource.VCUploadattachments,'VCUploadattachments/Img/edit.png')}" class='editAtmnt viewItem imgBtn' />
+                        <img src="{!URLFOR($Resource.VCUploadattachments,'VCUploadattachments/Img/delete.png')}" class='dltAtmnt viewItem imgBtn' recId="{!att.id}"/>
+                        <img src="{!URLFOR($Resource.VCUploadattachments,'VCUploadattachments/Img/save.png')}" class='updateAtmnt editItem imgBtn' recId="{!att.id}" />
+                    </td>
+                    <td >
+                        <span class="viewItem">
+                            <apex:outputlink value="/servlet/servlet.FileDownload?file={!att.id}" target="blank">{!att.name} </apex:outputlink>
+                        </span>
+                        <apex:inputField value="{!att.name}" id="attName" styleClass="editItem"/>
+                    </td>
+                    <td>{!att.contenttype}</td>
+                    <td>{!att.Createddate}</td>
+                    <td>{!att.CreatedBy.name}</td>
+                </tr>
+            </apex:repeat>    
+        </table>
+        <script>
+        j$(document).ready(function(){
+            j$('.editAtmnt').on('click',function(){
+                j$(this).closest('tr').find('.editItem').css('display','block');
+                j$(this).closest('tr').find('.viewItem').css('display','none');
+                j$(this).closest('tr').find('.viewItem').css('display','none');
+            });
+            j$('.updateAtmnt').on('click',function(){
+                var fileName = j$(this).closest('tr').find("input[name*='attName']").val();
+                console.log(fileName);
+                if(fileName)
+                {
+                    // identify the record
+                    var at = new sforce.SObject("Attachment");
+                    at.id = j$(this).attr('recId'); 
+                    console.log(at.id);
+                    // make the field change
+                    at.Name = fileName; 
+                    // save the change
+                    sforce.connection.update([at]); 
+                    rerenderAtmntsListPanel();
+                }
+            });
+            
+            j$('.dltAtmnt').on('click',function(){
+                var r = confirm("This will delete permanently! Click OK to Proceed.");
+                if (r == true)
+                {
+                    // identify the record
+                    var at = new sforce.SObject("Attachment");
+                    at.id = j$(this).attr('recId'); 
+                    console.log(at.id);
+                    // Delete the attachment
+                    sforce.connection.deleteIds([at.id]); 
+                    rerenderAtmntsListPanel();
+                }
+            });
+        });
+        function startLoading() {
+            alert('clicked')
+            j$('#load_scrl').css('top', j$(document).scrollTop() + 200);
+            j$('.loadingBox').show();
+        }
+ 
+        function stopLoading() {
+            j$('.loadingBox').hide();
+        }
+        </script>
+        <!--<apex:commandButton value="Submit" styleClass="btn" action="{!pageredirect}" style="margin-left: 50% !important;"/>-->
+    </apex:outputPanel>
+    <!-- <br/><span style="font-weight:bold;color:red;    margin-left: 30%;">2.Click the Upload button.Once the file(s) have been selected proceed to step3</span> -->
+    <br/><br/><br/><span style="font-weight:bold;">2. Click the <span style="font-style:italic">Upload</span> button.</span><input type="button" class="btn" id="uploadBtn" value="Upload" styleClass="uploadButton" /><br/>
+    <span style="font-weight:bold;">Once the file(s) have been selected proceed to step 3</span><br/><br/><br/><br/><br/>
+    <!--DIV for Showing Spinner-->
+    <div id="load_scrl" class="loadingBox loader" style="display:none"> </div>
+    <div class="loadingBox overlay"> </div>
+    <!--END for Spinner-->
+     <script type="text/javascript">
+                var attachFiles;
+                j$ = jQuery.noConflict();
+        function handleFileSelect(evt) {
+            evt.stopPropagation();
+            evt.preventDefault();
+            
+            attachFiles = evt.dataTransfer.files; // FileList object.
+            displayUploadingFiles();
+        }
+        function handleFileBrowse(evt) {
+            attachFiles = evt.target.files; // FileList object.
+            displayUploadingFiles();
+        }
+        
+        function displayUploadingFiles()
+        {
+            // files is a FileList of File objects. List some properties.
+            var output = [];
+            for (var i = 0, f; f = attachFiles[i]; i++) {
+                output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
+                            f.size, ' bytes, last modified: ',
+                            f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+                            '</li>');
+            }
+            document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+        }
+        
+        function handleDragOver(evt) {
+            evt.stopPropagation();
+            evt.preventDefault();
+            evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+        }
+        
+        // Setup the dnd listeners.
+        var dropZone = document.getElementById('drop_zone');
+        dropZone.addEventListener('dragover', handleDragOver, false);
+        dropZone.addEventListener('drop', handleFileSelect, false);
+        document.getElementById('atchmntA').addEventListener('change', handleFileBrowse, false);
+        j$('#uploadBtn').on('click',function(){
+            
+            var ctrl = j$(this);            
+            toggleActionButton(ctrl,'Upload/Uploading...');
+            var allowedCount = 10;
+            var attachments = [];
+            
+            var input = document.getElementById("atchmntA");
+            console.log('attachFile' + input);
+            //check if files browsed to upload
+            if(attachFiles == null || attachFiles.length == 0){
+                alert('Browse files to upload.');
+                toggleActionButton(ctrl,'Upload/Uploading...');
+                return;
+            }
+            var filesCount = attachFiles.length;
+            if(filesCount > allowedCount){
+                alert('Maximum of ' + allowedCount  +' files are allowed at a time.');
+                toggleActionButton(ctrl,'Upload/Uploading...');
+                return;
+            }
+            
+            //loop through each file
+            
+            for(var i = 0;i < filesCount ; i++)  
+            {
+                var f = attachFiles[i]
+                
+                if(f.size > 26214400){  //Where 26214400 is byte equivalent of 25MB
+                    alert('One of the attachment file size larger than the limit.');
+                    toggleActionButton(ctrl,'Upload/Uploading...');
+                    return;
+                }
+                
+                var reader = new FileReader();
+                reader.file = f;
+                
+                reader.onload = function(e)
+                {
+                    var attachment = new sforce.SObject("Attachment");
+                    attachment.Name = this.file.name;
+                    attachment.ContentType = this.file.type;                
+                    attachment.ParentId = '{!parentId}'; 
+                    console.log('account id----'+ attachment.ParentId);
+                    var binary = "";
+                    var bytes = new Uint8Array(e.target.result);
+                    var length = bytes.byteLength;
+                    
+                    for (var i = 0; i < length; i++) 
+                    {
+                        binary += String.fromCharCode(bytes[i]);
+                    }
+                    attachment.Body = (new sforce.Base64Binary(binary)).toString();
+                    attachment.Description =  j$("select[name*='fileCat']").val();
+                    attachments.push(attachment);
+                    console.log(attachments.length);
+                    console.log('filesCount---'+filesCount);
+                    console.log('attachments.length----'+attachments.length);
+                    //check if all file readers are complete, then insert to Salesforce
+                    if(filesCount == attachments.length)
+                    {
+                        console.log('Inside ----'+attachments.length);
+                        var result = sforce.connection.create(attachments);
+                        console.log('result ----'+result);
+                        if(result[0].getBoolean("success")){  
+                            alert('Files added successfully.');
+                            toggleActionButton(ctrl,'Upload/Uploading...');
+                            attachFiles = null;
+                            rerenderAtchmntPanel();
+                            window.parent.location.reload();
+                            
+                        }else{
+                            console.log(result);
+                            alert('Unable to upload files. Upload again or please contact System Admin.');
+                            toggleActionButton(ctrl,'Upload/Uploading...');
+                            window.top.location.reload();
+                            
+                        }
+                    }
+                }; 
+                //window.top.location();           
+                reader.readAsArrayBuffer(f);
+            }   
+        } );
+        function toggleActionButton(ctrl,text)
+        {
+            var displayText = text.split('/');
+            console.log(j$(ctrl).is(":disabled"));
+            if(j$(ctrl).is(":disabled"))
+            {
+                j$(ctrl).removeAttr('disabled');
+                j$(ctrl).attr('value', displayText[0]);
+            }
+            else
+            {
+                j$(ctrl).attr('disabled', 'disabled');
+                j$(ctrl).attr('value', displayText[1]);
+            }
+        }
+    </script>
+    <span style="font-weight:bold;">3. Click the <span style="font-style:italic">Submit</span> button to process your request.</span><apex:commandButton value="Submit" styleClass="btn" action="{!pageredirect}" rerender="msg,atchmntsList"  />
+    <br/><span style="font-weight:bold;">
+         A case will be generated. </span>
+    <apex:outputPanel rendered="{!ats.size = 0}">
+        <div style='margin:20px;line-height:1.5em'>
+            No Attachments uploaded for this record.
+        </div>
+    </apex:outputPanel>
+</apex:outputPanel>
+</apex:outputpanel>
+</apex:pageBlock>
+</apex:form>
+</apex:page>

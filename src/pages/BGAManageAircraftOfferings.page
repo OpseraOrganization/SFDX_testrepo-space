@@ -1,0 +1,246 @@
+<apex:page Controller="ListAircraftOfferings"
+tabStyle="Fleet_Asset_Detail__c"
+showHeader="false"
+sidebar="false"
+>
+        <head>
+            <TITLE>Manage Aircraft RMU- {!airName}</TITLE>
+        </head> 
+        
+<!-- 
+        Manage Aircraft Offerings screen is to install available platform offerings to aircraft.
+        Functions:
+        1) Install Aircraft RMU
+        2) Uninstall Aircraft RMU
+        3) View Other available RMUs with platform.
+        
+        This screen is controlled/navigated by following
+        1) "ListAircraftOfferings.class" 
+        2) "InstallOfferingToAircraft.page"
+-->
+
+<style>.fewerMore { display: none;}</style>
+<apex:sectionHeader title="Manage Aircraft RMUs - {!airName}" />
+
+<apex:pageMessages />
+
+<apex:form >
+            
+            <br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <img src='/img/icon/plane16.png' width="20" height="20"/>     
+            <a href='/{!airId}' target='_blank'>{!airName}</a>&nbsp;with platform&nbsp;<a href='/{!platfrmId}' target='_blank'>{!pltFrmName}</a>  
+            <br/>
+            <br/>     
+                
+            <apex:outputText rendered="{! showOtherInputsScreen == false}">     
+
+      
+              <!-- Installed RMU section Starts here-->
+               
+              <apex:pageblock id="CustomList1" title="Aircraft Installed RMUs">
+                
+                                    <apex:pageBlockButtons >  
+                                       <apex:commandButton action="{!saveInstallOffering}"      value="Update"/>
+                                       <apex:commandButton action="{!unInstallOffering}"      value="Uninstall"/>
+                                    </apex:pageBlockButtons>
+                
+                    <apex:outputText rendered="{! airOfferSIZE != 0}" >
+                    Installed&nbsp;&nbsp;<img src='/img/checkbox_checked.gif' alt='Checked' width='21' height='16' class='checkImg' title='Checked' />
+                    </apex:outputText>
+
+                    <apex:outputText rendered="{! airOfferSIZE == 0}" >
+                    No RMU Installed.
+                    </apex:outputText>
+                    <!-- <apex:outputLabel value="{!$ObjectType.Account.Fields.Name.Label}"/> -->
+                    <apex:pageBlockTable value="{!listInstalledSection}" var="o" rendered="{!NOT(ISNULL(listInstalledSection))}">
+                            
+                            
+                            <!-- apex:column >
+                            <b>
+                            <apex:commandLink action="{!unInstallOffering}" value="Uninstall" onclick="return confirmDelete();">
+                                <apex:param name="FirstParam" assignTo="{!delId}" value="{!o.a.Id}" />
+                                <apex:param name="ThirdParam" assignTo="{!actionedRMUName}" value="{!o.a.Offering_Mapper__r.Name}" />
+                            </apex:commandLink>
+                            </b> 
+                            </apex:column -->
+                            
+                            
+                            <apex:column >
+                                    <apex:inputCheckbox value="{!o.actionRecord}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.OFFERING_MAPPER__c.Fields.Name.Label}">
+                            <a href='/{!o.a.Offering_Mapper__c}' target='_blank'>
+                                {!o.a.Offering_Mapper__r.Name}
+                            </a>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.Installed_By_Dealer_Name__c.Label}">
+                            <apex:inputField value="{!o.a.Installed_By_Dealer_Name__c}" />
+                            <br/>
+                            <a href='/{!o.a.Installed_By_Dealer_Name__c}' target='_blank'>
+                                {!o.a.Installed_By_Dealer_Name__r.Name}
+                            </a>
+                            </apex:column>                          
+                            
+                            <!-- apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.Status__c.Label}">
+                            {!o.a.Status__c}
+                            </apex:column -->
+                            
+                            
+
+                            <!-- apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.Status__c.Label}">
+                                                <apex:selectList value="{!o.a.Status__c}" size="1">
+                                                    <apex:selectOptions value="{!optionsStatus}"/>
+                                                </apex:selectList>
+                            </apex:column>
+                                                        
+                            <!--apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.proposalprovided__c.Label}">
+                            <apex:inputCheckbox value="{!o.a.proposalprovided__c}" />
+                            </apex:column>      
+                            
+                            <apex:column headerValue="{!$ObjectType.OFFERING_MAPPER__c.Fields.RMU_DEALER_PRC__c.Label}">
+                            {!o.a.RMU_Dealer_Price__c}
+                            </apex:column>                          
+                            
+                            <apex:column headerValue="{!$ObjectType.OFFERING_MAPPER__c.Fields.RMU_HONEYWELL_PRC__c.Label}">
+                            {!o.a.RMU_Honeywell_Price__c}
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.OFFERING_MAPPER__c.Fields.TAIL_REV_AMT__c.Label}">
+                            {!o.a.Tail_Revenue_Amount__c}
+                            </apex:column -->
+
+                            <apex:column headerValue="Related Opportunity {!$ObjectType.Opportunity.Fields.Name.Label}">
+                                <apex:selectList value="{!o.a.Opportunity__c}" size="1"  required="false">
+                                            <apex:selectOptions value="{!listRelatedOpportunities}"/>
+                                </apex:selectList>
+                                <apex:outputText rendered="{!NOT(ISNULL(o.a.Opportunity__c))}" >
+                                    <br/>
+                                    <a href='/{!o.a.Opportunity__c}' target='_blank'>
+                                        {!o.a.Opportunity__r.Name} - {!o.a.Opportunity__r.StageName}
+                                    </a>
+                                </apex:outputText>
+                                
+                            </apex:column>
+
+                            <apex:column headerValue="Added By">
+                            {!o.a.CreatedBy.Name}
+                            </apex:column>
+
+                            <apex:column headerValue="Installed Date" >
+                                <apex:outputText rendered="{!NOT(ISNULL(o.a.Installed_Date__c))}" >
+                                    {!day(o.a.Installed_Date__c)}/{!month(o.a.Installed_Date__c)}/{!year(o.a.Installed_Date__c)}
+                                </apex:outputText>  
+                            </apex:column>
+                            
+                            <!-- apex:column headerValue="Installation Stage">
+                                <apex:selectList value="{!o.a.Status__c}" size="1"  required="false">
+                                            <apex:selectOptions value="{!itemsInstallationStage}"/>
+                                </apex:selectList>
+                            </apex:column>
+                            -->
+                            
+                            <!-- apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.Is_Customer_Contacted__c.Label}">
+                                    <apex:inputCheckbox value="{!o.a.Is_Customer_Contacted__c}" />
+                                    &nbsp;{!o.a.Proposal_Provided__c}
+                            </apex:column>
+                            
+                            -->
+                            
+                            
+                    </apex:pageBlockTable>
+              </apex:pageblock>
+
+              
+              <!-- Installed RMU section Ends here-->
+              <br/><br/><br/>
+              <!-- Other avialable offering/RMUs section starts here -->
+              <apex:pageblock id="CustomList2" title="Aircraft Platform Other RMUs">
+                    <apex:outputText rendered="{! airPlatOfferSIZE == 0}" >
+                        No Other RMUs Found.
+                    </apex:outputText>
+                                    <apex:pageBlockButtons >  
+                                       <apex:commandButton action="{!installOffering}"      value="Install">
+                                       </apex:commandButton>
+                                    </apex:pageBlockButtons>
+                     
+                    <apex:variable value="{!0}" var="rowNum"/>
+                    <apex:pageBlockTable value="{!airPlatOfferOpp}" var="o" rendered="{!NOT(ISNULL(airPlatOfferOpp))}">
+                    
+                            <!-- apex:column >
+                            <b>
+                            <apex:commandLink action="{!installOffering}" value="Install">
+                                            <apex:param name="FirstParam" assignTo="{!offerId}" value="{!o.a.Id}" />
+                                            <apex:param name="SecondParam" assignTo="{!selectedRow}" value="{!o.recCnt}" />
+                                            <apex:param name="ThirdParam" assignTo="{!actionedRMUName}" value="{!o.a.Name}" />
+                            </apex:commandLink>
+                            </b> 
+                            </apex:column -->
+
+                            <apex:column >
+                                    <apex:inputCheckbox value="{!o.actionRecord}" />
+                            </apex:column>
+
+                            
+                            <apex:column headerValue="{!$ObjectType.OFFERING_MAPPER__c.Fields.Name.Label}">
+                            <a href='/{!o.a.Id}' target='_blank'>{!o.a.Name}</a>
+                            </apex:column>
+                            
+                            
+                            <apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.Installed_By_Dealer_Name__c.Label}">
+                                            <apex:inputField value="{!o.opp.AccountId}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="Related Opportunity {!$ObjectType.Opportunity.Fields.Name.Label}">
+                                <apex:selectList value="{!o.relatedOpportunityName}" size="1"  required="false">
+                                            <apex:selectOptions value="{!listRelatedOpportunities}"/>
+                                </apex:selectList>
+                            </apex:column>
+                            
+                           <!-- apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.Is_Customer_Contacted__c.Label}">
+                                    <apex:inputCheckbox value="{!o.isCustomerContacted}" />
+                            </apex:column-->
+                            
+                            <!-- apex:column headerValue="Installation Stage">
+                                <apex:selectList value="{!o.installationStage}" size="1"  required="false">
+                                            <apex:selectOptions value="{!itemsInstallationStage}"/>
+                                </apex:selectList>
+                            </apex:column>
+                            -->
+                            <apex:variable var="rowNum" value="{!rowNum + 1}"/>
+
+
+                            <!--apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.Status__c.Label}">
+                                                <apex:selectList value="{!o.aofStatus}" size="1">
+                                                    <apex:selectOptions value="{!optionsStatus}"/>
+                                                </apex:selectList>
+                            </apex:column>
+                            <apex:column headerValue="{!$ObjectType.Aircraft_Offerings__c.Fields.proposalprovided__c.Label}">
+                                    <apex:inputCheckbox value="{!o.proposalSent}" />
+                            </apex:column>
+                            <apex:column headerValue="{!$ObjectType.OFFERING_MAPPER__c.Fields.RMU_DEALER_PRC__c.Label}">
+                            {!o.a.RMU_DEALER_PRC__c}
+                            </apex:column>                          
+                            <apex:column headerValue="{!$ObjectType.OFFERING_MAPPER__c.Fields.RMU_HONEYWELL_PRC__c.Label}">
+                            {!o.a.RMU_HONEYWELL_PRC__c}
+                            </apex:column>
+                            <apex:column headerValue="{!$ObjectType.OFFERING_MAPPER__c.Fields.TAIL_REV_AMT__c.Label}">
+                            {!o.a.TAIL_REV_AMT__c}
+                            </apex:column -->
+                            
+                    </apex:pageBlockTable>
+                    
+                    
+              </apex:pageblock>
+              
+              
+              
+</apex:outputText>
+</apex:form>
+
+<apex:insert name="footer">
+        <c:honeywellFooter1 />
+</apex:insert>
+</apex:page>
