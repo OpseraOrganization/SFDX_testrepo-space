@@ -71,7 +71,7 @@ Requirement: Sales Process 633
 	}	//AccountWrap class ends here 
 	
 		//Interface Log Variables   
-		global static String operationType;
+		global static Strin operationType;
 		global static String interfaceType;
 		global static String messageType;
 		global static String errorMessage;
