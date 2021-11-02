@@ -50,7 +50,7 @@ Requirement: Sales Process 633
 		webservice String activityName;
 		webservice String buildingFloor;
 		webservice String postalCode;
-		webservice String stateProvinceCountyCode;  
+		webservice Strin stateProvinceCountyCode;  
 		//.webservice String accountManagerUPI;	   
 		webservice Date companyEndDate;		
 		webservice String reasonForEndName;
