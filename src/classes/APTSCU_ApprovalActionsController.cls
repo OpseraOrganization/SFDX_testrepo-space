@@ -14,7 +14,7 @@ public with sharing class APTSCU_ApprovalActionsController{
 	public String sObjectDisplayFieldsJSON {get; set;}
 	public String previewApprovalsJSON {get;set;}
 	public String approvalHeaderInformation {get;set;}
-	public Str approvalRequestJSON {get;set;}
+	public String approvalRequestJSON {get;set;}
 	public String submitterName {get;set;}
 	public String approverName {get;set;}
 	public String redirectURL {get;set;}
