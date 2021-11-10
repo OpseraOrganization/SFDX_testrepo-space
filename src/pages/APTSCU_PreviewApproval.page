@@ -1,0 +1,666 @@
+<apex:page showHeader="false" standardStylesheets="false" sidebar="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0"  controller="APTSCU_PreviewApprovalsController" action="{!previewApprovals}">
+    <html ng-app="previewApprovalApp">
+        <head>
+            <style>
+                [ng:cloak],
+                [ng-cloak],
+                [data-ng-cloak],
+                [x-ng-cloak],
+                .ng-cloak,
+                .x-ng-cloak {
+                display:none !important;
+                }
+				.center {
+   margin-left: auto;
+    margin-right: auto;   
+    width: 80em;
+    height:100em;
+}
+        .forwinCard {
+ background-color:powderblue;
+}    
+      	
+	.leftalignmentReasons { 
+  width: 300px;
+}
+ .Paddingval { 
+ padding-left: 20px;
+ padding-right: 100px;
+          }     
+            </style>
+            <apex:stylesheet value="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/styles/salesforce-lightning-design-system-vf.css')}" /> 
+            
+<apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.11.3.js')}"/>
+    <apex:includeScript value="{!$Resource.Bootstrap335Library}"/>
+        <apex:includeScript value="{!$Resource.Angularjs148Library}"/>
+            <!--Code modified By Zhuyifeng 2017/07/11 End-->
+                <script>
+            Visualforce.remoting.timeout = 120000;
+                var previewApprovalApp=angular.module('previewApprovalApp',[]);
+var previewApprovalController = previewApprovalApp.controller('previewApprovalController',function($scope){
+    $scope.previewApprovalsJSON={!previewApprovalsJSON};
+    $scope.approvalReqWrapperListJSON = {!approvalReqWrapperListJSON};
+    $scope.isError=false;
+    $scope.onlyPreview={!onlyPreview};
+    $scope.isCancelled={!isCancelled};
+    $scope.ispreviewmessage={!ispreviewmessage};
+    $scope.Previewmessage={!Previewmessage};
+    $scope.loaupdated={!loaupdated};
+  
+    if( $scope.approvalReqWrapperListJSON != 'No approval Records available') {
+        angular.forEach($scope.approvalReqWrapperListJSON, function(value, key) {
+            value.sObjectDisplayFieldsJSON = JSON.parse(value.sObjectDisplayFieldsJSON);
+            console.log(value.sObjectDisplayFieldsJSON);
+        })
+        console.log($scope.approvalReqWrapperListJSON);
+    } else {
+        $scope.isError=true;
+        $scope.errorMessage = "No approvals needed at this time.";
+    }
+    $scope.sObjectId='{!sObjectId}';
+    $scope.sObjectType='{!sObjectType}';
+    $scope.showComments=true;
+    $scope.submittionComments ={comment: '{!JSENCODE(submittionComments)}'};  
+    $scope.showProcessingIcon =false;
+    
+    $scope.sObjectFieldSet = {!sObjectFieldSetJSON};
+    $scope.sObjectData = {!sObjectDataJSON};
+    $scope.sObjectFieldSetKeys = Object.keys($scope.sObjectFieldSet).reverse();
+    $scope.approvalColumnsFieldSet = {!approvalColumnsFieldSetJSON};
+    $scope.approvalColumnsFieldSetKeys = Object.keys($scope.approvalColumnsFieldSet).reverse();
+    
+    $scope.enableShowComment = function(){
+        $scope.showComments=true;
+    }
+   
+    function validateForm(){
+        var freason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem:freason').value;
+        var sreason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem1:sreason').value;
+        var treason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem2:treason').value;
+        var AmountGreaterFlag = '{!UnweightedAmount}';       
+        var requiredReasons = '{!reasonsRequired}';  
+        
+                        if(treason =='' || freason == '' || sreason ==''){    
+                            alert(requiredReasons);
+                            return 0;
+                        }else if(freason==sreason &&  sreason != ''){
+                            alert('Main reason and Second Reason can not be same');  
+                            return 0;
+                        }else if(sreason==treason && treason != ''){                
+                            alert('Second reason and Third Reason can not be same');
+                            return 0;                 
+                        }else if(treason==freason && freason != ''){                
+                            alert('Main reason and Third Reason can not be same'); 
+                            return 0;
+                        }
+                         else{                    
+                                return 1;
+                         }
+    }
+    if($scope.loaupdated==true)
+    {
+       toastLaunch();
+	}
+    $scope.submitForApproval = function(){
+           $scope.showwinmessage=false;
+           $scope.Previewmessage="Please wait until your request is completely processed. Do not close the page or interrupt the approval submission.";
+
+        var showSalesOutcomeReason= '{!DisplaySalesoutcomReason}';
+        
+        var showProbabilityPer = '{!DisplayProbability}';
+        
+        
+        if(showSalesOutcomeReason=="true"){ 
+            
+            var call = validateForm();
+            
+            if(call=="1"){
+                var freason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem:freason').value;
+                var sreason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem1:sreason').value;
+                var treason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem2:treason').value;
+                
+                 toastLaunch();
+                
+                $scope.showProcessingIcon=true;
+                $scope.updateOpportunityReasons();
+                $scope.SubmissionComments();
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.APTSCU_PreviewApprovalsController.submitForApprovals}',$scope.sObjectType,$scope.sObjectId,$scope.submittionComments.comment,
+                    function(result, event) {
+                        console.log(result); 
+                        if(result=='Success'){
+                            
+                            $scope.addComments();
+                            
+                        }
+                        else 
+                        if(result==null){
+                         $scope.redirectToRecord();
+                        }
+                        else {
+                            //window.location='/apex/NF_ErrorNotification?oppId='+$scope.sObjectId+'&from='+result;
+                            alert(result);
+                            errorMessage='We cannot process your request because some issue occurred.Please refresh and try to submit again,if still error please contact your system administrator.' + result;;
+                            $scope.isError=true;
+                            $scope.showProcessingIcon=false;
+                            $scope.$apply();
+                            
+                        }
+                    }); 
+                
+            }         
+        }
+        else if(showSalesOutcomeReason=="false"){
+            
+            if(showProbabilityPer == "true"){
+                
+                var ProbabilityPer= document.getElementById('j_id0:j_id14:thePageBlock1:theSection1:j_id15:theTextInput').value;
+                
+                var regexp = /[,.]/;
+                var result=regexp.test(ProbabilityPer);
+                
+                
+                
+                if(ProbabilityPer>0 && ProbabilityPer<=100 && !result){
+                     toastLaunch();
+                    $scope.updateProbabilityPercentage();
+                    $scope.SubmissionComments();
+                    $scope.showProcessingIcon=true;
+                    Visualforce.remoting.Manager.invokeAction(
+                        '{!$RemoteAction.APTSCU_PreviewApprovalsController.submitForApprovals}',$scope.sObjectType,$scope.sObjectId,$scope.submittionComments.comment,
+                        function(result, event) {
+                            console.log(result); 
+                            if(result=='Success'){
+                                $scope.addComments();
+                            }
+                            else 
+                        if(result==null){
+                         $scope.redirectToRecord();
+                        }
+                            else{
+                                //window.location='/apex/NF_ErrorNotification?oppId='+$scope.sObjectId+'&from='+result;
+                                alert(result);
+                                errorMessage=result;
+                                $scope.isError=true;
+                                 $scope.showProcessingIcon=false;
+                                $scope.$apply();
+                                
+                            }
+                        }); 
+                    
+                }else if(result || ProbabilityPer>100 || ProbabilityPer<=0 ){
+                    alert('Probability must be a numeric value between 1 and 100.');
+                }
+                
+                
+            }else{
+                 toastLaunch();
+                $scope.SubmissionComments();
+                $scope.showProcessingIcon=true;
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.APTSCU_PreviewApprovalsController.submitForApprovals}',$scope.sObjectType,$scope.sObjectId,$scope.submittionComments.comment,
+                    function(result, event) {
+                        console.log(result); 
+                        if(result=='Success'){
+                            $scope.addComments();
+                            
+                        }else 
+                        if(result==null){
+                         $scope.redirectToRecord();
+                        }
+                        else {
+                            //window.location='/apex/NF_ErrorNotification?oppId='+$scope.sObjectId+'&from='+result;
+                            alert(result);
+                            errorMessage=result;
+                            $scope.isError=true;
+                             $scope.showProcessingIcon=false;
+                            $scope.$apply();
+                            
+                        }
+                    }); 
+                
+                
+            }
+            
+        }
+        
+        
+        
+    }
+    
+    
+    
+    $scope.cancelApprovals = function(){
+                            $scope.showwinmessage=false;
+                            $scope.Previewmessage="Please wait until your request is completely processed. Do not close the page or interrupt the approval submission.";
+   
+                        toastLaunch();
+                        var commentssize=document.getElementById('textarea-input-01').value.length;
+                        if(commentssize<=254)
+                        {
+                         $scope.showProcessingIcon=true;
+                         Visualforce.remoting.Manager.invokeAction(
+                                 '{!$RemoteAction.APTSCU_PreviewApprovalsController.cancelApprovals}',$scope.sObjectType,$scope.sObjectId,$scope.submittionComments.comment,
+                                 function(result, event) {
+                                  console.log(result); 
+                                  if(result=='success'){
+                                    $scope.redirectToRecord();
+                                 
+                                  }
+                                  else if(result!=null){
+                                      alert(result);
+                                      errorMessage=result;
+                                      $scope.isError=true;
+                                       $scope.showProcessingIcon=false;
+                                      $scope.$apply();
+                                  }
+                              }); 
+                          }
+                          else if(commentssize>=255)
+                          {
+                           $scope.showProcessingIcon=false;
+                            alert('Recall comments cannot exceed 255 character limit.');
+                          }  
+                    }
+                    
+
+    
+    $scope.addComments = function(){
+        $scope.showProcessingIcon=true;
+        console.log('###Submission Comments:' + $scope.submittionComments.comment);
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.APTSCU_PreviewApprovalsController.addComments}',$scope.sObjectType,$scope.sObjectId,$scope.submittionComments.comment,
+            function(result, event) {
+                console.log(result); 
+                if(result=='success'){
+                    $scope.redirectToRecord();
+                }
+                else if(result!=null){
+                    alert(result);
+                    errorMessage=result;
+                    $scope.isError=true;
+                     $scope.showProcessingIcon=false;
+                    $scope.$apply();
+                }
+            }); 
+        
+    }
+    
+    $scope.updateProbabilityPercentage= function(){
+        $scope.showProcessingIcon=true;
+        
+        var ProbabilityPer= document.getElementById('j_id0:j_id14:thePageBlock1:theSection1:j_id15:theTextInput').value; 
+        
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.APTSCU_PreviewApprovalsController.updateProbabilityPercentage}',$scope.sObjectType,$scope.sObjectId,ProbabilityPer,
+            function(result, event) {
+                console.log(result); 
+                if(result=='success'){
+                    
+                }
+                else if(result!='null'){
+                    alert(result);
+                    location.reload(true);
+                    errorMessage=result;
+                    $scope.isError=true;
+                     $scope.showProcessingIcon=false;
+                    $scope.$apply();
+                }
+            }); 
+        
+        
+        
+    }
+    
+    
+    
+    $scope.SubmissionComments = function(){
+        $scope.showProcessingIcon=true;
+        console.log('###Submission Comments:' + $scope.submittionComments.comment);
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.APTSCU_PreviewApprovalsController.submissionCommentsUpdate}',$scope.sObjectId,$scope.submittionComments.comment,
+            function(result, event) {
+                console.log(result); 
+                if(result=='success'){
+                }
+                
+            }); 
+        
+    }  
+    
+    
+    
+    $scope.updateOpportunityReasons = function(){
+        $scope.showProcessingIcon=true;
+        
+        var freason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem:freason').value;
+        var sreason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem1:sreason').value;
+        var treason= document.getElementById('j_id0:theForm:thePageBlock:theSection:theSectionItem2:treason').value;
+        
+        
+        
+        
+        
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.APTSCU_PreviewApprovalsController.updateOpportunityReasons}',$scope.sObjectType,$scope.sObjectId,freason,sreason,treason,
+            function(result, event) {
+                console.log(result); 
+                if(result=='success'){
+                    $scope.redirectToRecord();
+                }
+                else if(result!='null'){
+                    alert(result);
+                    errorMessage=result;
+                    $scope.isError=true;
+                    $scope.$apply();
+                }
+            }); 
+        
+        
+        
+    }
+    
+    $scope.redirectToRecord = function(){
+        window.top.location='/'+$scope.sObjectId;
+    }
+    
+    $scope.displayHeaderData = function (apporvalReq) {
+        
+        if(apporvalReq.showHeaderInfo == false) {
+            apporvalReq.showHeaderInfo  = true;
+            
+        }
+        else {
+            apporvalReq.showHeaderInfo  = false;
+            
+        }
+    }
+});
+
+
+
+
+
+</script>
+<style>
+.approve-icon{
+border-radius: 2px;
+background-color: #f2cf5b;
+padding:5px;
+}
+
+.logo {
+margin-left:auto; 
+margin-right:auto;
+}
+
+.right {
+float: left;
+width: 300px;
+
+}
+</style>  
+<title>Preview Approval </title> 
+</head>
+<body ng-controller="previewApprovalController" id="mainbody">
+
+<div class="slds ng-cloak">
+<div class="slds-page-header" role="banner">
+<div class="slds-grid">
+<div class="slds-col slds-has-flexi-truncate">
+<div class="slds-media slds-media--top slds-no-space slds-grow">
+<div class="slds-media__figure">
+<span class="slds-avatar slds-avatar--small approve-icon">
+<img src="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/icons/action/description_60.png')}" alt="" />
+</span>
+</div>
+<div class="slds-media__body">
+<p class="slds-text-heading--label">APPROVALS</p>
+<h1 class="slds-page-header__title slds-truncate slds-text-heading--medium slds-section__title" title="My Approvals">{{sObjectData['Name']}}</h1>
+</div>
+</div>
+</div>
+</div>
+<br/>
+<div class="slds-grid slds-grid--align-spread">
+<div class="slds-col" ng-repeat="key in sObjectFieldSetKeys" ng-if="!isError">
+<dl>
+<dt>{{sObjectFieldSet[key]}}</dt>
+<dd>{{sObjectData[key]}}</dd>
+</dl>
+</div>
+</div>
+
+
+</div>
+<br/>
+<div class="slds-notify_container slds-notify_container--inline" ng-if="isError"><div class="slds-notify slds-notify--toast slds-theme--info" role="alert"><span class="slds-assistive-text">Info</span><div class="slds-notify__content slds-grid"><svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, '/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use></svg>
+<div class="slds-col slds-align-middle">
+<!-- added by Hellen -->
+            <h4><b>Error:</b></h4>
+            <!--end-->
+            <h2 class="slds-text-heading--small">{{errorMessage}}</h2></div></div></div></div>
+<!--Toast MEssage Changes-->
+   <script>
+    function toastLaunch(){
+        var element = document.getElementById("ToastMessage");
+        element.classList.toggle("slds-hidden");
+    }
+  
+    </script>
+<!--slds-hidden  slds-modal_large color:#FF4500; slds-hidden -->
+  <div class="forwinCard">
+   <h2 class="slds-text-heading--small" style="text-align:center; font-size: 24px;font-weight: bold; " ng-show="ispreviewmessage == true"  id="prompt-heading-id">WIN DECLARATION</h2>
+</div>
+
+  <!---->
+<div >
+<div  role="alertdialog" tabindex="-1" id='ToastMessage' aria-modal="false"  aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" class="slds-modal slds-fade-in-open slds-modal--prompt slds-hidden">
+      <div class="slds-notify_container center" >
+        <div class="slds-notify slds-notify--toast  slds-theme--warning" role="alert">
+          <span class="slds-assistive-text">Error</span>
+          <button class="slds-button slds-notify__close slds-button--icon-inverse" onclick='toastLaunch()' title="Close">
+            <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+              <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, '/assets/icons/utility-sprite/svg/symbols.svg#close')}">    
+                 </use>
+            </svg>
+            <span class="slds-assistive-text">Close</span>
+          </button>
+          <div class="slds-notify__content slds-grid">
+            <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+              <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}">    </use>
+            </svg>
+            <div class="slds-col slds-align-middle">
+      <h2 class="slds-text-heading--small" style="text-align:center; font-size: 18px;" id="prompt-heading-id">{{Previewmessage}}</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!--Toast End-->
+<br/>
+<table class="slds-table slds-table--bordered slds-table--cell-buffer slds-table--col-bordered" ng-if="isError == false">
+    
+    <thead>
+        <tr class="slds-text-title--caps">
+            <th scope="col">
+                <div class="slds-truncate" title="SEQUENCE NO">SEQUENCE NO.</div>
+            </th>
+            <th scope="col" ng-repeat='key in approvalColumnsFieldSetKeys' style="text-transform: uppercase;">
+                <div class="slds-truncate" title="{{approvalColumnsFieldSet[key]}}">{{approvalColumnsFieldSet[key]}}</div>
+            </th>
+            <th scope="col">
+                <div class="slds-truncate" title=""></div>
+            </th>
+        </tr>
+    </thead>
+    
+    <tbody  ng-repeat='approvalRecord in approvalReqWrapperListJSON track by $index' >
+        
+        <tr>
+            <td data-label="SEQUENCE NO.">
+                <div class="slds-truncate" title="{{($index+1)}}">{{($index+1)}}</div>
+            </td>
+            <td data-label="ASSIGNEE TYPE" ng-repeat='key in approvalColumnsFieldSetKeys'>
+                <div class="slds-truncate" title="{{approvalColumnsFieldSet[key]}}">{{approvalRecord.approvalReq[key]}}</div>
+            </td>
+            <td data-label="" style="text-align:right;">
+                <figure>
+                    <span class="slds-icon_container" >
+                        <a ng-click="displayHeaderData(approvalRecord)">
+                            <svg class="slds-icon slds-icon-text-default" aria-hidden="true" style="cursor:pointer;" ng-show="approvalRecord.showHeaderInfo == false" >
+                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, '/assets/icons/utility-sprite/svg/symbols.svg#chevronright')}">    
+                                </use>
+                            </svg>
+                        </a>
+                        <a ng-click="displayHeaderData(approvalRecord)">
+                            <svg class="slds-icon slds-icon-text-default" aria-hidden="true" ng-show="approvalRecord.showHeaderInfo == true" style="cursor:pointer;" >
+                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, '/assets/icons/utility-sprite/svg/symbols.svg#chevrondown')}">    
+                                </use>
+                            </svg>
+                        </a>
+                    </span>
+                </figure>
+            </td>
+        </tr>
+        <tr ng-show="approvalRecord.showHeaderInfo == true"><td colspan="5">
+            <div>
+                <div class="slds-grid slds-wrap slds-grid--pull-padded">
+                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" >
+                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                            <p><b>Step Name</b></p>
+                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                <li class="slds-item">{{approvalRecord.approvalReq.Apttus_Approval__Step_Name__c}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" >
+                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                            <p><b>Entry Criteria</b></p>
+                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                <li class="slds-item">{{approvalRecord.stepEntryCriteria}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="slds-grid slds-wrap slds-grid--pull-padded">
+                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" ng-repeat ="(key,value) in approvalRecord.sObjectDisplayFieldsJSON " ng-if="!isError">
+                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                            
+                            <p><b>{{value}}</b></p>
+                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                <li class="slds-item">{{sObjectData [key]}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" ng-repeat ="(key,value) in approvalRecord.sObjectDisplayFieldsJSON " ng-if="!isError">
+                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                            
+                            <p><b>Role Name</b></p>
+                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                <li class="slds-item">{{approvalRecord.approvalReq.NF_Role_Name__c}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+              
+                <div class="slds-grid slds-wrap slds-grid--pull-padded">
+                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" ng-repeat ="(key,value) in approvalRecord.sObjectDisplayFieldsJSON " ng-if="!isError">
+                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                            
+                            <p><b>Organisation</b></p>
+                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                <li class="slds-item">{{approvalRecord.approvalReq.NF_Organization_Level__c}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+               
+                  <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" ng-repeat ="(key,value) in approvalRecord.sObjectDisplayFieldsJSON " ng-if="!isError">
+                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                            
+                            <p><b>BG Attribute</b></p>
+                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                <li class="slds-item">{{approvalRecord.approvalReq.NF_BG_Attribute__c}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" ng-repeat ="(key,value) in approvalRecord.sObjectDisplayFieldsJSON " ng-if="!isError">
+                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                            
+                            <p><b>Role Code</b></p>
+                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                <li class="slds-item">{{approvalRecord.approvalReq.NF_Role_Code__c}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<br/>
+
+<div ng-if="!isError"> 
+    <apex:outputPanel rendered="{!DisplayProbability}">
+        <apex:form >
+            <div class="requiredInput"><div class="requiredBlock"></div><font color="red">*</font>Probability(%)   :      <input id="j_id0:j_id14:thePageBlock1:theSection1:j_id15:theTextInput" name="j_id0:j_id14:thePageBlock1:theSection1:j_id15:theTextInput" required="required" size="20" type="text" value="{!optyObj.Probability}"/>&nbsp;Note: Probability must be a numeric value between 1 and 100.</div>
+        </apex:form>
+    </apex:outputPanel>
+</div>
+
+<apex:outputPanel id="projectList"  rendered="{!DisplaySalesoutcomReason}" styleClass="logo">
+ <div  class="leftalignmentReasons"  >
+     <apex:form id="theForm">
+            
+            <apex:pageBlock id="thePageBlock" >
+                <center>
+                    <apex:pageBlockSection id="theSection" >
+                             
+                        <center><span class="Paddingval" ><font color="red">*</font>Main Reason:</span>
+                            <apex:pageBlockSectionItem id="theSectionItem" >
+                                <apex:inputfield value="{!optyObjRecord.Sales_Outcome_Reason__c}" id="freason"/><br/><br/>
+                            </apex:pageBlockSectionItem>
+                            </center>
+
+                        <center><span class="Paddingval" ><font color="red">*</font>Second Reason:</span>
+                            <apex:pageBlockSectionItem id="theSectionItem1">
+                                <apex:inputfield value="{!optyObjRecord.Second_Reason__c}" id="sreason"/><br/><br/>
+                            </apex:pageBlockSectionItem></center>
+                        
+                        <center><span class="Paddingval" ><font color="red">*</font>Third Reason:</span>
+                            <apex:pageBlockSectionItem id="theSectionItem2" >
+                                <apex:inputfield value="{!optyObjRecord.Third_Reason__c}" id="treason"/><br/><br/>
+                            </apex:pageBlockSectionItem></center>
+                        
+                    </apex:pageBlockSection> 
+                </center>       
+            </apex:pageBlock>
+            
+        </apex:form>
+    </div>
+</apex:outputPanel>
+
+<div ng-show="showComments" ng-if="!isError">
+    <div class="slds-form-element">
+        <label class="slds-form-element__label" for="textarea-input-01"></label>
+        <div class="slds-form-element__control">
+            <textarea id="textarea-input-01" class="slds-textarea" placeholder="Enter your comments" ng-model="submittionComments.comment" ></textarea>
+        </div>
+    </div>
+</div>
+<br/>
+<div style="text-align:right;">
+    <button class="slds-button slds-button--brand"  ng-click="redirectToRecord()" ng-if="!showProcessingIcon || isError ">Back</button>&nbsp;<button class="slds-button slds-button--brand" ng-hide="showComments" ng-click='enableShowComment()' >Submit with Comments</button>&nbsp;<img src="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/images/spinners/slds_spinner_brand.gif')}" width="40" height="10" ng-show="showProcessingIcon"/> &nbsp;<button class="slds-button slds-button--brand" ng-show='showComments' ng-click='submitForApproval()' ng-if="!isError && !onlyPreview  &&!showProcessingIcon">Submit</button>&nbsp;<button class="slds-button slds-button--brand" ng-click='cancelApprovals()' ng-if="!isError && onlyPreview && !isCancelled &&!showProcessingIcon">Recall</button>
+    
+</div>
+
+</div>
+</body>
+</html>
+</apex:page>
