@@ -1,0 +1,392 @@
+<apex:page standardController="Account" extensions="LeanData.RemotingRouter,LeanData.OnDemandView" action="{! redirectToTransferOrAccount}">
+    <apex:pageMessages />
+    <c:matchedViewAssets view_type="TransferAccount" with_dupes="false" with_l2a_matches="false"/>
+   
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__JqueryUI, 'jquery-ui-1.11.4.custom/jquery-ui.min.js')}"  />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__angela_app, 'styles.css')}"/> 
+    <apex:stylesheet value="{!$Resource.LeanData__loading_spinner}"/>
+  
+    <style>
+        .ui-autocomplete{
+            width: 200px;
+            border-radius: 2px;
+            border: 1px solid #454545;
+            z-index: 1000;
+        }
+
+        .ui-menu .ui-menu-item a{
+            color: #96f226;
+            border-radius: 0px;
+            border: 1px solid #454545;
+        }
+        
+        .bs .loadingOverlay {    
+            width: calc(100% - 200px);
+            position: absolute;
+            height: calc(100% - 30px);
+            z-index: 2;
+            background: rgba(140, 142, 143, 0.8);
+        }
+        
+        .bs .loadingParent {
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+    </style>
+    <c:style />
+    <div id="reassignment-wrapper" class="matchedViewAssetsParent bs">
+        <div class="loadingParent">
+            <div class="loadingOverlay">
+                <div class="sk-circle">
+                  <div class="sk-circle1 sk-child"></div>
+                  <div class="sk-circle2 sk-child"></div>
+                  <div class="sk-circle3 sk-child"></div>
+                  <div class="sk-circle4 sk-child"></div>
+                  <div class="sk-circle5 sk-child"></div>
+                  <div class="sk-circle6 sk-child"></div>
+                  <div class="sk-circle7 sk-child"></div>
+                  <div class="sk-circle8 sk-child"></div>
+                  <div class="sk-circle9 sk-child"></div>
+                  <div class="sk-circle10 sk-child"></div>
+                  <div class="sk-circle11 sk-child"></div>
+                  <div class="sk-circle12 sk-child"></div>
+                </div>
+            </div>
+        </div>
+        <div class="notLoadingParent">
+            <button type="button" id="back-link"> &larr; Back To Account </button>
+            <div class="bPageTitle"><div class="ptBody"><div class="content"><img src="/s.gif" alt="Account" class="pageTitleIcon" title="Account"/><h1 class="pageType">Reassign Account<span class="titleSeparatingColon">:</span></h1><h2 class="pageDescription account-name-wrapper"></h2><div class="blank">&nbsp;</div></div><div class="links"></div></div></div>
+            This screen allows you to transfer an account from one user to another.  When you transfer ownership of an account, the new owner will also gain ownership of the following records related to the transferred account:
+            <ul><li>all notes and open activities for this account owned by you</li><li>all contacts within the account owned by you, including all related notes and open activities owned by you</li><li>all opportunities (including closed opportunities if you select the Transfer closed opportunities  checkbox below) within the account owned by you, including all related notes and open activities owned by you</li></ul>
+            <div>Note that completed activities will not be transferred.<br/><br/>The new owner might need to edit sharing.</div>
+
+
+            <div class="bPageBlock brandSecondaryBrd bEditBlock bLayoutBlock secondaryPalette">
+                <div class="pbHeader pbHeaderEmpty">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                            <tr>
+                                <td class="pbTitle"><img src="/s.gif" alt="" width="1" height="1" class="minWidth" title=""/><h2 class="mainTitle"></h2></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pbBody">
+                    <div class="brandTertiaryBgr first pbSubheader tertiaryPalette" id="head_1_ep">
+                        <h3>Reassign Account - <span class="account-name-wrapper"></span><span class="titleSeparatingColon">:</span></h3>
+                    </div>
+                </div>
+                <div class="pbSubsection">
+                    <table class="detailList" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                            <tr>
+                                <td class="labelCol"></td>
+                                <td class="data2Col dummy" colspan="3"></td>
+                            </tr>
+                            <tr style="float: left; padding: 5px;">
+                                <td class="labelCol requiredInput"><label for="newOwn"><span class="assistiveText">*</span>Owner</label></td>
+                                <td class="data2Col" colspan="3"><input id="auto-complete-owner-box" placeholder="Type a user name..."></input></td>
+                            </tr>
+                            <tr class="last detailRow"><td colspan="4"><input id="transferContacts" name="transferContacts" type="checkbox" value="1"/><label for="transferContacts">Transfer ownership of contacts</label></td></tr>
+                            <tr class="detailRow"><td colspan="4"><input id="transOpenOpps" name="transOpenOpps" type="checkbox" value="1"/><label for="transOpenOpps">Transfer open opportunities not owned by the existing account owner</label></td></tr>
+                            <tr class="detailRow"><td colspan="4"><input id="transClosedOpps" name="transClosedOpps" type="checkbox" value="1"/><label for="transClosedOpps">Transfer closed opportunities</label></td></tr>
+                            <tr class="detailRow"><td colspan="4"><input id="transOpenActivities" name="transOpenActivities" type="checkbox" value="1"/><label for="transOpenActivities">Transfer in progress activities not owned by the existing account owner</label></td></tr>
+                            <tr class="detailRow"><td colspan="4"><input id="transClosedActivities" name="transClosedActivities" type="checkbox" value="1"/><label for="transClosedActivities">Transfer completed activities</label></td></tr>
+                            <tr class="detailRow"><td colspan="4"><input id="transOwnedCases" name="transOwnedCases" onclick="if (!this.checked) document.editPage.transClosedCase.checked=false;" type="checkbox" value="1"/><label for="transOwnedCases">Transfer open cases owned by the existing account owner</label></td></tr>
+                            <tr class="detailRow"><td colspan="4"><input id="transClosedCase" name="transClosedCase" onclick="if (this.checked) document.editPage.transOwnedCases.checked=true;" type="checkbox" value="1"/><label for="transClosedCase">Transfer closed cases</label></td></tr>
+                            <tr class="detailRow"><td colspan="4"><input id="allOrNothing" name="allOrNothing" onclick="if (this.checked) document.editPage.transOwnedCases.checked=true;" type="checkbox" value="1"/><label for="transClosedCase">Rollback if any transfer fails</label></td></tr>
+                            <tr class="last detailRow"><td colspan="4"><input id="sendMail" name="sendMail" type="checkbox" value="1"/><label for="sendMail">Send notification email to new owner</label></td></tr>
+                        </tbody>
+                    </table>
+                    <br/>
+                    <button id="reassignment-button" style="margin-left: 10px;">Reassign Account</button>
+                </div>
+            </div>
+
+            <div class="view">
+                <div class="matchedLeads section-wrapper" style="margin-top:5px;"  >
+                    <div class="wrapper">
+                        <div class="left" >
+                            <span class="table_title"><img class="leandata_logo" src="#LEANDATALOGORESOURCELINK"/>&nbsp;&nbsp;&nbsp;<h3>Matched Leads</h3></span>
+                        </div>
+                        <div class="right">
+                        </div>
+                    </div>
+                    <div class="matchedLeadsHeightDiv tableWrapper outer-panel">
+                        <div class="inner-panel">
+                            <table class="list content_table_matched_leads" cellspacing='0' cellpadding='0' style="table-layout:fixed;">
+                                <thead class="matchedLeadsTableHead">
+                                </thead>
+                                <tbody class="matchedLeadsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        Visualforce.remoting.timeout = 120000; // Set timeout at page level
+        var paginatedTable;
+        j$ = jQuery.noConflict();
+        j$('.notLoadingParent').hide();
+
+        function showPage() {
+            j$('.notLoadingParent').show();
+            j$('.loadingParent').hide();
+        }
+
+        function hidePage() {
+            j$('.notLoadingParent').hide();
+            j$('.loadingParent').show();
+        }
+
+        function start() {
+           objId = window.location.search.split("id=")[1].split("&")[0];
+           pageType = 'Account';
+           Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.OnDemandView.getNewViewObject}',
+                objId, "reassignAccount", null,
+                function(result, event) {buildView(result);showPage();}
+            ); 
+        }
+
+
+        j$('document').ready(function(){
+            start();
+        });
+
+
+        function pingJobStatus() {
+            var params = {
+                "accountId" : objId,
+                "newOwnerId" : getNewOwnerId(),
+                "childIds" : getChildIds(),
+                "options" : getOptions(),
+                "action" : "reassignChildObjects"
+            };
+            var serializedParams = JSON.stringify(params);
+            debugger;
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.RemotingRouter.remoteCall}',
+                serializedParams,
+                function(result, event) {
+                    var result = result.replace(/&(l|g|quo)t;/g, 
+                        function(a,b){
+                            return {
+                                l   : '<',
+                                g   : '>',
+                                quo : '"'
+                            }[b];
+                        }
+                    );
+                    var responseObject = JSON.parse(result);
+                    if (responseObject["status"] === "job in progress") {
+                        setTimeout(pingJobStatus(), 3000);
+                    } else if (responseObject["message"] !== "clear") {
+                        start();
+                    } else {
+                        start();
+                    }
+                }
+            );
+        }
+
+        function buildView(viewObject) {
+            if (viewObject["status"] === "job in progress") {
+                pingJobStatus();
+                return;
+            }
+            j$('.matchedLeads').css('opacity','1');
+            j$('.leandata_logo').attr('src', viewObject['logoURL']);
+            j$('#back-link').on('click', function(e) {window.location.href = '/' + objId;});
+            j$('.account-name-wrapper').html(viewObject["accountName"]);
+
+            initializeAutoComplete(viewObject["potentialOwners"]);
+            if(viewObject["leadCols"].indexOf("Actions") == -1) viewObject["leadCols"].unshift("Actions");
+            initializePage(viewObject);
+            
+            //not sure if this is the best pattern, directly modifying the cols maps
+            //to change the column name for "action," not sure what the best way to make this
+            //piece-meal change is, seems like one overwrite makes sense?
+            viewObject["leadColsMap"]["Actions"] = '<input type="checkbox" id="selectAllLeads" checked="true" />';
+
+            initializeSection('Lead', viewObject["leadCols"], viewObject["leadColsMap"], viewObject["leadMatches"]);
+
+            if (viewObject["leadMatches"].length === 0) {
+                j$('.matchedLeads').html('No records to display');
+                j$('.pageBody').show();
+                j$('.matchedLeads').css("overflow-x","");
+            } else {
+                j$(".matchedLeadsTableHead").html(generateHeader());
+                j$(".matchedLeadsTableBody").html(generateSObjectRows(false));
+
+                paginatedTable = initializeDataTable(j$(".content_table_matched_leads"), 'lead', {"pageLength" : 20});
+                j$('.pageBody').show();
+            }
+
+            j$("#reassignment-button").bind("click", reassignObjects);
+            j$('#selectAllLeads').on('click', function(event) {
+                event.stopPropagation();
+                j$(paginatedTable.fnGetNodes()).find('.leandata-checkbox').each(function() {
+                    if (this.checked != j$('#selectAllLeads')[0].checked && !this.disabled) {
+                        this.checked = j$('#selectAllLeads')[0].checked;
+                    }
+                });
+            });
+            j$('.leandata-checkbox').on('click', function() {
+                var checkboxArray = jQuery.makeArray(j$(paginatedTable.fnGetNodes()).find('.leandata-checkbox'));
+                var allChecked = checkboxArray.reduce(function(left, right) {
+                    return left && right.checked;
+                }, true);
+                if (!allChecked) {
+                    j$('#selectAllLeads')[0].checked = false;
+                } else {
+                    j$('#selectAllLeads')[0].checked = true;
+                }
+            });
+        }
+
+        function initializeAutoComplete(ownerList) {
+            var potentialStrings = j$.map(ownerList, function(el, i) {return {"data" : {"ownerId" : el.Id} ,"value" : (el.Name + " (" + el.Id + ")")};});
+            j$('#auto-complete-owner-box').autocomplete({
+                source: potentialStrings,
+                select: function (ev, list) {
+                    j$("#auto-complete-owner-box").val(list.item.value);
+                    j$("#auto-complete-owner-box").data("newOwnerId", list.item["data"]["ownerId"]);
+                    return false; 
+                }
+            });
+        }
+
+        function reassignObjects() {
+            //leandata-checkbox the class set in viewJSResource
+            // var childIds = $(".leandata-checkbox:checked").map(function(){return $(this).data("id");});
+            if (!getNewOwnerId()) {
+                alert('New owner required.');
+                return;
+            }
+            hidePage();
+            var params = {
+                "accountId" : objId,
+                "newOwnerId" : getNewOwnerId(),
+                "childIds" : getChildIds(),
+                "options" : getOptions(),
+                "action" : "reassignChildObjects"
+            };
+            j$('#reassignment-wrapper').css('opacity','.5');
+            var serializedParams = JSON.stringify(params);
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.RemotingRouter.remoteCall}',
+                serializedParams,
+                function(result, event) {handleReassignmentResponse(result, true)}
+            );
+        }
+
+        function getChildIds(){
+            var ids = [];
+            try{
+                j$.each(j$(paginatedTable.fnGetNodes()).find('.leandata-checkbox:checked'), function(idx,el){ids.push(j$(el).data('id'))});
+            } catch (ex) {}
+            return ids;
+        }
+
+        function getOptions(){
+            var options = {};
+            options["transferOpenOpps"] = j$('#transOpenOpps').is(":checked");
+            options["transferClosedOpps"] = j$('#transClosedOpps').is(":checked");
+            options["transferOpenActivities"] = j$('#transOpenActivities').is(":checked");
+            options["transferClosedActivities"] = j$('#transClosedActivities').is(":checked");
+            options["transferOpenCases"] = j$('#transOwnedCases').is(":checked");
+            options["transferClosedCases"] = j$('#transClosedCase').is(":checked");
+            options["sendNotificationEmails"] = j$('#sendMail').is(":checked");
+            options["transferContacts"] = j$('#transferContacts').is(":checked");
+            options["allOrNothing"] = j$('#allOrNothing').is(":checked");
+            return options;
+        }
+
+        function getNewOwnerId() {
+            var newOwnerId = j$('#auto-complete-owner-box').data('newOwnerId');
+            return newOwnerId;
+        }
+
+        function handleReassignmentResponse(resp,asyncTransfer) {  
+            var resp = resp.replace(/&(l|g|quo)t;/g, 
+                    function(a,b){
+                        return {
+                            l   : '<',
+                            g   : '>',
+                            quo : '"'
+                        }[b];
+                    }
+                );
+            var responseObject = JSON.parse(resp);
+            if (asyncTransfer) {
+                if (responseObject["success"]) {
+                    alert(responseObject["message"]);
+                    window.location.href = '/' + objId;
+                    pingJobStatus();
+                    return;
+                } else {
+                    alert(responseObject["message"]);
+                    start();
+                    return;
+                }
+            }
+            showPage();
+            j$('#reassignment-wrapper').css('opacity','1');
+            j$('.matchedLeads').css('opacity','.5');
+            if (responseObject["success"]) {
+                // do we need to set objId and pageType again here?  I'm guessing they're already set.. (KC)
+                objId = window.location.search.split("id=")[1].split("&")[0];
+                pageType = 'Account';
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.OnDemandView.getNewViewObject}',
+                    objId, "reassignAccount", null,
+                    function(result, event) {j$('.dataTables_wrapper').remove(); buildView(result);}
+                );
+            }
+        }
+
+
+        function generateTable(domId, records, cols) {
+            var tableParent = document.getElementById(domId);
+            j$("#" + domId).find('.dataTables_wrapper').remove();
+            j$("#" + domId).find('table').remove();
+            if (records.length === 0) {
+                j$('#' + domId).html('No records to display');
+                j$('.pageBody').show();
+                j$('#' + domId).css("overflow-x","");
+                return;
+            }
+            var tbl = document.createElement("table");
+            tbl.className = "list";
+            var thead = document.createElement("thead");
+            var row = document.createElement("tr");
+            thead.appendChild(row);
+
+            var tbody = document.createElement("tbody");
+
+            tbl.appendChild(thead);
+            tbl.appendChild(tbody);
+            tableParent.appendChild(tbl);
+            
+            tbl.setAttribute("border", "0");
+            tbl.setAttribute("cellpadding", "0");
+            tbl.setAttribute("cellspacing", "0");
+
+            j$("#" + domId + ' thead').html(generateHeader());
+            j$("#" + domId + ' tbody').html(generateSObjectRows(false));
+
+           initializeDataTable(j$(tbl), 'lead', {"pageLength" : 20});
+           j$('.pageBody').show();
+        }
+
+    </script>
+</apex:page>
