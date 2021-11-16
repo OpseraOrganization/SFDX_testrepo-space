@@ -1,0 +1,1317 @@
+<apex:page id="DashboardPage" 
+    sideBar="false" 
+    standardStylesheets="false" 
+    docType="html-5.0" 
+    controller="LeanData.DashboardBaseController" 
+    extensions="LeanData.RemotingRouter,LeanData.RoundRobinSettingController,LeanData.TerritoryRouting,LeanData.TaggingFieldController">
+
+  <!-- Main Dashboard page with Angular template code -->
+  <head>
+    <base href="./Dashboard"></base>
+    <link rel="stylesheet" href="{!URLFOR($Resource.angela_app, 'styles.css')}"></link> <!-- Prod Only -->
+  </head>
+  <body>
+    <ld-root></ld-root>
+
+    <!-- Default initial values -->
+    <script>
+      // Controller Variables
+      window.ns = '{!nameSpace}';
+      window.userTimeZone = '{!userTimeZone}';
+      window.userTimeZoneOffset = '{!userTimeZoneOffset}';
+      window.loggedInUserId = '{!userId}';
+      window.autoNavigateToMembers = {!autoNavigateToMembers};
+      // Page level variables
+      Visualforce.remoting.timeout = 120000;
+      // Magellan Global Object
+      window.Magellan = {};
+      // #LD_LEGACY
+      window.j$ = $.noConflict();
+      window.leandataDebuggerOn = false;
+    </script>
+
+    <!-- ----------------------------------- #LD_LEGACY START Old dashboard code ------------------------------------- -->
+    <script>
+      function gaTrack(title, action) {
+        if ('{!isGaDisabled}'!='true') {
+          var len = title.length;
+          ga('set', 'dimension1', '{!JSENCODE(orgName)}' + ' - ' + '{!orgId}');
+          ga('set', 'dimension2', '{!JSENCODE(userName)}' + ' - ' + '{!userId}');
+          ga('set', 'dimension3', title[0]);
+          ga('set', 'dimension4', len>1?title[1]:"");
+          ga('set', 'dimension5', len>2?(len===4?title[2] + ' | ' + title[3]:title[2]):"");
+          ga('set', 'dimension6', (dashboardController.viewObject['isSandbox']?'Yes':'No'));
+          ga('send', {
+            hitType: 'event',
+            eventCategory: 'Dashboard',
+            eventAction: action      
+          });
+        }
+      }
+      if ('{!isGaDisabled}'!='true') {
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+        ga('create', 'UA-50205525-1', 'auto');
+      }
+
+      (function(apiKey){
+        (function(p,e,n,d,o){var v,w,x,y,z;o=p[d]=p[d]||{};o._q=[];
+        v=['initialize','identify','updateOptions','pageLoad'];for(w=0,x=v.length;w<x;++w)(function(m){
+            o[m]=o[m]||function(){o._q[m===v[0]?'unshift':'push']([m].concat([].slice.call(arguments,0)));};})(v[w]);
+            y=e.createElement(n);y.async=!0;y.src='https://cdn.pendo.io/agent/static/'+apiKey+'/pendo.js';
+            z=e.getElementsByTagName(n)[0];z.parentNode.insertBefore(y,z);})(window,document,'script','pendo');
+      })('7e7cd4b3-14da-445e-7723-b673afae6f3c');
+
+        pendo.initialize({
+        visitor: {
+            id:              '{!userId}'   // Salesforce User Id
+        },
+        account: {
+            id:           '{!orgId}' // Salesforce Org Id
+        }
+      });
+
+      /* Sidebar Objects 
+          - Every nav and subnav have its own key, which needs to be unique locally
+          - Multi-word keys follow camelCase format 
+          - Abbreviated keys are all uppercase e.g. ATRR
+          - Nested Page/Component key are separated by dashes e.g. router-lead-logs
+          - When adding/editing a page, change the respective key string in DashboardBaseController.cls
+          - For pages that are not in dashboard buttons (only accessible from certain pages), insert them into 
+              DashboardBaseController.cls and respective component pages.
+      */
+
+      var IMG = '-img';
+      var ACTIVE = '-active';
+      var TITLE = '-title';
+      var ACTIVE_ICON = 'icon_active';
+      var INACTIVE_ICON = 'icon_inactive';
+      var ARROW = 'dg_sidebar-expand-arrow';
+      var ARROW_SPECIFIC = '-expandarrow';
+      var LEFT_SIDEBAR = 'left-sidebar';
+      var SECTION = '-section';
+      var ITEM = '-item';
+      var BUTTON = '-button';
+      var NAV = '-nav';
+      var SUBNAV = '-subnav';
+      var SUBSUBNAV = '-subsubnav';
+      var SUBSUBSUBNAV = '-subsubsubnav';
+      var LEFT_SIDEBAR_BUTTON = LEFT_SIDEBAR + BUTTON;
+      var LEFT_SIDEBAR_SUBNAV = LEFT_SIDEBAR + SUBNAV;
+      var LEFT_SIDEBAR_SUBSUBNAV = LEFT_SIDEBAR + SUBSUBNAV;
+      var LEFT_SIDEBAR_SUBSUBSUBNAV = LEFT_SIDEBAR + SUBSUBSUBNAV;
+      var NAVS = 'navs';
+      var CHILD = 'subnavs';
+      var SUBCHILD = 'subsubnavs';
+      var SUBSUBCHILD = 'subsubsubnavs';
+
+      var modalDirtyFlag = null;
+      var modalDirtyConfirmed = null;
+      var modalDestination = null;
+      var modalParameters = null;
+      var $rotatedArrow = null;
+      var $subRotatedArrow = null;
+      var $subsubRotatedArrow = null;
+
+      var dashboardSidebar = {
+        instance: 'dashboardSidebar', title: 'Main' , navs: {
+          home: {name: 'Home', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Home_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Home_Icon_selected.png')}', path:'#'},
+          matching: {name: 'Matching', classes: 'matching-product', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Account_Scoring_Icon_Unselected.png')}', activeSrc: '{!URLFOR($Resource.DashboardImages, 'Account_Scoring_Icon_Selected.png')}', disabledSrc: '{!URLFOR($Resource.DashboardImages, 'Matching_Icon_Disabled.png')}', subnavs: {
+              CM: {name: 'Tagging Finder', classes: 'workflowConfigurator flowbuilderOn', path:'#matching/tagging_finder'},
+              MTB: {name: 'Tagging Tie-Breakers', classes: 'workflowConfigurator requiresReadWrite', path:'#matching/tagging_settings'},
+              accountScoring: {name: 'Account Scoring', classes: 'account-scoring', subsubnavs: { 
+                FM: {name: 'Field Selection', classes: 'requiresReadWriteOrCustom', path:'#matching/account_scoring'},
+                SM: {name: 'Score Modifiers', classes: 'requiresReadWriteOrCustom', path:'#matching/account_scoring/modifiers'}
+              }},
+              LA: {name: 'List Analyzer', classes: 'requiresReadWrite listAnalyzerPage', subsubnavs:{
+                AL: {name: 'Analyze Leads', classes: 'requiresReadWrite listAnalyzerPage', path:'#matching/list_analyzer/analyze_leads'},
+                MAF: {name: 'Matched Account Fields', classes: 'requiresReadWrite listAnalyzerPage', path:'#matching/list_analyzer/matched_account_fields'},
+              }},
+              BP: {name: 'Buyer Persona', classes: 'buyer-persona requiresReadWrite', href: '/apex/' + ns + 'BuyerPersona'}, 
+              MS: {name: 'Match Settings', classes: 'match-settings requiresReadWrite', path:'#matching/match_settings'},
+              AS: {name: 'Advanced Settings', classes: '', subsubnavs: {
+                MAF: {name: 'Mapped Account Fields', classes: 'requiresReadWrite', path:'#matching/tagging_account_fields'},
+                OTM: {name: 'One-Time Tagging', classes: 'requiresReadWrite', path:'#matching/one_time_tagging'}
+              }},
+            }
+          },
+          router: {name: 'Routing', classes: 'routing-product', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'RC_Icon.png')}', activeSrc: '{!URLFOR($Resource.DashboardImages, 'RC_Icon_selected.png')}', disabledSrc: '{!URLFOR($Resource.DashboardImages, 'RC_Icon_disabled.png')}', subnavs: {
+            lead: { name: 'Leads', classes: 'lead-routing', subsubnavs: {
+              FB: {name: 'FlowBuilder', classes: 'workflowConfigurator requiresReadWrite', path:'#routing/lead/flowbuilder'},
+              DM: {name: 'Routing Insights', classes: 'workflowConfigurator requiresReadWrite', path:'#routing/lead/insights/live'},
+              logs: {name: 'Audit Logs', classes: '', path:'#routing/lead/audit_logs'},
+              DH: {name: 'Deployment History', classes: 'routing-deployment-history workflowConfigurator requiresReadWrite', path:'#routing/lead/deployment_history'},
+              OTR: {name: 'One-Time Routing', classes: 'workflowConfigurator requiresReadWrite', path: '#routing/lead/one_time_routing'},
+              AS: {name: 'Advanced Settings', classes: '', path: '#routing/lead/merge_duplicates', subsubsubnavs: {
+                MD: {name: 'Merge Duplicates', classes: 'requiresReadWrite', path: '#routing/lead/merge_duplicates'},
+                ATM: {name: 'Account Teams', classes: 'requiresReadWrite', path:'#routing/lead/account_teams'},
+                OM: {name: 'Owner Mappings', classes: 'requiresReadWrite', path: '#routing/lead/owner_mappings'},
+                NAC: {name: 'Account Creation', classes: 'routing-account-creation requiresReadWrite', path:'#routing/lead/account_creation'}
+              }}
+            }},
+            contact: { name: 'Contacts', classes: 'contact-routing', subsubnavs: {
+              FBC: {name: 'FlowBuilder', classes: 'workflowConfigurator requiresReadWrite', path:'#routing/contact/flowbuilder'},
+              DM: {name: 'Routing Insights', classes: 'workflowConfigurator requiresReadWrite', path:'#routing/contact/insights/live'},
+              logs: {name: 'Audit Logs', classes: '', path:'#routing/contact/audit_logs'},
+              DH: {name: 'Deployment History', classes: 'routing-deployment-history workflowConfigurator requiresReadWrite', path:'#routing/contact/deployment_history'},
+              OTR: {name: 'One-Time Routing', classes: 'workflowConfigurator requiresReadWrite', path: '#routing/contact/one_time_routing'},
+              AS: {name: 'Advanced Settings', classes: '', subsubsubnavs: {
+                ATM: {name: 'Account Teams', classes: 'requiresReadWrite', path:'#routing/contact/account_teams'},
+                OM: {name: 'Owner Mappings', classes: 'requiresReadWrite', path: '#routing/contact/owner_mappings'}
+              }}
+            }},
+            account: { name: 'Accounts', classes: 'account-routing isAccountRoutingActive', subsubnavs: {
+              FB: { name: 'FlowBuilder', classes: 'workflowConfigurator requiresReadWrite', path:'#routing/account/flowbuilder' },
+              DM: {name: 'Routing Insights', classes: 'workflowConfigurator requiresReadWrite', path:'#routing/account/insights/live'},
+              logs: { name : 'Audit Logs', classes: '', path:'#routing/account/audit_logs'},
+              DH: { name: 'Deployment History', classes: 'routing-deployment-history workflowConfigurator requiresReadWrite', path:'#routing/account/deployment_history'},
+              OTR: { name: 'One-Time Routing', classes:'requiresReadWrite', path: '#routing/account/one_time_routing'},
+              AS: {name: 'Advanced Settings', classes: '', subsubsubnavs: {
+                ATM: { name: 'Account Teams', classes: 'requiresReadWrite', path:'#routing/account/account_teams'},
+                OM: { name: 'Owner Mapping', classes: 'requiresReadWrite', path: '#routing/account/owner_mappings'}
+              }}
+            }},
+            opportunity: { name: 'Opportunities', classes: 'opportunity-routing isOpportunityRoutingActive', subsubnavs: {
+              FB: { name: 'FlowBuilder', classes: 'workflowConfigurator requiresReadWrite', path:'#routing/opportunity/flowbuilder' },
+              DM: { name: 'Routing Insights', classes: 'workflowConfigurator requiresReadWrite', path:'#routing/opportunity/insights/live' },
+              logs: { name: 'Audit Logs', classes: '', path:'#routing/opportunity/audit_logs' },
+              DH: { name: 'Deployment History', classes: 'routing-deployment-history workflowConfigurator requiresReadWrite', path:'#routing/opportunity/deployment_history' },
+              OTR: { name: 'One-Time Routing', classes: 'requiresReadWrite', path: '#routing/opportunity/one_time_routing'},
+              AS: { name: 'Advanced Settings', classes: '', subsubsubnavs: {
+                ATM: { name: 'Account Teams', classes: 'requiresReadWrite', path:'#routing/opportunity/account_teams'},
+                OM: { name: 'Owner Mapping', classes: 'requiresReadWrite', path: '#routing/opportunity/owner_mappings'}
+              }}
+            }},
+            territoryBB: { name: 'Territory Management', classes: 'requiresReadWrite territory-routing-BB isTerritoryRoutingBBActive', path:"#territory_segments"},
+            roundRobin: { name: 'Round Robin', classes: 'round-robin', path:'#routing/round_robin', subsubnavs: {
+              RRP: {name: 'Pools', classes: '', path:'#routing/round_robin_pools'},
+              RRM: {name: 'Members', classes: '', path:'#routing/round_robin_members'},
+              RRS: {name: 'Schedules', classes: '', path:'#routing/round_robin_schedules'},
+              RRR: {name: 'Live Routing', classes: 'requiresReadWrite hasLiveRouting', path:'#routing/round_robin_live_routing'},
+            }}
+          }},
+          attribution: {name: 'Attribution', classes:'attribution-product', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Reporting_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Reporting_Icon_selected.png')}', disabledSrc: '{!URLFOR($Resource.DashboardImages, 'ATT_Icon_disabled.png')}', subnavs: {
+            general: {name: 'General Settings', classes: 'requiresReadWrite', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Set_Up_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Set_Up_Icon_selected.png')}', path:'#attribution/general_settings'},
+            wizard: {name: 'Wizard', classes: 'requiresReadWrite', href: '/apex/Reporting_Wizard', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'AN_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'AN_Icon_selected.png')}'},
+            scheduler: {name: 'Scheduler', classes: 'requiresReadWrite', path:'#attribution/scheduler'},
+            CAM: {name: 'Custom Attribution Model', classes: 'hasAttribution hasCustomAttributionEnabled requiresReadWrite', path:'#attribution/custom_attribution_model'},
+            CW: {name: 'Campaign Weighting', classes: '', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Reporting_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Reporting_Icon_selected.png')}', subsubnavs: {
+              CTW: {name: 'Campaign Types', classes: 'requiresReadWrite', path:'#attribution/campaign_weighting/campaign_types'},
+              CMSW: {name: 'Campaign Member Statuses', classes: 'requiresReadWrite', path:'#attribution/campaign_weighting/campaign_member_statuses'}
+            }},
+            SH: {name: 'Settings Change Logs', classes: 'hasAttribution requiresReadWrite', path:'#attribution/settings_history'},
+            RH: {name: 'Attribution Runs', classes: 'hasAttribution requiresReadWrite', path:'#attribution/run_history'},
+            oppAnalyzer: {name: 'Opportunity Analyzer', classes: 'hasOppAnalyzer', path:'#attribution/opportunity_analyzer'},
+            clarity: {name: 'Clarity', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Clarity_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Clarity_Icon_selected.png')}', classes: 'clarityFrontendOn', subsubnavs: {
+              overview: {name: 'Overview', classes: 'clarityFrontendOn requiresReadWrite', path:'#attribution/clarity/overview'},
+              bookings: {name: 'Bookings', classes: 'clarityFrontendOn', subsubsubnavs: {
+                main: {name: 'Main', classes: 'requiresReadWrite clarityFrontendOnnrequiresReadWrite', path:'#attribution/clarity/bookings/main'},
+                segment: {name: 'Segment', classes: 'requiresReadWrite clarityFrontendOn', path:'#attribution/clarity/bookings/segment'}
+              }},
+              pipeline: {name: 'Pipeline', classes: 'requiresReadWrite', path:'#attribution/clarity/pipeline'}
+            }},
+            TA: {name: 'Target Accounts', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Target_Account_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Target_Accounts_Icon_Selected.png')}', classes: 'clarityFrontendOn', subsubnavs: {
+              main: {name: 'Main', classes: 'clarityFrontendOn requiresReadWrite', path:'#attribution/target_accounts/main'},
+              segment: {name: 'Segment', classes: 'clarityFrontendOn requiresReadWrite', path:'#attribution/target_accounts/segment'}
+            }},
+            CIR: {name: 'Campaign Influence Reporting', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Reporting_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Reporting_Icon_selected.png')}', classes: 'hasCampaignInfluenceReporting', subsubnavs: {
+              CIS: {name: 'Campaign Influence Summary', href: '/apex/CampaignInfluenceReport', classes: 'requiresReadWrite hasCampaignInfluenceReporting'},
+              wizard: {name: 'Wizard', href: '/apex/CampaignToOpportunity', classes: 'requiresReadWrite hasCampaignInfluenceReporting'},
+              CTW: {name: 'Campaign Type Weighting', href: '/apex/campaignInfluenceAdvancedSettings?mode=CampaignTypeWeighting', classes: 'requiresReadWrite hasCampaignInfluenceReporting'},
+              RAF: {name: 'Revenue Attribution Field', href: '/apex/campaignInfluenceAdvancedSettings?mode=CustomAttributionValue', classes: 'requiresReadWrite hasCampaignInfluenceReporting'}
+            }},
+            AS: {name: 'Advanced Settings', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Settings_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Settings_Icon_Selected.png')}', classes: '', subsubnavs: { 
+              CF: {name: 'Custom Filters', classes: 'requiresReadWrite', path:'#attribution/advanced_settings/custom_filters'},
+              CC: {name: 'Campaign Costs', classes: 'requiresReadWrite', path:'#attribution/advanced_settings/campaign_costs'},
+              OSM: {name: 'Opportunity Stage Mappings', classes: 'requiresReadWrite', path:'#attribution/advanced_settings/opportunity_stage_mappings'},
+              CFM: {name: 'Custom Field Mappings', classes: 'requiresReadWrite', path:'#attribution/advanced_settings/custom_field_mappings'},
+              OCA: {name: 'Opportunity Cohort Analysis', classes: 'clarityFrontendOn requiresReadWrite', path:'#attribution/advanced_settings/opportunity_cohort_analysis'}
+            }}
+          }},
+          view: {name: 'View', classes: 'view-product', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'View_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'View_Icon_selected.png')}', subnavs: {
+              general: {name: 'General', classes: 'requiresReadWriteOrCustom', path:'#view/general'}, 
+            layout: {name: 'Layout', classes: '', subsubnavs: {
+              leads: {name: 'Leads', classes: 'requiresReadWriteOrCustom', path:'#view/leads'}, 
+              contacts: {name: 'Contacts', classes: 'requiresReadWriteOrCustom', path:'#view/contacts'}, 
+              accounts: {name: 'Accounts', classes: 'requiresReadWriteOrCustom', path:'#view/accounts'}, 
+              RL: {name: 'Related Leads', classes: 'requiresReadWriteOrCustom', path:'#view/related_leads'}, 
+              MC: {name: 'Mass Convert', classes: 'requiresReadWriteOrCustom', path:'#view/mass_convert'} 
+            }}
+          }},
+          admin: {name: 'Admin', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Settings_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Settings_Icon_Selected.png')}', subnavs: {
+            general: {name: 'Settings', classes: 'requiresReadWrite', path:'#admin/general'},
+            PA: {name: 'Partner Apps', classes: 'requiresReadWrite partner-apps-menu-item', path:'#admin/partner_apps'},
+            MA: {name: 'CCIO Management', classes: 'hasMatching requiresReadWrite hasCCIOManagement', path:'#admin/ccio_management'},
+            MP: {name: 'Permissions', classes: 'requiresReadWrite', path:'#admin/manage_permissions'},
+            UM: {name: 'Routing Usage', classes: 'requiresReadWrite', path:'#admin/usage_metrics'}
+          }},
+          help: {name: 'Help', inactiveSrc: '{!URLFOR($Resource.DashboardImages, 'Help_Icon.png')}' , activeSrc: '{!URLFOR($Resource.DashboardImages, 'Help_Icon_selected.png')}', path:'#help'}
+        }
+      };
+
+      DashboardController = function () { 
+          /* View object retrieved through interpolation. It contains data used throughout all the components. Data is retrieved as part of the original page request, with no additional AJAX calls be required. */
+          this.viewObject = JSON.parse('{!JSENCODE((viewObject))}');
+
+          this.originalLatestDate = new Date();
+          this.originalEarliestDate = new Date(new Date().setDate(this.originalLatestDate.getDate() - 90));
+
+          this.latestDate = this.originalLatestDate;
+          this.earliestDate = this.originalEarliestDate;
+          
+          this.viewObject.upsellContainerHtml = '<div class="upsell-container">' +
+                  '<img class="upsell-ribbon" src="{!URLFOR($Resource.DashboardImages, 'Upgrade_Sash.png')}"/>' + 
+                  '<div class="upsell-content"> <div class="upsell-title"><%=upsell.title%></div> ' +
+                  '<div class="upsell-body"><%=upsell.body%></div> ' +
+                  '<a href="<%=upsell.location%>" target="_blank" style="text-decoration:none">' +
+                  '<span class="upsell-link ld-primary-small-button"><%=upsell.action%></span></a> </div> </div>';
+          this.viewObject.upsellContainerTemplate = _.template(this.viewObject.upsellContainerHtml);
+      };
+      
+      /* This method gets called every time a new page is loaded, in order to set its dynamic content. */
+      DashboardController.prototype.populateVariableDomElements = function () {
+          this.initDateIntervals();
+          this.populateStatuses();
+          this.populateOrgDefaultStatuses();
+      };
+
+      /* Initiates DatePickers based on this.earliestDate and this.latestDate. */
+      DashboardController.prototype.initDateIntervals = function () {
+          j$('#dailywrapper-initial-date').datepicker('destroy');
+          j$( "#dailywrapper-initial-date" ).datepicker({minDate: this.originalEarliestDate, maxDate: this.latestDate});
+          j$( "#dailywrapper-initial-date" ).datepicker("setDate", this.earliestDate);
+
+
+          j$('#dailywrapper-end-date').datepicker('destroy');
+          j$( "#dailywrapper-end-date" ).datepicker({minDate: this.earliestDate, maxDate: this.originalLatestDate});
+          j$( "#dailywrapper-end-date" ).datepicker("setDate", this.latestDate);
+
+          j$('.dailywrapper-date-interval').text(this.earliestDate.toLocaleDateString() + ' - ' + this.latestDate.toLocaleDateString());
+      }
+
+      /* Change the value of earliestDate and latestDate based on datePicker values, and reevaluate dynamic content of the page. */
+      DashboardController.prototype.renewDateInterval = function () {
+
+          this.earliestDate = j$( "#dailywrapper-initial-date" ).datepicker("getDate");
+          this.latestDate = j$( "#dailywrapper-end-date" ).datepicker("getDate");
+
+          this.populateVariableDomElements();
+      }
+
+      DashboardController.prototype.populateOrgDefaultStatuses = function () {
+          j$('#enableOpenLinksInNewTab').prop('checked', this.viewObject.orgDefaultStatuses['enableOpenLinksInNewTab']);
+          j$('#enableAllowUserColumnCustomizations').prop('checked', this.viewObject.orgDefaultStatuses['enableAllowUserColumnCustomizations']);
+          j$('#enableDisableActions').prop('checked', this.viewObject.orgDefaultStatuses['enableDisableActions']);
+
+          j$('#enableDuplicateLeadsContacts').prop('checked', this.viewObject.orgDefaultStatuses['enableDuplicateLeadsContacts']);
+          j$('#enableRelatedLeads').prop('checked', this.viewObject.orgDefaultStatuses['enableRelatedLeads']);
+          j$('#enableRelatedLeadsNewAccountButton').prop('checked', this.viewObject.orgDefaultStatuses['enableRelatedLeadsNewAccountButton']);
+          j$('#enableMatchedAccounts').prop('checked', this.viewObject.orgDefaultStatuses['enableMatchedAccounts']);
+          j$('#disenableStatusEditing').prop('checked', this.viewObject.orgDefaultStatuses['disenableStatusEditing']);
+          j$('#enableDuplicateLeadsContactView').prop('checked', this.viewObject.orgDefaultStatuses['enableDuplicateLeadsContactView']);
+          j$('#enableDuplicateAccounts').prop('checked', this.viewObject.orgDefaultStatuses['enableDuplicateAccounts']);
+          j$('#enableRelatedAccounts').prop('checked', this.viewObject.orgDefaultStatuses['enableRelatedAccounts']);
+          j$('#enableMatchedLeads').prop('checked', this.viewObject.orgDefaultStatuses['enableMatchedLeads']);
+          j$('#enableMassConvert').prop('checked', this.viewObject.orgDefaultStatuses['enableMassConvert']);
+
+          j$('#enableCustomConvertLink').prop('checked', this.viewObject.orgDefaultStatuses['enableCustomConvertLink']);
+          j$('.customConvertLink').val(this.viewObject.orgDefaultStatuses['customConvertLink']);
+      }
+
+      DashboardController.prototype.populateStatuses = function () {
+          /* View Settings 
+          ----------------
+          */
+          j$('#enableOpenLinksInNewTab').attr('checked', this.viewObject.statuses['enableOpenLinksInNewTab']);
+          j$('#enableAllowUserColumnCustomizations').attr('checked', this.viewObject.statuses['enableAllowUserColumnCustomizations']);
+          j$('#enableDisableActions').attr('checked', this.viewObject.statuses['enableDisableActions']);
+
+          j$('#enableDuplicateLeadsContacts').attr('checked', this.viewObject.statuses['enableDuplicateLeadsContacts']);
+          j$('#enableRelatedLeads').attr('checked', this.viewObject.statuses['enableRelatedLeads']);
+          j$('#enableRelatedLeadsNewAccountButton').attr('checked', this.viewObject.statuses['enableRelatedLeadsNewAccountButton']);
+          j$('#enableMatchedAccounts').attr('checked', this.viewObject.statuses['enableMatchedAccounts']);
+          j$('#disenableStatusEditing').attr('checked', this.viewObject.statuses['disenableStatusEditing']);
+          j$('#enableDuplicateLeadsContactView').attr('checked', this.viewObject.statuses['enableDuplicateLeadsContactView']);
+          j$('#enableDuplicateAccounts').attr('checked', this.viewObject.statuses['enableDuplicateAccounts']);
+          j$('#enableRelatedAccounts').attr('checked', this.viewObject.statuses['enableRelatedAccounts']);
+          j$('#enableMatchedLeads').attr('checked', this.viewObject.statuses['enableMatchedLeads']);
+          j$('#enableMassConvert').attr('checked', this.viewObject.statuses['enableMassConvert']);
+
+          j$('#enableCustomConvertLink').attr('checked', this.viewObject.statuses['enableCustomConvertLink']);
+          j$('.customConvertLink').val(this.viewObject.settings['customConvertLink']);
+
+          /*  --------------------
+              End of View Settings
+          */
+
+
+          /* Merge Duplicates Settings
+          ----------------------------
+          */
+          j$('.dedupeNewLeads').attr('checked', this.viewObject.statuses['dedupeNewLeads']);
+          j$('.dedupeExistingLeads').attr('checked', this.viewObject.statuses['dedupeExistingLeads']);
+          j$('.lcDedupeOn').attr('checked', this.viewObject.statuses['lcDedupeOn']);
+          j$('.llDedupeOn').attr('checked', this.viewObject.statuses['llDedupeOn']);
+          j$('[name=isEmailMatchDupes]').val(this.viewObject.statuses['isEmailMatchDupes']? '1':'0');
+          j$('[name=emailMergePreference]').val(this.viewObject.statuses['emailMergePreference']? '1' : '0');
+          j$('[name=prioritizeDupeContacts]').val(this.viewObject.statuses['prioritizeDupeContacts']? '1' : '0');
+          if(this.viewObject.settings['dedupeMasterFieldLL']) j$('[name=dedupeMasterFieldLL]').val(this.viewObject.settings['dedupeMasterFieldLL']);
+          if(this.viewObject.settings['dedupePreferenceFieldLL']) j$('[name=dedupePreferenceFieldLL]').val(this.viewObject.settings['dedupePreferenceFieldLL']);
+          if(this.viewObject.settings['dedupeMasterOperatorLL']) j$('[name=dedupeMasterOperatorLL]').val(this.viewObject.settings['dedupeMasterOperatorLL']);
+          if(this.viewObject.settings['dedupePreferenceOperatorLL']) j$('[name=dedupePreferenceOperatorLL]').val(this.viewObject.settings['dedupePreferenceOperatorLL']);
+          if(this.viewObject.settings['dedupeMasterFieldLC']) j$('[name=dedupeMasterFieldLC]').val(this.viewObject.settings['dedupeMasterFieldLC']);
+          if(this.viewObject.settings['dedupePreferenceFieldLC']) j$('[name=dedupePreferenceFieldLC]').val(this.viewObject.settings['dedupePreferenceFieldLC']);
+          if(this.viewObject.settings['dedupeMasterOperatorLC']) j$('[name=dedupeMasterOperatorLC]').val(this.viewObject.settings['dedupeMasterOperatorLC']);
+          if(this.viewObject.settings['dedupePreferenceOperatorLC']) j$('[name=dedupePreferenceOperatorLC]').val(this.viewObject.settings['dedupePreferenceOperatorLC']);
+          if(this.viewObject.settings['overwriteCondition']) j$('[name=overwriteCondition]').val(this.viewObject.settings['overwriteCondition']);
+          
+          /*  --------------------
+              End of Merge Duplicates Settings
+          */
+          
+         /* Attribution Settings
+          ----------------------------
+          */
+          if(!this.viewObject.statuses['hasClarityFrontend']) {
+              j$('.clarityFrontendOn').hide();
+          }
+          if(!this.viewObject.statuses['hasOppAnalyzer']) {
+              j$('.hasOppAnalyzer').hide();
+          }
+
+          if(!this.viewObject.statuses['hasCampaignInfluenceReporting']) {
+              j$('.hasCampaignInfluenceReporting').hide();
+          }
+          if(!this.viewObject.statuses['hasCustomAttributionEnabled']) {
+              j$('.hasCustomAttributionEnabled').hide();
+          }
+          /*  --------------------
+              End of Attribution Settings
+          */
+
+          if(!this.viewObject.statuses['hasCCIOManagement']){
+              j$('.hasCCIOManagement').hide();
+          }
+
+          if(!this.viewObject.statuses['hasLiveRouting']){
+            j$('.hasLiveRouting').hide();
+          }
+          
+          /* Admin Settings
+             --------------
+          */
+          j$('.isLeanDataEmailChecked').attr('checked', this.viewObject.statuses['isLeanDataEmailChecked']);
+          j$('.monitoringEmailAddress').val(this.viewObject.settings['monitoringEmailAddress']);
+
+          /*  --------------------
+              End of Admin Settings
+          */
+
+          j$('.main').attr('checked', this.viewObject.statuses['isGlobalChecked']);
+          if(!this.viewObject.statuses['isGlobalChecked'])
+              j$('.options').hide();
+          else {
+            j$('#alwaysON').attr('checked', this.viewObject.statuses['alwaysON']);
+            j$('#fallbackON').attr('checked', this.viewObject.statuses['fallbackON']);
+          }
+      }
+
+      DashboardController.prototype.initializeProductFeatures = function() {
+          if (this._alreadyInitializedProductFeatures) return;
+          this._alreadyInitializedProductFeatures = true;
+          
+          // feature keys
+          this.ACCOUNT_CREATION_NODE = 'routing account creation on';
+          this.ACCOUNT_ROUTING_ACTIVE = 'account routing active';
+          this.ACCOUNT_SCORING_ON = 'account scoring on';
+          this.BUYER_PERSONA_ENABLED = 'buyer persona enabled?';
+          this.CONTACT_ROUTING_ACTIVE = 'contact routing active';
+          this.ATTRIBUTION_ON = 'attribution on?';
+          this.CREATE_OPP_NODE = 'create opportunity on?';
+          this.HAS_ROUTING_PRODUCT = 'has routing product';
+          this.HAS_TAGGING_PRODUCT = 'has tagging product';
+          this.L2L_NODE = 'routing lead to lead on';
+          this.L2O_NODE = 'routing lead to opportunity on';
+          this.MATCHING_IN_ROUTING_ON = 'matching in routing on';
+          this.MULTI_TIEBREAKERS_ON = 'matching multi-tiebreakers on';
+          this.OPPORTUNITY_ROUTING_ACTIVE = 'opportunity routing active';
+          this.ROUTING_DEPLOYMENT_HISTORY = 'routing deployment history on';
+          this.ROUTING_EMAIL_NOTIFICATIONS = 'routing notifications on';
+          this.TERRITORY_ROUTING = 'territory management on';
+          this.VIEW_ON = 'on demand allowed';
+          this.LEAD_ROUTING_ACTIVE = 'lead routing active';
+          this.INTEGRATIONS_ENABLED = 'integrations enabled';
+          
+          /*******************************
+           * Features Configuration Object
+           *
+           * Essentially middleware mapping for DOM classes,
+           * template content, and onHover content.
+           ******************************/
+          this.FEATURE_CONFIG = {};
+
+          this.FEATURE_CONFIG[this.LEAD_ROUTING_ACTIVE] = {
+            selector: '.lead-routing',
+            featureName: 'Lead Routing',
+            upsell: {
+              'title': 'Looking to Route Leads to the Right Owner?',
+              'body': 'Support and automate any global lead routing ' +
+                  'process to instantly assign engaged leads to the right' +
+                  ' reps. Assign lead ownership by matched account, ' +
+                  'contact, or other existing leads. Contact your LeanData' +
+                  ' team to learn more.',
+              'action': 'Request a Demo',
+              'location': '//www.leandatainc.com/demo-request/'
+            },
+          };
+
+          this.FEATURE_CONFIG[this.HAS_ROUTING_PRODUCT] = {
+              selector: '.routing-product',
+              featureName: 'Routing',
+              upsell: {
+                'title': 'Looking to Route Leads to the Right Owner?',
+                'body': 'Support and automate any global lead routing process to instantly assign engaged leads to the right reps. Assign lead ownership by matched account, contact, or other existing leads. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request/'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.CONTACT_ROUTING_ACTIVE] = {
+              selector: '.contact-routing',
+              featureName: 'Contact Routing',
+              upsell: {
+                'title': 'Looking to Route Contacts to the Right Owner?',
+                'body': 'Support and automate any global contact routing process to instantly assign engaged contacts to the right reps. Assign contact ownership when a contact becomes qualified, or simply mirror your existing lead routing process. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.ACCOUNT_ROUTING_ACTIVE] = { 
+              selector: '.account-routing',
+              featureName: 'Account Routing',
+              upsell: {
+                'title': 'Looking to Route Accounts to the Right Owner?',
+                'body': 'Support and automate any global account routing process to instantly assign marketing qualified accounts to the right reps. Assign account ownership when a nurtured account becomes engaged or marketing qualified. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.OPPORTUNITY_ROUTING_ACTIVE] = { 
+              selector: '.opportunity-routing',
+              featureName: 'Opportunity Routing',
+              upsell: {
+                'title': 'Looking to Route Opportunities to the Right Owner?',
+                'body': 'Support and automate any global opportunity routing process to instantly assign opportunities that need attention to the right reps. Assign opportunity ownership when an opportunity changes stages. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.ACCOUNT_CREATION_NODE] = {
+              selector: '.routing-account-creation',
+              featureName: 'Account Creation',
+              upsell: {
+                'title': 'Looking to Create Accounts in Your Routing Flow?',
+                'body': 'Support your account-based strategy by creating accounts for high priority leads where an account doesn’t exist. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.ROUTING_DEPLOYMENT_HISTORY] = {
+              selector: '.routing-deployment-history',
+              featureName: 'Deployment History',
+              upsell: {
+                'title': 'View and Manage Previously Deployed Routing Flows.',
+                'body': 'View Routing Insights and instantly revert to a previously deployed Routing flow version. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request/'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.L2L_NODE] = {
+              selector: '.routing-lead-to-lead',
+              featureName: 'Lead-to-Lead Routing',
+              upsell: {
+                'title': 'Perform Account-Based Marketing and Sales.',
+                'body': 'Match leads with other leads from the same company to assign all leads to the same rep. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.L2O_NODE] = {
+              selector: '.routing-lead-to-opportunity',
+              featureName: 'Lead-to-Opportunity Routing',
+              upsell: {
+                'title': 'Route a Lead to an Active Opportunity. Learn about Professional',
+                'body': 'Match leads to existing opportunities so you can assign leads to reps who are actively working opportunities. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+
+          this.FEATURE_CONFIG[this.CREATE_OPP_NODE] = {
+              selector: '.routing-create-opportunity',
+              featureName: 'Create Opportunity',
+              upsell: {'title': 'Looking to Create Opportunities in Your Routing Flow? Learn about Professional', 'body': 'Support your account-based strategy by creating opportunities for high priority accounts where one doesn\'t exist.', 'action': 'Learn about Professional', 'location': '//www.leandatainc.com/packaging'}
+          };
+          
+          // For L2L_NODE, so that we have different body text for L2L Action Node
+          this.FEATURE_CONFIG['assign owner lead'] = {
+              selector: '.routing-lead-to-lead',
+              featureName: 'Lead-to-Lead Routing',
+              upsell: {
+                'title': 'Perform Account-Based Marketing and Sales.',
+                'body': 'Route leads to reps who are already working leads from an existing company even if an account doesn’t exist yet. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+          
+          // For L2O_NODE, so that we have different body text for L2O Action Node
+          this.FEATURE_CONFIG['assign owner opportunity'] = {
+              selector: '.routing-lead-to-opportunity',
+              featureName: 'Lead-to-Opportunity Routing',
+              upsell: {
+                'title': 'Route a Lead to an Active Opportunity.',
+                'body': 'Assign leads to reps who are actively working opportunities. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.ROUTING_EMAIL_NOTIFICATIONS] = {
+              selector: '.routing-notifications',
+              featureName: 'Email Notifications',
+              upsell: {
+                'title': 'Get Notified About Important Buying Signals.',
+                'body': 'Alert sales reps and account executives when there are important buying signals or a high priority lead becomes engaged. Contact your LeanData team to learn more.',
+                'action': 'Request Demo',
+                'location': '//www.leandatainc.com/demo-request/'
+              }
+          };
+
+          this.FEATURE_CONFIG[this.TERRITORY_ROUTING] = {
+              selector: '.territory-routing-BB',
+              featureName: 'Route To Territory',
+              upsell: { 'title': 'Looking to Route to Territories? Learn about Professional', 'body': 'Support and automate any global routing process to instantly assign engaged prospects and customers to the right reps. Assign ownership by matching to territories.', 'action': 'Learn about Professional', 'location': '//www.leandatainc.com/packaging'}
+          };
+          
+          this.FEATURE_CONFIG[this.VIEW_ON] = {
+              selector: '.view-product',
+              featureName: 'View',
+              upsell: {'title': 'Equip the Team to See Everyone in a Single View', 'body': 'Allows your sales and marketing teams to immediately see results from account-based marketing programs and account activity. Your account executives and inside sales team can see which leads match into accounts without having to search, saving dozens of hours per month.', 'action': 'Learn More', 'location': '//learn.leandatainc.com/h/i/254497563-leandata-view/258966'}
+          };
+          
+          this.FEATURE_CONFIG[this.HAS_TAGGING_PRODUCT] = {
+              selector: '.matching-product',
+              featureName: 'Tagging',
+              upsell: {
+                'title': 'Uncover Hidden Connections.',
+                'body': 'Connect leads to accounts to build a foundation for account-based sales and marketing. Contact your LeanData team to learn more.',
+                'action': 'Learn about Matching',
+                'location': '//www.leandatainc.com/matching'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.ACCOUNT_SCORING_ON] = {
+              selector: '.account-scoring',
+              featureName: 'Account Scoring',
+              upsell: {
+                'title': 'Looking to Prioritize Your Accounts?', 
+                'body': 'Leverage Account Scoring to identify your most important accounts. Contact your LeanData team to learn more.', 
+                'action': 'Request a Demo', 
+                'location': '//www.leandatainc.com/demo-request'}
+          };
+          
+          this.FEATURE_CONFIG[this.BUYER_PERSONA_ENABLED] = {
+              selector: '.buyer-persona',
+              featureName: 'Buyer Persona',
+              upsell: {
+                'title': 'Segment Your Leads and Contacts by Buyer Persona.',
+                'body': 'Precisely segment your database and understand who you are marketing to. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.MULTI_TIEBREAKERS_ON] = {
+              selector: '.matching-multi-tiebreakers',
+              featureName: 'Multiple Tie-breakers',
+              upsell: {
+                'title': 'Looking for Additional Match Segmentation?',
+                'body': 'Further segment your Lead-to-Account matches with the industry’s leading matching solution. Contact your LeanData team to learn more.',
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request/'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.ATTRIBUTION_ON] = {
+              selector: '.attribution-product',
+              featureName: 'Attribution',
+              upsell: {
+                'title': 'Looking for Marketing Attribution?',
+                'body': 'Measure and optimize marketing revenue impact. Contact your LeanData team to learn more.',
+                'action': 'Learn about Attribution',
+                'location': '//www.leandatainc.com/attribution-reporting'
+              }
+          };
+          
+          this.FEATURE_CONFIG[this.INTEGRATIONS_ENABLED] = {
+              selector: '.partner-apps-menu-item',
+              featureName: 'Partner Apps ###',
+              upsell: {
+                'title': 'Power your Technology Stack with LeanData',
+                'body': `
+                  Expedite speed to lead, respond, and engage by automating
+                  actions with Partner Apps, backed by the power of LeanData and
+                  simplified with the ease of FlowBuilder. Contact your LeanData
+                  team to learn more.
+                `,
+                'action': 'Request a Demo',
+                'location': '//www.leandatainc.com/demo-request/'
+              }
+          };
+
+          /******************************
+           * Subscription Badge Mapping
+           *****************************/
+          this.SUBSCRIPTION_LOGOS = {
+            '': "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-blank-2x.png')}",
+            undefined: "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-blank-2x.png')}",
+            null: "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-blank-2x.png')}",
+            'view-only': "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-view_only.png')}",
+            'starter-lead': "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-starter_lead.png')}",
+            'basic-routing': "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-basic_routing-2x.png')}",
+            'professional-lead': "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-professional_lead.png')}",
+            'professional-advanced': "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-professional-advanced-2x.png')}",
+            'enterprise-lead': "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-enterprise_lead.png')}",
+            'enterprise-advanced': "{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-enterprise_advanced-2x.png')}",
+          };
+
+          // Toggling logo depending on subscription, if invalid, default to
+          // undefined
+          const logoSrc = 
+            this.SUBSCRIPTION_LOGOS.hasOwnProperty(this.viewObject.subscriptionLevel) ?
+            this.SUBSCRIPTION_LOGOS[this.viewObject.subscriptionLevel] :
+            this.SUBSCRIPTION_LOGOS[undefined];
+          $('.logo img').attr('src', logoSrc);
+
+          _.each(this.FEATURE_CONFIG, function (featureConfig, settingKey) {
+              var featureSelector = featureConfig['selector'];
+              var htmlContent = '';
+
+              /**
+               * Check if this feature is provisioned via custom settings.
+               * If not enabled, disable DOM corresponding to menu item.
+               *
+               * Further reference: LeanData.cls
+               * - PROVISIONABLE_FEATURES
+               * - getFeatureProvisioning
+               */
+
+              if (!this.viewObject.featureProvisioning[settingKey] || this.viewObject.featureProvisioning[settingKey] === '0') {
+                // We disable feature if not provisioned unless it's integrations
+                // special exception so users can click through to see what
+                // partners/integrations exist
+                if (settingKey !== 'integrations enabled') {
+                  disableGivenClass('.left-sidebar ' + featureSelector + ', .left-sidebar ' + featureSelector + ' + div a');
+                }
+                  var upgradeButton = j$('<span class="label label-default label-ld-upgrade ld-promo">UPGRADE</span>');
+                  j$(featureSelector).find('.product-badge').html(upgradeButton);
+                  
+                  htmlContent = this.viewObject.upsellContainerTemplate(featureConfig);
+              }
+
+              // Add upgrade popovers to the upgrade buttons when clicked.
+              j$(featureSelector).find('.ld-promo').popover({
+                  placement: 'right',
+                  container: '.left-sidebar-popover-container',
+                  content: htmlContent,
+                  html: true,
+                  trigger: 'manual',
+                  template: '<div class="popover" role="tooltip"><div class="arrow"></div>' +
+                  '<h3 class="popover-title">' +
+                  '</h3><div class="popover-content"></div></div>'
+              }).on("click", function () {
+                  var _this = this;
+                  j$(this).popover("show");
+                  j$('#' + j$(this).attr('aria-describedby')).on("mouseleave", function () {
+                      j$(_this).popover('hide');
+                  });
+              }).on("mouseleave", function () {
+                  var _this = this;
+                  setTimeout(function () {
+                      if (!j$(".popover:hover").length) {
+                          j$(_this).popover("hide")
+                      }
+                  }, 300);
+              });
+          }, this);
+          
+      }
+
+      DashboardController.prototype.showPackagingPopup = function(target, popupType) {
+          var $target = j$(target);
+          var featureName = $target.data("feature");
+
+          if(popupType === 'upsell') {
+              var upsellHtml = dashboardController.viewObject.upsellContainerTemplate({upsell: dashboardController.FEATURE_CONFIG[featureName].upsell});
+          }
+
+          j$('.upsell-container').remove();
+          var upsellToast = j$(upsellHtml).appendTo(target);
+          upsellToast.show();
+
+      }
+
+      // DashboardBase Remote Methods
+      DashboardController.prototype.retrieveSObjectFields = function(objectType, updatableFields, callback) {
+          Visualforce.remoting.Manager.invokeAction(
+              '{!$RemoteAction.DashboardBaseController.retrieveSObjectFields}', objectType, updatableFields,
+              callback, 
+              { escape: false }
+          );
+      }
+
+      // DashboardBase Remote Methods
+      DashboardController.prototype.setLongTextSetting = function(key, value) {
+          j$('.loadingOverlay').parent().css('display', 'block');
+          Visualforce.remoting.Manager.invokeAction(
+              '{!$RemoteAction.DashboardBaseController.setLongTextSetting}', key, value,
+              function() {
+                  j$('.loadingOverlay').parent().css('display', 'none');
+                  j$('#settingsSavedModal').modal('show');
+              }
+          );
+      }
+
+      // Instantiate dashboard
+      dashboardController = new DashboardController();
+
+      // Globals dependant on dashboardController - change later to remote method to get all permissions (angular)
+      window.ldPermissions = {
+        isFullBlindOrg: dashboardController.viewObject.isFullBlindOrg,
+        hasLiveRouting: dashboardController.viewObject.statuses.hasLiveRouting,
+      };
+
+      // Set Authorization Link for All Dashboard Components
+      var globalAuthorizationLink = dashboardController.viewObject['isSandbox'] ? 'https://edge.leandatainc.com/auth/salesforcesandbox?instance_url=' + dashboardController.viewObject['sfInstance'] : 'https://edge.leandatainc.com/auth/salesforce';
+      if (dashboardController.viewObject['isManagedByOverlord']) {
+          globalAuthorizationLink = dashboardController.viewObject['isSandbox'] ? 'https://test.salesforce.com/services/oauth2/authorize?' : 'https://login.salesforce.com/services/oauth2/authorize?';         
+          globalAuthorizationLink += '&state=' + dashboardController.viewObject['overlordState'];
+          globalAuthorizationLink += '&response_type=code&client_id=3MVG9A2kN3Bn17hsx_bwj24IbvT.42LAiTdWbki1MhVMuHgwXiMkFFFfB.86e7EKi4ZsGRFwxpnBnZisdmyfa&redirect_uri=https://leandata.secure.force.com/oauthcallback';
+      }
+
+      // Global functions
+      window.numberWithCommas = function(x) {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      }
+      // Load main.html into the app wrapper
+      window.initializeMagellanAppPage = function(page, params) {
+        if (typeof params == 'undefined') params = {};
+        setActivePageAF(page, JSON.stringify(params));
+      }
+
+      // use this function to use Backbone router that wont require a full page refresh.
+      // use this when going from a static resource page to another static resource page.
+      // initializers.js on magellan_app.zip needs to run before the Router is setup.
+      window.changeHashPage = function(page) {
+        var hashPath = Magellan.Navigation.getPathFromPage(page);
+        
+        var paramList = window.location.search.substring(1).split('&');
+        var newPage = '';
+        
+        _.each(paramList, function(param){
+          if(param.split('=')[0] === 'page') newPage = param.split('=')[1];
+        });
+        
+        if (newPage !== page && newPage !== '') {
+          window.history.replaceState({}, document.title, "/apex/Dashboard");
+        } else if(newPage !== page && paramList.length > 2){
+          window.history.replaceState({}, document.title, "/apex/Dashboard");
+        }
+
+        var okToNavigate = Magellan.Navigation.navigate(hashPath);
+        if (!okToNavigate && window.location.hash) {
+          setActiveNav(Magellan.Navigation.getPageFromPath(window.location.hash), false);
+          return;
+        }
+        setActiveNav(page);
+      }
+
+      // Constructs and initializes the sidebar
+      window.initializeSidebar = function() {
+        // First Tier Menus
+        if (dashboardSidebar.hasOwnProperty(NAVS) && {! !autoNavigateToMembers }) {
+          var $navSection = j$('.' + LEFT_SIDEBAR);
+          for (var key in dashboardSidebar[NAVS]) {
+            var navObj = dashboardSidebar[NAVS][key];
+            $navSection.append(buildButtonDiv(navObj, key, CHILD, NAV, LEFT_SIDEBAR_BUTTON, true));
+            if (navObj.hasOwnProperty(CHILD)) {
+              var $subnavSection = j$("<div>", {class: LEFT_SIDEBAR_SUBNAV + SECTION + ' ' + key + SUBNAV + SECTION, style: "display:none"});
+              // Second Tier Menus
+              for (var subkey in navObj[CHILD]) {
+                var subnavObject = navObj[CHILD][subkey];
+                var subKeyString = constructKeyString(key, subkey);
+
+                $subnavSection.append(buildButtonDiv(subnavObject, subKeyString, SUBCHILD, SUBNAV, LEFT_SIDEBAR_SUBNAV + ITEM, false));
+                if (subnavObject.hasOwnProperty(SUBCHILD)) {
+                  var $subsubnavSection = j$("<div>", {class: LEFT_SIDEBAR_SUBSUBNAV + SECTION + ' ' + subKeyString + SUBSUBNAV + SECTION, style: "display:none"});
+                  // Third Tier Menus
+                  for (var subsubkey in subnavObject[SUBCHILD]) {
+                    var subsubnavObject = subnavObject[SUBCHILD][subsubkey];
+                    var subsubKeyString = constructKeyString(subKeyString, subsubkey);
+                    $subsubnavSection.append(buildButtonDiv(subsubnavObject, subsubKeyString, SUBSUBCHILD, SUBSUBNAV, LEFT_SIDEBAR_SUBSUBNAV + ITEM, false));
+                    if (subsubnavObject.hasOwnProperty(SUBSUBCHILD)) {
+                      var $subsubsubnavSection = j$("<div>", {class: LEFT_SIDEBAR_SUBSUBSUBNAV + SECTION + ' ' + subsubKeyString + SUBSUBSUBNAV + SECTION, style: "display:none"});
+                      //Fourth Tier Menus
+                      for (var subsubsubkey in subsubnavObject[SUBSUBCHILD]) {
+                        $subsubsubnavSection.append(buildButton(subsubnavObject[SUBSUBCHILD][subsubsubkey], constructKeyString(subsubKeyString, subsubsubkey), SUBSUBSUBNAV + ' ' + LEFT_SIDEBAR_SUBSUBSUBNAV + ITEM, subsubnavObject[SUBSUBCHILD][subsubsubkey].name));
+                      }
+                      $subsubnavSection.append($subsubsubnavSection);
+                    }
+                  }
+                  $subnavSection.append($subsubnavSection);
+                }
+                $navSection.append($subnavSection);
+              }
+            }
+          }
+        }
+        dashboardController.initializeProductFeatures();
+      }
+
+      /**
+       * Builds a nav button div with onclick event, classes, text, icons, expand arrows
+       * @param  {Object} nav         Nav object
+       * @param  {String} key         Dash separated page ID
+       * @param  {String} child       Child nav name
+       * @param  {String} navClass    Class for current nav
+       * @param  {Stirng} buttonClass Class for button object
+       * @param  {Boolean} withIcon   If icons should be included
+       * @return {jQuery Object}             
+       */
+      window.buildButtonDiv = function(nav, key, child, navClass, buttonClass, withIcon) {
+        var $buttonDiv = buildButton(nav, key, navClass + " " + buttonClass);
+        var $buttonSpan = j$("<span>", {class: buttonClass + TITLE + ' nav-link-title', text: nav.name});
+        if (withIcon) {
+          var $imgParent = j$("<div>", {class: buttonClass + IMG}); 
+          var $imgInactive = j$("<img>", {src: nav.inactiveSrc, class: "icon " + INACTIVE_ICON});
+          var $imgActive = j$("<img>", {src: nav.activeSrc, class: "icon " + ACTIVE_ICON, style:"display:none"});
+          var $imgDisabled = j$("<img>", {src: nav.disabledSrc, class: "icon icon_disabled"});
+          $imgParent.append($imgInactive);
+          $imgParent.append($imgActive);
+          if (nav.disabledSrc) $imgParent.append($imgDisabled);
+          $buttonDiv.append($imgParent);
+        }
+        if (nav.hasOwnProperty(child)) {
+            $buttonDiv.addClass('noOpenPage');
+          var $expandArrowAnchor = j$("<a>", {href:'#', target:"_blank", class:  'expandMenu', text: ('')});
+
+          var $expandArrow = j$("<img>", {class: ARROW + ' ' + key + ARROW_SPECIFIC, src: "{!URLFOR($Resource.magellan_app, 'images/Subnav_Arrow.png')}"});
+          var $expandArrowActive = j$("<img>", {class: ARROW + ' ' + ARROW + '-active ' + key + ARROW_SPECIFIC, src: "{!URLFOR($Resource.magellan_app, 'images/Subnav_Arrow_Active.png')}", style:"display:none"});
+          
+          $expandArrowAnchor.append($expandArrow);
+          $expandArrowAnchor.append($expandArrowActive);
+          $buttonSpan.append($expandArrowAnchor);
+        }
+        $buttonSpan.append('<span class="product-badge"></span>');
+        $buttonDiv.append($buttonSpan);
+        return $buttonDiv;
+      }
+
+      /**
+       * Builds a nav button with onclick event, classes and text
+       * Example of built object: <div onclick="changePage('home') class='home-nav'> Home </div>"
+       * @param  {Object} nav       Nav object to be parsed
+       * @param  {String} keyString Page link ID for link to new page and class purposes
+       * @param  {String} navclass  Extra classes
+       * @param  {String} label     Text for nav page
+       * @return {jQuery Object}    
+       */
+      window.buildButton = function(nav, keyString, navclass, label) {
+        var navButton;
+        if(nav.hasOwnProperty('href')) {
+          navButton = j$("<a>", {href:nav.href, target:'_blank', class: keyString + navclass + " " + (nav.classes || ''), text: (label || '')});
+        } else {
+          navButton = j$("<a>", {href:"#", name: keyString, class: keyString + navclass + " nav-click " + (nav.classes || ''), text: (label || '')});
+        }
+        
+        if (navButton.is('.left-sidebar-subsubsubnav-item')) navButton.append('<span class="product-badge"></span>');
+        return navButton;
+      }
+
+      window.arrowClickHandler = function(event, element) {
+        event.stopPropagation();
+        event.preventDefault();
+        var childrenContainer = j$(element).parent().parent().next();
+        
+        if(childrenContainer.hasClass('expanded')){
+          childrenContainer.removeClass('expanded');
+          childrenContainer.slideUp();
+          j$(element).children().removeClass('rotatedArrow');
+          j$(element).children().rotate({angle: 90, animateTo: 0});    
+        } else {
+          childrenContainer.addClass('expanded');
+          childrenContainer.slideDown();
+          j$(element).children().addClass('rotatedArrow');
+          j$(element).children().rotate({angle: 0, animateTo: 90});    
+        }
+      }
+
+      window.navClickHandler = function(event, element) {
+        event.preventDefault(); //for opening dashboard with tab
+        if(event.metaKey){ //for opening tab with cmd + left click
+          window.open('?page='+element.name, "", "_blank");
+        } else {
+          changePage(element.name);
+        }
+      }
+
+      window.getPermissionSet = function() {
+        return {
+          'hasRouter':dashboardController.viewObject.statuses['hasRouter'],
+          'hasMatching':dashboardController.viewObject.statuses['hasMatching'],
+          'hasAttribution':dashboardController.viewObject.statuses['hasAttribution'],
+          'hasReadWriteAccess':dashboardController.viewObject.statuses['hasReadWriteAccess']
+        }
+      }
+      
+      window.dirtyFlowBuilderUnloadEventHandler = function(event) {
+        if (typeof Magellan !== "undefined" && typeof Magellan.Controllers !== "undefined" && typeof Magellan.Controllers.GUI !== "undefined" && Magellan.Controllers.GUI.graphHasChanged()) {
+          if (event) {
+            event.returnValue = "randomString";
+          }
+            return "randomString";
+        } else {
+          return null;
+        } 
+      }
+
+      window.initializeDefaultModals = function() {
+        j$('#defaultModalDiv').append(createModal('settingsSaved', 'Settings Saved', '<div class="modal-body"><p>Your settings have been successfully saved.</p><p class="lean">The LeanData Team</p></div>', null, null, null, null, null, 40));
+        j$('#defaultModalDiv').append(createModal('error', 'Error Occurred', '', null, null, null, null));
+      }
+
+      window.clearModalDiv = function() {
+        j$('#modalDiv').empty();
+      }
+
+      window.showErrorModal = function(msg) {
+        j$('#errorModalText').text(msg);
+        j$('#errorModal').modal('show');
+      }
+      
+      window.returnHome = function() {
+        Magellan.Navigation.navigate('#');
+        closeAll();
+      }
+
+      window.clearActive = function() {
+        j$('.' + LEFT_SIDEBAR_SUBNAV + ITEM).removeClass(LEFT_SIDEBAR_SUBNAV + ITEM + ACTIVE);
+        j$('.' + LEFT_SIDEBAR_SUBSUBNAV + ITEM).removeClass(LEFT_SIDEBAR_SUBSUBNAV + ITEM + ACTIVE);
+        j$('.' + LEFT_SIDEBAR_SUBSUBSUBNAV + ITEM).removeClass(LEFT_SIDEBAR_SUBSUBSUBNAV + ITEM + ACTIVE);
+      }
+
+      window.closeAll = function(event, element) {
+        var fullElementName = element?element.name:'';
+        var elementNames = fullElementName.split('-');
+
+        var classesToIgnore = '';
+        var elementName = '';
+        for (let i = 0; i < elementNames.length; i++) {
+          elementName += elementNames[i];
+          if (i > 0) classesToIgnore +=',';
+          classesToIgnore += '.' + elementName  + SUBNAV + SECTION + ',' + '.' + elementName  + SUBSUBNAV + SECTION + ',' + '.' + elementName  + SUBSUBSUBNAV + SECTION + ',.' + elementName + ARROW_SPECIFIC;        
+          elementName += '-';
+        }
+        j$('.expanded').not(classesToIgnore).slideUp().removeClass('expanded');
+        j$('.rotatedArrow').not(classesToIgnore).removeClass('rotatedArrow').rotate({angle: 90, animateTo: 0});
+        
+        //remove all active css
+        clearActive();
+      }
+
+      window.postLoadInitialization = function() {
+        /* Set page to parameter provided, or default to Home. */
+        var page = getParameterByName('page') || 'home';
+        initializeSidebar();
+
+        j$('.nav-click').click(function(event){
+            event.stopPropagation();
+            event.preventDefault();
+            if (j$(this).hasClass('disabledLink')) return;
+            //check for noOpenPage class
+            if(j$(this).hasClass('noOpenPage')){
+                arrowClickHandler(event, j$(this).find('.expandMenu'));
+            }
+            else{
+                closeAll(event,this);
+                var that = this;
+                if(Magellan.Navigation.PAGE_HASHPATH_COLLECTION.filter(function(e) {return e.page == that.name}).length > 0){
+                     changeHashPage(that.name)
+                }else{
+                     navClickHandler(event,this);
+                }
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+
+        // support tab click open in new tab on salesforce classic
+        // and prevent the new tab from opening in lightning experience
+        j$('.nav-click').mousedown(function(event){
+          if (typeof sforce == 'undefined') {
+            switch (event.which) {
+            case 1:
+              break;
+            case 2:
+              var that = this;
+              if (Magellan.Navigation.PAGE_HASHPATH_COLLECTION.filter(function(e) {return e.page == that.name}).length > 0) {
+                 j$(this).attr('href', Magellan.Navigation.getPathFromPage(j$(this).attr('name')));
+              } else {
+                  j$(this).attr('href', '?page=' + j$(this).attr('name'));
+              }
+              break;
+            case 3:
+              var that = this;
+              if (Magellan.Navigation.PAGE_HASHPATH_COLLECTION.filter(function(e) {return e.page == that.name}).length > 0) {
+                 j$(this).attr('href', Magellan.Navigation.getPathFromPage(j$(this).attr('name')));
+              } else {
+                  j$(this).attr('href', '?page=' + j$(this).attr('name'));
+              }
+              break;
+            default:
+              console.log('click type not supported');
+            }
+          }
+        })
+
+        j$('.expandMenu').click(function(event){
+          event.stopPropagation();
+          event.preventDefault();
+          if (j$(this).parent().parent().hasClass('disabledLink')) return;
+          arrowClickHandler(event,this);
+        });
+      }
+
+      /* 
+        Called when user hits the back button. Pops state of the history
+        stack, and sets the current page to the previous page.
+      */
+      window.addEventListener("popstate", function(e) {
+        if (typeof Magellan !== "undefined" && typeof Magellan.Controllers !== "undefined" && typeof Magellan.Controllers.GUI !== "undefined" && typeof chosenGraphId !== "undefined" && chosenGraphId !== null && Magellan.Controllers.GUI.graphHasChanged()) {
+          var clickAway = confirm("Are you sure you want to leave this graph?", "You have unsaved changes that will be lost. Press OK to leave or Cancel to stay on the page.");
+          if (!clickAway) {
+            // Stay on the current page.
+            history.pushState(history.state, "", window.location.href);
+            return;
+          } else {
+            // This probably needs a tighter check
+            chosenGraphId = null;
+          }
+        }
+        if ('scrollRestoration' in history) {
+          history.scrollRestoration = 'manual';
+        }
+        
+        if (e.state) setActivePageAF(e.state.page, JSON.stringify(e.state.parameters));
+      });
+      
+      // Global click event listeners
+      j$(document).click(function(event) {
+        if(!$(event.target).closest('.upsell-wide-badge').length) {
+          if(j$('.upsell-container').is(":visible")) {
+            j$('.upsell-container').hide();
+          }
+        }
+
+        if(!j$(event.target).closest('.ld-tooltip-hint').length) {
+          j$('.page-content .ld-tooltip-hint.open .ld-tooltip-close-icon').trigger('click');
+        }
+      });
+
+      j$('#settingsSavedModal').on('hidden.bs.modal', function (e) {
+        window.history.back();
+      });
+    </script>
+
+    <div class="bs">
+        <apex:form >
+            <apex:pageMessages id="pm" />
+
+            <!-- AF to change the active component/page. Triggers Loading status.-->
+            <apex:actionFunction action="{!setActivePage}" name="setActivePageAF" rerender="mainContent" status="loadingComponent" oncomplete="clearModalDiv();initComponent();">
+                <apex:param name="activePage" assignTo="{!activePage}" value=""/>
+
+                <!-- used for segment-->
+                <apex:param name="parameters" assignTo="{!parameters}" value=""/>
+            </apex:actionFunction>
+            
+            <!-- AF To set active page to Upsell -->
+            <apex:actionFunction action="{!setDashboardUpsell}" name="setDashboardUpsellAF" rerender="mainContent" status="loadingComponent" oncomplete="clearModalDiv();initComponent();">
+                <apex:param name="activePage" assignTo="{!activePage}" value=""/>
+
+                <!-- used for segment-->
+                <apex:param name="parameters" assignTo="{!parameters}" value=""/>
+            </apex:actionFunction>
+
+            <!-- AF to set Edge settings. Triggered by the View and Merge duplicates pages. -->
+            <apex:actionFunction action="{!setEdgeSettingsAndReturn}" name="setEdgeSettingsAndReturnAF" rerender="x" status="loadingComponent" oncomplete="j$('#settingsSavedModal').modal('show');">
+                <apex:param name="edgeSettings" assignTo="{!edgeSettings}" value=""/>
+            </apex:actionFunction>
+            
+            <!-- AF to update email list. Triggered by the Admin page. -->
+            <apex:actionFunction action="{!saveEmailList}" name="saveEmailListAF" rerender="x" status="loadingComponent" oncomplete="j$('#settingsSavedModal').modal('show');">
+                <apex:param name="monitoringEmailAddress" assignTo="{!monitoringEmailAddress}" value=""/>
+                <apex:param name="isLeanDataEmailChecked" assignTo="{!isLeanDataEmailChecked}" value=""/>
+            </apex:actionFunction>
+
+            <div class="page-content">
+                <!-- .header -->
+                <div class="header">
+                  <div class="logo package-logo" onclick="returnHome();">
+                    <img src="{!URLFOR($Resource.magellan_app, 'images/ld-subscription-logo-blank-2x.png')}" alt="Logo" />
+                  </div>
+                </div>
+                <div class="left-sidebar"/>
+                <div class="left-sidebar-popover-container"></div>
+
+                <apex:outputPanel id="mainContent" layout="block" styleClass="main-content">
+                
+                    <!-- Loading action status. -->
+                    <apex:actionStatus id="loadingComponent">
+                        <apex:facet name="start">
+                            <div class="loadingOverlay">
+                                <div class="loadingParent">
+                                    <div class="sk-circle">
+                                        <div class="sk-circle1 sk-child"></div>
+                                        <div class="sk-circle2 sk-child"></div>
+                                        <div class="sk-circle3 sk-child"></div>
+                                        <div class="sk-circle4 sk-child"></div>
+                                        <div class="sk-circle5 sk-child"></div>
+                                        <div class="sk-circle6 sk-child"></div>
+                                        <div class="sk-circle7 sk-child"></div>
+                                        <div class="sk-circle8 sk-child"></div>
+                                        <div class="sk-circle9 sk-child"></div>
+                                        <div class="sk-circle10 sk-child"></div>
+                                        <div class="sk-circle11 sk-child"></div>
+                                        <div class="sk-circle12 sk-child"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </apex:facet>
+                    </apex:actionStatus>
+                    
+                    <!-- Dynamic component. Each tab has its own component. -->
+                    <apex:dynamicComponent componentValue="{!pageComponent}"/>
+                </apex:outputPanel>
+                <div id="angela-app-wrapper"></div>
+            </div>
+        </apex:form>
+
+        <div id="defaultModalDiv"></div>
+        <div id="modalDiv"></div>
+    </div>
+    <!-- ----------------------------------------- END Old dashboard code ------------------------------------------- -->
+
+    <!-- Angular -->
+    <script type="text/javascript" src="{!URLFOR($Resource.angela_app, 'runtime.js')}"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.angela_app, 'polyfills.js')}"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.angela_app, 'styles.js')}"></script> <!-- Dev Only -->
+    <script type="text/javascript" src="{!URLFOR($Resource.angela_app, 'scripts.js')}"></script>
+    <script type="text/javascript" src="{!URLFOR($Resource.angela_app, 'vendor.js')}"></script> <!-- Dev Only -->
+    <script type="text/javascript" src="{!URLFOR($Resource.angela_app, 'main.js')}"></script>
+    
+    <!-- Detach angular app wrapper to be loaded later in Dashboard.page -->
+    <script>
+      window.angelaApp = window.j$('ld-root').detach();
+    </script>
+
+    <!-- Stylesheets -->
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:100,200,300,400,500,600,700,800' rel='stylesheet' type='text/css' />
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__Libraries, 'styles/bootstrap-3.3.4.css')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__Libraries, 'styles/bootstrap-multiselect.css')}" />
+    <!-- <apex:stylesheet value="{!URLFOR($Resource.Libraries, 'styles/jquery-ui-1.11.4.css')}"/> --> <!-- Overrides PrimeNG styling -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__Libraries, 'styles/jquery-ui-timepicker-addon.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__Libraries, 'styles/jquery.dataTables.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__Libraries, 'styles/loading_spinner.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__Libraries, 'styles/rappid.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/style.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+
+    <!-- Libraries / Javascript Helpers -->
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'jquery-1.11.1.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'jquery-ui-1.11.4.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'jquery-ui-timepicker-addon-1.6.3.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'jQueryRotate-2.3.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'jquery.noty.packaged.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'dataTables-1.10.16.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'dataTables.editor-1.7.0.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'dataTables.fixedColumns-2.0.0.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'dataTables.keyTable-2.3.2.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'lodash-3.10.1.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'backbone-1.2.1.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'bootstrap-3.3.4.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'bootstrap-multiselect.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'typeahead-0.11.1.bundle.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'd3-4.10.0.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'rappid/graphlib.core.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'rappid/dagre.core.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'rappid/rappid-2.1.0.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'moment-2.17.0.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'sorting-datetime-moment-1.10.12.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'autonumeric_min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'loadingoverlay-2.1.3.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'autosize-3.0.17.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'highcharts-4.2.3.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'highcharts-more-4.2.3.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'human-format.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__Libraries, 'keyboard.js')}" />
+    <apex:includeScript value="{!$Resource.LeanData__viewJSResource}" />
+    <apex:includeScript value="{!$Resource.LeanData__htmlSanitizer}" />
+    <c:UtilJS />
+    <c:ModalJS />
+    <c:javascriptPaginator />
+
+    <!-- Include Backbone Router From magellan_app.resource, which contains necessary navigation methods and variables -->
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__magellan_app, 'router.js')}" />
+
+    <!-- ----------------------------------- #LD_LEGACY START Old dashboard code ------------------------------------- -->
+    <!-- Initialize app and navigation -->
+    <script>
+      // Initialize app and navigation
+      initializeMagellanInitializers();
+      initializeMagellanNavigation();
+
+      j$(document).ready(function() {
+        if (getParameterByName('leandatadebugger') == '1') {
+          leandataDebuggerOn = true;
+        }
+        
+        // Display loading animation.
+        j$('.loadingOverlay').parent().css('display', 'block');
+
+        postLoadInitialization();
+        initializeDefaultModals();
+      });
+    </script>
+    <!-- ----------------------------------------- END Old dashboard code ------------------------------------------- -->
+
+    <script>
+      // Put angular app inside Dashboard.page
+      $('#angela-app-wrapper').html(window.angelaApp);
+      // Hiding/Showing happens in router.js based on if it's a backbone router page or angular page route
+      $('#angela-app-wrapper').hide();
+      $('.main-content').hide();
+    </script>
+  </body>
+</apex:page>

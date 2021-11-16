@@ -1,0 +1,2435 @@
+<apex:page controller="LeanData.CampaignInfluenceReportController" sidebar="false" standardStylesheets="false" docType="html-5.0" >
+<c:googleAnalytics analyticsCategory="Reporting" />
+
+<apex:outputPanel id="jsQuery">
+<script>
+    Visualforce.remoting.timeout = 120000; // Set timeout at page level
+    var ns;
+    var selectedModel;
+    var attributionLogic;
+    var pageSize = 10;
+    ns = '{!JSENCODE(nameSpace)}';
+
+
+    function monify(number) {
+        number = number * 1.0;
+        var suffix = "K";
+
+        if (number/1000000000 >= .99) {
+            number = number/1000000000;
+            var suffix = "B";
+        }
+        else if (number/1000000 >= .99) {
+            number = number/1000000;
+            var suffix = "M";
+        } 
+        else {
+            number = number/1000;
+        }
+        var tempNumber = number.toFixed(2);
+       
+        if( tempNumber.length > 5 ){
+             number = number.toFixed(1);
+        }
+        else{
+            number = number.toFixed(2);
+        }    
+        number = number.toString();
+        
+        if( number.length > 5 )
+            number = number.substring(0, number.length - 1);
+            
+        while( number[number.length - 1] == '0' ){
+            number = number.substring(0, number.length - 1);
+        }
+
+        if( number[number.length -1 ] == '.' ){
+            number = number.substring(0, number.length - 1);
+        }
+        return "$" + number + suffix;
+    }
+    
+    function simplifyROI( number ){
+
+        if( number > 100 ){
+            number = number.toFixed(0).toString();
+        }
+        else if( isNaN( number ) )
+            number = 0;
+        return number;
+    }
+    function toSFDate(dateObj) {     
+      if( dateObj == 'Invalid Date' )     
+          return null;       
+      var dateStr = dateObj.getUTCFullYear() +'-'+pad2(dateObj.getUTCMonth()+1)+'-'+pad2(dateObj.getUTCDate());
+      return dateStr;
+    }
+    function toReportDate( dateObj ) {
+        if( dateObj == 'Invalid Date' )     
+          return null;       
+      var dateStr = pad2(dateObj.getUTCMonth()+1) + '/' + pad2(dateObj.getUTCDate()) + '/'  + dateObj.getUTCFullYear();
+      return dateStr;
+    }
+    function toSFDateTime( dateObj , offset){ 
+        var newDate = new Date( dateObj );
+        newDate.setDate( newDate.getDate() + offset );
+        //var timeZonedDate = new Date(newDate.valueOf() + newDate.getTimezoneOffset() * 60000);
+        var dateStr = newDate.getUTCFullYear() +'-'+pad2(newDate.getUTCMonth()+1)+'-'+pad2(newDate.getUTCDate());
+        dateStr+= 'T';
+        if( new Date().getTimezoneOffset() / 60 < 10 )
+             dateStr+= '0' + ( new Date().getTimezoneOffset() / 60 );
+        else
+            dateStr+= ( new Date().getTimezoneOffset() / 60 );
+        dateStr+=':00:00Z';
+        //console.log( ' tz date ' + timeZonedDate );
+        return dateStr;
+        //2015-07-01T07:00:00Z
+    }
+    function pad2(number) {     
+         return (number < 10 ? '0' : '') + number      
+    }
+
+    function getQuarterStart (createdMonth) {
+        var quarterStart = createdMonth;
+
+        if (createdMonth === 2 || createdMonth === 3) {
+            quarterStart = 1;
+        } else if (createdMonth === 5 || createdMonth === 6) {
+            quarterStart = 4;
+        } else if (createdMonth === 8 || createdMonth === 9) {
+            quarterStart = 7;
+        } else if (createdMonth === 11 || createdMonth === 12) {
+            quarterStart = 10;
+        }
+        return quarterStart;
+    }
+
+    var CampaignController = function () {       
+        this.campaignIdMap = {};
+        this.campaignIdToWrapperMap = {};
+        this.totalCampaignCost = 0.0;
+        this.totalNumberOfOpps = 0.0;
+        this.totalOppAmount = 0.0;
+        this.totalActiveCampaigns = 0.0;
+        this.pipelineAttribution = 0.0;
+        this.revenueAttribution = 0.0;
+        this.totalROI = 0.0;
+        this.usedOpportunityIds = {};
+        this.usedCampaignIds = {};
+        this.oppTouchCount = {};
+        this.buildReport();
+    };
+
+    CampaignController.prototype.buildReport = function () {
+        startT = new Date().getTime();
+        j$('.loading').css("display", "block");
+        this.campaignInfluenceReport = {};
+        this.queryCampaignOpps();
+    };
+    
+
+    CampaignController.prototype.render = function () {
+        var label = (this.groupBy == "Month" ? "MONTHLY VIEW" : "QUARTERLY VIEW");
+        j$('.groupByLabel').html(label);
+        j$('.totalNumberOfOppsWrapper').html(this.totalNumberOfOpps);
+        j$('.totalOppAmountWrapper').find('label').html(monify(this.totalOppAmount));
+        j$('.totalActiveCampaignsWrapper').html(this.totalActiveCampaigns);
+        j$('.totalCampaignCostWrapper').find('label').html(monify(this.totalCampaignCost));
+        j$('.totalPipelineAttributionWrapper').find('label').html(monify(this.pipelineAttribution));      
+        j$('.totalRevenueAttributionWrapper').find('label').html(monify(this.revenueAttribution));
+        j$('.totalROIWrapper').find('label').html( simplifyROI ( this.totalROI ) + '%');
+        var tableBody = this.generateReportTable();
+        j$('.variableTableRows').html(tableBody);
+        var topCampaignTableBody = this.generateTopCampaignTable();
+        j$('.topCampaignsWrapperEl').html(topCampaignTableBody);
+        var paginationNumbersBody = this.generatePaginationNumbers();
+        j$('.paginationNumbers').html(paginationNumbersBody);
+        var opportunitiesTableBody = generateOpportunitiesTable();
+        j$('.opportunitiesWrapperEl').html(opportunitiesTableBody);
+        var paginationNumbersBody = generateOpportunityPaginationNumbers();
+        j$('.opportunityPaginationNumbers').html(paginationNumbersBody);
+        //alert( ' Render call bind JS ' );
+        bindJS();
+        j$(".left-sidebar").css({'height':(j$(".page-content").height() - 40 +'px')});
+        
+        //Set Apex Variables for PDF export
+        var metricsParam = this.totalActiveCampaigns + ',' + monify(this.pipelineAttribution) + ',' + monify(this.revenueAttribution) + ',' + simplifyROI ( this.totalROI ) + '%';
+        var topCampaignsToPDF = cC.topCampaigns.slice(0, 9);
+        for( var i = 0; i < topCampaignsToPDF.length; i++){
+            topCampaignsToPDF[i].usedOppIds = {};
+        }
+        
+        j$('.loading').css("display", "none");
+        end = new Date().getTime();
+        time = end - startT;    
+        console.log('Full Execute Time: ' + time);     
+        ga_event('Viewed Campaign Influence Report // Load Time - ' + time);
+        setPDF(metricsParam, JSON.stringify( topCampaignsToPDF ) , JSON.stringify(paginatedOpportunitiesList) );
+    };
+    
+    Number.prototype.formatMoney = function(c, d, t){
+        var n = this, 
+        c = isNaN(c = Math.abs(c)) ? 2 : c, 
+        d = d == undefined ? "." : d, 
+        t = t == undefined ? "," : t, 
+        s = n < 0 ? "-" : "", 
+        i = parseInt(n = Math.abs(+n || 0).toFixed(c)) + "", 
+        j = (j = i.length) > 3 ? j % 3 : 0;
+       return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
+     };
+     
+     function customFormatMoney( input ){
+        if( input == null ) return null;
+        return '$' + String( Number(input).toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,') );
+     };
+
+    CampaignController.prototype.queryCampaignOpps = function () {
+        var campaignOppQueryString = "SELECT id,"  + ns + "Campaign_Type__c," + ns + "Weighted_LT_Attribution_Amount__c, "  + ns + "Weighted_FT_Attribution_Amount__c, "   + ns + "Weighted_MT_Attribution_Amount__c, " + ns + "Campaign__r.ActualCost, " + ns +"Campaign__c, "+ ns+"Campaign_Member_Created_Date__c, "+ ns +"Opportunity__r.CreatedDate, " + ns +"Opportunity__c, " + ns + "Opportunity__r.Name, " + ns + "Opportunity__r.isClosed, " + ns + "Opportunity_Close_Date__c, " + ns + "Opportunity__r.isWon, " + ns +"Opportunity__r.Amount," + ns +"FT_Attribution_Amount__c," + ns +"LT_Attribution_Amount__c," + ns + "MT_Attribution_Amount__c FROM " + ns +"Marketing_Touch__c WHERE ";
+        var selectedOpportunityStages = {};
+        var selectedOpportunityStagesString = '';
+        var selectedStagesArray = [];
+        var selectedStagesElementsArray = j$('.opportunityStageSelect');
+        
+        var allSelected = true;
+        
+        for (var i = 0; i < selectedStagesElementsArray.length; i++) {
+            var stage = selectedStagesElementsArray[i];
+            if (stage.selected) {
+                selectedOpportunityStages[stage.innerHTML] = true;
+                selectedOpportunityStagesString += ( "'" + stage.innerHTML + "', ");
+                selectedStagesArray.push(stage.innerHTML);
+            }
+            else{
+                allSelected = false;
+            }
+        }
+
+        if (selectedOpportunityStagesString.length > 0) {
+            selectedOpportunityStagesString = selectedOpportunityStagesString.substring(0, selectedOpportunityStagesString.length - 2)
+        }
+        else{
+            selectedOpportunityStagesString = "''";
+        }
+        
+        if( !allSelected )
+            campaignOppQueryString += ns +"Opportunity_Stage__c IN (" + selectedOpportunityStagesString + ")";
+
+        var selectedCampaignTypes = {};
+        var selectedCampaignTypesArray = [];
+
+        var campaignTypeSelector = j$('.campaignTypeOption');
+        allSelected = true;
+        
+        for (var i = 0; i < campaignTypeSelector.length; i++) {
+            var typeSel = campaignTypeSelector[i];
+            if (typeSel.selected) {
+                selectedCampaignTypes[typeSel.innerHTML] = true;
+                selectedCampaignTypesArray.push(("'" + typeSel.innerHTML + "'"));
+            }
+            else{
+                allSelected = false;
+            }
+        }
+
+        if (selectedCampaignTypesArray.length > 0) {
+            var selectedCampaignTypesString = selectedCampaignTypesArray.join(',');
+        }
+        else{
+            selectedCampaignTypesString = "''";
+        }
+        
+        if( !allSelected )
+            campaignOppQueryString += (" AND "+ ns +"Campaign_Type__c IN (" + selectedCampaignTypesString + ")");
+        
+        var selectedOpportunityTypes = {};
+        var selectedOpportunityTypesArray = [];
+        var selectedOpportunityTypesString ='';
+        var opportunityTypeSelector = j$('.opportunityTypeOption');
+        allSelected = true;
+        
+        for (var i = 0; i < opportunityTypeSelector.length; i++) {
+            var typeSel = opportunityTypeSelector[i];
+            if (typeSel.selected) {
+                selectedOpportunityTypes[typeSel.innerHTML] = true;
+                selectedOpportunityTypesArray.push(("'" + typeSel.innerHTML + "'"));
+            }
+            else{
+                allSelected = false;
+            }
+        }
+
+        if (selectedOpportunityTypesArray.length > 0) {
+            selectedOpportunityTypesString = selectedOpportunityTypesArray.join(',');
+            selectedOpportunityTypesString += ",''";
+        }
+        else{
+            selectedOpportunityTypesString = "''";
+        }
+        
+        if( !allSelected )
+            campaignOppQueryString += (" AND "+ ns +"Opportunity_Type__c IN (" + selectedOpportunityTypesString + ")");
+        
+        
+        var selectedMemberTypes = {};
+        this.selectedMemberTypesString = "";
+        selectedMemberTypesString = this.selectedMemberTypesString;
+        var selectedMemberTypesArray = [];
+        var memberTypeSelector = j$('.memberTypeSelect');
+        allSelected = true;
+        
+        if (memberTypeSelector[0].selected) {
+            selectedMemberTypes["Lead"] = true;
+            selectedMemberTypes["Converted Lead"] = true;
+            selectedMemberTypesString += "Lead, ";
+            selectedMemberTypesArray.push("'Lead'");
+        }
+        else{
+            allSelected = false;
+        }
+        
+        if (memberTypeSelector[1].selected) {
+            selectedMemberTypes["Contact"] = true;
+            selectedMemberTypes["Contact With Role"] = true;
+            selectedMemberTypesString += "Contact, ";
+            selectedMemberTypesArray.push("'Contact'");
+            selectedMemberTypesString += "Contact with Role, ";
+            selectedMemberTypesArray.push("'Contact with Role'");
+        }
+        else{
+            allSelected = false;
+        }
+        
+        if (memberTypeSelector[2].selected) {
+            selectedMemberTypes["Contact With Role"] = true;
+            selectedMemberTypesString += "Contact with Role, ";
+            selectedMemberTypesArray.push("'Contact with Role'");
+        }
+        else{
+            allSelected = false;
+        }
+        
+        if (selectedMemberTypesArray.length > 0) {
+            selectedMemberTypesString = selectedMemberTypesArray.join(",");
+        }
+        else{
+            selectedMemberTypesString="''";
+        }
+        
+        if( !allSelected )
+            campaignOppQueryString += " AND " + ns +"Campaign_Member_Object_Type__c IN (" + selectedMemberTypesString + ")";
+
+        var touchTypeSelector = j$('.touchTypeWrapper').find(':selected').html();
+        
+        if( touchTypeSelector == "First Touch" ){
+            selectedModel = "First Touch";
+            campaignOppQueryString += " AND " + ns + "Touch_Order__c IN ('First Touch','First & Last Touch')";    
+        }
+        else if( touchTypeSelector == "Last Touch" ){
+            selectedModel = "Last Touch";
+            campaignOppQueryString += " AND " + ns + "Touch_Order__c IN ('Last Touch','First & Last Touch')";    
+        } 
+        else if( touchTypeSelector == "Multi-Touch" ){
+            selectedModel = "Multi-Touch";
+        }
+        
+        var attributionLogicSelector = j$('.attributionLogicWrapper').find(':selected').html();
+        
+        if( attributionLogicSelector == "Standard" ){
+            attributionLogic = 'Standard';   
+        }
+        else if( attributionLogicSelector == "Weighted" ){
+            attributionLogic = 'Weighted';      
+        } 
+
+        var currentDate = new Date();
+
+        if( new Date(j$('.startDate')[0].value) == 'Invalid Date' ){
+            var startDate = toSFDate(new Date( currentDate.getFullYear() , 0, 1));
+            j$('.startDate').val( "1/1/"+ currentDate.getFullYear());
+        }
+        else{
+            var startDate = toSFDate(new Date(j$('.startDate')[0].value));
+        }
+        if( new Date(j$('.endDate')[0].value) == 'Invalid Date' ){
+            var endDate = toSFDate(new Date( currentDate.getFullYear(), 11 , 31 ));
+            j$('.endDate').val( "12/31/"+ currentDate.getFullYear());
+        }
+        else{
+            var endDate = toSFDate(new Date(j$('.endDate')[0].value));
+        }
+        
+        this.startDate = startDate;
+        this.endDate = endDate;
+
+        this.dateType = j$('.dateTypeWrapperEl').find(':selected').html();
+        this.groupBy = j$('.groupByWrapperEl').find(':selected')[0].value;
+        
+        if (this.dateType === "Campaign Member Created Date") {
+            if (startDate) {
+                campaignOppQueryString += " AND "+ ns +"Campaign_Member_Created_Date__c >= " + startDate;
+            }
+            if (endDate) {
+                campaignOppQueryString += " AND "+ ns +"Campaign_Member_Created_Date__c <= " + endDate;
+            }
+        } else if (this.dateType === "Opportunity Created Date") {
+            if (startDate) {
+                campaignOppQueryString += " AND " + ns + "Opportunity__r.CreatedDate >= " + toSFDateTime(new Date(j$('.startDate')[0].value), 0 );
+            }
+            if (endDate) {
+                campaignOppQueryString += " AND " + ns +"Opportunity__r.CreatedDate  <= " + toSFDateTime(new Date(j$('.endDate')[0].value), 1);
+            }
+        } else if (this.dateType === "Opportunity Close Date") {
+            if (startDate) {
+                campaignOppQueryString += " AND "+ ns +"Opportunity_Close_Date__c >= " + startDate;
+            }
+            if (endDate) {
+                campaignOppQueryString += " AND "+ ns +"Opportunity_Close_Date__c <= " + endDate;
+            }
+        }      
+        
+        campaignOppQueryString = campaignOppQueryString.replace("WHERE  AND","WHERE");
+        CO = [];
+        lastQueryId='';
+        remoteBuildObjectList(campaignOppQueryString);
+    };
+ 
+    var lastQueryId = '';
+    var CO;
+    function remoteBuildObjectList(campaignOppQueryString){
+        if( lastQueryId == '' ){
+            var queryString = campaignOppQueryString + " ORDER BY Id ASC LIMIT " + '{!minimumQuerySize}' ;
+        }
+        else{
+            var queryString = campaignOppQueryString + " AND Id > \'" + lastQueryId+ "\' ORDER BY Id ASC LIMIT " + '{!minimumQuerySize}' ;
+        }
+        console.log( queryString );
+
+        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.CampaignInfluenceReportController.remoteQueryCampaignOpps}', queryString, '{!queryLimit}',
+          function(result, event) {
+            if(event.type === 'exception') {
+                console.log("exception");
+                console.log(event);
+            } else if (event.status) {
+                var tempCampaignOpps = result;
+                
+                for (var i = 0; i < tempCampaignOpps.length; i++) {
+                   CO.push( tempCampaignOpps[i] );
+                }
+
+                console.log('got ' + tempCampaignOpps.length);
+              if( tempCampaignOpps.length < '{!queryLimit}' ){
+                console.log( ' Total Campaign opps = ' + CO.length );
+                finishBuildObjectList(CO);
+              }
+              else{
+                  console.log( 'requery' );
+                  lastQueryId = tempCampaignOpps[ tempCampaignOpps.length - 1 ].Id;
+                  remoteBuildObjectList(campaignOppQueryString);
+              }
+              
+            }
+         });
+    }
+    function finishBuildObjectList(queriedCampaignOpps){
+
+        var end = new Date().getTime();
+        var time = end - startT;    
+        console.log('Query time: ' + time);                       
+        console.log('calling createReportShell');
+        cC.createReportShell(cC.startDate, cC.endDate);
+        console.log('calling calculateMEtrics');
+        queryCampaigns(queriedCampaignOpps);
+        //cC.calculateMetricsBegin(queriedCampaignOpps); 
+    }
+    
+    CampaignController.prototype.createReportShell = function (startDate, endDate) {
+        startDate = new Date(startDate);
+        endDate = new Date(endDate);
+        var currentMonth = startDate.getUTCMonth() + 1;
+        var currentYear = startDate.getUTCFullYear();
+        var campaignInfluenceReport = this.campaignInfluenceReport;
+        var groupBy = this.groupBy;
+
+        if (this.groupBy === "Month") {
+            while (true) {
+                if (!campaignInfluenceReport[currentYear]) {
+                    campaignInfluenceReport[currentYear] = {};
+                    campaignInfluenceReport[currentYear][currentMonth] = new CampaignInfluenceWrapper(currentMonth, currentYear, this.groupBy);
+                } else {
+                    campaignInfluenceReport[currentYear][currentMonth] = new CampaignInfluenceWrapper(currentMonth, currentYear, groupBy);
+                }
+
+                if (currentMonth === 12) {
+                    currentMonth = 1;
+                    currentYear += 1;
+                } else {
+                    currentMonth += 1;
+                }
+
+                if (currentYear > endDate.getUTCFullYear() || (currentMonth >= endDate.getUTCMonth() + 2 && currentYear === endDate.getUTCFullYear())) {
+                    break;
+                }
+            }
+        } else if (groupBy === "Quarter") {
+                currentMonth = getQuarterStart(currentMonth);
+
+                while (true) {
+                    if (!campaignInfluenceReport[currentYear]) {
+                        campaignInfluenceReport[currentYear] = {};
+                        campaignInfluenceReport[currentYear][currentMonth] = new CampaignInfluenceWrapper(currentMonth, currentYear, groupBy);
+                    } else {
+                        campaignInfluenceReport[currentYear][currentMonth] = new CampaignInfluenceWrapper(currentMonth, currentYear, groupBy);
+                    }
+
+                    if (currentMonth === 10) {
+                        currentMonth = 1;
+                        currentYear += 1;
+                    } else {
+                        currentMonth += 3;
+                    }
+
+                    if (currentYear > endDate.getUTCFullYear() || (currentMonth >= endDate.getUTCMonth() + 2 && currentYear == endDate.getUTCFullYear())) {
+                        break;
+                    }
+                }
+        }
+
+    }
+
+    function queryCampaigns(queriedCampaignOpps){
+        Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.CampaignInfluenceReportController.remoteQueryFunction}', "SELECT id, Name, ActualCost, StartDate, EndDate, Type FROM Campaign", 
+          function(result, event) {
+            if(event.type === 'exception') {
+                console.log("exception");
+                console.log(event);
+            } else if (event.status) {
+                callMetrics(result,queriedCampaignOpps);                      
+            }
+        });
+    }
+
+    function callMetrics(records,queriedCampaignOpps){
+        if (records && records.length) {
+            for (var i = 0; i < records.length; i++) {
+                var record = records[i];
+                cC.campaignIdMap[record.Id] = record;
+            }
+        }
+        cC.calculateMetricsBegin(queriedCampaignOpps);
+    }
+
+    CampaignController.prototype.calculateMetricsBegin = function (validCampaignOpps) {
+        var dateType = this.dateType;
+        var groupBy = this.groupBy;
+        var that = this;
+        var campaignInfluenceReport = this.campaignInfluenceReport;
+        //function calculateMetricsFinish(result) {
+        var usedOpportunityIds = that.usedOpportunityIds;
+        var usedCampaignIds = that.usedCampaignIds;
+
+        
+        var campaignIdMap = that.campaignIdMap;
+        var campaignIdToWrapperMap = that.campaignIdToWrapperMap;
+        
+        var relevantAttributionFieldName;
+        
+        
+        if( attributionLogic == 'Standard' ){
+            if( selectedModel == "Multi-Touch" ){
+                relevantAttributionFieldName = ns + "MT_Attribution_Amount__c";
+            }
+            else if( selectedModel == "First Touch" ){
+                relevantAttributionFieldName = ns + "FT_Attribution_Amount__c";
+            }
+            else if( selectedModel == "Last Touch" ){
+                relevantAttributionFieldName = ns + "LT_Attribution_Amount__c";
+            }
+        }
+        else if( attributionLogic == 'Weighted' ){
+            if( selectedModel == "Multi-Touch" ){
+                relevantAttributionFieldName = ns + "Weighted_MT_Attribution_Amount__c";
+            }
+            else if( selectedModel == "First Touch" ){
+                relevantAttributionFieldName = ns + "Weighted_FT_Attribution_Amount__c";
+            }
+            else if( selectedModel == "Last Touch" ){
+                relevantAttributionFieldName = ns + "Weighted_LT_Attribution_Amount__c";
+            }
+        }
+        topCampaignTypes = {};
+        
+        console.log( 'Relevant Attribution Field Name :' +     relevantAttributionFieldName );
+        for (var i = 0; i < validCampaignOpps.length; i++) {
+            //console.log( ' Start Iter  ' + validCampaignOpps[i] );
+            var campaignOpp = validCampaignOpps[i];
+
+            var relevantAttribution;
+          
+            relevantAttribution = parseFloat( campaignOpp[ relevantAttributionFieldName ] );
+            
+            //Add Touch to Opp Touch Count
+            if( !that.oppTouchCount[campaignOpp[ns + "Opportunity__c" ] ] ){
+                that.oppTouchCount[campaignOpp[ns + "Opportunity__c" ] ] = 0;
+            }
+            
+            that.oppTouchCount[campaignOpp[ns + "Opportunity__c" ] ]++;
+            
+            if( !topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"]] ){
+                topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"]] = {};
+                topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"] ].pipelineAttribution = 0;
+                topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"] ].revenueAttribution = 0;
+                topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"] ].campaignMemberTouches = 0;
+                topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"] ].Type = campaignOpp[ns + "Campaign_Type__c"];
+            }
+
+            topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"] ].campaignMemberTouches ++;
+
+            that.pipelineAttribution += relevantAttribution;
+            topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"]].pipelineAttribution += relevantAttribution;
+
+            if( campaignOpp[ ns + "Opportunity__r"].IsClosed == true && campaignOpp[ ns + "Opportunity__r"].IsWon == true ){
+                that.revenueAttribution += relevantAttribution;     
+                topCampaignTypes[ campaignOpp[ns + "Campaign_Type__c"] ].revenueAttribution += relevantAttribution;              
+            }
+            
+            //Campaign Type 
+            //console.log( 'C Type ' + campaignOpp[ns + "Campaign_Type__c"] );
+           
+            if (!usedCampaignIds[campaignOpp[ns + "Campaign__c"]]) {
+                usedCampaignIds[campaignOpp[ns + "Campaign__c"]] = true;
+                that.totalActiveCampaigns++;
+                if (campaignOpp[ns + "Campaign__r"].ActualCost) {
+                    that.totalCampaignCost += parseFloat(campaignOpp[ns + "Campaign__r"].ActualCost);
+                }
+            }
+            if (!usedOpportunityIds[campaignOpp[ns + "Opportunity__c"]]) {
+                usedOpportunityIds[campaignOpp[ns + "Opportunity__c"]] = true;
+                that.totalNumberOfOpps++;
+                if (campaignOpp[ns + "Opportunity__r"].Amount) {
+                    that.totalOppAmount += parseFloat(campaignOpp[ns + "Opportunity__r"].Amount);
+                }
+            }
+            var createdYear;
+            var createdMonth;
+
+            if (dateType === 'Campaign Member Created Date') {
+                createdYear = new Date(campaignOpp[ns + "Campaign_Member_Created_Date__c"]).getFullYear();
+                createdMonth = new Date(campaignOpp[ns + "Campaign_Member_Created_Date__c"]).getMonth() + 1;
+            } else if (dateType == "Opportunity Created Date") {
+                var createDate = new Date( campaignOpp[ns + "Opportunity__r"].CreatedDate );
+                createdYear = createDate.getFullYear();            
+                createdMonth = createDate.getMonth() + 1;
+            } else if (dateType == "Opportunity Close Date") {
+                createdYear = new Date(campaignOpp[ns + "Opportunity_Close_Date__c"]).getUTCFullYear();
+                createdMonth = new Date(campaignOpp[ns + "Opportunity_Close_Date__c"]).getUTCMonth() + 1;
+            }
+            
+            if (groupBy === "Quarter") {
+                createdMonth = getQuarterStart(createdMonth);
+            }
+
+            var currentReportLine = campaignInfluenceReport[createdYear][createdMonth];
+            
+            if (!currentReportLine) {
+                console.log("Current Report Line not found, probably a dating issue . Month " + createdMonth + " , Year " + createdYear + " Opportunity " + campaignOpp[ns + "Opportunity__c"] + " , Date : " + campaignOpp[ns + "Opportunity_Close_Date__c"] );
+            }
+            
+            currentReportLine.totalAttribution += relevantAttribution;
+            
+            if (!currentReportLine.campaignMap[campaignOpp[ns + "Campaign__c"]]) {
+                currentReportLine.campaignMap[campaignOpp[ns + "Campaign__c"]] = new CampaignWrapper(campaignIdMap[campaignOpp[ns + "Campaign__c"]]);
+                currentReportLine.numberOfCampaigns++;
+                if(campaignOpp[ns + "Campaign__r"].ActualCost) {
+                    currentReportLine.totalCampaignCost += parseFloat(campaignOpp[ns + "Campaign__r"].ActualCost);
+                }
+            }
+
+            if (!currentReportLine.campaignMap[campaignOpp[ns + "Campaign__c"]].usedOppIds[campaignOpp[ns + "Opportunity__c"]]) {
+                currentReportLine.campaignMap[campaignOpp[ns + "Campaign__c"]].usedOppIds[campaignOpp[ns + "Opportunity__c"]] = true;
+                currentReportLine.campaignMap[campaignOpp[ns + "Campaign__c"]].numberOfOpps++;
+                if (campaignOpp[ns + "Opportunity__r"].Amount) {
+                    currentReportLine.campaignMap[campaignOpp[ns + "Campaign__c"]].totalOppAmt += parseFloat(campaignOpp[ns + "Opportunity__r"].Amount);
+                }
+            }
+
+            currentReportLine.campaignMap[campaignOpp[ns + "Campaign__c"]].numberOfCampaignMembers++;
+
+            if (!currentReportLine.usedOppIds[campaignOpp[ns + "Opportunity__c"]]) {
+                currentReportLine.usedOppIds[campaignOpp[ns + "Opportunity__c"]] = true;
+                currentReportLine.numberOfOpportunities++;
+                if (campaignOpp[ns + "Opportunity__r"].Amount) {
+                    currentReportLine.totalOpportunityAmount += parseFloat(campaignOpp[ns + "Opportunity__r"].Amount);
+                }
+            }
+
+            if (!campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]]) {
+                campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]] = new CampaignWrapper(campaignIdMap[campaignOpp[ns + "Campaign__c"]]);
+            }
+            if (!campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]].usedOppIds[campaignOpp[ns + "Opportunity__c"]]) {
+                campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]].usedOppIds[campaignOpp[ns + "Opportunity__c"]] = true;
+                campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]].numberOfOpps++;
+                if (campaignOpp[ns + "Opportunity__r"].Amount) {
+                    campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]].totalOppAmt += parseFloat(campaignOpp[ns + "Opportunity__r"].Amount);
+                }
+            }
+            campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]].numberOfCampaignMembers++;
+            //campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]].campaignOpps.push(campaignOpp);
+            campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]].totalAttribution += relevantAttribution;
+            
+            if( campaignOpp[ ns + "Opportunity__r"].IsClosed == true && campaignOpp[ ns + "Opportunity__r"].IsWon == true  ){
+                campaignIdToWrapperMap[campaignOpp[ns + "Campaign__c"]].revenueAttribution += relevantAttribution;
+            }
+        }
+        console.log( ' Done iterating CO ' );
+        that.totalROI = ( that.revenueAttribution / that.totalCampaignCost ) * 100;
+        that.totalROI = Math.round(that.totalROI * 100) / 100;
+        //this is a controller variable, topCampaigns!
+        //}
+
+        that.topCampaigns = [];
+        that.tempTopCampaigns = [];
+        for (var campaignId in that.campaignIdToWrapperMap) {
+            if (!that.campaignIdToWrapperMap.hasOwnProperty(campaignId)) continue;
+            var value = that.campaignIdToWrapperMap[campaignId];
+            that.tempTopCampaigns.push(value);
+        }       
+        
+        allTopCampaigns = that.tempTopCampaigns;
+        allTopCampaigns.sort(sortWrapperDESC);
+        moveToPage( 1 );
+        that.frontEndReport = [];
+        for (var i in campaignInfluenceReport) {
+            if (!campaignInfluenceReport.hasOwnProperty(i)) continue;
+            var values = [];
+            for (var key in campaignInfluenceReport[i]) {
+                var obj = campaignInfluenceReport[i];
+                if (!obj.hasOwnProperty(key)) continue;
+                var val = obj[key];
+                values.push(val);           
+            }
+            that.frontEndReport = that.frontEndReport.concat(values);
+        }
+        that.frontEndReport.sort(sortWrapper);
+        
+        //-----Create Opp List        
+        var oppQuery = 'SELECT id,Name,Type,StageName,Amount,CreatedDate,CloseDate';
+        customAttrField = '{!JSENCODE(customAttributionField)}';
+        console.log( 'Custom Attribution Field = ' + customAttrField );
+        
+        if( customAttrField != null && customAttrField!= '' && customAttrField != 'Amount' )
+            oppQuery += ',' + customAttrField;
+        if( customAttrField == '' || customAttrField == null )
+            customAttrField = 'Amount';
+            
+        oppQuery += ' FROM Opportunity';
+        var oppCount = 0;
+        var oppIds = [];
+        opportunitiesList = [];
+        paginatedOpportunitiesList = [];
+        for( var oppId in that.usedOpportunityIds ){
+            oppCount++;
+            oppIds.push( '\'' + oppId + '\'' );
+        }
+        if ( oppCount > 0) {
+            selectedOppIds = oppIds.join(",");
+            oppQuery += " WHERE Id IN (" + selectedOppIds + ")";
+            
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.CampaignInfluenceReportController.remoteQueryFunction}', oppQuery, 
+          function(result, event) {
+            if(event.type === 'exception') {
+                console.log("exception");
+                console.log(event);
+            } else if (event.status) {
+                for( var resultRow in result ){
+                    //console.log( resultRow + 'Result Row ' + JSON.stringify( result[resultRow] ) );
+                    if( !result[resultRow].Name ) continue;
+                    opportunitiesList.push( new OpportunityWrapper( result[resultRow] ) );
+                }
+                //opportunitiesList = result;
+                opportunitiesList.sort( sortWrapperDESC );
+                opportunityMoveToPage(1);
+                console.log('Opp Count: ' + opportunitiesList.length);     
+                that.render();                        
+            }
+         });
+        }
+        else{
+            opportunitiesList = [];
+            that.render();
+        }
+        
+        console.log( 'Opportunity Query ' + oppQuery );
+    }
+
+    var allTopCampaigns;
+    var opportunitiesList;
+    var topCampaignTypes;
+    var paginatedOpportunitiesList;
+    
+    function sortWrapper (a,b){
+        if (a < b) 
+            return -1;
+        if (a > b)
+            return 1;
+        return 0;
+    }
+    function sortWrapperDESC (a,b){
+        if (a > b) 
+            return -1;
+        if (a < b)
+            return 1;
+        return 0;
+    }
+    var CampaignInfluenceWrapper = function (mth, yr, groupBy) {
+        this.month = mth;
+        this.year = yr;
+        this.numberOfCampaigns = 0;
+        this.totalCampaignCost = 0;
+        this.numberOfOpportunities = 0;
+        this.totalOpportunityAmount = 0;
+        this.totalAttribution = 0;
+        this.campaignMap = {};
+        this.usedOppIds = {};
+        var monthMap = {
+            1 : "Jan",
+            2 : "Feb",
+            3 : "Mar",
+            4 : "Apr",
+            5 : "May",
+            6 : "Jun",
+            7 : "Jul",
+            8 : "Aug",
+            9 : "Sep",
+            10 : "Oct",
+            11 : "Nov",
+            12 : "Dec"
+        }
+
+        if (groupBy === "Month") {
+            this.groupPrefix = monthMap[this.month];
+        }
+
+        if (groupBy === "Quarter") {
+            if (this.month === 1) {
+                this.groupPrefix = "Q1";
+            } else if (this.month === 4) {
+                this.groupPrefix = "Q2";
+            } else if (this.month === 7) {
+                this.groupPrefix = "Q3";
+            } else if (this.month === 10) {
+                this.groupPrefix = "Q4";
+            }
+        }
+
+        this.groupName = this.groupPrefix + this.year;
+        this.wrapperName = this.groupName;
+    }
+
+    CampaignInfluenceWrapper.prototype.valueOf = function () {
+        return this.year * 50 + this.month;
+    }
+
+    var CampaignWrapper = function (tempCampaign) {
+        this.C = tempCampaign;
+        this.usedOppIds = {};
+        this.numberOfOpps = 0;
+        this.totalOppAmt = 0;
+        this.totalAttribution = 0;
+        this.revenueAttribution = 0;
+        this.numberOfCampaignMembers = 0;
+        this.campaignOpps = [];
+    }
+    var sortBy = 'totalAttribution';
+    var sortOrder = 'DESC';
+    var pageNumber = 1;
+    CampaignWrapper.prototype.valueOf = function () {
+        var currentVal = this;
+        sortBy.split(".").forEach(function (fieldSplit) {
+            currentVal = currentVal[fieldSplit];
+        } );
+
+        return currentVal;
+    }
+    function moveToPage( pNum ){
+        pageNumber = pNum;
+        cC.topCampaigns = [];
+        if (allTopCampaigns.length > 0) {
+            for (var j = ( pageNumber - 1 )*pageSize; j < ( pageNumber*pageSize ); j++) {
+                cC.topCampaigns.push(allTopCampaigns[j]);
+                if (j === allTopCampaigns.length - 1) break;
+            }
+        } 
+        var topCampaignTableBody = cC.generateTopCampaignTable();
+        j$('.topCampaignsWrapperEl').html(topCampaignTableBody);   
+        var paginationNumbersBody = cC.generatePaginationNumbers();
+        j$('.paginationNumbers').html(paginationNumbersBody);
+    }
+    function changePage( direction ){
+        if( direction == 'Forward' ){
+            if( pageNumber * pageSize < ( allTopCampaigns.length ) ){
+                cC.topCampaigns = [];
+                pageNumber++;
+                if (allTopCampaigns.length > 0) {
+                    for (var j = ( pageNumber - 1 )*pageSize; j < ( pageNumber*pageSize ); j++) {
+                        cC.topCampaigns.push(allTopCampaigns[j]);
+                        if (j === allTopCampaigns.length - 1) break;
+                    }
+                }
+            }
+        }
+        else{
+            if( pageNumber > 1 ){
+                cC.topCampaigns = [];
+                pageNumber--;
+                if (allTopCampaigns.length > 0) {
+                    for (var j = ( pageNumber - 1) *pageSize; j < ( pageNumber*pageSize ); j++) {
+                        cC.topCampaigns.push(allTopCampaigns[j]);
+                        if (j === allTopCampaigns.length - 1) break;
+                    }
+                }
+            }
+        }
+        var topCampaignTableBody = cC.generateTopCampaignTable();
+        j$('.topCampaignsWrapperEl').html(topCampaignTableBody);
+        var paginationNumbersBody = cC.generatePaginationNumbers();
+        j$('.paginationNumbers').html(paginationNumbersBody);
+    }
+    
+    function sortTopCampaigns( sortByInput ){
+        pageNumber = 1;
+        if( sortByInput == sortBy ){
+            if( sortOrder == 'DESC' )    
+                sortOrder = 'ASC';
+            else
+                sortOrder = 'DESC';
+        }
+        else{
+            sortBy = sortByInput;
+            sortOrder = 'ASC';
+        }
+        
+        if( sortOrder == 'ASC' ){
+            allTopCampaigns.sort( sortWrapper );
+            j$('.sortedUp' ).removeClass('sortedUp'); 
+            j$('.sortedDown' ).removeClass('sortedDown'); 
+            j$('.Campaigns_' + sortByInput.replace('.','') ).addClass('sortedUp');       
+        }
+        else{
+            allTopCampaigns.sort( sortWrapperDESC );
+            j$('.sortedUp' ).removeClass('sortedUp'); 
+            j$('.sortedDown' ).removeClass('sortedDown'); 
+            j$('.Campaigns_' + sortByInput.replace('.','') ).addClass('sortedDown');        
+        }
+        
+        moveToPage( 1 );
+        var topCampaignTableBody = cC.generateTopCampaignTable();
+        j$('.topCampaignsWrapperEl').html(topCampaignTableBody);
+        
+        
+    }
+    var OpportunityWrapper = function (tempOpportunity) {
+        this.Opp = tempOpportunity;
+    }
+    var opportunitySortBy = 'Opp.Amount';
+    var opportunitySortOrder = 'DESC';
+    var opportunityPageNumber = 1;
+    OpportunityWrapper.prototype.valueOf = function () {
+        //console.log( 'Custom Attr ' + customAttrField );
+        //console.log( this.Opp );
+        if( opportunitySortBy == 'Opp.Amount' ){
+            var currentVal = this.Opp[customAttrField];
+        }
+        else if( opportunitySortBy == 'Opp.TouchCount' ){
+            var currentVal = cC.oppTouchCount[this.Opp.Id];
+        }
+        else{
+            var currentVal = this;
+            opportunitySortBy.split(".").forEach(function (fieldSplit) {
+                currentVal = currentVal[fieldSplit];
+            } );
+        }
+        //console.log( ' Field ' + opportunitySortBy + ' Got Value ' + currentVal );
+        if( currentVal == undefined ) return 0;
+        return currentVal;
+    }
+    function sortOpportunities( sortByInput ){
+        opportunityPageNumber = 1;
+        if( sortByInput == opportunitySortBy ){
+            if( opportunitySortOrder == 'DESC' )    
+                opportunitySortOrder = 'ASC';
+            else
+                opportunitySortOrder = 'DESC';
+        }
+        else{
+            opportunitySortBy = sortByInput;
+            opportunitySortOrder = 'ASC';
+        }
+
+        if( opportunitySortOrder == 'ASC' ){
+            opportunitiesList.sort( sortWrapper );
+            j$('.sortedUpOpportunity' ).removeClass('sortedUpOpportunity'); 
+            j$('.sortedDownOpportunity' ).removeClass('sortedDownOpportunity'); 
+            j$('.Opportunity_' + sortByInput.replace('.','') ).addClass('sortedUpOpportunity');     
+        }
+        else{
+            opportunitiesList.sort( sortWrapperDESC );
+            j$('.sortedUpOpportunity' ).removeClass('sortedUpOpportunity'); 
+            j$('.sortedDownOpportunity' ).removeClass('sortedDownOpportunity'); 
+            j$('.Opportunity_' + sortByInput.replace('.','') ).addClass('sortedDownOpportunity');     
+        }
+        opportunityMoveToPage( 1 );
+        var opportunityListBody = generateOpportunitiesTable();
+        j$('.opportunitiesWrapperEl').html(opportunityListBody);
+
+    }
+    function opportunityMoveToPage( pNum ){
+        opportunityPageNumber = pNum;        
+        paginatedOpportunitiesList = [];
+        if (opportunitiesList.length > 0) {
+            for (var j = ( opportunityPageNumber - 1 )*pageSize; j < ( opportunityPageNumber*pageSize ); j++) {
+                paginatedOpportunitiesList.push(opportunitiesList[j]);
+                if (j === opportunitiesList.length - 1) break;
+            }
+        } 
+        var opportunityTableBody = generateOpportunitiesTable();
+        j$('.opportunitiesWrapperEl').html(opportunityTableBody);   
+        var paginationNumbersBody = generateOpportunityPaginationNumbers();
+        j$('.opportunityPaginationNumbers').html(paginationNumbersBody);
+    }
+    function opportunityChangePage( direction ){
+        if( direction == 'Forward' ){
+            if( opportunityPageNumber * pageSize < ( opportunitiesList.length ) ){
+                paginatedOpportunitiesList = [];
+                opportunityPageNumber++;
+                if (opportunitiesList.length > 0) {
+                    for (var j = ( opportunityPageNumber - 1 )*pageSize; j < ( opportunityPageNumber*pageSize ); j++) {
+                        paginatedOpportunitiesList.push(opportunitiesList[j]);
+                        if (j === opportunitiesList.length - 1) break;
+                    }
+                }
+            }
+        }
+        else{
+            if( opportunityPageNumber > 1 ){
+                paginatedOpportunitiesList = [];
+                opportunityPageNumber--;
+                if (opportunitiesList.length > 0) {
+                    for (var j = ( opportunityPageNumber - 1) *pageSize; j < ( opportunityPageNumber*pageSize ); j++) {
+                        paginatedOpportunitiesList.push(opportunitiesList[j]);
+                        if (j === opportunitiesList.length - 1) break;
+                    }
+                }
+            }
+        }
+        var opportunityTableBody = generateOpportunitiesTable();
+        j$('.opportunitiesWrapperEl').html(opportunityTableBody);   
+        var paginationNumbersBody = generateOpportunityPaginationNumbers();
+        j$('.opportunityPaginationNumbers').html(paginationNumbersBody);
+    }
+    
+    CampaignController.prototype.generateReportTable = function () {
+         var reportTable = '';
+        for (var i = 0; i < this.frontEndReport.length; i ++) {
+            var campaignInfluenceWrapper = this.frontEndReport[i];
+            reportTable += campaignInfluenceWrapper.generateCampaignInfluenceRow();
+        }
+        
+        reportTable += ['<div class="table-responsive scroll-table">',
+             '<table style="width:1330px;" class="table clear-table header-table">',
+            '<tr>',
+              '<td style="width:150px;" class="first-cell"><span class="q-text"> Totals </small></span></td>',
+              '<td width="109"></td>',
+              '<td><span>' + cC.totalActiveCampaigns + '</span><small>Campaigns</small></td>',
+              '<td><span>$' + cC.totalCampaignCost.formatMoney() + '</span><small>Total Campaign Costs</small></td>',
+              '<td ><span>$' + cC.pipelineAttribution.formatMoney() + ' </span><small>Total Attribution</small></td>',
+              '<td><span>' + cC.totalNumberOfOpps + '</span><small>Opportunities</small></td>',
+            '</tr>',
+            '</table>',
+          '</div>'].join('');
+        
+        return reportTable;
+    }  
+
+    CampaignInfluenceWrapper.prototype.generateCampaignInfluenceRow = function () {
+        return(['<div class="table-responsive scroll-table">',
+         '<table style="width:1330px;" class="table clear-table header-table">',
+        '<tr>',
+          '<td style="width:150px;" class="first-cell"><span class="q-text">'+ this.groupPrefix + '<br /><small>'+ this.year +'</small></span></td>',
+          '<td width="109"></td>',
+          '<td><span>' + this.numberOfCampaigns + '</span><small>Campaigns</small></td>',
+          '<td><span>$' + this.totalCampaignCost.formatMoney() + '</span><small>Total Campaign Costs</small></td>',
+          '<td ><span>$' + this.totalAttribution.formatMoney() + ' </span><small>Total Attribution</small></td>',
+          '<td><span>' + this.numberOfOpportunities + '</span><small>Opportunities</small></td>',
+        '</tr>',
+        '</table>',
+      '</div>'].join(''));
+    }
+    
+    CampaignWrapper.prototype.generateCampaignMapRow = function () {
+        return (['<tr>',
+          '<td width="215"><a target="_blank" value="/' + this.C.Id + '" style="color:#4eaacc;">' + this.C.Name + '</a></td>',
+          '<td width="150">' + this.C.Type + '</td>',
+          '<td width="150">' + (this.C.ActualCost ? "$" + this.C.ActualCost.formatMoney() : "") + '</td>',
+          '<td width="150">' + this.numberOfOpps + '</td>',
+          '<td width="140">$' + this.totalOppAmt + '</td>',
+          '<td width="110">' + this.numberOfCampaignMembers + '</td>',
+        '</tr>'].join(''));
+    };
+    
+    CampaignController.prototype.generateTopCampaignTable = function () {
+        var tableInMaking = '';
+        for (var i = 0; i < this.topCampaigns.length; i++) {
+          var topCampaign = this.topCampaigns[i];
+          try{
+              tableInMaking += topCampaign.generateTopCampaignRow();
+          }
+          catch(err) {
+                console.log( err.message );
+          }
+       }
+        return tableInMaking;
+    };
+        
+    CampaignWrapper.prototype.generateTopCampaignRow = function () {
+        return ['<tr style="border-left:1px solid #ededed; border-right:1px solid #ededed;border-bottom:1px solid #ededed;">',
+              '<td width="315"><a href=/'+ this.C.Id + ' target=\"_blank\">' + this.C.Name + '</td>',
+              '<td width="170">' + this.C.Type + '</td>',
+              '<td width="170">' + (this.C.ActualCost ? "$" + parseFloat(this.C.ActualCost).formatMoney() : "") + '</td>',
+              '<td width="170">' + (this.totalAttribution ? "$" + this.totalAttribution.formatMoney() : "") + '</td>',
+              '<td width="170">' + (this.revenueAttribution ? "$" + this.revenueAttribution.formatMoney() : "") + '</td>',
+              '<td width="130">' + this.numberOfCampaignMembers + '</td>',
+              '</tr>'].join('');
+    };
+    
+    function generateOpportunitiesTable (){
+        var tableInMaking = '';
+        if( paginatedOpportunitiesList.length > 0 ){
+            for (var i = 0; i < paginatedOpportunitiesList.length; i++) {
+                var opp = paginatedOpportunitiesList[i];
+                //console.log( ' Generate Opp Row ' + JSON.stringify( opp ) );
+                tableInMaking += opp.generateOpportunityRow( );
+            }
+        }
+        return tableInMaking;
+        
+    }
+        
+    OpportunityWrapper.prototype.generateOpportunityRow = function () {
+        var createDate = new Date(this.Opp.CreatedDate);
+        var closeDate = new Date(this.Opp.CloseDate);
+        closeDate = new Date(this.Opp.CloseDate + closeDate.getTimezoneOffset() * 60000); 
+        
+        var oppValue = this.Opp.Amount;
+        
+        if( customAttrField != null && customAttrField != '' ){
+            oppValue = this.Opp[customAttrField];
+        }
+            return ['<tr>',
+              '<td width="215"><a href=/'+ this.Opp.Id + ' target=\"_blank\">' + this.Opp.Name + '</td>',
+              '<td width="170">' + this.Opp.StageName + '</td>',
+              '<td width="145">' + cC.oppTouchCount[ this.Opp.Id ] + '</td>',
+              '<td width="130">' + (oppValue ? "$" + parseFloat(oppValue).formatMoney() : "") + '</td>',
+              '<td width="170">' + createDate.toLocaleDateString() + '</td>',
+              '<td width="170">' + closeDate.toLocaleDateString() + '</td>',
+              '<td width="170">' + ( this.Opp.Type  ? this.Opp.Type : "" ) + '</td>',
+              '</tr>'].join('');
+    };
+    function normalizeDateExtended(mydate){  
+       mydate = new Date(mydate);  
+       mydate = new Date(mydate - mydate.getTimezoneOffset() * 60000);  
+       var d = mydate.getDate();  
+       var m = mydate.getMonth()+1;  
+       var y = mydate.getFullYear();  
+       return ''+ (m<=9?'0'+m:m) +'-' + (d<=9?'0'+d:d)+'-' + y;  
+     }  
+    CampaignController.prototype.generatePaginationNumbers = function () {
+        var tableInMaking = '';
+               
+        if( allTopCampaigns.length != 0 ){    
+            j$('.campaignPaginationPanel').show();
+            tableInMaking +='<a class="paginationLink" onClick="changePage(\'Backward\');" > Back </a> ';
+            var startNum = 1;
+            if ( pageNumber > 3 ){
+                startNum = pageNumber - 2;
+            }
+            var cutOff = allTopCampaigns.length / pageSize + 1;
+            
+            if( allTopCampaigns.length / pageSize + 1 > pageNumber + 3 )
+                cutOff = pageNumber + 3;
+            
+            if( startNum == 1 ){
+                if( allTopCampaigns.length / pageSize + 1 > cutOff )
+                    cutOff++;
+                if( allTopCampaigns.length / pageSize + 1 > cutOff )
+                    cutOff++;
+            } 
+            if( startNum != 1 && allTopCampaigns.length / pageSize + 1 - cutOff < 3 ){
+                if( startNum > 1 )
+                    startNum--;
+                if( startNum > 1 )
+                    startNum--;
+            }
+            for (var i = startNum; i < cutOff; i++ ) {
+                if( i == pageNumber ){
+                    tableInMaking += '<a class="paginationLink selectedLink" onClick="moveToPage(\'' + i + '\');" >' + i + '</a> ';
+                }
+                else{
+                   tableInMaking += '<a class="paginationLink" onClick="moveToPage(\'' + i + '\');" >' + i + '</a> ';
+                }
+            }
+            tableInMaking +='<a class="paginationLink" onClick="changePage(\'Forward\');" > Next </a> ';
+        }
+        return tableInMaking;
+    };                                  
+
+    function generateOpportunityPaginationNumbers() {
+        var tableInMaking = '';
+               
+        if( opportunitiesList.length != 0 ){
+            j$('.opportunityPaginationPanel').show();
+            tableInMaking +='<a class="paginationLink" onClick="opportunityChangePage(\'Backward\');" > Back </a> ';
+            var startNum = 1;
+            if ( opportunityPageNumber > 3 ){
+                startNum = opportunityPageNumber - 2;
+            }
+            var cutOff = opportunitiesList.length / pageSize + 1;
+            
+            if( opportunitiesList.length / pageSize + 1 > opportunityPageNumber + 3 )
+                cutOff = opportunityPageNumber + 3;
+            
+            if( startNum == 1 ){
+                if( opportunitiesList.length / pageSize + 1 > cutOff )
+                    cutOff++;
+                if( opportunitiesList.length / pageSize + 1 > cutOff )
+                    cutOff++;
+            } 
+            if( startNum != 1 && opportunitiesList.length / pageSize + 1 - cutOff < 3 ){
+                if( startNum > 1 )
+                    startNum--;
+                if( startNum > 1 )
+                    startNum--;
+            }
+            for (var i = startNum; i < cutOff; i++ ) {
+                if( i == opportunityPageNumber ){
+                    tableInMaking += '<a class="paginationLink selectedLink" onClick="opportunityMoveToPage(\'' + i + '\');" >' +i + '</a> ';
+                }
+                else{
+                   tableInMaking += '<a class="paginationLink" onClick="opportunityMoveToPage(\'' + i + '\');" >' + i + '</a> ';
+                }
+            }
+            tableInMaking +='<a class="paginationLink" onClick="opportunityChangePage(\'Forward\');" > Next </a> ';
+        }
+        return tableInMaking;
+    };      
+    
+    function rerenderPageJS(){
+         cC = new CampaignController();
+    }
+    
+    function downloadTopCampaigns(){
+        var filename = 'Top_Campaigns_Export.csv';
+        var csvFile = 'Campaign Name, Campaign Type, Campaign Cost, Pipeline Attribution, Revenue Attribution, # of Campaign Touches\r\n';
+        for (var i = 0; i < allTopCampaigns.length; i++) {
+            var line = '\"' + allTopCampaigns[i].C.Name + '\",' + allTopCampaigns[i].C.Type + ',\"' + customFormatMoney( allTopCampaigns[i].C.ActualCost ) + '\",\"' + customFormatMoney( allTopCampaigns[i].totalAttribution) + '\",\"' + customFormatMoney ( allTopCampaigns[i].revenueAttribution ) + '\",' + allTopCampaigns[i].numberOfCampaignMembers ;                  
+            csvFile += line + '\r\n';
+        }
+        
+        csvFile = csvFile.replace(/null/g, '');
+        var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+        if (navigator.msSaveBlob) { // IE 10+
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            var link = document.createElement("a");
+            if (link.download !== undefined) { // feature detection
+                // Browsers that support HTML5 download attribute
+                var url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    }
+    function downloadCSV( downloadType ){
+        if( downloadType == 'Campaigns' ){
+            var filename = 'Campaigns_Export.csv';
+            var csvFile = 'Campaign Name, Campaign Type, Campaign Cost, Pipeline Attribution, Revenue Attribution, # of Campaign Touches\r\n';
+            for (var i = 0; i < allTopCampaigns.length; i++) {
+                var line = '\"' + allTopCampaigns[i].C.Name + '\",' + allTopCampaigns[i].C.Type + ',\"' + customFormatMoney( allTopCampaigns[i].C.ActualCost ) + '\",\"' + customFormatMoney( allTopCampaigns[i].totalAttribution) + '\",\"' + customFormatMoney ( allTopCampaigns[i].revenueAttribution ) + '\",' + allTopCampaigns[i].numberOfCampaignMembers ;                  
+                csvFile += line + '\r\n';
+            }
+        }
+        else if( downloadType == 'Opportunities' ){
+            var filename = 'Opportunities_Export.csv';
+            var csvFile = 'Opportunity Name, Opportunity Stage, Opportunity Amount, CreatedDate, CloseDate, Opportunity Type\r\n';
+            for (var i = 0; i < opportunitiesList.length; i++) {
+                var createDate = new Date(opportunitiesList[i].Opp.CreatedDate);
+                var closeDate = new Date(opportunitiesList[i].Opp.CloseDate);
+                var line = '\"' + opportunitiesList[i].Opp.Name + '\",' + opportunitiesList[i].Opp.StageName + ',\"' + customFormatMoney( opportunitiesList[i].Opp.Amount ) + '\",\"' + toReportDate( createDate ) + '\",\"' + toReportDate( closeDate )+ '\",' + opportunitiesList[i].Opp.Type ;                  
+                csvFile += line + '\r\n';
+            }
+        }
+        csvFile = csvFile.replace(/null/g, '');
+        
+        
+        var a = document.createElement('a');
+        a.href     = 'data:attachment/csv;charset=utf-8,\ufeff' + escape(csvFile);
+        a.target   ='_blank';
+        a.download = filename;
+        a.innerHTML = "Click me to download the file.";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>
+</apex:outputPanel>
+<style>
+    html {
+      font-family: sans-serif ;
+      -webkit-text-size-adjust: 100% ;
+          -ms-text-size-adjust: 100% ;
+    }
+
+    .chartBorder{
+        border: 2px solid #f5f5f5; 
+        padding: 10px;
+        margin-top:25px;
+    }
+    .noSidebarCell{
+        padding: 0 !important;
+    }
+    .center-align{
+        text-align : center;
+    }
+    .bottom-margin-10{
+        margin-bottom: 10px;
+    }
+    .bottom-margin-40{
+        margin-bottom: 40px;
+    }
+    .top-margin-20{
+        margin-top: 20px;
+    }
+    .top-margin-10{
+        margin-top: 10px;
+    }
+    .top-margin-60{
+        margin-top: 60px;
+    }
+    .table-top-campaigns tbody{
+        max-height: 400px !important;
+    }
+    .loading {
+      position: fixed;
+      z-index: 999;
+      height: 2em;
+      width: 2em;
+      overflow: show;
+      margin: auto;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+    }
+    
+    /* Transparent Overlay */
+    .loading:before {
+      content: '';
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.3);
+    }
+    
+    /* :not(:required) hides these rules from IE9 and below */
+    .loading:not(:required) {
+      /* hide "loading..." text */
+      font: 0/0 a;
+      color: transparent;
+      text-shadow: none;
+      background-color: transparent;
+      border: 0;
+    }
+    
+    .loading:not(:required):after {
+      content: '';
+      display: block;
+      font-size: 10px;
+      width: 1em;
+      height: 1em;
+      margin-top: -0.5em;
+      -webkit-animation: spinner 1500ms infinite linear;
+      -moz-animation: spinner 1500ms infinite linear;
+      -ms-animation: spinner 1500ms infinite linear;
+      -o-animation: spinner 1500ms infinite linear;
+      animation: spinner 1500ms infinite linear;
+      border-radius: 0.5em;
+      -webkit-box-shadow: rgba(0, 0, 0, 0.75) 1.5em 0 0 0, rgba(0, 0, 0, 0.75) 1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) 0 1.5em 0 0, rgba(0, 0, 0, 0.75) -1.1em 1.1em 0 0, rgba(0, 0, 0, 0.5) -1.5em 0 0 0, rgba(0, 0, 0, 0.5) -1.1em -1.1em 0 0, rgba(0, 0, 0, 0.75) 0 -1.5em 0 0, rgba(0, 0, 0, 0.75) 1.1em -1.1em 0 0;
+      box-shadow: rgba(0, 0, 0, 0.75) 1.5em 0 0 0, rgba(0, 0, 0, 0.75) 1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) 0 1.5em 0 0, rgba(0, 0, 0, 0.75) -1.1em 1.1em 0 0, rgba(0, 0, 0, 0.75) -1.5em 0 0 0, rgba(0, 0, 0, 0.75) -1.1em -1.1em 0 0, rgba(0, 0, 0, 0.75) 0 -1.5em 0 0, rgba(0, 0, 0, 0.75) 1.1em -1.1em 0 0;
+    }
+    
+    /* Animation */
+    
+    @-webkit-keyframes spinner {
+      0% {
+        -webkit-transform: rotate(0deg);
+        -moz-transform: rotate(0deg);
+        -ms-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        -moz-transform: rotate(360deg);
+        -ms-transform: rotate(360deg);
+        -o-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+    @-moz-keyframes spinner {
+      0% {
+        -webkit-transform: rotate(0deg);
+        -moz-transform: rotate(0deg);
+        -ms-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        -moz-transform: rotate(360deg);
+        -ms-transform: rotate(360deg);
+        -o-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+    @-o-keyframes spinner {
+      0% {
+        -webkit-transform: rotate(0deg);
+        -moz-transform: rotate(0deg);
+        -ms-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        -moz-transform: rotate(360deg);
+        -ms-transform: rotate(360deg);
+        -o-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+    @keyframes spinner {
+      0% {
+        -webkit-transform: rotate(0deg);
+        -moz-transform: rotate(0deg);
+        -ms-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        -moz-transform: rotate(360deg);
+        -ms-transform: rotate(360deg);
+        -o-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+    .paginationLink:hover{
+        text-decoration:none !important;
+        color: #4eaacc !important;
+    }
+    .paginationLink{
+        color:#4eaacc;
+        font-size:12px;
+        margin-top:-25px;
+        margin-left:3px;
+        margin-right:3px;
+        cursor:pointer;
+    }
+    .selectedLink{
+        color: black !important;
+        pointer-events:none;
+        cursor: default;
+        font-weight: bold;
+    }
+    .downloadButton:hover{
+        text-decoration:none !important;
+        border: none !important;
+        color: white !important;
+        padding: 6px 4px !important; 
+        background: #4eaacc !important;
+    }
+    .downloadButton{
+        margin-left:10px;
+        float:left;
+        padding: 6px 4px !important; 
+        border-radius:5px; 
+        border: 1px solid #d0d8da; 
+        font-weight: bold; 
+        color: #337ab7;
+        font-size:10px;
+    }
+    .bs .button-toggle {
+        width: 100%;
+        text-align: right;
+        margin-bottom: 85px;
+    }
+    .bs .button-toggle .glyphicon {
+        cursor: pointer;
+        color: #e7eaeb;
+        border: 2px solid #e7eaeb;
+        border-radius: 50%;
+        padding: 5px;
+    }
+    
+    .bs .button-toggle .glyphicon:hover {
+        color: #4eaacc;
+        border: 2px solid #4eaacc;
+        border-radius: 50%;
+        padding: 5px;
+    }
+    .sortedUp{
+        background: url({!URLFOR($Resource.Images,'sort_arrow_up.png')}) no-repeat 99%;
+    }
+    .sortedDown{
+        background: url({!URLFOR($Resource.Images,'sort_arrow_down.png')}) no-repeat 99%;
+    }
+    .sortedUpOpportunity{
+        background: url({!URLFOR($Resource.Images,'sort_arrow_up.png')}) no-repeat 99%;
+    }
+    .sortedDownOpportunity{
+        background: url({!URLFOR($Resource.Images,'sort_arrow_down.png')}) no-repeat 99%;
+    }
+    .use-sidebar {
+        width: 70px !important;
+    }
+
+    li.active{
+        margin: 0;
+    }
+    ul li{
+        margin: 0;
+    }
+    .bs .dropdown-menu .active a{
+        background: #e7eaeb !important;
+        color: black !important;
+    }
+    .use-sidebar-main {
+        padding: 0 0 0 70px !important;
+}
+</style>
+<head>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+
+    <title>Campaign Influence Summary</title>
+
+   
+    <!-- Bootstrap Core CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'css/bootstrap.css')}"/> 
+    <!-- Custom CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'css/bootstrap-multiselect.css')}"/> 
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__CampaignInfluenceReportResources, 'css/custom.css')}"/>
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
+  
+    <!-- Fonts -->
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css' />
+    
+</head>
+
+<body>
+    <apex:form >
+        <apex:actionFunction name="setPDF" action="{!setPDFVariables}" rerender="x">
+            <apex:param value="" name="metrics" assignTo="{!frontEndMetrics}" />
+            <apex:param value="" name="campaigns" assignTo="{!frontEndCampaigns}" />
+            <apex:param value="" name="opps" assignTo="{!frontEndOpps}" />
+        </apex:actionFunction>
+    </apex:form>
+<div class="bs">
+    <!-- Page Content -->
+    <div class="page-content">
+        <div class="loading" style="display:none">Loading&#8230;</div>
+     <!-- .header -->
+        <section class="header" style="z-index:1;">
+            <div class="container">
+                <div class="logo">
+                    <apex:image url="{!URLFOR($Resource.LeanData__images, 'logo_white_large.png')}" alt="Logo" height="27px"/>
+                </div>
+                <div id="mobile-menu" class="navbar navbar-default mobile-menu">
+                  <button type="button" class="navbar-toggle" data-toggle="offcanvas" data-target="#myNavmenu" data-canvas="body">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                  </button>
+                  <span class="text-menu">FILTERS</span>
+                </div>
+            </div>
+        </section>
+        <!-- / .header -->
+
+    <aside id="filters" class="filters">
+        <div id="left-sidebar" class="left-sidebar" style="padding-top:5px;">
+            <div class="button-toggle" style="float:right;" >
+                <span class="button-sidebar glyphicon glyphicon-chevron-left" aria-hidden="true" style="padding-left: 4px !important;font-weight:normal;padding-top: 2px !important;padding-right: 4px !important;width:30px;height:30px;float:right;"></span>
+            </div>
+            <div class = "sideBarContents" >        
+            <apex:form >
+                <h3>Filter data by :</h3>
+                <div class="form-group top-margin-20">
+                    <select size="1" class="form-control input-lg select-1" name="select" id="select-1" multiple="multiple">
+                        <apex:variable value="{!1}" var="campaignTypeRowNum"/>
+                        <apex:repeat value="{!campaignTypeSelector}" var="CT" >  
+                            <option value="{!campaignTypeRowNum}" class="campaignTypeSelect campaignTypeOption" id="{!CT.Label}" selected="true">{!CT.Label}</option>
+                            <apex:variable var="campaignTypeRowNum" value="{!campaignTypeRowNum + 1}"/>
+                        </apex:repeat>
+                        
+                        <apex:variable value="{!1}" var="campaignTypeRowNum2"/>
+                        <apex:repeat value="{!campaignTypeSelector}" var="CT" >  
+                            <apex:inputcheckbox value="{!CT.isSelected}" styleClass="{!campaignTypeRowNum2}checkBox campaignTypeCheckBox" style="display:none;" />
+                            <apex:variable var="campaignTypeRowNum2" value="{!campaignTypeRowNum2 + 1}"/>
+                        </apex:repeat>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select size="1" class="form-control input-lg select-2" name="select" id="select-2" multiple="multiple">
+                        <apex:repeat value="{!memberTypeSelector}" var="MT" >  
+                            <option value="{!MT.Label}" class="campaignTypeSelect memberTypeSelect" id="{!MT.Label}" selected="true" >{!MT.Label}</option>
+                        </apex:repeat>
+                        <apex:repeat value="{!memberTypeSelector}" var="MT" >  
+                            <apex:inputcheckbox value="{!MT.isSelected}" styleClass="{!SUBSTITUTE(MT.Label,' ','')}memberTypeCheckBox campaignMemberTypeCheckBox" style="display:none;" />
+                        </apex:repeat>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select size="1" class="form-control input-lg select-3" name="select" id="select-3" multiple="multiple">
+                        <apex:variable value="{!1}" var="stageRowNum"/>
+                        <apex:repeat value="{!opportunityStageSelector}" var="OS" >  
+                            <option value="{!stageRowNum}" class="opportunityStageSelect" id="{!OS.Label}" selected="true" >{!OS.Label}</option>
+                            <apex:variable var="stageRowNum" value="{!stageRowNum + 1}"/>
+                        </apex:repeat>
+                        
+                        <apex:variable value="{!1}" var="stageRowNum2"/>
+                        <apex:repeat value="{!opportunityStageSelector}" var="OS" >  
+                            <apex:inputcheckbox value="{!OS.isSelected}" styleClass="{!stageRowNum2}opportunityStageCheckBox opportunityStageCheckBox" style="display:none;" />
+                            <apex:variable var="stageRowNum2" value="{!stageRowNum2 + 1}"/>
+                        </apex:repeat>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select size="1" class="form-control input-lg select-4" name="select" id="select-4" multiple="multiple">
+                        <apex:variable value="{!1}" var="oppTypeRowNum"/>
+                        <apex:repeat value="{!opportunityTypeSelector}" var="OT" >  
+                            <option value="{!oppTypeRowNum}" class="opportunityTypeSelect opportunityTypeOption" id="{!OT.Label}" selected="true" >{!OT.Label}</option>
+                            <apex:variable var="oppTypeRowNum" value="{!oppTypeRowNum + 1}"/>
+                        </apex:repeat>
+                        
+                        <apex:variable value="{!1}" var="oppTypeRowNum2"/>
+                        <apex:repeat value="{!opportunityTypeSelector}" var="OT" >  
+                            <apex:inputcheckbox value="{!OT.isSelected}" styleClass="{!oppTypeRowNum2}opportunityTypeCheckBox opportunityTypeCheckBox" style="display:none;" />
+                            <apex:variable var="oppTypeRowNum2" value="{!oppTypeRowNum2 + 1}"/>
+                        </apex:repeat>
+                    </select>
+                </div>
+                <div class="form-group" >
+                    <div>
+                        <h4>Attribution : </h4>
+                    </div>
+                    <div class="top-margin-10">
+                        <apex:selectList size="1" value="{!touchType}" styleClass="form-control input-lg touchTypeWrapper">
+                            <apex:selectOptions value="{!touchTypeOptions}" />
+                        </apex:selectList>
+                    </div>     
+                    <div class="top-margin-10">
+                        <apex:selectList size="1" value="{!attributionLogic}" styleClass="form-control input-lg attributionLogicWrapper">
+                            <apex:selectOptions value="{!attributionLogicOptions}" />
+                        </apex:selectList>
+                    </div>                    
+                </div>
+                <div class="top-margin-60">
+                    <h4>TIME FRAME:</h4>
+                </div>
+                <div class="form-group top-margin-20 groupByWrapperEl">
+                    <apex:selectList size="1" value="{!groupBy}" styleClass="form-control input-lg">
+                      <apex:selectOptions value="{!groupByOptions}"/>
+                    </apex:selectList> 
+                </div>
+                <div class="form-group dateTypeWrapperEl" >
+                    <apex:selectList size="1" value="{!dateType}" styleClass="form-control input-lg" style="font-size:73% !important;">
+                      <apex:selectOptions value="{!dateTypeOptions}" />
+                    </apex:selectList> 
+                </div>
+                <div class="top-margin-60">
+                    <h4>DATE RANGE <span>( From - To ) :</span></h4>
+                </div>
+                <apex:outputPanel layout="block" id="dateRangePanel" styleClass="row top-margin-20 hideCurrDate">
+                    <div class="form-group col-md-6">
+                        <!-- <input type="text" id="date" style="width:8em;" class="form-control" placeholder="date" /> -->
+                         <input style="height:0px; top:-1000px; position:absolute" type="text" value="" />
+                        <apex:inputText value="{!startDateString}" styleClass="form-control startDate" style="padding: 3px; font-weight: normal;" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <apex:inputText value="{!endDateString}" styleClass="form-control endDate" style="padding: 3px; font-weight: normal;" />
+                    </div>                   
+                </apex:outputPanel>
+                <div class="form-group" >
+                    <apex:selectList size="1" value="{!dateRange}" styleClass="form-control input-lg presetDateRange" style="font-size:73% !important;">
+                      <apex:selectOptions value="{!dateRangeOptions}" />
+                      <apex:actionSupport event="onchange" reRender="dateRangePanel" action="{!setDateRange}" onComplete="datePickerJS();"/>
+                    </apex:selectList> 
+                </div>
+                <apex:commandLink styleClass="btn btn-primary btn-lg btn-block filter-button" rerender="x" value="APPLY FILTERS" onClick="rerenderPageJS();"/>
+            </apex:form>
+            </div>
+        </div>
+        <!-- /.col-md-2 -->
+    </aside>
+    
+    <main>
+        <apex:outputPanel layout="block"  id="main-content" styleClass="main-content">       
+            <section class="header-title container center-align">
+                <h2>Campaign Influence Summary</h2>
+                <div style="float:right; margin-right: 30px;" >
+                <apex:form >
+                <apex:commandlink action="{!downloadPDF}" target="_blank" html-data-toggle="tooltip" title="Download PDF" html-data-placement="left" >
+                    <apex:image url="{!URLFOR($Resource.LeanData__images, 'icon_download.png')}" />
+                </apex:commandLink>
+                </apex:form>
+                </div>
+            </section>
+            <!-- /.header-title -->
+            
+            <section class="content">
+                <div class="container across" >
+                <div class="details">
+                    <apex:outputPanel id="errorTitle" layout="block" style="overflow: hidden;" styleClass="row" >
+                        <apex:outputPanel >
+                            <h4>Total Across Unique Opportunities</h4>
+                        </apex:outputPanel>
+                    </apex:outputPanel>                      
+                <div class="row top-margin-10" style="overflow:visible !important;">
+                    <div class="col-sm-6 col-xs-6 col-md-3 first-box">
+                        <div class="box campaigns" data-placement="bottom" data-toggle="tooltip" title="Total number of campaigns with at least one campaign member touch.">
+                            <div class="title"><apex:outputPanel id="summary1" styleClass="totalActiveCampaignsWrapper"></apex:outputPanel></div>
+                            <div class="sub-title"><br />CAMPAIGNS</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xs-6 col-md-3 mob-padding-l">
+                        <div class="box total" data-placement="bottom" data-toggle="tooltip" title="Total opportunity amount on opportunities with a campaign member touch.">
+                            <div class="title"><apex:outputPanel id="summary2" styleClass="totalPipelineAttributionWrapper"><apex:outputLabel /></apex:outputPanel></div>
+                            <div class="sub-title">PIPELINE<br />ATTRIBUTION</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xs-6 col-md-3 mob-padding-r">
+                        <div class="box opportunity" data-placement="bottom" data-toggle="tooltip" title="Total amount of revenue generated from opportunities closed (won) with a campaign member touch.">
+                            <div class="title"><apex:outputPanel id="summary3" styleClass="totalRevenueAttributionWrapper" ><apex:outputLabel /> </apex:outputPanel></div>
+                            <div class="sub-title">REVENUE<br />ATTRIBUTION</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xs-6 col-md-3 last-box">
+                        <div class="box cost" data-placement="bottom" data-toggle="tooltip" title="Total revenue generated divided by the total campaign cost. Note:  Missing campaign cost affects the total ROI.">
+                            <div class="title"><apex:outputPanel id="summary4" styleClass="totalROIWrapper" ><apex:outputLabel /></apex:outputPanel></div>
+                            <div class="sub-title">TOTAL<br />ROI</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.row -->
+
+                <div class="row" style="height: 0px;">
+                    <div class="data-shown col-md-12">
+                        <div >
+                            <h5>DATA SHOWN INCLUDES â</h5>
+                        </div>
+                        <apex:outputPanel id="selectedFilters" >
+                            <p style="width:800px;">  </p> 
+                        </apex:outputPanel>
+                    </div>
+                    <!-- /.container -->
+                </div>
+                <!-- /.row -->
+                </div>
+                </div>
+            </section>
+            <!-- /.content -->
+            
+            <section class="charts" >
+                <div class="charts-inner container" >
+                    <div class="col-md-6 first-chart">
+                        <div class="chart-title">Total Number of Opportunities and Attribution</div>
+                        <div class="chartBorder" >
+                            <div class="chart-content" style="margin-top:0px;">                       
+                                <apex:outputPanel id="chart1"  >
+                                    <div id="classic" class="classic" style="height:300px;"></div>
+                                </apex:outputPanel>
+                            </div>
+                        </div>
+                    </div>  
+                    <div class="col-md-6 second-chart">
+                        <div class="chart-title">Top Campaign Types</div>
+                        <div class="chartBorder" >
+                            <div class="chart-content"  style="margin-top:0px;">
+                                <apex:outputPanel id="chart2" >
+                                    <div id="topCampaigns" class="topCampaigns" style="height:300px;"></div>
+                                </apex:outputPanel>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- /.charts -->
+            
+          
+            <section class="tables-view container">
+                <!-- Start Details Table ( Grouped by Date ) -->
+                <apex:outputPanel id="detailsPanel" styleClass="detailsPanel" style="display:none">
+                    <div class="table-view-title center-align bottom-margin-40">
+                        <h2 class="groupByLabel"></h2>
+                        <apex:form >
+                            <apex:commandLink styleClass="btn btn-primary filter-button" onClick="showTopCampaigns();" value="View Campaigns" style="float:right; margin-top: -25px;" rerender="x"/>
+                            <apex:commandLink styleClass="btn btn-primary filter-button" onClick="showOpportunities();" value="View Opportunities" style="float:right; margin-top: -25px;" rerender="x"/>
+                        </apex:form> 
+                    </div>
+                <div class="variableTableRows">
+
+                  
+                
+                </div>
+                </apex:outputPanel>
+                <!-- Start Top Campaigns Table ( Grouped by Date ) -->
+                <apex:outputPanel id="topCampaignsPanel" styleClass="topCampaignsPanel">
+                    <div class="table-view-title center-align bottom-margin-40">
+                        <h2>CAMPAIGNS</h2>
+                        <apex:form >
+                            <!-- <apex:commandLink styleClass="btn btn-primary filter-button" onClick="showDetailsTable();" value="View Opportunity Trend" style="float:right;margin-top:-25px;" rerender="x"/> -->
+                            <apex:commandLink styleClass="btn btn-primary filter-button" onClick="showOpportunities();" value="View Opportunities" style="margin-right:-1000px; margin-top: -25px;" rerender="x"/>
+                        </apex:form>
+                    </div>
+
+                    <div class="table-responsive scroll-table">
+                        <table style="width:1330px;" class="table clear-table header-table">
+                            <tr>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="table-responsive table-bottom table-show" style="display:block;" >
+                        <table width="1330" class="table table-striped table-info table-top-campaigns">
+                            <thead>
+                                <tr>
+                                    <th width="315" class="Campaigns_CName"> <a onClick="sortTopCampaigns('C.Name');" style="color:#85c4da; cursor: pointer;" >CAMPAIGN NAME</a></th>
+                                    <th width="170" class="Campaigns_CType"><a onClick="sortTopCampaigns('C.Type');" style="color:#85c4da;cursor: pointer;">CAMPAIGN TYPE</a></th>
+                                    <th width="170" class="Campaigns_CActualCost"><a onClick="sortTopCampaigns('C.ActualCost');" style="color:#85c4da;cursor: pointer;">CAMPAIGN COST</a></th>
+                                    <th width="170" class="sortedDown Campaigns_totalAttribution"><a onClick="sortTopCampaigns('totalAttribution');" style="color:#85c4da;cursor: pointer;">PIPELINE ATTRIBUTION</a></th>
+                                    <th width="170" class="Campaigns_revenueAttribution" ><a onClick="sortTopCampaigns('revenueAttribution');" style="color:#85c4da;cursor: pointer;">REVENUE ATTRIBUTION</a></th>
+                                    <th width="130" class="Campaigns_numberOfCampaignMembers"><a onClick="sortTopCampaigns('numberOfCampaignMembers');" style="color:#85c4da;cursor: pointer;" ># OF CAMPAIGN TOUCHES</a></th>
+                                    <!--<th width="119">New Opportunity Amount</th>
+                                    <th width="119">Existing Opportunity Amount</th>-->
+                                </tr>
+                            </thead>
+                            <tbody class="topCampaignsWrapperEl" style="max-height:740px !important;">
+                               
+                            </tbody>
+                        </table>
+                        <br/>
+                        <apex:form >
+                            <apex:outputPanel styleClass="campaignPaginationPanel" layout="block" style="margin-top:-20px;float:right; margin-right:10px; width:100%; display:none;">
+                                <apex:commandLink styleClass="downloadButton" onClick="downloadCSV('Campaigns');" value="Download" rerender="x"/>
+                                <span class="paginationNumbers" style="float:right;"/>
+                                <!-- <apex:commandLink onClick="changePage('Forward');" value="Next" style="font-size:18px; font-weight: 600;margin-left:6px;" rerender="x"/>    -->                       
+                                </apex:outputPanel>
+                        </apex:form>
+
+                    </div>
+
+                </apex:outputPanel>   
+                <!-- End Top Campaigns Table ( Grouped by Date ) -->
+                <!-- Start Opportunities Table -->
+                <apex:outputPanel id="opportunitiesPanel" styleClass="opportunitiesPanel" style="display:none;">
+                    <div class="table-view-title center-align bottom-margin-40">
+                        <h2>OPPORTUNITIES</h2>
+                        <apex:form >
+                            <!-- <apex:commandLink styleClass="btn btn-primary filter-button" onClick="showDetailsTable();" value="View Opportunity Trend" style="float:right;margin-top:-25px;" rerender="x"/> -->
+                            <apex:commandLink styleClass="btn btn-primary filter-button" onClick="showTopCampaigns();" value="View Campaigns" style="float:right; margin-top: -25px;" rerender="x"/>
+                        </apex:form>
+                    </div>
+
+                    <div class="table-responsive scroll-table">
+                        <table style="width:1330px;" class="table clear-table header-table">
+                            <tr>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="table-responsive table-bottom table-show" style="display:block;" >
+                        <table width="1330" class="table table-striped table-info table-top-campaigns">
+                            <thead>
+                                <tr>
+                                    <th width="215" class="Opportunity_OppName"> <a  onClick="sortOpportunities('Opp.Name');" style="color:#85c4da; cursor: pointer;" >OPPORTUNITY NAME</a></th>
+                                    <th width="170" class="Opportunity_OppStageName"><a onClick="sortOpportunities('Opp.StageName');" style="color:#85c4da;cursor: pointer;">OPPORTUNITY STAGE</a></th>
+                                    <th width="145" class="Opportunity_OppTouchCount"><a onClick="sortOpportunities('Opp.TouchCount');" style="color:#85c4da;cursor: pointer;"># OF TOUCHES</a></th>
+                                    <th width="130" class="sortedDownOpportunity Opportunity_OppAmount"><a onClick="sortOpportunities('Opp.Amount');" style="color:#85c4da;cursor: pointer;" >AMOUNT</a></th>
+                                    <th width="170" class="Opportunity_OppCreatedDate"><a onClick="sortOpportunities('Opp.CreatedDate');" style="color:#85c4da;cursor: pointer;">CREATED DATE</a></th>
+                                    <th width="170" class="Opportunity_OppCloseDate"><a onClick="sortOpportunities('Opp.CloseDate');" style="color:#85c4da;cursor: pointer;">CLOSE DATE</a></th>
+                                    <th width="170" class="Opportunity_OppType"><a onClick="sortOpportunities('Opp.Type');" style="color:#85c4da;cursor: pointer;">OPPORTUNITY TYPE</a></th>
+                                    <!--<th width="119">New Opportunity Amount</th>
+                                    <th width="119">Existing Opportunity Amount</th>-->
+                                </tr>
+                            </thead>
+                            <tbody class="opportunitiesWrapperEl" style="max-height:740px !important;">
+                               
+                            </tbody>
+                        </table>
+                        <br/>
+                        <apex:form >
+                            <apex:outputPanel styleClass="opportunityPaginationPanel" layout="block" style="margin-top:-20px;float:right; margin-right:10px;width:100%; display:none;">
+                                <!-- <apex:commandLink onClick="changePage('Backward');" value="Back" style="font-size:18px;font-weight:600;margin-right:6px;" rerender="x"/>     -->                            
+                                <apex:commandLink styleClass="downloadButton" onClick="downloadCSV('Opportunities');" value="Download" rerender="x"/>
+
+                                <span class="opportunityPaginationNumbers" style="float:right;" />
+                                <!-- <apex:commandLink onClick="changePage('Forward');" value="Next" style="font-size:18px; font-weight: 600;margin-left:6px;" rerender="x"/>    -->                       
+                                </apex:outputPanel>
+                        </apex:form>
+
+                    </div>
+
+                </apex:outputPanel>   
+                <!-- End Opportunites Table -->
+            </section>
+        </apex:outputPanel>
+        <!-- /.main-content --> 
+    </main>
+    </div>
+    <!-- /.page-content -->
+    <apex:outputPanel id="refreshJS" >
+    <script>
+        function drawTopCampaignTypesChart(){
+            //alert( ' Start Top Campaigns' );
+            var topCampaignsChart;
+            var topCampaignsDiv = j$('.topCampaigns').get(0);
+            
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Campaign Type');
+                        
+           //alert( ' Top Campaigns w/ JS' );
+           var iter = 5;
+           var modifier = 'Attribution (Thousands)';
+           console.log('begin top campaigns iter' );
+
+           var topCampaignTypesList = [];
+
+            for (var key in topCampaignTypes ) {
+                topCampaignTypesList.push( topCampaignTypes[key] );
+            }
+
+           if( topCampaignTypesList != null ){
+                topCampaignTypesList.sort(function(a, b){
+                 return b.pipelineAttribution - a.pipelineAttribution;
+                })
+                topCampaignTypesList.sort();
+                console.log( 'Top Campaign Types List' );
+                console.log( topCampaignTypesList );
+
+               var highestValue = 0;
+               var divider = 1000;
+                if( topCampaignTypesList.length < iter )
+                    iter = topCampaignTypesList.length;
+                    
+                  for(var i = 0; i < iter; i++) {
+                    if( topCampaignTypesList[i].pipelineAttribution > highestValue )
+                        highestValue = topCampaignTypesList[i].pipelineAttribution; 
+                  }
+                
+                  if( highestValue > 999999999 ){
+                      divider = 1000000000;
+                      modifier = 'Attribution (Billions)';
+                  }
+                  else if( highestValue > 999999 ){
+                      divider = 1000000;
+                      modifier = 'Attribution (Millions)';
+                  }
+                  
+                  data.addColumn('number', modifier );
+                  data.addColumn({type: 'string', role: 'annotation'});
+                for(var i = 0; i < iter; i++) {
+                  data.addRow([ '' , Math.round(topCampaignTypesList[i].pipelineAttribution/divider * 100) / 100, topCampaignTypesList[i].Type ]  );
+                }
+              
+            } 
+
+          var options = {
+            colors: ['#6ab4c9', '#b0dd08'],
+            legend: { position: 'top' },
+            backgroundColor : '#f5f5f5',
+            bar: { groupWidth: "60%" },
+            animation:{
+                duration: 1000,
+                easing: 'out',
+                startup: 'true'
+              },
+            annotations: {
+                textStyle: {
+                  fontSize: 9,
+                  color: 'black'
+                }
+            },
+            hAxis: {
+              title: 'Total Pipeline Attribution',
+              minValue: 0,
+              textStyle: {
+                bold: true,
+                fontSize: 14,
+                italic: false,
+                color: '#4d4d4d'
+              },
+              viewWindow:{
+                        min:0
+                  },
+              titleTextStyle: {
+                bold: true,
+                fontSize: 14,
+                italic: false,
+                color: '#4d4d4d'
+              }
+            },
+            vAxis: {
+              title: 'Campaign Type',
+              textStyle: {
+                fontSize: 14,
+                bold: true,
+                italic: false,
+                color: '#4d4d4d'
+              },
+              titleTextStyle: {
+                fontSize: 14,
+                bold: true,
+                italic: false,
+                color: '#4d4d4d'
+              }
+            }
+          };
+          var chart = new google.visualization.BarChart(topCampaignsDiv);
+          chart.draw(data, options);
+      }
+        function drawTopCampaignsChart(){
+            //alert( ' Start Top Campaigns' );
+            var topCampaignsChart;
+            var topCampaignsDiv = j$('.topCampaigns').get(0);
+            
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Campaign');
+            
+            
+      
+           //alert( ' Top Campaigns w/ JS' );
+           var iter = 5;
+           var modifier = 'Attribution (Thousands)';
+           console.log('begin top campaigns iter' );
+           if( allTopCampaigns != null ){
+               var highestValue = 0;
+               var divider = 1000;
+                if( allTopCampaigns.length < iter )
+                    iter = allTopCampaigns.length;
+                    
+                  for(var i = 0; i < iter; i++) {
+                    if( allTopCampaigns[i].totalAttribution > highestValue )
+                        highestValue = allTopCampaigns[i].totalAttribution; 
+                  }
+                
+                  if( highestValue > 999999999 ){
+                      divider = 1000000000;
+                      modifier = 'Attribution (Billions)';
+                  }
+                  else if( highestValue > 999999 ){
+                      divider = 1000000;
+                      modifier = 'Attribution (Millions)';
+                  }
+                  
+                  data.addColumn('number', modifier );
+                  data.addColumn({type: 'string', role: 'annotation'});
+                for(var i = 0; i < iter; i++) {
+                  data.addRow([ '' , Math.round(allTopCampaigns[i].totalAttribution/divider * 100) / 100, allTopCampaigns[i].C.Name ]  );
+                }
+              
+            } 
+
+          var options = {
+            colors: ['#6ab4c9', '#b0dd08'],
+            legend: { position: 'top' },
+            backgroundColor : '#f5f5f5',
+            bar: { groupWidth: "60%" },
+            animation:{
+                duration: 1000,
+                easing: 'out',
+                startup: 'true'
+              },
+            annotations: {
+                textStyle: {
+                  fontSize: 9,
+                  color: 'black'
+                }
+            },
+            hAxis: {
+              title: 'Total Pipeline Attribution',
+              minValue: 0,
+              textStyle: {
+                bold: true,
+                fontSize: 14,
+                italic: false,
+                color: '#4d4d4d'
+              },
+              viewWindow:{
+                        min:0
+                  },
+              titleTextStyle: {
+                bold: true,
+                fontSize: 14,
+                italic: false,
+                color: '#4d4d4d'
+              }
+            },
+            vAxis: {
+              title: 'Campaign',
+              textStyle: {
+                fontSize: 14,
+                bold: true,
+                italic: false,
+                color: '#4d4d4d'
+              },
+              titleTextStyle: {
+                fontSize: 14,
+                bold: true,
+                italic: false,
+                color: '#4d4d4d'
+              }
+            }
+          };
+          var chart = new google.visualization.BarChart(topCampaignsDiv);
+          chart.draw(data, options);
+      }
+    
+        
+        function drawChart( ) {
+          var classicChart;
+            
+          var classicDiv = j$('.classic').get(0);
+    
+          var data = new google.visualization.DataTable();
+          data.addColumn('string', 'Month');
+          
+          
+          //alert( ' At IF ' );
+          
+          var frontEndReport = cC.frontEndReport;
+          var modifier = 'Attribution (Thousands)';
+
+          if( frontEndReport != null ){  
+              var highestValue = 0;
+              var divider = 1000;
+              for(var i = 0; i < frontEndReport.length; i++) {
+                  if( frontEndReport[i].totalAttribution > highestValue )
+                      highestValue = frontEndReport[i].totalAttribution; 
+              }
+              if( highestValue > 999999999 ){
+                  divider = 1000000000;
+                  modifier = 'Attribution (Billions)';
+              }
+              else if( highestValue > 999999 ){
+                  divider = 1000000;
+                  modifier = 'Attribution (Millions)';
+              }
+              
+              data.addColumn('number', modifier );
+              data.addColumn('number', "Number of Opportunities");
+              
+              for(var i = 0; i < frontEndReport.length; i++) {
+                  data.addRow([frontEndReport[i].groupName , Math.round(frontEndReport[i].totalAttribution/divider * 100) / 100 ,frontEndReport[i].numberOfOpportunities  ]  );
+              }
+          }          
+          
+              var classicOptions = {
+                // Gives each series an axis that matches the vAxes number below.
+                series: {
+                  0: {
+                      targetAxisIndex: 0
+                      },
+                  1: {targetAxisIndex: 1, type: "line"}
+                },
+                seriesType: "bars",
+                vAxes: {
+                  // Adds titles to each axis.
+                  0: {title: 'Pipeline Attribution',
+                      textStyle: {
+                        fontSize: 14,
+                        bold: true,
+                        italic: false,
+                        color: '#4d4d4d'
+                      },
+                      viewWindow:{
+                            min:0
+                      },
+                      titleTextStyle: {
+                        fontSize: 14,
+                        bold: true,
+                        italic: false,
+                        color: '#4d4d4d'
+                      }
+                  },
+                  1: {title: 'Number of Opportunities',
+                      textStyle: {
+                        fontSize: 14,
+                        bold: true,
+                        italic: false,
+                        color: '#4d4d4d'
+                      },
+                      viewWindow:{
+                            min:0
+                      },
+                      titleTextStyle: {
+                        fontSize: 14,
+                        bold: true,
+                        italic: false,
+                        color: '#4d4d4d'
+                      }
+                    }
+                },
+                animation:{
+                    duration: 1000,
+                    easing: 'out',
+                    startup: 'true'
+                  },
+                hAxis: {
+                  gridlines:{ color: 'transparent' },
+                  ticks: [
+                         ]
+                },
+                fontName : 'Open Sans',
+                pointSize: 10,
+                backgroundColor : '#f5f5f5',
+                bar: { groupWidth: "40%" },
+                colors: ['#6ab4c9', '#b0dd08'],
+              };
+              
+             
+              for(var i = 0; i < frontEndReport.length; i++) {
+                  classicOptions.hAxis.ticks.push( new Date( frontEndReport[i].year, frontEndReport[i].month)  );
+              }
+
+              classicChart = new google.visualization.ComboChart(classicDiv);
+              classicChart.draw(data, classicOptions);
+              console.log('call top campaigns');
+              drawTopCampaignTypesChart();
+              //drawTopCampaignsChart();
+            }
+            
+        
+    </script>
+    </apex:outputPanel>
+</div>
+    <!-- jQuery Version 1.11.1 -->
+     <apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/jquery.js')}"/> 
+     <apex:includeScript value="{!URLFOR($Resource.LeanData__JqueryUI, 'jquery-ui-1.11.4.custom/jquery-ui.min.js')}"  />
+     <!-- <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script> -->
+ 
+     
+    <!-- Bootstrap Core JavaScript -->
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/bootstrap.js')}"/> 
+    
+    <!-- JavaScript -->
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/bootstrap-multiselect.js')}"/> 
+    <!-- <apex:includeScript value="{!URLFOR($Resource.CampaignInfluenceReportResources, 'js/custom.js')}"/> -->
+
+    <!-- Google Charts -->
+    <script type="text/javascript" src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1.1','packages':['line', 'corechart']}]}"></script>
+    
+    <script>
+    //var cC;
+    j$ = jQuery.noConflict();
+    j$(document).ready(function() {
+        j$('[data-toggle="tooltip"]').tooltip(); 
+        j$(".left-sidebar").css({'height':(j$(".page-content").height() - 40 +'px')});
+        j$('.select-1').multiselect({
+            nonSelectedText: 'Campaign Type',
+            numberDisplayed: 1,
+            includeSelectAllOption: true,
+            nSelectedText: ' Campaign Types',
+            allSelectedText: 'Campaign Type - All',
+            selectAllNumber: false,
+            onChange: function(option, checked, select) {
+                if( option != null ){
+                    var checkClassName = '.' + j$(option).val().replace(/ /g,'') + 'checkBox';
+                    j$( checkClassName  ).prop('checked', checked);
+                }
+                else{
+                    j$( '.campaignTypeCheckBox' ).prop('checked', checked);
+                }
+            }
+        });
+        j$('.select-2').multiselect({
+            nonSelectedText: 'Campaign Member Type',
+            numberDisplayed: 1,
+            includeSelectAllOption: true,
+            nSelectedText: ' Member Types',
+            allSelectedText: 'Member Type - All',
+            selectAllNumber: false,
+            onChange: function(option, checked, select) {
+                if( option != null ){
+                    var checkClassName = '.' + j$(option).val().replace(/ /g,'') + 'memberTypeCheckBox';
+                    j$( checkClassName  ).prop('checked', checked);
+                }
+                else{
+                    j$( '.campaignMemberTypeCheckBox' ).prop('checked', checked);
+                }
+            }
+        });
+        
+        j$('.select-3').multiselect({
+            nonSelectedText: 'Opportunity Stage',
+            numberDisplayed: 1,
+            includeSelectAllOption: true,
+            nSelectedText: ' Opportunity Stages',
+            allSelectedText: 'Opportunity Stage - All',
+            selectAllNumber: false,
+            onChange: function(option, checked, select) {
+                if( option != null ){
+                    var checkClassName = '.' + j$(option).val().replace(/ /g,'') + 'opportunityStageCheckBox';
+                    j$( checkClassName  ).prop('checked', checked);
+                }
+                else{
+                    j$( '.opportunityStageCheckBox' ).prop('checked', checked);
+                }
+            }
+        });
+        
+        j$('.select-4').multiselect({
+            nonSelectedText: 'Opportunity Type',
+            numberDisplayed: 0,
+            includeSelectAllOption: true,
+            nSelectedText: ' Opportunity Types',
+            allSelectedText: 'Opportunity Type - All',
+            selectAllNumber: false,
+            onChange: function(option, checked, select) {
+                if( option != null ){
+                    var checkClassName = '.' + j$(option).val().replace(/ /g,'') + 'opportunityTypeCheckBox';
+                    j$( checkClassName  ).prop('checked', checked);
+                }
+                else{
+                    j$( '.opportunityTypeCheckBox' ).prop('checked', checked);
+                }
+            }
+        });
+        
+        j$(".campaignTypeSelect").click(function(){
+        });       
+        
+        j$(function() {
+            datePickerJS();
+            cC = new CampaignController();
+        });
+      
+      var now = new Date();
+      var m = ( now.getUTCMonth() + 1).toString();
+      var d = ( now.getUTCDate()).toString();
+
+      if ( m.length == 1 )
+          m = '0' + m;
+      if ( d.length == 1 )
+          d = '0' + d;    
+      var yearBeginning = '01/01/' + now.getUTCFullYear();
+      var yearEnd = m + '/' + d + '/' + now.getUTCFullYear();
+      //j$('.startDate').val( yearBeginning );
+      //j$('.endDate').val( yearEnd );
+      
+      // Toggle sidebar
+        j$('.button-toggle').click(function(){
+            j$('.sideBarContents').toggle();
+            j$('.left-sidebar').toggleClass('use-sidebar');
+            j$('.main-content').toggleClass('use-sidebar-main');
+        });
+        
+        j$(".button-sidebar").click(function(){
+            j$(this).toggleClass('glyphicon-chevron-right');
+        });
+    });   
+    function datePickerJS(){
+        j$( ".startDate" ).datepicker({
+          defaultDate: "+1w",
+          changeMonth: true,
+          changeYear: true,
+          onClose: function( selectedDate ) {
+            j$( ".endDate" ).datepicker( "option", "minDate", selectedDate );
+          },
+          onSelect: function( selectedDate ) {          
+            j$( ".presetDateRange" ).val("Custom");
+          }
+        });
+        j$( ".endDate" ).datepicker({
+          defaultDate: "+1w",
+          changeMonth: true,
+          changeYear: true,
+          onClose: function( selectedDate ) {
+            j$( ".startDate" ).datepicker( "option", "maxDate", selectedDate );
+          },
+          onSelect: function( selectedDate ) {            
+            j$( ".presetDateRange" ).val("Custom");
+          }
+        });
+    }
+
+
+    function bindJS(){
+        //alert( ' bind JS begin ' );
+        j$(".mobile-menu").click(function(){
+            j$(".filters").fadeToggle('slow');
+        });
+        j$(".table-head").click(function(){
+            j$(this).parent().parent().parent().parent().parent().next(".table-show").fadeToggle('fast');
+            j$(this).toggleClass('glyphicon-minus');
+        });
+        /*** SCROLL ***/
+        var subCatContainer = j$(".scroll-table");
+        
+        subCatContainer.scroll(function() {
+            subCatContainer.scrollLeft(j$(this).scrollLeft());
+        });
+        
+       
+        drawChart( );
+        j$(".left-sidebar").css({'height':(j$(".page-content").height() - 40 +'px')});
+    }
+    
+    function showTopCampaigns(){
+        j$(".detailsPanel").hide();
+        j$(".topCampaignsPanel").show();
+        j$(".opportunitiesPanel").hide();
+    }
+    
+    function showDetailsTable(){
+        j$(".detailsPanel").show();
+        j$(".topCampaignsPanel").hide();
+        j$(".opportunitiesPanel").hide();
+    }
+    
+    function showOpportunities(){
+        j$(".detailsPanel").hide();
+        j$(".topCampaignsPanel").hide();
+        j$(".opportunitiesPanel").show();
+    }
+    
+    google.load('visualization', '1.1', {packages: ['line', 'corechart']});
+    
+    </script>
+
+</body>
+
+</apex:page>
