@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fieldUpdates>
+        <fullName>CH_GridBuddy_Schedule_Name</fullName>
+        <field>CH_Schedule_Name__c</field>
+        <formula>CH_Workgroup_Schedule__r.Name</formula>
+        <name>CH_GridBuddy_Schedule_Name</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>CH_GridBuddy_Workgroup_Id</fullName>
+        <field>CH_Workgroup_Id__c</field>
+        <formula>CASESAFEID(CH_Workgroup_Schedule__r.CH_Workgroup__c)</formula>
+        <name>CH_GridBuddy_Workgroup_Id</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>CH_GridBuddy_Workgroup_Name</fullName>
+        <field>CH_Workgroup_Name__c</field>
+        <formula>CH_Workgroup_Schedule__r.CH_Workgroup__r.Name</formula>
+        <name>CH_GridBuddy_Workgroup_Name</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+</Workflow>
