@@ -1,0 +1,266 @@
+<aura:component implements="forceCommunity:availableForAllPageTypes" controller="NCP_Favourites_COM">
+
+    <aura:attribute name='allItems' type='Object'/>
+    <aura:attribute name='isAuth' type='Boolean' default='false'/>
+    <aura:attribute name='hasEntitledProducts' type='Boolean' default='false'/>
+    <aura:attribute name="isInitialised" type="Boolean" default="false"/>
+    <aura:attribute name='itemsReady' type='Boolean' default='false'/>
+    <aura:attribute name='currentTab' type='String' default='products'/>
+    <aura:attribute name='tabClassesBaseSet' type='String' default='slds-page-header nok-variant slds-show_inline-block ncp-text-color-primary-brand '/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <!-- Area is only required if user has entitlements (they must be authenticated to have entitlements -->
+    <aura:if isTrue="{!v.hasEntitledProducts}">
+        <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread ncp_bottom_border">
+            <div class="slds-col slds-grid">
+                <div id="products" class="{!v.currentTab == 'products' ? v.tabClassesBaseSet : v.tabClassesBaseSet + 'ncp-text-color-disabled'}"  onclick="{!c.tabClick}">
+                    <div class="slds-grid slds-grid_vertical-align-center">
+                        <div class="slds-m-right_x-small">
+                            <lightning:icon class="{!v.currentTab == 'products' ? 'slds-icon-background-brand' : 'slds-icon-background-brand slds-icon-is-disabled'}"
+                                            iconName="standard:product" size="medium" alternativeText="Favorite Products"/>
+                        </div>
+                        <div class="">
+                            <h1 class="ncp-text-headline_three"><span>Favorite</span><span> Products</span></h1>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div id="services" class="{!v.currentTab == 'products' ? v.tabClassesBaseSet + 'ncp-text-color-disabled' : v.tabClassesBaseSet}" onclick="{!c.tabClick}">
+                    <div class="slds-grid slds-grid_vertical-align-center">
+                        <div class="slds-m-right_x-small">
+                            <lightning:icon class="{!v.currentTab == 'products' ? 'slds-icon-background-brand slds-icon-shrink_small slds-icon-is-disabled' : 'slds-icon-background-brand slds-icon-shrink_small'}"
+                                            iconName="utility:user_role" size="small" alternativeText="Favorite Services"/>
+                        </div>
+                        <div>
+                            <h1 class="ncp-text-headline_three"><span>Favorite</span><span> Services</span></h1>
+                        </div>
+                    </div>
+                </div> -->
+            </div>
+            <div class="slds-col slds-shrink-none slds-text-align_right">
+                <aura:if isTrue="{!v.isAuth}" >
+                    <div class="{!v.currentTab == 'products' ? '' : 'slds-hidden'}">
+                        <lightning:buttonGroup class="slds-show_medium">
+                            <lightning:button label="Edit" onclick="{!c.editFavoriteProduct}" />
+                            <lightning:button label="See All" onclick="{!c.seeAllFavoriteProduct}" />
+                        </lightning:buttonGroup>
+                        <lightning:buttonGroup class="slds-hide_medium">
+                            <lightning:button label="Edit" onclick="{!c.editFavoriteProduct}" variant="base" class="slds-m-right_x-small"/>
+                            <lightning:button label="See All" onclick="{!c.seeAllFavoriteProduct}" variant="base"/>
+                        </lightning:buttonGroup>
+                    </div>
+                </aura:if>
+            </div>
+        </div>
+
+        <!-- Tabbed content area -->
+        <div class="ncp-tabbed-content-area">
+            <aura:if isTrue="{!v.currentTab != 'products'}" >
+                <div class="slds-m-top_medium">
+                    <c:NCP_LoginPrompt myType="underConstruction"/>
+                </div>
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!v.isInitialised}" >
+                        <aura:if isTrue="{!v.isAuth}" >
+                            <!-- Here if authorised show the favourite products -->
+                            <c:NCP_FavoriteProductsCmp />
+                            <!-- Otherwise show the login prompt -->
+                            <aura:set attribute="else">
+                                <div class="slds-m-top_medium">
+                                    <c:NCP_LoginPrompt myType="loginForFavouriteProducts"/>
+                                </div>
+                            </aura:set>
+                        </aura:if>
+                    </aura:if>
+                </aura:set>
+            </aura:if>
+        </div>
+
+    </aura:if>
+    <!--END Tabbed content area -->
+
+    <div class="slds-p-bottom_xx-large">
+        <aura:iteration var="category" items="{!v.allItems}">
+            <aura:if isTrue="{#category.links.length}">
+
+                    <div class="{!category.isOpen ? 'slds-section slds-is-open' : 'slds-section'}">
+                        <h3 class="slds-section__title">
+                            <button id="{#category.value}" onclick="{!c.toggleSection}" aria-controls="expando-self-service" aria-expanded="true" class="slds-button slds-section__title-action">
+                                <lightning:icon iconName="{!category.isOpen ? 'utility:chevrondown' : 'utility:chevronright'}" size="x-small"/>
+                                <span class="slds-truncate slds-m-left_x-small" title="{#$Label.c.NCP_favourites_section_heading_self_service}">{#category.title}</span>
+                            </button>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content" id="expando-self-service">
+                            <div class="slds-grid slds-wrap">
+                                <aura:if isTrue="{!v.itemsReady}" >
+                                <aura:iteration var="item" items="{#category.links}">
+                                    <div class="slds-col_padded slds-size_1-of-1">
+                                        <div class="slds-media slds-p-vertical_x-small">
+                                            <div class="slds-media__figure">
+                                                <lightning:icon class="slds-icon-background-inverse slds-icon-shrink_small" iconName="{!'utility:' + item.NCP_Image_Name__c}" size="medium"/>
+                                            </div>
+                                            <div class="slds-media__body slds-p-top_x-small" onclick="{!c.itemSelected}">
+                                                <aura:if isTrue="{!item.NCP_CH_authorised_contact_only__c}">
+                                                    <a href="javascript:void(0);" data-item-url="{#item.NCP_URL__c}" class="ncp-text-color-primary-brand">
+                                                        {#item.NCP_Title__c}
+                                                    </a>
+                                                    <aura:set attribute="else">
+                                                        <lightning:formattedUrl value="{!item.NCP_URL__c}" tooltip="{!'View details of ' + item.NCP_Title__c}" label="{!item.NCP_Title__c}" class="ncp-standard-link" target="_blank" />
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </aura:iteration>
+                                </aura:if>
+                            </div>
+                        </div>
+                    </div>
+
+            </aura:if>
+        </aura:iteration>
+
+
+
+        <!-- <aura:if isTrue="{!v.allItems.selfService.length}">
+            <div class="{!v.selfServiceOpen ? 'slds-section slds-is-open' : 'slds-section'}">
+                <h3 class="slds-section__title">
+                    <button id="selfService" onclick="{!c.toggleSection}" aria-controls="expando-self-service" aria-expanded="true" class="slds-button slds-section__title-action">
+                        <lightning:icon iconName="{!v.selfServiceOpen ? 'utility:chevrondown' : 'utility:chevronright'}" size="x-small"/>
+                        <span class="slds-truncate slds-m-left_x-small" title="{#$Label.c.NCP_favourites_section_heading_self_service}">{#$Label.c.NCP_favourites_section_heading_self_service}</span>
+                    </button>
+                </h3>
+                <div aria-hidden="false" class="slds-section__content" id="expando-self-service">
+                    <div class="slds-grid slds-wrap">
+                        <aura:if isTrue="{!v.itemsReady}" >
+                            <aura:iteration var="item" items="{!v.allItems.selfService}">
+                                <div class="slds-col_padded slds-size_1-of-1">
+                                    <div class="slds-media slds-p-vertical_x-small">
+                                        <div class="slds-media__figure">
+                                            <lightning:icon class="slds-icon-background-inverse slds-icon-shrink_small" iconName="{!'utility:' + item.NCP_Image_Name__c}" size="medium"/>
+                                        </div>
+                                        <div class="slds-media__body slds-p-top_x-small" onclick="{!c.itemSelected}">
+                                            <aura:if isTrue="{!item.NCP_CH_authorised_contact_only__c}">
+                                                <a href="javascript:void(0);" data-item-url="{#item.NCP_URL__c}" class="ncp-text-color-primary-brand">
+                                                    {#item.NCP_Title__c}
+                                                </a>
+                                                <aura:set attribute="else">
+                                                    <lightning:formattedUrl value="{!item.NCP_URL__c}" tooltip="{!'View details of ' + item.NCP_Title__c}" label="{!item.NCP_Title__c}" class="ncp-standard-link" target="_blank" />
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aura:iteration>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.allItems.toolsAndResources.length}">
+            <div class="{!v.toolsAndResourcesOpen ? 'slds-section slds-is-open' : 'slds-section'}">
+                <h3 class="slds-section__title">
+                    <button id="toolsAndResources" onclick="{!c.toggleSection}" aria-controls="expando-tools-and-resources" aria-expanded="true" class="slds-button slds-section__title-action">
+                        <lightning:icon iconName="{!v.toolsAndResourcesOpen ? 'utility:chevrondown' : 'utility:chevronright'}" size="x-small"/>
+                        <span class="slds-truncate slds-m-left_x-small" title="{#$Label.c.NCP_favourites_section_heading_tools_resources}">{#$Label.c.NCP_favourites_section_heading_tools_resources}</span>
+                    </button>
+                </h3>
+                <div aria-hidden="false" class="slds-section__content" id="expando-tools-and-resources">
+                    <div class="slds-grid slds-wrap">
+                        <aura:if isTrue="{!v.itemsReady}" >
+                            <aura:iteration var="item" items="{!v.allItems.toolsAndResources}">
+                                <div class="slds-col_padded slds-size_1-of-1">
+                                    <div class="slds-media slds-p-vertical_x-small">
+                                        <div class="slds-media__figure">
+                                            <lightning:icon class="slds-icon-background-inverse slds-icon-shrink_small" iconName="{!'utility:' + item.NCP_Image_Name__c}" size="medium"/>
+                                        </div>
+                                        <div class="slds-media__body slds-p-top_x-small" onclick="{!c.itemSelected}">
+                                            <aura:if isTrue="{!item.NCP_CH_authorised_contact_only__c}">
+                                                <a href="javascript:void(0);" data-item-url="{#item.NCP_URL__c}" class="ncp-text-color-primary-brand">
+                                                    {#item.NCP_Title__c}
+                                                </a>
+                                                <aura:set attribute="else">
+                                                    <lightning:formattedUrl value="{!item.NCP_URL__c}" tooltip="{!'View details of ' + item.NCP_Title__c}" label="{!item.NCP_Title__c}" class="ncp-standard-link" target="_blank" />
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aura:iteration>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.allItems.training.length}">
+            <div class="{!v.trainingOpen ? 'slds-section slds-is-open' : 'slds-section'}">
+                <h3 class="slds-section__title">
+                    <button id="training" onclick="{!c.toggleSection}" aria-controls="expando-training" aria-expanded="true" class="slds-button slds-section__title-action">
+                        <lightning:icon iconName="{!v.trainingOpen ? 'utility:chevrondown' : 'utility:chevronright'}" size="x-small"/>
+                        <span class="slds-truncate slds-m-left_x-small" title="{#$Label.c.NCP_favourites_section_heading_training}">{#$Label.c.NCP_favourites_section_heading_training}</span>
+                    </button>
+                </h3>
+                <div aria-hidden="false" class="slds-section__content" id="expando-training">
+                    <div class="slds-grid slds-wrap">
+                        <aura:if isTrue="{!v.itemsReady}" >
+                            <aura:iteration var="item" items="{!v.allItems.training}">
+                                <div class="slds-col_padded slds-size_1-of-1">
+                                    <div class="slds-media slds-p-vertical_x-small">
+                                        <div class="slds-media__figure">
+                                            <lightning:icon class="slds-icon-background-inverse slds-icon-shrink_small" iconName="{!'utility:' + item.NCP_Image_Name__c}" size="medium"/>
+                                        </div>
+                                        <div class="slds-media__body slds-p-top_x-small" onclick="{!c.itemSelected}">
+                                            <aura:if isTrue="{!item.NCP_CH_authorised_contact_only__c}">
+                                                <a href="javascript:void(0);" data-item-url="{#item.NCP_URL__c}" class="ncp-text-color-primary-brand">
+                                                    {#item.NCP_Title__c}
+                                                </a>
+                                                <aura:set attribute="else">
+                                                    <lightning:formattedUrl value="{!item.NCP_URL__c}" tooltip="{!'View details of ' + item.NCP_Title__c}" label="{!item.NCP_Title__c}" class="ncp-standard-link" target="_blank" />
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aura:iteration>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.allItems.supportPolicies.length}">
+            <div class="{!v.supportPoliciesOpen ? 'slds-section slds-is-open' : 'slds-section'}">
+                <h3 class="slds-section__title">
+                    <button id="supportPolicies" onclick="{!c.toggleSection}" aria-controls="expando-support-policies" aria-expanded="true" class="slds-button slds-section__title-action">
+                        <lightning:icon iconName="{!v.supportPoliciesOpen ? 'utility:chevrondown' : 'utility:chevronright'}" size="x-small"/>
+                        <span class="slds-truncate slds-m-left_x-small" title="{#$Label.c.NCP_favourites_section_heading_support_policies}">{#$Label.c.NCP_favourites_section_heading_support_policies}</span>
+                    </button>
+                </h3>
+                <div aria-hidden="false" class="slds-section__content" id="expando-support-policies">
+                    <div class="slds-grid slds-wrap">
+                        <aura:if isTrue="{!v.itemsReady}" >
+                            <aura:iteration var="item" items="{!v.allItems.supportPolicies}">
+                                <div class="slds-col_padded slds-size_1-of-1">
+                                    <div class="slds-media slds-p-vertical_x-small">
+                                        <div class="slds-media__figure">
+                                            <lightning:icon class="slds-icon-background-inverse slds-icon-shrink_small" iconName="{!'utility:' + item.NCP_Image_Name__c}" size="medium"/>
+                                        </div>
+                                        <div class="slds-media__body slds-p-top_x-small" onclick="{!c.itemSelected}">
+                                            <aura:if isTrue="{!item.NCP_CH_authorised_contact_only__c}">
+                                                <a href="javascript:void(0);" data-item-url="{#item.NCP_URL__c}" class="ncp-text-color-primary-brand">
+                                                    {#item.NCP_Title__c}
+                                                </a>
+                                                <aura:set attribute="else">
+                                                    <lightning:formattedUrl value="{!item.NCP_URL__c}" tooltip="{!'View details of ' + item.NCP_Title__c}" label="{!item.NCP_Title__c}" class="ncp-standard-link" target="_blank" />
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aura:iteration>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </aura:if> -->
+    </div>
+</aura:component>

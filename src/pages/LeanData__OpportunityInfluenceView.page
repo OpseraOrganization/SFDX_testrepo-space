@@ -1,0 +1,106 @@
+<apex:page standardcontroller="Opportunity" extensions="LeanData.OpportunityInfluenceViewController" showHeader="false" sidebar="false" >
+<apex:includeScript value="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"/>
+<c:googleAnalytics analyticsCategory="Reporting" />
+<apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+<apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__angela_app, 'styles.css')}"/> 
+<style>
+    .PBT{
+        border-collapse:collapse;
+    }
+    .PBTHead td{
+        background: var(--lt-grey-2); 
+        padding: 5px; 
+        border: 1px solid var(--lt-grey-2); 
+        text-align: center;
+        font-weight: bold;
+        color: #000;
+    }
+    .PBTRow td{
+        background : white; padding 5 px; border: 1px solid var(--lt-grey-2); 
+        text-align: center;
+    }
+    a{
+        text-decoration:none;
+    }
+    a:hover{
+        text-decoration : underline;
+    }
+
+    .output-panel-message {
+        color: var(--dk-grey-2);
+    }
+</style>
+    <apex:form >       
+    <apex:pageBlock id="influenceView" >
+        <img src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}" class="leandata_logo_header" height="20px" style="vertical-align:bottom;" /> &nbsp;<span style="font-weight:bold;font-size:120%;" > Campaign Influence on this Opportunity </span>
+        <div style="float:right; margin-right: 10px; margin-top: 10px; color: #015ba7;">
+          <apex:outputPanel rendered="{!showSetting}">
+            <apex:outputLink value="{!$Page.LeanData__selectFields}?mode=OpportunityInfluenceView" target="_top" styleClass="action_link" style="color: #015ba7;">Select Fields</apex:outputLink>
+            <apex:outputLabel value=" - " />
+            <apex:outputLink value="{!$Page.LeanData__CampaignToOpportunity}" target="_blank" style="color: #015ba7;">Update Report</apex:outputLink>
+          </apex:outputPanel>
+        </div>
+        <br/>
+
+        <apex:pageBlockButtons location="bottom">
+            <!-- <a  target="_top" href="/apex/LeanData__CampaignInfluenceSummary" style="float:right; margin-right: 10px; margin-top: 10px;color:blue;"> View All Campaigns </a> -->
+            <apex:outputpanel id="viewHideButtonsPanel">
+                <apex:commandLink styleClass="ld-tertiary-small-button" onClick="ga_event('Viewed Opportunity Influence Details')" value="View Details" action="{!viewCampaignOpps}" rerender="campaignOppPanel,viewHideButtonsPanel" rendered="{!viewMode != 'Campaign Opportunities'}"/>
+                <apex:commandLink styleClass="ld-tertiary-small-button" value="Hide Details" action="{!viewSummary}" rerender="campaignOppPanel,viewHideButtonsPanel" rendered="{!viewMode != 'Summary'}"/>
+            </apex:outputPanel>            <apex:outputLink value="{!$Page.LeanData__CampaignInfluenceReport}" target="_top" styleClass="action_link ld-green" style="float:right; margin-right: 10px; margin-top: 10px; "><div>View All Campaigns</div></apex:outputLink>
+        </apex:pageBlockButtons>
+        
+        <apex:outputPanel layout="block" id="opportunityViewPanel" style="margin-top:10px;" >          
+            <apex:panelGrid columns="2" id="theGrid" cellspacing="0px" styleClass="PBT" rowClasses="PBTHead,PBTRow" cellpadding="5px" style="width: 50%;">
+                <apex:outputLabel value="Number of Touches" />
+                <apex:outputLabel value="Number of Campaigns" />
+                <!-- <apex:outputLabel value="Total Campaign Costs" /> -->
+                <apex:outputLabel value="{!numberOfCampaignMembers}" />
+                <apex:outputLabel value="{!numberOfCampaigns}" />
+                     
+                
+                
+               <!-- <apex:outputText value="${0, number, ###,##0.00}" >
+                    <apex:param value="{!totalCampaignCosts}"/>
+                </apex:outputText>     -->     
+
+            </apex:panelGrid>    
+            <apex:outputPanel layout="block" style="max-height: 190px; overflow: auto;margin-top:10px;" id="campaignOppPanel" >             
+                <apex:pageBlockTable value="{!campaignOpportunities}" var="CO" rendered="{!viewMode == 'Campaign Opportunities'}">
+                    <apex:repeat value="{!fieldList}" var="FL" >
+                        <apex:column >
+                            <apex:facet name="header">
+                            <apex:outputPanel layout="block"  >
+                            <apex:commandLink value="{!FL.fieldLabel} " action="{!toggleSort}" rerender="campaignOppPanel" style="float:left;" >
+                                 <apex:param name="sortCategory" value="{!FL.fieldName}" assignTo="{!sortCategory}" />   
+                             </apex:commandLink>
+                             <apex:outputPanel rendered="{!sortCategory == FL.fieldName}" > 
+                                     <apex:outputPanel rendered="{!sortOrder == 'desc'}" layout="block" style="float:left;height:11px;width:11px; background: transparent url(/img/alohaSkin/sortArrows_sprite.png) no-repeat 0 top" /> 
+                                     <apex:outputPanel rendered="{!sortOrder == 'asc'}" layout="block" style="float:left;height:11px;width:11px; background: transparent url(/img/alohaSkin/sortArrows_sprite.png) no-repeat 0 -16px;" /> 
+                                 </apex:outputPanel>    
+                             </apex:outputPanel>
+                            </apex:facet>
+                    
+                            <apex:outputText rendered="{!CONTAINS(FL.fieldLabel,'Date')}" value="{0, date, MM/dd/yyyy}" >
+                                <apex:param value="{!CO[FL.fieldName]}" />
+                            </apex:outputText>
+                            
+                            <apex:outputText rendered="{!CONTAINS(FL.fieldLabel,'Attribution')}" value="${0, number, ###,#00.00}">
+                                <apex:param value="{!CO[FL.fieldName]}" />
+                            </apex:outputText> 
+                           
+                            <apex:outputLabel rendered="{!NOT(CONTAINS(FL.fieldName,'__r.Name')) && NOT((CONTAINS(FL.fieldLabel,'Date'))) && NOT((CONTAINS(FL.fieldLabel,'Attribution')))}" value="{!CO[FL.fieldName]}" />
+                            <apex:outputLink rendered="{!CONTAINS(FL.fieldName,'__r.Name')}" value="/{!CO[ RPAD ( LEFT(FL.fieldName,LEN(FL.fieldName) - 6), LEN(FL.fieldName) - 5, 'c' )]}" target="_top">{!CO[FL.fieldName]}</apex:outputLink> 
+                            
+                        </apex:column>
+                    </apex:repeat>
+                </apex:pageBlockTable>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!!isRun}" styleClass="output-panel-message">
+                     This Opportunity has not been influenced by any Campaigns. Rerun your Campaigns to update results.
+                </apex:outputPanel>
+          </apex:outputPanel>
+    </apex:pageBlock>
+    </apex:form>
+</apex:page>

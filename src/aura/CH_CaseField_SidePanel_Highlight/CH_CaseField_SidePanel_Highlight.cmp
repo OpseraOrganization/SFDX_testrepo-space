@@ -1,0 +1,222 @@
+<aura:component controller="CH_CaseField_SideHighlightApex" implements="lightning:actionOverride,flexipage:availableForRecordHome,force:hasRecordId"> 
+	<lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>   
+    <aura:attribute name="currentRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <aura:attribute name="record" type="Case"/>
+    <aura:attribute name="caseRecord" type="Case" default="{ 'sobjectType': 'Case' }"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute access="private" name="error" type="String" default=""/>
+    
+    <!-- Attributes to show EDIT or READ access-->
+    <aura:attribute name="edit" type="boolean" />
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="CH_Case_Number__c ,CH_CurrentQueue__c,CH_ServiceType__c, CH_Rep_CDBContractType__c,CH_Solution__c,Status,CH_Workgroup__c"
+                      targetFields="{!v.currentRecord}"
+                      targetError="{!v.recordLoadError}"                      
+                      />
+    
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <aura:attribute name="headerTitle" type="Aura.Component[]">
+        <h1>
+            <b>Case Info</b>
+        </h1>
+    </aura:attribute>
+    
+    <aura:if isTrue="{!v.edit}">
+        <lightning:card class="slds-text-heading_small" title="{!v.headerTitle}">
+            <lightning:layout horizontalAlign="Left">
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <lightning:recordEditForm aura:id="recordEditForm" 
+                                              recordId="{!v.recordId}"
+                                              objectApiName="Case"
+                                              onsuccess="{!c.handleSuccess}" >
+                        <Lightning:messages />
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputfield fieldName="CH_ServiceType__c" />
+                                    </div>
+                                </div>
+                            </div>
+                            <aura:if isTrue="{!or(v.currentRecord.CH_ServiceType__c =='Internal Support' , v.currentRecord.CH_ServiceType__c == 'Customer Support')}">
+                                <div class="slds-col">
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <label class="slds-form-element__label" for="id-ContractType">Contract Type</label>
+                                            <br/>
+                                            <ui:outputText class="slds-form-element__static" aura:id="id-ContractType" value="{!v.currentRecord.CH_Rep_CDBContractType__c}"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aura:if>
+                        </div>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:outputfield fieldName="Subject" />
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputfield fieldName="CH_OwnerName__c" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:buttonIcon iconName="utility:change_owner" variant="bare" onclick="{! c.handleReaasign }" alternativeText="Re-assign" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputfield fieldName="CH_Workgroup__c" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:buttonIcon iconName="utility:edit" variant="bare" onclick="{! c.openWorkGroupInstruction }" alternativeText="Show WG Instructions" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <aura:if isTrue="{!v.currentRecord.CH_Solution__c !=null }">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield fieldName="CH_Solution__c" />
+                                </div>
+                            </div>
+                        </aura:if>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:inputfield fieldName="CH_InternalStatus__c" />
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:inputfield label="Reason For Internal Status" fieldName="CH_ReasonForInternalStatus__c" />
+                            </div>
+                        </div>
+                        <aura:if isTrue="{!v.currentRecord.CH_ServiceType__c !='Internal Support' }">
+                            <br/>
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:inputfield label="Summary For Customer" fieldName="CH_Summary__c" />
+                                </div>
+                            </div>
+                        </aura:if>
+                        <br/>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:button class="slds-m-top_small" variant="brand" type="button" name="update" label="Save" onclick="{!c.update}" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </lightning:recordEditForm>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:card>
+        <aura:set attribute="else">
+            <lightning:card class="slds-text-heading_small" title="{!v.headerTitle}">
+                <lightning:layout horizontalAlign="Left">
+                    <lightning:layoutItem flexibility="auto" padding="around-small">
+                        <lightning:recordViewForm aura:id="recordViewForm" 
+                                                  recordId="{!v.recordId}"
+                                                  objectApiName="Case" >
+                            <Lightning:messages />
+                            
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col">
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <lightning:outputfield fieldName="CH_ServiceType__c" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <aura:if isTrue="{!or(v.currentRecord.CH_ServiceType__c =='Internal Support' , v.currentRecord.CH_ServiceType__c == 'Customer Support')}">
+                                    <div class="slds-col">
+                                        <div class="slds-form-element">
+                                            <div class="slds-form-element__control">
+                                                <label class="slds-form-element__label" for="id-ContractType">Contract Type</label>
+                                                <br/>
+                                                <ui:outputText class="slds-form-element__static" aura:id="id-ContractType" value="{!v.currentRecord.CH_Rep_CDBContractType__c}"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </aura:if>
+                            </div>                     
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield fieldName="Subject" />
+                                </div>
+                            </div>
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield fieldName="CH_OwnerName__c" />
+                                </div>
+                            </div>
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield fieldName="CH_Workgroup__c" />
+                                </div>
+                            </div>
+                            <aura:if isTrue="{!v.currentRecord.CH_Solution__c !=null }">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputfield fieldName="CH_Solution__c" />
+                                    </div>
+                                </div>
+                            </aura:if>
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield fieldName="CH_InternalStatus__c" />
+                                </div>
+                            </div>
+                            <br/>
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield label="Reason For Internal Status" fieldName="CH_ReasonForInternalStatus__c" />
+                                </div>
+                            </div>
+                            <aura:if isTrue="{!v.currentRecord.CH_ServiceType__c !='Internal Support' }">
+                                <br/>
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputfield label="Summary For Customer" fieldName="CH_Summary__c" />
+                                    </div>
+                                </div>
+                            </aura:if>
+                        </lightning:recordViewForm>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:card>
+        </aura:set>
+    </aura:if>
+</aura:component>

@@ -1,0 +1,84 @@
+<aura:component controller="CH_EntitlementContactController" 
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" 
+                access="global">
+    
+    <aura:attribute name="entitlementId" type="String"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <aura:attribute name="EntitlementContacts" type="EntitlementContact[]" />
+    <aura:attribute name="sortedBy" type="string" default="Name" />
+    <aura:attribute name="sortedDirection" type="string" default="asc" />
+    <aura:attribute name="mycolumn" type="List" />    
+    
+    <!-- Use boolean attribute to store true/false to determine New button visibility -->
+    <aura:attribute name="isNewButtonVisible" type="boolean" default="false"/>
+
+    <!-- Use boolean attribute for Store true/false value,
+    make default to "false" so modal box are not display on the load of component. --> 
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="parentRecordId" type="String" default=""/>
+    
+    <!-- the container element determine the height of the datatable -->
+    
+    <lightning:card variant="Narrow" title="Authorized Contact" iconName="standard:contact">            
+        <aura:set attribute="actions">            
+            <aura:if isTrue="{!v.sObjectName == 'ServiceContract'}">
+            	<aura:if isTrue="{!v.isNewButtonVisible}">    
+                	<lightning:button name="AddAuthorizedContact" label="New" onclick="{!c.openModel}" />            
+                </aura:if>
+            	<lightning:button name="Refresh" label="Refresh" onclick="{!c.refreshView}" />
+            </aura:if>                
+        </aura:set>
+        
+        <div style="height: 300px">
+        	<lightning:datatable data="{!v.EntitlementContacts}" 
+                                 columns="{!v.mycolumn}" 
+                                 onsort="{!c.updateColumnSorting}" 
+                                 sortedBy="{!v.sortedBy}" 
+                                 sortedDirection="{!v.sortedDirection}" 
+                                 hideCheckboxColumn="true"
+                                 onrowaction="{!c.handleRowAction}"
+                                 keyField="Id" />
+    	</div>
+    </lightning:card>
+    
+    <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->   
+    <aura:if isTrue="{!v.isOpen}">
+        <!--Use "slds-m-around_xx-large" class to add standard X-Large padding to the component--> 
+        <div id="modal-window" class="slds-x-around_xx-large">            
+            <!--###### MODAL BOX Start######--> 
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{!c.closeModel}"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Authorized Contact</h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <lightning:layout >
+                            <lightning:layoutItem flexibility="auto" padding="around-small">
+                                <lightning:input aura:id="cFirstName" name="cFirstName" placeholder="type contact first name..." label="Contact First Name" />
+                                <lightning:input aura:id="cLastName" name="cLastName" placeholder="type contact last name..." label="Contact Last Name" />
+                                <lightning:input aura:id="cAccountName" name="cAccountName" placeholder="type account name..." label="Account (Legal Entity)" />
+                                <lightning:input aura:id="cContactId" name="cContactId" placeholder="type contact id..." label="Contact ID" />
+                                <lightning:input aura:id="cEmail" name="cEmail" placeholder="type contact email address..." label="Email" />
+                                <lightning:button label="Search" title="Search Contacts" onclick="{!c.search}"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        <lightning:layout >
+                        	<c:CH_AuthorizedContactSearchListComponent aura:id="resultList" />    
+                        </lightning:layout>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+            <!--###### MODAL BOX Part END Here ######-->                        
+    	</div>
+    </aura:if>
+</aura:component>

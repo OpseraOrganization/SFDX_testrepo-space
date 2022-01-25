@@ -1,0 +1,132 @@
+<aura:component controller="CH_CN_SubscriptionsController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>    
+    <!-- Attribute recordTypeId and RecordId -->
+    <aura:attribute name="recordId" type="String" description="Id of CH_NotificationSubscription__c" />       
+    <aura:attribute name="recordTypeId" type="String" />
+    <!-- attribute to check if the page has changed or not -->
+    <aura:attribute name="hasPageChanged" type="Boolean" default="true" />
+    <!-- attribute to check if it is initialLoad -->
+    <aura:attribute name="initialLoad" type="Boolean" default="true"/>
+    <aura:attribute name="firstTimeLoad" type="Boolean" default="true"/>
+     <aura:attribute name="currentStageName" type="String" default=""  />
+    <!-- Reset the Component -->
+    <aura:method name="resetMethod" action="{!c.init}" description="reset method"> 
+        <aura:attribute name="reset" type="String" default=""/> 
+    </aura:method>
+    
+    <!-- Attribute related to datatable -->
+    <aura:attribute name="allData" type="List" description="To store all data"/>     
+    <aura:attribute name ="AccountColumns" type="List" description="use for data table column"/>  
+    <aura:attribute type="List"  name="selectedAccount"      default=""/>
+    <aura:attribute type="List"     name="selection"      default=""/>
+    <aura:attribute type="List"     name="tempSelection"      default=""/>     
+    <aura:attribute name="searchParentKeyword" type="string" default=""/>
+    <aura:attribute name="searchLegalKeyword" type="string" default=""/>
+    <aura:attribute name="maxRowsAccount" type="Integer" default="1000"/>
+    <aura:attribute name="maxRows" type="Integer" default="10000"/>
+    <aura:attribute type="Integer"  name="LegalEntitySearchLimit"      default="2000"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>      
+    <!-- Attribute related to radio button group --> 
+    <aura:attribute name ="isLegalChecked" type="Boolean" default="false"/>
+    <aura:attribute name="showTable" type="boolean"  default="false"/>  
+    <aura:attribute name="accountType" type="String" default="Legal Account"/>  
+    <!--List options for account type radio button -->
+    <aura:attribute name="accountListOptions" type="List" default="[{'label': 'Legal Entity', 'value': 'Legal Account'},
+                                                                   {'label': 'Customer Parent Account', 'value': 'Parent Account'}]"/>     
+    <!-- Modal Spinner declare -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner  alternativeText="Loading" size="medium"/>
+    </aura:if>  
+    
+    <lightning:radioGroup type="radio" 
+                          aura:id="accountTypeGroup" 
+                          name="accountTypeGroup" 
+                          options="{! v.accountListOptions }"
+                          value="{! v.accountType }"
+                          onchange="{!c.onChangeAccountRadioButton}"
+                          class="customRadioCls"/>
+    
+    <!-- Parent Account -->
+    <div class="{!v.accountType=='Parent Account' ? 'slds-show' : 'slds-hide'}">    
+        <div class="slds-grid slds-grid_vertical-align-start" >
+            <div class="slds-col">
+                <span>
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem class="slds-p-vertical--small"  size="5">
+                            <div class="slds-grid  slds-gutters"> 
+                                <div class="slds-col" onkeyup="{!c.searchAcc}">
+                                    <span>
+                                        <lightning:input value="{!v.searchParentKeyword}"
+                                                         placeholder="Customer Parent Account Name"
+                                                         aura:id="searchField" label="Enter Customer Parent Account Name" />
+                                    </span>
+                                </div>                                
+                            </div>
+                        </lightning:layoutItem>   
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <div class="slds-grid  slds-gutters"> 
+                                <div class="slds-col" style="padding-top:5px;">
+                                    <span>
+                                        <p class="title">Click on Search </p>
+                                        <lightning:button aura:id="btnParentSearch" onclick="{!c.searchAccount}" variant="brand" label="Search" iconName="utility:search"/> 
+                                    </span>
+                                </div>                                
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Parent Account Ends -->
+    
+    <!-- Legal Account -->
+    <div class="{!v.accountType=='Legal Account'? 'slds-show' : 'slds-hide'}"> 
+        <div class="slds-grid slds-grid_vertical-align-start" >
+            <div class="slds-col">
+                <span>
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem class="slds-p-vertical--small" size="5">
+                            <div class="slds-grid  slds-gutters"> 
+                                <div class="slds-col slds-p-top--medium slds-size--2-of-12">
+                                    <Lightning:input type="checkbox" id="LegalCheckbox" label="All" onchange="{!c.handleAllLegal}"  checked="{!v.isLegalChecked}" />
+                                </div>
+                                <div class="slds-col slds-size--10-of-12" onkeyup="{!c.searchAcc}" >
+                                    <span>
+                                        <lightning:input value="{!v.searchLegalKeyword}"
+                                                         placeholder="Search with Legal Entity Name"
+                                                         aura:id="searchField" label="Enter Legal Entity Name"  disabled="{!v.isLegalChecked}"/>
+                                    </span>
+                                </div>                                
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <div class="slds-grid  slds-gutters"> 
+                                <div class="slds-col" style="padding-top:5px;">
+                                    <span>
+                                        <p class="title">Click on Search </p>
+                                        <lightning:button aura:id="btnLegalSearch"
+                                                          onclick="{!c.searchAccount}"
+                                                          variant="brand"
+                                                          label="Search"
+                                                          iconName="utility:search" disabled="{!v.isLegalChecked}"/> </span>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout></span>
+            </div>
+        </div>
+    </div>
+    <!-- Legal Account Ends -->
+    
+    
+    
+    <!-- Account Table Starts -->
+    
+    <aura:if isTrue="{!v.showTable}">
+        <c:CH_CN_LightingDatatable aura:id="accountDataTable" initialLoad="{!v.initialLoad}" currentStageName="{!v.currentStageName}" accountType="{!v.accountType}" maxRowsAccount="{!v.maxRowsAccount}" allData="{!v.allData}"  columns="{! v.AccountColumns }"  maxRows="{!v.maxRows}" selectedData="{!v.selectedAccount}" isHeaderVisible="true" hideCheckboxColumn="false" recordId="{!v.recordId}" firstTimeLoad="{!v.firstTimeLoad}"/>
+    </aura:if>
+    <!-- Account Table Ends -->    
+</aura:component>

@@ -1,0 +1,573 @@
+<apex:page sideBar="false" standardStylesheets="false" docType="html-5.0" controller="LeanData.Reporting_BaseController" >
+    <style>
+        .funnel-td {
+            color: white;
+            font-size: 19px;
+            line-height: 40px;
+            font-family: 'Open Sans', sans-serif;
+        }
+        
+        .funnelBG {
+            background: url("{!URLFOR($Resource.LeanData__Reporting_Images, 'Funnel_1.png')}") no-repeat;
+            background-size: 100% 100%;
+        }
+        
+        .filler-td {
+            height: 30px !important;
+        }
+        
+        .taper-right {
+            width: 25px;
+            height: 0px;
+            border-color: #65d2bd transparent;
+            border-style: solid;
+            border-width: 37px 10px 0px 0px;
+            float: left;
+        }
+        
+        .taper-left {
+            width: 25px;
+            height: 0px;
+            border-color: #65d2bd transparent;
+            border-style: solid;
+            border-width: 37px 0px 0px 10px;
+            float: left;
+        }
+        
+        .taper-center {
+            width: 200px;
+            height: 37px;
+            color: white;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 15px;
+            border-color: #65d2bd transparent;
+            border-style: solid;
+            background-color: #65d2bd transparent;
+            background-color: #65d2bd;
+            float: left;
+            text-align: center;
+            padding-top: 10px;
+        }
+        
+        .info-taper-left {
+            width: 25px;
+            height: 0px;
+            border-color: #f0f8ff transparent;
+            border-style: solid;
+            border-width: 0px 0px 37px 10px;
+            float: left;
+        }
+        
+        .info-taper-center {
+            width: 375px;
+            height: 37px;
+            color: #555555;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 14px;
+            border-color: #f0f8ff transparent;
+            border-style: solid;
+            background-color: #f0f8ff transparent;
+            background-color: #f0f8ff;
+            float: left;
+            text-align: right;
+            padding-top: 10px;
+            padding-right: 40px;
+        }
+        
+        .funnel-button {
+            float: left;
+            margin-left: 25px;
+        }
+        
+        .funnel-button:hover {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .funnel-button:active,
+        .funnel-button:focus {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .spacer {
+            clear: both;
+            height: 10px;
+        }
+        
+        a {
+            cursor: pointer !important;
+        }
+        
+        .bs dg_campaign-type-choice {
+            float: left;
+        }
+        
+        .funnel-row-header {
+            margin-left: 150px;
+            height: 30px;
+        }
+        
+        .funnel-row-header-c1 {
+            width: 150px;
+            display: inline-block;
+        }
+        
+        .funnel-row-header-c2 {
+            margin-left: 130px;
+            display: inline-block;
+        }
+        
+        .funnel-row-header-c3 {
+            margin-left: 55px;
+            display: inline-block;
+        }
+        
+        .funnel-row-header-c4 {
+            margin-left: 50px;
+            display: inline-block;
+            line-height: 20px;
+        }
+        
+        .funnel-row-content-c1 {
+            display: inline-block;
+            margin-right: 80px;
+            width: 70px;
+            text-align: right;
+        }
+        
+        .funnel-row-content-c2 {
+            display: inline-block;
+            margin-right: 80px;
+            width: 35px;
+            text-align: right;
+        }
+        
+        .funnel-row-content-c3 {
+            display: inline-block;
+            width: 50px;
+            text-align: right;
+        }
+    </style>
+    <apex:composition template="LeanData__Reporting_Template">
+        <apex:define name="customHeaderContent">
+            <div class="customHeaderContent-right">
+                <apex:commandLink rerender="x" html-data-toggle="modal" html-data-target="#infoModal">
+                    <apex:image value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Info_Button_Icon.png')}" styleClass="customHeaderContent-right-information" />
+                </apex:commandLink>
+            </div>
+        </apex:define>
+        <apex:define name="mainContent">
+            <div class="dg_outer-wrapper">
+                <div class="dg_outer-wrapper-header">
+                    Campaigns for Influencing Bookings
+                </div>
+                <div class="dg_outer-wrapper-content">
+                    <div class="dg_large-option-wrapper">
+                        <div onClick="setGroupingCategory('By Campaign')" class="dg_large-option-button dg_large-option-button-campaign"> By Campaign </div>
+                        <div onClick="setGroupingCategory('By Type')" class="dg_large-option-button dg_large-option-button-type dg_large-option-button-active" style="margin-left:3px;"> By Type </div>
+                    </div>
+                    <div class="dg_inner-wrapper">
+                        <div class="dg_inner-wrapper-header">
+                            <div class="dg_styled-select dg_campaign-type-choice-div" style="float:left;display:inline-block;width:150px;margin: 7px 0px 0px 20px;">
+                                <apex:selectList value="{!campaignType}" onchange="bookingsReport.drawChart();bookingsReport.renderTable(); bookingsReport.sortTable();" size="1" styleClass="bsmultiselect_ct dg_picklist dg_campaign-type-choice" multiselect="true">
+                                    <apex:selectOptions value="{!campaignTypeOptions}" />
+                                </apex:selectList>
+                            </div>
+                            <span class="bookings-influenced" /> Bookings Influenced
+                            <div class="dg_styled-select" style="float:right;display:inline-block;width:150px;margin: 7px 20px 0px 0px;">
+                                <select class="dg_picklist dg_time-frame-choice" onChange="buildBookingsReport();">
+                                    <option value="THIS_FISCAL_QUARTER">Quarter-To-Date</option>
+                                    <option value="THIS_FISCAL_YEAR">Year-To-Date</option>
+                                    <option value="LAST_FISCAL_QUARTER">Last Quarter</option>
+                                    <option selected="selected" value="LAST_FISCAL_YEAR">Last Year</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="dg_inner-wrapper-content" style="padding-top: 30px;">
+                            <div class="dg_axis-choices-div">
+                                <div class="dg_styled-select" style="display:inline-block;width:175px;margin-right:20px;">
+                                    <select class="dg_picklist dg_y-axis-choice" onChange="bookingsReport.drawChart();bookingsReport.renderTable();bookingsReport.sortTable();">
+                                        <option selected="selected" value="Lift">Lift</option>
+                                        <option value="bookingsAttribution">Bookings Attribution</option>
+                                        <option value="numberOfOpps"># of Opps</option>
+                                        <option value="avgDaysToClose">Average Days to Close</option>
+                                        <option value="totalCost">Total Cost</option>
+                                    </select>
+                                </div>
+                                vs.
+                                <div class="dg_styled-select" style="display:inline-block;width:175px;margin-left:20px;">
+                                    <select class="dg_picklist dg_x-axis-choice" onChange="bookingsReport.drawChart();bookingsReport.renderTable();bookingsReport.sortTable();">
+                                        <option value="Lift">Lift</option>
+                                        <option selected="selected" value="bookingsAttribution">Bookings Attribution</option>
+                                        <option value="numberOfOpps"># of Opps</option>
+                                        <option value="avgDaysToClose">Average Days to Close</option>
+                                        <option value="totalCost">Total Cost</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="dg_highchart" />
+                            <div class="dg_details-table-div bookings-details-div">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!----- End Campaign for influencing bookings Wrapper ------>
+            <div class="dg_inner-wrapper">
+                <div class="dg_inner-wrapper-header">
+                    <span style="position:absolute;left:620px;">Opportunities to Influence</span>
+                    <div style="float:right;margin-right:20px;font-size:13px;">
+                        Expected Close Date &nbsp;
+                        <div class="dg_styled-select" style="display:inline-block;width:150px;margin: 7px 20px 0px 0px;">
+                            <select class="dg_picklist opp-stage-time-frame" onChange="buildOppStages();">
+                                <option selected="selected" value="THIS_FISCAL_QUARTER">This Quarter</option>
+                                <option value="NEXT_FISCAL_QUARTER">Next Quarter</option>
+                                <option value="THIS_AND_NEXT_FISCAL_QUARTER">This and Next Quarter</option>
+                                <option value="ALL_TIME">All Time</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="dg_inner-wrapper-content">
+                    <div class="funnel-row-header">
+                        <div class="funnel-row-header-c1">Opportunity Stage</div>
+                        <div class="funnel-row-header-c2">Open Pipeline</div>
+                        <div class="funnel-row-header-c3"># of Opps</div>
+                        <div class="funnel-row-header-c4">Avg Days
+                            <br/> in Stage</div>
+                    </div>
+                    <div class="opp-stage-funnel" style="padding-bottom: 20px; padding-top:20px;display: inline-block;" />
+                </div>
+            </div>
+            <!-- End Opportunities to INfluence Wrapper -->
+            
+            <!-- Begin Tooltip -->
+            <div id="infoModal" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content" style="display: inline-block;background: #eeefef;border-radius: 0px; padding-left: 20px;">
+                        
+                        <apex:commandLink rerender="x" html-data-dismiss="modal" style="float:right;margin:5px 5px 0 0">
+                            <apex:image width="15px" height="15px" value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Close_Window_Icon.png')}"/>
+                        </apex:commandLink>
+                        
+                        <div class="dg_inner-wrapper" style="width:615px">
+                            <div class="dg_inner-wrapper-header">
+                                Tooltip | Bookings
+                            </div>
+                            
+                            <div class="dg_inner-wrapper-content" style="height:400px;overflow:auto">
+                                <p>On the Bookings screen you’ll find metrics to help you close more deals. Review your campaign performance and then launch new targeted campaigns designed to close more deals.</p>
+                                
+                                <h5>Campaigns for Influencing Bookings</h5>
+                                <br/>
+                                
+                                <h6>Multi-touch (MT) Bookings Attribution</h6>
+                                <p>The value of closed won bookings are distributed among all campaigns with a relevant campaign member touch. Distribution can be equal or using a custom weighting model.</p>
+                                <h6>Lift</h6>
+                                <p>The statistical impact of a particular campaign touch on the probability of winning an opportunity. Lift is an absolute number which won’t vary by time period.</p>
+                                <h6>Cost</h6>
+                                <p>Actual cost of campaigns as defined on SFDC Campaign. You can add an average cost per type in the Advanced Settings.</p>
+                                <h6>Median Days to Close</h6>
+                                <p>Median of number of days opportunities are open. Calculated from opportunity created date to closed date.</p>
+
+                                <h5>Opportunities to Influence</h5>
+                                <p>Open opportunities expected to close in near future.</p>
+                                
+                                <h6>Open Pipeline</h6>
+                                <p>Total amount of open opportunities by stage and expected to close in the timeframe defined.</p>
+                                <h6>Average Days in Stage</h6>
+                                <p>Average number of days an opportunity is in a particular stage.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End of Tooltip -->
+        </apex:define>
+    </apex:composition>
+    <script>
+        opp_stage_time_frame = 'THIS_FISCAL_QUARTER';
+
+        j$(document).ready(function() {
+            var reachBookingsGoal = {!reachBookingsGoal};
+
+            if (reachBookingsGoal < 0) {
+                setPageTitle('Close More Deals | ' + formatFieldByType(reachBookingsGoal * (-1), 'Currency') + ' Over Bookings Goal');
+            } else {
+                setPageTitle('Close More Deals | ' + formatFieldByType(reachBookingsGoal, 'Currency') + ' to Reach Bookings Goal');
+            }
+
+            setActiveNav('bookings-nav');
+            
+            j$('.bsmultiselect_ct').multiselect({
+                nonSelectedText: 'Campaign Type',
+                numberDisplayed: 1,
+                includeSelectAllOption: true,
+                nSelectedText: 'Campaign Type',
+                allSelectedText: 'All Types',
+                selectAllNumber: false,
+            });
+            
+            j$('.bsmultiselect_ct').multiselect('selectAll', false);
+            j$('.bsmultiselect_ct').multiselect('updateButtonText');
+            buildReport();
+        });
+
+        function buildReport() {
+            buildBookingsReport();
+
+            buildOppStages();
+        }
+        
+        function buildBookingsReport(){
+            if (j$('.dg_large-option-button-campaign').hasClass('dg_large-option-button-active')) {
+                bookingsReport = new objWrapper('bookingsReport', 'Bookings By Campaign', j$(".bookings-details-div"));
+            } else {
+                bookingsReport = new objWrapper('bookingsReport', 'Bookings By Type', j$(".bookings-details-div"));
+            }
+        }
+        
+        function buildOppStages() {
+            oppStagesReport = new objWrapper('oppStagesReport', 'Opportunity Stages', null);
+        }
+
+        objWrapper.prototype.queryBookingsMetrics = function() {
+            var report = this;
+
+            time_frame = j$('.dg_time-frame-choice').val();
+            campaign_type = j$('.dg_campaign-type-choice').val();
+
+            console.log( ' Remote Call Campaign Metrics ' );
+            
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Reporting_BaseController.getCampaignBookingsMetrics}', grouping_category, campaign_type, time_frame,
+                function(result, event) {
+                    if (event.type === 'exception') {
+                        console.log("exception");
+                        console.log(event);
+                    } else if (event.status) {
+                        //console.log(result);
+                        for (var i = 0; i < result.length; i++) {
+                            result[i].avgDaysToClose = result[i].totalDaysToClose / result[i].totalCount;
+                            report.originalObjList.push(result[i]);
+                        }
+                        console.log('CM Queried');
+                        console.log(report.originalObjList);
+                        
+                        report.drawChart();
+                        report.renderTable();
+                        report.sortTable();
+                        j$('.bookings-influenced').html(formatFieldByType(report.objList.sum('bookingsAttribution'), 'Currency'));
+                    }
+                });
+        };
+
+        objWrapper.prototype.queryOpportunityMetrics = function() {
+            opp_stage_time_frame = j$('.opp-stage-time-frame').val();
+
+            var report = this;
+            console.log( ' Remote Call Opp Metrics ' );
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Reporting_BaseController.getOpportunityStageMetrics}', opp_stage_time_frame,
+                function(result, event) {
+                    if (event.type === 'exception') {
+                        console.log("exception");
+                        console.log(event);
+                    } else if (event.status) {
+                        for (var i = 0; i < result.length; i++) {
+                            report.objList.push(result[i]);
+                        }
+
+                        console.log('OM Queried');
+                        console.log(report.objList);
+
+                        report.generateOpportunityStageFunnel();
+                    }
+                });
+        };
+
+        objWrapper.prototype.generateOpportunityStageFunnel = function() {
+            var tableInMaking = '';
+            var over7 = this.objList.length - 7;
+            var currentOver7 = over7;
+
+            for (var i = 0; i < this.objList.length; i++) {
+                var variantIndex = i - over7;
+                var opportunityMetricEntry = this.objList[i];
+
+                if (currentOver7 > 0) {
+                    var entryString = ['<div class=\"cont\">',
+                        '<div class=\"taper-center\" style=\"width: 410px;\">' + opportunityMetricEntry.Name + '</div>',
+                        '<div class=\"info-taper-center\" style=\"width: 375px;margin-left:10px;\">' + '<span style="float:right"> <span class="funnel-row-content-c1">' + formatFieldByType(opportunityMetricEntry.openPipeline, 'Currency') + '</span><span class="funnel-row-content-c2">' + opportunityMetricEntry.numberOfOpps + '</span><span class="funnel-row-content-c3">' + opportunityMetricEntry.avgDaysInStage + '</span></span></div>',
+                        '<a target="_blank" href=\"/apex/' + ns + 'Reporting_CreateSegment?objType=Opportunity&category=' + opportunityMetricEntry.Name + '&timeframe=' + opp_stage_time_frame + '\" class=\"funnel-button main-button\" style=\"width: 185px;\" >Define Segment</a>',
+                        '</div>',
+                        '<div class=\"spacer\"></div>'
+                    ].join('');
+                    currentOver7--;
+                } else {
+                    var entryString = ['<div class=\"cont\">',
+                        '<div class=\"taper-left\" style=\"margin-left: ' + (variantIndex * 20 + 10) + 'px;\"></div>',
+                        '<div class=\"taper-center\" style=\"font-size: ' + (16 - variantIndex) + 'px;width:' + (-variantIndex * 40 + 340) + 'px;\">' + opportunityMetricEntry.Name + '</div>',
+                        '<div class=\"taper-right\"></div>',
+                        '<div class=\"info-taper-left\"> </div>',
+                        '<div class=\"info-taper-center\" style=\"width: ' + (variantIndex * 20 + 370) + 'px;\">' + '<span style="float:right"> <span class="funnel-row-content-c1">' + formatFieldByType(opportunityMetricEntry.openPipeline, 'Currency') + '</span><span class="funnel-row-content-c2">' + opportunityMetricEntry.numberOfOpps + '</span><span class="funnel-row-content-c3">' + opportunityMetricEntry.avgDaysInStage + '</span></span></div>',
+                        '<a target="_blank" href=\"/apex/' + ns + 'Reporting_CreateSegment?objType=Opportunity&category=' + opportunityMetricEntry.Name + '&timeframe=' + opp_stage_time_frame + '\" class=\"funnel-button main-button\" style=\"width: 185px;\">Define Segment</a>',
+                        '</div>',
+                        '<div class=\"spacer\"></div>'
+                    ].join('');
+                }
+                tableInMaking += entryString;
+            }
+
+            j$('.opp-stage-funnel').html(tableInMaking);
+            resizeSideBar();
+        }
+
+        objWrapper.prototype.drawChart = function() {
+
+            this.setChartUnits();
+            console.log(this.objList);
+            var avgPoint = getAvg(getArrayVals(this.objList, 'y'));
+            var maxPoint = 1000000000000000;
+            
+            if( x_axis != 'bookingsAttribution' || y_axis != 'Lift' ){
+                avgPoint = 1000000000000000;
+            }
+            
+            console.log( ' x axis max/min ' + x_axis_max + '   /   ' + x_axis_min );
+            console.log( ' y axis max/min ' + y_axis_max + '   /   ' + y_axis_min );
+            
+            j$('.dg_highchart').highcharts({
+                chart: {
+                    type: 'bubble',
+                    plotBorderWidth: 1,
+                    zoomType: 'xy'
+                },
+                legend: {
+                    enabled: false
+                },
+
+                title: {
+                    text: '',
+                    style: {
+                        fontSize: '16px',
+                        fontColor: '#555555',
+                        fontFamily: 'Open Sans'
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                xAxis: {
+                    gridLineWidth: 0,
+                    title: {
+                        text: x_axis_label
+                    },
+                    labels: {
+                        format: x_axis_prefix + '{value}' + x_axis_scale + x_axis_suffix
+                    },
+                    lineWidth: 0,
+                    minorGridLineWidth: 0,
+                    lineColor: 'transparent',
+                    max: x_axis_max,
+                    min: x_axis_min
+                },
+
+                yAxis: {
+                    startOnTick: false,
+                    endOnTick: false,
+                    max: y_axis_max,
+                    min: y_axis_min,
+                    title: {
+                        text: y_axis_label
+                    },
+                    labels: {
+                        format: y_axis_prefix + '{value}' + y_axis_scale + y_axis_suffix
+                    },
+                    maxPadding: 0.2,
+                    gridLineWidth: 0,
+                    lineWidth: 0,
+                    minorGridLineWidth: 0,
+                    lineColor: 'transparent',
+                    plotLines: [{
+                        color: '#8da8bf', // Color value                                     
+                        value: avgPoint, // Value of where the line will appear
+                        width: 1 // Width of the line    
+                    }],
+                    plotBands: [{
+                        color: '#f0f8ff', // Color value
+                        from: avgPoint, // Start of the plot band
+                        to: maxPoint // End of the plot band
+                    }]
+                },
+
+                tooltip: {
+                    useHTML: true,
+                    borderWidth: 0,
+                    style: {
+                        padding: 0
+                    },
+                    formatter:function(){
+                        return '<div class="dg_bubble-div">' + 
+                            '<div class="dg_bubble-header">' + formatFieldByType(this.point.Name, 'String') + '</div>' + 
+                            '<div class="dg_bubble-left-content">' + 
+                                'Campaign Type: ' + formatFieldByType(this.point.Type, 'String') +  
+                                '<br/>Lift: ' + formatFieldByType(this.point.Lift, 'Percentage') +
+                                '<br/>Total Cost: ' + formatFieldByType(this.point.totalCost, 'Currency') +
+                            '</div>' +
+                            '<div class="dg_bubble-right-content">' + 
+                                'Bookings Attribution: ' + formatFieldByType(this.point.bookingsAttribution, 'Currency') + 
+                                '<br/>Opportunities Won: ' + formatFieldByType(this.point.numberOfOppsWon, 'Integer') +  
+                               // '<br/>Opportunities Touched: ' + formatFieldByType(this.point.numberOfOpps, 'Integer') + 
+                            '</div>' + 
+                        '</div>';
+                        
+                    },
+                    
+                    followPointer: false
+                },
+                exporting: {
+                    buttons: {
+                        contextButton: {
+                            enabled: false
+                        }
+                    }
+                },
+                plotOptions: {
+                    bubble: {
+                        minSize: 3,
+                        maxSize: 20
+                    },
+                    series: {
+                        dataLabels: {
+                            useHTML: true,
+                            enabled: true,
+                            align: "left",
+                            x: 14,
+                            format: '{point.Name}',
+                            style: {
+                                color: 'black',
+                                textShadow: false,
+                                fontWeight: 400,
+                                fontFamily: 'Open Sans',
+                                fontSize: '12.5px'
+                            }
+                        }
+                    },
+                },
+
+                series: [{
+                    data: this.objList
+                }]
+            });
+        }
+
+        function getAvg(arr) {
+            if (arr.length == 0)
+                return 0;
+            return arr.reduce(function(p, c) {
+                return p + c;
+            }) / arr.length;
+        }
+    </script>
+</apex:page>

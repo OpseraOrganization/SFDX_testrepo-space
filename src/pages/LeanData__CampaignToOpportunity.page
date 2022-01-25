@@ -1,0 +1,1146 @@
+<apex:page controller="LeanData.CampaignToOpportunityController" sidebar="false" standardStylesheets="false" docType="html-5.0" action="{!checkPopulateFromClarity}">
+<c:googleAnalytics analyticsCategory="Reporting" />
+<c:loadingBox />
+<style>
+    html {
+      font-family: sans-serif ;
+      -webkit-text-size-adjust: 100% ;
+          -ms-text-size-adjust: 100% ;
+    }
+    .noSidebarCell{
+        padding: 0 !important;
+    }
+    .bs a{
+        text-decoration : none ;
+    }
+    .selectedLink{
+        
+    }
+    body{
+        margin: 0px;
+    }
+    .bs .label-yes {
+        background-color: #003c57;
+        opacity: .2;
+        border-radius: 3px;
+        color: #ffffff;
+        cursor: pointer;
+        padding: 1px 5px;
+        margin-left: -4px;
+    }
+    
+    .bs .label-yes:hover {
+        opacity: 1;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .bs .label-yes:focus {
+        opacity: 1;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .bs .label-yes-selected {
+        opacity: 1;
+        color: white;
+        text-decoration: none;
+    }
+    .table-opp-stages thead tr td{
+        color: #a4daeb !important;
+        font-size: 11px !important;
+        font-family: sans-serif !important;
+        font-weight: normal !important;
+        vertical-align: middle;
+    }
+    .blue-button {
+        background-color: #003c57 !important;
+        border: 2px solid #003c57;
+        border-radius: 7px;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #ffffff !important;
+        padding: 6px 14px;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .blue-button:hover {
+        background-color: #005980 !important;
+        border: 2px solid #005980;
+        text-decoration: none !important;
+    }
+    div.bs span.dateInput span.dateFormat{
+       display:none;
+    }
+    .bs .table-check tbody {
+        max-height: 400px;
+        overflow-y: auto;
+        display: block;
+        width: 100%;
+    } 
+    .bs .table-check-2 tbody {
+        max-height: 400px;
+        overflow-y: auto;
+        display: block;
+        width: 100%;
+    } 
+
+    .bs .table-opp-stages > thead > tr > th, .bs .table-check-2 > tbody > tr > th, .bs .table-check-2 > tfoot > tr > th, .bs .table-check-2 > thead > tr > td, .bs .table-check-2 > tbody > tr > td, .bs .table-check-2 > tfoot > tr > td {
+    float: left;
+    border-bottom: medium none;
+    } 
+    .bs .section-1, .bs .section-2, .bs .section-3, .bs .section-3-2, .bs .section-2a, .bs .section-4{
+        float:left !important; 
+        padding-left:50px !important; 
+    }
+    .bs .date-select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        //background: url("../images/arrow.png") no-repeat scroll 90% center / 15px auto #e7eaeb !important;
+        text-overflow: ""; 
+        cursor: pointer;
+        width: 120px;
+        display: inline-block;
+        letter-spacing: 0;
+        background-size: 15px auto;
+    }
+    
+    .bs .date-select-close {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background: url("{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/close.png')}") no-repeat scroll 90% center / 15px auto #e7eaeb !important;
+        text-overflow: ""; 
+        cursor: pointer;
+        width: 120px;
+        display: inline-block;
+        letter-spacing: 0;
+        background-size: 15px auto;
+    }
+    .date-input {
+        float: left;
+        width: 120px !important;
+    }
+    
+    .bs .input-lg + .form-control-feedback, .bs .input-group-lg + .form-control-feedback {
+        font-size: 16px;
+        height: 35px;
+        line-height: 35px;
+        width: 25px;
+        color: #2597c3;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+    
+    .bs .has-feedback label ~ .form-control-feedback {
+        top: 0;
+    }
+</style>
+
+<head>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+
+    <title>Bulk Campaign Report - Step 1</title>
+
+    <!-- Bootstrap Core CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'css/bootstrap.css')}"/> 
+    <!-- Custom CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__CampaignInfluenceWizardResources, 'css/custom.css')}"/> 
+     
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
+    <!-- Fonts -->
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css' />
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,600,700,800,300' rel='stylesheet' type='text/css' />   
+
+</head>
+
+<body>
+<apex:outputPanel layout="block" styleClass="bs" rendered="{!isReportingOn}" >
+    <apex:form >
+    <!-- Page Content -->
+    <apex:outputPanel layout="block" styleClass="page-content" >
+        <!-- .header -->
+        <section class="header" style="z-index:1;">
+            <div class="container">
+                <div class="logo">
+                    <img width="138" height="27" src="{!URLFOR($Resource.images, 'logo_white_large.png')}" alt="Logo" />
+                </div>
+                <div id="mobile-menu" class="navbar navbar-default">
+                  <button type="button" class="navbar-toggle" data-toggle="offcanvas" data-target="#myNavmenu" data-canvas="body">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                  </button>
+                </div>
+            </div>
+        </section>
+         / .header -->
+        
+        <!-- .right-sidebar 
+        <section id="right-sidebar" class="right-sidebar padding-step-1" >           
+            <div class="sidebar-title col-xs-12">
+                <h2>Summary of Report Build</h2>
+                <img width="30" height="40" src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/icon-report.png')}" alt="Icon Report" /> 
+            </div>
+            
+            <div class="include-form col-xs-12">
+                <apex:outputPanel styleClass="form-group" id="eligibleCampaigns">
+                    <label for="name">Included Eligible Campaigns</label>
+                    <div class="form-control" style="height: 35px;"><apex:outputLabel rendered="{!selectedCampaignIds != null}" value="{!selectedCampaignIds.size} Campaigns " style="color:#5e7178;"/></div>
+                </apex:outputPanel>
+            </div>
+            
+            <div class="exclusion-form col-xs-12">
+                <h3>Filters - Exclusions</h3>
+                <apex:outputPanel styleClass="form-group col-xs-12" id="excludedMemberStatuses">
+                    <label for="name">Excluded Member Status</label>
+                    <div class="form-control" style="height:200px;"><apex:outputLabel rendered="{!excludedMemberStatuses != null}" value="{!excludedMemberStatuses}" style="color:#5e7178;"/></div>
+                </apex:outputPanel>
+                
+                <apex:outputPanel styleClass="form-group col-xs-12" id="excludedLeadStatuses">
+                    <label for="name">Excluded Lead Status</label>
+                    <div class="form-control small-textarea" style="height:200px !important;"><apex:outputLabel rendered="{!excludedLeadStatuses != null}" value="{!excludedLeadStatuses}" style="color:#5e7178;"/></div>
+                </apex:outputPanel>
+            </div>
+            
+            <!--
+                <div class="opp-form col-xs-12">
+                    <h3>Filters - Opportunities</h3>
+                    <div class="form-group col-xs-12">
+                        <label for="name">Opportunity Created Date</label>
+                        <div class="form-control big-textarea"></div>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label for="name">Opportunity Closed Date</label>
+                        <div class="form-control big-textarea"></div>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label for="name">Excluded Opportunity Types</label>
+                        <div class="form-control small-textarea"></div>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label for="name">Excluded Opportunity Stages</label>
+                        <div class="form-control big-textarea"></div>
+                    </div>
+                </div>
+            
+        </section>  -->
+             <!-- .right-sidebar -->
+            
+        <!-- .section-1 -->
+        <section class="section-1">
+            <div class="container">
+                <div class="col-xs-12 main-title">
+                    <div class="col-md-6 col-xs-12">
+                        <div><h1>Bulk Campaign Report</h1></div> 
+                    </div>
+                    <!-- <div class="col-md-6  col-xs-12">
+                        <a href="#">Switch to Specific Campaigns</a>
+                    </div> -->
+                </div>  
+                <div class="sub-title">
+                    <div><h2 class="titles" id="title_1">Campaign Criteria</h2></div>
+                    <div><h2 class="titles" id="title_2">Eligible Campaigns</h2></div>
+                    <div><h2 class="titles" id="title_3">Filters</h2></div>
+                    <div><h2 class="titles" id="title_4">Filters</h2></div>
+                </div>                    
+                <div class="col-xs-12 navigation">                  
+                    <span>Steps</span>
+                    <ul class="tabs">
+                        <li data-related="title_1" data-toggle="tooltip" data-placement="bottom" title="CAMPAIGN CRITERIA" class="current nav-1" data-tab="tab-1" id="nav-1">1</li>
+                        <li data-related="title_2" data-toggle="tooltip" data-placement="bottom" title="ELIGIBLE CAMPAIGNS" class="nav-2" data-tab="tab-2" id="nav-2">2</li>
+                        <li data-related="title_3" data-toggle="tooltip" data-placement="bottom" title="FILTERS" class="nav-3" data-tab="tab-3" id="nav-3">3</li>
+                        <li data-related="title_4" data-toggle="tooltip" data-placement="bottom" title="FILTERS - OPPORTUNITIES" class="nav-4" data-tab="tab-4" id="nav-4">4</li>
+                        <li data-related="title_5" data-toggle="tooltip" data-placement="bottom" title="SCHEDULE RUN" class="nav-5" data-tab="tab-5" id="nav-5">5</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <!-- / .section-1 -->
+    
+    
+<!-- TAB 1 -->
+    <div id="tab-1" class="tab-content current">
+        <!-- .section-2 -->
+        <section class="section-2">
+            <div class="container">
+                <div><h2>Campaign Start Date: <span style="font-weight:normal; color: #666666;"> Select dates or leave blank to include all dates.</span></h2> </div>
+                <div class="from-to">
+                    <div class="form-group has-feedback" >
+                        <label>From:</label>
+                            <input style="height:0px; top:-1000px; position:absolute" type="text" value="" />
+                            <apex:inputText value="{!campaignStartDateString}" styleClass="form-control startDate input-lg date-select-close date1"  />
+                            <span onclick="ClearFields1();" class="fa fa-close form-control-feedback reset-input"></span>
+                    </div>
+                    <div class="form-group has-feedback">
+                        <label>To:</label>
+                            <apex:inputText value="{!campaignEndDateString}" styleClass="form-control endDate input-lg date-select-close date2"  />
+                            <span onclick="ClearFields2();" class="fa fa-close form-control-feedback reset-input"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- / .section-2 -->
+        
+        <!-- .section-3 -->
+        <section class="section-3">
+            <div class="container" style="min-height:700px;">
+                <h2><span>Campaign Type:</span>  Select which types to <span>include</span> in your report.</h2>
+                <div class="campaign-type">
+                    CAMPAIGN TYPE
+                </div>
+                <apex:outputPanel id="campaignTypePanel">
+                <table class="table table-check table-type">                                     
+                      <tbody>
+                        <tr class="colored">
+                            <td width="65"><div class="check-box"><input id="allcb-type" class="allcb-type" type="checkbox" value="option1" name="checkbox1" checked="true" /><label></label></div></td>
+                            <td width="640" >Include All</td>                                  
+                        </tr>
+                            
+                            <apex:repeat value="{!campaignTypeSelector}" var="CT" >
+                            <tr class="{!IF(CT.isSelected == true,'colored' ,'')}">
+                                <td><div class="check-box campaign-type-selector" id="{!CT.selectorLabel}" ><apex:inputCheckbox styleClass="campaign-type-checkbox" value="{!CT.isSelected}"  /><label></label></div></td>
+                                <td>{!CT.selectorLabel}</td>      
+                            </tr>
+                            </apex:repeat>
+                      </tbody>
+                 </table>
+                 </apex:outputPanel>
+            </div>
+        </section>
+        <!-- / .section-3 -->
+        
+        <!-- .section-4 -->
+        <section class="section-4">
+            <div class="container">
+                <div class="buttons-bottom">
+                     <apex:commandLink action="{!selectBulkCampaigns}"  onComplete="bindJS();" rerender="bulkCampaignsPanel" id="step-2" html-data-related="title_2" html-data-tab="tab-2" styleClass="step-2 next-button pagi" value="Next" /> 
+                     <!-- <apex:commandLink action="{!selectBulkCampaigns}"  onComplete="stepTwo();" rerender="bulkCampaignsPanel" id="step-2" html-data-related="title_2" html-data-tab="tab-2" styleClass="step-2 next-button" value="Next" /> -->
+                    <a class="back-button" >BACK</a>                    
+                </div>
+            </div>
+        </section>
+        <!-- / .section-4 -->
+    </div>
+
+<!-- TAB 2 -->
+    <div id="tab-2" class="tab-content">
+                <!-- .section-3 -->
+        <section class="section-3-2">
+            <div class="container" style="min-height:800px;">
+                <h2><span>Eligible Campaigns:</span>  Select which campaigns to <span>include</span> in your report.</h2>
+                <div class="campaign-type">
+                    CAMPAIGN NAMES
+                </div>
+                <apex:outputPanel id="bulkCampaignsPanel" >
+                    <apex:outputPanel rendered="{!bulkCampaignSelector == null}" style="width:100%;" layout="block">
+                        <img src="/img/loading.gif" style="margin-top: 20px; margin-left: 20px;" /> 
+                    </apex:outputPanel>
+                    <apex:outputPanel id="showBulkCampaigns" rendered="{!bulkCampaignSelector != null && selectedCampaignsSize <= 500}" >
+                        <table class="table table-check table-names">                                    
+                              <tbody>
+                                <tr class="colored">
+                                    <td width="65">
+                                    <apex:outputPanel rendered="{!bulkCampaignSelector.size!=0}" >
+                                   
+                                    <apex:outputPanel rendered="{!allCampaignsSelected}" > <div class="check-box"><input class="allcb-names" id="allcb-names" type="checkbox" value="option1" name="checkbox1" checked="true"/><label></label></div></apex:outputPanel>
+                                    <apex:outputPanel rendered="{!!allCampaignsSelected}" > <div class="check-box"><input class="allcb-names" id="allcb-names" type="checkbox" value="option1" name="checkbox1" /><label></label></div></apex:outputPanel>
+                                    
+
+                                    </apex:outputPanel></td>
+                                    <td  width="640"><apex:outputPanel rendered="{!bulkCampaignSelector.size!=0}" >Include All</apex:outputPanel></td>                                  
+                                </tr>
+                                <apex:repeat value="{!bulkCampaignSelector}" var="BC" >
+                                    <tr class="{!IF(BC.isSelected == true,'colored' ,'')}">
+                                        <td><div class="check-box"><apex:inputCheckbox value="{!BC.isSelected}"  /><label></label></div></td>
+                                        <td>{!BC.obj['Name']}</td>                                  
+                                    </tr>
+                                </apex:repeat>                        
+                              </tbody>
+                         </table>
+                     </apex:outputPanel>
+                     <apex:outputPanel id="hideBulkCampaigns" rendered="{!selectedCampaignsSize !=null && selectedCampaignsSize > 500}" >
+                         <h2>You have selected <span>{!selectedCampaignsSize}</span> Campaigns. Click 'Next' to Continue.</h2>
+                     </apex:outputPanel>
+                 </apex:outputPanel>
+            </div>
+        </section>
+        <!-- / .section-3 -->
+        
+        <!-- .section-4 -->
+        <section class="section-4">
+            <div class="container">
+                <div class="buttons-bottom">
+                    <a onClick="initializeCMS();" id="step-3" data-related="title_3" data-tab="tab-3" class="next-button pagi step-3">Next</a>
+                    <a id="step-1" data-related="title_1" data-tab="tab-1" class="back-button pagi step-1">BACK</a>                    
+                </div>
+            </div>
+        </section>
+        <!-- / .section-4 -->
+    </div>
+    
+<!-- TAB 3 -->
+    <div id="tab-3" class="tab-content">
+        <apex:outputPanel id="step3Panel" >
+                <!-- .section-2a -->
+        <section class="section-2a">
+            <div class="container">
+                <div class="info-box">
+                    <img width="30" height="30" src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/info-icon.png')}" alt="Info Icon" /><span>You have selected {!selectedCampaignIds.size} campaigns.</span>
+                </div>
+            </div>
+        </section>
+        <!-- / .section-2a -->
+        
+        <!-- .section-3 -->
+        <section class="section-3-2">
+            <div class="container" style="min-height:700px;">
+                <div><h2><span>Inclusions:</span> Select which of the following to <span>include</span> in your report.</h2></div>
+                <div class="col-sm-6 col-xs-12 exclude-1">
+                    <div class="campaign-type-2">
+                        CAMPAIGN MEMBER STATUS
+                    </div>
+                    <apex:outputPanel rendered="{!campaignMemberStatusSelector == null}" layout="block">
+                        <img src="/img/loading.gif" style="margin-top: 20px; margin-left: 20px;" /> 
+                    </apex:outputPanel>
+                    <table class="table table-check-2 table-member">                                   
+                          <tbody>
+                            <!--<tr>
+                                <td width="65"><div class="check-box-2"><input class="allcb-member" id="allcb-member" type="checkbox" value="option1" name="checkbox1" /><label></label></div></td>
+                                <td>Exclude All</td>                                  
+                            </tr>-->
+                            <apex:repeat value="{!campaignMemberStatusSelector}" var="CM" >
+                                <tr class="{!IF(CM.isSelected == true,'colored' ,'')}">
+                                    <td width="65"><div class="check-box-2"><apex:inputCheckbox value="{!CM.isSelected}"  /><label></label></div></td>
+                                    <td width="503" >{!CM.selectorLabel} <span style="font-weight: normal; font-style: italic; font-size: 80%;" > {!campaignStatusTypesMap[CM.selectorLabel]}</span></td>                                  
+                                </tr>
+                            </apex:repeat>           
+                          </tbody>
+                     </table>
+                </div><div class="col-sm-6 col-xs-12 exclude-2">
+                    <div class="campaign-type-2">
+                        LEAD STATUS
+                    </div>
+                    <apex:outputPanel rendered="{!leadStatusSelector == null}" layout="block">
+                        <img src="/img/loading.gif" style="margin-top: 20px; margin-left: 20px;" /> 
+                    </apex:outputPanel>
+                    <table class="table table-check-2 table-lead">                                     
+                          <tbody>
+                            <!--<tr>
+                                <td width="65"><div class="check-box-2"><input class="allcb-lead" id="allcb-lead" type="checkbox" value="option1" name="checkbox1" /><label></label></div></td>
+                                <td>Exclude All</td>                                  
+                            </tr> -->
+                            <apex:repeat value="{!leadStatusSelector}" var="LS" >
+                                <tr class="{!IF(LS.isSelected == true,'colored' ,'')}">
+                                    <td width="65"><div class="check-box-2"><apex:inputCheckbox value="{!LS.isSelected}"  /><label></label></div></td>
+                                    <td width="503">{!LS.obj['MasterLabel']}</td>                                  
+                                </tr>
+                            </apex:repeat> 
+                          </tbody>
+                     </table>
+                </div>
+            </div>
+            
+        </section>
+        <!-- / .section-3 -->
+        
+        </apex:outputPanel>
+        
+        <!-- .section-4 -->
+        <section class="section-4">
+            <div class="container">
+                <div class="buttons-bottom">
+                    <apex:commandLink onComplete="bindJS();" action="{!populate2ndBulkSettings}" rerender="step4Panel, excludedMemberStatuses, excludedLeadStatuses" id="step-4" html-data-related="title_4" html-data-tab="tab-4" styleClass="next-button pagi step-4" value="NEXT" />
+                    <a id="step-2a" data-related="title_2" data-tab="tab-2" class="back-button pagi step-2a">BACK</a>                   
+                </div>
+            </div>
+        </section>
+        <!-- / .section-4 -->
+        
+    </div>
+
+<!-- TAB 4 -->  
+    <div id="tab-4" class="tab-content tab-4">
+        <apex:outputPanel id="step4Panel" >
+                <!-- .section-2a -->
+        <section class="section-2a">
+            <div class="info-box">
+                <img width="30" height="30" src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/info-icon.png')}" alt="Info Icon" /><span>You have selected {!selectedCampaignIds.size} campaigns.</span>
+            </div>
+            <!--
+            <div class="container">
+                <apex:outputPanel rendered="{!opportunityTypeSelector == null}" layout="block">
+                        <img src="/img/loading.gif" style="margin-top: 20px; margin-left: 20px;" /> 
+                </apex:outputPanel>
+                <apex:outputPanel styleClass="info-box-2" rendered="{!numberOfUnselectedBulkOpps != 0 && opportunityTypeSelector != null}" layout="block">
+                    <img width="30" height="30" src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/info-icon.png')}" alt="Info Icon" /><span class="infobox-2-text">You have selected {!selectedCampaignIds.size} campaigns.</span>
+                    <p>There are <span>{!numberOfUnselectedBulkOpps} campaigns</span> that have been run prior, but are not included in this selection.<br />Do you want to delete those results? 
+                    <apex:commandLink action="{!deleteOldResults}" styleClass="label-yes yes label-yes-selected" rerender="x" value="Yes" /><apex:commandLink action="{!retainOldResults}" styleClass="label-yes no" rerender="x" value="No" /> 
+                    </p>
+                </apex:outputPanel>
+            </div>
+            -->
+        </section>
+        <!-- / .section-2a -->
+        
+        <!-- .section-3 -->
+        <section class="section-3-2 section-3-2-a">
+            <div class="container">
+                <div class="col-sm-6 col-xs-12 exclude-1 border-step4">
+                    <h2><span>Opportunity Created Date:</span></h2>
+                    <div class="step-4-filter">
+                        <div class="from-to">
+                            <div class="form-group has-feedback">
+                                <label class="first-label">Between</label>
+                                <apex:inputText value="{!oppStartDateString}" styleClass="form-control oppCreateStartDate input-lg date-select-close date3" />
+                                <span onclick="ClearFields3();" class="fa fa-close form-control-feedback reset-input"></span>
+                            </div>
+                            <div class="form-group has-feedback">
+                                <label>and</label>
+                                <apex:inputText value="{!oppEndDateString}" styleClass="form-control oppCreateEndDate input-lg date-select-close date4" />
+                                <span onclick="ClearFields4();" class="fa fa-close form-control-feedback reset-input"></span>
+                            </div>
+                        </div>
+                        <div class="from-to">
+                            <div class="form-group">
+                                <label>Less than</label>
+                                <apex:inputText value="{!relevantPriorDayRange}" styleClass="form-control input-lg small-drop date-select" />
+                                <p>days <span>before</span> campaign</p>
+                            </div>
+                        </div>
+                        <div class="from-to">
+                            <div class="form-group">
+                                <label>Less than</label>
+                                <apex:inputText value="{!relevantPostDayRange}" styleClass="form-control input-lg small-drop date-select" />
+                                <p>days <span>after</span> campaign</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xs-12 exclude-2">
+                    <h2><span>Opportunity Closed Date:</span></h2>
+                    <div class="step-4-filter">
+                        <div class="from-to">
+                            <div class="form-group has-feedback">
+                                <label class="first-label">Between</label>
+                                <apex:inputText value="{!oppClosedStartDateString}" styleClass="form-control oppCloseStartDate input-lg date-select-close date5" />
+                                <span onclick="ClearFields5();" class="fa fa-close form-control-feedback reset-input"></span>
+                            </div>
+                            <div class="form-group has-feedback">
+                                <label>and</label>
+                                <apex:inputText value="{!oppClosedEndDateString}" styleClass="form-control oppCloseEndDate input-lg date-select-close date6" />
+                                <span onclick="ClearFields6();" class="fa fa-close form-control-feedback reset-input"></span>
+                            </div>
+                        </div>
+                        <div class="from-to">
+                            <div class="form-group">
+                                <label>Less than</label>
+                                <apex:inputText value="{!relevantPriorDayRangeOppClose}" styleClass="form-control input-lg small-drop date-select" />
+                                <p>days <span>before</span> campaign</p>
+                            </div>
+                        </div>
+                        <div class="from-to">
+                            <div class="form-group">
+                                <label>Less than</label>
+                                <apex:inputText value="{!relevantPostDayRangeOppClose}" styleClass="form-control input-lg small-drop date-select" />
+                                <p>days <span>after</span> campaign</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- / .section-3 -->
+        
+        <!-- .section-3 -->
+        <section class="section-3">
+            <div class="container" style="min-height:700px;">
+                <h2><span>Inclusions:</span>  Select which of the following to <span>include</span> in your report.</h2>
+                <div class="campaign-type">
+                    OPPORTUNITY TYPES
+                </div>
+                <apex:outputPanel rendered="{!opportunityTypeSelector == null}" layout="block">
+                        <img src="/img/loading.gif" style="margin-top: 20px; margin-left: 20px;" /> 
+                </apex:outputPanel>
+                <table class="table table-check table-opp-types">                                  
+                      <tbody>
+                        <!--
+                        <tr>
+                            <td width="65"><div class="check-box"><input class="allcb-opp-types" id="allcb-opp-types" type="checkbox" value="option1" name="checkbox1" /><label></label></div></td>
+                            <td>Exclude All</td>                                  
+                        </tr>
+                        -->
+                        <apex:repeat value="{!opportunityTypeSelector}" var="OT" >
+                            <tr class="{!IF(OT.isSelected == true,'colored' ,'')}">
+                                <td width="65"><div class="check-box"><apex:inputCheckbox value="{!OT.isSelected}"  /><label></label></div></td>
+                                <td width = "640">{!OT.selectorLabel}</td>                                  
+                            </tr>
+                        </apex:repeat> 
+                      </tbody>
+                 </table>
+
+                <table class="table table-check table-opp-stages table-margin">
+                      <thead>
+                        <tr>
+                            <td width="735">OPPORTUNITY STAGES</td>
+                          <!--  <td >IS WON</td>
+                            <td >IS CLOSED</td>   -->                    
+                        </tr>
+                      </thead>
+                      <tbody>
+                          <!-- <tr><td>
+                              <apex:outputPanel rendered="{!opportunityStageSelector == null}" layout="block">
+                                    <img src="/img/loading.gif" style="margin-left: 20px;" /> 
+                             </apex:outputPanel>
+                          </td></tr> -->
+                          <!--
+                        <tr>
+                            <td width="170"><div class="check-box-1"><input class="allcb-opp-stages" id="allcb-opp-stages" type="checkbox" value="option1" name="checkbox1" /><label></label></div> Exclude All</td>
+                            <td width="50"></td>
+                            <td width="50"></td>                             
+                        </tr>
+                        -->
+                        <apex:repeat value="{!opportunityStageSelector}" var="OS" >
+                            <tr class="{!IF(OS.isSelected == true,'colored' ,'')}">
+                                <td width="735"><div class="check-box-1"><apex:inputCheckbox value="{!OS.isSelected}"  /><label></label></div> {!OS.OS.MasterLabel}</td>
+                              <!--  <td><apex:outputField value="{!OS.OS.isWon}"/><label></label></td>
+                                <td><apex:outputField value="{!OS.OS.isClosed}" /><label></label></td>     -->                          
+                            </tr>
+                        </apex:repeat> 
+                      </tbody>
+                 </table>
+            </div>
+        </section>
+        <!-- / .section-3 -->
+        
+        </apex:outputPanel>
+        
+        <!-- .section-4 -->
+        <section class="section-4">
+            <div class="container">
+                <div class="buttons-bottom">
+                    <apex:commandLink rerender="x" onComplete="bindJS();" id="step-5" html-data-related="title_5" html-data-tab="tab-5" styleClass="next-button pagi step-5" value="NEXT" />
+                    <!-- <apex:commandLink action="{!runReport}" styleClass="next-button" html-data-toggle="modal" html-data-target="#myModal" value="RUN" reRender="x" /> -->
+                    <a id="step-3a" data-related="title_3" data-tab="tab-3" class="back-button pagi step-3a">BACK</a>
+                    
+                </div>
+            </div>
+        </section>
+        <!-- / .section-4 -->
+    </div>
+    
+<!-- TAB 5 -->
+    <div id="tab-5" class="tab-content">
+        <apex:outputPanel id="step5Panel" >
+                <!-- .section-2a -->
+        <section class="section-2a">
+            <div class="container">
+                <!--
+                <div class="info-box">
+                    <img width="30" height="30" src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/info-icon.png')}" alt="Info Icon" /><span>You have selected {!bulkSelectedCampaigns.size} campaigns.</span>
+                </div>
+                -->
+            </div>
+        </section>
+        <!-- / .section-2a -->
+        
+        <!-- .section-3 -->
+        <section class="section-3-2">    
+            <div class="container" style="min-height:700px;color:black;">
+                <!-- <div><h2>Choose your run type.</h2></div> -->
+                <div class="col-sm-6 col-xs-12 exclude-1" style="text-align: center;">
+                    <h2>
+                        Scheduled Run
+                    </h2>
+                
+                <br /><br />
+                I want to run Campaign Influence Reporting  <br /><br />
+                    <apex:selectList value="{!scheduleType}"  size="1" styleClass="form-control input-lg small-drop date-select" style="margin-left:7px;margin-right:7px;">
+                        <apex:selectOptions value="{!scheduleTypeOptions}" />  
+                        <apex:actionSupport event="onchange" reRender="scheduleDayPanel" />  
+                    </apex:selectList>
+                    
+                    <apex:outputPanel id="scheduleDayPanel">
+                        <apex:outputPanel rendered="{!scheduleType == 'Weekly'}" >
+                        on 
+                        
+                        <apex:selectList value="{!scheduleDay}"  size="1" styleClass="form-control input-lg small-drop date-select"  style="margin-left:7px;margin-right:7px;">
+                            <apex:selectOptions value="{!scheduleDayOptions}" />        
+                        </apex:selectList>
+                        
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel rendered="{!scheduleType == 'Monthly'}" >
+                        on the
+                        
+                        <apex:selectList value="{!scheduleDate}"  size="1" styleClass="form-control input-lg small-drop date-select" style="margin-left:7px;margin-right:7px;">
+                            <apex:selectOptions value="{!scheduleDateOptions}" />        
+                        </apex:selectList>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+                    at
+                    
+                    <apex:selectList value="{!scheduleTime}"  size="1" styleClass="form-control input-lg small-drop date-select" style="margin-left:7px;margin-right:7px;">
+                        <apex:selectOptions value="{!scheduleTimeOptions}" />        
+                    </apex:selectList>
+                    
+                    <apex:selectList value="{!scheduleTimePeriod}"  size="1" styleClass="form-control input-lg small-drop date-select" style="margin-left:7px;margin-right:7px;">
+                        <apex:selectOptions value="{!scheduleTimePeriodOptions}" />        
+                    </apex:selectList>
+                    <br /><br />
+                    <apex:commandLink action="{!scheduleCampaignInfluence}" rerender="x, msgs" id="schedule" value="SCHEDULE" html-data-toggle="modal" html-data-target="#myModal2" styleClass="blue-button"/> 
+                
+                </div>
+                
+                <div class="col-sm-6 col-xs-12 exclude-2" style="text-align: center; border-left : 1px solid #E1E1E1;">
+                    <h2>
+                        One Time Run
+                    </h2>
+                <br /><br /><br />
+                <apex:commandLink action="{!runReport}" value="RUN" reRender="x, msgs" styleClass="blue-button" html-data-toggle="modal" html-data-target="#myModal"/>
+                <!-- <apex:actionFunction name="runReport" action="{!runReport}" rerender="x" onComplete="alert('Report Run');" /> -->
+                <apex:actionFunction name="runReport"  action="{!runReport}" oncomplete="test()"  reRender="Exp_total, msgs" />
+               
+                <apex:actionFunction action="{!initializeCMS}" name="initializeCMSAF" rerender="step3Panel,eligibleCampaigns" oncomplete="bindJS();" status="loading">
+                    <apex:param name="firstParam" assignTo="{!cmsSelectorJSON}" value="" />
+                </apex:actionFunction>
+                    
+                <apex:pageMessages id="msgs" />
+                        
+                </div>
+            </div>
+        </section>
+        <!-- / .section-3 -->
+        
+        </apex:outputPanel>
+        
+        <!-- .section-4 -->
+        <section class="section-4">
+            <div class="container">
+                <div class="buttons-bottom">
+                    <a id="step-4a" data-related="title_4" data-tab="tab-4" class="back-button pagi step-4a">BACK</a>                   
+                </div>
+            </div>
+        </section>
+        <!-- / .section-4 -->
+        
+    </div>    
+    <!-- /.page-content -->
+    
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><img src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/close.png')}" alt="Close" /></button>
+          </div>
+          <div class="modal-body">
+                <h2>Thank you!</h2>
+                <p>Your bulk campaign report has been<br />successfully run. An email will be sent to you<br />once it is complete.</p>
+                <p class="lean">The LeanData Team</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><img src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/close.png')}" alt="Close" /></button>
+          </div>
+          <div class="modal-body">
+                <h2>Thank you!</h2>
+                <p>Your bulk campaign report has been<br />successfully scheduled.</p>
+                <p class="lean">The LeanData Team</p>
+          </div>
+        </div>
+      </div>
+    </div> 
+</apex:outputPanel>
+</apex:form>
+</apex:outputPanel>
+
+     <!-- jQuery Version 1.11.1 -->
+     <apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/jquery.js')}"/> 
+     <apex:includeScript value="{!URLFOR($Resource.LeanData__JqueryUI, 'jquery-ui-1.11.4.custom/jquery-ui.min.js')}"  /> 
+     
+     <!-- Bootstrap Core JavaScript -->
+     <apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/bootstrap.js')}"/> 
+    
+     <!-- JavaScript -->
+
+     <script>
+            j$ = jQuery.noConflict();
+             /*** MOBILE MENU ***/
+            j$(".mobile-menu").click(function(){
+                j$(".right-sidebar").fadeToggle('slow');
+            });
+            
+            /*** TABLE ***/
+            j$(function() {
+                j$('td:first-child input').change(function() {
+                    j$(this).closest('tr').toggleClass("colored", this.checked);
+                });
+            });
+            
+            function bindSideBar(){
+                j$(".right-sidebar").css({'height':(j$(".page-content").height()- 140 +'px' )});
+            }
+            function bindJS(){
+                bindSideBar();
+                $(".yes").click(function(){
+                    $('.yes').toggleClass('label-yes-selected');
+                    $('.no').removeClass('label-yes-selected');
+                });
+                
+                $(".no").click(function(){
+                    $('.no').toggleClass('label-yes-selected');
+                    $('.yes').removeClass('label-yes-selected');
+                });
+                j$('.allcb-member').change(function(){
+                    if(j$(this).prop('checked')){
+                        j$('.table-member tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', true);
+                            j$(this).closest('tr').addClass("colored", this.checked);
+                        });
+                    }else{
+                        j$('.table-member tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', false);
+                            j$(this).closest('tr').removeClass("colored", this.checked);
+                        });
+                    }
+                });
+            
+                j$('.allcb-lead').change(function(){
+                    if(j$(this).prop('checked')){
+                        j$('.table-lead tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', true);
+                            j$(this).closest('tr').addClass("colored", this.checked);
+                        });
+                    }else{
+                        j$('.table-lead tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', false);
+                            j$(this).closest('tr').removeClass("colored", this.checked);
+                        });
+                    }
+                });
+            
+                j$('.allcb-names').change(function(){
+                    if(j$(this).prop('checked')){
+                        j$('.table-names tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', true);
+                            j$(this).closest('tr').addClass("colored", this.checked);
+                        });
+                    }else{
+                        j$('.table-names tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', false);
+                            j$(this).closest('tr').removeClass("colored", this.checked);
+                        });
+                    }
+                });
+            
+                j$('.allcb-type').change(function(){
+                    if(j$(this).prop('checked')){
+                        j$('.table-type tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', true);
+                            j$(this).closest('tr').addClass("colored", this.checked);
+                        });
+                    }else{
+                        j$('.table-type tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', false);
+                            j$(this).closest('tr').removeClass("colored", this.checked);
+                        });
+                    }
+                });
+                
+                j$('.allcb-opp').change(function(){
+                    if(j$(this).prop('checked')){
+                        j$('.table-opp tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', true);
+                            j$(this).closest('tr').addClass("colored", this.checked);
+                        });
+                    }else{
+                        j$('.table-opp tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', false);
+                            j$(this).closest('tr').removeClass("colored", this.checked);
+                        });
+                    }
+                });
+            
+                j$('.allcb-opp-types').change(function(){
+                    if(j$(this).prop('checked')){
+                        j$('.table-opp-types tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', true);
+                            j$(this).closest('tr').addClass("colored", this.checked);
+                        });
+                    }else{
+                        j$('.table-opp-types tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', false);
+                            j$(this).closest('tr').removeClass("colored", this.checked);
+                        });
+                    }
+                });
+            
+                j$('input[type="checkbox"]').change(function(){
+                    if(j$(this).prop('checked')){
+                        $(this).closest('tr').addClass("colored", this.checked);
+                    }
+                    else{
+                        $(this).closest('tr').removeClass("colored", this.checked);
+                    }
+                });
+                
+                j$('.allcb-opp-stages').change(function(){
+                    if(j$(this).prop('checked')){
+                        j$('.table-opp-stages tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', true);
+                            j$(this).closest('tr').addClass("colored", this.checked);
+                            j$(this).removeAttr("disabled", this.checked);
+                        });
+                    }else{
+                        j$('.table-opp-stages tbody tr td input[type="checkbox"]').each(function(){
+                            j$(this).prop('checked', false);
+                            j$(this).closest('tr').removeClass("colored", this.checked);
+                            j$(this).closest('td:nth-child(2) input').attr("disabled", true);
+                            j$(this).closest('td:nth-child(3) input').attr("disabled", true);
+                        });
+                    }
+                });
+                
+                $( ".startDate" ).datepicker({
+                  defaultDate: "+1w",
+                  changeMonth: true,
+                  changeYear: true,
+                  onClose: function( selectedDate ) {
+                    $( ".endDate" ).datepicker( "option", "minDate", selectedDate );
+                  }
+                });
+                
+                $( ".endDate" ).datepicker({
+                  defaultDate: "+1w",
+                  changeMonth: true,
+                  changeYear: true,
+                  onClose: function( selectedDate ) {
+                    $( ".startDate" ).datepicker( "option", "maxDate", selectedDate );
+                  }
+                });
+                
+                $( ".oppCreateStartDate" ).datepicker({
+                  defaultDate: "+1w",
+                  changeMonth: true,
+                  changeYear: true,
+                  onClose: function( selectedDate ) {
+                    $( ".oppCreateEndDate" ).datepicker( "option", "minDate", selectedDate );
+                  }
+                });
+                
+                $( ".oppCreateEndDate" ).datepicker({
+                  defaultDate: "+1w",
+                  changeMonth: true,
+                  changeYear: true,
+                  onClose: function( selectedDate ) {
+                    $( ".oppCreateStartDate" ).datepicker( "option", "maxDate", selectedDate );
+                  }
+                });
+                
+                $( ".oppCloseStartDate" ).datepicker({
+                  defaultDate: "+1w",
+                  changeMonth: true,
+                  changeYear: true,
+                  onClose: function( selectedDate ) {
+                    $( ".oppCloseEndDate" ).datepicker( "option", "minDate", selectedDate );
+                  }
+                });
+                
+                $( ".oppCloseEndDate" ).datepicker({
+                  defaultDate: "+1w",
+                  changeMonth: true,
+                  changeYear: true,
+                  onClose: function( selectedDate ) {
+                    $( ".oppCloseStartDate" ).datepicker( "option", "maxDate", selectedDate );
+                  }
+                });
+                
+                /*** SCROLL ***/
+                 j$(".pagi").click(function(){
+                     j$("html, body").animate({
+                     scrollTop:0
+                     },"fast"); 
+                });                
+                
+                j$('.pagi').on( "click", function(e) {
+                    e.preventDefault();
+                    var id = j$(this).attr('data-related'); 
+                    j$(".titles").each(function(){
+                        j$(this).hide();
+                        if(j$(this).attr('id') == id) {
+                            j$(this).show();
+                        }
+                    });
+                });
+                
+                j$('.back-button').on( "click", function(e) {
+                    bindSideBar();
+                });
+               
+            }
+            
+            j$(document).ready(function() {
+                bindJS();
+                j$(".titles").each(function(){
+                     j$(this).hide();
+                    if(j$(this).attr('id') == 'title_1') {
+                        j$(this).show();
+                    }
+                });
+            });
+            
+            /*** TOOLTIP ***/
+            j$(function () {
+                 $('[data-toggle="tooltip"]').tooltip();
+            });
+            
+
+              
+            /*** NAVIGATION ***/
+            
+            j$(document).ready(function(){   
+                j$('.pagi').click(function(){
+                    var tab_id = j$(this).attr('data-tab');
+                    j$('ul.tabs li').removeClass('current');
+                    j$('.tab-content').removeClass('current');
+            
+                    j$(this).addClass('current');
+                    j$("#"+tab_id).addClass('current');
+                })
+                
+                
+            });
+            
+            j$(function(){
+                j$('.step-2').on('click',function(){
+                   j$('.nav-2').addClass('current');
+                });
+            });
+            
+            j$(function(){
+              j$('.step-2a').on('click',function(){
+                   j$('.nav-2').addClass('current');
+                });
+            });
+            
+            j$(function(){
+              j$('.step-1').on('click',function(){
+                   j$('.nav-1').addClass('current');
+                });
+            });
+            
+            j$(function(){
+              j$('.step-3').on('click',function(){
+                   j$('.nav-3').addClass('current');
+                });
+            });
+            
+            j$(function(){
+              j$('.step-3a').on('click',function(){
+                   j$('.nav-3').addClass('current');
+                });
+            });
+            
+            j$(function(){
+              j$('.step-4').on('click',function(){
+                   j$('.nav-4').addClass('current');
+                });
+            });
+            
+            j$(function(){
+              j$('.step-4a').on('click',function(){
+                   j$('.nav-4').addClass('current');
+                });
+            });
+            
+            j$(function(){
+              j$('.step-5').on('click',function(){
+                   j$('.nav-5').addClass('current');
+                });
+            });
+            
+            j$(function(){
+                j$('.step-4').on('click',function(){
+                   j$('.right-sidebar').addClass('more-padding');
+                });
+                j$('.nav-4').on('click',function(){
+                   j$('.right-sidebar').addClass('more-padding');
+                });
+                j$('.nav-3').on('click',function(){
+                   j$('.right-sidebar').removeClass('more-padding');
+                });
+                j$('.nav-2').on('click',function(){
+                   j$('.right-sidebar').removeClass('more-padding');
+                });
+                j$('.nav-1').on('click',function(){
+                   j$('.right-sidebar').removeClass('more-padding');
+                });
+                j$('.step-3a').on('click',function(){
+                   j$('.right-sidebar').removeClass('more-padding');
+                });
+                j$('.mobile-menu').on('click',function(){
+                   j$('.right-sidebar').removeClass('more-padding');
+                });
+            });
+            function ClearFields1() {
+                 $('.date1').val("");
+            }
+            
+            function ClearFields2() {
+                 $('.date2').val("");
+            }
+            
+            function ClearFields3() {
+                 $('.date3').val("");
+            }
+            
+            function ClearFields4() {
+                 $('.date4').val("");
+            }
+            
+            function ClearFields5() {
+                 $('.date5').val("");
+            }
+            
+            function ClearFields6() {
+                 $('.date6').val("");
+            }
+            
+            function initializeCMS() {
+                var selectedCampaignTypes = [];
+                j$('.campaign-type-selector').each(function(){ 
+                    console.log( j$(this).parent().find('.campaign-type-checkbox') );
+                    if( j$(this).parent().find('.campaign-type-checkbox').is(":checked") )
+                        selectedCampaignTypes.push(this.id); 
+                });
+                console.log( ' selected campaign types ' + selectedCampaignTypes );
+                Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.CampaignToOpportunityController.getCampaignMemberStatuses}', selectedCampaignTypes, 
+                    function(result, event) {
+                        if (event.type === 'exception') {
+                            console.log("exception");
+                            console.log(event);
+                        } else if (event.status) {
+                            console.log( 'Finished Run');
+                            initializeCMSAF(JSON.stringify(result));
+                        }
+                    });
+            };
+     </script>
+</body>
+
+
+</apex:page>

@@ -1,0 +1,179 @@
+<aura:component controller ="CH_CN_SubscriptionsController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride,lightning:isUrlAddressable" access="global">
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:method name="resetMethod" action="{!c.handleProductDimension}" description="reset method"> 
+    <aura:attribute name="reset" type="String" default=""/> 
+    </aura:method>
+    <aura:attribute name="currentStageName" type="String" default=""  />
+    <aura:attribute name="initialLoad" type="Boolean" default="true"/>
+    <!-- Reset Details -->
+    <aura:attribute name="resetSelectedAllBGs" type="boolean" default="false"/>
+    <aura:attribute name="resetSelectedBGs" type="list" />
+    <aura:attribute name="resetSelectedAllBUs" type="boolean"/>
+    <aura:attribute name="resetSelectedBUs" type="list"/>
+    <aura:attribute name="resetSelectedProducts" type="list"/>
+    <aura:attribute name="resetisAllProductsSelected" type="boolean"/>
+    <!-- BG related Attributes -->
+    <aura:attribute name="recordId" type="string" description="Id of CH_NotificationSubscription__c"/>
+    <aura:attribute name="showBgDetails" type="Boolean" default="false"/>
+    <aura:attribute name="bgbuMap" type="Map" />    
+    <aura:attribute name="bgLst" type="List" />
+    <aura:attribute name="selectedBGs" type="List" default="[]"/>
+    <aura:attribute name="storedBGs" type="List" default="[]"/>
+    <aura:attribute name="requiredOptions" type="List" default="[]"/>
+    <aura:attribute name="selectedAllBGs" type="Boolean" default="false"/>
+    
+    <!-- BU related Attributes -->
+    <aura:attribute name="buLst" type="List" />
+    <aura:attribute name="allbuLst" type="List" />
+    <aura:attribute name="selectedBUs" type="List" default="[]"/>
+    <aura:attribute name="storedBUs" type="List" default="[]"/>
+    <aura:attribute name="selectedAllBUs" type="Boolean" default="false"/>
+    
+    <!-- Product related Attributes -->
+    <aura:attribute name="productFilterText" type="String" default=""/>
+    <aura:attribute name="productList" type="List"/>
+    <aura:attribute name="productColumns" type="List"/>
+    <aura:attribute name="showProductTable" type="Boolean" default="false"/>
+    <aura:attribute name="searchKeyword" type="String" description="use to store  search keyword"/>
+    <aura:attribute name="isAllProductsSelected" type="Boolean" default="false"/>
+
+    <!-- Datatable -->
+    <aura:attribute name="allData" type="List"/>
+    <aura:attribute type="List"     name="selectedProduct"      default=""/>
+    <aura:attribute type="String" name="confirmMessage" default="Product's data of related value will be removed if you remove Selected values"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit }"/>
+    <aura:attribute name="maxRowsProduct" type="Integer" default="10000"/>
+    <aura:attribute name="maxRows" type="Integer" default="10000"/>
+    <aura:attribute type="Integer"  name="ProductSearchLimit"      default="2000"/>
+    <aura:attribute name="firstTimeLoad" type="Boolean" default="true"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="true"/>
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Loading" size="medium" />
+    </aura:if>
+    <div class="{!v.showBgDetails ? 'slds-show' : 'slds-hide'}">
+        
+        <div class="c-container" >  
+            <div class="slds-grid slds-grid_vertical-align-start" >
+                <div class="slds-col" >
+                    <span>
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="6" >
+                                <div class="c-container" >  
+                                    <h1 class="slds-text-heading_small">Business Groups</h1>
+                                    <div class="slds-grid slds-grid_vertical-align-start" >
+                                        <div class="slds-col">
+                                            <span>
+                                                <lightning:layout multipleRows="true">
+                                                    <lightning:layoutItem padding="around-small" size="0">
+                                                        
+                                                        
+                                                        <lightning:input  aura:id="bgCheckbox" 
+                                                                         type="checkbox" 
+                                                                         label="All" 
+                                                                         checked="{!v.selectedAllBGs}" 
+                                                                         onchange="{!c.bgRadioChange}"
+                                                                         style="padding-top:17px;"
+                                                                         />
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem padding="around-small" size="10" class="customPadCls">
+                                                        <lightning:dualListbox aura:id="bgselectOptions"  
+                                                                               sourceLabel="Available Groups" 
+                                                                               selectedLabel="Selected Groups" 
+                                                                               options="{!v.bgLst}"
+                                                                               value="{!v.selectedBGs}"
+                                                                               requiredOptions="{!v.requiredOptions}"
+                                                                               onchange="{!c.bghandleChange }"
+                                                                               disabled="{!v.selectedAllBGs}"/>
+                                                    </lightning:layoutItem>                                                    
+                                                </lightning:layout>
+                                            </span>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                                
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" >
+                                <div class="c-container" >  
+                                    <h1 class="slds-text-heading_small">Business Units</h1>
+                                    <div class="slds-grid slds-grid_vertical-align-start" >
+                                        <div class="slds-col">
+                                            <span>
+                                                <lightning:layout multipleRows="true">
+                                                    <lightning:layoutItem padding="around-small" size="0">
+                                                        
+                                                        <lightning:input 
+                                                                         aura:id="buCheckbox" 
+                                                                         type="checkbox" 
+                                                                         label="All" 
+                                                                         checked="{!v.selectedAllBUs}" 
+                                                                         onchange="{!c.buRadioChange}"
+                                                                         disabled="{!and(!v.selectedAllBGs,!v.selectedBGs.length>0)}"
+                                                                         style="padding-top:17px;"
+                                                                         />
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem padding="around-small" size="10" class="customPadCls">
+                                                        <lightning:dualListbox aura:id="buselectOptions"  
+                                                                               sourceLabel="Available Units" 
+                                                                               selectedLabel="Selected Units" 
+                                                                               options="{!v.buLst}"
+                                                                               value="{!v.selectedBUs}"
+                                                                               requiredOptions="{!v.requiredOptions}"
+                                                                               onchange="{!c.buhandleChange }"
+                                                                               disabled="{!or(v.selectedAllBUs,and(!v.selectedAllBGs,!v.selectedBGs.length>0))}"/>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </span>
+                                        </div>
+                                        
+                                    </div>
+                                </div></lightning:layoutItem>
+                        </lightning:layout></span></div></div></div>
+        <br/>       
+        <div class="c-container" >
+            <h1 class="slds-text-heading_small">Products</h1>
+            <div class="slds-grid slds-grid_vertical-align-start" >
+                <div class="slds-col">
+                    <span>
+                        <lightning:layout multipleRows="true">
+                            
+                            
+                            <lightning:layoutItem padding="around-small" size="10">
+                                
+                                <div class="slds-grid  slds-gutters">    
+                                    <lightning:input aura:id="productAllCheckbox" 
+                                                     type="checkbox" 
+                                                     label="All" 
+                                                     checked="{!v.isAllProductsSelected}" 
+                                                     onchange="{!c.onSelectAllChangeProducts}"
+                                                     disabled="{! and(!v.selectedAllBUs,!v.selectedBUs.length>0)}" style="padding-top:20px;"/>
+                                    <div class="slds-col" onkeyup="{!c.searchProd}">
+                             
+          
+                                        <span>
+                                            <lightning:input value="{!v.searchKeyword}"
+                                                             placeholder="Search with Product Name"
+                                                             aura:id="searchField" label="Enter Product Name"   disabled="{! or(v.isAllProductsSelected,and(!v.selectedAllBUs,!v.selectedBUs.length>0))}" style="width:90%"/></span>
+                                    </div>
+                                    <div class="slds-col" style="padding-top:4px">
+                                        <span>
+                                            <p class="title">Click on Search </p>
+                                            <lightning:button aura:id="productSearchBtn"
+                                                              onclick="{!c.searchProducts}"
+                                                              variant="brand"
+                                                              label="Search"
+                                                              iconName="utility:search"  disabled="{!or(v.isAllProductsSelected,and(!v.selectedAllBUs,!v.selectedBUs.length>0))}"/> </span>
+                                    </div>                                                
+                                </div>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+            <aura:if isTrue="{!v.showProductTable}">
+                <c:CH_CN_LightingDatatable aura:id="productTable" maxRows="{!v.maxRows}" initialLoad="{!v.initialLoad}" currentStageName="{!v.currentStageName}" allData="{!v.allData}"  columns="{! v.productColumns }"  maxRowsProduct="{!v.maxRowsProduct}" selectedData="{!v.selectedProduct}" isHeaderVisible="true" hideCheckboxColumn="false" recordId="{!v.recordId}" firstTimeLoad="{!v.firstTimeLoad}"/>
+            </aura:if>
+    </div>    
+</aura:component>

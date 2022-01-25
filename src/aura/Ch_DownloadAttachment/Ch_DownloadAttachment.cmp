@@ -1,0 +1,430 @@
+<aura:component controller="CAPS_AttachmentController" 
+                implements="force:appHostable,flexipage:availableForRecordHome,flexipage:availableForAllPageTypes,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" 
+                access="global"> 
+    <ltng:require styles="{!$Resource.ToastMessageNewLine}" />
+    <aura:attribute 		name="chAttachments" 				type="List" />
+    <aura:attribute 		name="caseId" 						type="Id" />
+    <aura:attribute 		name="isSelected" 					type="Boolean" 		default = "true"	/>
+	<aura:attribute 		name="isSelectedRandD" 			    type="Boolean" 		default = "true"	/>
+    <aura:attribute 		name="isSpinner" 					type="Boolean"		default = "false"	/>
+    <aura:attribute 		name="isAgentProfile" 				type="Boolean" 		default = "true"	/>
+    <aura:attribute 		name="passwords" 					type="List"/>
+    <aura:attribute 		name="wrappervalue" 				type="Object"/>
+    <aura:attribute 		name="chAttachmentsObj" 			type="CH_Attachment__c[]" />
+    <aura:attribute 		name="isDeleteModalOpen" 			type="Boolean" 		default="false"/>
+    <aura:attribute 		name="isMessageModalOpen" 			type="Boolean" 		default="false"/>
+    <aura:attribute 		name="errorMessage" 				type="String"		default=""/>
+    <aura:attribute 		name="isCommunity" 					type="Boolean"		default="false"/>
+    <aura:attribute 		name="isAlreadyMarkedForDeletion" 	type="Boolean"		default="false"/>
+    <aura:attribute 		name="isRefreshed" 					type="Boolean"		default="false"/>
+    <aura:attribute 		name="message" 						type="string" />
+    <aura:attribute 		name="isDataBreachCase" 			type="Boolean" 		default = "true"	/>
+    <aura:attribute 		name="isRnDModalOpen" 				type="Boolean" 		default = "false"	/>
+    <aura:attribute 		name="innerWrapper" 				type="Object" />
+    <aura:attribute 		name="attachmentIdsForRnD" 			type="List" />
+    <aura:attribute 		name="searchText" 					type="String" />
+    <aura:attribute 		name="filterName" 					type="String" 		default=""/>
+    <aura:attribute 		name="sortAsc" 						type="Boolean"  />
+    <aura:attribute 		name="sortField" 					type="String"  />
+    <aura:attribute 		name="isCaseWorkgroupMember" 		type="Boolean"		default="false"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="c:CH_UploadEvent" action="{!c.doInit}"/>
+    <ltng:require styles="{!join(',', 
+                          $Resource.datatable + '/DataTables-1.10.16/media/css/jquery.dataTables.min.css',
+                          $Resource.datatable + '/DataTables-1.10.16/extensions/FixedHeader/css/fixedHeader.dataTables.min.css')}"
+                  scripts="{!join(',', 
+                           $Resource.CH_jquery224, 
+                           $Resource.datatable + '/DataTables-1.10.16/media/js/jquery.dataTables.min.js',
+                           $Resource.datatable + '/DataTables-1.10.16/extensions/FixedHeader/js/dataTables.fixedHeader.min.js')}" afterScriptsLoaded="{!c.scriptsLoaded}" /> 
+    
+    <aura:if isTrue="{!v.isSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand"  size="small" />
+        </div>
+    </aura:if>
+    <article class="slds-card">
+        <aura:if isTrue="{!v.isMessageModalOpen}">
+            <div class="demo-only" style="height: 640px;">
+                <section role="dialog" tabindex="-1" aria-label="error panel" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <lightning:button class="slds-button slds-button_icon slds-modal__close" iconName="utility:close" title="Close" onclick="{!c.closeErrorModal}">
+                                <!--span class="slds-assistive-text">Close</span-->
+                            </lightning:button>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">  Error Messages	</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p align="center">{!v.errorMessage}</p>
+                        </div>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>     
+        </aura:if>
+        <div>
+            <lightning:button class="slds-button slds-section__title-action" iconName="utility:list" iconPosition="left">
+                <b>CAPS Attachments</b></lightning:button>
+            
+            <div class ="slds-p-around_medium" align="right">  
+                <lightning:button class="slds-button" variant="brand" iconName="utility:refresh" iconPosition="left" label="Refresh" onclick="{!c.refreshView}"/>
+                <aura:if  isTrue="{!v.innerWrapper.caseRecordTypeName == 'CH_Problem' &amp;&amp; !v.isCommunity &amp;&amp; (v.innerWrapper.rNdInterfaceName == 'JIRA' || v.innerWrapper.rNdInterfaceName == 'PRONTO' &amp;&amp; v.isSelected==false)}">
+                    <lightning:button class="slds-button" variant="brand" iconName="utility:share" iconPosition="left" label="Share with R&amp;D" onclick="{!c.shareLinkWithRandD}" disabled="{!v.isSelectedRandD}"/>
+                </aura:if>
+                <aura:if  isTrue="{!v.isAgentProfile}">
+                    <lightning:button class="slds-button" variant="brand" iconName="utility:download" iconPosition="left" label="Download" onclick="{!c.downloadAttachment}" disabled="{!v.isSelected}"/>
+                </aura:if>
+                <aura:if  isTrue="{!v.isDataBreachCase}">
+                    <lightning:button class="slds-button" variant="destructive" iconName="utility:delete" iconPosition="left" label="Delete" onclick="{!c.confirmaDeletionModal}" disabled="{!v.isSelected || !v.isCaseWorkgroupMember}"/>
+                </aura:if>
+            </div>
+        </div>
+        <div><br/></div>
+        <div id="tablecontainer">
+            <aura:if isTrue="{!!empty(v.chAttachmentsObj)}">
+                <div class="slds-align_absolute-center slds-p-bottom_xx-small slds-size_12-of-12">
+                    <div>
+                        <lightning:select name="select1" aura:id="selectedFilter" 
+                                          onchange="{!c.search}" value="">
+                            <option value="">--Select One--</option>
+                            <option value="All Filters">All Filters</option>
+                            <option value="File Name">File Name</option>
+                            <option value="Description">Description</option>
+                            <option value="Status">Status</option>
+                            <option value="Source">Source</option>
+                            <option value="File Type">Version</option>
+                        </lightning:select>
+                    </div>
+                    <lightning:input type="search" disabled ="{!v.filterName==''}" 
+                                     aura:id="filterId" value="{!v.searchText}" onchange="{!c.search}"
+                                     isLoading="false" placeholder="Enter Text to search"/>
+                </div>
+            </aura:if>
+            <!--table id="{!'attachment-' + v.recordId}"  class="display compact slds-table slds-table_cell-buffer slds-table_bordered" -->
+            <div class="slds-size_12-of-12" style="overflow-x: auto;">
+                <table id="{!'attachment-' + v.recordId}"  class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <thead>
+                        <tr class="slds-text-heading_label">
+                            <th scope="col" width="50px"><div title="Select">Select</div></th>
+                            <!--th scope="col"><div class="slds-truncate" title="Name">Name</div></th-->
+                            <th scope="col" width="150px">
+                                <div style="cursor: pointer;" title="Name" onclick="{!c.sortByName}">File Name
+                                    <aura:if isTrue="{!v.sortField=='Name'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th>
+                            <th scope="col" width="100px">
+                                <div  style="cursor: pointer;" title="Version" onclick="{!c.sortByVersion}">Version
+                                    <aura:if isTrue="{!v.sortField=='CH_FileType__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>	
+                                </div>
+                            </th>
+                            <th scope="col" width="100px">
+                                <div  title="Status" style="cursor: pointer;" onclick="{!c.sortByStatus}">Status
+                                    <aura:if isTrue="{!v.sortField=='CH_Status__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th>
+                            <th scope="col" width="150px">
+                                <div  title="Sensitive Data?" style="cursor: pointer;" onclick="{!c.sortBySensitiveData}">Sensitive Data?
+                                    <aura:if isTrue="{!v.sortField=='Sensitive_Data__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th>
+                            <th scope="col" width="100px">
+                                <div  title="Source" style="cursor: pointer;" onclick="{!c.sortByEmailToCase}">Source
+                                    <aura:if isTrue="{!v.sortField=='CH_Portal_or_Email_to_Case__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th>
+                            <th scope="col" width="150px">
+                                <div title="Description" style="cursor: pointer;" onclick="{!c.sortByDescription}">Description
+                                    <aura:if isTrue="{!v.sortField=='CH_Description__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th>
+                            <th scope="col" width="150px">
+                                <div  title="Mark for Delete" style="cursor: pointer;" onclick="{!c.sortByMarkDel}">Mark for Delete
+                                    <aura:if isTrue="{!v.sortField=='CH_MarkForDelete__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th>
+                            <th scope="col" width="150px">
+                                <div  title="Customer Visible" style="cursor: pointer;" onclick="{!c.sortByCustVisible}">Customer Visible
+                                    <aura:if isTrue="{!v.sortField=='Customer_Visible__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th>
+                            <th scope="col" width="100px">
+                                <div align="center" title="Size" style="cursor: pointer;" onclick="{!c.sortBySize}">Size(KB)
+                                    <aura:if isTrue="{!v.sortField=='CH_Size__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th>
+                            <th scope="col" width="150px">
+                                <div title="Uploaded" style="cursor: pointer;" onclick="{!c.sortByUploaded}">Uploaded
+                                    <aura:if isTrue="{!v.sortField=='CH_Uploaded__c'}">
+                                        <span>
+                                            <aura:if isTrue="{!v.sortAsc}">
+                                                &#8593;
+                                                <aura:set attribute="else">
+                                                    &#8595;
+                                                </aura:set>
+                                            </aura:if>
+                                        </span>
+                                    </aura:if>
+                                </div>
+                            </th> 
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.chAttachments}" var="chAttachment">
+                            <tr>
+                                <td><div align="center"> <ui:inputCheckbox text="{!chAttachment.Id}" class = "normal-inputcheckbox" disabled ="{!chAttachment.CH_Status__c=='Deleted'}" aura:id="checkboxId" value="" change = "{!c.isSelected}" /></div></td>
+                                <!-- <ui:inputCheckbox text="{!chAttachment.Id}" disabled ="{!chAttachment.CH_MarkForDelete__c== True}" aura:id="checkboxId" value="" change = "{!c.isSelected}" /></div></td>-->
+                                <td><a onclick="{!c.navigateToDetails}"><div class="breakwords" data-recId="{!chAttachment.Id}"  data-status="{!chAttachment.CH_Status__c}" title="{!chAttachment.Name}">{!chAttachment.Name}</div></a></td>
+                                <td><div title="{!chAttachment.CH_FileType__c}">{!chAttachment.CH_FileType__c}</div></td>
+                                <td><div title="{!chAttachment.CH_Status__c}">{!chAttachment.CH_Status__c}</div></td>
+                                <td><div align="center"> <ui:inputCheckbox class="slds-checkbox disabled-inputcheckbox" value="{!chAttachment.Sensitive_Data__c}" disabled ="true" /></div></td>
+                                <td><div class="breakwords" title="{!chAttachment.CH_Portal_or_Email_to_Case__c}">{!chAttachment.CH_Portal_or_Email_to_Case__c}</div></td>
+                                <td><div class="breakwords" title="{!chAttachment.CH_Description__c}">{!chAttachment.CH_Description__c}</div></td>
+                                <td><div align="center"  title="{!chAttachment.CH_MarkForDelete__c}"><ui:inputCheckbox class="slds-checkbox disabled-inputcheckbox"  aura:id="inputField" value="{!chAttachment.CH_MarkForDelete__c}" disabled ="true"/></div></td>
+                                <td><div align="center" title="{!chAttachment.Customer_Visible__c}"><ui:inputCheckbox class="slds-checkbox disabled-inputcheckbox" value="{!chAttachment.Customer_Visible__c}" disabled ="true" /></div></td>
+                                <td><div align="center" title="{!chAttachment.CH_Size__c}">{!chAttachment.CH_Size__c/1000 &lt; 1 ? 1 : chAttachment.CH_Size__c/1000}</div></td>
+                                <td><div class="breakwords"  title="{!chAttachment.CH_Uploaded__c}"><ui:outputDateTime value="{!chAttachment.CH_Uploaded__c}"/></div></td>
+                            </tr>
+                        </aura:iteration>
+                        <aura:if isTrue="{!!empty(v.chAttachmentsObj) &amp;&amp; empty(v.chAttachments)}">
+                            <tr>
+                                <td colspan="5">
+                                    <div class="slds-align_absolute-center" align="center">
+                                        No matching record found.
+                                    </div>
+                                </td>
+                            </tr>
+                        </aura:if>
+                    </tbody>
+                </table>
+            </div>
+        <div><br/></div>
+        </div>
+        <aura:if isTrue="{!!empty(v.wrappervalue)}">
+            <div id="tablecontainer" style="height:250px;width:100%">
+                <table  class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered" style="margin-bottom:90px" width="100%">
+                    <thead>
+                        <tr class="slds-text-heading_label">
+                            <th scope="col">
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="text-input-id-1">Downloaded File Name</label>
+                                </div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="text-input-id-1">Password</label>
+                                </div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-form-element" align="center">
+                                    <label class="slds-form-element__label" for="text-input-id-1">Copy to Clipboard</label>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.wrappervalue}" var="item">
+                            <tr>
+                                <td class="breakwords"><div>{!item.fileName}</div></td>
+                                <td class="breakwords">{!item.password}</td>
+                                <td ><div align="center"><lightning:button  aura:id="button1"  iconName="utility:copy_to_clipboard" title="Copy"  value="{!item.password}" onclick="{!c.copy}" /></div></td>
+                                
+                            </tr>
+                        </aura:iteration> 
+                    </tbody>
+                </table>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.isDeleteModalOpen}">
+            <div class="demo-only" style="height: 640px;">
+                <section role="dialog" tabindex="-1" aria-label="Confirm" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p align="center">All files in selected attachment will get deleted. Are you sure?</p>
+                            <p align="center">Please click "Continue" to proceed or "Cancel"</p>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral" 
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{!c.cancelDelete}"/>
+                            <lightning:button variant="brand" 
+                                              label="Continue"
+                                              title="Continue"
+                                              onclick="{!c.deleteAttachments}"/>
+                            
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.isRnDModalOpen}">
+            <div class="demo-only" style="height: 1640px;">
+                <section role="dialog" tabindex="-1" aria-label="Confirm" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <fieldset class="slds-box slds-theme--default slds-container--small">
+                                <legend id="newexpenseform" class="slds-text-heading--small slds-p-vertical--medium">
+                                    <b>Share attachments with R&amp;D</b>
+                                </legend>
+                                <form class="slds-form--stacked">
+                                    <lightning:input aura:id="subjectRnD" label="Subject:" name="subject" 
+                                                     value="Update R&amp;D Interaction - Attachment" required="true" disabled = "true"/> 
+                                    <lightning:textarea  aura:id="rNdDescription" name="descrptionRnD" value="" required="true" label="Description" disabled = "true"/>
+                                    <lightning:textarea aura:id="rNdAdditionalDescription" name="AdditionDescriptionRnd" value="" label="Additional Description (for R&amp;D)" />
+                                    <lightning:textarea aura:id="rNdComment" name="CommentsRnD" value="" label="Comments (not shared with R&amp;D)" />
+                                </form>
+                            </fieldset>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral" 
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{!c.canceltoSharewithRnD}"/>
+                            <lightning:button variant="brand" 
+                                              label="Send to R&amp;D"
+                                              title="Share"
+                                              onclick="{!c.sendToRnD}"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>
+        </aura:if>
+        
+        <div class="slds-hidden" aura:id='toastMessageSuccess'>
+            <div class="slds-notify_container slds-is-relative" style="position: absolute; top:0;">
+                <div class="slds-notify slds-notify_toast slds-theme_success" role="alert">
+                    <span class="slds-assistive-text">success</span>
+                    <span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top">
+                        <lightning:icon iconName="utility:success" variant="inverse" size="small"/>
+                    </span>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small">{!v.message}</h2>
+                    </div>
+                    <button class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" onclick="{!c.hideMessage}">
+                        <lightning:icon iconName="utility:close" variant="inverse" size="small"/>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </div>
+            </div>
+        </div> 
+        <div class="slds-hidden" aura:id='toastMessageError'>
+            <div class="slds-notify_container slds-is-relative" style="position: absolute; top:0;">
+                <div class="slds-notify slds-notify_toast slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">error</span>
+                    <span class="slds-icon_container slds-icon-utility-error slds-m-right_small slds-no-flex slds-align-top">
+                        <lightning:icon iconName="utility:error" variant="inverse" size="small"/>
+                    </span>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small">{!v.message}</h2>
+                    </div>
+                    <button class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" onclick="{!c.hideMessage}">
+                        <lightning:icon iconName="utility:close" variant="inverse" size="small"/>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="slds-hidden" aura:id='toastMessageInfo'>
+            <div class="slds-notify_container slds-is-relative" style="position: absolute; top:0;">
+                <div class="slds-notify slds-notify_toast slds-theme_info" role="alert">
+                    <span class="slds-assistive-text">info</span>
+                    <span class="slds-icon_container slds-icon-utility-info slds-m-right_small slds-no-flex slds-align-top">
+                        <lightning:icon iconName="utility:info" variant="inverse" size="small"/>
+                    </span>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small customToastMessageNewLine">{!v.message}</h2>
+                    </div>
+                    <button class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" onclick="{!c.hideMessage}">
+                        <lightning:icon iconName="utility:close" variant="inverse" size="small"/>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div><br/></div>
+    </article>
+</aura:component>
