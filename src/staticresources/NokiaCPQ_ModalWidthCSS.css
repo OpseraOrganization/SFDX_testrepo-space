@@ -1,0 +1,6 @@
+/*  ModalWidthComponent */
+
+.slds-modal__container{
+	width: 80% !important;
+	max-width: 80% !important;
+}

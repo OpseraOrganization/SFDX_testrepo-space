@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <description>Post Critical Severity Chatter notification to Account</description>
+        <name>Post_Critical_Severity_to_Account</name>
+        <label>Post Critical Severity to Account</label>
+        <locationX>748</locationX>
+        <locationY>292</locationY>
+        <actionName>chatterPost</actionName>
+        <actionType>chatterPost</actionType>
+        <connector>
+            <targetReference>Post_Critical_Severity_to_Product</targetReference>
+        </connector>
+        <inputParameters>
+            <name>text</name>
+            <value>
+                <elementReference>CriticalPostToAccount</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>subjectNameOrId</name>
+            <value>
+                <elementReference>CurrentCase.AccountId</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <actionCalls>
+        <description>Post Critical Severity to Product</description>
+        <name>Post_Critical_Severity_to_Product</name>
+        <label>Post Critical Severity to Product</label>
+        <locationX>877</locationX>
+        <locationY>288</locationY>
+        <actionName>chatterPost</actionName>
+        <actionType>chatterPost</actionType>
+        <inputParameters>
+            <name>text</name>
+            <value>
+                <elementReference>CriticalPostToProduct</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>subjectNameOrId</name>
+            <value>
+                <elementReference>CurrentCase.ProductId</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <actionCalls>
+        <description>Post Outage update to Account</description>
+        <name>Post_Outage_to_Account</name>
+        <label>Post Outage to Account</label>
+        <locationX>570</locationX>
+        <locationY>46</locationY>
+        <actionName>chatterPost</actionName>
+        <actionType>chatterPost</actionType>
+        <connector>
+            <targetReference>Post_Outage_to_Product</targetReference>
+        </connector>
+        <inputParameters>
+            <name>text</name>
+            <value>
+                <elementReference>OutagePost</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>subjectNameOrId</name>
+            <value>
+                <elementReference>CurrentCase.AccountId</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <actionCalls>
+        <description>Post Outage update to Product</description>
+        <name>Post_Outage_to_Product</name>
+        <label>Post Outage to Product</label>
+        <locationX>711</locationX>
+        <locationY>46</locationY>
+        <actionName>chatterPost</actionName>
+        <actionType>chatterPost</actionType>
+        <connector>
+            <targetReference>Severity_Critical</targetReference>
+        </connector>
+        <inputParameters>
+            <name>text</name>
+            <value>
+                <elementReference>OutagePost</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>subjectNameOrId</name>
+            <value>
+                <elementReference>CurrentCase.ProductId</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <apiVersion>49.0</apiVersion>
+    <decisions>
+        <name>Outage_yes</name>
+        <label>Outage yes</label>
+        <locationX>326</locationX>
+        <locationY>54</locationY>
+        <defaultConnector>
+            <targetReference>Severity_Critical</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No</defaultConnectorLabel>
+        <rules>
+            <name>Yes</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CurrentCase.CH_Outage__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Yes</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CurrentCase.CH_Outage__c</leftValueReference>
+                <operator>WasSet</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Post_Outage_to_Account</targetReference>
+            </connector>
+            <label>Yes</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Severity_Critical</name>
+        <label>Severity Critical</label>
+        <locationX>486</locationX>
+        <locationY>292</locationY>
+        <defaultConnectorLabel>Non Critical</defaultConnectorLabel>
+        <rules>
+            <name>Critical</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CurrentCase.Severity__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Critical</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CurrentCase.Severity__c</leftValueReference>
+                <operator>WasSet</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Post_Critical_Severity_to_Account</targetReference>
+            </connector>
+            <label>Critical</label>
+        </rules>
+    </decisions>
+    <interviewLabel>CH Notifications Chatter Post {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>CH Notifications Chatter Post</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordLookups>
+        <name>get_Case</name>
+        <label>get Case</label>
+        <locationX>170</locationX>
+        <locationY>50</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Outage_yes</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>CaseID</elementReference>
+            </value>
+        </filters>
+        <object>Case</object>
+        <outputReference>CurrentCase</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>AccountId</queriedFields>
+        <queriedFields>ProductId</queriedFields>
+        <queriedFields>Severity__c</queriedFields>
+        <queriedFields>CH_Outage__c</queriedFields>
+        <queriedFields>CaseNumber</queriedFields>
+        <queriedFields>CreatedDate</queriedFields>
+        <queriedFields>CH_ServiceType__c</queriedFields>
+        <queriedFields>CH_Account_Name__c</queriedFields>
+        <queriedFields>CH_Product_Name__c</queriedFields>
+        <queriedFields>CH_ExternalBridge__c</queriedFields>
+        <queriedFields>Country__c</queriedFields>
+    </recordLookups>
+    <startElementReference>get_Case</startElementReference>
+    <status>Active</status>
+    <textTemplates>
+        <name>CriticalPostToAccount</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>The Case {!CurrentCase.CaseNumber} has been identified as Critical. #[Critical]
+Case Details:
+Reported to Nokia: {!CurrentCase.CreatedDate} (in User Timezone)
+Service Type: {!CurrentCase.CH_ServiceType__c}
+Severity: {!CurrentCase.Severity__c}
+Outage: {!CurrentCase.CH_Outage__c}
+Customer: {!CurrentCase.CH_Account_Name__c}
+Product: {!CurrentCase.CH_Product_Name__c}
+External Bridge Number: {!CurrentCase.CH_ExternalBridge__c}
+Country: {!CurrentCase.Country__c}</text>
+    </textTemplates>
+    <textTemplates>
+        <name>CriticalPostToProduct</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>The Case {!CurrentCase.CaseNumber} has been identified as Critical. #[Critical]
+Case Details:
+Reported to Nokia: {!CurrentCase.CreatedDate} (in User Timezone)
+Service Type: {!CurrentCase.CH_ServiceType__c}
+Severity: {!CurrentCase.Severity__c}
+Outage: {!CurrentCase.CH_Outage__c}
+Product: {!CurrentCase.CH_Product_Name__c}
+External Bridge Number: {!CurrentCase.CH_ExternalBridge__c}
+Customer: {!CurrentCase.CH_Account_Name__c}
+Country: {!CurrentCase.Country__c}</text>
+    </textTemplates>
+    <textTemplates>
+        <description>Chatter post to Outage update</description>
+        <name>OutagePost</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>The Case {!CurrentCase.CaseNumber} has been marked as an Outage. #[Outage]
+Case Details:
+Reported to Nokia: {!CurrentCase.CreatedDate} (in User Timezone)
+Service Type:  {!CurrentCase.CH_ServiceType__c}
+Severity:  {!CurrentCase.Severity__c}
+Outage:  {!CurrentCase.CH_Outage__c}
+Customer:  {!CurrentCase.CH_Account_Name__c}
+Product:  {!CurrentCase.CH_Product_Name__c}
+External Bridge Number:  {!CurrentCase.CH_ExternalBridge__c}
+Country:  {!CurrentCase.Country__c}</text>
+    </textTemplates>
+    <variables>
+        <description>Case ID from PB</description>
+        <name>CaseID</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <description>The Case that the notification is coming from</description>
+        <name>CurrentCase</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+</Flow>
