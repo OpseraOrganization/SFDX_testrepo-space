@@ -11,6 +11,7 @@
            sidebar="false"
            standardStylesheets="false"
            lightningStylesheets="{!$User.UIThemeDisplayed == 'Theme4d' ||
+           						   $User.UIThemeDisplayed == 'Theme4u' ||
            						   $User.UIThemeDisplayed == 'Theme4t'}">
            
     <apex:stylesheet value="{!URLFOR($Resource.Apttus_Approval__ApprovalsSF1Assets, 'css/fonts.css')}" />
@@ -28,15 +29,20 @@
     <script type="text/javascript" src="/soap/ajax/42.0/apex.js"></script>
     
     <script type="text/javascript">
-        // determine if we are in salesforce1
-        var inSf1Mode = false;
-        try {
-            if (sforce.one) {
-                inSf1Mode = true;
-            }
-        }
-        catch(err) {
-        }
+        // determine if we are in Classic, Lightning, or Sf1 mobile theme
+		// Theme3—Salesforce Classic 2010 user interface theme
+		// Theme4d—Modern “Lightning Experience” Salesforce theme
+		// Theme4u-Lightning Console theme
+		// Theme4t—Salesforce mobile app theme
+		
+        var inClassicMode = "{!$User.UIThemeDisplayed == 'Theme3'}";
+        var inLightningMode = "{!$User.UIThemeDisplayed == 'Theme4d' || $User.UIThemeDisplayed == 'Theme4u'}";
+        var inSf1Mode = "{!$User.UIThemeDisplayed == 'Theme4t'}";
+
+        //console.log('MyCartApprovalsLaunch::inClassicMode='+inClassicMode+'\n'+
+        	//'inLightningMode='+inLightningMode+'\n'+
+        	//'inSf1Mode='+inSf1Mode+'\n'+
+        	//"{!$User.UIThemeDisplayed}");
     </script>
 
     <apex:form >
@@ -51,18 +57,37 @@
                     // call this once the page is ready
                     var pageLoaded = "{!pageLoaded}";
                     var pageURL = "{!JSENCODE(pageURL)}";
+					var siteDomain = "{!siteDomain}";
+					//console.log('pageLoaded='+pageLoaded);
+					//console.log('pageURL='+pageURL);
+					//console.log('siteDomain='+siteDomain);
 
+					var inClassicMode = "{!$User.UIThemeDisplayed == 'Theme3'}";
+					var inLightningMode = "{!$User.UIThemeDisplayed == 'Theme4d' || $User.UIThemeDisplayed == 'Theme4u'}";
+					var inSf1Mode = "{!$User.UIThemeDisplayed == 'Theme4t'}";
+
+					//console.log('pageLoaded='+pageLoaded+'\n'+'pageURL='+pageURL+'\n'+'inClassicMode='+inClassicMode+'\n'+'inLightningMode='+inLightningMode+'\n'+'inSf1Mode='+inSf1Mode+'\n'+"{!$User.UIThemeDisplayed}");
                     if (pageLoaded == 'false') {
-                        launchMyCartApprovals(inSf1Mode);
+                        //console.log('calling launchMyCartApprovals');
+                        launchMyCartApprovals(inClassicMode, inLightningMode, inSf1Mode);
 
                     } else {
                         if (pageURL.length > 0) {
-                            // determine if we are in Salesforce1 and set navigation link appropriately
                             try {
-                                if (sforce.one) {
-                                    sforce.one.navigateToURL(pageURL);
+                                if (inClassicMode == 'false') {
+                                    var pos = pageURL.indexOf(siteDomain);
+                                    //console.log('pos='+pos);
+                                    if (pos == -1) {
+                                    	sforce.one.navigateToURL(pageURL);
+                                    } else {
+                                    	// strip site domain from the URL
+                                    	var relativePageURL = pageURL.substring(pos + siteDomain.length);
+										//console.log('relativePageURL='+relativePageURL);
+                                    	sforce.one.navigateToURL(relativePageURL);
+                                    }
                                 }
                                 else {
+									//console.log('top.location.replace');
                                     top.location.replace(pageURL);
                                     return true;
                                 }
@@ -103,6 +128,7 @@
                 <div class="footerBtn">
                     <apex:commandButton value="{!$Label.apttus_approval__ok}"
                                         action="{!doReturn}"
+                                        reRender="idPageNavigation"
                                         styleClass="btn btn-default2" />
                 </div>
             </apex:outputPanel>
@@ -110,8 +136,9 @@
                               style="text-align:center"
                               rendered="{!hasErrors && inSf1Mode}">
                               
-                <apex:commandButton action="{!doReturn}"
-                                    value="{!$Label.apttus_approval__ok}"
+                <apex:commandButton value="{!$Label.apttus_approval__ok}"
+                                    action="{!doReturn}"
+                                    reRender="idPageNavigation"
                                     styleClass="btn btn-default2" />
             </apex:outputPanel>
         </apex:outputPanel>
@@ -119,7 +146,9 @@
         <apex:actionFunction name="launchMyCartApprovals"
                              action="{!doLaunchMyCartApprovals}"
                              reRender="idPageNavigation,idHeaderPanel,idBodyPanel,idFooterPanel">
-            <apex:param name="param1" assignTo="{!inSf1Mode}" value="" />
+            <apex:param name="param1" assignTo="{!inClassicMode}" value="" />
+            <apex:param name="param2" assignTo="{!inLightningMode}" value="" />
+            <apex:param name="param3" assignTo="{!inSf1Mode}" value="" />
         </apex:actionFunction>
 
     </apex:form>

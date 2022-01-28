@@ -1,0 +1,162 @@
+<apex:page controller="LeanData.OnDemandView" extensions="LeanData.InLineEditable" action="{! initializeIsAllowed}" sidebar="false">
+    <c:accessCheck isAllowed="{! isAllowed}">
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__angela_app, 'styles.css')}"/> 
+    <c:style />
+    <div class="matched-leads-wrapper" style="padding: 20px;">
+      <div class="view">
+      <div class="pageLoading">
+          <c:loading />
+      </div>
+      <div class="pageBody" style="display: none;">
+             <div class="content">
+             <img style="height:25px;" src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}" class="leandata_logo"/>
+             <h2 class="page-description"><span class="accountName"></span><span class="firstName"></span>&nbsp;<span class="lastName"></span></h2>
+         </div>
+         <div class="clear" />
+         <div class="duplicatesTable">
+              <div>
+                  <div id="view">
+                      <div >
+                          <div class="wrapper">
+                              <div class="left">
+                                  <span class="table_title"><h3><span class="title"></span></h3></span>
+                              </div>
+                              <div class="right">
+                                  <span><a href="#RELATEDLEADSETTINGSLINKS" target="_blank" class="customTarget action_link leadsSettingsLink"><span class="setting_name ld-green"></span></a></span>
+                              </div>
+                          </div>
+                      </div>
+                      <div>
+                          <div class="dupesHeightDiv tableWrapper outer-panel">
+                              <div class="inner-panel">
+                                  <div class="scroll-panel" style="overflow-y: auto;">
+                                      <table class="list content_table_lead" id="duplicatesTable" style="table-layout:fixed;">
+                                          <thead class="TableHead">
+                                          </thead>
+                                          <tbody class="TableBody">
+                                          </tbody>
+                                      </table>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div>
+              <span><a href="#LINKTOACCOUNTPAGE" target="_blank" class="sobjectLink"> &laquo; Back to <span class="sobjectType"></span></a> &nbsp;|</span>
+              <span>Showing <span class="rowLimit"></span> duplicate records</span>
+          </div>
+      </div>
+      </div>
+    </div>
+    <c:setTargetValue targetValue="{!targetValue}"/>
+    <c:matchedViewAssets view_type="{! sObjectType}" with_dupes="false" with_l2a_matches="false"/>
+    <script>
+        Visualforce.remoting.timeout = 120000; // Set timeout at page level
+        j$ = jQuery.noConflict();
+        objId = '{! JSENCODE(objId)}';
+        pageType = '{! JSENCODE(sobjectType)}';
+        startTime = Date.now();
+        j$('document').ready(function(){
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.OnDemandView.getNewViewObject}',
+                objId, pageType, null,
+                function(result, event) {buildView(result)}
+            )
+        });
+    </script>
+    </c:accessCheck>
+    <script>
+    function buildView(result) {
+            viewObject = result;
+            var leadList, colList, colMap;
+            if( pageType == 'Lead') {
+              leadList = viewObject["relatedLeadMatches"];
+              colList = viewObject["leadCols"];
+              colMap = viewObject["leadColsMap"];
+            }
+            else if( pageType =='Account') {
+              leadList = viewObject['leadMatches'];
+              colList = viewObject["leadCols"];
+              colMap = viewObject["leadColsMap"];
+            }
+            if(leadList.length>0) {
+             if(pageType == 'Lead')
+               ga_event('A2B Details View with dupes');
+             if(pageType == 'Account')
+               ga_event('Matched Leads View with l2a matches');
+            }
+            
+            initializePage(viewObject);
+
+
+            // [ZH tbd] j$('.leandata_logo').attr('src', viewObject['logoURL']);
+            // j$('.leandata_logo_header').attr('src', viewObject['logoURL']);
+
+            if (viewObject["isRelatedLeadViewOn"] || viewObject["isMatchedLeadsViewOn"]) {
+              j$('.accountName').html(viewObject['accountName']);
+              j$('.firstName').html(viewObject['FirstName']);
+              j$('.lastName').html(viewObject['LastName']);
+              if(pageType == 'Account') {
+                j$('.title').html('Matched Leads');
+                j$('.setting_name').html('Lead Settings');
+                if(viewObject['hasColumnSettingAccess'] || viewObject['enableAllowUserColumnCustomizations']) {
+                  j$('.leadsSettingsLink').attr('href', viewObject['dupeLeadSettingsLink']);
+                } else {
+                  j$('.leadsSettingsLink').hide();
+                }
+              }
+              if(pageType == 'Lead') {
+                j$('.title').html('Related Leads');
+                j$('.setting_name').html('Related Lead Settings');
+                if(viewObject['hasColumnSettingAccess'] || viewObject['enableAllowUserColumnCustomizations']) {
+                  j$('.leadsSettingsLink').attr('href', viewObject['relatedLeadsSettingsLink']);
+                } else {
+                  j$('.leadsSettingsLink').hide();
+                }
+              }
+              j$('.sobjectLink').attr('href',viewObject['sobjectLink']);
+              j$('.sobjectType').html(pageType);
+
+              initializeSection('Lead', colList, colMap, leadList);
+                j$('.TableHead').html(generateHeader());
+                j$('.TableBody').html(generateSObjectRows());
+                
+            }
+            var selectedLists = j$('.inline_editable').get();
+            [].forEach.call(selectedLists, function(selectList){
+              var toJ = j$(selectList);
+              toJ.change(function(event){
+               //event.preventDefault();
+               var touchedSelectList = event.target;
+               var leadId = touchedSelectList.className.split(" ")[1];
+               var newStatus = touchedSelectList.options[touchedSelectList.selectedIndex].value;
+               changeLead(leadId, htmlDecode(newStatus));
+               })
+            })
+            function changeLead (leadId, newStatus) {
+               console.log('change');
+               Visualforce.remoting.Manager.invokeAction(
+               '{!$RemoteAction.OnDemandView.updateLeadStatus}',
+               leadId,
+               newStatus,
+               function (result, event) {}
+               )
+            }
+
+            j$('.pageLoading').hide();
+            j$('.pageBody').show();
+
+            ga_timing(pageType, Date.now() - startTime);
+
+           setTarget();
+           initializeDataTable(j$('.content_table_lead'), 'lead', {"pageLength" : 20});
+
+           if( UserInfo.getUIThemeDisplayed() != 'Theme4d')
+            j$('.view').width( j$('.bPageHeader').width() - 20 );
+        }
+         </script>
+</apex:page>

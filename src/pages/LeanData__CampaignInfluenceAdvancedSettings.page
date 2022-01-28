@@ -1,0 +1,833 @@
+<apex:page sidebar="false" showHeader="false" standardStylesheets="false" controller="LeanData.CampaignInfluenceASController">
+    <script>
+    j$ = jQuery.noConflict();
+    var weightingOn;
+
+    function CloseWindow() {
+        var winMain=window.opener;
+        if (null==winMain) {
+            winMain=window.parent.opener;
+        }
+        winMain.closeLookupPopup();
+    }
+    function toggleWeighting( mode, category ){
+        console.log( ' Switch Campaign Weighting ' + mode );
+        weightingOn = mode;
+        var weightingPrefix = '';
+        if( category == 'Type' )
+            weightingPrefix = 'CampaignType';
+            
+        else if( category == 'Member Status' )
+            weightingPrefix = 'CampaignMemberStatus';
+            
+        if( mode == 'On'){
+            j$('.' + weightingPrefix + 'OnButton').addClass('OnOffButtonActive');
+            j$('.' + weightingPrefix + 'OffButton').removeClass('OnOffButtonActive');
+            j$('.' + weightingPrefix + 'OnButton').bind('click', false);
+            j$('.' + weightingPrefix + 'OffButton').unbind('click', false);
+            
+            j$('.' + weightingPrefix + 'WeightingActions').fadeTo(500, 1);
+            j$('.' + weightingPrefix + 'WeightSelector').on("click");
+            j$('.' + weightingPrefix + 'SaveButton').on("click");  
+            j$('.' + weightingPrefix + 'CancelButton').on("click");        
+            j$('.' + weightingPrefix + 'weightSelector').removeClass('inactiveLink');
+            setWeightSelectorActions();
+        }
+        else{
+             j$('.' + weightingPrefix + 'OnButton').removeClass('OnOffButtonActive');
+            j$('.' + weightingPrefix + 'OffButton').addClass('OnOffButtonActive');
+            j$('.' + weightingPrefix + 'OnButton').bind('click', false);
+            j$('.' + weightingPrefix + 'OffButton').unbind('click', false);
+            
+            j$('.' + weightingPrefix + 'WeightingActions').fadeTo(500,.2);
+            j$('.' + weightingPrefix + 'WeightSelector').addClass('inactiveLink');
+            j$('.' + weightingPrefix + 'WeightSelector').off("click");
+        }
+        if( category == 'Type' )
+            setWeightingOnAF( mode );
+        else if( category == 'Member Status' )
+            setCampaignMemberStatusWeightingOnAF( mode );
+
+    }
+
+    j$(document).ready(function() {
+        setWeightSelectorActions();
+        j$('[data-toggle="tooltip"]').tooltip(); 
+
+
+        weightingOn = '{!JSENCODE(isCampaignTypeWeightingOn)}';
+        if( '{!JSENCODE(isCampaignTypeWeightingOn) }' == 'Off' ){
+            j$('.CampaignTypeWeightingActions').fadeTo(500,.2);
+            j$('.CampaignTypeWeightSelector').addClass('inactiveLink');
+            j$('.CampaignTypeWeightSelector').off("click");  
+            j$('.CampaignTypeSaveButton').off("click");  
+            j$('.CampaignTypeCancelButton').off("click");      
+        }
+        
+        if( '{!JSENCODE(isCampaignMemberStatusWeightingOn)}' == 'Off' ){
+            j$('.CampaignMemberStatusWeightingActions').fadeTo(500,.2);
+            j$('.CampaignMemberStatuseWeightSelector').addClass('inactiveLink');
+            j$('.CampaignMemberStatusWeightSelector').off("click");  
+            j$('.CampaignMemberStatusSaveButton').off("click");  
+            j$('.CampaignMemberStatusCancelButton').off("click");    
+        }
+    }); 
+    
+    function setWeightSelectorActions(){
+        j$( ".CampaignTypeWeightSelector" ).click(function() {
+            var x = '.' + j$(this).attr('class').split(/\s+/)[1];
+            j$( x ).each(function() {             
+                var newSource= j$(this).children('img').attr("src").replace("green","grey");
+                var currentSource = j$(this).children('img').attr("src", newSource );
+            });
+            j$(this).children('img').attr("src", j$(this).children('img').attr("src").replace("grey","green") );
+        });
+    }
+
+    function setWeight( campaignType, weight ){
+        if(weightingOn  == 'On' ){
+            console.log( ' Type : ' + campaignType + ' weight: ' + weight );
+            setWeightAF( campaignType, weight );
+        }
+        else{
+            console.log( ' Weighting Off' );
+        }
+    }
+    
+    //--------- ACTIVITY SCORE DETAILS
+    j$( document ).ready(function() {
+        j$('#myWizard').easyWizard({
+            showSteps: false,
+            showButtons: false,
+            submitButton: false
+        });
+        j$('#myWizardPager .previous a').bind('click', function(e) {
+            e.preventDefault();
+            j$('#myWizard').easyWizard('prevStep');
+        });
+        j$('#myWizardPager .page1 a').bind('click', function(e) {
+            e.preventDefault();
+            j$('#myWizard').easyWizard('goToStep', 1);
+        });
+        j$('#myWizardPager .page2 a').bind('click', function(e) {
+            e.preventDefault();
+            j$('#myWizard').easyWizard('goToStep', 2);
+        });
+        j$('#myWizardPager .page3 a').bind('click', function(e) {
+            e.preventDefault();
+            j$('#myWizard').easyWizard('goToStep', 3);
+        });
+        j$('#myWizardPager .page4 a').bind('click', function(e) {
+            e.preventDefault();
+            j$('#myWizard').easyWizard('goToStep', 4);
+        });
+        j$('#myWizardPager .page5 a').bind('click', function(e) {
+            e.preventDefault();
+            j$('#myWizard').easyWizard('goToStep', 5);
+        });
+        j$('#myWizardPager .next a').bind('click', function(e) {
+            e.preventDefault();
+            j$('#myWizard').easyWizard('nextStep');
+        });
+    });
+    function toggleCampaignType(){
+        j$('.campaignTypePanel').toggle(400);
+    }
+    </script>
+    <style>
+    body{
+        font-family: 'Open Sans', sans-serif;
+        margin: 0;
+    }
+    .weightingTable td{
+        padding-top: 20px;
+        text-align: left;
+        font-size: 18px;
+        font-weight: normal;
+    }
+    .weightingTable th{
+        font-size: 18px;
+        padding-top: 20px;
+    }
+    .OnOffButton{
+        display: block;
+        width: 75px;
+        background: #bfced5 !important;
+        padding: 5px 1px !important;
+        text-align: center;
+        border-radius: 5px;
+        color: white !important;
+        font-weight: bold;
+    }
+    .OnOffButtonActive{
+        background : #45b7e6 !important;
+    }
+    .inactiveLink{
+        cursor: default !important;
+    }
+    .CampaignTypeWeightSelector{
+        cursor: pointer;
+    }
+    .btn:hover{
+        opacity: .5;
+    }
+    
+    .bs .modal-backdrop {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 1040;
+      background-color: #000;
+    }
+    .bs .modal-backdrop.fade {
+      filter: alpha(opacity=0);
+      opacity: 0;
+    }
+    .bs .modal-backdrop.in {
+      filter: alpha(opacity=50);
+      opacity: .5;
+    }
+    
+    .bs .modal-header {
+        border-bottom: none;
+    }
+    
+    .bs .close {
+        background: none;
+        border: none;
+        opacity: 1;
+        color: #6ab4c9;
+        font-size: 32px;
+    }
+    
+    .bs .modal-header .close {
+        margin-top: -16px;
+        margin-right: -12px;
+    }
+    
+    .bs .modal-body {
+        text-align: center;
+        font-weight: 300;
+        line-height: 24px;
+    }
+    
+    .bs .lean {
+        font-size: 14px !important;
+    }
+    .bs .modal-content{
+        padding: 10px;
+    }
+    .bs .modal-body h2 {
+        color: #005980;
+        font-size: 18px;
+        font-family: 'Open Sans', sans-serif;
+        font-weight: 600;
+        margin-top: -10px;
+        margin-bottom: 17px;    
+    }
+    
+    .bs .modal-body p {
+        font-size: 16px;
+        color: #666666;
+        font-family: 'Open Sans', sans-serif;
+        line-height: 20px;
+        margin-bottom: 28px;
+    }
+    
+    .bs .modal-dialog {
+        margin: 100px auto;
+     }
+    
+    .bs .modal-backdrop{
+        opacity:0.34 !important;
+    }
+    .bs .CMSweightSelector{
+        width: 50px;
+        color: white;
+        border-radius:0px;
+        border:none;
+        text-align:center;
+        padding-left: 20px;
+        background: url("{!URLFOR($Resource.LeanData__images, 'down_arrow_outline_white.png')}") no-repeat scroll 90% center / 15px auto #6bd3bb !important;
+        background-size: 10px !important;
+    }
+    .bs .campaignTypeWeightBox{
+        background: #1b527e;
+        padding-left:20px;
+        width: 50px;  
+        color: white;      
+    }
+    .pagePanel{
+        width:800px; 
+        height:500px;
+        padding: 0px;
+        overflow : hidden; 
+        margin-left:10%;    
+        border:1px solid #5C5C5C;
+        text-align:center;
+        background: #eeeeee;
+    }
+    .hero-unit{
+        padding: 20px;
+    }
+    h1{
+        font-size:25px !important;
+    }
+    .statsTable{
+        border-collapse: collapse;
+        color: #1b527f;
+        font-weight: normal;
+        
+    }
+    .statsTable td{
+        background: #e1e8e9;
+        padding: 7px;
+        border-bottom: 1px solid white;
+        font-size: 18px;
+    }
+    .statsHeader{
+        background: #6bd3bb;
+        color: white;
+        font-weight: normal;
+    }
+    </style>
+    <!-- Bootstrap Core CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'css/bootstrap.css')}"/> 
+    <!-- Custom CSS -->
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__CampaignInfluenceReportResources, 'css/custom.css')}"/>
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
+  
+    <!-- Fonts -->
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600' rel='stylesheet' type='text/css' />
+    <div class="bs" >
+        <apex:form >
+        <apex:actionFunction name="setWeightAF" action="{!setWeight}" rerender="x">
+            <apex:param value="" name="cType" assignTo="{!selectedCampaignType}" />
+            <apex:param value="" name="weight" assignTo="{!selectedWeight}" />
+        </apex:actionFunction>
+        <apex:actionFunction name="setWeightingOnAF" action="{!setCampaignTypeWeightingOn}" rerender="x">
+            <apex:param value="" name="sw" assignTo="{!isCampaignTypeWeightingOn}" />
+        </apex:actionFunction>
+        <apex:actionFunction name="setCampaignMemberStatusWeightingOnAF" action="{!setCampaignMemberStatusWeightingOn}" rerender="x">
+            <apex:param value="" name="cmsw" assignTo="{!isCampaignMemberStatusWeightingOn}" />
+        </apex:actionFunction>
+        <apex:outputPanel layout="block" id="attributionValueSettingsPanel" style="margin-left: 70px; text-align:center; margin-top:50px;" rendered="{!settingMode == 'CustomAttributionValue'}">
+            <table class="attributionValueTable" style="height: 50px; width: 440px;">
+            <tr>
+            <td style="text-align: center;font-size: 18px; color:#666666; font-weight: normal;">
+            Please select your custom attribution value field
+            </td>
+            </tr>
+            <tr>
+            <td style="text-align: center;padding:5px; vertical-align:middle;">
+                <apex:selectList value="{!customAttributionValueField}" multiselect="false" size="1" style="padding:4px;text-align:center; font-size: 16px;" >
+                    <apex:selectOptions value="{!customAttributionValueFieldOptions}"/>
+                </apex:selectList>
+
+                <apex:commandLink style="margin-left:8px;padding:4px 10px; font-size: 16px; margin-top: -4px;" styleClass="btn btn-primary" action="{!saveAttributionValue}" rerender="attributionValueSettingsPanel" onComplete="window.close();" >Save</apex:commandLink>
+            </td>
+            </tr>
+            </table>
+        </apex:outputPanel>
+              
+        <apex:outputPanel layout="block" id="campaignTypeWeightingPanel" style="text-align:center;width: 700px;border: solid 35px #e1e8e9;" rendered="{!settingMode == 'CampaignTypeWeighting'}">
+            <div style="border: 1px solid #a3aaae;">
+                <div style="width:628px;; text-align: left; padding-left: 50px; height:60px; background: #6ab4c9;padding-top: 20px;">
+                    <apex:image url="{!URLFOR($Resource.LeanData__images, 'logo_white_large.png')}" alt="Logo" height="27px"/>
+                    <div style="margin-right: 30px;float:right; color:white; font-size: 12px;margin-top:10px;" >Total Campaign Types ({!numberOfCampaignTypes})</div>
+                </div>
+                <div style="display:block;padding-top: 21px;padding-bottom: 50px; color: #1b527f;">
+                    <span style="font-size: 15px; font-weight: semi-bold;">Custom weighting for Campaign : </span><a style="margin-left: 5px;" class="btn OnOffButton CampaignTypeOnButton {!IF(isCampaignTypeWeightingOn  == 'On','OnOffButtonActive','')}" onClick="toggleWeighting( 'On', 'Type');"> ON </a> <a class="btn CampaignTypeOffButton OnOffButton {!IF(isCampaignTypeWeightingOn  == 'Off','OnOffButtonActive','')}" onClick="toggleWeighting( 'Off', 'Type' );"> OFF </a>
+                    
+                    <div class="CampaignTypeWeightingActions" >
+                        <table style="margin:0 auto; margin-top: 30px;" class="weightingTable">
+                        <tr>
+                            <th>Campaign Type</th><th style="padding-left: 60px;">Weighting Value</th>
+                        </tr>
+                        <apex:variable var="rowNumber" value="{!1}" />
+                        <apex:repeat value="{!orderedCampaignTypeNames}" var="C" >                  
+                        <tr>
+                            <td>{!C}</td>
+                            <td style="padding-left: 60px;" > 
+                                <a class="CampaignTypeWeightSelector WS{!rowNumber}" onClick="setWeight( '{!JSENCODE(C)}', '1' )" data-placement="bottom" data-toggle="tooltip" title="Low" ><apex:image url="{!URLFOR($Resource.LeanData__images)}/{!IF(campaignTypeWeights[C] == 1,"Weighting_green_1.png", "Weighting_grey_1.png")}" style="margin-right:5px;" /></a>
+                                <a class="CampaignTypeWeightSelector WS{!rowNumber}" onClick="setWeight( '{!JSENCODE(C)}', '2' )"><apex:image url="{!URLFOR($Resource.LeanData__images)}/{!IF(campaignTypeWeights[C] == 2,"Weighting_green_2.png", "Weighting_grey_2.png")}" style="margin-right:5px;margin-left:5px;"/></a>
+                                <a class="CampaignTypeWeightSelector WS{!rowNumber}" onClick="setWeight( '{!JSENCODE(C)}', '3' )"><apex:image url="{!URLFOR($Resource.LeanData__images)}/{!IF(campaignTypeWeights[C] == 3,"Weighting_green_3.png", "Weighting_grey_3.png")}" style="margin-right:5px;margin-left:5px;"/></a>
+                                <a class="CampaignTypeWeightSelector WS{!rowNumber}" onClick="setWeight( '{!JSENCODE(C)}', '4' )"><apex:image url="{!URLFOR($Resource.LeanData__images)}/{!IF(campaignTypeWeights[C] == 4,"Weighting_green_4.png", "Weighting_grey_4.png")}" style="margin-right:5px;margin-left:5px;"/></a>
+                                <a class="CampaignTypeWeightSelector WS{!rowNumber}" onClick="setWeight( '{!JSENCODE(C)}', '5' )"><apex:image url="{!URLFOR($Resource.LeanData__images)}/{!IF(campaignTypeWeights[C] == 5,"Weighting_green_5.png", "Weighting_grey_5.png")}" style="margin-left:5px;"/></a>
+                                <a class="CampaignTypeWeightSelector WS{!rowNumber}" onClick="setWeight( '{!JSENCODE(C)}', '6' )" data-placement="bottom" data-toggle="tooltip" title="High"><apex:image url="{!URLFOR($Resource.LeanData__images)}/{!IF(campaignTypeWeights[C] == 6,"Weighting_green_6.png", "Weighting_grey_6.png")}" style="margin-left:5px;"/></a>
+                            </td>
+                        </tr>
+                        <apex:variable var="rowNumber" value="{!rowNumber + 1}" />
+                        </apex:repeat>
+                        </table>
+                        
+                        <div style="margin-top:30px; margin-left: 250px;" >
+                            <apex:commandLink action="{!saveCampaignTypeWeight}" html-data-toggle="modal" html-data-target="#myModal" rerender="x" value="Save" styleClass="btn CampaignTypeSaveButton" style="background:#005980; color:white; padding: 5px 25px !important;"/>
+                            <apex:commandLink onClick="CloseWindow();" rerender="x" value="Cancel" styleClass="btn CampaignTypeCancelButton" style="margin-left:5px;background:#bfced5; color:white;padding: 5px 25px !important;"/>
+                        </div>
+                        
+                        <div style="margin-top:10px; font-size: 11px;">
+                        Saving these values will allow you to view weighted attribution on Campaign Influence Reports. 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </apex:outputPanel>
+        
+         <apex:outputPanel layout="block" id="campaignMemberStatusWeightingPanel" style="text-align:center;width: 900px;border: solid 35px #e1e8e9;" rendered="{!settingMode == 'CampaignMemberStatusWeighting'}">
+            <div style="border: 1px solid #a3aaae;">
+                <div style="width:828px;; text-align: left; padding-left: 50px; height:60px; background: #6ab4c9;padding-top: 20px;">
+                    <apex:image url="{!URLFOR($Resource.LeanData__images, 'logo_white_large.png')}" alt="Logo" height="27px"/>
+                    <div style="margin-right: 30px;float:right; color:white; font-size: 12px;margin-top:10px;"> </div>
+                </div>
+                <apex:outputPanel style="display:block;padding-left: 130px;padding-top:30px;padding-bottom:30px;padding-right: 30px; color: #1b527f; text-align:left; font-weight:normal;" rendered="{!isCampaignTypeWeightingOn!='On'}">
+                   Campaign member status weighting is based <br/> on custom values in campaign type.<br/><br/>
+                   Please enable campaign type weighting first.
+                </apex:outputPanel>
+                <apex:outputPanel style="display:block;padding-top: 21px;padding-bottom: 50px; color: #1b527f;" rendered="{!isCampaignTypeWeightingOn=='On'}">
+                   <span style="font-size: 15px; font-weight: semi-bold;">Custom weighting for Campaign Member Status: </span><a style="margin-left: 5px;" class="btn OnOffButton CampaignMemberStatusOnButton {!IF(isCampaignMemberStatusWeightingOn  == 'On','OnOffButtonActive','')}" onClick="toggleWeighting( 'On', 'Member Status');"> ON </a> <a class="btn CampaignMemberStatusOffButton OnOffButton {!IF(isCampaignMemberStatusWeightingOn  == 'Off','OnOffButtonActive','')}" onClick="toggleWeighting( 'Off' , 'Member Status');"> OFF </a>
+                   
+                   <apex:outputPanel layout="block" id="CampaignMemberStatusWeightingActions" styleClass="CampaignMemberStatusWeightingActions" style="padding-left:50px;padding-right:50px;" >
+                        <table style="margin:0 auto; margin-top: 30px;" class="weightingTable">
+                        <tr>
+                            <th>Campaign Type</th><th style="padding-left: 60px;">Weighting Value</th>
+                            <td style="width:100px;font-size:11px;"><apex:commandLink action="{!defaultCampaignMemberStatusWeight}" value="Revert to Defaults" rerender="CampaignMemberStatusWeightingActions"/></td>
+                        </tr>
+                        <apex:variable var="CMSrowNumber" value="{!1}" />
+                        <apex:repeat value="{!orderedCampaignTypeNames}" var="C" >                  
+                        <tr style="padding-top: 20px;">
+                            <td>{!CMSrowNumber}. &nbsp; {!C}</td>
+                            <td style="padding-left: 60px;" > <div class="campaignTypeWeightBox" >{!campaignTypeWeights[C]} </div> </td>                            
+                        </tr>
+                        <tr style="border-bottom:1px solid #E1E1E1;" >
+                        <td colspan="3" style="padding-top:10px !important; padding-bottom:10px;">
+                            <table>
+                                <tr>
+                                <td style="padding-top:0px !important;vertical-align:top;font-size:14px;">Status:</td>
+                                <td style="padding-left:60px;padding-top:0px !important; vertical-align:top; font-size:13px;text-align:right;">
+                                    <apex:repeat value="{!campaignTypeToStatusKeys[C]}" var="CMS" >
+                                        <span style="float: left; width: 203px; margin-top:4px;">
+                                            {!CMS} &nbsp;
+                                            <apex:selectList size="1" value="{!campaignMemberStatusWeights[C][CMS]}"  styleClass="CMSweightSelector" >
+                                                <apex:selectOptions value="{!weightingSelectList}"/>
+                                            </apex:selectList>
+                                        </span>
+                                    </apex:repeat>
+                                </td>
+                                </tr>
+                            </table>    
+                        </td>
+                        </tr>
+                        <apex:variable var="CMSrowNumber" value="{!CMSrowNumber + 1}" />
+                        </apex:repeat>
+                        </table>
+
+                        <div style="margin-top:30px; margin-left: 50px;" >
+                            <apex:commandLink action="{!saveCampaignMemberStatusWeight}" html-data-toggle="modal" html-data-target="#myModal2" rerender="x" value="Save" styleClass="btn CampaignMemberStatusSaveButton" style="background:#005980; color:white; padding: 5px 25px !important;"/>
+                            <apex:commandLink onClick="CloseWindow();" rerender="x" value="Cancel" styleClass="btn CampaignMemberStatusCancelButton" style="margin-left:5px;background:#bfced5; color:white;padding: 5px 25px !important;"/>
+                        </div>
+                        
+                        <div style="margin-top:10px; font-size: 11px;">
+                        Saving these values will allow you to view weighted attribution on Campaign Influence Reports. 
+                        </div>
+                    </apex:outputPanel>
+                    
+                </apex:outputPanel>
+            </div>
+        </apex:outputPanel>
+        
+        <!------------ ACCOUNT SCORE SETTING STUFFF , REMOVE THIS LATER ---------------------->
+        <apex:outputPanel layout="block" styleClass="salesTouchSettings" style="text-align:center;width: 900px;border: solid 35px #e1e8e9;" rendered="{!settingMode == 'SalesTouchSettings'}" >    
+            <div style="border: 1px solid #a3aaae;padding-bottom: 10px;">
+                <div style="width:828px;; text-align: left; padding-left: 50px; height:60px; background: #6ab4c9;padding-top: 20px;">
+                    <apex:image url="{!URLFOR($Resource.LeanData__images, 'logo_white_large.png')}" alt="Logo" height="27px"/>
+                    <div style="margin-right: 30px;float:right; color:white; font-size: 12px;margin-top:10px;"> </div>
+                </div>
+                <div style="color:#1b527f; width:100%; text-align: left; padding-left: 20px; padding-top:5px;"> Sales Touch Settings </div>   
+                <div id="myWizard" style="height:350px; font-size:20px !important;">
+                    <section class="step" data-step-title="page">
+                        <div class="hero-unit" style="font-size:20px;">
+                            <span style="color:#1b527f;font-size: 22px;">Select Task Types and Statuses to Include</span>
+                            <apex:outputPanel id="ActivityTypesPanel" layout="block" style="text-align:center;margin-top:10px;height:350px; overflow: hidden;">
+                                <div style="display: inline-block;">
+                                <table>
+                                <tr>
+                                <td>
+                                    <div style="height:250px; overflow: auto;">
+                                    <table class="statsTable" >
+                                    <tr>
+                                    <th class="statsHeader" style="font-weight:normal;padding: 5px 20px;">
+                                        Task Type
+                                    </th>
+                                    <th class="statsHeader" style="font-weight:normal;padding: 5px 20px;">
+                                        Include
+                                    </th>
+                                    </tr>
+                                    <apex:repeat value="{!TaskTypeList}" var="AT">
+                                        <tr>
+                                        <td>
+                                            {!AT.selectorLabel}
+                                        </td>
+                                        <td>
+                                            <apex:inputCheckbox value="{!AT.isSelected}" />
+                                        </td>
+                                        </tr>
+                                    </apex:repeat>
+                                    </table>
+                                    </div>
+                                </td>
+                                <td style="padding-left: 10px;" >
+                                    <div style="height:250px; overflow: auto;">
+                                    <table class="statsTable" >
+                                    <tr>
+                                    <th class="statsHeader" style="font-weight:normal;padding: 5px 20px;">
+                                        Task Status
+                                    </th>
+                                    <th class="statsHeader" style="font-weight:normal;padding: 5px 20px;">
+                                        Include
+                                    </th>
+                                    </tr>
+                                    <apex:repeat value="{!TaskStatusList}" var="TS">
+                                        <tr>
+                                        <td>
+                                            {!TS.selectorLabel}
+                                        </td>
+                                        <td>
+                                            <apex:inputCheckbox value="{!TS.isSelected}" />
+                                        </td>
+                                        </tr>
+                                    </apex:repeat>
+                                    </table>
+                                    </div>
+                                </td>
+                                </tr>
+                                </table>
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+                    </section>
+                    <section class="step" data-step-title="page">
+                        <div class="hero-unit" style="font-size:20px;">
+                            <span style="color:#1b527f;font-size: 22px;">Select Event Types to Include</span>
+                            <apex:outputPanel id="EventTypesPanel" layout="block" style="text-align:center;margin-top:10px;height:350px; overflow: hidden;">
+                                <div style="display: inline-block;height:250px; overflow: auto;">
+                                    <table class="statsTable" >
+                                    <tr>
+                                    <th class="statsHeader" style="font-weight:normal;padding: 5px 20px;">
+                                        Event Type
+                                    </th>
+                                    <th class="statsHeader" style="font-weight:normal;padding: 5px 20px;">
+                                        Include
+                                    </th>
+                                    </tr>
+                                    <apex:repeat value="{!EventTypeList}" var="ET">
+                                        <tr>
+                                        <td>
+                                            {!ET.selectorLabel}
+                                        </td>
+                                        <td>
+                                            <apex:inputCheckbox value="{!ET.isSelected}" />
+                                        </td>
+                                        </tr>
+                                    </apex:repeat>
+                                    </table>                           
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+                    </section>
+                    <section class="step" data-step-title="page">
+                        <div class="hero-unit" style="font-size:20px;">
+                            <span style="color:#1b527f;font-size: 22px;">Save Account Scoring</span>
+                            <!-- <p> Daily Run Time &nbsp;<apex:input type="time" value="{!scheduledDateTime}" /> </p> -->
+                            <p><apex:commandLink styleClass="btn" style="background:#ffa600; color:white; padding: 5px 25px !important;" value="Save Settings" action="{!saveSalesTouchSettings}" onComplete="alert('Settings Saved.');" rerender="x" /></p>
+                        </div>
+                    </section>
+                </div>
+                <div id="myWizardPager" style="display: block; margin-top:20px;margin-left:180px; ">
+                    <table>
+                    <tr>
+                    <td>
+                    <div class="previous">
+                        <a href="#" class="btn" style="background:#005980; color:white; padding: 5px 25px !important;" > Previous </a>
+                    </div>
+                    </td>
+                    <td>
+                    <div class="page1">
+                        <a href="#" class="btn" style="background:#005980; color:white; padding: 5px 25px !important;margin-left:1px;" > 1 </a>
+                    </div>
+                    </td>
+                    <td>
+                    <div class="page2">
+                        <a href="#" class="btn" style="background:#005980; color:white; padding: 5px 25px !important;margin-left:1px;" > 2 </a>
+                    </div>
+                    </td>
+                    <td>
+                    <div class="page3">
+                        <a href="#" class="btn" style="background:#005980; color:white; padding: 5px 25px !important;margin-left:1px;" > 3 </a>
+                    </div>
+                    </td>
+                    <td>
+                    <div class="next">
+                        <a href="#" class="btn" style="background:#005980; color:white; padding: 5px 25px !important;margin-left:1px;" > Next </a>
+                    </div>
+                    </td>
+                    </tr>
+                    </table>
+                </div>                
+            </div>
+        </apex:outputPanel>
+        
+        
+        <!------------ END ACCOUNT SCORE SETTING STUFFF , REMOVE THIS LATER ---------------------->
+        </apex:form>
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><img src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/close.png')}" alt="Close" /></button>
+              </div>
+              <div class="modal-body">
+                    <p>Campaign Type weighting saved. You will receive an email once the report has finished processing. Please visit Campaign Influence Reports to view Attribution by Campaign Type. </p>
+                    <p class="lean">The LeanData Team</p>
+              </div>
+            </div>
+          </div>
+        </div> 
+        
+        <div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><img src="{!URLFOR($Resource.CampaignInfluenceWizardResources, 'images/close.png')}" alt="Close" /></button>
+              </div>
+              <div class="modal-body">
+                    <p>Campaign Member Status weighting saved. You will receive an email once the report has finished processing. Please visit Campaign Influence Reports to view Attribution by Campaign Member Status. </p>
+                    <p class="lean">The LeanData Team</p>
+              </div>
+            </div>
+          </div>
+        </div> 
+    </div>
+
+    <!-- jQuery Version 1.11.1 -->
+     <apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/jquery.js')}"/> 
+     <apex:includeScript value="{!URLFOR($Resource.LeanData__JqueryUI, 'jquery-ui-1.11.4.custom/jquery-ui.min.js')}"  />
+     <!-- <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script> -->
+   
+    <!-- Bootstrap Core JavaScript -->
+    <apex:includeScript value="{!URLFOR($Resource.LeanData__bootstrap_v3_3_4, 'js/bootstrap.js')}"/> 
+
+    <!-- Google Charts -->
+    <script type="text/javascript" src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1.1','packages':['line', 'corechart']}]}"></script>
+    <!-- <apex:includeScript value="{!URLFOR($Resource.AccountActivityResources, 'AccountActivityResources/scripts/jqueryeasyWizard.js')}"  /> -->
+    <script>
+        (function( $ ) {
+            var arrSettings = [];
+            var easyWizardMethods = {
+                init : function(options) {
+                    var settings = $.extend( {
+                        'stepClassName' : 'step',
+                        'showSteps' : true,
+                        'stepsText' : '{n}. {t}',
+                        'showButtons' : true,
+                        'buttonsClass' : '',
+                        'prevButton' : '< Back',
+                        'nextButton' : 'Next >',
+                        'debug' : false,
+                        'submitButton': true,
+                        'submitButtonText': 'Submit',
+                        'submitButtonClass': '',
+                        before: function(wizardObj, currentStepObj, nextStepObj) {},
+                        after: function(wizardObj, prevStepObj, currentStepObj) {},
+                        beforeSubmit: function(wizardObj) {
+                            wizardObj.find('input, textarea').each(function() {
+                                if(!this.checkValidity()) {
+                                    this.focus();
+                                    step = $(this).parents('.'+thisSettings.stepClassName).attr('data-step');
+                                    easyWizardMethods.goToStep.call(wizardObj, step);
+        
+                                    return false;
+                                }
+                            });
+                        }
+                    }, options);
+        
+                    arrSettings[this.index()] = settings;
+        
+                    return this.each(function() {
+                        thisSettings = settings;
+        
+                        $this = $(this); // Wizard Obj
+                        $this.addClass('easyWizardElement');
+                        $steps = $this.find('.'+thisSettings.stepClassName);
+                        thisSettings.steps = $steps.length;
+                        thisSettings.width = $(this).width();
+        
+                        if(thisSettings.steps > 1) {
+                            // Create UI
+                            $this.wrapInner('<div class="easyWizardWrapper" />');
+                            $this.find('.easyWizardWrapper').width(thisSettings.width * thisSettings.steps);
+                            $this.css({
+                                'position': 'relative',
+                                'overflow': 'hidden'
+                            }).addClass('easyPager');
+        
+                            $stepsHtml = $('<ul class="easyWizardSteps">');
+        
+                            $steps.each(function(index) {
+                                step = index + 1;
+                                $(this).css({
+                                    'float': 'left',
+                                    'width': thisSettings.width,
+                                    'height': '1px'
+                                }).attr('data-step', step);
+        
+                                if(!index) {
+                                    $(this).addClass('active').css('height', '');
+                                }else {
+                                    $(this).find('input, textarea, select, button').attr('tabindex', '-1');
+                                }
+        
+                                stepText = thisSettings.stepsText.replace('{n}', '<span>'+step+'</span>');
+                                stepText = stepText.replace('{t}', $(this).attr('data-step-title'));
+                                $stepsHtml.append('<li'+(!index?' class="current"':'')+' data-step="'+step+'">'+stepText+'</li>');
+                            });
+        
+                            if(thisSettings.showSteps) {
+                                $this.prepend($stepsHtml);
+                            }
+        
+                            if(thisSettings.showButtons) {
+                                paginationHtml = '<div class="easyWizardButtons">';
+                                    paginationHtml += '<button class="prev '+thisSettings.buttonsClass+'">'+thisSettings.prevButton+'</button>';
+                                    paginationHtml += '<button class="next '+thisSettings.buttonsClass+'">'+thisSettings.nextButton+'</button>';
+                                    paginationHtml += thisSettings.submitButton?'<button type="submit" class="submit '+thisSettings.submitButtonClass+'">'+thisSettings.submitButtonText+'</button>':'';
+                                paginationHtml  += '</div>';
+                                $paginationBloc = $(paginationHtml);
+                                $paginationBloc.css('clear', 'both');
+                                $paginationBloc.find('.prev, .submit').hide();
+                                $paginationBloc.find('.prev').bind('click.easyWizard', function(e) {
+                                    e.preventDefault();
+        
+                                    $wizard = $(this).parents('.easyWizardElement');
+                                    easyWizardMethods.prevStep.apply($wizard);
+                                });
+        
+                                $paginationBloc.find('.next').bind('click.easyWizard', function(e) {
+                                    e.preventDefault();
+        
+                                    $wizard = $(this).parents('.easyWizardElement');
+                                    easyWizardMethods.nextStep.apply($wizard);
+                                });
+                                $this.append($paginationBloc);
+                            }
+        
+                            $formObj = $this.is('form')?$this:$(this).find('form');
+        
+                            // beforeSubmit Callback
+                            $this.find('[type="submit"]').bind('click.easyWizard', function(e) {
+                                $wizard = $(this).parents('.easyWizardElement');
+                                var beforeSubmitValue = thisSettings.beforeSubmit($wizard);
+                                if(beforeSubmitValue === false) {
+                                    return false;
+                                }
+                                return true;
+                            });
+                        }else if(thisSettings.debug) {
+                            console.log('Can\'t make a wizard with only one step oO');
+                        }
+                    });
+                },
+                prevStep : function( ) {
+                    thisSettings = arrSettings[this.index()];
+                    $activeStep = this.find('.'+ thisSettings.stepClassName +'.active');
+                    if($activeStep.prev('.'+thisSettings.stepClassName).length) {               
+                        prevStep = parseInt($activeStep.prev().attr('data-step'));
+                        easyWizardMethods.goToStep.call(this, prevStep);
+                    }
+                },
+                nextStep : function( ) {
+                    thisSettings = arrSettings[this.index()];           
+                    $activeStep = this.find('.'+ thisSettings.stepClassName +'.active');
+                    if($activeStep.next('.'+thisSettings.stepClassName).length) {
+                        nextStep = parseInt($activeStep.next().attr('data-step'));
+                        easyWizardMethods.goToStep.call(this, nextStep);
+                    }
+                },
+                goToStep : function(step) {
+                    thisSettings = arrSettings[this.index()];
+                    $activeStep = this.find('.'+ thisSettings.stepClassName +'.active');
+                    $nextStep = this.find('.'+thisSettings.stepClassName+'[data-step="'+step+'"]');
+                    currentStep = $activeStep.attr('data-step');
+        
+                    // Prevent sliding same step
+                    if (currentStep == step) return;
+        
+                    // Before callBack
+                    var beforeValue = thisSettings.before(this, $activeStep, $nextStep);
+                    if(beforeValue === false) {
+                        return false;
+                    }
+        
+                    // Define direction for sliding
+                    if(currentStep < step) { // forward
+                        leftValue = thisSettings.width * -1;
+                    }else { // backward
+                        leftValue = thisSettings.width;
+                    }
+        
+                    // Slide !
+                    $activeStep.removeClass('active');
+                    $activeStep.find('input, textarea, select, button').attr('tabindex', '-1');
+        
+                    $nextStep.css('height', '').addClass('active');
+                    $nextStep.find('input, textarea, select, button').removeAttr('tabindex');
+        
+                    this.find('.easyWizardWrapper').stop(true, true).animate({
+                        'margin-left': thisSettings.width * (step - 1) * -1
+                    }, function () {
+                        $activeStep.css({ height: '1px' });
+                    });
+        
+                    // Defines steps
+                    this.find('.easyWizardSteps .current').removeClass('current');
+                    this.find('.easyWizardSteps li[data-step="'+step+'"]').addClass('current');
+        
+                    // Define buttons
+                    $paginationBloc = this.find('.easyWizardButtons');
+                    if($paginationBloc.length) {
+                        if(step == 1) {
+                            $paginationBloc.find('.prev, .submit').hide();
+                            $paginationBloc.find('.next').show();
+                        }else if(step < thisSettings.steps) {
+                            $paginationBloc.find('.submit').hide();
+                            $paginationBloc.find('.prev, .next').show();
+                        }else {
+                            if($nextStep.prev('.'+thisSettings.stepClassName).length) { // If there is a previous step, must be always the case but... you know =)
+                                $paginationBloc.find('.prev').show();
+                            }
+                            $paginationBloc.find('.next').hide();
+                            $paginationBloc.find('.submit').show();
+                        }
+                    }
+        
+                    // After callBack
+                    thisSettings.after(this, $activeStep, $nextStep);
+                }
+            };
+        
+            $.fn.easyWizard = function(method) {
+                if ( easyWizardMethods[method] ) {
+                    return easyWizardMethods[ method ].apply( this, Array.prototype.slice.call( arguments, 1 ));
+                } else if ( typeof method === 'object' || ! method ) {
+                    return easyWizardMethods.init.apply( this, arguments );
+                } else {
+                    $.error( 'Method ' +  method + ' does not exist on jQuery.easyWizard' );
+                }
+            };
+        })(jQuery);
+    </script>
+</apex:page>

@@ -1,0 +1,315 @@
+<apex:page sideBar="false" standardStylesheets="false" docType="html-5.0" controller="LeanData.Reporting_BaseController" >
+    <apex:composition template="LeanData__Reporting_Template">
+        <apex:define name="customHeaderContent">
+            <div class="customHeaderContent-right">
+                <apex:commandLink rerender="x" html-data-toggle="modal" html-data-target="#infoModal">
+                    <apex:image value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Info_Button_Icon.png')}" styleClass="customHeaderContent-right-information" />
+                </apex:commandLink>
+            </div>
+        </apex:define>
+        <apex:define name="mainContent">
+            <div class="dg_outer-wrapper">
+                <div class="dg_outer-wrapper-header">
+                    Campaigns for Sourcing New Pipeline
+                </div>
+                <div class="dg_outer-wrapper-content">
+                    <div class="dg_large-option-wrapper">
+                        <div onClick="setGroupingCategory('By Campaign')" class="dg_large-option-button dg_large-option-button-campaign"> By Campaign </div>
+                        <div onClick="setGroupingCategory('By Type')" class="dg_large-option-button dg_large-option-button-type dg_large-option-button-active" style="margin-left:3px;"> By Type </div>
+                    </div>
+                    <div class="dg_inner-wrapper">
+                        <div class="dg_inner-wrapper-header">
+                            <div class="dg_styled-select dg_campaign-type-choice-div" style="float:left;display:inline-block;width:150px;margin: 7px 0px 0px 20px;">
+                                <apex:selectList value="{!campaignType}" size="1" multiselect="true" styleClass="bsmultiselect_ct dg_picklist dg_campaign-type-choice" onChange="pipelineReport.drawChart(); pipelineReport.renderTable(); pipelineReport.sortTable();">
+                                    <apex:selectOptions value="{!campaignTypeOptions}" />
+                                </apex:selectList>
+                            </div>
+                            <span class="pipeline-sourced" /> Pipeline Sourced
+                            <div class="dg_styled-select" style="float:right;display:inline-block;width:150px;margin: 7px 20px 0px 0px;">
+                                <select class="dg_picklist dg_time-frame-choice" onChange="buildReport();">
+                                    <option value="THIS_FISCAL_QUARTER">Quarter To Date</option>
+                                    <option value="THIS_FISCAL_YEAR">Year To Date</option>
+                                    <option value="LAST_FISCAL_QUARTER">Last Quarter</option>
+                                    <option selected="selected" value="LAST_FISCAL_YEAR">Last Year</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="dg_inner-wrapper-content">
+                            <div class="dg_axis-choices-div">
+                                <div class="dg_styled-select" style="display:inline-block;width:175px;margin-right:20px;">
+                                    <select class="dg_picklist dg_y-axis-choice" onChange="pipelineReport.drawChart(); pipelineReport.renderTable(); pipelineReport.sortTable();">
+                                        <option selected="selected" value="closeRate">Close Rate</option>
+                                        <option value="FTPipelineAttribution">FT Pipeline Attribution</option>
+                                        <option value="FTBookingsAttribution">FT Bookings Attribution</option>
+                                        <option value="totalCost">Total Cost</option>
+                                    </select>
+                                </div>
+                                vs.
+                                <div class="dg_styled-select" style="display:inline-block;width:175px;margin-left:20px;">
+                                    <select class="dg_picklist dg_x-axis-choice" onChange="pipelineReport.drawChart(); pipelineReport.renderTable(); pipelineReport.sortTable();">
+                                        <option value="closeRate">Close Rate</option>
+                                        <option selected="selected" value="FTPipelineAttribution">FT Pipeline Attribution</option>
+                                        <option value="FTBookingsAttribution">FT Bookings Attribution</option>
+                                        <option value="totalCost">Total Cost</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="dg_highchart pipeline-chart" />
+                            <div class="dg_details-table-div pipeline-details-div">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- .content-wrapper-content -->
+                </div>
+            </div>
+            
+            
+            <!-- Begin Tooltip -->
+            <div id="infoModal" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content" style="display: inline-block;background: #eeefef;border-radius: 0px; padding-left: 20px;">
+                        
+                        <apex:commandLink rerender="x" html-data-dismiss="modal" style="float:right;margin:5px 5px 0 0">
+                            <apex:image width="15px" height="15px" value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Close_Window_Icon.png')}"/>
+                        </apex:commandLink>
+                        
+                        <div class="dg_inner-wrapper" style="width:615px">
+                            <div class="dg_inner-wrapper-header">
+                                Tooltip | Pipeline
+                            </div>
+                            
+                            <div class="dg_inner-wrapper-content" style="height:400px;overflow:auto">
+                                
+                                <p>On the Pipeline Screen you will find all of the metrics you need to know in order to create more pipeline. See which campaigns were more successful at creating pipeline and at what rate it closed.</p>
+                                
+                                <h5>Campaigns for Sourcing New Pipeline</h5>
+                                <br/>
+                                
+                                <h6>First Touch (FT) Pipeline Attribution</h6>
+                                <p>First campaign with a relevant campaign member touch is attributed the total opportunity amount. *Only opportunities created in the specified timeframe are considered.</p>
+                                <h6>First Touch (FT) Bookings Attribution</h6>
+                                <p>First campaign with a relevant campaign member touch is attributed the total opportunity closed (won) amount. *Only opportunities closed (won) in the specified timeframe are considered.</p>
+                                <h6>Close Rate</h6>
+                                <p>Percentage of opportunities with a relevant campaign touch that are closed won.</p>
+                                <h6>Cost</h6>
+                                <p>Actual Cost of campaigns as defined on SFDC Campaign. You can add an average cost per type in the Advanced Settings.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End of Tooltip -->
+        </apex:define>
+    </apex:composition>
+    <script>
+        j$(document).ready(function() {
+            var reachPipelineGoal = {!reachPipelineGoal};
+
+            if (reachPipelineGoal < 0) {
+                setPageTitle('Close More Deals | ' + formatFieldByType(reachPipelineGoal * (-1), 'Currency') + ' Over Pipeline Goal');
+            } else {
+                setPageTitle('Create More Pipeline | ' + formatFieldByType(reachPipelineGoal, 'Currency') + ' to Reach Pipeline Goal');
+            }
+
+            setActiveNav('pipeline-nav');
+            
+            j$('.bsmultiselect_ct').multiselect({
+                nonSelectedText: 'Campaign Type',
+                numberDisplayed: 1,
+                includeSelectAllOption: true,
+                nSelectedText: 'Campaign Type',
+                allSelectedText: 'All Types',
+                selectAllNumber: false
+            });
+            
+            j$('.bsmultiselect_ct').multiselect('selectAll', false);
+            j$('.bsmultiselect_ct').multiselect('updateButtonText');
+            buildReport();
+        });
+
+        function buildReport() {
+
+            if (j$('.dg_large-option-button-campaign').hasClass('dg_large-option-button-active')) {
+                pipelineReport = new objWrapper('pipelineReport', 'Pipeline By Campaign', j$(".pipeline-details-div"));
+            } else {
+                pipelineReport = new objWrapper('pipelineReport', 'Pipeline By Type', j$(".pipeline-details-div"));
+            }
+
+        }
+
+        objWrapper.prototype.queryPipelineMetrics = function() {
+            var report = this;
+
+            time_frame = j$('.dg_time-frame-choice').val();
+            campaign_type = j$('.dg_campaign-type-choice').val();
+            console.log( ' Remote Campaign Metrics ' ); 
+            Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.Reporting_BaseController.getCampaignPipelineMetrics}', grouping_category, campaign_type, time_frame,
+                function(result, event) {
+                    if (event.type === 'exception') {
+                        console.log("exception");
+                        console.log(event);
+                    } else if (event.status) {
+                        for (var i = 0; i < result.length; i++) {
+                            result[i].closeRate = (result[i].totalWonOpps / result[i].totalOpps) * 100;
+                            report.originalObjList.push(result[i]);
+                        }
+
+                        console.log('CM Queried');
+                        console.log(report.originalObjList);
+
+                        report.drawChart();
+                        
+                        report.renderTable();
+                        report.sortTable();
+                        j$('.pipeline-sourced').html(formatFieldByType(report.objList.sum('FTPipelineAttribution'), 'Currency'));
+                    }
+                });
+        };
+
+        objWrapper.prototype.drawChart = function() {
+            this.setChartUnits();
+            console.log( 'Draw Chart , New Object List : ');
+            console.log(this.objList);
+            
+            if( x_axis == 'FTPipelineAttribution' && y_axis == 'closeRate' ){
+                var avgCloseRate = getAvg(getArrayVals(this.objList, 'y'));
+                var avgFTpipelineAttribution = getAvg(getArrayVals(this.objList, 'x'));
+            }
+            else{
+                var avgCloseRate = 1000000000000000000000;
+                var avgFTpipelineAttribution  = 1000000000000000000000;
+            }
+            
+            j$('.dg_highchart').highcharts({
+                chart: {
+                    type: 'bubble',
+                    plotBorderWidth: 1,
+                    zoomType: 'xy'
+                },
+                colors: ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
+                    '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1'
+                ],
+                legend: {
+                    enabled: false
+                },
+
+                title: {
+                    text: '',
+                    style: {
+                        fontSize: '16px',
+                        fontColor: '#555555',
+                        fontFamily: 'Open Sans'
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                xAxis: {
+                    gridLineWidth: 0,
+                    title: {
+                        text: x_axis_label
+                    },
+                    labels: {
+                        format: x_axis_prefix + '{value}' + x_axis_scale + x_axis_suffix
+                    },
+                    plotLines: [{
+                        color: '#8da8bf', // Color value                                     
+                        value: avgFTpipelineAttribution, // Value of where the line will appear
+                        width: 1 // Width of the line    
+                    }],
+                    lineWidth: 0,
+                    minorGridLineWidth: 0,
+                    lineColor: 'transparent',
+                    max: x_axis_max,
+                    min: x_axis_min
+                },
+
+                yAxis: {
+                    startOnTick: false,
+                    endOnTick: false,
+                    title: {
+                        text: y_axis_label
+                    },
+                    plotLines: [{
+                        color: '#8da8bf', // Color value                                     
+                        value: avgCloseRate, // Value of where the line will appear
+                        width: 1, // Width of the line
+                        zIndex: 1,   
+                        label : {
+                            align: 'right',
+                            text: '(Avg Close Rate)',
+                            x: 10,
+                            y: 15
+                        } 
+                    }],
+                    labels: {
+                        format: y_axis_prefix + '{value}' + y_axis_scale + y_axis_suffix
+                    },
+                    maxPadding: 0.2,
+                    gridLineWidth: 0,
+                    lineWidth: 0,
+                    minorGridLineWidth: 0,
+                    lineColor: 'transparent'
+                },
+                exporting: {
+                    buttons: {
+                        contextButton: {
+                            enabled: false
+                        }
+                    }
+                },
+                tooltip: {
+                    useHTML: true,
+                    borderWidth: 0,
+                    style: {
+                        padding: 0
+                    },
+                    formatter:function(){
+                        return '<div class="dg_bubble-div">' + 
+                            '<div class="dg_bubble-header">' + formatFieldByType(this.point.Name, 'String') + '</div>' + 
+                            '<div class="dg_bubble-left-content">' + 
+                                'Campaign Type: ' + formatFieldByType(this.point.Type, 'String') +  
+                                '<br/>Total Cost: ' + formatFieldByType(this.point.totalCost, 'Currency') +
+                                '<br/>Close Rate: ' + formatFieldByType(this.point.closeRate, 'Percentage') +
+                            '</div>' +
+                            '<div class="dg_bubble-right-content">' + 
+                                'FT Pipeline Attribution: ' + formatFieldByType(this.point.FTPipelineAttribution, 'Currency') + 
+                                '<br/>Opportunities Won: ' + formatFieldByType(this.point.totalWonOpps, 'Integer') +  
+                                '<br/>Opportunities Touched: ' + formatFieldByType(this.point.totalOpps, 'Integer') + 
+                            '</div>' + 
+                        '</div>';
+                        
+                    },
+                    followPointer: false
+                },
+                plotOptions: {
+                    bubble: {
+                        minSize: 3,
+                        maxSize: 20
+                    },
+                    series: {
+                        dataLabels: {
+                            useHTML: true,
+                            enabled: true,
+                            align: "left",
+                            x: 14,
+                            format: '{point.Name}',
+                            style: {
+                                color: 'black',
+                                textShadow: false,
+                                fontWeight: 400,
+                                fontFamily: 'Open Sans',
+                                fontSize: '12.5px'
+                            }
+                        }
+                    }
+                },
+
+                series: [{
+                    data: pipelineReport.objList
+                }]
+            });
+        }
+    </script>
+</apex:page>

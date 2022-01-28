@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>CH_NotifyIncidentOfCancellation</name>
+        <label>Notify Incident of Cancellation</label>
+        <locationX>887</locationX>
+        <locationY>488</locationY>
+        <actionName>chatterPost</actionName>
+        <actionType>chatterPost</actionType>
+        <connector>
+            <targetReference>CH_LoopOfAllIncidents</targetReference>
+        </connector>
+        <inputParameters>
+            <name>subjectNameOrId</name>
+            <value>
+                <elementReference>CH_IncidentReccordInLoop.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>text</name>
+            <value>
+                <elementReference>CH_CanellationMessageQueue</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <actionCalls>
+        <name>CH_NotifyIncidentOwnerOfCancellation</name>
+        <label>Notify Incident Owner Of Cancellation</label>
+        <locationX>884</locationX>
+        <locationY>262</locationY>
+        <actionName>chatterPost</actionName>
+        <actionType>chatterPost</actionType>
+        <connector>
+            <targetReference>CH_LoopOfAllIncidents</targetReference>
+        </connector>
+        <inputParameters>
+            <name>subjectNameOrId</name>
+            <value>
+                <elementReference>CH_IncidentReccordInLoop.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>text</name>
+            <value>
+                <elementReference>CH_CancellationMessageUser</elementReference>
+            </value>
+        </inputParameters>
+    </actionCalls>
+    <apiVersion>49.0</apiVersion>
+    <decisions>
+        <name>CH_CheckForStage</name>
+        <label>Check for Stage</label>
+        <locationX>210</locationX>
+        <locationY>222</locationY>
+        <defaultConnector>
+            <targetReference>CH_CheckStatus</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_StageSelected</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.CH_Stage__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_StageNotSelected</targetReference>
+            </connector>
+            <label>Stage Selected</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>CH_CheckIfCaseOwnerIsUserOrQueue</name>
+        <label>Check if Case Owner is User or Queue</label>
+        <locationX>892</locationX>
+        <locationY>370</locationY>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_IsUser</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_IncidentReccordInLoop.OwnerId</leftValueReference>
+                <operator>StartsWith</operator>
+                <rightValue>
+                    <stringValue>005</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_NotifyIncidentOwnerOfCancellation</targetReference>
+            </connector>
+            <label>Is User?</label>
+        </rules>
+        <rules>
+            <name>CH_IsQueue</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_IncidentReccordInLoop.OwnerId</leftValueReference>
+                <operator>StartsWith</operator>
+                <rightValue>
+                    <stringValue>00G</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_NotifyIncidentOfCancellation</targetReference>
+            </connector>
+            <label>Is Queue</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>CH_CheckStatus</name>
+        <label>Check Case Status</label>
+        <locationX>400</locationX>
+        <locationY>118</locationY>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_CreatedStatus</name>
+            <conditionLogic>(1 OR 2) AND (3 AND 4)</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.CH_Stage__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Report</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.CH_Stage__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Review</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.Status</leftValueReference>
+                <operator>NotEqualTo</operator>
+                <rightValue>
+                    <stringValue>Cancelled</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.Status</leftValueReference>
+                <operator>NotEqualTo</operator>
+                <rightValue>
+                    <stringValue>Closed</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_CaseReasonForCancellation</targetReference>
+            </connector>
+            <label>Created Status</label>
+        </rules>
+        <rules>
+            <name>CH_NotCreatedStatus</name>
+            <conditionLogic>(1 OR 2) AND (3 OR 4)</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.CH_Stage__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Remedy</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.CH_Stage__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Close</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.Status</leftValueReference>
+                <operator>NotEqualTo</operator>
+                <rightValue>
+                    <stringValue>Cancelled</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.Status</leftValueReference>
+                <operator>NotEqualTo</operator>
+                <rightValue>
+                    <stringValue>Closed</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_CaseNotCancelled</targetReference>
+            </connector>
+            <label>Not Created Status</label>
+        </rules>
+        <rules>
+            <name>CH_CancelledStatus</name>
+            <conditionLogic>or</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.Status</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Cancelled</stringValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_CurrentCaseSobject.Status</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Closed</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_CancelledCase</targetReference>
+            </connector>
+            <label>Cancelled Status</label>
+        </rules>
+    </decisions>
+    <description>Cancel Problem and Notify all Incidents</description>
+    <interviewLabel>Cancel Problem and Notify Incidents {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Cancel Problem and Notify Incidents</label>
+    <loops>
+        <name>CH_LoopOfAllIncidents</name>
+        <label>Loop Of All Incidents</label>
+        <locationX>635</locationX>
+        <locationY>364</locationY>
+        <assignNextValueToReference>CH_IncidentReccordInLoop</assignNextValueToReference>
+        <collectionReference>CH_AssociatedIncidentSObjectCollection</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>CH_CheckIfCaseOwnerIsUserOrQueue</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>CH_CancelCase</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <processType>Flow</processType>
+    <recordLookups>
+        <name>CH_AssociatedIncidents</name>
+        <label>Associated Incidents</label>
+        <locationX>636</locationX>
+        <locationY>234</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_LoopOfAllIncidents</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>CH_Problem__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>CH_CurrentCaseSobject.Id</elementReference>
+            </value>
+        </filters>
+        <object>Case</object>
+        <outputReference>CH_AssociatedIncidentSObjectCollection</outputReference>
+        <queriedFields>CaseNumber</queriedFields>
+        <queriedFields>Status</queriedFields>
+        <queriedFields>OwnerId</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>CH_GetCurrentCase</name>
+        <label>Get Current Case</label>
+        <locationX>43</locationX>
+        <locationY>120</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_CheckForStage</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <object>Case</object>
+        <outputReference>CH_CurrentCaseSobject</outputReference>
+        <queriedFields>Status</queriedFields>
+        <queriedFields>Subject</queriedFields>
+        <queriedFields>CaseNumber</queriedFields>
+        <queriedFields>CH_Stage__c</queriedFields>
+    </recordLookups>
+    <recordUpdates>
+        <name>CH_CancelCase</name>
+        <label>Cancel Case</label>
+        <locationX>431</locationX>
+        <locationY>367</locationY>
+        <connector>
+            <targetReference>CH_CancellationSucceeded</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>CH_ReasonForCancellation__c</field>
+            <value>
+                <elementReference>CH_ReasonForCancellationOfProblem</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Status</field>
+            <value>
+                <stringValue>Cancelled</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Case</object>
+    </recordUpdates>
+    <screens>
+        <name>CH_CancellationSucceeded</name>
+        <label>Cancellation Succeeded</label>
+        <locationX>439</locationX>
+        <locationY>469</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>CH_SuccessMessage</name>
+            <fieldText>&lt;DIV ALIGN=&quot;LEFT&quot;&gt;&lt;FONT FACE=&quot;Arial&quot; STYLE=&quot;font-size:14px&quot; COLOR=&quot;#000000&quot; LETTERSPACING=&quot;0&quot; KERNING=&quot;0&quot;&gt;Problem {!CH_CurrentCaseSobject.CaseNumber} has been successfully cancelled.&lt;/FONT&gt;&lt;/DIV&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>CH_CancelledCase</name>
+        <label>Cancelled Case</label>
+        <locationX>274</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <fields>
+            <name>CH_CancelledCaseMessage</name>
+            <fieldText>You can&apos;t Cancel Problem once Cancelled or Closed!</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>CH_CaseNotCancelled</name>
+        <label>Case Not Cancelled</label>
+        <locationX>500</locationX>
+        <locationY>0</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <fields>
+            <name>CH_Cancelled</name>
+            <fieldText>It is not possible to cancel a problem in the stage remedy or close</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>CH_CaseReasonForCancellation</name>
+        <label>Case Reason for Cancellation</label>
+        <locationX>631</locationX>
+        <locationY>125</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <connector>
+            <targetReference>CH_AssociatedIncidents</targetReference>
+        </connector>
+        <fields>
+            <name>CH_CaseReasonForCancelMessage</name>
+            <fieldText>&lt;DIV ALIGN=&quot;LEFT&quot;&gt;&lt;FONT FACE=&quot;Arial&quot; STYLE=&quot;font-size:14px&quot; COLOR=&quot;#000000&quot; LETTERSPACING=&quot;0&quot; KERNING=&quot;0&quot;&gt;Please confirm the cancellation of the problem! After your problem is cancelled, it will be closed without the option to be reopened. If you really want to cancel this problem then please provide reason for cancellation below.&lt;/FONT&gt;&lt;/DIV&gt;&lt;DIV ALIGN=&quot;LEFT&quot;&gt;&lt;FONT FACE=&quot;Arial&quot; STYLE=&quot;font-size:14px&quot; COLOR=&quot;#000000&quot; LETTERSPACING=&quot;0&quot; KERNING=&quot;0&quot;&gt;&lt;/FONT&gt;&lt;/DIV&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>CH_ReasonForCancellationOfProblem</name>
+            <dataType>String</dataType>
+            <fieldText>Reason for Cancellation of Problem</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>false</isRequired>
+        </fields>
+        <fields>
+            <name>CH_OtherInformationToTheIncidentOwner</name>
+            <fieldText>Other Information To The Incident Owner</fieldText>
+            <fieldType>LargeTextArea</fieldType>
+            <isRequired>false</isRequired>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>CH_StageNotSelected</name>
+        <label>Stage Not Selected</label>
+        <locationX>210</locationX>
+        <locationY>346</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <fields>
+            <name>CH_StageMessage</name>
+            <fieldText>Please select appropriate stage for the problem.</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <startElementReference>CH_GetCurrentCase</startElementReference>
+    <status>Active</status>
+    <textTemplates>
+        <name>CH_CancellationMessageUser</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>Problem &lt;{!CH_CurrentCaseSobject.CaseNumber}&gt;, to which this Incident &lt;{!CH_IncidentReccordInLoop.CaseNumber}&gt; was associated, has been cancelled. 
+Reason for cancellation is:
+{!CH_ReasonForCancellationOfProblem}
+Other Information provided is:
+{!CH_OtherInformationToTheIncidentOwner}
+Please review accordingly. 
+@[{!CH_IncidentReccordInLoop.OwnerId}]</text>
+    </textTemplates>
+    <textTemplates>
+        <description>Cancellation Message (if the owner of the Case is a Queue)</description>
+        <name>CH_CanellationMessageQueue</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>Problem &lt;{!CH_CurrentCaseSobject.CaseNumber}&gt;, to which this Incident &lt;{!CH_IncidentReccordInLoop.CaseNumber}&gt; was associated, has been cancelled. 
+Reason for cancellation is:
+{!CH_ReasonForCancellationOfProblem}
+Other Information provided is:
+{!CH_OtherInformationToTheIncidentOwner}
+Please review accordingly.</text>
+    </textTemplates>
+    <variables>
+        <name>CH_AssociatedIncidentSObjectCollection</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <description>SObject variable to store current case from lookup</description>
+        <name>CH_CurrentCaseSobject</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <name>CH_CurrentIncident</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <description>Temp variable for Owner ID</description>
+        <name>CH_IncidentOwnerID</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>CH_IncidentReccordInLoop</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>
