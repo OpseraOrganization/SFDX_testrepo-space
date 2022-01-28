@@ -1,0 +1,150 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" controller="ShareSupportAsset">
+    <aura:handler name="init" value="{!this}" action="{!c.myAction}" />  
+    <aura:attribute name="email" type="string"/>
+    
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="contentDetail" type="contentdocument" />
+    <aura:attribute name="UserDetail" type="User" />
+    <aura:attribute name="articleURL" type="string" />
+    <aura:attribute name="PRMDocDetails" type="Object" />
+    
+    <aura:attribute name="ShowError" type="Boolean" default="false" />
+    <aura:attribute name="valuesArray" type="String[]" />
+    <aura:handler event="force:refreshView" action="{!c.isRefreshed}" />
+    
+    <!-- attribute for lookup-->
+    <aura:attribute Name="selItem" type="object"  access="public" /> 
+    <aura:attribute Name="selItem1" type="object"  access="public" />
+    <aura:attribute Name="selItem2" type="object"  access="public" />
+    <aura:attribute Name="selItem3" type="object"  access="public" />
+    <aura:attribute Name="SelectedLookupMultiple" type="List"  access="public" />
+    
+    <!-- multi select attributes End-->
+    <aura:attribute name="ObjectName" type="Object"  access="global" default="{'sobjectType': 'User'}"/>
+    <aura:attribute name="FieldName" type="String"  access="global" default="None"/>
+    <aura:attribute name="addValuestoRight" type="String" />
+    <aura:attribute name="remValuesFromRight" type="String" />
+    <aura:attribute name="ErrorMessage" type="String" />
+    <aura:attribute name="flag" type="Integer" />
+    <aura:attribute name="SelectedValues" type="String[]" access="global"/>
+    <!-- multi select attributes End -->
+    
+    
+    <div class="demo-only" aura:id="CLoseTab" style="">
+        <section  role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container modalSize">
+                <center>  <div class="HeaderCLass">
+                    
+                    {!v.contentDetail.Title}
+                    
+                    <form class="slds-form--inline">
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:button class="slds-button_brand textColor" label="Preview" onclick="{!c.openFile}" variant="brand"/>
+                            </div>
+                        </div>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:button class="slds-button_brand textColor" label="Share" onclick="{!c.openEmailContent}" variant="brand"/>
+                            </div>
+                        </div>
+                        <div class="slds-form-element" >
+                            <div class="slds-form-element__control">
+                                <lightning:button class="slds-button_brand textColor" label="Like" aura:id="LikeButton" onclick="{!c.documentLike}" variant="brand"/>
+                            </div>
+                            
+                        </div>
+                        
+                        
+                        
+                    </form> 
+                    </div>
+                </center>
+                
+            </div>
+            
+        </section>
+        <div aura:id="backdrop" class="slds-backdrop slds-backdrop--open"></div>
+    </div>
+    
+    <div class="demo-only slds-hide" aura:id="CloseEmails" >
+        <section  role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container" >
+                <header class="slds-modal__header slds-box slds-theme_shade slds-theme_alert-texture" >
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate ">Select user to share</h2>
+                    
+                </header>
+                
+                <aura:if isTrue="{!v.UserDetail.IsPortalEnabled}">
+                    <div class="slds-modal__content " id="modal-content-id-1">
+         <fieldset class="slds-form--compound ">
+                            <div class="slds-form-stacked">
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row slds-media__body Margin">
+                                        <div class="slds-form-element slds-size--3-of-7">
+                                            <ui:inputSelect label=" " multiple="true" value="{!v.addValuestoRight}"
+                                                            aura:id="mSelectLeft" class="slds-input slds-dueling-list__options" >
+                                             </ui:inputSelect>
+                                        </div>
+                                        <div class="slds-form-element ">
+                                            <br/>
+                                            <br/>
+                                            <Lightning:button class="slds-button slds-button_icon" onclick="{!c.moveRight}">
+                                                <lightning:Icon aura:id="btnMove" size="xx-small"  iconName="utility:right" variant="brand"  alternativeText="Right." />
+                                            </Lightning:button>
+                                            
+                                            <br/>
+                                            <Lightning:button class="slds-button slds-button_icon" onclick="{!c.moveLeft}" >
+                                                <lightning:Icon aura:id="btnMove" size="xx-small"  iconName="utility:left" variant="brand" alternativeText="Left." />
+                                            </Lightning:button>
+                                            
+                                        </div>
+                                        <div class="slds-form-element slds-size--3-of-7">
+                                            <ui:inputSelect label="" multiple="true" value="{!v.remValuesFromRight}"
+                                                            aura:id="mSelectRight" class="slds-input slds-dueling-list__options" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                </div>
+                    <aura:set attribute="else">
+                        
+                        <div class="slds-modal__content " id="modal-content-id-1" style="height:350px">
+                            
+                            <fieldset class="slds-form--compound">
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+
+                                            <c:GlobalLookup objectName="User"
+                                                            field_API_text="Email"
+                                                            field_API_val="Id"
+                                                            field_API_search="Email"
+                                                            lookupIcon="standard:user" 
+                                                            selItem="{!v.selItem2}" 
+                                                            placeholder="Enter text to search User Email"
+                                                            numbers="{!v.SelectedLookupMultiple}"
+                                                            />  
+
+                                    </div>                      
+                                </div>
+                            </fieldset>
+                            
+                            
+                        </div>
+                    </aura:set>
+                </aura:if> 
+                <footer class="slds-modal__footer slds-box slds-theme_shade slds-theme_alert-texture">
+                    
+                        <ui:outputText class="ErrorMsg slds-float_left" value="{!v.ErrorMessage}" />
+                    
+                    <lightning:button variant="brand" class="slds-button textColor" onclick="{!c.cancelEmailContent}">Cancel</lightning:button>
+                    <lightning:button variant="brand" class="slds-button textColor" onclick="{!c.SendEmailContent}">Send Email</lightning:button>
+               </footer>
+            </div>
+        </section>
+        
+    </div>
+    <!-- end -->
+</aura:component>

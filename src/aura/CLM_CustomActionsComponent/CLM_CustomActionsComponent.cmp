@@ -1,0 +1,221 @@
+<aura:component controller="CLM_AgrmntCustomActionsCtrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasRecordId,lightning:isUrlAddressable" access="global" >
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="submitRequestLabel" type="string" />
+    <aura:attribute name="wrapper" type="object"/>
+    <aura:attribute name="permissionWrapper" type="object"/>
+    <aura:attribute name="agrmntObject" type="object"/>
+    <aura:attribute name="showSubmitButton" type="boolean" default="false"/>
+    <aura:attribute name="showreturnRequestor" type="boolean" default="false"/>
+    <aura:attribute name="ReadyForReviewSignature" type="boolean" default="false"/>
+    <aura:attribute name="ReadyForReview" type="boolean" default="false"/>
+    <aura:attribute name="sendForSignature" type="boolean" default="false"/>
+    <aura:attribute name="cancelRequest" type="boolean" default="false"/>
+    <aura:attribute name="showAmend" type="boolean" default="false"/>
+    <aura:attribute name="showRenew" type="boolean" default="false"/>
+    <aura:attribute name="spinner" type="boolean" default="false"/>
+    <aura:attribute name="newAgreement" type="boolean" default="false"/>
+    <aura:attribute name="newAgreementRecordType" type="boolean" default="false"/>
+    <aura:attribute name="nextEnable" type="boolean" default="true"/>
+    <aura:attribute name="ctrctRequestEnable" type="boolean" default="true"/>
+    <aura:attribute name="userOwnerAccess" type="boolean" default="false"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="RecordTypeVal" type="String" default=""/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <aura:attribute name="RecordTypeOptions" type="List" default="[
+                                                                  {'label': 'Care Agreement', 'value': 'Care_Agreement'},
+                                                                  {'label': 'Non-Transactional Agreement', 'value': 'Frame_Agreement'},
+                                                                  {'label': 'Supply and Services Agreement', 'value': 'SSA'}
+                                                                  ]"/>
+    
+    
+    <aura:html tag="style">
+        .slds-modal__container{
+        max-width: 60rem !important;
+        width:60% !important;
+        }
+    </aura:html>
+    
+    <div class="slds-box slds-theme_default"><br/>
+        <div class="slds-grid demo-only demo-only--sizing slds-gutters slds-wrap">
+            <aura:if isTrue="{!v.userOwnerAccess}">
+                <aura:if  isTrue="{!or(v.permissionWrapper.hasAMPermission, v.permissionWrapper.hasCCMPernission)}" >
+                    <aura:if isTrue="{!v.permissionWrapper.hasAMPermission}">
+                        <aura:if isTrue="{!v.showSubmitButton}">
+                            <div class="slds-col--padded slds-size--1-of-4" >
+                                <div class="slds-text-align_center slds-m-bottom_medium">
+                                    <span class="slds-align_absolute-center"><div class="slds-col" >
+                                        <button class="slds-button " onclick="{!c.validatingRequest}" >
+                                            <lightning:icon iconName="standard:work_order_item" size="large" title="{!v.submitRequestLabel}"/>
+                                        </button>
+                                        <span class="slds-align_absolute-center"><a href="javascript:void(0)" onclick="{!c.validatingRequest}">{!v.submitRequestLabel}</a></span>
+                                        </div>
+                                    </span>
+                                </div>
+                            </div>
+                        </aura:if>
+                    </aura:if>
+                    <aura:if isTrue="{!v.cancelRequest}">
+                        <div class="slds-col--padded slds-size--1-of-4">
+                            <div class="slds-text-align_center">
+                                <span class="slds-align_absolute-center slds-m-bottom_medium"><div class="slds-col">
+                                    <button class="slds-button" onclick="{!c.cancelRequest}">
+                                        <lightning:icon iconName="standard:resource_absence" size="large" title="Cancel"/>
+                                    </button>
+                                    <span class="slds-align_absolute-center">
+                                        <a href="javascript:void(0)" onclick="{!c.cancelRequest}">Cancel</a></span>
+                                    </div></span></div>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.permissionWrapper.hasCCMPernission}">
+                        <aura:if isTrue="{!v.showRenew}">
+                            <div class="slds-col--padded slds-size--1-of-4">
+                                <div class="slds-text-align_center slds-m-bottom_medium">
+                                    <span class="slds-align_absolute-center"><div class="slds-col">
+                                        <button class="slds-button" onclick="{!c.renewRequest}">
+                                            <lightning:icon iconName="action:reset_password" size="medium" title="Renew Existing Contract"/>
+                                        </button>
+                                        <span class="slds-align_absolute-center">
+                                            <a href="javascript:void(0)" onclick="{!c.renewRequest}">Renew Existing Contract</a></span>
+                                        </div></span></div>
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{!v.showAmend}">
+                            <div class="slds-col--padded slds-size--1-of-4">
+                                <div class="slds-text-align_center slds-m-bottom_medium">
+                                    <span class="slds-align_absolute-center"><div class="slds-col">
+                                        <button class="slds-button" onclick="{!c.amendRequest}">
+                                            <lightning:icon iconName="standard:service_contract" size="large" title="Amend Existing Contract"/>
+                                        </button>
+                                        <span class="slds-align_absolute-center">
+                                            <a href="javascript:void(0)" onclick="{!c.amendRequest}">Amend Existing Contract</a></span>
+                                        </div></span></div>
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{!v.newAgreement}">
+                            <div class="slds-col--padded slds-size--1-of-4">
+                                <div class="slds-text-align_center">
+                                    <span class="slds-align_absolute-center slds-m-bottom_medium"><div class="slds-col">
+                                        <button class="slds-button" onclick="{!c.createNewAgreement}">
+                                            <lightning:icon iconName="action:record" size="medium" title="New Agreement"/>
+                                        </button>
+                                        <span class="slds-align_absolute-center">
+                                            <a href="javascript:void(0)" onclick="{!c.createNewAgreement}">New Agreement</a></span>
+                                        </div></span></div>
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{!v.ReadyForReviewSignature}">
+                            <div class="slds-col--padded slds-size--1-of-4">
+                                <div class="slds-text-align_center slds-m-bottom_medium">
+                                    <span class="slds-align_absolute-center"><div class="header-column">
+                                        <button class="slds-button" onclick="{!c.returnToRequestor}">
+                                            <lightning:icon iconName="action:edit" size="medium" title="Ready for Review/Signatures"/>
+                                        </button>
+                                        <aura:if isTrue="{!v.ReadyForReview}"><span class="slds-align_absolute-center">
+                                            <a href="javascript:void(0)" onclick="{!c.returnToRequestor}">Ready for Review</a></span></aura:if>
+                                        <aura:if isTrue="{!v.sendForSignature}"><span class="slds-align_absolute-center">
+                                            <a href="javascript:void(0)" onclick="{!c.returnToRequestor}">Ready for Signatures</a></span></aura:if>
+                                        </div></span></div>
+                            </div>
+                        </aura:if>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </div>
+        
+        <aura:if isTrue="{!v.isOpen}">
+            <div class="slds-box slds-theme_default">
+                <div class="slds-m-around_xx-large">
+                    <div class="slds-backdrop slds-backdrop_open">
+                        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                            <div class="slds-modal__container slds-border">
+                                <header class="slds-modal__header">
+                                    <lightning:buttonIcon iconName="utility:close"
+                                                          onclick="{! c.closeModel }"
+                                                          alternativeText="close"
+                                                          variant="bare-inverse"
+                                                          class="slds-modal__close"/>
+                                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                        The following entries are required for submission
+                                    </h2>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    <aura:iteration items="{!v.wrapper}" var="wrap"  indexVar="index">
+                                        <ul>
+                                            <li>{!index+1}. {!wrap.fieldLabel}</li>
+                                        </ul>
+                                    </aura:iteration>
+                                </div>
+                                <footer class="slds-modal__footer">
+                                    
+                                    <lightning:button variant="neutral" 
+                                                      label="Ok"
+                                                      title="Ok"
+                                                      onclick="{! c.closeModel }"/>
+                                    
+                                </footer>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.newAgreementRecordType}">
+            <div class="slds-box slds-theme_default">
+                <div class="slds-m-around_xx-large">
+                    <div class="slds-backdrop slds-backdrop_open">
+                        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                            <div class="slds-modal__container slds-border">
+                                <header class="slds-modal__header">
+                                    <lightning:buttonIcon iconName="utility:close"
+                                                          onclick="{! c.closeAgreementModel }"
+                                                          alternativeText="close"
+                                                          variant="bare-inverse"
+                                                          class="slds-modal__close"/>
+                                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"> New Agreement </h2>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    <div class="slds-grid slds-wrap">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <br/>
+                                            <p style="margin-left:20em">
+                                                Select a record type</p>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <br/> <br/>
+                                            <lightning:radioGroup name="recordType"
+                                                                  options="{!v.RecordTypeOptions}"
+                                                                  value="{!v.RecordTypeVal}"
+                                                                  type="radio"
+                                                                  onchange="{!c.handleChange}"
+                                                                  />
+                                            <br/><br/>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                <footer class="slds-modal__footer">
+                                    <lightning:button variant="neutral" 
+                                                      label="Cancel"
+                                                      title="Cancel"
+                                                      onclick="{!c.closeAgreementModel}"/>
+                                    
+                                    <lightning:button variant="brand" 
+                                                      label="Next"
+                                                      title="Next"
+                                                      onclick="{!c.selectRecordType}" 
+                                                      disabled ="{!v.nextEnable}"
+                                                      />
+                                </footer>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.spinner}">
+            <lightning:spinner alternativeText="Loading" size="large" />
+        </aura:if>
+    </div>
+</aura:component>

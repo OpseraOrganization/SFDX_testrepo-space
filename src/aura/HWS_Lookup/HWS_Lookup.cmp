@@ -1,0 +1,222 @@
+<aura:component controller ="HWS_Lookup_Class" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+    <aura:attribute name="passingAccount" type="String" />
+    <aura:attribute name="SelectedAccountleg" type="String" />
+    <aura:attribute name="objectName" type="String" />
+    <aura:attribute name="otherValues" type="String" />
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="createNew" type="boolean" default="false"/>
+    <aura:attribute name="projectsId" type="String"/>
+    <aura:attribute name="pickupAddr" type="String"/>
+    <aura:attribute name="createProj" type="String" />
+    <aura:attribute name="searchFields" type="String" />
+    <aura:attribute name="returnValue" type="String" />
+    <aura:attribute name="projectId" type="String" />
+    <aura:attribute name="projectName" type="String" />
+    <aura:attribute name="projectAddr1" type="String" />
+    <aura:attribute name="projectAddr2" type="String" />
+    <aura:attribute name="projectAddr3" type="String" />
+    <aura:attribute name="projectCity" type="String" />
+    <aura:attribute name="SelectedAsset" type="object[]" />
+    <aura:attribute name="shippingCountry" type="String" />
+	<aura:attribute name="shipToPartyAccount" type="object" />
+    <!-- 25672 -->
+    <aura:attribute name="triggeredFrom" type="String" default="" description="this is used to know from where it is triggred like console or portal"/>
+    <aura:attribute name="strSearchProjectName" type="String" description="used as a input for the project search" />
+    <aura:attribute name="projectList" type="object[]" />
+    <aura:attribute name="projectListResult" type="object[]" />
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
+    <aura:handler name="HWS_createNewRecordEvent" event="c:HWS_createNewRecordEvent" action="{!c.handleComponentEvent}"/>
+    <aura:registerEvent name="HWS_LookupReturnValueEvent" type="c:HWS_LookupReturnValueEvent"/>
+    <aura:method name="shipToPartyError" action="{!c.shipToPartyError}" access="PUBLIC"/> 
+	 <aura:method name="removeShiptoParty" action="{!c.removeShiptoPartyMethod}" access="PUBLIC"/>
+	 <aura:method name="doInitFromPortal" action="{!c.doInit}" access="PUBLIC"/>
+    <!--Deal Field Start-->
+    
+    <aura:if isTrue="{!v.objectName=='Account'}">
+        <div >
+            <div class="slds-form-element slds-is-required">                        
+                <div aura:id="ImportFromSec">
+                    <div class="slds-form-element slds-is-required">
+                        <div class="customRequired"><label class="slds-form-element__label" for="lookup">Ship to Address</label>
+                        <lightning:helptext content="Select address for delivery of replacement Unit" class="customIcon"/>
+                        </div>
+                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                            <div class="slds-form-element">
+                                <div aura:id="idSearchboxPilotSeries">
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                                        <c:svg aria-Hidden="true" class="slds-input__icon slds-icon-text-default"
+                                               xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                        <ui:inputText aura:id="strNamePilot" class="slds-input"
+                                                      labelClass="slds-form-element__label" required="false"
+                                                      value="{!v.strSearchProjectName}" updateOn="keyup"
+                                                      keyup="{!c.dosearchShiptoParty}" placeholder="Search..." />
+                                    </div>
+                                    <aura:if isTrue="{! v.strSearchProjectName.length>2}">
+                                        <div aura:id="lookuplistPilot"
+                                             class="slds-lookup__menu slds-hide" role="listbox">
+                                            <ul aura:id="lookuplist-items" class="slds-lookup__list recordListBox"
+                                                role="presentation">
+                                                <aura:iteration items="{!v.projectList}"
+                                                                var="projectMatched">
+                                                    <li class="slds-lookup__item"><a id="{!globalId + '_id_' + projectMatched.currentworkingTitleId}"
+                                                                                     role="option" onclick="{!c.selectProjectName}"
+                                                                                     data-id="{!projectMatched.currentworkingTitleId}"> <!--<c:svg class="slds-button__icon slds-button-has-icon-right" xlinkHref="/resource/SLDS092/assets/icons/utility-sprite/svg/symbols.svg#user" />-->
+                                                        <div style="font-size:12px"><b>{!projectMatched.currentworkingTitleName}</b></div>
+                                                        <div style="font-size:12px">{!projectMatched.addressLine1}</div>
+                                                        <div style="font-size:12px">{!projectMatched.addressLine2}</div>
+                                                        <div style="font-size:12px">{!projectMatched.addressLine3}</div>
+                                                        <div style="font-size:12px">{!projectMatched.cityStateCountry}</div>
+                                                        </a></li>
+                                                </aura:iteration>
+                                            </ul>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                                
+                                <ul>
+                                    <aura:iteration items="{!v.projectListResult}" var="teamMember">
+                                        <!-- {!teamMember.contactId} - {!teamMember.contactName}-!teamMember.contactType}<br/> -->
+                                        <li class="slds-pill slds-show"><a class="slds-show"
+                                                                           id="{!globalId + '_id_' + teamMember.currentworkingTitleId}"
+                                                                           role="option" onclick="{!c.removeProjectName}"
+                                                                           data-id="{!teamMember.currentworkingTitleId}"> <c:svg class="slds-icon slds-icon-standard-contact slds-icon--small slds-m-right--xx-small"
+                                                                                                                                 xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#user" />
+                                            
+                                            {!teamMember.currentworkingTitleName}
+                                            <button
+                                                    class="slds-button slds-button--icon slds-float--right slds-m-top--xx-small slds-pill__remove">
+                                                <c:svg aria-Hidden="true" class="slds-button__icon"
+                                                       xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                            </button>
+                                            </a></li>
+                                        
+                                    </aura:iteration>
+                                </ul>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <aura:if isTrue="{!v.createNew &amp;&amp; v.pickupAddr == 'shipToParty'}">
+                <div class="slds-text-heading--x-small slds-listTab"> 
+                    <div class="slds-text-heading--x-small slds-m-top--x-small">
+                        (or) <a id="createNewRecord" onclick="{! c.openModel }">Create New Ship to Address</a>
+                    </div>
+                    
+                </div>
+            </aura:if> 
+            <div aura:id="SelectionDisplayAddr">
+              <label class="slds-form-element__label">
+                  <div style="font-size:12px"><b>{!v.projectName}</b></div>
+                  <div style="font-size:12px">{!v.projectAddr1}</div>
+                  <div style="font-size:12px">{!v.projectAddr2}</div>
+                  <div style="font-size:12px">{!v.projectAddr3}</div>
+                  <div style="font-size:12px">{!v.projectCity}</div>
+              </label>
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.objectName=='Contact'}">
+        <div >
+            <div class="slds-form-element slds-is-required">                        
+                <div aura:id="ImportFromSec">
+                    <div class="slds-form-element slds-is-required">
+                        <label class="slds-form-element__label" for="lookup">Communication {!v.objectName}</label>
+                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                            <div class="slds-form-element">
+                                <div aura:id="idSearchboxPilotSeries">
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                                        <c:svg aria-Hidden="true" class="slds-input__icon slds-icon-text-default"
+                                               xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                        <ui:inputText aura:id="strNamePilot" class="slds-input"
+                                                      labelClass="slds-form-element__label" required="false"
+                                                      value="{!v.strSearchProjectName}" updateOn="keyup"
+                                                      keyup="{!c.dosearchProject}" placeholder="Search..." />
+                                    </div>
+                                    <aura:if isTrue="{! v.strSearchProjectName.length>2}">
+                                        <div aura:id="lookuplistPilot"
+                                             class="slds-lookup__menu slds-hide" role="listbox">
+                                            <ul aura:id="lookuplist-items" class="slds-lookup__list"
+                                                role="presentation">
+                                                <aura:iteration items="{!v.projectList}"
+                                                                var="projectMatched">
+                                                    <li class="slds-lookup__item"><a id="{!globalId + '_id_' + projectMatched.currentworkingTitleId}"
+                                                                                     role="option" onclick="{!c.selectProjectName}"
+                                                                                     data-id="{!projectMatched.currentworkingTitleId}"> <!--<c:svg class="slds-button__icon slds-button-has-icon-right" xlinkHref="/resource/SLDS092/assets/icons/utility-sprite/svg/symbols.svg#user" />-->
+                                                        <c:svg class="slds-icon slds-icon-standard-contact slds-icon--small"
+                                                               xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#user" />
+                                                        {!projectMatched.currentworkingTitleName}
+                                                        </a></li>
+                                                </aura:iteration>
+                                            </ul>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                                
+                                <ul>
+                                    <aura:iteration items="{!v.projectListResult}" var="teamMember">
+                                        <!-- {!teamMember.contactId} - {!teamMember.contactName}-!teamMember.contactType}<br/> -->
+                                        <li class="slds-pill slds-show"><a class="slds-show"
+                                                                           id="{!globalId + '_id_' + teamMember.currentworkingTitleId}"
+                                                                           role="option" onclick="{!c.removeProjectName}"
+                                                                           data-id="{!teamMember.currentworkingTitleId}"> <c:svg class="slds-icon slds-icon-standard-contact slds-icon--small slds-m-right--xx-small"
+                                                                                                                                 xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#user" />
+                                            {!teamMember.currentworkingTitleName}
+                                            <button
+                                                    class="slds-button slds-button--icon slds-float--right slds-m-top--xx-small slds-pill__remove">
+                                                <c:svg aria-Hidden="true" class="slds-button__icon"
+                                                       xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                            </button>
+                                            </a></li>
+                                        
+                                    </aura:iteration>
+                                </ul>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <aura:if isTrue="{!v.createNew}">
+                <div class="slds-text-heading--x-small slds-listTab"> 
+                    <div class="slds-text-heading--x-small slds-m-top--x-small">
+                        (or) <a id="createNewRecord" onclick="{! c.openModel }" >Create New Communication {!v.objectName}</a>
+                    </div>
+                    
+                </div>
+            </aura:if> 
+        </div>
+    </aura:if>
+    <!-- Deal field End-->
+    
+    <aura:if isTrue="{!v.createProj}">
+        
+        
+        <!--Use "slds-m-around_xx-large" class to add standard X-Large padding to the component--> 
+        <div class="slds-m-around_xx-large">
+            
+            <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->  
+            <aura:if isTrue="{!v.objectName=='Contact'}">
+                <aura:if isTrue="{!v.isOpen}">
+                    <c:HWS_CreateNewRecord objectName='{!v.objectName}' otherValues = "{!v.otherValues}" shippingCountry="{!v.shippingCountry}"/>
+                </aura:if>   
+            </aura:if>
+            
+            <aura:if isTrue="{!v.objectName=='Account'}">
+                <aura:if isTrue="{!v.isOpen}">
+                    <c:HWS_CreateNewRecord objectName='{!v.objectName}' otherValues = "{!v.otherValues}" passingAccount = "{!v.passingAccount}" 
+                                           shippingCountry="{!v.shippingCountry}" SelectedAsset = "{!v.SelectedAsset}" />
+                </aura:if>   
+            </aura:if>
+            
+        </div>
+    </aura:if>
+    
+    
+    
+    
+    <!-- end Model popup addNewTalent-->
+</aura:component>

@@ -1,0 +1,363 @@
+<aura:component controller="DS_DisplayQuoteLI_Information" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="QuoteInfoList"  type="Object[]"/>
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="attributeList" type="List"/>
+    <aura:attribute name="mapValues" type="Object"/>
+
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem class="" flexibility="grow" size="12" padding="around-small">
+            <b>Line Items</b>
+            <aura:if isTrue="{!not(empty(v.QuoteInfoList))}">
+                <div class="slds-grid slds-scrollable--x">
+                    <table class="slds-table slds-table_bordered slds-max-medium-table--stacked">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col" >
+                                    <span class="slds-truncate" title=""></span>
+                                </th>
+                                <th class="slds-text-title--caps" scope="col" >
+                                    <span class="slds-truncate slds-cell-wrap " title="Customer Grouping"><B>Customer Grouping</B></span>
+                                </th>
+                                <th class="slds-text-title--caps" scope="col">
+                                    <span class="slds-truncate slds-cell-wrap" title="Product Code" ><B>Product Code</B></span>
+                                </th>
+                                <th class="slds-text-title--caps" scope="col" >
+                                    <span class="slds-truncate slds-cell-wrap" title="Product Name"><B>Product Name</B></span>
+                                </th>
+                                <th class="slds-text-title--caps" scope="col" >
+                                    <span class="slds-truncate slds-cell-wrap" title="Cells/Quantities"><B>Cells/Quantities</B></span>
+                                </th>
+                                <th class="slds-text-title--caps" scope="col" >
+                                    <span class="slds-truncate slds-cell-wrap" title="Net Price"><B>Net Price</B></span>
+                                </th>
+                                <!-- colunms of item level attributes -->
+                                <aura:if isTrue="{!v.attributeList.length > 0}">
+                                    <aura:iteration items="{!v.attributeList}" var="attribute">
+                                        <th class="slds-text-title--caps" scope="col" >
+                                            <span class="slds-truncate slds-cell-wrap " title="{!attribute}"><B>{!attribute}</B></span>
+                                        </th>
+                                    </aura:iteration>
+                                </aura:if>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.QuoteInfoList}" var="objQuoteInfo">
+                                <!-- CUSTOMER GROUPING ROWS -->
+                                <tr class="slds-table_bordered">
+                                    <td data-label="Detailed Features" scope="row">
+                                    </td>
+                                     <td data-label="Customer Grouping">
+                                        <div class="slds-truncate slds-cell-wrap" title="">{!objQuoteInfo.Name}</div>
+                                    </td>
+                                    <td data-label="Product Code">
+                                        <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                    </td>
+                                    <td data-label="Product Name">
+                                        <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                    </td>
+                                    <td data-label="Cells/Quantities">
+                                        <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                    </td>
+                                    <td data-label="Net Price">
+                                        <div class="slds-truncate slds-cell-wrap" title="">
+                                            <lightning:formattedNumber value="{!objQuoteInfo.totalSum}" style="currency" currencyCode="{!objQuoteInfo.currencyType}" currencyDisplayAs="code"/>
+                                        </div>
+                                    </td>
+                                   <!-- empty cells of attributes on group level -->
+                                   <aura:if isTrue="{!v.attributeList.length > 0}">
+                                        <aura:iteration items="{!v.attributeList}" var="attribute">
+                                            <td data-label="Attributes">
+                                                <span class="slds-truncate slds-cell-wrap "></span>
+                                            </td>
+                                        </aura:iteration>
+                                    </aura:if>
+                                </tr>
+
+                                <!-- This section to display the All Bundle Products -->
+                                <aura:iteration items="{!objQuoteInfo.objProdInformation.lstBundle}" var="objQuoteInfoBundle">
+                                    <tr>
+                                        <td data-label="Detailed Features" scope="row">
+                                            <aura:if isTrue="{!not(objQuoteInfoBundle.objProd.Apttus_QPConfig__PriceListItemId__r.Hide_Bundle_Options__c)}">
+                                                <aura:if isTrue="{!not(empty(objQuoteInfoBundle.optionsBundleList))}">
+                                                    <aura:if isTrue="{!objQuoteInfoBundle.isBundleOptionOpened}">
+                                                        <lightning:buttonIcon title="Collapse details" name="{!rowIndex}" value="{!objQuoteInfoBundle.isBundleOptionOpened}"  onclick="{!c.Expandcollapse}" aura:id="remove" iconName="utility:dash" variant="bare" alternativeText="{!rowIndex}" iconClass="dark"/>
+                                                        <aura:set attribute="else">
+                                                            <lightning:buttonIcon title="Expand details" name="{!rowIndex}" value="{!objQuoteInfoBundle.isBundleOptionOpened}"  onclick="{!c.Expandcollapse}" aura:id="add" iconName="utility:add" variant="bare" alternativeText="{!rowIndex}" iconClass="dark"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:if>
+                                            </aura:if>
+                                        </td>
+                                        <td data-label="Customer Grouping">
+                                            <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                        </td>
+                                        <td data-label="Product Code">
+                                            <div class="slds-truncate slds-cell-wrap " title="">
+                                                <aura:if isTrue= "{!not(empty(objQuoteInfoBundle.objProd.External_Reference__c))}">
+                                                    {!objQuoteInfoBundle.objProd.External_Reference__c}
+                                                    <aura:set attribute="else">
+                                                        {!objQuoteInfoBundle.objProd.Product_Code__c}
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                        </td>
+                                        <td data-label="Product Name">
+                                            <div class="slds-truncate slds-cell-wrap" title="">
+                                                <aura:if isTrue= "{!not(empty(objQuoteInfoBundle.objProd.External_Description__c))}">
+                                                    {!objQuoteInfoBundle.objProd.External_Description__c}
+                                                    <aura:set attribute="else">
+                                                        {!objQuoteInfoBundle.objProd.NokiaCPQ_Product_Name__c}
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                        </td>
+                                        <td data-label="Cells/Quantities">
+                                            <div class="slds-truncate slds-cell-wrap" title="">{!objQuoteInfoBundle.objProd.Apttus_QPConfig__Quantity2__c }</div>
+                                        </td>
+                                        <td data-label="Net Price">
+                                            <div class="slds-truncate slds-cell-wrap" title="">
+                                                <lightning:formattedNumber value="{!objQuoteInfoBundle.objProd.Apttus_QPConfig__NetPrice__c }" style="currency" currencyCode="{!objQuoteInfo.currencyType}" currencyDisplayAs="code"/>
+                                            </div>
+                                        </td>
+                                        <!-- colunms of item level attributes on bundle level -->
+                                        <aura:if isTrue="{!and(v.attributeList.length > 0, v.mapValues.length > 0)}">
+                                            <aura:iteration items="{!v.attributeList}" var="attributeLabel">
+                                                <aura:iteration items="{!v.mapValues}" var="attributeMap" indexVar="key">
+                                                    <!-- check for the Quote Line Item ID -->
+                                                    <aura:if isTrue="{!attributeMap.key == objQuoteInfoBundle.objProd.Id}">
+                                                        <aura:iteration items="{!attributeMap.value}" var="attribute" indexVar="key">
+                                                            <!-- check for the proper Attribute Label -->
+                                                            <aura:if isTrue="{!attribute.key == attributeLabel}">
+                                                                <td data-label="Attribute" scope="row">
+                                                                    <span class="slds-truncate slds-cell-wrap " title="">{!attribute.value}</span>
+                                                                </td>
+                                                            </aura:if>
+                                                        </aura:iteration>
+                                                    </aura:if>
+                                                </aura:iteration>
+                                            </aura:iteration>
+                                        </aura:if>
+                                    </tr>
+
+                                    <!-- Below Aura Iteration will display all the Option Product exist on bundle  -->
+                                    <aura:if isTrue="{!objQuoteInfoBundle.isBundleOptionOpened}">
+                                        <aura:iteration items="{!objQuoteInfoBundle.optionsBundleList}" var="objOption">
+                                            <tr>
+                                                <td data-label="Detailed Features" scope="row" style="padding-left: 20PX;">
+                                                    <aura:if isTrue="{!objOption.isFeatureExist}">
+                                                        <aura:if isTrue="{!objOption.isFeatureOpen}">
+                                                            <lightning:buttonIcon title="Collapse details" name="{!rowIndex}" value="{!objOption.isFeatureOpen}"  onclick="{!c.Expandcollapse}" aura:id="remove" iconName="utility:dash" variant="bare" alternativeText="{!rowIndex}" iconClass="dark"/>
+                                                            <aura:set attribute="else">
+                                                                <lightning:buttonIcon title="Expand details" name="{!rowIndex}" value="{!objOption.isFeatureOpen}"  onclick="{!c.Expandcollapse}" aura:id="add" iconName="utility:add" variant="bare" alternativeText="{!rowIndex}" iconClass="dark"/>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </aura:if>
+                                                </td>
+                                                <td data-label="Customer Grouping">
+                                                    <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                                </td>
+                                                <td data-label="Product Code">
+                                                    <div class="slds-truncate slds-cell-wrap" title="" style="padding-left:30px;">
+                                                        <aura:if isTrue= "{!not(empty(objOption.objProd.External_Reference__c))}">
+                                                            {!objOption.objProd.External_Reference__c}
+                                                            <aura:set attribute="else">
+                                                                {!objOption.objProd.Product_Code__c}
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </div>
+                                                </td>
+                                                <td data-label="Product Name">
+                                                    <div class="slds-truncate slds-cell-wrap" title="">
+                                                        <aura:if isTrue= "{!not(empty(objOption.objProd.External_Description__c))}">
+                                                            {!objOption.objProd.External_Description__c}
+                                                            <aura:set attribute="else">
+                                                                {!objOption.objProd.NokiaCPQ_Product_Name__c}
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </div>
+                                                </td>
+                                                <td data-label="Cells/Quantities">
+                                                    <div class="slds-truncate slds-cell-wrap" title="">{!objOption.objProd.Total_Option_Quantity__c}</div>
+                                                </td>
+                                                <td data-label="Net Price">
+                                                    <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                                </td>
+                                                <!-- colunms of empty item level attributes on bundle option level -->
+                                                <aura:if isTrue="{!v.attributeList.length > 0}">
+                                                    <aura:iteration items="{!v.attributeList}" var="attributeLabel">
+                                                        <td data-label="Attribute" scope="row" >
+                                                            <span class="slds-truncate slds-cell-wrap " title=""></span>
+                                                        </td>
+                                                    </aura:iteration>
+                                                </aura:if>
+                                            </tr>
+
+                                            <!-- Below block of code will contain the logic for displaying the Features of Option Product if exist -->
+                                            <aura:if isTrue="{!objOption.isFeatureExist}">
+                                                <aura:if isTrue="{!objOption.isFeatureOpen}">
+                                                    <tr>
+                                                        <th class="hide-th">
+                                                            <span class="slds-truncate" title=""></span>
+                                                        </th>
+                                                        <th class="hide-th tableheadercolor" scope="col" >
+                                                            <span class="slds-truncate slds-cell-wrap " title="Feature Name">Feature Name</span>
+                                                        </th>
+                                                        <th class="hide-th tableheadercolor" scope="col" >
+                                                            <span class="slds-truncate slds-cell-wrap " title="Feature Code">Feature Code</span>
+                                                        </th>
+
+                                                        <th class="hide-th tableheadercolor" scope="col" >
+                                                            <span class="slds-truncate slds-cell-wrap " title="Release Package">Release Package</span>
+                                                        </th>
+
+                                                        <th class="hide-th"></th>
+                                                        <th class="hide-th"></th>
+
+                                                    </tr>
+                                                    <aura:iteration items="{!objOption.proFeatureList}" var="objFeature">
+                                                        <tr class="selectedRow">
+                                                            <td class='hide-th'>
+                                                                <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                                            </td>
+                                                            <td data-label="Feature Name">
+                                                                <div class="slds-truncate slds-cell-wrap" title="">{!objFeature.Product_Feature__r.Description__c}</div>
+                                                            </td>
+                                                            <td data-label="Feature Name">
+                                                                <div class="slds-truncate slds-cell-wrap" title="">{!objFeature.Product_Feature__r.Feature_Commercial_Number__c}</div>
+                                                            </td>
+                                                            <td data-label="Feature Name">
+                                                                <div class="slds-truncate slds-cell-wrap" title="">{!objFeature.Release_NSN_Code__c}</div>
+                                                            </td>
+
+                                                            <td class='hide-th'></td>
+                                                            <td class='hide-th'></td>
+                                                        </tr>
+                                                    </aura:iteration>
+                                                </aura:if>
+                                            </aura:if>
+                                        </aura:iteration>
+                                    </aura:if>
+                                </aura:iteration>
+
+                                <!-- This section to display the All StandAlone Products -->
+                                <aura:iteration items="{!objQuoteInfo.objProdInformation.lstStandAlone}" var="obj">
+                                    <tr>
+                                        <td data-label="Detailed Features" scope="row">
+                                            <aura:if isTrue="{!obj.standAloneObj.isFeatureExist}">
+                                                <aura:if isTrue="{!obj.standAloneObj.isFeatureOpen}">
+                                                    <lightning:buttonIcon title="Collapse details" name="{!rowIndex}" value="{!obj.standAloneObj.isFeatureOpen}"  onclick="{!c.Expandcollapse}" aura:id="remove" iconName="utility:dash" variant="bare" alternativeText="{!rowIndex}" iconClass="dark"/>
+                                                    <aura:set attribute="else">
+                                                        <lightning:buttonIcon title="Expand details" name="{!rowIndex}" value="{!obj.standAloneObj.isFeatureOpen}"  onclick="{!c.Expandcollapse}" aura:id="add" iconName="utility:add" variant="bare" alternativeText="{!rowIndex}" iconClass="dark"/>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:if>
+                                        </td>
+                                        <td data-label="Customer Grouping">
+                                            <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                        </td>
+                                        <td data-label="Product Code">
+                                            <div class="slds-truncate slds-cell-wrap" title="">
+                                                <aura:if isTrue= "{!not(empty(obj.standAloneObj.objProd.External_Reference__c))}">
+                                                    {!obj.standAloneObj.objProd.External_Reference__c}
+                                                    <aura:set attribute="else">
+                                                        {!obj.standAloneObj.objProd.Product_Code__c}
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                        </td>
+                                        <td data-label="Product Name">
+                                            <div class="slds-truncate slds-cell-wrap" title="">
+                                                <aura:if isTrue= "{!not(empty(obj.standAloneObj.objProd.External_Description__c))}">
+                                                    {!obj.standAloneObj.objProd.External_Description__c}
+                                                    <aura:set attribute="else">
+                                                        {!obj.standAloneObj.objProd.NokiaCPQ_Product_Name__c}
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                        </td>
+                                        <td data-label="Cells/Quantities">
+                                            <div class="slds-truncate slds-cell-wrap" title="">{!obj.standAloneObj.objProd.Apttus_QPConfig__Quantity2__c }</div>
+                                        </td>
+                                        <td data-label="Net Price">
+                                            <div class="slds-truncate slds-cell-wrap" title="">
+                                                <lightning:formattedNumber value="{!obj.standAloneObj.objProd.Apttus_QPConfig__NetPrice__c}" style="currency" currencyCode="{!objQuoteInfo.currencyType}" currencyDisplayAs="code"/>
+                                            </div>
+                                        </td>
+                                        <!-- colunms of item level attributes on standalone item level -->
+                                        <aura:if isTrue="{!and(v.attributeList.length > 0, v.mapValues.length > 0)}">
+                                            <aura:iteration items="{!v.attributeList}" var="attributeLabel">
+                                                <aura:iteration items="{!v.mapValues}" var="attributeMap" indexVar="key">
+                                                    <!-- check for the Quote Line Item ID -->
+                                                    <aura:if isTrue="{!attributeMap.key == obj.standAloneObj.objProd.Id}">
+                                                        <aura:iteration items="{!attributeMap.value}" var="attribute" indexVar="key">
+                                                            <!-- check for the proper Attribute Label -->
+                                                            <aura:if isTrue="{!attribute.key == attributeLabel}">
+                                                                <td data-label="Attribute" scope="row">
+                                                                    <div class="slds-truncate slds-cell-wrap" title="">{!attribute.value}</div>
+                                                                </td>
+                                                            </aura:if>
+                                                        </aura:iteration>
+                                                    </aura:if>
+                                                </aura:iteration>
+                                            </aura:iteration>
+                                        </aura:if>
+                                    </tr>
+
+                                    <aura:if isTrue="{!obj.standAloneObj.isFeatureExist}">
+                                        <aura:if isTrue="{!obj.standAloneObj.isFeatureOpen}">
+                                            <tr>
+                                                <th class="hide-th" scope="col">
+                                                    <span class="slds-truncate" title=""></span>
+                                                </th>
+                                                <th class="hide-th tableheadercolor" scope="col" >
+                                                    <span class="slds-truncate slds-cell-wrap " title="Feature Name">Feature Name</span>
+                                                </th>
+                                                <th class="hide-th tableheadercolor" scope="col" >
+                                                    <span class="slds-truncate slds-cell-wrap " title="Feature Code">Feature Code</span>
+                                                </th>
+
+                                                <th class="hide-th tableheadercolor" scope="col" >
+                                                    <span class="slds-truncate slds-cell-wrap " title="Release Package">Release Package</span>
+                                                </th>
+                                                <th class='hide-th'></th>
+                                                <th class='hide-th'></th>
+                                            </tr>
+
+                                            <aura:iteration items="{!obj.standAloneObj.proFeatureList}" var="objFeature">
+                                                <tr class="selectedRow" >
+                                                    <td class='hide-th'>
+                                                        <div class="slds-truncate slds-cell-wrap" title=""></div>
+                                                    </td>
+                                                    <td data-label="Feature Name">
+                                                        <div class="slds-truncate slds-cell-wrap" title="">{!objFeature.Product_Feature__r.Description__c}</div>
+                                                    </td>
+                                                    <td data-label="Feature Code">
+                                                        <div class="slds-truncate slds-cell-wrap" title="">{!objFeature.Product_Feature__r.Feature_Commercial_Number__c}</div>
+                                                    </td>
+                                                    <td data-label="Release Package">
+                                                        <div class="slds-truncate slds-cell-wrap" title="">{!objFeature.Release_NSN_Code__c}</div>
+                                                    </td>
+                                                    <td class='hide-th'></td>
+                                                    <td class='hide-th'></td>
+
+                                                </tr>
+                                            </aura:iteration>
+                                        </aura:if>
+                                    </aura:if>
+                                </aura:iteration>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div>
+            </aura:if>
+
+            <aura:if isTrue="{!empty(v.QuoteInfoList)}">
+                <br />
+                <div class="slds-align_absolute-center">No Proposal line item exist.</div>
+                <hr />
+            </aura:if>
+
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

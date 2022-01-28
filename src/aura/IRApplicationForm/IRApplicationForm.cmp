@@ -1,0 +1,1434 @@
+<aura:component implements="forceCommunity:availableForAllPageTypes,force:appHostable,flexipage:availableForAllPageTypes" access="global" controller="IRApplicationCase">    
+    <aura:handler name="init" value="{!this}" action="{!c.myAction}" />
+    <aura:attribute name="Case" type="Case" 
+                    default="{ 'sobjectType': 'Case' }"/>
+    <aura:dependency resource="markup://force:showToast" type="EVENT"/>
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>    
+    <aura:attribute name="validationAttr" type="String"/>
+    <aura:attribute name="isSaveReturn" type="Boolean" default="false"/>
+    <aura:attribute name="casenumber" type="List" /> 
+    <aura:attribute name="opts" type="List"/>
+    <aura:attribute name="optctype" type="List"/>
+    <aura:attribute name="optAnnual" type="List"/>
+    <aura:attribute name="optRevServices" type="List"/>
+    <aura:attribute name="optnoofemp" type="List"/>
+    <aura:attribute name="optTechPro" type="List"/>
+    <aura:attribute name="optEmpinSales" type="List"/>
+    <aura:attribute name="optEmpinServices" type="List"/>
+    <aura:attribute name="optEmpinMarketing" type="List"/>
+    <aura:attribute name="optRepNokia" type="List"/>
+    <aura:attribute name="optverfocus" type="List"/>
+    <aura:attribute name="optManufacture" type="List"/>
+    <aura:attribute name="optPrimaryInterest" type="List"/>
+    <aura:attribute name="optMaintenance" type="List"/>
+    <aura:attribute name="optState" type="List"/>
+    <aura:attribute name="optCountry" type="List"/>
+    <aura:attribute name="optDistributor" type="List" default=""/>
+    <aura:attribute name="optSellNokia" type="List"/>
+    <aura:attribute name="optSalesTerr" type="List"/>
+    <aura:attribute name="LanguageOption" type="List"/>
+    <aura:attribute name="optDepartureYear" type="List"/>
+    <aura:attribute name="loginCaseNumber" type="string"/>
+    <aura:attribute name="loginCaseId" type="string"/>
+    <!--
+        added for multi language -->
+    <aura:attribute name="closeModal" type="Boolean"/>
+    <aura:attribute name="SelectedLanguage" type="String"/>
+    <aura:attribute name="conSelected" type="List"/>
+    <aura:attribute name="conEntered" type="List"/>
+    <aura:attribute name="allValues" type="List"/>
+    <aura:attribute name="sectionLabels" type="Map"/>
+	<aura:attribute name="showIRPage" type="Boolean" default="false"/>
+    <aura:attribute name="SaveAndReturn" type="Boolean" default="true"/>
+    <aura:attribute name="countryChecked" type="List"/>
+    <aura:attribute name="draftTicket" type="String"/>
+    <aura:attribute name="ShowPrimaryIntDependFields" type="Boolean" default="false"/>
+
+    <aura:attribute name="newContact" type="Object"/>
+    <aura:attribute name="simpleNewContact" type="Object"/>
+    <aura:attribute name="newContactError" type="String"/>
+    <aura:attribute name="caseId" type="string"/>
+    <aura:attribute name="clname" type="string"/>
+    <aura:attribute name="cfname" type="string"/>
+    <aura:attribute name="cemail" type="string"/>
+    
+     <force:recordData aura:id="contactRecordCreator" 
+                      layoutType="FULL"
+                      targetRecord="{!v.newContact}"
+                      targetFields="{!v.simpleNewContact}"
+                      targetError="{!v.newContactError}" />
+     <!-- multi lang attributes end-->
+
+	<aura:if isTrue = "{!v.SaveAndReturn}">
+        <div class="headerInfo">
+            <div class="slds-text-color_inverse">In order to complete this application you will need to provide the following for the countries in which you are applying to resell Nokia products:<br/>
+			&nbsp;&nbsp;-&nbsp;Company registration number(s) or other identification number as evidence of the legal existence of your business<br/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;->&nbsp;Examples: Local Country Registration, EIN etc.<br/>
+			<!--&nbsp;&nbsp;-&nbsp;Upload documents that provide proof of legal entity, authentic official document of registration/incorporation<br/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;->&nbsp;Examples: Incorporation Certificate, Certificate of Registration, TAX ID documents, Business License etc.<br/>-->
+            </div>
+        </div>
+        <br></br>
+		<div>
+			<div class=" slds-text-title_caps slds-size_1-of-1">ENTER THE NIRA APPLICATION NUMBER TO RETRIEVE YOUR DRAFT:</div>
+			<br/>
+			<label class="slds-form-element__label slds-size_1-of-1" for="ticketNumber">
+				<abbr class="slds-required slds-text-title_caps" title="required">*</abbr>NIRA Ticket Number:
+			</label>
+			<div class="slds-form-element__control slds-size_1-of-2">
+				<ui:inputText aura:id="ticketNumber" class="slds-input" placeholder="Enter Ticket Number"/>
+				<ui:button label="Retrieve" press="{!c.RetriveForm}"/>
+			</div>
+			<br/>
+			<div class=" slds-text-title_caps slds-size_1-of-1">Or</div>
+			<br/>
+			<div class=" slds-text-title_caps slds-size_1-of-1"><ui:button label="Start a New NIRA Application" press="{!c.ShowIRPage}"/></div>
+		   <br></br><br></br><br></br><br></br><br></br><br></br>
+            <br></br><br></br><br></br><br></br>
+		</div>
+	</aura:if>  
+<aura:if isTrue = "{!v.showIRPage}">	
+    <div class="main" aura:id="firstPage">
+        <div class="slds-form--inline">
+            <div class="slds-align_absolute-center"> 
+            <lightning:select aura:id="LanguageSelection" name="LanguageSelection" label="Select language to download terms :">
+                <option value="English" text="English"></option>
+                <aura:iteration items="{!v.LanguageOption}" var="Lang">
+                    <option value="{!Lang}" text="{!Lang}"></option>
+                </aura:iteration>
+            </lightning:select>
+            <lightning:button variant="brand" label="Download Terms and Conditions" onclick="{!c.downloadTC}"/>
+            </div>
+        </div>
+        <br/>
+        <h2 class="headercolor">NOKIA PARTNER REGISTRATION</h2>
+        <br/>
+        <div class="slds-form" role="list">
+            <div class="slds-form__row">
+                <div class="slds-form__item" role="listitem">
+                    <div class="slds-form__row">
+                        <label class="slds-form-element__legend slds-form-element__label"><label class="required">*</label>Are You Already a Nokia Direct Reseller Partner?
+                        </label>
+                        <div class="slds-form-element_compound">
+                            <div class="slds-form-element__control">
+                                <span class="slds-radio">
+                                    <input type="radio" id="radio-27" name="Group1" />
+                                    <label class="slds-radio__label" for="radio-27" >
+                                        <span class="slds-radio--faux"></span>
+                                        <span class="slds-form-element__label">Yes</span>
+                                    </label>
+                                </span>
+                                <span class="slds-radio">
+                                    <input type="radio" id="radio-28" name="Group1" />
+                                    <label class="slds-radio__label" for="radio-28">
+                                        <span class="slds-radio--faux"></span>
+                                        <span class="slds-form-element__label">No</span>
+                                    </label>
+                                </span>
+                                <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-form__item" role="listitem">
+                	<div class="slds-form-element_compound">                    
+                        <div class="slds-form-element__control">
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="input-04"><label class="required">*</label>First Name
+                                    </label>
+                                    <div class="slds-form-element__control">
+                                        <ui:inputtext aura:id="cfname2" value="{!v.cfname}" maxlength="40" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="input-05">
+                                        <label class="required">*</label>
+                                        Last Name
+                                    </label>
+                                    <div class="slds-form-element__control">
+                                        <ui:inputText aura:id="clname2" value="{!v.clname}" maxlength="40" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="input-05">
+                                        <label class="required">*</label>Email
+                                    </label>
+                                    <ui:inputEmail aura:id="cemail2" value="{!v.cemail}" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>                           
+            <fieldset class="slds-form-element" style="display:none">
+                <legend class="slds-form-element__legend slds-form-element__label">
+                    <label class="required">*</label>What Type of Business Would You Like To Have With Nokia?
+                </legend>
+                <div class="slds-form-element__control" style="display:none">
+                    <label class="slds-radio" for="BusinessType">
+                        <input type="Radio" name="Group2" id="BusinessType" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">Value Added Reseller - purchase through distribution</span>
+                    </label>
+                    <label class="slds-radio" for="Reseller">
+                        <input type="Radio" name="Group2" id="Reseller" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">Value Added Reseller - purchase direct</span>
+                    </label>
+                    <label class="slds-radio" for="Distributor">
+                        <input type="Radio" name="Group2" id="Distributor" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">Distributor</span>
+                    </label>
+                    <label class="slds-radio" for="Integrator">
+                        <input type="Radio" name="Group2" id="Integrator" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">Systems Integrator</span>
+                    </label>
+                    <label class="slds-radio" for="OEM">
+                        <input type="Radio" name="Group2" id="OEM" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">OEM</span>
+                    </label>
+                    <label class="slds-radio" for="Consultant">
+                        <input type="Radio" name="Group2" id="Consultant" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">Consultant</span>
+                    </label>
+                </div>
+            </fieldset>
+        </div>
+        <br/>
+        <br/>
+        <h2 class="headercolor">COMPANY HEADQUARTERS</h2>
+        <br/>
+        <fieldset class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2 ">
+                        <label class="slds-form-element__label" for="input-01"><label class="required">*</label>Street Address 1</label>
+                        <ui:inputTextarea aura:id="street1" maxlength="50"
+                                          class="slds-input" />
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-02">Street Address 2
+                        </label>
+                        <ui:inputTextarea aura:id="street2" maxlength="50" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <fieldset class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">Street Address 3</label>
+                        <ui:inputTextarea aura:id="street3" maxlength="50" class="slds-input" />
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05"><label class="required">*</label>City</label>
+                        <ui:inputText aura:id="city"  maxlength="50" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}">
+                        </ui:inputText>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04"><label class="required">*</label>Postal Code
+                        </label>
+                        <ui:inputText aura:id="postal" maxlength="30" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>
+                            Country (Headquarters)
+                        </label>
+                        <ui:inputSelect aura:id="country" class="slds-input" change="{!c.changeState}">
+                            <ui:inputSelectOption label="Select Your Country" text="" disabled="True" />
+                            <aura:iteration items="{!v.optCountry}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputSelect>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04"><label class="required">*</label>Phone No.
+                        </label>
+                        <ui:inputPhone aura:id="phone" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">State/Province(If Applicable)
+                        </label>
+                        <ui:inputSelect aura:id="statep" class="slds-input" >
+                            <ui:inputSelectOption label="Select Your State" text="" disabled="True" />
+                            <aura:iteration items="{!v.optState}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputSelect>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            Fax
+                        </label>
+                        <ui:inputPhone aura:id="fax" class="slds-input" />
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>Company's Website
+                        </label>
+                        <ui:inputText aura:id="compweb" maxlength="200" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-form--compound">
+                <div class="slds-form-element__group">
+                    <div class="slds-form-element__row">
+                        <div class="slds-form-element slds-size--1-of-2">
+                            <label class="slds-form-element__label" for="input-04">
+                                <label class="required">*</label>
+                                Company Email Domains (e.g. @xyz.com)
+                            </label>
+                            <ui:inputText aura:id="emaild" maxlength="80" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                        </div>
+                        <div class="slds-form-element slds-size--1-of-2">
+                            <label class="slds-form-element__label" for="input-05">
+                                Number of Branch Locations                                
+                            </label>
+                            <ui:inputNumber aura:id="nob" class="slds-input" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-form--compound">
+                <div class="slds-form-element__group">
+                    <div class="slds-form-element__row">
+                        <div class="slds-form-element slds-size--1-of-2">
+                            <label class="slds-form-element__label" for="input-04"
+                                   >Branch Offices ( i.e. Cities, States/Provinces or Markets)
+                            </label>
+                            <ui:inputText aura:id="BranchCity" maxlength="50" class="slds-input" >
+                            </ui:inputText>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+        <h2 class="headercolor">COMPANY PROFILE</h2>
+        <br/>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            <label class="required">*</label>
+                            Full Legal Name of Your Organization
+                        </label>
+                        <ui:inputtext aura:id="legalOrgName" maxlength="50" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            Tax Number
+                            <label class="labelcol">
+                                (VAT required for Europe; CNPJ required for Brazil)
+                            </label>
+                        </label>
+                        <ui:inputText aura:id="vat" maxlength="50" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2" style="display:none">
+                        <label class="slds-form-element__label" for="input-05">
+                            If Publically Traded, Please Indicate Stock Exchange Where Listed
+                        </label>
+                        <ui:inputText aura:id="stock" maxlength="200" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            Please Provide Your D-U-N-S Number (If Applicable)
+                        </label>
+                        <ui:inputText aura:id="duns" maxlength="50" class="slds-input" />
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2" style="display:none">
+                        <label class="slds-form-element__label" for="input-04">
+                            Name of the Company's Main Shareholders
+                        </label>
+                        <ui:inputtext aura:id="CompShareholder" class="slds-input" />
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            <label class="required">*</label>Company Type
+                        </label>
+                        <ui:inputSelect aura:id="companyType" class="slds-input" >
+                            <ui:inputSelectOption label="Select Your Company Type" text="" disabled="True" />  
+                            <aura:iteration items="{!v.optctype}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputSelect>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            Number of Years in Business
+                        </label>
+                        <ui:inputNumber aura:id="YearsinBus" class="slds-input" />                        
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            <label class="required">*</label>Annual Revenues
+                        </label>
+                        <ui:inputselect aura:id="revenue" class="slds-input" >
+                            <ui:inputSelectOption label="Select Your Annual revenues" text="" disabled="True" />
+                            <aura:iteration items="{!v.optAnnual}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputselect>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">% of Revenues through Services
+                        </label>
+                        <ui:inputselect aura:id="revServices" class="slds-input" >
+                            <ui:inputSelectOption label="Select % of revenues through Services" text="" disabled="True" />
+                            <aura:iteration items="{!v.optRevServices}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputselect>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04"><label class="required">*</label>No. of Employees in the Company
+                        </label>
+                        <ui:inputselect aura:id="noOfEmployee" class="slds-input">
+                            <ui:inputSelectOption label="Select Total Number of Employees" text="" disabled="True" />
+                            <aura:iteration items="{!v.optnoofemp}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputselect>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            % of Employees Working As Technical Professionals
+                        </label>
+                        <ui:inputSelect aura:id="TechPro" class="slds-input" >
+                            <ui:inputSelectOption label="Select percentage of technical professionals" text="" disabled="True" />
+                            <aura:iteration items="{!v.optTechPro}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputSelect>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            % of Employees Working in Sales
+                        </label>
+                        <ui:inputselect aura:id="EmpInSales" class="slds-input" >
+                            <ui:inputSelectOption label="Select percentage of these employees work in sales" text="" disabled="True" />
+                            <aura:iteration items="{!v.optEmpinSales}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputselect>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            % of Employees Working in Services
+                        </label>
+                        <ui:inputSelect aura:id="EmpInServices" class="slds-input" >
+                            <ui:inputSelectOption label="What percentage of these employees work in services" text="" disabled="True" />
+                            <aura:iteration items="{!v.optEmpinServices}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputSelect>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            % of Employees Working in Marketing
+                        </label>
+                        <ui:inputselect aura:id="EmpInMarketing" class="slds-input" >
+                            <ui:inputSelectOption label="What percentage of these employees work in marketing" text="" disabled="True" />
+                            <aura:iteration items="{!v.optEmpinMarketing}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputselect>                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            % of Employees Responsible to Represent Nokia to your Customers
+                        </label>
+                        <ui:inputSelect aura:id="RepNokia" class="slds-input" >
+                            <ui:inputSelectOption label="Select percentage of employees responsible to represent Nokia" text="" disabled="True" />
+                            <aura:iteration items="{!v.optRepNokia}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                        </ui:inputSelect>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2" >
+                        <label class="slds-form-element__label" for="input-06">
+                            <label class="required">*</label>
+                            In Which Sales Territory (Country) Are You Requesting to Sell Nokia Products and/or Services? (NOTE: Include Headquarters HQ if applicable.)
+                        </label>
+                   <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message10"></div>
+                       <lightning:dualListbox name="HQCountry" aura:id="SalesTerr"
+                           
+                           sourceLabel="Available"
+                           selectedLabel="Chosen"
+                                              
+                           options="{!v.optSalesTerr}"/>
+                    </div>                   
+                    <div class="slds-form-element slds-size--1-of-2">
+                    <label class="slds-form-element__label setWidth " for="input-05">
+                        In which other countries are you actively selling (For Nokia's Informational Purposes)
+                    </label>
+                        <br/>
+                        <br/>
+                         <lightning:dualListbox name="AnotherCountry" aura:id="SellNokia"
+                           
+                           sourceLabel="Available"
+                           selectedLabel="Chosen"                    
+                           options="{!v.optSellNokia}"/>
+                    <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message9"></div>
+                    </div> 
+                </div>
+            </div>
+        </div>
+        <br/>        
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div 
+                     
+                     class="slds-form-element__row">
+                    <label class="slds-form-element__legend slds-form-element__label">
+                        <label class="required">*</label>
+                        Do You Wish to Resell to USA Federal Government Sectors?
+                    </label>
+                    <label class="slds-radio" for="Group31">
+                        <input type="Radio" name="Group3"  id="Group31" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">Yes</span>
+                    </label>
+                    <label class="slds-radio" for="Group32">
+                        <input type="Radio" name="Group3" id="Group32" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">No</span>
+                    </label>
+                    <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message2"></div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <label class="slds-form-element__legend slds-form-element__label">
+                        Do You Wish to Resell to Non-USA Governments or Government-Controlled Entities?
+                    </label>
+                    <label class="slds-radio" for="Group41">
+                        <input type="Radio" name="Group4" id="Group41" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">Yes</span>
+                    </label>
+                    <label class="slds-radio" for="Group42">
+                        <input type="Radio" name="Group4" id="Group42" />
+                        <span class="slds-radio--faux"></span>
+                        <span class="slds-form-element__label">No</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label setWidth" for="input-04">
+                            <label class="required">*</label>
+                            Which Products or Solutions Do You Plan to Resell?
+                        </label>
+                        <lightning:dualListbox name="ProductsAndSolutions" aura:id="PrimaryInterest"
+                           
+                           sourceLabel="Available"
+                           selectedLabel="Chosen" 
+                           onchange = "{!c.onChangePrimaryInterest}"          
+                           options="{!v.optPrimaryInterest}"/>
+                        <div style="color:rgb(194, 57, 52);font-size:0.85rem;" class="slds-form-element__label" id="message11"></div>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label setWidth " for="input-04">
+                             Which Vertical markets do you serve?
+                        </label>
+                         <lightning:dualListbox name="Markets" aura:id="VerticalFocus"
+                           
+                           sourceLabel="Available"
+                           selectedLabel="Chosen"                   
+                           options="{!v.optverfocus}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <aura:if isTrue="{!v.ShowPrimaryIntDependFields}">
+            <div class="slds-form--compound">
+                <div class="slds-form-element__group">
+                    <div class="slds-form-element__row">
+                        <div class="slds-form-element slds-size--1-of-2">
+                            <label class="slds-form-element__label" for="input-04">
+                                <label class="required">*</label>
+                                Please describe your experience level with 4G/5G and list references
+                            </label>
+                            <ui:inputText aura:id="refand4G5GExp" maxlength="250" class="slds-input" />
+                        </div>
+                        <div class="slds-form-element slds-size--1-of-2">
+                            <label class="slds-form-element__label" for="input-04">
+                                <label class="required">*</label>
+                                Please describe your experience with Radio Frequency planning
+                            </label>
+
+                            <ui:inputText aura:id="radioFrequencyExp" maxlength="250" class="slds-input" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-form--compound">
+                <div class="slds-form-element__group">
+                    <div class="slds-form-element__row">
+                        <div class="slds-form-element slds-size--1-of-2">
+                            <label class="slds-form-element__label" for="input-04">
+                                <label class="required">*</label>
+                                Please describe your experience with installation of radio networks
+                            </label>
+
+                            <ui:inputText aura:id="radioNetworksInstallationExp" maxlength="250" class="slds-input" />
+                        </div>
+                        <div class="slds-form-element slds-size--1-of-2">
+                            <label class="slds-form-element__label" for="input-04">
+                                <label class="required">*</label>
+                                Please describe your Tier I and Tier II support set-up, experience, resources and certifications
+                            </label>
+                            <ui:inputText aura:id="tiersSupportLevel" maxlength="250" class="slds-input" />
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </aura:if>        
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label setWidth" for="input-05">
+                            Which Manufacturer(s) Do You Currently Represent?
+                        </label>
+                        <lightning:dualListbox name="Manufacture" aura:id="Manufacture"
+                           
+                           sourceLabel="Available"
+                           selectedLabel="Chosen"                   
+                           options="{!v.optManufacture}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            Who Are Your Leading Competitors?
+                        </label>
+                        <br/>
+                        <br/>
+                        <br/>
+                        <ui:inputText aura:id="LeadingComp" maxlength="50" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--inline">
+            <div class="slds-form-element slds-size--1-of-2">
+                <label class="slds-form-element__label" for="input-04">Do You Offer Your Own Maintenance and Support?
+                </label>
+                <ui:inputselect aura:id="Maintenance" class="slds-input " >
+                    <ui:inputSelectOption label="Select an option " text="" disabled="True" />
+                    <aura:iteration items="{!v.optMaintenance}" var="op">
+                        <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                    </aura:iteration>
+                </ui:inputselect>
+            </div>
+        </div>     
+        <br/>
+        <br/>
+    </div>
+    <div aura:id="nextButton" style="text-align:center">
+        <br/>
+        <ui:button aura:id="Next" label="Next" press="{!c.OnNextPage}"/>
+    </div>
+    <div aura:id="saveAndReturn" style="text-align:center">
+        <br/>
+        <ui:button aura:id="SaveReturn" label="Save And Return" press="{!c.handleSaveCase}"/>
+    </div>
+    </aura:if>
+    <div class="main" aura:id="CountryPage" >
+        <h2 class="headercolor">AFFILIATES/SUBSIDIARY INFORMATION</h2>
+        <br/>
+        <h3>Please click on country (ies) listed below to provide necessary information for each territory(ies) where you request to sell. When completed, click Next.</h3>
+        <br/>
+        <!-- New Code Start-->
+        <aura:iteration items="{!v.countryChecked}" var="item" indexVar="key">
+            <a data-attr="{!item.key}" onclick="{!c.openmodalA}">{!item.key}</a>&nbsp;
+            <aura:if isTrue="{!item.value}">
+                <lightning:icon iconName="utility:success" alternativeText="Success!" variant="Success" title="success variant xx-small" size="xx-small" />
+            </aura:if>
+           	<br/>
+        </aura:iteration>
+        {!v.body}
+        <!-- New Code End lang attributes end-->
+    </div>
+    <div aura:id="countryPageButton" style="text-align:center">
+        <ui:button label="Back" press="{!c.BackToFirstPage}"/>
+        <ui:button label="Next" press="{!c.OnSecondPage}"/>
+    </div>
+    <div class="main" aura:id="SecondPage" >
+        <h2 class="headercolor" >KEY COMPANY CONTACTS</h2>
+        <br/>
+        <h3>YOUR CONTACT DETAILS</h3>
+        <br/>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04"><label class="required">*</label>First Name
+                        </label>
+                        <ui:inputtext aura:id="cfname1" value="{!v.cfname}" maxlength="40" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                        
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>
+                            Last Name
+                        </label>
+                        <ui:inputText aura:id="clname1" value="{!v.clname}" maxlength="40" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04"><label class="required">*</label>Title
+                        </label>
+                        <ui:inputText aura:id="ctitle1" maxlength="100" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>Email
+                        </label>
+                        <ui:inputEmail aura:id="cemail1" value="{!v.cemail}" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04"><label class="required">*</label>Office Phone
+                        </label>
+                        <ui:inputPhone aura:id="coffice1" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>
+                            Retype Email
+                        </label>
+                        <ui:inputEmail aura:id="cRetypeEmail" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>	
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--inline">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04"><label class="required">*</label>Mobile Phone
+                        </label>
+                        <ui:inputPhone aura:id="cmobile1" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+        <div class="slds-form--inline">
+            <div class="slds-form-element">
+                <label class="slds-form-element__label" for="input-04">
+                    PRIMARY BUSINESS CONTACT FOR NOKIA (Will Be Notified of Application Acceptance or Rejection)
+                </label>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form--inline">
+                    <div class="slds-form-element">
+                        <ui:inputCheckbox class="sameasabove" aura:id="checkbox" change="{!c.onCheck}"/>
+                    </div>
+                    <div class="slds-form-element">
+                        <label class="slds-form-element__label" for="input-04">
+                            Same as above
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            <label class="required">*</label>
+                            First Name
+                        </label>
+                        <ui:inputText aura:id="primaryfname" maxlength="40" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>
+                            Last Name
+                        </label>
+                        <ui:inputText aura:id="primarylname" maxlength="40" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            <label class="required">*</label>
+                            Title
+                        </label>
+                        <ui:inputText aura:id="primarytitle" maxlength="100" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>
+                            Email
+                        </label>
+                        <ui:inputEmail aura:id="primaryemail" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            <label class="required">*</label>
+                            Office Phone
+                        </label>
+                        <ui:inputPhone aura:id="primaryoffice" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>
+                            Retype Email
+                        </label>
+                        <ui:inputEmail aura:id="primaryRetypeEmail" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--inline">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            <label class="required">*</label>
+                            Mobile Phone
+                        </label>
+                        <ui:inputPhone aura:id="primarymobile" class="slds-input" onError="{!c.handleError}" onClearErrors="{!c.handleClearError}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            HEAD OF COMPANY/PRESIDENT/CEO
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        
+                        <label class="slds-form-element__label" for="input-04">
+                            <label class="required">*</label>
+                            First Name        
+                        </label>
+                        <ui:inputText aura:id="HFirstName" maxlength="40" class="slds-input" />
+                    </div>
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-05">
+                            <label class="required">*</label>
+                            Last Name
+                        </label>
+                        <ui:inputText aura:id="HLastName" maxlength="40" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--inline">
+            <div class="slds-form-element">
+                <label class="slds-form-element__label" for="input-04">
+                    <label class="required">*</label>
+                    Title 
+                </label>
+                <ui:inputText aura:id="HTitle" maxlength="100" class="slds-input" />
+            </div>
+        </div> 
+        <h2 class="headercolor">BUSINESS AND CAPABILITIES</h2>
+        <br/>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            Please Describe Your Current Business Activities
+                        </label>
+                        <ui:inputTextarea aura:id="busActivities" maxlength="250" class="slds-input" />
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            Please Describe the Experience and the Business/Professional Relationships Your Company Has to Assist Nokia in the Enterprise or Service Provider Segments
+                        </label>
+                        <ui:inputTextarea aura:id="ExpRelation" maxlength="250" class="slds-input" />
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            Please List Any Relevant Professional Industry Organizations to Which Your Company Belongs
+                        </label>
+                        <ui:inputTextarea aura:id="OrgBelong" maxlength="250" class="slds-input" />
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            Please List Any Annual Industry Conferences You Regularly Attend
+                        </label>
+                        <ui:inputTextarea aura:id="AnnualInd" maxlength="255" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <label class="slds-form-element__label" >
+            Please List All the Persons Whom You Expect Will be Principally Responsible For Your Company's Work on Behalf of Nokia
+        </label>
+        <div class="slds-form--inline" aura:id="FirstPerson">
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText aura:id="name1" class="slds-input" maxlength="20" placeholder="Name" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText Aura:id="Position(s)1" placeholder="Position(s)" maxlength="20" class="slds-input" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText Aura:id="Roles/Responsibility1" placeholder="Roles/Responsibility" maxlength="30" class="slds-input" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputEmail Aura:id="EmailAddress1" placeholder="Email Address" class="slds-input" value="" />
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--inline" aura:id="SecondPerson">
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText aura:id="name2" class="slds-input" maxlength="20" placeholder="Name" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText Aura:id="Position(s)2" placeholder="Position(s)" maxlength="20" class="slds-input" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText Aura:id="Roles/Responsibility2" placeholder="Roles/Responsibility" maxlength="30" class="slds-input" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputEmail Aura:id="EmailAddress2" placeholder="Email Address" class="slds-input" value="" />
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--inline" aura:id="ThirdPerson">
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText aura:id="name3" class="slds-input" maxlength="20" placeholder="Name" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText Aura:id="Position(s)3" placeholder="Position(s)" maxlength="20" class="slds-input" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputText Aura:id="Roles/Responsibility3" placeholder="Roles/Responsibility" maxlength="30" class="slds-input" value="" />
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <div class="slds-form-element__control">
+                    <ui:inputEmail Aura:id="EmailAddress3" placeholder="Email Address" class="slds-input" value="" />
+                </div>
+            </div>
+        </div>
+        <br/>
+        <br/>
+    </div>
+    <br/>
+    <div aura:id="secondPageButton" style="text-align:center">
+        <ui:button label="Back" press="{!c.BackToCountryPage}"/>
+        <ui:button label="Next" press="{!c.finalPage}"/>
+    </div>
+    <div class="main" aura:id="finalPage">
+        <h2 class="headercolor">COMPLIANCE AND ETHICS</h2>
+        <div class="slds-form-element">
+            <label class="slds-form-element__legend slds-form-element__label"><label class="required">*</label>To the best of your knowledge, has your company, any person listed above , any of your company affiliates , any officer, director or owner of your company's affiliates, or anyone working on behalf of your Company, ever been convicted, fined, indicted or charged in a criminal or regulatory proceeding including any related to bribery or corruption or money laundering?
+                
+            </label>
+            <div class="slds-form-element__control">
+                <label class="slds-radio" for="Group51">
+                    <input type="Radio" name="Group5"  id="Group51" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">Yes</span>
+                </label>
+                <label class="slds-radio" for="Group52">
+                    <input type="Radio" name="Group5" id="Group52" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">No</span>
+                </label>
+                <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message3"></div>
+            </div>
+        </div>   
+        <br/>
+        <div class="slds-form-element">
+            <label class="slds-form-element__legend slds-form-element__label">
+                <label class="required">*</label>
+                To the best of your knowledge, are there any current criminal or regulatory investigations pending against your Company or anyone working on its behalf?
+            </label>
+            <div class="slds-form-element__control">
+                <label class="slds-radio" for="Group61">
+                    <input type="Radio" name="Group6" id="Group61" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">Yes</span>
+                </label>
+                <label class="slds-radio" for="Group62">
+                    <input type="Radio" name="Group6" id="Group62" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">No</span>
+                </label>
+                <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message4"></div>
+            </div>
+        </div>   
+        <br/>
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            If you answered Yes to either of the last two questions, please provide a detailed explanation
+                        </label>
+                        <ui:inputTextarea aura:id="DetailedExpl" maxlength="250" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+        <div class="slds-form-element">
+            <label class="slds-form-element__legend slds-form-element__label"><label class="required">*</label>Have you or any of the key principals, respective family members, or Ultimate Beneficial Owners of the Company and its affiliated entities been a former Nokia (or former Alcatel-Lucent) employee?
+     		</label>
+            <div class="slds-form-element__control">
+                <label class="slds-radio" for="Group101">
+                    <input type="Radio" name="Group10" id="Group101" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">Yes</span>
+                </label>
+                <label class="slds-radio" for="Group102">
+                    <input type="Radio" name="Group10" id="Group102" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">No</span>
+                </label>
+                <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message10"></div>
+            </div>
+        </div> 
+        <br/>
+          <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">
+                            If you answered Yes to the last question, please provide your last title
+                        </label>
+                        <ui:inputText  aura:id="LastTitle" maxlength="255" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+        <div class="slds-form-element slds-size--1-of-2">
+            <label class="slds-form-element__label" for="input-05">
+                If you answered Yes to the last question, please provide your year of departure
+                </label>
+                     <ui:inputselect aura:id="YearOfDep" class="slds-input" >
+                            <ui:inputSelectOption label="Select Your Year Of Departure" text="" disabled="True" />
+                            <aura:iteration items="{!v.optDepartureYear}" var="op">
+                                <ui:inputSelectOption label="{!op}" text="{!op}"/>	    
+                            </aura:iteration>
+                    </ui:inputselect>
+        </div>
+        <br/>
+        <div class="slds-form-element">
+            <label class="slds-form-element__legend slds-form-element__label"><label class="required">*</label>Does your Company have a Company Code of Conduct / Compliance Program in place?
+                
+            </label>
+            <div class="slds-form-element__control">
+                <label class="slds-radio" for="Group71">
+                    <input type="Radio" name="Group7" id="Group71" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">Yes</span>
+                </label>
+                <label class="slds-radio" for="Group72">
+                    <input type="Radio" name="Group7" id="Group72" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">No</span>
+                </label>
+                <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message5"></div>
+            </div>
+        </div> 
+        <br/>
+        <div class="slds-form-element">
+            <label class="slds-form-element__legend slds-form-element__label">
+                <label class="required">*</label>
+                Do you provide anti-corruption training to employees within your Company
+            </label>
+            <div class="slds-form-element__control">
+                <label class="slds-radio" for="Group81">
+                    <input type="Radio" name="Group8" id="Group81"  />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">Yes</span>
+                </label>
+                <label class="slds-radio" for="Group82">
+                    <input type="Radio" name="Group8" id="Group82" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">No</span>
+                </label>
+                <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message6"></div>
+            </div>
+        </div> 
+        <br/>
+        <div class="slds-form-element">
+            <label class="slds-form-element__legend slds-form-element__label">
+                If so, please provide any document or policy addressing anti-corruption bribery guidelines, or provide a URL to such publicly available documents.
+            </label>
+            <div style="text-align:center" class="slds-form--inline">
+                <div class="slds-form-element">
+                    <input type="file" class="file" aura:id="file" />
+                </div>
+                <div class="slds-form-element">
+                    <ui:inputText placeholder="Guideline/Document URL" size="40" aura:id="guideline" class="slds-input"/>
+                </div>
+            </div>
+        </div>
+        <br/>
+        <!--h2 class="headercolor">PROOF OF LEGAL ENTITY DOCUMENTS</h2>
+        <div class="slds-form-element">
+            <label class="slds-form-element__legend slds-form-element__label"><label class="required">*</label>Upload documents that provide Proof of Legal Entity, authentinc official document of registration/incorporation</label>
+            <br/>
+            <br/>
+            <div style="text-align:left" class="slds-form- -inline">
+            	Examples: Incorporation Certificate, Certificate of Registration, TAX Id Documents, Business License, etc            	
+            </div>
+            <br/>
+            <aura:iteration items="{!v.conSelected}" var="country" aura:id="child-files">      
+              <div class="slds-var-p-around_xxx-small">
+				 <div style="text-align:right" class="slds-form_inline">
+					<div class="slds-form-element">
+						  <strong>{!country}:&nbsp;&nbsp;</strong>
+                        <input type="file" class="file"/>
+					</div>
+					<div class="slds-form-element" >
+						<ui:inputText placeholder="Guideline/Document URL" size="40" aura:id="guideline2" class="slds-input"/>
+					</div>
+					 </div>
+				</div> 
+            </aura:iteration>
+        </div>
+        <br/-->
+        <h2 class="headercolor">GOVERNMENT AFFILIATIONS</h2> 
+        <br/>
+        <div class="slds-form-element">
+            <label class="slds-form-element__legend slds-form-element__label">
+                <label class="required">*</label>
+                Does any government or international department, agency, government entity or any official or employee thereof have any ownership in the Company or its affiliates (either directly or indirectly)?
+            </label>
+            <div class="slds-form-element__control">
+                <label class="slds-radio" for="Group91">
+                    <input type="Radio" name="Group9" id="Group91" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">Yes</span>
+                </label>
+                <label class="slds-radio" for="Group92">
+                    <input type="Radio" name="Group9" id="Group92" />
+                    <span class="slds-radio--faux"></span>
+                    <span class="slds-form-element__label">No</span>
+                </label>
+                <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message7"></div>
+            </div>
+        </div> 
+        <div class="slds-form--compound">
+            <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                    <div class="slds-form-element slds-size--1-of-2">
+                        <label class="slds-form-element__label" for="input-04">If Yes, please describe
+                        </label>
+                        <ui:inputTextarea aura:id="PlsDescribe" maxlength="250" class="slds-input" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+    </div>
+    <div aura:id="required" style="color:red;text-align:center">
+        <ui:outputText value="{!v.validationAttr}"/>
+        <br/>
+    </div>
+    <div class="slds-form-element" aura:id="finalButton">
+        <div style="text-align:center" class="slds-form-element__control">
+            <label class="slds-checkbox__label" >
+                <span class="slds-checkbox--faux"></span>
+                <span class="slds-form-element__label"><a style="color: red; border-bottom: 1px solid red;" onclick="{!c.Checked }">I have read and accepted the Nokia Indirect Reseller Agreement</a>
+                    <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message8"></div>
+                </span>
+            </label>
+            <br/>
+            <br/>
+            <ui:button aura:id="backSecond" label="Back" press="{!c.BackforSecond}"></ui:button>
+            <ui:button label="Submit" press="{!c.finalsubmit}"></ui:button>
+        </div>
+    </div>
+    
+    <!-- multi language component call-->
+    <aura:if isTrue="{!v.closeModal}">
+        <div role="dialog" aura:id="CLoseTab" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open">
+            <c:MultiLangTerm closeModal="{!v.closeModal}" Language="{!v.LanguageOption}" SelectedLanguage="{!v.SelectedLanguage}"/>
+        </div>
+        <div aura:id="backdrop" class="slds-backdrop slds-backdrop--open"></div>
+    </aura:if>
+    <!-- multi lang end-->
+    <div aura:id="successMessage" style="text-align:center; position: relative;
+                                         height:400px;color:#7998d2">
+        <aura:if isTrue="{!v.isSaveReturn}">
+            <div class="slds-form--inline">
+                <div class="slds-form-element__control">
+                    <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="Thank you for your interest in the Nokia Partner Program. "/>
+                </div> 
+                <br/>
+                <br/>
+                <div class="slds-form-element__control">             
+                    <ui:outputtext aura:id="creationsuccessmsg" class="Success" value= " Your Application has been " />
+                    <u><ui:outputtext aura:id="creationsuccessmsg" class="Success" value=" saved as draft " /></u> 
+                    <ui:outputtext aura:id="creationsuccessmsg" class="Success" value=" under application number " />
+                    <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="{!v.casenumber[0]}"/>
+                </div>
+                <br/> 
+                <div class="slds-form-element__control"> 
+                    <ui:outputtext aura:id="creationsuccessmsg" class="Success" value=" Please retain this 8 digit application number;  You will need it to resume your application. "/>
+                </div>
+                <br/>
+                <br/>
+                <div class="slds-form-element__control">
+                    <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="To download your application in its current draft state, "/>
+                    <br/>
+                    <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="or to download the Nokia Indirect Reseller Terms and Conditions, please use the buttons below. "/>
+                    
+                </div>
+                <br/>
+                <br/>
+                <div class="slds-form-element__control">
+                    <b><ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" Attention! In order for Nokia to process your application "/></b>
+                    <br/>
+                    <b><ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" you must return to continue and "/></b>
+                    <b><u><ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" submit "/></u></b>
+                    <b><ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" the completed application. "/></b>
+                    <br/>
+                    <br/>
+                    <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="To continue and submit your application:" />&nbsp;
+                    <br/>
+                    <br/>
+                    <div class="slds-m-left_xx-large">
+                        <div class="slds-float_left">
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 1)  navigate to this " />
+                            <ui:outputURL value="{!$Label.c.NIRA_Link}" label="NIRA LINK"/>
+                        </div>
+                    </div>    
+                    <br/>
+                    <div class="slds-p-left_xx-large">
+                        <div class="slds-float_left">
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 2)  retrieve your draft application using your 8 digit application number" />
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-p-left_xx-large">
+                        <div class="slds-float_left">
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 3)  complete the application " />
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-p-left_xx-large">
+                        <div class="slds-float_left">
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 4)  read and accept the Nokia Indirect Reseller Agreement " />
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-p-left_xx-large">
+                        <div class="slds-float_left">
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 5)	click on “submit”. " />   
+                        </div>
+                    </div>
+                    <br/>
+                    <br/>
+                    <lightning:select aura:id="LanguageSelection" name="LanguageSelection" label="Select language to download terms :">
+                        <option value="English" text="English"></option>
+                        <aura:iteration items="{!v.LanguageOption}" var="Lang">
+                            <option value="{!Lang}" text="{!Lang}"></option>
+                        </aura:iteration>
+                    </lightning:select>
+                    <lightning:button variant="brand" label="Download Terms and Conditions" onclick="{!c.downloadTC}"/>
+                    <lightning:button variant="brand" label="Download Application" onclick="{!c.downloadForm}"/>
+                </div>
+                <div class="slds-form-element__control">
+                </div>
+            </div>
+            <aura:set attribute="else">
+                <div class="slds-form--inline">
+                    <div class="slds-form-element__control">
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="Thank you for your interest in the Nokia Partner Program. We have received your application and we are reviewing it now. If we need further information we will contact you via email."/>
+                    </div>
+                    <br/>
+                    <div class="slds-form-element__control">
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="Within the next Twenty (20) business days you can expect to hear back from us via email."/>
+                    </div>
+                    <br/>
+                    <div class="slds-form-element__control">
+                        <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="If you have any questions or comments about your application, please contact us at partner.registration@nokia.com and reference your Nokia application number #"/> 
+                        <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="{!v.casenumber[0]}"/>
+                        <br/>
+                        <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="Thank you again for your interest." />&nbsp;
+                        <br/>
+                        <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="You may now close this browser window." />
+                        <br/>
+                        <br/>
+                        <lightning:select aura:id="LanguageSelection1" name="LanguageSelection" label="Select language to download terms :">
+                            <option value="English" text="English"></option>
+                            <aura:iteration items="{!v.LanguageOption}" var="Lang">
+                                <option value="{!Lang}" text="{!Lang}"></option>
+                            </aura:iteration>
+                        </lightning:select>
+                        <lightning:button variant="brand" label="Download Terms and Conditions" onclick="{!c.downloadTC1}"/>
+                        <lightning:button variant="brand" label="Download Application" onclick="{!c.downloadForm}"/>
+                    </div>
+                    <div class="slds-form-element__control">
+                    </div>
+                </div>
+            </aura:set>
+        </aura:if> 
+    </div>
+    <div aura:id="waitingCase">
+        <center >
+            <lightning:spinner variant="brand" aura:id="spinner" size="large"/>
+        </center>
+    </div>
+</aura:component>

@@ -1,0 +1,175 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithoutHeader" access="global" controller="DS_ValidateButton">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="statusCode" type="Integer"/> 
+    <aura:attribute name="recordId" type="String"  access="public"/> 
+    <aura:attribute name="relatedData" type="SWx_Upsell_Proposal__c" />
+    <aura:attribute name="docFlag" type="Integer"  />
+    <aura:attribute name="rejFlag" type="Integer"  />
+    <aura:attribute name="ProposalText" type="String"  />
+    <aura:attribute name="QuoteText" type="String"  />
+    <aura:attribute name="entitlementStatus" type="String"  />
+    <aura:attribute name="dpType" type="String"  />
+    
+    <aura:attribute name="record" type="SWx_Upsell_Proposal__c"/>
+    <aura:attribute name="recordError" type="String"/>
+    <aura:attribute name="IsFileAvailable" type="Boolean"  />
+    <aura:attribute name="updatedstatusDetails" type="SWx_Upsell_Proposal__c" />
+    <aura:attribute name="validateHoverMessage" type="String"  />
+    <aura:attribute name="rejectHoverMessage" type="String"  /> 
+    
+    <aura:attribute name="showValdiateRejectButtons" type="Boolean" default="false" />
+    <aura:attribute name="showRejectionReasons" type= "Boolean" default= "false" />
+    <aura:attribute name="RejectionReasons" type= "String" />
+    <aura:attribute name="ShowValidateCmp" type="boolean" default="true" />
+    <aura:attribute name="showThanksMessage" type="boolean" default="false" />
+    <aura:attribute name="showRejectMessage" type="boolean" default="false" />
+    
+    <!--aura handler with waiting and donewaiting events-->
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+     
+    <!--component attributs -->
+    <aura:attribute name="spinner" type="boolean" default="FALSE"/>    
+     
+    <!--loading spinner start-->
+    <aura:if isTrue="{!v.spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Loading spinner end-->   
+     
+    
+    <lightning:layout horizontalAlign="spread" multipleRows="true">                   
+    <aura:if isTrue="{! v.ShowValidateCmp}">
+        <!-- -->
+        
+        <lightning:layoutItem size="7" class="validatecmp" >
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <h2><lightning:icon iconName="utility:info" />                            
+                     Validate Recommendation</h2>
+                </lightning:layoutItem>
+                <br />
+                <lightning:layoutItem class="" flexibility="grow" size="12"  >
+                    <p><ui:outputText value="{!v.QuoteText}" />  </p> 
+                </lightning:layoutItem>
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                <aura:if isTrue="{! v.showRejectionReasons}">
+                        <div class="slds-text-align_left" >
+                            {!$Label.c.DS_DP_Rejection_reason} : {!v.RejectionReasons} 
+                        </div>   
+                    </aura:if>
+                </lightning:layoutItem>
+                <aura:if isTrue="{! v.showValdiateRejectButtons}">
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    
+                        <div class="slds-form--inline slds-float--right" aura:id="optionButton">
+							<div class="slds-form-element ">
+                                <lightning:button variant="brand" 
+                                                  onclick="{!c.statusUpdate}" 
+                                                  class="slds-button " 
+                                                  aura:id="btnValidate"
+                                                  title="{!v.validateHoverMessage}"
+                                                  >
+                                    Validate
+                                </lightning:button>
+                            </div>
+							<div class="slds-form-element">
+                                <lightning:button variant="destructive" 
+                                                  onclick="{!c.statusUpdate}" 
+                                                  class="slds-button " 
+                                                  title="{!v.rejectHoverMessage}"
+                                                  aura:id="btnReject">
+                                    Reject
+                                </lightning:button>
+                            </div>                            
+                        </div>
+                    </lightning:layoutItem> 
+                    </aura:if>
+                             
+                    <aura:if isTrue="{!v.rejFlag == 1 }">
+                        <lightning:layoutItem class="" flexibility="grow" size="12">
+                        <div aura:id="divMessage" >
+                            <ui:outputText /> 
+                            
+                        </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem class="" flexibility="grow" size="12">
+                            <ui:inputTextArea aura:id="rejReason"  rows="5" label="Reason for rejection"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem class="" flexibility="grow" size="12">
+                            <lightning:button variant="brand" 
+                                          class="slds-button left"
+                                          aura:id="btnBack"
+                                          onclick="{!c.confirmReject}">
+                            Confirm
+                        </lightning:button>
+                        </lightning:layoutItem>
+                    </aura:if>                
+            </lightning:layout>
+        </lightning:layoutItem>
+        
+        
+        
+        
+        
+        <!-- -->
+  
+    </aura:if>
+    <aura:if isTrue="{! v.showThanksMessage}">
+        <lightning:layoutItem size="12" class="confirmationMessagePanel">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <h2> Thank you for validating our recommendation. </h2>
+                    <h2> We're ready to go!</h2>
+                </lightning:layoutItem>
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <p>We hope you will review other recommendations and validate them successfully.</p> 
+                </lightning:layoutItem>
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <p></p>
+                	<lightning:button class="slds-theme_brand" variant="brand" onclick="{!c.addfeedback}" label="Go to feedback form">
+                    </lightning:button>
+                    <p></p>
+                </lightning:layoutItem>
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <lightning:button 
+                                      variant="base"
+                                      onclick="{!c.moveToListView}" 
+                                      >validate other recommendations</lightning:button>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:layoutItem>
+    </aura:if>
+    <aura:if isTrue="{! v.showRejectMessage}">
+        <lightning:layoutItem size="12" class="confirmationMessagePanel">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <h2> Please notice. </h2>
+                    <h2> You've rejected our recommendation.</h2>
+                </lightning:layoutItem>
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <p>We hope you will review other recommendations and validate them successfully.</p> 
+                </lightning:layoutItem>
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <p></p>
+                	<lightning:button class="slds-theme_brand" variant="brand" onclick="{!c.addfeedback}" label="Go to feedback form">
+                    </lightning:button>
+                    <p></p>
+                </lightning:layoutItem>
+                <lightning:layoutItem class="" flexibility="grow" size="12">
+                    <lightning:button 
+                                      variant="base"
+                                      onclick="{!c.moveToListView}" 
+                                      >validate other recommendations</lightning:button>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:layoutItem>
+    </aura:if>
+        </lightning:layout>
+</aura:component>

@@ -1,0 +1,301 @@
+<apex:page standardController="Lead" showHeader="false" extensions="LeanData.OnDemandView,LeanData.InLineEditable" action="{!initializeIsAllowed}">
+    <c:accessCheck isAllowed="{!isAllowed}"> 
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__angela_app, 'styles.css')}"/> 
+    <c:style />
+        
+    <div class="view">
+        <div class="pageLoading">
+            <c:loading />
+        </div>
+
+        <div class="settingMessage" style="display: none;">
+            <p style="font-size:16px; color:Red; padding:15px">All LeanData View sections have been turned off. Have a Salesforce Admin fully enable View through the Section Settings of the LeanData Tab.</p>
+            <p style="font-size:16px; color:Red; padding-left:15px">LeanData --> Settings --> View --> Section Settings</p>
+        </div>
+
+        <div class="timeoutMessage" style="display:none;">
+            <p style="font-size:16px; color:Red; padding:15px">There was a problem loading your Lead-to-Account View, please refresh the page to try again.</p>
+        </div>
+        
+        
+        <div class="pageBody">
+            <div class="duplicatesTable section-wrapper">
+                <div class="wrapper">
+                    <div class="left" style="width:65%;">
+                        <span class="table_title"><img class="leandata_logo" src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}"/>&nbsp;&nbsp;&nbsp;<h3>Duplicate Leads and Contacts</h3></span>
+                        <span class="dupesCountContainer"><span>|</span> <a href="#LINKTOA2BMUSTBEGENERATEDBACKENDANDSERVEDUP" target="_blank" class="customTarget action_link duplicatesLeadViewLink ld-green">See All (Leads:<span class="leadsCount"></span> | Contacts: <span class="contactsCount"/>) »</a></span>
+                    </div>
+                    <div class="right setting_panel">
+                        <span><a href="#RELATEDLEADSSETTINGSLINKS" target="_blank" class="customTarget action_link dupeLeadSettingsLink ld-green">Lead Settings</a>
+                            <span> | </span>
+                            <a href="#CONTACTSETTINGSLINKS" target="_blank" class="customTarget action_link dupeContactSettingsLink ld-green">Contact Settings</a>
+                        </span>
+                    </div>
+                </div>
+                <div class="tableWrapper outer-panel" >
+                    <div class="inner-panel">
+                        <table class="list content_table_lead" cellspacing='0' cellpadding='0' style="table-layout:fixed;">
+                            <thead class="duplicatesLeadTableHead">
+                            </thead>
+                            <tbody class="duplicatesLeadTableBody">
+                            </tbody>
+                        </table>
+                        <table class="list content_table_contact" cellspacing='0' cellpadding='0' style="table-layout:fixed;">
+                            <thead class="duplicatesContactTableHead">
+                            </thead>
+                            <tbody class="duplicatesContactTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="matchedAccounts section-wrapper" style="margin-top:5px;" >
+                <div class="wrapper">
+                    <div class="left" >
+                        <span class="table_title"><img class="leandata_logo" src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}"/>&nbsp;&nbsp;&nbsp;</span><span class="table_title"><h3>Matched Accounts</h3></span>
+                        <span class="matchedAccountsCountContainer"><span>|</span> <a href="#LINKTOA2BMUSTBEGENERATEDBACKENDANDSERVEDUP" target="_blank" class="customTarget action_link matchedAccountsLink ld-green
+                        ">Preview Matched Accounts: <span class="accountsCount"></span> accounts »</a></span>
+                    </div>
+                    <div class="right">
+                        <span><a href="#RELATEDLEADSSETTINGSLINKS" target="_blank" class="customTarget action_link accountsViewSettingsLink ld-green">Account Settings</a></span>
+                    </div>
+                </div>
+                <div class="matchedAccountsHeightDiv tableWrapper outer-panel">
+                    <div class="inner-panel">
+                        <table class="list content_table_account" cellspacing='0' cellpadding='0' style="table-layout:fixed;">
+                            <thead class="matchedAccountsTableHead">
+                            </thead>
+                            <tbody class="matchedAccountsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relatedLeads section-wrapper" style="margin-top:5px;"  >
+                <div class="wrapper">
+                    <div class="left" >
+                        <span class="table_title"><img class="leandata_logo" src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}"/>&nbsp;&nbsp;&nbsp;<h3>Related Leads</h3></span>
+                        <span class="relatedLeadsCountContainer"><span>|</span><a href="" class="customTarget action_link relatedLeadsLink ld-green" target="_blank">See All (Related Leads:<span class="leadsCount"></span>) &raquo;</a> <a href="" target="_blank" class="customTarget action_link a2bSummaryLink ld-green">Preview Related Leads: <span class="leadsCount"></span> leads &raquo;</a></span>
+                    </div>
+                    <div class="right">
+                        <span><a href="#RELATEDLEADSSETTINGSLINKS" target="_blank" class="customTarget action_link relatedLeadsSettingsLink ld-green">Lead Settings</a></span>
+                    </div>
+                </div>
+                <div class="relatedLeadsHeightDiv tableWrapper outer-panel">
+                    <div class="inner-panel">
+                        <table class="list content_table_a2b" cellspacing='0' cellpadding='0' style="table-layout:fixed;">
+                            <thead class="relatedLeadsTableHead">
+                            </thead>
+                            <tbody class="relatedLeadsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>   
+           
+    <c:setTargetValue targetValue="{!targetValue}"/>
+    <c:matchedViewAssets view_type="Lead" with_dupes="false" with_l2a_matches="false"/>
+
+    <script>
+        Visualforce.remoting.timeout = 120000; // Set timeout at page level
+        j$ = jQuery.noConflict();
+        // set viewJSResource variables
+        objId = '{! JSENCODE((objId))}';
+        pageType = 'Lead';
+        startTime = Date.now();
+        j$('document').ready(function(){
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.OnDemandView.getNewViewObject}',
+                '{! JSENCODE((objId))}', 'Lead', null,
+                function(result, event) {
+                    if (event.statusCode !== 200)  {
+                        j$('.timeoutMessage p').text(event.message);
+                    }
+
+                    buildView(result);
+                });
+        });
+    </script>
+        
+    </c:accessCheck>
+
+    <script>
+        // initialize();
+        function buildView(viewObject) {
+            if(viewObject == null){
+                j$('.pageLoading').hide();
+                j$('.pageBody').hide();
+                j$('.timeoutMessage').show();
+                return;
+            }
+
+            if(viewObject['leadMatches'].length>0 || viewObject['contactMatches'].length>0)
+              ga_event('Lead View with dupes');
+
+            if(viewObject['accountMatches'].length>0)
+              ga_event('Lead View With l2a matches');
+
+            
+            initializePage(viewObject);
+
+            // var totalHeight = j$('.pageBody').height();
+            var totalHeight = 460;
+            var heights = calculateHeights( totalHeight, "Lead", {           
+              "leadMatches" :   viewObject["leadMatches"].length,
+              "contactMatches" : viewObject["contactMatches"].length,
+              "isDuplicatesOnLeadViewOn" : viewObject["isDuplicatesOnLeadViewOn"],
+              "accountMatches" : viewObject["accountMatches"].length,
+              "isMatchedAccountsViewOn" : viewObject["isMatchedAccountsViewOn"],
+              "relatedLeadMatches" : viewObject["relatedLeadMatches"].length,
+              "isRelatedLeadViewOn" : viewObject["isRelatedLeadViewOn"]
+              });
+
+            var dupesHeight  = heights['dupeHeightLead'];
+            var matchedHeight = heights['matchedHeight'];
+            var relatedHeight = heights['a2bHeight'];
+
+            j$('.duplicatesTable').css('height',''+ dupesHeight + 'px' );
+            j$('.matchedAccounts').css('height',''+ matchedHeight + 'px' );
+            j$('.relatedLeads').css('height',''+ relatedHeight + 'px' );
+                
+            // [ZH tbd] j$('.leandata_logo').attr('src', viewObject['logoURL']);
+            
+            var counter = 0;
+            if(dupesHeight == 0){
+              j$('.duplicatesTable').hide();
+              counter++;
+            }
+              
+            if(matchedHeight == 0){
+              j$('.matchedAccounts').hide();
+              counter++;
+            }
+              
+            if(relatedHeight == 0){
+              j$('.relatedLeads').hide();
+              counter++;
+            }
+            
+            if(counter == 3)  j$('.settingMessage').show();
+
+            if (viewObject["isRelatedLeadViewOn"]) {
+                initializeSection('Lead', viewObject["a2bCols"], viewObject["leadColsMap"], viewObject["relatedLeadMatches"]);
+                j$('.relatedLeadsTableHead').html(generateHeader());
+                j$('.relatedLeadsTableBody').html(generateSObjectRows());
+                j$('.relatedLeadsCountContainer .leadsCount').html(viewObject["relatedLeadMatches"].length);
+                
+                if(viewObject["isLeadMassConvertAllowed"]) {
+                    j$('.relatedLeadsLink').hide();
+                    j$('.a2bSummaryLink').attr('href', viewObject['a2bSummaryLink'] + "?mode=Lead&id=" + objId);
+                } else {
+                    j$('.a2bSummaryLink').hide();
+                    j$('.relatedLeadsLink').attr('href', viewObject['relatedLeadsLink'] + "?id=" + objId + "&type=Lead&detail=true");
+                }    
+                
+                if(viewObject['hasColumnSettingAccess'] || viewObject['enableAllowUserColumnCustomizations']) 
+                   j$('.relatedLeadsSettingsLink').attr('href', viewObject['dupeLeadSettingsLink']);
+                else
+                   j$('.relatedLeadsSettingsLink').hide();
+            } 
+            else {
+                j$('.relatedLeadsCountContainer').hide();
+                j$('.relatedLeadsSettingsLink').hide();
+            }
+        
+            if (viewObject["isDuplicatesOnLeadViewOn"]) {
+                j$('.duplicatesLeadViewLink').attr('href', viewObject['duplicatesLeadViewLink'] + "?id=" + objId + "&type=Lead&detail=true");
+                if(viewObject['hasColumnSettingAccess'] || viewObject['enableAllowUserColumnCustomizations']) {
+                    j$('.dupeContactSettingsLink').attr('href', viewObject['dupeContactSettingsLink']);
+                    j$('.dupeLeadSettingsLink').attr('href', viewObject['dupeLeadSettingsLink']);
+                } else {
+                    j$('.setting_panel').hide();
+                }
+
+                j$('.dupesCountContainer .leadsCount').html(viewObject["leadMatches"].length);
+                j$('.dupesCountContainer .contactsCount').html(viewObject["contactMatches"].length);
+
+                initializeSection('Lead', viewObject["leadCols"], viewObject["leadColsMap"], viewObject["leadMatches"]);
+                j$('.duplicatesLeadTableHead').html(generateHeader());
+                j$('.duplicatesLeadTableBody').html(generateSObjectRows());
+
+                initializeSection('Contact',viewObject["contactCols"], viewObject["contactColsMap"], viewObject["contactMatches"]);
+                var hasStatus = false;
+                j$('.duplicatesContactTableHead').html(generateHeader(hasStatus));
+                j$('.duplicatesContactTableBody').html(generateSObjectRows());
+            }
+
+            if (viewObject["isMatchedAccountsViewOn"]) {
+                initializeSection('Account', viewObject["accountCols"], viewObject["accountColsMap"], viewObject["accountMatches"]);
+                j$('.matchedAccountsTableHead').html(generateHeader(hasStatus));
+                j$('.matchedAccountsTableBody').html(generateSObjectRows());
+                j$('.matchedAccountsCountContainer .accountsCount').html(viewObject["accountMatches"].length);
+                j$('.matchedAccountsLink').attr('href', viewObject['matchedAccountsViewLink'] + "?id=" + objId + "&type=Lead&detail=true");
+                if(viewObject['hasColumnSettingAccess'] || viewObject['enableAllowUserColumnCustomizations']) 
+                    j$('.accountsViewSettingsLink').attr('href', viewObject['accountsViewSettingsLink']);
+                else
+                    j$('.accountsViewSettingsLink').hide();
+            } else {
+                j$('.matchedAccountsCountContainer').hide();
+                j$('.matchedAccountsLink').hide();
+                j$('.accountsViewSettingsLink').hide();
+            }
+            
+            
+           var selectedLists = j$('.inline_editable').get();
+           [].forEach.call(selectedLists, function(selectList){
+              var toJ = j$(selectList);
+              toJ.change(function(event){
+               //event.preventDefault();
+               var touchedSelectList = event.target;
+               var leadId = touchedSelectList.className.split(" ")[1];
+               var newStatus = touchedSelectList.options[touchedSelectList.selectedIndex].value;
+               changeLead(leadId, htmlDecode(newStatus));
+              })
+            })
+            function changeLead (leadId, newStatus) {
+               console.log('change');
+               Visualforce.remoting.Manager.invokeAction(
+               '{!$RemoteAction.OnDemandView.updateLeadStatus}',
+               leadId,
+               newStatus,
+               function (result, event) {}
+               )
+             }
+
+            j$('.pageLoading').hide();
+            j$('.pageBody').show();
+
+            ga_timing('Lead', Date.now() - startTime);
+
+            setTarget();
+
+            var dataTableOptions = {"pagination" : false, "emptyTableText": "No records to display"};
+            if (viewObject["isDuplicatesOnLeadViewOn"]) initializeDataTable(j$('.content_table_lead'), 'lead', dataTableOptions);
+            if (viewObject["isDuplicatesOnLeadViewOn"]) initializeDataTable(j$('.content_table_contact'), 'contact', dataTableOptions);
+            if (viewObject["isMatchedAccountsViewOn"]) initializeDataTable(j$('.content_table_account'), 'account', dataTableOptions);
+            if (viewObject["isRelatedLeadViewOn"]) initializeDataTable(j$('.content_table_a2b'), 'lead', dataTableOptions);
+
+            window.addEventListener("resize", function(){console.log('resize!'); setOuterPanelHeights(); }, true);
+            var leadWidth = j$('.content_table_lead').width();
+            var contactWidth =  j$('.content_table_contact').width();
+
+            var maxWidth = Math.max( leadWidth, contactWidth );
+            j$('.content_table_lead').width( maxWidth );
+            j$('.content_table_contact').width( maxWidth );
+
+            // Re-adjust table height after container is made
+            j$('.duplicatesTable .tableWrapper').css('height',''+ (dupesHeight - 35) + 'px' );
+            j$('.matchedAccountsHeightDiv').css('height',''+ (matchedHeight - 35) + 'px' );
+            j$('.relatedLeadsHeightDiv').css('height',''+ (relatedHeight - 35) + 'px' );
+            // Override extra border added
+            j$('.pageBody th').css({'border-right': 'none'})
+   }
+    </script>
+
+</apex:page>

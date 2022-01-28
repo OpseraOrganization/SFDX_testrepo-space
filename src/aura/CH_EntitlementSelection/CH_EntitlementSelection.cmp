@@ -1,0 +1,80 @@
+<aura:component controller="CH_LightningController" access="global">
+    <!-- Aura Events -->
+    <aura:registerEvent name="onEvent" type="c:CH_CaseFlow_Event"/>
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.account}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.asset}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.contact}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.netElemAsset}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.serviceType}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.entitlementScriptVerified}" action="{!c.emitScriptVerification}" />
+    <!-- Global Attributes -->
+    <aura:attribute name="account" type="Object"/>
+    <aura:attribute name="asset" type="Object"/>
+    <aura:attribute name="contact" type="Object"/>
+    <aura:attribute name="netElemAsset" type="Object"/>
+    <aura:attribute name="serviceType" type="String" description="" default="Customer Support"/>
+    <aura:attribute name="autoNext" type="Boolean" default="false" description="If Only One auto selected and fires a Next Event"/>
+    <aura:attribute name="tableColumns" type="List" description="Pass the columns you want throuth" default=""/>
+    <aura:attribute name="showAllButton" type="Boolean" default="false"/>
+    <aura:attribute name="showScripts" type="Boolean" default="true"/>
+    <aura:attribute name="withoutSharing" type="Boolean" description="Defines if this component follows the sharing rules or not" default="false"/>
+    <aura:attribute name="swMaintenance" type="boolean" default="false" />
+    <aura:attribute name="displayEntitlementScriptVerified" type="boolean" default="false"/>
+    <aura:attribute name="globalActions" type="List" description="Pass the Global Actions you want throuth" default="[{name:'neaSelection', label:'Select NEA'}, {name:'clearNEA', label: 'Clear NEA'}, {name:'notListed', label:'Not Listed'}, {name:'clearSelection', label:'Clear Selection'}]"/>
+    <!-- Aura Methods -->
+    <aura:method name="resetSelection" action="{!c.resetSelection}" description="Reset the Selected Values"/>
+    <!-- Private Attributes -->
+    <aura:attribute name="selected" type="String" access="private" description="Id of the selected"/>
+    <aura:attribute name="entitlements" type="List" description="" access="private"/>
+    <aura:attribute name="contractScript" type="String" default="" description="" access="private"/>
+    <aura:attribute name="lineItemScript" type="String" default="" description="" access="private"/>
+    <aura:attribute name="entitlementScriptVerified" type="boolean" default="false" access="private"/>
+    <aura:attribute name="actionCounter" type="Integer" default="0" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <!-- Entitlement Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative">
+        <!-- Loading Spinner -->
+        <aura:if isTrue="{! v.showSpinner }">
+            <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+        </aura:if>
+        <!-- Component -->
+        <c:Datatable aura:id="entitlementTable"
+                     label="Select a Entitlement"
+                     data="{! v.entitlements }" 
+                     columns="{! v.tableColumns }"
+                     maxRowSelection="1" 
+                     globalActions="{! v.globalActions }"
+                     onglobalaction="{! c.handleGlobalAction }"
+                     onrowselection="{! c.handleSelection }"
+                     type="selection"/>
+        <aura:if isTrue="{! and(v.showScripts, or(!empty(v.contractScript), !empty(v.lineItemScript))) }">
+            <div class="slds-box slds-clearfix slds-col slds-size_12-of-12 slds-p-vertical_small slds-m-top_small">
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col slds-size_1-of-2 slds-border_right">
+                        <div class="slds-scrollable script_height">
+                            <div class="slds-align_absolute-center"><b>Service Contract Script</b></div>
+                            <div class="slds-text-longform" style="width: flexable;">
+                                <pre style="white-space: pre-wrap;"><lightning:formattedRichText value="{! v.contractScript }" /></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">                            
+                        <div class="slds-scrollable script_height"> 
+                            <div class="slds-align_absolute-center"><b>Contract Line Item Script</b></div>
+                            <div class="slds-text-longform" style="width: flexable">
+                                <pre style="white-space: pre-wrap;"><lightning:formattedRichText value="{! v.lineItemScript }" /></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{! and(v.displayEntitlementScriptVerified, or(!empty(v.contractScript), !empty(v.lineItemScript))) }">
+            <div class="slds-col slds-size_12-of-12">
+            	<lightning:input class="slds-float_right slds-p-top_x-small slds-p-right_x-small" type="checkbox" label="Entitlement Script Verification Complete?" checked="{! v.entitlementScriptVerified}"/>
+            </div>
+        </aura:if> 
+    </div>
+</aura:component>

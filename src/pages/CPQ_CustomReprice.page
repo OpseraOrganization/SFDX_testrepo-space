@@ -1,0 +1,224 @@
+<!-- 
+    CUSTOM REPRICE REUSE PAGE 
+    USED BY CPQ_CustomReprice_Controller
+     
+    @CreatedBY: SHUBHAM BHATT (APTTUS_PS)
+    @CreatedDATE: 15th MAY 2018
+ -->
+
+<apex:page standardStylesheets="false" showHeader="false" sidebar="false" id="CPQ_CustomReprice" controller="CPQ_CustomReprice_Controller">
+<html lang="en">
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__CPQPageResources, 'CPQDelight.css')}"/>
+        <apex:stylesheet value="{!URLFOR($Resource.CPQ_ngResource,'bootstrap/css/bootstrap.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.CPQ_FONT_AWESOME_4_6_3,'css/font-awesome.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.CPQ_Angular_Related_Files,'CSS/style.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.CPQ_Angular_Related_Files,'CSS/loader.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.CPQ_Angular_Related_Files,'CSS/extra.css')}" />
+        <apex:includeScript value="{!URLFOR($Resource.CPQ_Angular_Related_Files,'JS/angular.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.CPQ_RepriceAPI, 'jquery-ui-1.11.2/external/jquery/jquery.js')}"  />
+        <title>Custom Reprice</title>
+
+        <style type="text/css"> 
+
+        </style>
+    </head>
+
+    <body style='background-color:#FFF; overflow-x: hidden;'> 
+        <!-- Header section bar starts here-->
+        <div class="apt-page-header cartTable clearfix" style="position: fixed;padding:0px; background:#314054 !important;box-shadow:none !important">
+            <div class="apt-quote-panel apt-pull-left" style="margin-left:0px!important;">
+                <span class="apt-cart-head-label" style="font-size: 1.3rem;">
+                    <a href='javascript:void(0);' id='ProposalId' style='text-decoration:none !important;'>
+                        <span class="apt-location-text apt-cart-head-label">&nbsp;</span>
+                    </a>
+                </span>
+            </div>
+            <div class="SearchFixHeader" style="width:100%;line-height:0">
+                <div id="searchParams">
+                    <table cellpadding="2" cellspacing="2" style="background: #334a60;" width="100%" >
+                        <tbody>
+                            <tr class="form-group">
+                                <td style="padding: 0px!important;height: 35px;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Header section bar ends here -->
+
+        <!-- Footer Action Button Block starts here -->
+        <div class="display-actions-block">
+            <div class="display-actions-block-button text-center">
+                
+            </div>
+        </div>
+        <!-- Footer Action Button Block ends here -->
+
+        <div class="loader" ng-show="showLoadingPage"/>
+        <!--<div class="page-container modal-body">
+            <div ng-if="errorMsg" class="alert alert-danger"></div>
+        </div>-->    
+    </body>
+    
+    
+    <script>
+    
+        var errorMsg;
+        var showLoadingPage = true;
+        
+    
+        $j = jQuery.noConflict();
+        $j(document).ready(function() {             
+           CallMethod();
+            var cartID;
+            
+        });
+        //function to block the whole page
+        function blockPage(){ 
+            $j.blockUI({ message: '<img src="/img/loading32.gif" /><h1> Loading...</h1>', 
+                css: { 
+                 border: 'none', 
+                 padding: '15px',  
+                 '-webkit-border-radius': '10px', 
+                 '-moz-border-radius': '10px', 
+                 opacity: .9
+                } 
+            }); 
+            return false;
+        }
+        
+        //function to unblock the page
+        function unblockPage(){
+            $j.unblockUI();
+        }
+    </script>
+    <script type = "text/javascript">
+        
+          function redirect(){
+            cartID = getUrlVars()["id"];   
+            console.log('Ready TO Redirect TO CART'+cartID);
+            redirectToCart();
+          }  
+        
+        function repriceAndConstRule(){
+            
+            cartID = getUrlVars()["id"];
+            console.log('FINISHEFD NokiaSoftware-Check '+ cartID);
+            console.log('Calling Do-Reprice');
+            numberOfTime = '1';
+            doReprice(cartID);
+        }
+            
+      
+    function doReprice(cartID) {
+        console.log('In do Reprice Method**************** :');
+        
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.CPQ_CustomReprice_Controller.doReprice}',
+            cartID,
+            function(result, event) {
+                
+                if (event.status) {
+                   
+                   if (result === 1) {
+                        console.log('In do Reprice Method****************:  Recursive Reprice called =>  '+result);
+                         //  alert('Called Reprice Time' + numberOfTime);
+                          doReprice(cartID);
+                    }
+                    else if(result === 0){
+                        console.log('IN doReprice Pricing Completed So Ready To Calcuate Quantity***************');
+                        calculateRollups(cartID);
+                    }
+                    }else if(result === 2){
+                        alert('Pricing Failed');
+                        console.log('IN doReprice Pricing Failed');
+                        redirect();                         
+                    }
+            }, {
+                escape: true
+            }
+        );
+    }   
+    
+    function calculateRollups(cartID) {
+        console.log('IN calculateRollups');
+        
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.CPQ_CustomReprice_Controller.calculateRollups}',
+            cartID,
+            function(result, event) {
+                if (event.status) {
+                    
+                    if (result === true) {
+                        console.log('IN Calculate Quantiy Completed -  So Ready To Change Pricing Status***************');
+                        changePricingStatus(cartID);
+                    }else{
+                        console.log('IN changePricingStatus Broken');
+                        alert('changePricingStatus Broken');
+                        redirect();                                 
+                    }
+                } else if (event.type === 'exception') {
+                    alert('ERROR1 in changePricingStatus');
+                } else {
+                    alert('ERROR2 in changePricingStatus');
+                }
+            }, {
+                escape: true
+            }
+        );
+    }    
+    
+   
+    function changePricingStatus(cartID) {
+        console.log('IN changePricingStatus');
+        
+        Visualforce.remoting.Manager.invokeAction(
+            '{!$RemoteAction.CPQ_CustomReprice_Controller.changePricingStatus}',
+            cartID,
+            function(result, event) {
+                if (event.status) {
+                    
+                    if (result === true) {
+                        console.log('IN changePricingStatus completed');
+                        redirect();
+                    }else{
+                        console.log('IN changePricingStatus Broken');
+                        alert('changePricingStatus Broken');
+                        redirect();                                 
+                    }
+                } else if (event.type === 'exception') {
+                    alert('ERROR1 in changePricingStatus');
+                } else {
+                    alert('ERROR2 in changePricingStatus');
+                }
+            }, {
+                escape: true
+            }
+        );
+    }     
+    
+    
+   
+    
+    function getUrlVars() {
+        var vars = {};
+        var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+            vars[key] = value;
+        });
+        return vars;
+    }  
+    
+    
+    
+    </script>    
+    <apex:form id="pb">
+        <apex:actionFunction name="CallMethod" action="{!ChangeStatus}" id="Sample" status="blockUI" reRender="pb" oncomplete="repriceAndConstRule();"/>
+        <apex:actionFunction name="CallMethod1" action="{!ChangeStatus}" id="Sample1" status="blockUI" reRender="pb" oncomplete="redirect();"/>
+        <apex:actionFunction name="redirectToCart" action="{!redirectToCart}" id="redirectToCart" status="blockUI" />
+    </apex:form>       
+    
+    
+</html>
+</apex:page>

@@ -37,7 +37,7 @@
 		var leng = bookingLocations.length;
 		var portf = [];
 		
-		//Get the filter values dummy edit
+		//Get filter values
 		if(leng == 1)
 		{
 			if(helper.filterCertificationRecord(portfolioValue, partnerValue, partnerTypeValue, bookingLocations[0]))//Checks Partner type filter
