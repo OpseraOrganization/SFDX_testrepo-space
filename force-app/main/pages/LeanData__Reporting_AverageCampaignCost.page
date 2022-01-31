@@ -1,0 +1,165 @@
+<apex:page sideBar="false" standardStylesheets="false" docType="html-5.0" controller="LeanData.Reporting_AverageCampaignCostController">
+    <style>
+        .bs table {
+            font-family: 'Open Sans', sans-serif;
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            font-size: 13pt;
+            font-weight: 200;
+        }
+        
+        .bs thead th {
+            background-color: #EFF8FF;
+            font-weight: 600;
+        }
+        
+        .bs th,
+        td {
+            padding: 5px !important;
+            font-family: 'Open Sans', sans-serif;
+        }
+        
+        .bs tr {
+            height: 50px;
+        }
+        
+        .bs .clearAllButton {
+            display: block;
+            text-decoration: underline;
+            margin-left: 5px;
+            font-size: 11pt;
+            color: #5e7178;
+            font-weight: 400;
+            margin-top: 30px;
+            margin-bottom: 12.5px;
+        }
+        
+        .bs .clearAllButton:hover {
+            color: #5e7178;
+        }
+        
+        .bs .costInputField {
+            padding: 0 15px 0 15px;
+            color: #5e7178;
+            width: 175px;
+            height: 22px;
+            font-size: 12pt;
+        }
+    </style>
+    <apex:composition template="LeanData__Reporting_Template">
+        <apex:define name="customHeaderContent">
+            <div class="customHeaderContent-right">
+                <apex:commandLink rerender="x" html-data-toggle="modal" html-data-target="#infoModal">
+                    <apex:image value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Info_Button_Icon.png')}" styleClass="customHeaderContent-right-information" />
+                </apex:commandLink>
+            </div>
+        </apex:define>
+        <apex:define name="mainContent">
+            <div class="dg_outer-wrapper">
+                <div class="dg_outer-wrapper-content">
+                    <div class="dg_inner-wrapper">
+                        <div class="dg_inner-wrapper-header">
+                            Campaign Costs
+                        </div>
+                        <div class="dg_inner-wrapper-content" style="padding:25px">
+                            <apex:commandLink rerender="x" styleClass="clearAllButton" value="Clear All Campaign Costs" onclick="clearInputFields()" />
+                            <apex:outputPanel id="campaignCostTable">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th> Campaign Type </th>
+                                            <th> Cost </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!campaignKeys}" var="ck">
+                                            <tr>
+                                                <td> {!ck} </td>
+                                                <td>
+                                                    <apex:inputText html-type="number" styleClass="costInputField ld-input-small" value="{!campaignCostsMap[ck]}" /> </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                            </apex:outputPanel>
+                        </div>
+                        <!-- .dg_inner-wrapper-content -->
+                    </div>
+                    <!-- .dg_inner-wrapper -->
+                    <div class="dg_saveclose-nav">
+                        <apex:commandLink onclick="CloseWindow();" rerender="x">
+                            <apex:image value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Cancel_Button_Unselected.png')}" width="150px" height="38px" style="margin-right:12.5px" />
+                        </apex:commandLink>
+                        <apex:commandLink rerender="x" onclick="updateCosts();" html-data-toggle="modal" html-data-target="#settingsSavedModal">
+                            <apex:image value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Save_Button.png')}" width="150px" height="38px" />
+                        </apex:commandLink>
+                        <apex:actionFunction name="updateCostsAF" action="{!saveSettings}" rerender="x"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Begin Tooltip -->
+            <div id="infoModal" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content" style="display: inline-block;background: #eeefef;border-radius: 0px; padding-left: 20px;">
+                        
+                        <apex:commandLink rerender="x" html-data-dismiss="modal" style="float:right;margin:5px 5px 0 0">
+                            <apex:image width="15px" height="15px" value="{!URLFOR($Resource.LeanData__Reporting_Images, 'Close_Window_Icon.png')}"/>
+                        </apex:commandLink>
+                        
+                        <div class="dg_inner-wrapper" style="width:615px">
+                            <div class="dg_inner-wrapper-header">
+                                Tooltip | Average Costs
+                            </div>
+                            
+                            <div class="dg_inner-wrapper-content" style="height:400px;overflow:auto">
+                                <p>Allows a marketer to add a “placeholder” cost while they are waiting for financial costs to be calculated for a particular campaign. When actual campaign costs are added they will overwrite the average cost.
+                                <br/><br/>
+                                Input the dollar value of the average campaign of this type. You have the option of removing all values by pressing the “Clear All Campaign Costs” link at the top. 
+                                <br/><br/>
+                                Please press save when you conclude your edits.</p>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End of Tooltip -->
+        </apex:define>
+    </apex:composition>
+    <script>
+        function updateCosts() {
+            unbindCurrencyFormatter();
+            updateCostsAF();
+            bindCurrencyFormatter();
+        }
+    
+        function clearInputFields() {
+            j$(".costInputField").val("0");
+        }
+
+        var costs = [];
+        function unbindCurrencyFormatter() {
+            j$('.costInputField').each(function() {
+              costs.push(j$( this ).val());
+              j$( this ).val(j$( this ).val().replace('$ ','').replace(',',''));
+            });
+        }
+        
+        function bindCurrencyFormatter() {
+            var i = 0;
+            j$('.costInputField').each(function() {
+              j$( this ).val(costs[i++]);
+            });
+        }
+            
+        j$(document).ready(function() {
+            setPageTitle('Settings | Campaign Costs');
+            setActiveNav('settings-nav', 'Campaign Costs');
+        
+            j$('.costInputField').autoNumeric('init', {aSign: '$ '});
+        });
+    </script>
+</apex:page>

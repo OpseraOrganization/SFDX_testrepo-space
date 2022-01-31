@@ -1,0 +1,201 @@
+<apex:page controller="GBLite.ManageTabbedPagesController" showHeader="true" sidebar="false" action="{!initConfigPage}" title="{!pageTitle}" tabStyle="Grid_Wizard__tab" docType="html-5.0">
+	<c:FileComponent CSSFileNames="{!CSSFileNames}" />
+	<c:FileComponent JSFileNames="{!JSFileNames}" />
+
+<apex:form styleClass="tabsForm gbAppPage{!IF(lightningStylesEnabled, ' gbLightning', '')}">
+	<apex:actionFunction name="saveTabbedPages" action="{!saveTabbedPages}" rerender="errors" oncomplete="GBTabsConfig.toggleButtonState(false)"/>
+	<apex:inputHidden value="{!tabbedPagesJson}" id="tabbedPagesJson"/>
+	<div id="tabErrorMessage" class="msgBox warningMsg">
+	    <div class="gbIconAlert"></div>
+	    <div class="msgDetail"></div>			                
+	</div>
+	
+	<apex:outputPanel id="errors">
+		<c:EmptyComponent rendered="{!errors.showErrorMessages}">
+			<div class="msgBox warningMsg gbwMsg">
+	               <div class="gbIconAlert"></div>
+	               <div class="rMessages">
+					<apex:repeat value="{!errors.errorMessagesFromMap}" var="error">
+	                    <div><apex:outputText value="{!error}" escape="false" /></div>
+					</apex:repeat>
+	               </div>
+			</div>
+		</c:EmptyComponent>
+	</apex:outputPanel>
+	
+	<apex:pageBlock title="">
+        <apex:pageBlockButtons location="top">
+            <div class="titleContainer">
+                <h1 class="pageTitle" >Manage Tabbed Pages</h1>
+                <h1 class="pageSelectorLabel">Select a page: </h1>
+                <select id="pageSelect"></select>
+            </div>
+            <input type="button" class="saveBtn gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="Save" />
+            <input type="button" class="gbBtnDisabled{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="Save" disabled="disabled" style="display:none;"/>
+            <input type="button" id="removePage" class="gbBtn deleteBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="Delete" />
+            <input type="button" class="gbBtnDisabled deleteBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="Delete" disabled="disabled" style="display:none;"/>
+            <input type="button" id="launchPage" class="gbBtn launchBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="Launch" />
+            <input type="button" class="gbBtnDisabled launchBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="Launch" disabled="disabled" style="display:none;"/>
+            <input type="button" id="addPage" class="gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="New" />
+            <input type="button" class="gbBtnDisabled{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="New" disabled="disabled" style="display:none;"/>
+        </apex:pageBlockButtons>
+		
+		<div class="tabSetupContainer">
+		
+			<div class="pageLevelSection">
+				<h1>Configure Page</h1>
+			
+				<div class="formColumn">
+					<div class="formRow">
+						<label>Title</label><span class="star">*</span>
+						<span class="gbInfoIcon tooltip starInfoIcon" title="Human-readable name of the tabbed page. This will be used to generate the Visualforce page API name."></span>
+						<input id="tabbedPageNameInput" type="text" placeholder="Page Title"/>
+					</div>
+					
+					<div id="tabbedPageAPIName" class="formRow">
+						<label>Page Name </label>
+						<span class="pageName"></span>
+					</div>
+					
+					<div class="formRow">
+						<label>Select an Object</label>
+						<span class="gbInfoIcon tooltip" title="Do you want to embed this page in a record detail or other page? Select the object here."></span>
+						<apex:selectList required="true" multiselect="false" 
+								size="1" id="tabbedPageObjectSelect" styleClass="tabbedPageObjectSelect">
+							<apex:selectOption value="{!defaultObjectSelectOption}" />
+							<apex:selectOptions value="{!embedObjectSelectOptions}" />
+							<apex:selectOptions value="{!objectSelectOptionsNextSublist}" />
+						</apex:selectList>
+					</div>
+					
+					<div class="formRow">
+						<label>Tab Height</label>
+						<span class="gbInfoIcon tooltip" title="Set a height for your tabbed page in pixels. Defaulted to 500px if left blank."></span>
+						<input id="tabbedPageHeightInput" type="number" placeholder="Defaulted to 500px if left blank"/>
+					</div>
+					
+					<div class="formRow">
+						<label>Description</label>
+						<span class="gbInfoIcon tooltip" title="Description that will be displayed on the page above the tabs."></span>
+						<input id="tabbedPageDescriptionInput" type="text" placeholder="This will be displayed on the page"/>
+					</div>
+					
+					<div class="formRow">
+						<label>Global Buttons</label>
+						<span class="gbInfoIcon tooltip" title="Optionally add a global save and a global refresh button to your tabbed page. These will save or refresh all of your grids at the same time."></span>
+						<input id="tabbedPageGlobalSave" type="checkbox"/>
+					</div>
+					
+                   <div class="formRow">
+                        <label>Show Salesforce Header</label>
+                        <span class="gbInfoIcon tooltip" title="Check this box to show the standard Salesforce header on your tabbed page."></span>
+                        <input id="tabbedPageShowHeader" type="checkbox"/>
+                    </div>
+                    
+                    <div class="formRow">
+                        <label>Show Salesforce Sidebar</label>
+                        <span class="gbInfoIcon tooltip" title="Check this box to show the standard Salesforce left sidebar on your tabbed page. Show Salesforce Header must be selected."></span>
+                        <input id="tabbedPageShowSidebar" type="checkbox"/>
+                    </div>
+				</div>
+						
+			</div>
+			<div class="tabLevelSection">
+				<h1>Configure Tabs</h1>
+				<div class="instr">Type in the name of the grid or Visualforce page in the content section and select from the available list. Drag and drop to reorder your tabs.</div>
+				<span class="gbInfoIcon tooltip" title="After you select the grid or Visualforce page, a relative URL will be populated in the content section. Add additional URL parameters at the end of this relative URL. You can also enter absolute URLs in the content section."></span>
+				
+				<div class="tabListContainer"></div>
+				
+				<input type="button" id="addTab" class="gbBtn{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="Add Tab" />
+				<input type="button" id="addTab" class="gbBtnDisabled{!IF(lightningStylesEnabled, ' ldsWhiteBtn', '')}" value="Add Tab" style="display:none;"/>
+			
+			</div>
+			<div class="previewSection">
+				<h1>Preview</h1>
+				<div class="tabbedPreviewContainer">
+				</div>
+			</div>
+			<c:EmptyComponent rendered="{!customCodeEnabled}">
+				<div class="customCodeSection">
+					<h1>{!lang.GWCustomCodeHeader}</h1>
+					<table>
+						<tr>
+							<td class="instr" colspan="3">
+								<apex:outputText value="{!lang.chooseCustomCodeLbl}" escape="false"/><br/>
+							</td>
+						</tr>
+						<tr>
+							<td class="alignRight"  valign="top">
+								{!lang.addCustomCodeLabel}
+								<div class="addEditFolderContainer">
+									<apex:outputText value="{!lang.addEditLbl}" escape="false"><apex:param value="{!URLFOR(CCPageUrl)}"/></apex:outputText>
+								</div>
+							</td>
+							<td class="customCodeBlock css" colspan="2">
+								<div class="customCodeBox">
+									<div class="gradientHeader folder-title">{!lang.availableCSSLbl}</div>
+									<div id="availableCSSCode" class="codeList">
+										<div class="customCode customCodeInfo">{!lang.noCSSConfiguredLbl}</div>
+									</div>
+								</div>
+								<div class="customCodeBox">
+									<div class="gradientHeader folder-title">{!lang.selectedCSSLbl}</div>
+									<div id="selectedCSSCode" class="codeList">
+										<div class="customCode customCodeInfo">{!lang.noneSelectedLbl}</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td></td>
+							<td class="customCodeBlock js" colspan="2">
+								<div class="customCodeBox">
+									<div class="gradientHeader folder-title">{!lang.availableJSLbl}</div>
+									<div id="availableJSCode" class="codeList">
+										<div class="customCode customCodeInfo">{!lang.noJSConfiguredLbl}</div>
+									</div>
+								</div>
+								<div class="customCodeBox">
+									<div class="gradientHeader folder-title">{!lang.selectedJSLbl}</div>
+									<div id="selectedJSCode" class="codeList">
+										<div class="customCode customCodeInfo">{!lang.noneSelectedLbl}</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</c:EmptyComponent>
+		</div>
+	</apex:pageBlock>
+</apex:form>
+
+<script type="text/javascript">
+    var __sfdcSessionId = '{!GETSESSIONID()}', // used for AJAX toolkit
+    	unmanagedVFPrefix = '{!baseRelativeURLForVFUnmanaged}',
+    	salesforceBaseURL = '{!URLFOR("/")}',
+    	communityDomain = '{!$Site.Domain}',
+    	namespace = '{!namespace}',
+    	namespacePrefix = '{!namespacePrefix}';
+    	
+   	var gridList = new Array();
+   	<apex:repeat value="{!gridList.0String}" var="item">
+   		gridList.push({value:'{!JSENCODE(item)}', label:'{!JSENCODE(item)} - Grid' , type: 'grid'});
+   	</apex:repeat>
+   	<apex:repeat value="{!gridList.1String}" var="item">
+   		gridList.push({value:'{!JSENCODE(item)}', label:'{!JSENCODE(item)} - Grid' , type: 'grid'});
+   	</apex:repeat>
+   	<apex:repeat value="{!gridList.2String}" var="item">
+   		gridList.push({value:'{!JSENCODE(item)}', label:'{!JSENCODE(item)} - Grid' , type: 'grid'});
+   	</apex:repeat>
+    
+    jq(document).ready(function(){
+		GBTabsConfig.init({customCodeEnabled: {!customCodeEnabled},
+			customCodeRecords: {!customCodeJSON}
+		});
+	});
+</script>  
+<script src="/soap/ajax/42.0/connection.js" type="text/javascript"></script><!-- Sforce AJAX toolkit -->
+
+</apex:page>

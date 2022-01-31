@@ -1,0 +1,491 @@
+<apex:page controller="LeanData.AccountActivitySummaryController" extensions="LeanData.InLineEditable" action="{! initializeIsAllowed}" sidebar="false">
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__angela_app, 'styles.css')}"/> 
+    <c:style />
+    <script>
+        OPEN_ACTIVITY_COLUMNS = [
+            {"label" : "Subject", "name" : "Subject", "type" : "STRING"},
+            {"label" : "Related To", "name" : "WhoId", "type" : "REFERENCE"},
+            {"label" : "Is Task", "name" : "IsTask", "type" : "BOOLEAN"},
+            {"label" : "Due Date", "name" : "ActivityDate", "type" : "DATETIME"},
+            {"label" : "Status", "name" : "Status", "type" : "STRING"},
+            {"label" : "Priority", "name" : "Priority", "type" : "STRING"},
+            {"label" : "Owner", "name" : "OwnerId", "type" : "REFERENCE"}
+        ] 
+        ACTIVITY_HISTORY_COLUMNS = [
+            {"label" : "Subject", "name" : "Subject", "type" : "STRING"},
+            {"label" : "Related To", "name" : "WhoId", "type" : "REFERENCE"},
+            {"label" : "Is Task", "name" : "IsTask", "type" : "BOOLEAN"},
+            {"label" : "Due Date", "name" : "ActivityDate", "type" : "DATETIME"},
+            {"label" : "Owner", "name" : "OwnerId", "type" : "REFERENCE"}
+        ] 
+        CAMPAIGN_MEMBER_COLUMNS = [
+            {"label" : "Campaign", "name" : "CampaignId", "type" : "REFERENCE"},
+            {"label" : "Matched To", "name" : "LeadId", "type" : "REFERENCE"},
+            {"label" : "Start Date", "name" : "Campaign.StartDate", "type" : "DATETIME"},
+            {"label" : "Type", "name" : "Campaign.Type", "type" : "STRING"},
+            {"label" : "Status", "name" : "Status", "type" : "STRING"},
+            {"label" : "Responded", "name" : "HasResponded", "type" : "BOOLEAN"},
+            {"label" : "Last Modified Date", "name" : "LastModifiedDate", "type" : "DATETIME"}
+        ]
+        NOTES_COLUMNS = [
+            {"label" : "Type", "name" : "Type", "type" : "STRING"},
+            {"label" : "Title", "name" : "Title", "type" : "STRING"},
+            {"label" : "Matched To", "name" : "ParentId", "type" : "REFERENCE"},
+            {"label" : "Last Modified", "name" : "LastModifiedDate", "type" : "DATETIME"},
+            {"label" : "Created By", "name" : "CreatedById", "type" : "REFERENCE"}
+        ] 
+    </script>
+    <style>
+        .infoSection {
+            float:left;
+            width: 50%;
+        }
+        
+        .infoLabel {    
+            width: intrinsic;
+            margin-bottom: 15px;
+        }
+        .infoLabel-heading {
+            display: inline-block;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            margin-right: 15px;
+            color: #4a4a56;        
+        }
+        .left{
+            margin-top: 10px;
+        }
+    </style>
+    <apex:outputPanel rendered="{! !validID}">
+        <span style="font-weight: bold; font-size: 12pt;">Sorry, this page does not exist.</span>       
+    </apex:outputpanel>
+
+    <apex:outputPanel rendered="{! validID}" layout="block" styleClass="view">
+        <c:matchedViewAssets view_type="AccountActivitySummary" with_dupes="false" with_l2a_matches="false"/>
+        <c:UtilJS />
+        <c:accessCheck isAllowed="{! isAllowed }"> <!-- other access checks for different modes? -->
+        <div class="account-activity-summary-page-wrapper">
+            <div class="bPageTitle">
+                <div class="ptBody secondaryPalette brandSecondaryBrd">
+                    <div class="content" >
+                        <img style="height:25px;" class="leandata_logo" src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}"/>
+                        <h2 class="page-description">{! IF(mode == 'Account', currentAccount.Name + ' | Account Matched Leads', currentLead.Company + ' | New Account Related Leads') }</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="loadingDiv">
+                <c:loading />
+            </div>
+            <div class="loadedDiv" style="display:none">
+                <apex:outputPanel rendered="{! mode != 'Account'}" layout="block" style="margin:0 auto; padding: 5px;margin-top:5px;">
+                    <apex:form html-align="center">
+                        <apex:commandLink action="/{!theId}" value="Cancel" styleClass="ld-tertiary-small-button" />&nbsp;
+                        <apex:commandLink style="margin-left:10px;" action="{!$Page.MassConvert}?Id={!theId}" value="Create New Account" styleClass="ld-tertiary-small-button" />
+                    </apex:form>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{! mode == 'Account' }">
+                    <div>
+                        <div id="view">
+                            <div class="wrapper">
+                                <div class="left">
+                                    <span class="table_title"><h3><span class="title">Account Details</span></h3></span>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        <div >
+                            <div class="dupesHeightDiv tableWrapper outer-panel" >
+                                <div class="inner-panel" style="text-align:left;margin:0 auto;">
+                                    <apex:pageBlock mode="maindetail" >
+                                        <div class="infoSection">
+                                            <div class="infoLabel">
+                                                <span class="infoLabel-heading">Account Owner</span>
+                                                <span class="infoLabel-content" ><apex:outputField value="{!currentAccount.OwnerId}" label="Account Owner" /></span>                                               
+                                            </div>
+                                            
+                                            <div class="infoLabel">
+                                                <span class="infoLabel-heading">Phone</span>
+                                                <span class="infoLabel-content" ><apex:outputField value="{!currentAccount.Phone}" label="Phone Number" /></span>                                                                                          
+                                            </div>
+                                            
+                                            <div class="infoLabel">
+                                                <span class="infoLabel-heading">Account Name</span>
+                                                <span class="infoLabel-content" ><apex:outputField value="{!currentAccount.Name}" label="Account Name" /></span>
+                                            </div>
+                                            
+                                            <div class="infoLabel">
+                                                <span class="infoLabel-heading">Industry</span>
+                                                <span class="infoLabel-content" ><apex:outputField value="{!currentAccount.Industry}" label="Industry" /></span>
+                                            </div>
+                                            
+                                             <div class="infoLabel">
+                                                <span class="infoLabel-heading">Billing Address</span>
+                                                <span class="infoLabel-content" ><apex:outputText value="{!currentAccount.BillingStreet}, {!currentAccount.BillingCity}, {!currentAccount.BillingState} {!currentAccount.BillingPostalCode} {!currentAccount.BillingCountry}" label="Billing Address" /></span>
+                                            </div>      
+                                            
+                                        </div>
+                                        <div class="infoSection">
+                                            <div class="infoLabel">
+                                                <span class="infoLabel-heading">Website</span>
+                                                <span class="infoLabel-content" ><apex:outputField value="{!currentAccount.Website}" label="Website" /></span>
+                                            </div>
+                                            
+                                            <div class="infoLabel">
+                                                <span class="infoLabel-heading">Annual Revenue</span>
+                                                <span class="infoLabel-content" ><apex:outputField value="{!currentAccount.AnnualRevenue}" label="Annual Revenue" /></span>
+                                            </div>
+                                            
+                                            <div class="infoLabel">
+                                                <span class="infoLabel-heading">Number of Employees</span>
+                                                <span class="infoLabel-content" ><apex:outputField value="{!currentAccount.NumberOfEmployees}" label="Number of Employees" /></span>
+                                            </div>
+                                            
+                                            <div class="infoLabel">
+                                                <span class="infoLabel-heading">Shipping Address</span>
+                                                <span class="infoLabel-content" ><apex:outputText value="{!currentAccount.ShippingStreet}, {!currentAccount.ShippingCity}, {!currentAccount.ShippingState} {!currentAccount.ShippingPostalCode} {!currentAccount.ShippingCountry}" label="Shipping Address" /></span>
+                                            </div>                                          
+                                        </div>
+                                    </apex:pageBlock>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                   
+                </apex:outputPanel>
+                
+                <apex:outputPanel rendered="{! mode != 'Account' }">
+                    <div>
+                        <div id="view">
+                            <div class="wrapper">
+                                <div class="left">
+                                    <span class="table_title"><h3><span class="title">New Account Details</span></h3></span>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        <div >
+                            <div class="dupesHeightDiv tableWrapper outer-panel" >
+                                <div class="inner-panel">
+                                    <apex:pageBlock mode="maindetail">
+                                        <apex:pageBlockSection columns="2">
+                                            <apex:outputField value="{!currentLead.OwnerId}" label="New Account Owner" />
+                                            <apex:outputField value="{!currentLead.Phone}" />
+                                            <apex:outputField value="{!currentLead.Company}" label="New Account Name" />
+                                            <apex:outputField value="{!currentLead.Fax}" />
+                                            <apex:outputField value="{!currentLead.Industry}" />
+                                            <apex:outputField value="{!currentLead.Website}" />
+                                            <apex:outputField value="{!currentLead.AnnualRevenue}" />
+                                            <apex:outputField value="{!currentLead.NumberOfEmployees}" />
+                                            <apex:outputText value="{!currentLead.Street}, {!currentLead.City}, {!currentLead.State} {!currentLead.PostalCode} {!currentLead.Country}"
+                                                  label="Billing Address" />
+                                        </apex:pageBlockSection>
+                                    </apex:pageBlock>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div id="view">
+                            <div class="wrapper">
+                                <div class="left">
+                                    <span class="table_title"><h3><span class="title">Additional Information</span></h3></span>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        <div >
+                            <div class="dupesHeightDiv tableWrapper outer-panel" >
+                                <div class="inner-panel">
+                                    <apex:pageBlock mode="maindetail">
+                                        <apex:pageBlockSection columns="2">
+                                            <apex:outputField value="{!currentLead.Description}" />
+                                            <apex:outputField value="{!currentLead.LastModifiedById}" />
+                                            <apex:outputField value="{!currentLead.CreatedById}" />
+                                        </apex:pageBlockSection>
+                                    </apex:pageBlock>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </apex:outputPanel>
+                
+                
+                        
+                <div class="matchedViewAssetsParent">
+                    <apex:outputPanel id="view">
+                        <div>
+                            <div id="view">
+                                <div class="wrapper">
+                                    <div class="left">
+                                        <span class="table_title"><h3><span class="title">{! IF(mode == 'Account', 'Matched Leads', 'Related Leads') }</span></h3></span>
+                                    </div>
+                                    <div class="right view-lead-columns" />
+                                    
+                                </div>
+                                <div >
+                                    <div class="dupesHeightDiv tableWrapper outer-panel" >
+                                        <div class="inner-panel">
+                                            <div class="scroll-panel related-lead-div">
+                                                
+                                            </div>
+                                        </div>                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        
+                        <div>
+                            <div id="view">
+                                <div class="wrapper">
+                                    <div class="left">
+                                        <span class="table_title"><h3><span class="title">Open Activities</span></h3></span>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            <div >
+                                <div class="dupesHeightDiv tableWrapper outer-panel" >
+                                    <div class="inner-panel">
+                                        <div class="scroll-panel open-activities-div">
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div id="view">
+                                <div class="wrapper">
+                                    <div class="left">
+                                        <span class="table_title"><h3><span class="title">Activity History</span></h3></span>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            <div >
+                                <div class="dupesHeightDiv tableWrapper outer-panel" >
+                                    <div class="inner-panel">
+                                        <div class="scroll-panel activity-history-div">
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div id="view">
+                                <div class="wrapper">
+                                    <div class="left">
+                                        <span class="table_title"><h3><span class="title">Campaign History</span></h3></span>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            <div >
+                                <div class="dupesHeightDiv tableWrapper outer-panel" >
+                                    <div class="inner-panel">
+                                        <div class="scroll-panel campaign-history-div">
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div id="view">
+                                <div class="wrapper">
+                                    <div class="left">
+                                        <span class="table_title"><h3><span class="title">Notes and Attachments</span></h3></span>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            <div >
+                                <div class="dupesHeightDiv tableWrapper outer-panel" >
+                                    <div class="inner-panel">
+                                        <div class="scroll-panel notes-attachments-div">
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <apex:outputPanel rendered="{! mode != 'Account'}" layout="block" style="margin:0 auto; padding: 5px;margin-top:5px;">
+                            <apex:form html-align="center">
+                                <apex:commandLink action="/{!theId}" value="Cancel" styleClass="ld-tertiary-small-button" />&nbsp;
+                                <apex:commandLink style="margin-left:10px;" action="{!$Page.MassConvert}?Id={!theId}" value="Create New Account" styleClass="ld-tertiary-small-button" />
+                            </apex:form>
+                        </apex:outputPanel>
+
+                        <script>      
+                            j$ = jQuery.noConflict();
+                            if( {! hasColumnSettingAccess}) {
+                                var page_block_header = j$('.view-lead-columns')[0]; //j$("#lead_table").parents(".bPageBlock").find(".pbTitle").siblings()[0]; // this is pretty fragile, but alternative is to make our own page block divs
+                                page_block_header.innerHTML = '<div style="float:right;padding-right:10px;"><a href="/apex/dashboard#view/leads" target="_blank" class="customTarget action_link ld-green">Lead View Columns</a></div>';
+                            }
+                            j$('document').ready(function(){
+                                Visualforce.remoting.Manager.invokeAction(
+                                    '{!$RemoteAction.AccountActivitySummaryController.getViewObject}',
+                                    '{! JSENCODE(theId)}',
+                                    '{! JSENCODE(mode)}',
+                                    function(result, event) {buildView(result)}
+                                )
+                            });
+                        </script>
+                    </apex:outputPanel>
+                </div>
+            </div>
+        </div>
+        </c:accessCheck>
+
+        <script>
+            function buildView(result) { 
+                console.log(result);
+
+                j$('.loadedDiv').show();
+                j$('.loadingDiv').hide();
+                var tableParent, displayColumns, table, tbody, objs, obj, row, cell;
+                var openActivityTable, openActivityBody, activityHistoryTable, activityHistoryBody;
+                // generate Related Leads table
+                tableParent = j$('.related-lead-div')[0];
+                displayColumns = result["display columns"];
+                tableParent.appendChild(table = generateTableAndHeader(tableParent, displayColumns, 'lead'));
+         
+                table.appendChild(tbody = document.createElement("tbody"));
+                objs = result["leads"];
+                for (var i=0;i<objs.length;i++) {
+                    tbody.appendChild(row = generateTableRow());
+                    for (var j = 0; j < displayColumns.length; j++) {
+                        var cell = generateDataTablesCell(row, false);
+                        if(displayColumns[j]["name"] == "Name") 
+                          cell.innerHTML = '<a target="_blank" class="customTarget" href="/' + objs[i]["Id"] + '">' + objs[i]["Name"] + '</a>';
+                        else
+                          cell.innerHTML = getHTMLForValue(objs[i], displayColumns[j]);
+                    }
+                }
+                initializeDataTable(j$(table), 'lead');
+                
+                // both tasks and events are activities, which are split into "Open Activity" and "Activity History"
+                // tables.  For Tasks, IsClosed go into Activity History.  For Events, if the end date has already passed,
+                // those go into Activity History
+                tableParent = j$('.open-activities-div')[0];
+                tableParent.appendChild(openActivityTable = generateTableAndHeader(tableParent, OPEN_ACTIVITY_COLUMNS, 'open_activities'));
+                openActivityTable.appendChild(openActivityBody = document.createElement("tbody"));
+
+                tableParent = j$('.activity-history-div')[0];
+                tableParent.appendChild(activityHistoryTable = generateTableAndHeader(tableParent, ACTIVITY_HISTORY_COLUMNS, 'activity_history'));
+                activityHistoryTable.appendChild(activityHistoryBody = document.createElement("tbody"));
+
+                objs = result["tasks"];
+                for (var i=0;i<objs.length;i++) {
+                    row = generateTableRow();
+                    if(objs[i]["IsClosed"]) {
+                        tbody = activityHistoryBody;
+                        displayColumns = ACTIVITY_HISTORY_COLUMNS;
+                    } else {
+                        tbody = openActivityBody;
+                        displayColumns = OPEN_ACTIVITY_COLUMNS;
+                    }
+                    for (var j = 0; j < displayColumns.length; j++) {
+                        var cell = generateDataTablesCell(row, false);
+                        if(displayColumns[j]["name"] == "Subject") 
+                          cell.innerHTML = '<a target="_blank" class="customTarget" href="/' + objs[i]["Id"] + '">' + objs[i]["Subject"] + '</a>';
+                        else if(displayColumns[j]["name"] == "IsTask") 
+                          cell.innerHTML = '<img src="/img/checkbox_checked.gif" alt="Checked" width="21" height="16" class="checkImg" title="Checked">';
+                        else
+                          cell.innerHTML = getHTMLForValue(objs[i], displayColumns[j]);
+                    }
+                    tbody.appendChild(row);
+                }
+                objs = result["events"];
+                for (var i=0;i<objs.length;i++) {
+                    row = generateTableRow();
+                    // if end date is before current time, Event goes in Activity History, else Open Activities
+                    if(objs[i]["EndDateTime"] < Date.now()) { 
+                        tbody = activityHistoryBody;
+                        displayColumns = ACTIVITY_HISTORY_COLUMNS;
+                    } else {
+                        tbody = openActivityBody;
+                        displayColumns = OPEN_ACTIVITY_COLUMNS;
+                    }
+                    for (var j = 0; j < displayColumns.length; j++) {
+                        var cell = generateDataTablesCell(row, false);
+                        if(displayColumns[j]["name"] == "Subject") 
+                          cell.innerHTML = '<a target="_blank" class="customTarget" href="/' + objs[i]["Id"] + '">' + objs[i]["Subject"] + '</a>';
+                        else if(displayColumns[j]["name"] == "IsTask") 
+                          cell.innerHTML = '<img src="/img/checkbox_unchecked.gif" alt="Not Checked" width="21" height="16" class="checkImg" title="Not Checked">';
+                        else if((displayColumns[j]["name"] != 'Status') && (displayColumns[j]["name"] != 'Priority'))
+                          cell.innerHTML = getHTMLForValue(objs[i], displayColumns[j]);
+                    }
+                    tbody.appendChild(row);
+                }
+                if(openActivityBody.childNodes.length == 0) noElements(".open-activities-div");
+                if(activityHistoryBody.childNodes.length == 0) noElements(".activity-history-div");
+                initializeDataTable(j$(openActivityTable), 'open-activities');
+                initializeDataTable(j$(activityHistoryTable), 'activity-history');
+
+                // generate Campaign Members table
+                tableParent = j$('.campaign-history-div')[0];
+                tableParent.appendChild(table = generateTableAndHeader(tableParent, CAMPAIGN_MEMBER_COLUMNS, 'campaign_history'));
+         
+                table.appendChild(tbody = document.createElement("tbody"));
+                displayColumns = CAMPAIGN_MEMBER_COLUMNS;
+                objs = result["campaign members"];
+                for (var i=0;i<objs.length;i++) {
+                    obj = objs[i];
+                    tbody.appendChild(row = generateTableRow());
+                    for (var j = 0; j < displayColumns.length; j++) {
+                        var cell = generateDataTablesCell(row, false);
+                        if(displayColumns[j]["name"] == "Type") 
+                          cell.innerHTML = obj["IsNote"] ? "Note" : "Attachment"
+                        else if(displayColumns[j]["name"] == "Title") 
+                          cell.innerHTML = '<a target="_blank" class="customTarget" href="/' + obj["Id"] + '">' + obj["Title"] + '</a>';
+                        else
+                          cell.innerHTML = getHTMLForValue(obj, displayColumns[j]);
+                    }
+                }
+                if(tbody.childNodes.length == 0) noElements(".campaign-history-div");
+                initializeDataTable(j$(table), 'campaign-history');
+                
+                // generate Notes and Attachments table
+                tableParent = j$('.notes-attachments-div')[0];
+                displayColumns = NOTES_COLUMNS;
+                tableParent.appendChild(table = generateTableAndHeader(tableParent, displayColumns, 'notes'));
+         
+                tbody = document.createElement("tbody");
+                table.appendChild(tbody);
+                objs = result["notes"];
+                for (var i=0;i<objs.length;i++) {
+                    obj = objs[i];
+                    tbody.appendChild(row = generateTableRow());
+                    for (var j = 0; j < displayColumns.length; j++) {
+                        var cell = generateDataTablesCell(row, false);
+                        if(displayColumns[j]["name"] == "Type") 
+                          cell.innerHTML = obj["IsNote"] ? "Note" : "Attachment"
+                        else if(displayColumns[j]["name"] == "Title") 
+                          cell.innerHTML = '<a target="_blank" class="customTarget" href="/' + obj["Id"] + '">' + obj["Title"] + '</a>';
+                        else
+                          cell.innerHTML = getHTMLForValue(obj, displayColumns[j]);
+                    }
+                }
+                if(tbody.childNodes.length == 0) noElements(".notes-attachments-div");
+                initializeDataTable(j$(table), 'notes');
+            }
+
+            function noElements(selector) {
+                var tableDiv = j$(selector )[0];
+                tableDiv.innerHTML = "No records to display"
+            }
+        </script>
+    </apex:outputPanel>
+</apex:page>

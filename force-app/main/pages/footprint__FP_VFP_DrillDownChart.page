@@ -1,0 +1,239 @@
+<!--
+Visualforce Page    : FP_VFP_DrillDownChart
+Standard Controller : Footprint__c
+Controller          : FP_VFC_DrillDownChart
+Author              : Maryem BOURHI (mbourhi@salesforce.com)
+Created Date        : 11/07/2016
+Last Modified Date  : 27/07/2016
+Descritpion         : his Page is used to launch the batch analysing field usage informations
+-->
+<apex:page standardController="footprint__FootPrint__c" extensions="footprint.FP_VFC_DrillDownChart" showHeader="false">
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+</head>
+
+    <apex:stylesheet value="{!URLFOR($Resource.footprint__footprintAll, '/FootprintZip/Footprint/SLDS202/assets/styles/salesforce-lightning-design-system.min.css')}"  />
+    <style>
+    hr {
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #ccc;
+    margin: 1em 0;
+    padding: 0;
+    }
+    </style>
+    <script src="{!URLFOR($Resource.footprint__JQueryMin)}">
+    </script>
+    <script src="{!URLFOR($Resource.footprint__Highcharts, '/js/highcharts.js')}">
+    </script>
+    <script src="{!URLFOR($Resource.footprint__Highcharts, '/js/modules/drilldown.js')}">
+    </script>
+    <script>$j = jQuery.noConflict();</script>
+    <script>
+        var wid={!JSENCODE(TEXT(currentFootprint.footprint__FootPrint_Fields__c))}*100;
+        var widRT={!JSENCODE(TEXT(currentFootprint.footprint__FootPrint_Record_Types__c))}*150;
+        if({!currentFootprint.footprint__FootPrint_Record_Types__c}==1){
+            widRT=300;
+        }
+       jQuery(function () {
+        // Create the chart
+       jQuery('#container').highcharts({
+           credits: {
+            enabled: false
+        },
+            chart: {
+                type: 'column',
+                width: wid,
+                
+            events: {
+                drilldown: function (e) {
+                    if({!numberOfRT}<50)
+                    {
+                    this.setSize(widRT, 400,false);
+                    showTable(e.point.name);
+                    this.setTitle({ text: e.point.name },{ text: '{!$Label.footprint__fp_recordtypeusage}'});
+                    }
+                },
+                drillup:function (e) {
+                    
+                    this.setSize(wid, 400,false);
+                    HideTable();
+                    this.setTitle({ text: '{!JSENCODE(footprint__FootPrint__c.footprint__FootPrint_Object_Label__c)} {!$Label.footprint__fp_fieldusage} <span style="color:grey;">    ({!$Label.footprint__rangetitle}{!currentFootprint.footprint__MinRange__c}-{!currentFootprint.footprint__MaxRange__c}%)</span>' },{ text: '{!$Label.footprint__fp_charthelp}'});
+                }
+            }        
+            },
+            title: {
+                text: '{!JSENCODE(footprint__FootPrint__c.footprint__FootPrint_Object_Label__c)} {!$Label.footprint__fp_fieldusage} <span style="color:grey;">    ({!$Label.footprint__rangetitle}{!currentFootprint.footprint__MinRange__c}-{!currentFootprint.footprint__MaxRange__c}%)</span>',
+                align: 'left'
+            },
+            subtitle: {
+                text: '{!$Label.footprint__fp_charthelp}',
+                align: 'left'
+            },
+            xAxis: {
+                type: 'category'
+            },
+            yAxis: {
+                title: {
+                    text: 'Total percent usage'
+                }
+    
+            },
+            legend: {
+                enabled: false
+            },
+            plotOptions: {
+                
+                series: {
+                    borderWidth: 0,
+                    dataLabels: {
+                        overflow: 'none',
+                        crop: false,
+                        enabled: true,
+                        color: 'rgb(84, 105, 141)',
+                        format: '{point.y:.1f}%'
+                    }
+                }
+            },
+    
+            tooltip: {
+                headerFormat: '<span style="font-size:11px">{series.name}</span><br>',
+                pointFormat: '<span style="color:{point.color}">{point.name}</span>: <b>{point.y:.2f}%</b> of total<br/>'
+            },
+    
+           series: [{
+            name: 'Fields',
+            colorByPoint: true,
+            data: 
+            {!fieldsListString}
+        }],
+        drilldown: {
+            series: 
+            {!recordTypeList}
+        }
+    });    
+                     
+});
+    jQuery('.highcharts-data-labels').last().hide(); 
+    
+    var oldFieldName;
+    function showTable(fieldName){
+        jQuery('.highcharts-series-1').last().hide(); 
+        oldFieldName=fieldName;
+     document.getElementById('containter2').style.display='inline';
+     document.getElementById('FU'+fieldName).style.display='inline';
+     document.getElementById('VR'+fieldName).style.display='inline';
+     document.getElementById('WR'+fieldName).style.display='inline';
+     document.getElementById('RE'+fieldName).style.display='inline';
+     }
+    
+    function HideTable(){
+        jQuery('.highcharts-data-labels').last().hide(); 
+     document.getElementById('containter2').style.display='none';
+     document.getElementById('FU'+oldFieldName).style.display='none';
+     document.getElementById('VR'+oldFieldName).style.display='none';
+     document.getElementById('WR'+oldFieldName).style.display='none';
+     document.getElementById('RE'+oldFieldName).style.display='none';
+     }
+     
+     jQuery( document ).ready(function() {
+    
+     jQuery('.highcharts-drilldown-data-label').last().text('');
+    
+      });
+     
+     
+    </script>
+    <apex:form id="form2">
+      
+      <apex:outputPanel rendered="{!currentFootprint.footprint__FootPrint_Records__c==null}">
+        <div>
+          <div aria-hidden="false" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" role="alertdialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+            <div class="" role="document" id="prompt-message-wrapper" tabindex="0" style="margin: auto;position: relative;top: 50%;transform: translateY(-50%);transform: rotateZ;">
+              <div class="">
+                <h2 class="slds-text-heading--medium" id="prompt-heading-id" style="font-size:18px;">{!$Label.FP_ChartUnavailable} </h2>
+              </div>
+              <div class="slds-text-heading--label-normal   slds-m-bottom--xx-small" style="padding-left:0;padding-top:0.5%;">
+                <div>
+ <!--                 <p style="font-family: Salesforce Sans, Arial, sans-serif;color: rgb(84, 105, 141);">{!$Label.FP_UnavailableText}</p> -->
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="slds-backdrop slds-backdrop--open"></div>
+        </div>
+      </apex:outputPanel>
+      
+      <apex:outputPanel rendered="{!( checkLimit==true && currentFootprint.footprint__FootPrint_Records__c!=null)}">
+        <div>
+          <div aria-hidden="false" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" role="alertdialog" class="slds-modal slds-modal--prompt slds-fade-in-open">
+            <div class="" role="document" id="prompt-message-wrapper" tabindex="0" style="margin-left:3%;width:80%;margin-top:15%;">
+              <div class="">
+                <h2 class="slds-text-heading--medium" id="prompt-heading-id" style="font-size:18px;">{!$Label.FP_ChartUnavailable} </h2>
+              </div>
+              <div class="slds-modal__content slds-p-around--medium" style="padding-left:0;padding-top:0.5%;">
+                <div style="display:{!IF(currentFootprint.FootPrint_Records__c!=null,'none','')}">
+                  <p style="font-family: Salesforce Sans, Arial, sans-serif;color: rgb(84, 105, 141);">{!$Label.FP_UnavailableText}</p>
+                </div>
+                 <div style="display:{!IF((checkLimit==true) && (currentFootprint.FootPrint_Records__c!=null),'','none')};font-family: Salesforce Sans, Arial, sans-serif;color: rgb(84, 105, 141);" >
+                   Your Footprint analysis results are available in the related lists, however, due to the amount of data included ({!currentFootprint.footprint__FootPrint_Fields__c} fields and {!currentFootprint.footprint__FootPrint_Record_Types__c} record types), we cannot display your Footprint analysis chart.
+                   <br/>
+                  Alternatively, please filter by record type or use ranges to narrow results and display your Footprint analysis chart.                   
+               </div>
+
+              </div>
+            </div>
+          </div>
+          <div class="slds-backdrop slds-backdrop--open"></div>
+        </div>
+        
+      </apex:outputPanel>
+      
+      
+      <div id="container" style="height: 400px; margin: 0 auto"></div>
+        
+        <div id="containter2" style="display:none;font-family: 'Salesforce Sans',Arial,sans-serif;"><br/>
+            <p class="highcharts-title" style="font-size:16px;color: rgb(84, 105, 141);">Metadata Including This Field </p><br/>
+            <div class="slds-grid slds-grid--pull-padded" >
+            <div class="slds-col--padded" style="width:30%"><div class="slds-box slds-box--small slds-theme--shade slds-text-align--left">
+            <p class="highcharts-title slds-text-align--center" style="font-size:16px;">Validation rules</p><hr/>
+            <apex:repeat value="{!validationrules22}" var="list">
+         <div class="highcharts-title" id="VR{!list.fieldName}" style="display:none;font-size:14px;">
+                <apex:repeat value="{!list.validationRules}" var="val">
+                   <a href="{!val}"><apex:outputText value="{!list.validationRules[val]}" escape="true"/></a><br/>
+                </apex:repeat></div>
+            </apex:repeat>
+                </div></div>
+            <div class="slds-col--padded" style="width:30%"><div class="slds-box slds-box--small slds-theme--shade slds-text-align--left">
+            <p class="highcharts-title slds-text-align--center" style="font-size:16px;">Workflow Rules</p><hr/>
+            <apex:repeat value="{!validationrules22}" var="list">
+        <div class="highcharts-title" id="WR{!list.fieldName}" style="display:none;font-size:14px;">
+                <apex:repeat value="{!list.workflowRules}" var="val">
+                    <a href="{!val}"><apex:outputText value="{!list.workflowRules[val]}" escape="true"/></a><br/>
+                </apex:repeat></div>
+            </apex:repeat>
+                </div></div><br/>
+          
+            <div class="slds-col--padded" style="width:30%"><div class="slds-box slds-box--small slds-theme--shade slds-text-align--left">
+            <p class="highcharts-title slds-text-align--center" style="font-size:16px;">Field Updates</p><hr/>
+            <apex:repeat value="{!validationrules22}" var="list"><div class="highcharts-title" id="FU{!list.fieldName}" style="display:none;font-size:14px;">
+                <apex:repeat value="{!list.FieldUpdates}" var="val">
+                <a href="{!val}"><apex:outputText value="{!list.FieldUpdates[val]}" escape="true"/></a><br/>
+                </apex:repeat></div>
+            </apex:repeat>
+                </div></div>
+                
+            <div class="slds-col--padded" style="width:30%"><div class="slds-box slds-box--small slds-theme--shade slds-text-align--center">
+            <p class="highcharts-title" style="font-size:16px;">Reports</p><hr/>
+            <apex:repeat value="{!validationrules22}" var="list"><div class="highcharts-title" id="RE{!list.fieldName}" style="display:none;font-size:14px;">
+                <apex:repeat value="{!list.reports}" var="val">
+                <a href="{!val}" target="_blank"><apex:outputText value="{!list.reports[val]}" escape="true"/></a><br/>
+                </apex:repeat></div>
+            </apex:repeat>
+                </div></div>
+               
+        </div>
+        </div>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,126 @@
+<apex:page controller="LeanData.OnDemandView" extensions="LeanData.InLineEditable" action="{! initializeIsAllowed}" sidebar="false">
+    <c:accessCheck isAllowed="{! isAllowed}">
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__angela_app, 'styles.css')}"/> 
+    <c:style />
+    
+    <div class="view">
+    <div class="pageLoading">
+        <c:loading />
+    </div>
+    <div class="pageBody matched-accounts-view-wrapper" style="display: none;">
+       <div >
+         <div >
+           <div class="content">
+           <img style="height:25px;" class="leandata_logo" src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}"/>
+           <h2 class="page-description"><span class="accountName"></span><span class="firstName"></span>&nbsp;<span class="lastName"></span></h2>
+           </div>
+         </div>
+       </div>
+       <div class="clear" />
+       <div class="duplicatesTable">
+            <div class="">
+                <div id="view">
+                    <div >
+                        <div class="wrapper">
+                            <div class="left">
+                                <span class="table_title"><h3><span class="title"></span></h3></span>
+                            </div>
+                            <div class="right">
+                                <span><a href="#ACCOUNTSETTINGSLINKS" target="_blank" class="customTarget action_link dupeAccountSettingsLink ld-green">Account Settings</a></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div >
+                        <div class="dupesHeightDiv tableWrapper outer-panel" >
+                            <div class="inner-panel">
+                                <div class="scroll-panel">
+                                    <table class="list content_table_account" id="duplicatesTable" >
+                                        <thead class="TableHead">
+                                        </thead>
+                                        <tbody class="TableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <span><a href="#LINKTOACCOUNTPAGE" target="_blank" class="sobjectLink"> &laquo; Back to <span class="sobjectType"></span></a> &nbsp;|</span>
+            <span>Showing <span class="rowLimit"></span> duplicate records</span>
+        </div>
+    </div>
+    </div>
+    <c:setTargetValue targetValue="{!targetValue}"/>
+    <c:matchedViewAssets view_type="{! sObjectType}" with_dupes="false" with_l2a_matches="false"/>
+    <script>
+        Visualforce.remoting.timeout = 120000; // Set timeout at page level
+        j$ = jQuery.noConflict();
+        objId = '{! JSENCODE(objId)}';
+        pageType = '{! JSENCODE(sobjectType)}';
+        startTime = Date.now();
+        j$('document').ready(function(){
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.OnDemandView.getNewViewObject}',
+                objId, pageType, null,
+                function(result, event) {buildView(result)}
+            )
+        });
+    </script>
+    </c:accessCheck>
+    <script>
+    function buildView(viewObject) {
+            var accList = viewObject["accountMatches"];
+           
+
+            if(accList.length>0) {
+              if(pageType == 'Account')
+                ga_event('Account Details View with dupes');
+              if(pageType == 'Lead')
+                ga_event('Matched Accounts View with l2a matches');
+            }
+            
+            initializePage(viewObject);
+
+            // [ZH tbd] j$('.leandata_logo').attr('src', viewObject['logoURL']);
+            // j$('.leandata_logo_header').attr('src', viewObject['logoURL']);
+
+            if  (viewObject["isDuplicatesViewOn"] || viewObject["isMatchedAccountsViewOn"] )  {
+                j$('.accountName').html(viewObject['accountName']);
+                j$('.firstName').html(viewObject['FirstName']);
+                j$('.lastName').html(viewObject['LastName']);
+                if(pageType == 'Account')
+                  j$('.title').html('Potential Duplicate Accounts');
+                if(pageType == 'Lead')
+                  j$('.title').html('Matched Accounts');
+                if(viewObject['hasColumnSettingAccess'] || viewObject['enableAllowUserColumnCustomizations']) {
+                  j$('.dupeAccountSettingsLink').attr('href', viewObject['duplicateAccountsViewSettingsLink']);
+                } else {
+                   j$('.dupeAccountSettingsLink').hide();
+                }
+                j$('.sobjectLink').attr('href',viewObject['sobjectLink']);
+                j$('.sobjectType').html(pageType);
+                initializeSection('Account', viewObject["accountCols"], viewObject["accountColsMap"], accList);
+                j$('.TableHead').html(generateHeader());
+                j$('.TableBody').html(generateSObjectRows());
+                
+            }
+
+      
+        j$('.pageLoading').hide();
+        j$('.pageBody').show();
+
+
+
+
+       ga_timing(pageType, Date.now() - startTime);
+
+       setTarget();
+       initializeDataTable(j$('.content_table_account'), 'account', {"pageLength" : 20});
+    }
+      </script>
+</apex:page>

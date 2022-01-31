@@ -1,0 +1,210 @@
+<apex:page sideBar="false" standardController="Opportunity" extensions="LeanData.OpportunityToCampaignMembersController" docType="html-5.0">
+    <c:loadingBox />
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'css/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__magellan_app, 'scss/magellan.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.LeanData__angela_app, 'styles.css')}"/> 
+    <style>
+    .dateFormat{
+        display:none;
+    }
+    .sectionHeader{
+        background: var(--lt-grey-2);
+        color:var(--dk-grey-2);
+        height:25px;
+        width:100%;
+        font-weight:bold;
+        font-size:110%;
+        padding-left:10px;
+        display: table; 
+        overflow: hidden;
+        margin-bottom:5px;
+        margin-top:5px;
+        text-shadow: none;
+    }
+    .centerSectionHeader{
+        display: table-cell; 
+        vertical-align: middle;
+    }
+    .statsTable{
+        background: white;
+        border: solid 1px gray;     
+        border-collapse: collapse;   
+    }
+    .statsTable .statsHeader td{
+        color: white;
+    }
+    .statsTable .statsHeader th{
+        background: var(--lt-grey-2);
+        padding: 7px;
+        border: 1px solid var(--lt-grey-2);
+        color: #000;
+    }
+    .statsTable tr td{
+        border: solid 1px var(--lt-grey-2);   
+        padding: 10px;     
+    }
+
+    /* copy of ld-tertiary-small-button from style.resource since attributes have to be !important to override apex standard button stylesheet*/
+    .tertiary-small-button{
+        line-height: 20px !important; 
+        display: inline-block !important;
+        cursor: pointer !important;
+        border: solid thin !important;
+        font-size: 12px !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        border-color: var(--lt-grey-2) !important;
+        border-radius: 5px !important;
+        vertical-align: top !important;
+        margin-right: 5px !important;
+        color: var(--dk-grey-1) !important;
+        text-decoration: none !important;
+        background: var(--white) !important;
+        font-weight: var(--regular) !important;
+    }
+
+    .tertiary-small-button:hover{
+        background: var(--lt-grey-1_5) !important;
+    }
+
+    </style>
+    <apex:form >
+        <img src="{!URLFOR($Resource.DashboardImages,'LD-logo_2x.png')}" class="leandata_logo_header" height="30px;" style="margin-bottom:5px;"/>
+        <apex:pageBlock id="reportingOff" rendered="{!NOT(isReportingOn)}">
+            <apex:outputPanel id="pageMessagePanel">
+                    <apex:pageMessages />
+            </apex:outputPanel>               
+        </apex:pageBlock>
+        <apex:outputPanel rendered="{!isReportingOn}">
+            <apex:pageBlock title="Opportunity Selection">
+                <apex:pageBlockButtons location="bottom"> 
+                    <apex:commandButton action="{!runInitialReport}" value="Run Initial Report" rerender="pageMessagePanel,resultsPanel" status="loadStatus" styleClass="tertiary-small-button"/>
+                </apex:pageBlockButtons>
+                <apex:outputPanel layout="block" style="width:300px;align:center;">           
+                    <apex:inputField value="{!dummyOCM.LeanData__Opportunity__c}" style="width:300px;" onChange="selectOpportunityAF();" required="true"/>
+    
+                </apex:outputPanel>
+            </apex:pageBlock>    
+            <apex:outputPanel id="resultsPanel">
+                <apex:pageBlock id="opportunityBlock" title="Opportunity Details" rendered="{!isInitialRun}">
+                    <table class="statsTable" style="text-align:center">
+                        <tr class="statsHeader">
+                            <th>Number of Related Campaigns</th>
+                            <th>Created Date</th>
+                            <th>Close Date</th>
+                            <th>Stage</th>
+                            <th>Amount</th>
+                            <th>Owner</th>
+                        </tr>
+                    <tr>
+                    <td><apex:outputText value="{!NumberofRelatedCampaigns}" /></td>
+                    <td>
+                        <apex:outputText value="{0,date,MM'/'dd'/'yyyy}">
+                            <apex:param value="{!CreatedDate}" /> 
+                        </apex:outputText>
+                    </td>
+                    <td><apex:outputField value="{!selectedOpportunity.CloseDate}" /></td>
+                    <td><apex:outputField value="{!selectedOpportunity.StageName}" /></td>
+                    <td><!--<apex:outputField value="{!selectedOpportunity.Amount}" />--></td> 
+                    <td><apex:outputField value="{!selectedOpportunity.Owner.Name}" /></td>
+                    </tr>
+                    </table>
+                </apex:pageBlock>
+                <apex:pageBlock id="filterBlock" title="Set Filters" rendered="{!isInitialRun}">
+                <apex:pageBlockButtons location="bottom">
+                    <apex:commandButton action="{!runFilteredReport}" value="Filter Report" rerender="pageMessagePanel,resultsPanel" status="loadStatus" styleClass="tertiary-small-button"/>                
+                </apex:pageBlockButtons>
+                <ul>
+                    <li>Found {!NumberOfContacts} Contacts connected to this Opportunity.</li>
+                    <li>Found {!NumberOfLeads} Leads connected to this Opportunity.</li>
+                    <li>Found {!numberOfContactWithRoles} Contacts with Roles connected to this Opportunity.</li>
+                </ul>    
+                
+                <apex:outputPanel styleClass="sectionHeader" layout="block"> 
+                    <apex:outputPanel styleClass="centerSectionHeader">
+                        Select Dates
+                    </apex:outputPanel>
+                </apex:outputPanel> 
+                
+                <table>          
+                    <tr><td><b>Start Date : </b></td><td><apex:inputField Value="{!dummyCampaignForDates.StartDate}" /></td></tr>
+                    <tr><td><b>End Date : </b></td><td><apex:inputField Value="{!dummyCampaignForDates.EndDate}" /></td></tr>           
+                </table>
+                
+                <apex:outputPanel styleClass="sectionHeader" layout="block"> 
+                    <apex:outputPanel styleClass="centerSectionHeader">
+                        Exclude Campaign Member Status
+                    </apex:outputPanel>
+                </apex:outputPanel> 
+                
+                <apex:outputPanel style="max-height:200px;overflow:auto;" layout="block" >
+                    <apex:pageBlockTable value="{!campaignMemberStatusList}" var="L" id="CampaignMemberStatusTable" rendered="{!campaignMemberStatusList != null}" style="margin-bottom:10px;"  >
+                        <apex:column headerValue="Exclude" > <apex:inputCheckbox value="{!L.isSelected}" /> </apex:column>
+                        <apex:column headerValue="Campaign" value="{!L.Camp.Name}" />
+                        <apex:column headerValue="Campaign Member Status" value="{!L.CMS.Label}" />
+                        <apex:column headerValue="Occurances" value="{!L.NumberOfInstances}" />
+                    </apex:pageBlockTable>
+                </apex:outputPanel>
+                
+                <apex:outputPanel styleClass="sectionHeader" layout="block"> 
+                    <apex:outputPanel styleClass="centerSectionHeader">
+                        Exclude Lead Status
+                    </apex:outputPanel>
+                </apex:outputPanel> 
+    
+                <apex:pageBlockTable value="{!LeadStatusList}" var="L" id="LeadStatusTable" rendered="{!LeadStatusList != null}" style="margin-bottom:10px;">
+                    <apex:column headerValue="Exclude" > <apex:inputCheckbox value="{!L.isSelected}" /> </apex:column>
+                    <apex:column headerValue="Lead Status" value="{!L.LS.MasterLabel}" />
+                    <apex:column headerValue="Occurances" value="{!L.NumberOfInstances}" />
+                </apex:pageBlockTable>
+                
+                <apex:outputPanel styleClass="sectionHeader" layout="block"> 
+                    <apex:outputPanel styleClass="centerSectionHeader">
+                        Exclude Campaign Type
+                    </apex:outputPanel>
+                </apex:outputPanel> 
+    
+                <apex:pageBlockTable value="{!CampaignTypeList}" var="L" id="CampaignTypeTable" rendered="{!CampaignTypeList != null}" style="margin-bottom:10px;">
+                    <apex:column headerValue="Exclude" > <apex:inputCheckbox value="{!L.isSelected}" /> </apex:column>
+                    <apex:column headerValue="Campaign Type" value="{!L.CampaignType}" />
+                    <apex:column headerValue="Occurances" value="{!L.NumberOfInstances}" />
+                </apex:pageBlockTable>
+                
+                </apex:pageBlock>
+                <apex:outputPanel id="pageMessagePanel">
+                    <apex:pageMessages />
+                </apex:outputPanel> 
+                <apex:pageBlock id="resultsBlock" title="Results" rendered="{!isInitialRun}">
+                    <apex:pageBlockButtons location="top">`
+                        <apex:commandButton action="{!saveOpportunityToCampaignMembers}" value="Save Results" rerender="pageMessagePanel" status="loadStatus" styleClass="tertiary-small-button"/>                
+                    </apex:pageBlockButtons>
+                    <ul><li><b>{!TotalConnectedCampaignMembers} Campaign Members.</b></li></ul>
+                    <apex:pageBlockTable value="{!opportunityCampaignMembers}" var="C" id="CampaignMembersTable" rendered="{!opportunityCampaignMembers != null}" style="margin-bottom:10px;">
+                            <apex:column headerValue="Name" > <apex:outputText value="{!leadsMap[C.LeanData__Lead__c].Name}" rendered="{!C.LeanData__Lead__c != null}" /><apex:outputText value="{!contactsMap[C.LeanData__Contact__c].Name}" rendered="{!C.LeanData__Contact__c != null}" /> </apex:column>
+                            <apex:column headerValue="Campaign" value="{!campaignsMap[C.LeanData__Campaign__c].Name}" />
+                            <apex:column headerValue="Campaign Member Created Date" value="{!C.LeanData__Campaign_Member_Created_Date__c}">   </apex:column>
+                            <apex:column headerValue="Campaign Member Status" value="{!C.LeanData__Campaign_Member_Status__c}" />
+                            <apex:column headerValue="Campaign Start Date" value="{!campaignsMap[C.LeanData__Campaign__c].StartDate}" />
+                            <apex:column headerValue="Title" ><apex:outputText value="{!leadsMap[C.LeanData__Lead__c].Title}" rendered="{!C.LeanData__Lead__c != null && leadsMap[C.LeanData__Lead__c].Title != null}" /><apex:outputText value="{!contactsMap[C.LeanData__Contact__c].Title}" rendered="{!C.LeanData__Contact__c != null}" /></apex:column>
+                            <apex:column headerValue="Company" ><apex:outputText value="{!leadsMap[C.LeanData__Lead__c].Company}" rendered="{!C.LeanData__Lead__c != null}" /><apex:outputText value="{!contactsMap[C.LeanData__Contact__c].Account.Name}" rendered="{!C.LeanData__Contact__c != null}" /></apex:column>
+                            <apex:column headerValue="Lead Status" ><apex:outputText value="{!leadsMap[C.LeanData__Lead__c].Status}" rendered="{!C.LeanData__Lead__c != null}" /></apex:column>
+                            <apex:column headerValue="Contact Role" ><apex:outputText value="{!contactRoleMap[C.LeanData__Contact__c]}" rendered="{!(CONTAINS(contactWithRoleString, C.LeanData__Contact__c) && C.LeanData__Contact__c != null)}" /></apex:column>
+                            <apex:column headerValue="Owner" ><apex:outputText value="{!leadsMap[C.LeanData__Lead__c].Owner.Name}" rendered="{!C.LeanData__Lead__c != null}" /><apex:outputText value="{!contactsMap[C.LeanData__Contact__c].Owner.Name}" rendered="{!C.LeanData__Contact__c != null}" /></apex:column>         
+                            <!--          
+                            <apex:column headerValue="Campaign Weight" >
+                                <apex:outputText value="${0, number, ###,###,###,##0.00}">  
+                                      <apex:param value="{!C.temp_Weighted_Campaign_Attribution__c}"/>  
+                                 </apex:outputText> 
+                            </apex:column>                   
+                            <apex:column headerValue="Campaign Member Weight" >
+                                <apex:outputText value="${0, number, ###,###,###,##0.00}">  
+                                      <apex:param value="{!C.temp_Weighted_Campaign_Member_Attributio__c}"/>  
+                                 </apex:outputText> 
+                            </apex:column>  
+                            -->
+                    </apex:pageBlockTable>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:outputPanel>        
+    </apex:form>
+</apex:page>
