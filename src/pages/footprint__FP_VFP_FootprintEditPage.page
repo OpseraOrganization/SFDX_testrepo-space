@@ -1,0 +1,884 @@
+<apex:page standardStylesheets="false" standardController="footprint__FootPrint__c" extensions="footprint.FP_VFC_FootprintEditPage" tabStyle="footprint__FootPrint__c">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="background-color: #F4F6F9" >
+    <script src="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/jquery/jquery-1.11.1.min.js')}"></script>
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js">
+    </script>
+    <script>$j = jQuery.noConflict();
+    </script>
+    <script src="/soap/ajax/33.0/connection.js" type="text/javascript">
+    </script>
+    <script src="/soap/ajax/24.0/apex.js">
+    </script>
+    <apex:stylesheet value="{!URLFOR($Resource.footprint__SLDS203, '/assets/styles/salesforce-lightning-design-system.min.css')}" />
+    <script type="text/javascript" src="https://bartaz.github.io/sandbox.js/jquery.highlight.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/plug-ins/1.10.12/features/searchHighlight/dataTables.searchHighlight.min.js"></script>
+    <apex:stylesheet value="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.css" />
+    <style>
+         html body.sfdcBody {
+            font-family: 'Salesforce Sans',Arial,sans-serif !important;
+            color: #3c3d3e;
+            background: none transparent;
+            margin: 0;
+            line-height: 2.5;
+            padding: 10px 0px 0 0px; 
+            height: 100%;
+            overflow: initial !important;
+            -webkit-overflow-scrolling: touch;
+            }   
+    </style>
+    <apex:form id="jsForm">
+    
+    <script type="text/javascript" charset="utf-8">
+        
+        var FieldList;
+   
+    var titleRel; 
+    function showOppmodal(){
+        document.getElementById('modaldialog').style.display='block'; 
+        document.getElementById('ContentPanel').style.display='block';
+        
+    }
+    function hideModal(){
+         document.getElementById('modaldialog').style.display='None';       
+    }
+
+    </script>
+        <script>
+        
+        $j(document).ready(function(){
+            InitFilters();
+        });
+        //showFilters('{!filterOn}');
+              (function( $ ) {
+        
+                    $.widget( 'slds.autocomplete', $.ui.autocomplete, {
+        
+                        _create: function() {
+        
+                            this._super();
+        
+                            this.sldsMenu = $('<div>')
+                                                .addClass('slds-lookup__menu slds-hide')
+                                                .attr('role', 'listbox')
+        
+                            this.element.parentsUntil('.slds-lookup').append( this.sldsMenu );
+        
+                            $('.ui-helper-hidden, .ui-helper-hidden-accessible').addClass('slds-hide');
+        
+                        },
+
+                _renderMenu: function( ul, items ) {
+
+                    var self = this;
+
+                    ul.addClass('slds-lookup__list').attr('role', 'presentation');
+                    ul.appendTo( this.sldsMenu );
+
+                    this.sldsMenu.addClass('slds-show').removeClass('slds-hide');
+
+                    $.each( items, function( index, item ) {
+                        self._renderItemData( ul, item );
+                    });
+
+                },
+
+                _renderItem: function( ul, item ) {
+                        var a=item.label.substring(item.label.lastIndexOf("(")+1,item.label.lastIndexOf(")"));
+                     var b=item.label.substring(0,item.label.lastIndexOf("("));
+                    return $('<li>')
+                        .addClass('slds-lookup__item')
+                    .append( '<a href="#" class="slds-lookup__item-action slds-media slds-media--center" role="option" Onclick="console.log(\''+a+'\');Fill(\''+a+'\');" ><div class="slds-media__body"><div class="slds-lookup__result-text">' + b+ '<span class="slds-lookup__result-meta slds-text-body--small"><br/>'+a+'</span></div></a>' )
+                        .appendTo( ul );
+                },
+
+                _close: function( event ) {
+
+                    this._super( event );
+
+                    this.sldsMenu.addClass('slds-hide').removeClass('slds-show');
+
+                }
+
+            });
+
+        })( jQuery );
+
+        $j(function() {
+
+            $j('#lookup-input').autocomplete({
+                source: {!ObjectsList}
+            });
+        });
+ var room = 0;       
+function InitFilters(){
+        <apex:variable var="i" value="{!0}"/>
+        <apex:repeat value="{!Fields}" var="a">
+        add_fields();
+        document.getElementById('Field'+room).value='{!Fields_Map[a]}'+';;'+'{!Fields_Map[a].describe.type}';
+        document.getElementById('Operator'+room).value='{!Operators[i]}';
+       
+        document.getElementById('ValueInput'+room).value='{!Values[i]}';
+    <apex:variable var="i" value="{!i+1}"/>
+    </apex:repeat>
+    if('{!i}'>1){
+    showFilterLogicSection();  
+        document.getElementById('FilterLogicTextArea').value='{!filterLogic}';
+    }
+}
+        
+function removeFilterLogicSection() {
+  document.getElementById('FilterLogic').innerHTML = '<a id="add_filterLogic" Onclick="showFilterLogicSection();" Class="slds-button" >Add filter Logic</a>';
+  document.getElementById('add_filterLogic').style.display = 'inline';
+}
+
+function removeAllFilters() {
+ document.getElementById('room_fileds').innerHTML =  document.getElementById('ReplacementSelect').innerHTML;
+ document.getElementById("j_id0:jsForm:myonoffswitch").checked = false;
+ showFilters(false);
+
+}
+    function selectRelease(a, b) {
+        $('.filterPanel').addClass('invisible');
+        $('.popoverPanel').removeClass('invisible');
+        $('.popoverPanel').addClass('invisible');
+        $('.releaseMenu').find('.slds-dropdown__item').each(function () {
+             console.dir('AES ########'); 
+            $(this).css("background-color", "white");
+            $(this).removeClass('slds-is-selected');
+        });
+        $(a).css("background-color", "#F4F6F9");
+        $(a).addClass('slds-is-selected');
+        release = b;
+        if(b == 'Recently viewed'){
+             ChangeView('');
+             $('.divReleases').html('Recently viewed');
+             $(".slds-popover__body input[type=checkbox]").each(function () {
+                $(this).prop("checked", true);
+            });
+        }else{
+            ChangeView(b);
+        }
+        $(".slds-popover__body input[type=checkbox]").each(function () {
+               if($(this).val() == b){
+                    $(this).prop("checked", true);
+               }
+        });
+        $('.divReleases').html(b);
+        $('.releaseTitle').html(b);   
+        titleRel = b;
+    }
+
+function showFilterLogicSection() {
+
+ document.getElementById('add_filterLogic').style.display = 'none';
+ var container = document.getElementById('FilterLogic')
+ var link = document.createElement("div");
+ link.innerHTML += '<a id="remove_filterLogic" onclick="removeFilterLogicSection();return false;" Class="slds-button " >Remove</a>' +
+  '<div class="slds-form-element" id="filterLogicSection">' +
+  '<div class="slds-popover slds-popover--tooltip slds-nubbin--bottom-left" id="tooltip" role="tooltip" style="display:none;z-index:99;bottom: 100%;left:10%;position:absolute">' +
+  '<div class="slds-popover__body">' +
+  '<p>Filter Logic governs how and when filters apply. Use AND and OR operators to fine tune your results</p>' +
+  '</div>' +
+  '</div>' +
+  '<label class="slds-form-element__label" for="FilterLogicTextArea">Filter Logic</label>' +
+
+  '<span class="infoicon slds-icon_container" title="description of icon when needed" onmouseover=" document.getElementById(\'tooltip\').style.display=\'block\'; " onmouseout=" document.getElementById(\'tooltip\').style.display=\'none\'; ">' +
+  '<svg aria-hidden="true" class="slds-icon slds-icon--x-small slds-icon-text-default">' +
+  '<use xlink:href="{!URLFOR($Resource.footprint__footprintAll, '/FootprintZip/Footprint/ SLDS202/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>' +
+  '</svg>' +
+  '<span class="slds-assistive-text">Description of icon</span>' +
+  '</span></div>' +
+  '<div class="slds-form-element__control" id="textAreaFilter">' +
+  '<input id="FilterLogicTextArea" class="slds-textarea" />' +
+  '</div>';
+ container.appendChild(link);
+}
+var showedFilter = false;
+function FillFields() {
+ document.getElementById("j_id0:jsForm:myonoffswitch").checked = false;
+ document.getElementById('FilterLogic').innerHTML='';
+ FieldList = document.getElementById('FieldsMap').innerHTML;
+ document.getElementById("j_id0:jsForm:myonoffswitch").checked = false;
+}
+
+function add_fields() {
+    if(document.getElementById('remove_filters')!=null)
+ document.getElementById('remove_filters').style.display = 'inline';
+ room++;
+ if (room == 2 ) {
+  var container = document.getElementById('FilterLogic')
+  var link = document.createElement("div");
+  link.innerHTML = '<a id="add_filterLogic" Onclick="showFilterLogicSection();" Class="slds-button" >Add filter Logic</a>';
+  container.appendChild(link);
+ }
+ var objTo = document.getElementById('room_fileds')
+ var divtest = document.createElement("div");
+   if(document.getElementById('FieldsMap')!=null){
+        FieldList = document.getElementById('FieldsMap').innerHTML;
+       }
+ divtest.innerHTML = '<div class="slds-form-element" style="width: 28%; margin-right: 15px;">' +
+  '<label class="slds-form-element__label" name="Label" for="Field">{!$Label.footprint__fp_field}</label><br/>' +
+  '<div class="slds-form-element__control">' +
+  ' <select name="Field" class="slds-input slds-show" style="width: 100%;" id="Field'+room+'">' + FieldList +
+  '</select>' +
+  '</div>' +
+  ' </div>' +
+  '       <div class="slds-form-element" style="width: 28%; margin-right: 22px;">' +
+  ' <label class="slds-form-element__label" name="Label" for="Operator">{!$Label.footprint__fp_operator}</label><br/>' +
+  '<div class="slds-form-element__control" >' +
+  ' <select name="Operator" class="slds-input slds-show" style="width: 100%;" id="Operator'+room+'">' +
+  '<option value="=">Equal</option>' +
+  '<option value="!=">Not Equal</option>' +
+  '<option value="<">Less than</option>' +
+  '<option value="<=">Less or equal</option>' +
+  '<option value=">">Greater than</option>' +
+  '<option value=">=">Greater or equal</option>' +
+  '                              </select>' +
+  '</div>' +
+  '</div> ' +
+  '<div class="slds-form-element" style="width: 28%; margin-right: 22px;">' +
+  ' <label class="slds-form-element__label" name="Label" for="Value">{!$Label.footprint__fp_value}</label><br/>' +
+  '<div class="slds-form-element__control">' +
+  '   <input type="text" class="slds-input" id="ValueInput' + room + '" name="Value" style="width: 130%;"/>' +
+
+  '</div>' +
+     '</div>' + '<p id="errorMessagelookup' + room + '" style="color:red;"></p><br/>';
+
+ objTo.appendChild(divtest)
+}
+
+function rotate() {
+ document.getElementById('RefreshButton').style = '';
+}
+
+function putBack() {
+ document.getElementById('RefreshButton').style = '-webkit-animation:spin 0.3s linear infinite; -moz-animation:spin 0.3s linear infinite; animation:spin 0.3s linear 1;';
+ setTimeout(rotate, 2000);
+ Update();
+}
+
+function showFilters(a) {
+    if(document.getElementById("errorMessagelookup")!=null)
+ document.getElementById("errorMessagelookup").innerHTML = '';
+ if (document.getElementById('lookup-input').value == '' && a) {
+  document.getElementById("errorMessagelookup").innerHTML = '{!$Label.footprint__fp_error_enter}';
+  document.getElementById("j_id0:jsForm:myonoffswitch").checked = false;
+ } else {
+
+  if (a) { //if the toggle button is on
+   var operators = document.getElementsByName('Operator');
+   var i;
+   for (i = 0; i < operators.length; i++) {
+    operators[i].disabled = false;
+   }
+   var values = document.getElementsByName('Value');
+   for (i = 0; i < values.length; i++) {
+    values[i].disabled = false;
+   }
+   var fields = document.getElementsByName('Field');
+   for (i = 0; i < fields.length; i++) {
+    fields[i].disabled = false;
+   }
+   document.getElementById('more_filters').style = 'color: #0070D2';
+   document.getElementById('remove_filters').style = 'color: #0070D2';
+      if(document.getElementById('add_filterLogic')!=null)
+   document.getElementById('add_filterLogic').style = 'color: #0070D2';
+
+  } else {
+      if(document.getElementById('add_filterLogic')!=null){
+   removeFilterLogicSection();
+      }
+   var operators = document.getElementsByName('Operator');
+   var i;
+   for (i = 0; i < operators.length; i++) {
+    operators[i].disabled = true;
+   }
+   var values = document.getElementsByName('Value');
+   for (i = 0; i < values.length; i++) {
+    values[i].disabled = true;
+   }
+   var fields = document.getElementsByName('Field');
+   for (i = 0; i < fields.length; i++) {
+    fields[i].disabled = true;
+   }
+   document.getElementById('more_filters').style = 'color:#999999';
+   document.getElementById('remove_filters').style = 'color:#999999';
+      if(document.getElementById('add_filterLogic')!=null)
+   document.getElementById('add_filterLogic').style = 'color: #999999';
+  }
+ }
+}
+
+//This function is used to validate the filter logic field
+//the validation crieteria is : Includes only and or + Includes only numbers (limited to the number of filters)
+function ValidateFilterLogic() {
+ document.getElementById('generalError').innerHTML = '';
+ var Fields = document.getElementsByName("Field");
+ if (Fields.length > 1 && (document.getElementById("FilterLogicTextArea") == null || document.getElementById("FilterLogicTextArea").value == '')) {
+  document.getElementById('generalError').innerHTML = '<b>Error:</b> Please Fill the Filter Logic</div>';
+  return false;
+ } else {
+
+  if (Fields.length == 1) {
+   filterLogic = '1';
+  } else {
+   filterLogic = document.getElementById("FilterLogicTextArea").value;
+  }
+  filterLogic = filterLogic.replace('(', ' ( ');
+  filterLogic = filterLogic.replace(')', ' ) ');
+  filterLogic = filterLogic.replace(/\s+/g, ' ').trim();
+  var tab = filterLogic.split(' ');
+  var i;
+  var list = [];
+  for (i = 1; i < Fields.length + 1; i++) {
+   list.push(i + '');
+  }
+  for (i = 0; i < tab.length; i++) {
+   if (tab[i].toUpperCase() != 'AND' && tab[i].toUpperCase() != 'OR' && list.indexOf(tab[i]) == -1 && tab[i] != '(' && tab[i] != ')') {
+    document.getElementById('generalError').innerHTML = '<b>Error:</b> Invalid filter logic </div>';
+    return false;
+   }
+  }
+ }
+ return true;
+}
+
+//Create the query from the filters and verify if its valid
+function ValidateQuery() {
+ var Fields = document.getElementsByName("Field");
+ var Operators = document.getElementsByName("Operator");
+ var Values = document.getElementsByName("Value");
+ var array = [];
+ var i;
+ //constructing the conditions, each condition in a table col
+ for (i = 0; i < Operators.length; i++) {
+  var fieldName = Fields[i].value.split(';;')[0];
+  var fieldType = Fields[i].value.split(';;')[1];
+  if (fieldType == 'BOOLEAN' || fieldType == 'DOUBLE' || fieldType =='INTEGER' || fieldType =='CURRENCY') {
+   array.push(fieldName + ' ' + Operators[i].value +' '+ Values[i].value + ' ');
+  } else {
+   array.push(fieldName + ' ' + Operators[i].value + " '" + Values[i].value + "' ");
+  }
+ }
+ // constructing the query
+ var filterLogic
+ if (document.getElementById("FilterLogicTextArea") == null) {
+  filterLogic = '1';
+ } else {
+  filterLogic = document.getElementById("FilterLogicTextArea").value;
+ }
+ 
+ 
+ for (i = 1; i < Operators.length + 1; i++) {
+//  filterLogic = filterLogic.replace(i,' '+array[i - 1]+' ');
+    filterLogic = filterLogic.replace(i,'$'+i)
+ }
+ 
+ for (i = 1; i < Operators.length + 1; i++) {
+  filterLogic = filterLogic.replace('$'+i,' '+array[i - 1]+' ');
+ }
+ 
+     return filterLogic.replace( /\s\s+/g, ' ' );
+}
+//Test if the query is correct before saving it
+
+function TestQuery() {
+ try {
+  sforce.connection.sessionId = "{!$Api.Session_ID}";
+  var a=document.getElementById('lookup-input').value;
+  a=a.substring(a.lastIndexOf("(")+1,a.lastIndexOf(")"));
+  var ReferraAccepted = sforce.connection.query("SELECT id from  " + a + " where " + ValidateQuery() + " limit 1");
+  return true;
+ } catch (err) {
+
+  document.getElementById('generalError').innerHTML = '<b>Error:</b> Invalid Query</div>';
+  console.log('an error has occured' + err);
+  return false;
+ }
+}
+
+
+// Verify if each filter is valid
+//Validation crieteria is: types of field and value entered should match
+function ValidateFilters() {
+ var Fields = document.getElementsByName("Field");
+ var Operators = document.getElementsByName("Operator");
+ var Values = document.getElementsByName("Value");
+ var array = [];
+ var i;
+ var reg = new RegExp("^[0-9]{2}[\/]{1}[0-9]{2}[\/]{1}[0-9]{4}$", "g");
+ var regDateTime = new RegExp("[0-9]:[0-5][0-9]:[0-5][0-9]", "g");
+ var result = true;
+ for (i = 0; i < Operators.length; i++) {
+  // if field type is boolean value must be either true or false
+  //if field type is numeric value must be numeric
+  var fieldName = Fields[i].value.split(';;')[0];
+  var fieldType = Fields[i].value.split(';;')[1];
+
+  if (fieldType == 'BOOLEAN' && Values[i].value != 'True' && Values[i].value != 'False' && Values[i].value != 'true' && Values[i].value != 'false') {
+      var number = i + 1;
+   var errorTag = "errorMessagelookup" + number;
+   var inputTag = "ValueInput" + number;
+   document.getElementById(inputTag).style = "outline: none;border-color: red;box-shadow: 0 0 10px red;"
+   document.getElementById(errorTag).innerHTML = '{!$Label.footprint__fp_booleanerror}';
+   result = false;
+  } else if (fieldType == 'DOUBLE' && isNaN(Values[i].value)) {
+   var number = i + 1;
+   var inputTag = "ValueInput" + number;
+   var errorTag = "errorMessagelookup" + number;
+   document.getElementById(inputTag).style = "outline: none;border-color: red;box-shadow: 0 0 10px red;"
+   document.getElementById(errorTag).innerHTML = '{!$Label.footprint__fp_numericerror}';
+   result = false;
+  } else if (fieldType == 'DATE' && !reg.test(Values[i].value)) {
+   var number = i + 1;
+   var mydate = Values[i].value.split(' ')[0];
+   var myTime = Values[i].value.split(' ')[1];
+   var inputTag = "ValueInput" + number;
+   var errorTag = "errorMessagelookup" + number;
+   document.getElementById(inputTag).style = "outline: none;border-color: red;box-shadow: 0 0 10px red;"
+   document.getElementById(errorTag).innerHTML = '{!$Label.footprint__fp_dateerror}';
+   result = false;
+  } else if (fieldType == 'DATETIME') {
+   var number = i + 1;
+   if (new Date(Date.parse(Values[i].value)) == 'Invalid Date') {
+    var inputTag = "ValueInput" + number;
+    var errorTag = "errorMessagelookup" + number;
+    document.getElementById(inputTag).style = "outline: none;border-color: red;box-shadow: 0 0 10px red;"
+    document.getElementById(errorTag).innerHTML = '{!$Label.footprint__fp_datetimeerror}';
+    result = false;
+   }
+  }
+
+ }
+ return result;
+}
+function removeerror(){
+    document.getElementById("errorMessagelookup").innerHTML = '';
+    }
+        
+function isValidObject() {
+ var array = {!ObjectsList};
+ if (!array.includes(document.getElementById('lookup-input').value) && document.getElementById('lookup-input').value!='{!JSENCODE(fp.footprint__FootPrint_Object_Label__c)} ({!JSENCODE(fp.footprint__FootPrint_Object_Name__c)})') {
+  document.getElementById("errorMessagelookup").innerHTML = '{!$Label.footprint__fp_invalidobject}';
+  return false;
+ }
+ return true;
+}
+
+function SaveFootprint() {
+    var objectName=document.getElementById('lookup-input').value;
+    var a=objectName.substring(objectName.lastIndexOf("(")+1,objectName.lastIndexOf(")"));
+ if (isValidObject()) {
+     if (document.getElementById("j_id0:jsForm:myonoffswitch").checked == false) {
+      SaveFP(a, document.getElementById('input-Name').value, '',document.getElementById('j_id0:jsForm:checkbox-Email').checked,document.getElementById('j_id0:jsForm:checkbox-VR').checked,document.getElementById('j_id0:jsForm:checkbox-WR').checked);
+  } else {
+   if (ValidateFilters() && ValidateFilterLogic() && TestQuery()) {
+       SaveFP(a, document.getElementById('input-Name').value, ValidateQuery(),document.getElementById('j_id0:jsForm:checkbox-Email').checked,document.getElementById('j_id0:jsForm:checkbox-VR').checked,document.getElementById('j_id0:jsForm:checkbox-WR').checked);
+   }
+  }
+ }
+}
+var ObjectName;
+var FootprintName;
+var Formula;
+function AnalysisOptions(){
+     document.getElementById('AnalysisModal').style.display='inline';
+    document.getElementById('modaldialog').style.display='none';
+    if (document.getElementById("j_id0:jsForm:myonoffswitch").checked == false) {
+     var ObjectName=document.getElementById('lookup-input').value;
+    var FootprintName=document.getElementById('input-Name').value;
+    var Formula='';
+    }
+    else {
+       if (ValidateFilters() && ValidateFilterLogic() && TestQuery()) {
+            var ObjectName=document.getElementById('lookup-input').value;
+            var FootprintName=document.getElementById('input-Name').value;
+            var Formula=ValidateQuery();
+           }
+        }
+    var a=ObjectName.substring(ObjectName.lastIndexOf("(")+1,ObjectName.lastIndexOf(")"));
+    document.getElementById('ContentPanel').style.display='none';
+    document.getElementById('WarningPanel').style.display='none';
+    document.getElementById('LoadingModalHeader').style.display='inline';
+    document.getElementById('LoadingArea').style.display='inline';
+    launch(a,FootprintName,Formula,document.getElementById('checkbox-Email').checked,document.getElementById('checkbox-VR').checked,document.getElementById('checkbox-WR').checked);    
+    }
+function SaveAndAnalyze() {    
+    if (document.getElementById("j_id0:jsForm:myonoffswitch").checked == false) {
+     var ObjectName=document.getElementById('lookup-input').value;
+    var FootprintName=document.getElementById('input-Name').value;
+    var Formula='';
+    }
+    else {
+       if (ValidateFilters() && ValidateFilterLogic() && TestQuery()) {
+            var ObjectName=document.getElementById('lookup-input').value;
+            var FootprintName=document.getElementById('input-Name').value;
+            var Formula=ValidateQuery();
+           }
+        }
+    
+   
+}
+        var numSelectedOptions=0;
+        var elements = [];
+    function selectOption(a,b)
+    {
+        if (a.checked )
+        {
+            elements.push(b);
+        }
+        else {
+           elements.indexOf(b);
+        elements.splice(elements.indexOf(b),1); 
+            }
+        var i;
+        var text='';
+        for (i = 0; i < elements.length; i++) {
+          text+=elements[i]+' and ';   
+        }
+        text = text.substring(0, text.length - 5);
+        document.getElementById('WarningMessage').innerHTML='You have chosen to include '+text+' in your Analysis. Analysis may take some time to complete depending on data volume.';
+        //a.style.border = "2px inset #0C8EFF";
+        if(elements.length==0){
+       document.getElementById('WarningPanel').style.display='none';
+            }
+        else {
+       document.getElementById('WarningPanel').style.display='inline';
+            }
+    }
+    function UnselectOption(a,b)
+    {
+        elements.indexOf(b);
+        elements.splice(elements.indexOf(b),1);
+        if(elements.length==0)
+       {
+       document.getElementById('WarningPanel').style.display='none';
+       document.getElementById('checkboxPanel').style.display='none';
+       }
+    }
+        </script>
+        <apex:actionFunction name="Fill" action="{!FillFields}" reRender="popup" status="status2" oncomplete="FillFields();">
+          <apex:param name="ObjectName" id="ObjectName"  value="" />
+        </apex:actionFunction>
+        <apex:actionFunction action="{!Save}" name="SaveFP" reRender="jsform">
+          <apex:param id="object" name="object" value=""/>
+          <apex:param id="FPName" name="FPName" value=""/>
+          <apex:param id="Formula" name="Formula" value=""/>
+          <apex:param name="SEmailMe" value="" id="SEmailMe"/>
+          <apex:param name="SWR" value="" id="SWR"/>
+          <apex:param name="SVR" value="" id="SVR"/>
+        </apex:actionFunction>
+        <apex:actionFunction action="{!backto}" name="getback" rerender="jsform"/>
+                <div id="modaldialog" >
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: black;"></div>
+        <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" >
+          <div class="slds-modal__container" >
+            <apex:actionStatus id="status2" >
+              <apex:facet name="start">
+                  <div style="position: fixed; top: 0%; left: 0; right: 0; bottom: 0%; opacity: 0.25; z-index: 2000; background-color: white;">
+                                                                        &nbsp;
+                                                                    </div>
+                <div style="position: fixed; left: 0; top: 30%; bottom: 0; right: 0; z-index: 2001; margin: 15% 50%">
+                  <div style="display: inline-block; padding: 2px;  width: 180px;">
+                    <div class="slds-spinner--medium">
+                      <img src="{!URLFOR($Resource.lightningRes, '/LightningResources/SLDS202/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                    </div>
+                  </div>
+                </div>
+              </apex:facet>
+            </apex:actionStatus>
+            <div class="slds-modal__header">
+                <div id="WarningPanel" style="display:none">
+                    <div class="slds-notify_container">
+                      <div class="slds-notify slds-notify--toast" role="alert" id="CloseWarning">
+                        <span class="slds-assistive-text">Error</span>
+                        <button class="slds-button slds-button--icon-inverse slds-notify__close" Onclick="document.getElementById('WarningPanel').style.display='none';">
+                          <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                            <use xlink:href="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/SLDS202/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                          </svg>
+                          <span class="slds-assistive-text">Close</span>
+                        </button>
+                         
+                        <div class="slds-notify__content slds-grid">
+                          <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                            <use xlink:href="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/SLDS202/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                          </svg>
+                          <div class="slds-col slds-align-middle">
+                            <p id="WarningMessage" style="color: white;"></p>
+                          </div>
+                        </div>
+                      </div>
+                    </div> 
+                    
+                </div>
+                <button class="slds-button slds-button--icon slds-modal__close" onClick="getback();return false;">
+                <img src="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/SLDS202/assets/icons/utility/close_60.png')}" width="25px" />
+                <span class="slds-assistive-text">Close</span>
+              </button><br/> 
+              <h2 id="header43" class="slds-text-heading--small">Edit Footprint</h2>
+              <br/>
+            </div>
+            <div class="slds-modal__content slds-p-around--medium" >
+              <div style="margin-left: 25px;margin-right: 25px;">
+                <apex:outputText value="{!$Label.footprint__fp_footprintname}" styleClass="slds-form-element__label" />
+                <Input id="input-Name" class="slds-input slds-show" value="{!fp.Name}" type="text" styleclass="slds-input slds-is-required" required="true"/>
+                <p id="errorMessageName" style="color:red;"></p>
+                <div class="slds-lookup" data-select="single" data-scope="single" data-typeahead="true">
+                  <br/>
+                  <apex:outputText value="{!$Label.footprint__fp_objectname} " styleClass="slds-form-element__label"/>
+                  <div class="slds-input-has-icon slds-input-has-icon--right">
+                    <svg aria-hidden="true" class="slds-input__icon slds-icon-text-default">
+                      <use xlink:href="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/SLDS202/assets/icons/utility-sprite/svg/symbols.svg#search')}"></use>
+                    </svg>
+                    <div class="slds-pill__container slds-hide" ></div>
+                    <input id="lookup-input" disabled="true" Onkeyup="removeerror();" value="{!fp.FootPrint_Object_Label__c} ({!fp.FootPrint_Object_Name__c})" class="slds-input slds-show" type="text" aria-autocomplete="list" role="combobox" aria-expanded="true" aria-activedescendant="" />
+                    <p id="errorMessagelookup" style="color:red;"></p>
+                  </div>
+                  </div><br/>
+                <div class="slds-form--inline">
+                  <div class="slds-form-element">
+                    <apex:outputText value="Filters" styleClass="slds-form-element__label"/>
+                  </div>
+                 
+                      <div class="slds-form-element">
+                          <label class="slds-checkbox--toggle slds-grid slds-grid--vertical-align-center">
+                            <apex:inputCheckbox onchange="showFilters(this.checked);" id="myonoffswitch"  value="{!filterOn}" />
+                            <span class="slds-checkbox--faux" data-check-on="On" data-check-off="Off"></span>
+                          </label>
+                    </div><br/>
+                    <!-- <div class="slds-form-element">
+                    <div class="onoffswitch">
+                      <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch"  onchange="showFilters(this.checked);"/>
+                      <label class="onoffswitch-label" for="myonoffswitch">
+                        <span class="onoffswitch-inner"></span>
+                        <span class="onoffswitch-switch"></span>
+                      </label>
+                    </div>
+                  </div>-->
+                </div>
+                <apex:outputPanel id="popup">
+                                          <div id="ReplacementSelect" style="display:none">
+                      <div class="slds-form-element__control" >
+                        <div class="slds-form-element"  style="width: 28%; margin-right: 15px;">
+                      <label class="slds-form-element__label" name="Label" for="Field">{!$Label.FP_Field}</label>
+                      <br/>
+                      
+                      <div class="slds-form-element__control">
+                        <select name="!" class="slds-input slds-show" id="FieldsMap" style="width: 100%; min-width: 120px; margin-right:16px" disabled="true">
+                            <apex:repeat value="{!Fields_Map }" var="field">
+                            <option value="{!Fields_Map[field]};;{!Fields_Map[field].describe.type}">{!Fields_Map[field].describe.Label} ({!Fields_Map[field].describe.name})</option>
+                           </apex:repeat>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="slds-form-element"  style="width: 28%; margin-right: 22px;">
+                      <label class="slds-form-element__label" for="Operator" name="Label">Operator</label>
+                      <br/>
+                      <div class="slds-form-element__control">
+                        <select name="OperatorR" class="slds-input slds-show" style="width: 100%;" disabled="true" >
+                            <option value="=" >Equals</option>
+                          <option value="!=">Not Equal</option>
+                          <option value="<">Less than
+                          </option>
+                          <option value="<=">Less or equal
+                          </option>
+                          <option value=">">Greater than</option>
+                          <option value=">=">Greater or equal</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="slds-form-element"  style="width: 28%; margin-right: 22px;">
+                      <label class="slds-form-element__label" name="Label" for="ValueR">{!$Label.FP_Value}</label>
+                      <br/>
+                      <div class="slds-form-element__control">
+<!--                        <input type="text" class="slds-input" id="ValueInput1" name="RValue" style="width: 130%;" disabled="true"/> -->
+                      </div>
+                    </div>
+                    <p id="errorMessagelookup1" style="color:red;"></p>
+                          
+                      </div>
+                      </div>
+                  <div class="slds-form--inline" id="room_fileds" >
+
+                     <apex:outputPanel rendered="{!OR(fp.footprint__FootPrint_Filter__c=='',not(filledFields))}" id="FilterArea">
+                          
+                      <div class="slds-form-element"  style="width: 28%; margin-right: 15px;">
+                      <label class="slds-form-element__label" name="Label" for="Field">{!$Label.FP_Field}</label>
+                      <br/>
+                      
+                      <div class="slds-form-element__control">
+                        <select name="Field" class="slds-input slds-show" id="FieldsMap" style="width: 100%; min-width: 120px; margin-right:16px" disabled="true">
+                            <apex:repeat value="{!Fields_Map }" var="field">
+                            <option value="{!Fields_Map[field]};;{!Fields_Map[field].describe.type}">{!Fields_Map[field].describe.Label} ({!Fields_Map[field].describe.name})</option>
+                          </apex:repeat>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="slds-form-element"  style="width: 28%; margin-right: 22px;">
+                      <label class="slds-form-element__label" for="Operator" name="Label">Operator</label>
+                      <br/>
+                      <div class="slds-form-element__control">
+                        <select name="Operator" class="slds-input slds-show" style="width: 100%;" disabled="true" >
+                            <option value="=" >Equals</option>
+                          <option value="!=">Not Equal</option>
+                          <option value="<">Less than
+                          </option>
+                          <option value="<=">Less or equal
+                          </option>
+                          <option value=">">Greater than</option>
+                          <option value=">=">Greater or equal</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="slds-form-element"  style="width: 28%; margin-right: 22px;">
+                      <label class="slds-form-element__label" name="Label" for="Value">{!$Label.FP_Value}</label>
+                      <br/>
+                      <div class="slds-form-element__control">
+                        <input type="text" class="slds-input" id="ValueInput1" name="ValueR" style="width: 130%;" disabled="true"/>
+                      </div>
+                    </div>
+                    <p id="errorMessagelookup1" style="color:red;"></p>
+                     </apex:outputPanel>
+                     <!--<apex:outputPanel rendered="{!and(fp.FootPrint_Filter__c!='',filledFields)}" id="OldFiltersArea">
+                        
+                      <apex:variable var="i" value="{!0}"/>
+                      <apex:repeat value="{!Fields}" var="a">
+                          
+                    <div class="slds-form-element"  style="width: 28%; margin-right: 15px;">
+                      <label class="slds-form-element__label" name="Label" for="Field">{!$Label.FP_Field}</label>
+                      <br/>
+                      <div class="slds-form-element__control">
+                          
+                          <apex:outputPanel rendered="{!and(fp.FootPrint_Filter__c!='')}" id="FieldsSelectList">
+                               <select name="Field" class="slds-input slds-show" id="FieldsMap" style="width: 100%; min-width: 120px; margin-right:16px" >
+                                  <option value="{!Fields_Map[a]};;{!Fields_Map[a].describe.type}">{!Fields_Map[a].describe.Label} ({!a})</option>
+                                    <apex:repeat value="{!Fields_Map }" var="field">
+                                    <option value="{!Fields_Map[field]};;{!Fields_Map[field].describe.type}">{!Fields_Map[field].describe.Label} ({!Fields_Map[field].describe.name})</option>
+                                  </apex:repeat>
+                                </select>
+                          </apex:outputPanel>
+                        
+                      </div>
+                    </div>
+                    <div class="slds-form-element"  style="width: 28%; margin-right: 22px;">
+                      <label class="slds-form-element__label" for="Operator" name="Label">Operator</label>
+                      <br/>
+                      <div class="slds-form-element__control">
+                          <apex:outputPanel rendered="{!fp.FootPrint_Filter__c!=''}">
+                              <select name="Operator" class="slds-input slds-show" style="width: 100%;">
+                          <option value="{!Operators[i]}">{!operatorsSigns[Operators[i]]}</option>
+                            <option value="=" >Equals</option>
+                          <option value="!=">Not Equal</option>
+                          <option value="<">Less than
+                          </option>
+                          <option value="<=">Less or equal
+                          </option>
+                          <option value=">">Greater than</option>
+                          <option value=">=">Greater or equal</option>
+                        </select>
+                          </apex:outputPanel>
+                      </div>
+                    </div>
+                    <div class="slds-form-element"  style="width: 28%; margin-right: 22px;">
+                        
+                      <label class="slds-form-element__label" name="Label" for="Value">{!$Label.FP_Value}</label>
+                      <br/>
+                      <div class="slds-form-element__control">
+                        <apex:outputPanel rendered="{!fp.FootPrint_Filter__c!=''}">
+                            <input type="text" class="slds-input" id="ValueInput1" name="Value" style="width: 130%;" value="{!Values[i]}"/>                             
+                        </apex:outputPanel>
+                      </div>
+                    </div>
+                    <p id="errorMessagelookup1" style="color:red;"></p>
+                          <apex:variable var="i" value="{!i+1}"/>
+                          </apex:repeat>
+                          </apex:outputPanel>-->
+                  </div>
+                   
+                </apex:outputPanel>
+                <section class="slds-clearfix">
+                  <div class="slds-float--left">
+                    <a id="more_filters" Class="slds-button" style="color:#999999" onclick="if(document.getElementById('j_id0:jsForm:myonoffswitch').checked) add_fields();" >Add Filter</a>
+                  </div>
+                  <div class="slds-float--right">
+                    <a id="remove_filters" style="color:#999999" Class="slds-button" onclick="removeAllFilters();" >Remove All</a>
+                  </div>
+                </section>
+                <p id="generalError" style="color:red;"></p>
+                 <div id="FilterLogic">
+                    <!--<apex:outputPanel rendered="{!fp.FootPrint_Filter__c!=''}">
+                      <div class="slds-form-element" id="filterLogicSection">
+                      <div class="slds-popover slds-popover--tooltip slds-nubbin--bottom-left" id="tooltip" role="tooltip" style="display:none;z-index:99;bottom: 100%;left:10%;position:absolute">
+                      <div class="slds-popover__body">
+                      <p>Filter Logic governs how and when filters apply. Use AND and OR operators to fine tune your results</p>
+                      </div>
+                      </div>
+                          <section class="slds-clearfix">
+                            <div class="slds-float--left">
+                                <label class="slds-form-element__label" for="FilterLogicTextArea">Filter Logic</label>
+                                <span class="infoicon slds-icon_container" title="description of icon when needed" onmouseover=" document.getElementById('tooltip').style.display='block'; " onmouseout=" document.getElementById('tooltip').style.display='none'; ">
+                                    <svg aria-hidden="true" class="slds-icon slds-icon--x-small slds-icon-text-default">
+                                        <use xlink:href="{!URLFOR($Resource.SLDS203, '/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+                                    </svg>
+                                    <span class="slds-assistive-text">Description of icon</span>
+                                </span>
+                              </div>
+                              <div class="slds-float--right">
+                                <a id="remove_filterLogic" onclick="removeFilterLogicSection();return false;" Class="slds-button ">Remove</a>
+                              </div></section>
+                      </div>
+                     <div class="slds-form-element__control" id="textAreaFilter">
+                      <input id="FilterLogicTextArea" class="slds-textarea" value="{!filterLogic}"/>
+                      </div>
+                    </apex:outputPanel>-->
+                    </div>
+              </div>
+                <!--New part-->
+            <div id="ContentPanel" style="margin-left: 25px;margin-right: 25px;">
+            <div class="slds-form-element" >            
+          <div class="slds-form-element__control">
+              <span class="slds-form-element__label" style="font-size:14px"><br/>Select Metadata types (Optional) </span><br/>
+              </div>
+             </div>
+             <div class="slds-form-element" > 
+            <div class="slds-form-element__control">  
+            <label class="slds-checkbox">
+              <apex:inputCheckbox id="checkbox-WR" Onchange="selectOption(this,'Workflow rules');return false;" value="{!fp.footprint__WF__c}" />
+              <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Workflow Rules</span>
+            </label>
+            </div>
+            <div class="slds-form-element__control">
+            <label class="slds-checkbox">
+              <apex:inputCheckbox id="checkbox-VR"  Onchange="selectOption(this,'Validation rules');return false;" value="{!fp.footprint__VR__c}"/>
+              <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Validation rules</span>
+            </label>
+            </div>
+            <div class="slds-form-element__control">
+            <label class="slds-checkbox">
+              <apex:inputCheckbox id="checkbox-Rep"  Onchange="selectOption(this,'Reports');return false;" value="{!fp.footprint__reports__c}"/>
+              <span class="slds-checkbox--faux"></span><span class="slds-form-element__label">Reports</span>
+            </label>
+            </div>
+
+            </div>
+            <div class="slds-form-element" >
+            <div class="slds-form-element__control">
+                <span class="slds-form-element__label"></span>
+                    <label class="slds-checkbox--toggle slds-grid slds-grid--vertical-align-center"><span class="slds-form-element__label" style="font-weight: normal;">Email me at the end of the analysis</span>
+                        <apex:inputCheckbox id="checkbox-Email" value="{!fp.footprint__EmailMe__c}"/>
+                        <span class="slds-checkbox--faux" data-check-on="On" data-check-off="Off"></span>
+                    </label>
+            </div>
+        </div>
+        </div>
+        </div>
+            <div align="right" class="slds-modal__footer">
+              <Button Class="slds-button slds-button--neutral" OnClick="getback();return false;" type="button">{!$Label.FP_Cancel}</Button>
+              <Button Class="slds-button slds-button--brand" OnClick="SaveFootprint();return false;" type="submit">Save</Button>
+            </div>
+          </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div></div>
+        </apex:form>
+    </html>
+</apex:page>

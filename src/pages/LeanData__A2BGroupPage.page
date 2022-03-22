@@ -1,0 +1,174 @@
+<apex:page controller="LeanData.A2BGroupDisplayController" readOnly="true">
+<style>
+.resultsTable
+{
+    width:100%;
+    border-collapse: collapse;
+}
+.pagination
+{
+    float:right;
+}
+.pagination-standard{
+    font-size:10pt;
+    color:#1b527e;
+    padding:5px;
+}
+
+.pagination-link{
+    cursor:pointer;
+}
+
+.pagination-link:hover { 
+    color: #6bd3bb;
+}
+
+.pagination-active{
+    color:#6bd3bb;
+    text-decoration: underline;
+    
+ }
+
+</style>
+<apex:includeScript value="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"/>
+   
+   <script type="text/javascript">
+
+        var totalRecords;
+        var groupInfo = [];
+        var itemsPerPage = 25; 
+        var activePage = 0; // Indexing starts from 0. Will display as being page 1.
+        var segmentNo = 0;
+        var initialPageRendered = false; // Has the first page been rendered?
+        
+        Visualforce.remoting.timeout = 120000; // Set timeout at page level
+        
+        // Defines the number of records retrieved in one request. 
+        var itemsPerSegment = 25000; 
+        
+        // Retrieve number of records, and start building JSON object by making several requests.
+        function getGroupInfo() {
+            // This remoting call will use the page's timeout value
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.A2BGroupDisplayController.getNoRecords}',
+                function (result,event) 
+                { 
+                    totalRecords = result;
+                    getSegmentedGroupInfo(0);
+                }
+            );
+        }
+
+        function getSegmentedGroupInfo() {
+            // This remoting call will use the page's timeout value
+            Visualforce.remoting.Manager.invokeAction(
+                '{!$RemoteAction.A2BGroupDisplayController.getSegmentedGroupInfo}',
+                segmentNo,
+                itemsPerSegment,
+                handleResult
+            );
+        }
+
+        function handleResult(segmentedGroupInfo, event) {
+            if (event.status) {
+                groupInfo = groupInfo.concat(segmentedGroupInfo);
+                
+                // If we are not done building the object, initiate another request.
+                if(groupInfo.length < totalRecords) {
+                    segmentNo++;
+                    getSegmentedGroupInfo();
+                }
+
+                else {
+                    renderPage(activePage);
+                    $('.pageLoading').hide();
+                    $('.pageBody').show();
+                }
+                
+            } else if (event.type === 'exception') {
+                document.getElementById("responseErrors").innerHTML =
+                    event.message + "<br/>\n<pre>" + event.where + "</pre>";
+            } else {
+                document.getElementById("responseErrors").innerHTML = event.message;
+            }
+        } 
+
+
+        function renderPage(pageNo)
+        {
+            $('.resultsTable').remove();
+            $('#dynamictable').append('<table class="resultsTable"></table>');
+            var table = $('#dynamictable').children(); 
+            table.append("<tr><th>Group Name</th><th>Number of Leads</th></tr>") 
+            var tr;
+            for (var i = itemsPerPage*pageNo; i < itemsPerPage*(pageNo+1) && i < groupInfo.length; i++) {
+                tr = $('<tr/>');
+                tr.append("<td><a target='_blank' href='/apex/AccountActivitySummary?mode=A2B&id=" + groupInfo[i].groupId + "'>" + groupInfo[i].groupName + "</a></td>");
+                tr.append("<td>" + groupInfo[i].numOfLead + "</td>");
+                table.append(tr);
+            }
+
+            refreshPagination(pageNo);
+        }
+
+        function refreshPagination(pageNo)
+        {   
+            $('.pagination-standard').remove();
+            var pag = $('.pagination');
+          
+            // If there are more than 3 pages between page indexed 0 and pageNo,
+            // then render the start page followed by '...'.
+            if(pageNo>3)
+            {
+                pag.append('<span class="pagination-link pagination-standard" onclick="renderPage(0)"> 1 </span>');
+                pag.append('<span class="pagination-standard"> ... </span>');
+            }
+
+            for(var i=pageNo-3;i<=pageNo+3;i++)
+            {
+                if(i>=0 && (i)*itemsPerPage < totalRecords)
+                {
+                    if(i == pageNo) {
+                        pag.append('<span class="pagination-active pagination-link pagination-standard" onclick="renderPage(' + i + ')">' + (i+1) + '</span>');
+                
+                    }
+                    else {
+                        pag.append('<span class="pagination-link pagination-standard" onclick="renderPage(' + i + ')">' + (i+1) + '</span>');
+                
+                    }
+                }
+            }
+
+            // If there are more than 3 pages between pageNo and the lastPage,
+            // then render '...' followed by the last page.
+            if((pageNo+4)*itemsPerPage<totalRecords)
+            {
+                pag.append('<span class="pagination-standard"> ... </span>');
+                pag.append('<span class="pagination-link pagination-standard" onclick="renderPage(' + (Math.ceil(totalRecords/itemsPerPage) - 1) + ')">' + Math.ceil(totalRecords/itemsPerPage) + '</span>');
+            }
+        }
+        
+    </script>
+    <apex:includeScript value="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"/>
+    
+    <div class="pageLoading">
+        <c:loading />
+    </div>
+
+    <div class="pageBody" style="display:none">        
+        <div id="responseErrors"></div>
+    
+        <apex:pageBlock id="block">
+            <div id="dynamictable"></div>
+        </apex:pageBlock>
+        
+        <div class="pagination">
+        </div>
+    </div>
+
+    <script type='text/javascript'>
+        $(document).ready(function() {
+          getGroupInfo();
+        });
+  </script>
+</apex:page>
