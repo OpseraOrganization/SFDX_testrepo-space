@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CH_StatusCannotbeEdited</fullName>
+    <active>true</active>
+    <description>Case Status transition is not valid or Status field has been manually updated which is not supported.</description>
+    <errorConditionFormula>AND(($Setup.CH_CaseStatus_Validation_Bypass__c.CH_Disable_Validation_Rules__c = false),
+
+OR(
+AND(
+	OR(RecordType.Name=&apos;Nokia Incident with Restoration&apos;,  RecordType.Name=&apos;Nokia Information Request&apos;,  RecordType.Name=&apos;Nokia Standard Case&apos;),
+	OR(
+		AND(OR(ISPICKVAL(Status ,&apos;Closed&apos;),ISPICKVAL(Status,&apos;Solution Provided&apos;)),NOT(CH_IsCompleteSolutionProvided__c)),
+		AND(ISPICKVAL(Status ,&apos;Created&apos;), CH_IsCompleteInitialResponse__c),
+		AND(ISPICKVAL(Status,&apos;Pending Customer&apos;) ,OR(NOT( CH_IsCompleteInitialResponse__c ), CH_IsCompleteSolutionProvided__c )),
+		AND(ISPICKVAL(Status,&apos;Restoration Provided&apos;) ,OR(NOT(CH_IsCompleteRestore__c), CH_IsCompleteSolutionProvided__c, CH_IsCompleteTemporarySolution__c)),
+		AND(ISPICKVAL(Status,&apos;Temp Sol. Provided&apos;) ,OR(NOT(CH_IsCompleteTemporarySolution__c), CH_IsCompleteSolutionProvided__c ))
+	)
+),   
+AND(
+	(NOW()- ClosedDate)&lt; 180,
+	ISPICKVAL(Status,&apos;Completed&apos;),
+	CH_RecordTypeCheck__c,       
+	OR(   
+		CH_LegacyCaseNumber__c=null,
+		AND(
+			$Label.CH_Enable_Completion_of_Legacy_Cases=&apos;Yes&apos;,CH_LegacyCaseNumber__c!=null
+		)
+	)
+)
+)
+)</errorConditionFormula>
+    <errorDisplayField>of_Employees_to_represent_Nokia_CP__c</errorDisplayField>
+    <errorMessage>Case Status transition is not valid or Status field has been manually updated which is not supported.</errorMessage>
+</ValidationRule>
