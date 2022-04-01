@@ -3,7 +3,7 @@
 @Author:  Jigar Naik
 @CreateDate: 21 Feb 2016
 @UpdatedDate: 1 Apr 2022
-@Description: Controller class for custom approval actions page.
+@Description: Controller class for custom approval actions page
 ******************************************************************/
 public with sharing class APTSCU_ApprovalActionsController{
 	public String sObjectType {get; set;}
