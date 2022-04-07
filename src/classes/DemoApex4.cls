@@ -11,6 +11,6 @@ private Integer num;
     }
     
     public static testMethod void testNewMethod() {
-        System.debug('Change Hello DemoApexClass41');
+        System.debug('Change Hello Demo ApexClass');
     }
 }
