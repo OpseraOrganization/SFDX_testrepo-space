@@ -56,21 +56,21 @@ private class ALCRInboundInterfaceTest{
 		alcrAccWrap.CustomerAccountName = 'Test Customer';
 		alcrAccWrap.fcgCode = 'CXPCT' ;
 		alcrAccWrap.fcgName = 'SI TRANSPORT-ARG';
-	   // alcrAccWrap.CAT = 'BYTEL-FR';
+	// alcrAccWrap.CAT = 'BYTEL-FR';
 		alcrAccWrap.keyAccountCode = 'KEY-CODE';
 		alcrAccWrap.keyAccountName = 'KEY-NAME';
 		alcrAccWrap.holdingAccountCode = 'HOLDING-CODE';
 		alcrAccWrap.holdingAccountName = 'HOLDING-NAME';
 		alcrAccWrap.LegalNameExtension = 'Test Account Ext.';		 
 		alcrAccWrap.BusinessName = 'Test Business';		
-		alcrAccWrap.WebAddress = 'test@tcs.com';						
+		alcrAccWrap.WebAddress = 'test@tcs.com';			
 		alcrAccWrap.MarketCode = 'ENT';
 		alcrAccWrap.MarketName = 'ENTERPRISE';		
 		alcrAccWrap.activityName = 'TRHW-Transport - Highways, Airports & Ports';
 		alcrAccWrap.buildingFloor = 'Innovator';		 
 		alcrAccWrap.PostalCode = '560000';
 		alcrAccWrap.stateProvinceCountyCode = 'KA';
-	   // alcrAccWrap.AccountManagerUPI = 'Test User';
+	// alcrAccWrap.AccountManagerUPI = 'Test User';
 		alcrAccWrap.CompanyEndDate = System.today();
 		alcrAccWrap.ReasonForEndName = 'xxx reasons';
 		alcrAccWrap.AssetQualityRatingCode = '1';
@@ -88,7 +88,7 @@ private class ALCRInboundInterfaceTest{
 		alcrAccWrap.commercialCluster = 'MENA';
 		/****added by Debin Kuriakose [IDC] on 05/11/2015 for ALCR Modernization****/
 		alcrAccWrap.recordType = 'Direct';
-	   /*****************************************************************************/
+	/*****************************************************************************/
 		
 			//Test.setMock(WebServiceMock.class, new WebServiceMockImpl());
 			alcrRes = ALCRInboundInterface.createAccount(alcrAccWrap);
@@ -103,8 +103,8 @@ private class ALCRInboundInterfaceTest{
 	
 	static testMethod void alcrInboundInterfaceTestUpdate(){
 		
-	  test.startTest();		   
-				  
+	  test.startTest();	 
+	  
 		ALCRInboundInterface alcrinterface = New ALCRInboundInterface();
 		ALCRInboundInterface.Response alcrRes = New ALCRInboundInterface.Response();
 		ALCRInboundInterface.AccountWrap alcrAccWrap = New ALCRInboundInterface.AccountWrap();
@@ -116,14 +116,14 @@ private class ALCRInboundInterfaceTest{
 		/**Account account = new Account( Name = 'Test Update', AccountNumber = '2');
 		
 		insert account;
-	   // providing test data to the AccountWrap class
+	// providing test data to the AccountWrap class
 		alcrAccWrap.CustomerNumber = '2';
 		alcrAccWrap.LegalName = 'Test Account2';
 		alcrAccWrap.CurrencyCode = 'EUR';	
 		alcrAccWrap.ActivitySectorCode = 'TRHW';
 		alcrAccWrap.Street = 'ITPB';		
 		alcrAccWrap.City = 'Blr'; 
-		alcrAccWrap.countryCodeISO2 = 'IN';	   
+		alcrAccWrap.countryCodeISO2 = 'IN';	
 		alcrAccWrap.CompanyType = 'Customer';
 		alcrAccWrap.CustomerAccountCode = 'KORA3BY';
 		alcrAccWrap.CustomerAccountName = 'Test Customer';
@@ -319,7 +319,7 @@ private class ALCRInboundInterfaceTest{
 		test.startTest();
 			alcrRes = ALCRInboundInterface.createAccount(alcrAccWrap);
 			system.debug('alcrRes ..............'+alcrRes);
-		   // System.assertEquals('Required Company Type field is empty. Customer Number : 1',alcrRes.message);
+	 // System.assertEquals('Required Company Type field is empty. Customer Number : 1',alcrRes.message);
 		test.stopTest();
 	}
 	
