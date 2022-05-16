@@ -7,6 +7,7 @@ Created for: Nokia Customer Portal
 Created: 04 16 2018
 
 Update History
+test
 --------------
 Created: 04 16 2018 – aboukrim@salesforce.com
 -------------
@@ -15,7 +16,6 @@ public class AccountContactRelationTriggerHandler extends TriggerHandler {
 	private List<AccountContactRelation> oldList;
 	private List<AccountContactRelation> newList;
 	private Map<Id, AccountContactRelation> oldMap;
-	private Map<Id, AccountContactRelation> newMap;
 	 
 	public AccountContactRelationTriggerHandler() {
 		this.oldList = (List<AccountContactRelation>) Trigger.old;
