@@ -1,0 +1,68 @@
+<aura:component controller="CH_LightningController" access="global">
+    <!-- Aura Events -->
+    <aura:registerEvent name="onEvent" type="c:CH_CaseFlow_Event"/>
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.contact}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.serviceType}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.showOnlyAuthEntities}" action="{!c.handleAuthEntities}"/>
+    <aura:handler name="change" value="{!v.notLinkedToCustomer}" action="{!c.emitNotLinkedToCustomer}"/>
+    <!-- Global Attributes -->
+    <aura:attribute name="contact" type="Object" />
+    <aura:attribute name="serviceType" type="String" description="" default="Customer Support"/>
+    <aura:attribute name="tableColumns" type="List" description="Pass the columns you want throuth" default=""/>
+    <aura:attribute name="autoNext" type="Boolean" default="false" description="If Only One auto selected and fires a Next Event"/>
+    <aura:attribute name="showOnlyAuthEntitiesToggle" type="Boolean" default="true"/>
+    <aura:attribute name="showAccountNameAlias" type="Boolean" default="true" description="" />
+    <aura:attribute name="swMaintenance" type="boolean" default="false" />
+    <aura:attribute name="withoutSharing" type="Boolean" default="false" description="Defines if this component follows the sharing rules or not"/>
+    <aura:attribute name="automaticSearch" type="Boolean" default="false" description="Defines if this component search will start automaticly or will wait for the user to press enter."/>
+    <!-- Aura Methods -->
+    <aura:method name="resetSelection" action="{!c.resetSelection}" description="Reset the Selected Values"/>
+    <aura:method name="preSelect" action="{!c.preSelect}" description="Selectes manualy a record from the values">
+        <aura:attribute name="target" type="object" default=""/>
+        <aura:attribute name="callback" type="Function" />
+	</aura:method>
+    <!-- Private Attributes -->
+    <aura:attribute name="selected" type="String" access="private" description="Id of the selected"/>
+    <aura:attribute name="legalEntities" type="List" access="private"/>
+    <aura:attribute name="accountNameAlias" type="String" default="" access="private"/>
+    <aura:attribute name="searchText" type="String" access="private"/>
+    <aura:attribute name="showOnlyAuthEntities" type="Boolean" default="true" access="private"/>
+    <aura:attribute name="notLinkedToCustomer" type="Boolean" default="false" access="private"/>
+    <!-- Legal Entity Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12">
+        <div class="slds-col slds-size_12-of-12">
+            <aura:if isTrue="{! v.serviceType == 'Customer Support' }">
+                <aura:if isTrue="{! v.showOnlyAuthEntitiesToggle }">
+                    <lightning:input class="slds-float_right slds-p-bottom_x-small slds-p-right_x-small" type="toggle" label="Show Only Authorized Legal Entities" name="toggle" checked="{! v.showOnlyAuthEntities }"/>                                
+                </aura:if>
+            </aura:if>
+            <aura:if isTrue="{! v.serviceType == 'Internal Support' }">
+                <lightning:input class="slds-float_right slds-p-bottom_x-small slds-p-right_x-small" type="checkbox" label="Not Linked to Customer provided Service" checked="{! v.notLinkedToCustomer }"/>
+            </aura:if>
+            <div onkeyup="{! c.handleSearch }">
+                <c:Datatable aura:id="legalEntityTable"
+                             label="{! v.serviceType == 'Customer Support' ? 'Select a Legal Entity' : 'Search for a Legal Entity' }"
+                             columns="{! v.tableColumns }"
+                             data="{! v.legalEntities }"
+                             search="{! v.searchText }"
+                             disableSearch="{! or(v.serviceType != 'Customer Support', v.showOnlyAuthEntities != true) }"
+                             disabled="{! v.notLinkedToCustomer }"
+                             maxRowSelection="1" 
+                             onrowselection="{! c.handleSelection }"
+                             type="selection"/>
+            </div>
+            <aura:if isTrue="{!v.showAccountNameAlias}">
+                <div class="{! !empty(v.accountNameAlias) ? 'slds-grid slds-col slds-size_12-of-12 slds-p-vertical_small': 'slds-hide'}">
+                    <div class="slds-col slds-box slds-scrollable description_height">
+                        <div class="slds-align_absolute-center"><b>Account Name Alias</b></div>
+                        <div class="slds-text-longform" style="width: flexable;">
+                            <pre style="white-space: pre-wrap;"><lightning:formattedRichText value="{! v.accountNameAlias }" /></pre>
+                        </div>
+                    </div>
+                </div>
+            </aura:if>
+        </div>
+    </div>
+</aura:component>

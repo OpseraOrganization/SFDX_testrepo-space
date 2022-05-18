@@ -1,0 +1,94 @@
+<aura:component controller="NCP_ProductSearch_COM" implements="forceCommunity:searchInterface" access="global" extends="c:NCP_ProductSearchBase">
+
+    <!--declare attributes-->
+    <aura:attribute name="searchResults" type="List" description="Stores search results returned from controller" default="[]"/>
+    <aura:attribute name="selectedItems" type="List" description="Items selected for further actions" default="[]"/>
+    <aura:attribute name="searchTerm" type="string" default=""/>
+    <aura:attribute name="savedSearchTerm" type="string" default=""/>
+    <aura:attribute name="objectAPIName" type="string" default="Product2"/>
+    <aura:attribute name="searchStatusMessage" type="String" default=""/>
+    <aura:attribute name="isFilterOpened" type="Boolean" default="false"/>
+
+    <!-- configuration options -->
+    <aura:attribute name="isDeepLinking" type="Boolean" default="false"/>
+    <aura:attribute name="showLabel" type="Boolean" default="true"/>
+    <aura:attribute name="alwaysShowPills" type="Boolean" default="false"/>
+    <aura:attribute name="isSingleSelect" type="Boolean" default="true"/>
+    <aura:attribute name="isResponsive" type="Boolean" default="false"/>
+    <aura:attribute name="responsiveClasses" type="String" default="slds-form-element slds-lookup ncp-text-color-main slds-size_1-of-1 slds-small-size_2-of-3 slds-medium-size_1-of-2 slds-large-size_1-of-4"/>
+    <aura:attribute name="standardClasses" type="String" default="slds-form-element slds-lookup ncp-text-color-main slds-size_1-of-1"/>
+
+    <!-- A flag to hide the search completely, rather than using CSS -->
+    <aura:attribute name="isHidden" type="Boolean" default="false"/>
+
+
+    <!-- methods -->
+    <aura:method name="showErrorState" action="{!c.showErrorState}" description="allows theme to directly set notifiers in header"></aura:method>
+
+    <!-- state -->
+    <aura:attribute name="isInErrorState" type="Boolean" default="false"/>
+
+
+
+    <!--declare events hendlers-->
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <aura:handler name="change" value="{!v.searchTerm}" action="{!c.onChange}"/>
+    <aura:handler name="change" value="{!v.selectedItems}" action="{!c.checkErrorState}"/>
+
+    <aura:if isTrue="{!v.isHidden}">
+        <!-- Search component is hidden -->
+    <aura:set attribute="else">
+        <div aura:id="searchRes" class="{!(v.isResponsive) ? v.responsiveClasses : v.standardClasses}">
+            <!--This part is for display search bar for lookup-->
+            <aura:if isTrue="{!(v.selectedItems.length == 0)}">
+                <div class="{!(v.isInErrorState) ? 'slds-form-element slds-has-error' : 'slds-form-element'}">
+
+                    <aura:if isTrue="{!v.showLabel}">
+                        <label class="slds-form-element__label">
+                            <!-- <abbr class="slds-required" title="required">*</abbr> -->
+                            <span>Product</span>
+                        </label>
+                    </aura:if>
+                    <div class="slds-form-element__control">
+                        <ui:inputText aura:id="ncp_productSearchInput" click="{!c.onFocus}" focus="{!c.onFocus}" updateOn="keyup" keydown="{!c.onKeyDown}" class="slds-input" value="{!v.searchTerm}" placeholder="Find and select a product"/>
+                        <lightning:icon iconName="utility:search" size="small" class="ncp_productSearchIcon"/>
+                    </div>
+                    <ul aura:id="ncp_productSearchResults" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-hide" role="listbox">
+                        <lightning:spinner aura:id="ncp_productSearchSpinner" size="small" alternativeText="Searching..."/>
+                        <div class="slds-text-align_center">{!v.searchStatusMessage}</div>
+                        <aura:iteration items="{!v.searchResults}" var="result">
+                            <li role="presentation" class="{!result.hasFocus ? 'slds-listbox__item slds-is-active' : 'slds-listbox__item'}" data-product-id="{#result.Id}" onclick="{!c.showProductPage}">
+                                <span class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta">
+                                    <span class="slds-truncate">
+                                        <aura:unescapedHtml value="{#result.matchedText}"/>
+                                    </span>
+                                </span>
+                            </li>
+                        </aura:iteration>
+                    </ul>
+                    <aura:if isTrue="{!v.isInErrorState}">
+                        <div class="slds-form-element__help" aria-live="assertive">and/or please choose a product</div>
+                    </aura:if>
+                </div>
+            </aura:if>
+            <!--This part is for Display typehead lookup result List-->
+            <aura:if isTrue="{!(v.selectedItems.length > 0) || v.alwaysShowPills}">
+                <!-- <div class="slds-is-absolute slds-m-top_medium slds-size_1-of-1 ncp-use-z-index slds-grid slds-grid_vertical ncp-background-color-primary-background ncp-border-around_grey-2"> -->
+                <label class="slds-form-element__label">
+                    <!-- <abbr class="slds-required" title="required">*</abbr> -->
+                    <span>Product</span>
+                </label>
+                <div class="slds-size_1-of-1 slds-grid slds-grid_vertical ncp-background-color-primary-background ncp-border-around_grey-2">
+                    <aura:iteration items="{!v.selectedItems}" var="item">
+                        <div class="slds-col slds-m-vertical_xx-small slds-p-horizontal_x-small">
+                            <lightning:pill label="{#item.label}" onremove="{!c.removeItemFromSelectedItems}"/>
+                        </div>
+                    </aura:iteration>
+                </div>
+                <!-- <lightning:pillContainer items="{!v.selectedItems}" onitemremove="{!c.removeItemFromSelectedItems}" class="slds-is-absolute ncp-use-z-index"/> -->
+            </aura:if>
+        </div>
+    </aura:set>
+    </aura:if>
+</aura:component>
