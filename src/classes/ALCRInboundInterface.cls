@@ -7,14 +7,15 @@
 global class ALCRInboundInterface{
 /***************************************************************
  Class Name:Response
- Author: Accenture
+ Author: Accenture test
  Purpose: Response class to send status info to ALCR interface.
-Requirement: Sales Process 633
+
 ****************************************************************/
 	// Response class to send status info to ALCR interface
 	global class Response{
 		webservice String message;
 		webservice Integer errorCode;
+        test
 	}
 /***************************************************************
  Class Name:AccountWrap
