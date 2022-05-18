@@ -1,0 +1,1576 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" access="global" controller="ApprovalCentreController">    <aura:attribute name="recordId" type="String" description="Opportunity Record Id" default="{!v.recordId}"/>
+    <aura:attribute name="approvalCenter" type="List"/>
+    
+    
+    <aura:attribute name="wrapper" type="ApprovalCentreWrapper" />  
+    <aura:attribute name="DocWrapper" type="DocumentWrapper" />
+     <aura:attribute name="G4G5DocWrapper" type="DocumentWrapper" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="modalPopUp" type="boolean" default="false"/>
+    <aura:attribute name="vfURL" type="String" default="false"/>
+    <aura:attribute name="userPicURL" type="String" default="/resource/SldsNew/assets/images/avatar3.jpg"/>
+    <aura:attribute name="documents" type="Map" />
+    <aura:attribute name="ConfiDocument" type="Map" />
+    <aura:attribute name="G4_G5_Documents" type="ContentVersion" />
+    <aura:attribute name="strAppComments" type="string" default=""/>
+    <aura:attribute name="actiontype" type="string" default=""/>
+    <aura:attribute name="OfferOutput" type="Offer__c" default="{'sobjectType': 'Offer__c', 'Offer_Description__c': '',
+                                                                 'Approval_Scope__c' :'' }"/>
+    <aura:attribute name="ApprovalReq" type="Apttus_Approval__Approval_Request__c" default="{'sobjectType': 'Apttus_Approval__Approval_Request__c',
+                                                                                            'Apttus_Approval__Step_Name__c': '', 'Apttus_Approval__Approval_Status__c' :'','Apttus_Approval__Assigned_To_Name__c':'','NF_Assignee_Type__c':'','Apttus_Approval__DelegateApprover__c':'','NF_Role_Name__c':'','NF_Organization_Level__c':'','Apttus_Approval__ActualApproverName__c':'','Apttus_Approval__Approver_Comments__c':''}"/>  
+    <aura:attribute name="approvalList" type="List" />
+    <aura:attribute name="mobileDevice" type="boolean" default="false" description="True if component is rendered in mobile"/>
+    <aura:attribute name="ApproverDelegatePopUp" type="boolean" default="false"/>
+    <aura:attribute name="ValidatorDelegatePopUp" type="boolean" default="false"/>
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:attribute name="loggedinUserId" type="string" default=""/>
+    <aura:attribute name="validatorDelgateCount" type="integer" default=""/>
+    <aura:attribute name="approverDelgateCount" type="integer" default=""/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!and(v.ApproverDelegatePopUp,v.wrapper.type == ' Approving as Delegate')}">
+        <div role="dialog" tabindex="-1" aria-labelledby="header99" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Part Start From Here ######-->
+                <div class="slds-modal__header">
+                    <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="{!c.closeDelegateModel}">
+                        X
+                        <span class="slds-assistive-text">Close</span>
+                    </button>                    
+                    <h2 id="header99" class="slds-text-heading--medium">Please select a approver</h2>
+                </div>   
+                <div class="slds-modal__content slds-scrollable slds-p-around--medium">					
+                    <aura:if isTrue="{!!empty(v.wrapper.approverRecList)}"> 			                        
+                        <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_col-bordered">  
+                            <thead>
+                                <tr class="slds-text-title_caps">
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="SELECT">SELECT</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="ROLE Name">ROLE NAME</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="ASSIGNED TO">ASSIGNED TO</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="ACTUAL APPROVER">ACTUAL APPROVER</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="APPROVAL STATUS">APPROVAL STATUS</div>
+                                    </th>      
+                                </tr>
+                            </thead>                                
+                            <tbody>     
+                                <aura:iteration items="{!v.wrapper.approverRecList}" var="approvalRec">
+                                    <aura:if isTrue="{!and(or(approvalRec.Apttus_Approval__Approval_Status__c == 'Assigned',approvalRec.Apttus_Approval__Approval_Status__c == 'Reassigned'),approvalRec.Apttus_Approval__DelegateApproverIds__c == v.loggedinUserId)}">
+                                        <tr>
+                                            <td data-label="SELECT">                                            
+                                                <ui:inputCheckbox labelClass="" text="{!approvalRec.Id}" aura:id="ApprovalRecCheckbox" value="" change="{!c.delegateCheckAction}"/>
+                                            </td>
+                                            <td data-label="ROLE Name">
+                                                <div class="slds-truncate" title="{!approvalRec.NF_Role_Name__c}">{!approvalRec.NF_Role_Name__c}</div>
+                                            </td>                                    
+                                            <td data-label="ASSIGNED TO">
+                                                <div class="slds-truncate" title="{!approvalRec.Apttus_Approval__Assigned_To_Name__c}">{!approvalRec.Apttus_Approval__Assigned_To_Name__c}</div>
+                                            </td>                                    
+                                            <td data-label="ACTUAL APPROVER">
+                                                <div class="slds-truncate" title="{!approvalRec.Apttus_Approval__ActualApproverName__c}">{!approvalRec.Apttus_Approval__ActualApproverName__c}</div>
+                                            </td>                                                                                                              
+                                            <td data-label="APPROVAL STATUS">
+                                                <div class="slds-truncate" title="{!approvalRec.Apttus_Approval__Approval_Status__c}">{!approvalRec.Apttus_Approval__Approval_Status__c}</div>
+                                            </td>                                                                            
+                                        </tr>
+                                    </aura:if>
+                                </aura:iteration>
+                            </tbody>
+                        </table>                                                   		
+                    </aura:if>
+                </div>  
+                <!--###### MODAL BOX FOOTER Part Start From Here ######-->
+                <div class="slds-modal__footer">
+                    
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </aura:if> 
+    <aura:if isTrue="{!and(v.ValidatorDelegatePopUp,v.wrapper.type == 'Validator as Delegate')}">    
+        <div role="dialog" tabindex="-1" aria-labelledby="header99" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Part Start From Here ######-->
+                <div class="slds-modal__header">
+                    <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="{!c.closeDelegateModel}">
+                        X
+                        <span class="slds-assistive-text">Close</span>
+                    </button>                    
+                    <h2 id="header99" class="slds-text-heading--medium">Please select a validator</h2>
+                </div>   
+                <div class="slds-modal__content slds-p-around--medium">					
+                    <aura:if isTrue="{!!empty(v.wrapper.validatorRecList)}">                                                     
+                        <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_col-bordered">
+                            <thead>
+                                <tr class="slds-text-title_caps">
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="SELECT">SELECT</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="ROLE Name">ROLE NAME</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="ASSIGNED TO">ASSIGNED TO</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="ACTUAL APPROVER">ACTUAL VALIDATOR</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="APPROVAL STATUS">APPROVAL STATUS</div>
+                                    </th>      
+                                </tr>
+                            </thead> 
+                            <tbody>   
+                                <aura:iteration items="{!v.wrapper.validatorRecList}" var="approvalRec">
+                                    <aura:if isTrue="{!and(empty(approvalRec.Validator_Status__c),approvalRec.Apttus_Approval__DelegateApproverIds__c == v.loggedinUserId)}">
+                                        <tr>
+                                            <td data-label="SELECT">
+                                                <ui:inputCheckbox labelClass="" text="{!approvalRec.Id}" aura:id="ValidatorRecCheckbox" value="" change="{!c.delegateCheckAction}"/>
+                                            </td>
+                                            <td data-label="ROLE Name">
+                                                <div class="slds-truncate" title="{!approvalRec.NF_Role_Name__c}">{!approvalRec.NF_Role_Name__c}</div>
+                                            </td>                                    
+                                            <td data-label="ASSIGNED TO">
+                                                <div class="slds-truncate" title="{!approvalRec.Apttus_Approval__Assigned_To_Name__c}">{!approvalRec.Apttus_Approval__Assigned_To_Name__c}</div>
+                                            </td>                                    
+                                            <td data-label="ACTUAL VALIDATOR">
+                                                <div class="slds-truncate" title="{!approvalRec.Apttus_Approval__ActualApproverName__c}">{!approvalRec.Apttus_Approval__ActualApproverName__c}</div>
+                                            </td>                                                                                                              
+                                            <td data-label="APPROVAL STATUS">
+                                                <div class="slds-truncate" title="{!approvalRec.Apttus_Approval__Approval_Status__c}">{!approvalRec.Apttus_Approval__Approval_Status__c}</div>
+                                            </td>  
+                                        </tr>
+                                    </aura:if>
+                                </aura:iteration>
+                            </tbody>
+                        </table>                                                                                                
+                    </aura:if>
+                </div>  
+                <!--###### MODAL BOX FOOTER Part Start From Here ######-->
+                <div class="slds-modal__footer">
+                    
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </aura:if> 
+    <aura:if isTrue="{!v.mobileDevice}">
+        <article class="slds-card">
+            <div class="slds-box">
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__figure">	  
+                            <span class="slds-icon_container slds-icon-standard-contact" title="description of icon when needed">
+                                <c:svgIcon svgPath="/resource/SldsNew/assets/icons/standard-sprite/svg/symbols.svg#approval" class="slds-icon slds-icon_small"/>                                                                         
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <h2>
+                                <span class="slds-text-heading_small">Approval Center</span>          
+                            </h2>
+                        </div>
+                    </header>   
+                    <!--  <aura:if isTrue="{!v.wrapper.stakeHolderComment}">
+                        <span class="slds-text-heading_small">{!v.wrapper.type}</span>
+                        <lightning:button aura:id="stakeHolderAddCmtBtn" class="slds-button" variant="brand" value="{!v.wrapper.approvalRequestId}" onclick="{!c.validateOrRejectController}" label="Add Comment"/>
+                        <aura:set attribute="else"> -->
+                    <aura:if isTrue="{!v.wrapper.validatorOrApprover}">
+                        <span class="slds-text-heading_small">{!v.wrapper.type}</span>
+                        <lightning:button aura:id="validate" disabled="{!!v.wrapper.isApprovalRequested}" class="slds-button" variant="brand"  value="{!v.wrapper.approvalRequestId}"  label="Validate" onclick="{!c.validateOrRejectController}"/>
+                        <lightning:button aura:id="ValidateReject" disabled="{!!v.wrapper.isApprovalRequested}" class="slds-button" variant="destructive" value="{!v.wrapper.approvalRequestId}"  label="Reject" onclick="{!c.validateOrRejectController}"/>                        
+                        <aura:set attribute="else">
+                            <div data-recId ="{!v.wrapper.opportunityId}" class="slds-no-flex">
+                                <span class="slds-text-heading_small">{!v.wrapper.type}</span>
+                                <lightning:button aura:id="approveButton" class="slds-button" variant="brand" value="{!v.wrapper.approvalRequestId}" onclick="{!c.approvalRequestController}" label="Approve"/>
+                                <lightning:button aura:id="rejectButton" class="slds-button" variant="destructive" value="{!v.wrapper.approvalRequestId}" onclick="{!c.rejectionRequestController}" label="Reject"/>                        
+                            </div>
+                        </aura:set>
+                    </aura:if> 
+                    <!--    </aura:set>
+                    </aura:if>   -->                                    
+                </div>            
+                <div class="slds-card__body">
+                    <table class="slds-table slds-table_bordered slds-no-row-hover slds-table_cell-buffer">           
+                        <tbody>            
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Gate Step">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Gate Step</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.gateStep}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Approval request date">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Approval Request Date</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.approvalReqDate}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                
+                                <td>   
+                                    <div class="slds-truncate" title="Add Comments">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Add Comments</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <ui:inputTextarea aura:id="addComments" value="" disabled="true" rows="1" cols="50"/>                                                          
+                                            </div>
+                                        </div>
+                                    </div>                                        
+                                </td>
+                                
+                            </tr>
+                        </tbody>
+                    </table>		
+                    <table class="slds-table slds-table_bordered slds-no-row-hover slds-table_cell-buffer">
+                        <tbody>
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Offer Number">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Active Offer Number</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.offerNumber}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Opportunity Name">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Opportunity Name</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.opportunityName}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Customer">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Customer</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.customer}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Customer">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Market/Country</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.marketOrCountry}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                
+                            </tr>
+                            <!--BP-FT-1961-->
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="WTD Case">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">WTD Case</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <!--span class="slds-form-element__static">{!v.wrapper.WinTheDealLink}</span-->
+                                                <p><lightning:formattedUrl value="{!v.wrapper.WinTheDealLink}" tooltip="Redirect for Case in Win the Deal Tool" label="{!v.wrapper.WinTheDealLink}" target="_blank" /></p>
+                                                <!--a href="{!v.wrapper.WinTheDealLink}" target="_blank">{!v.wrapper.WinTheDealLink}</a-->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
+                        </tbody>
+                    </table> 
+                </div>
+            </div>
+        </article>
+        
+        
+        
+        <article class="slds-card">
+            <div class="slds-box">
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__figure">	  
+                            <span class="slds-icon_container slds-icon-standard-contact" title="description of icon when needed">
+                                <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#description" class="slds-icon slds-icon_small"/>                                                                         
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <h2>          
+                                <span class="slds-text-heading_small">Approval Summary</span>          
+                            </h2>                        
+                        </div>                    
+                        <div class="slds-media__figure slds-grid slds-grid_align-end" style="margin-left: 550px;">
+                            <span class="slds-avatar slds-avatar_large  slds-grid slds-grid_align-end">
+                                <img alt="Person name" src="{!v.userPicURL}" title="User avatar"/>
+                            </span>
+                        </div>                        
+                        <div class="slds-media__body">
+                            
+                            <h2>          
+                                <span class="slds-text-heading_small slds-grid slds-grid_align-end">Approval Requester: {!v.wrapper.approvalRequester}</span>          
+                            </h2>
+                        </div>
+                    </header>                
+                </div>
+                
+                <div class="slds-card__body">
+                    <aura:if isTrue="{!v.strAppComments}">
+                        <table class="slds-table slds-table_bordered slds-no-row-hover slds-table_cell-buffer"> 
+                            <thead>
+                                <th><h3>Approval Requester Comments:</h3></th>
+                            </thead>
+                            <tbody>                            
+                                <tr>                
+                                    <th scope="row">
+                                        <div class="slds-truncate" title="Offer Value">                        
+                                            <div class="slds-form-element">
+                                                <div class="slds-form-element__control slds-border_bottom">
+                                                    <span class="slds-form-element__static">{!v.strAppComments}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </th>   
+                                </tr>                        
+                            </tbody>
+                        </table>
+                    </aura:if>
+                    &nbsp;&nbsp;&nbsp;&nbsp;	
+                    <table class="slds-table slds-table_bordered slds-no-row-hover slds-table_cell-buffer"> 
+                        <thead>
+                            <th><h3>LoA Information:</h3></th>
+                        </thead>
+                        <tbody>                            
+                            <tr>                
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Offer Net Price">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Offer Net Price (CNP)</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.offerValue_CNP}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Accounting Value">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Accounting Value (NS)</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.offerValue_NS}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>                        
+                        </tbody>
+                    </table>
+                    &nbsp;&nbsp;&nbsp;&nbsp;           
+                    <table class="slds-table slds-table_bordered slds-table_col-bordered">
+                        <tbody>	
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Lead BG">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Lead BG</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.leadBG}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th> 
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Lead BG">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Lead BU</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.leadBU}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Supporting BGs/BUs">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Supporting BGs/BUs</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.supportingBGsBUs}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>                                       
+                                <th scope="row">
+                                    <div class="slds-truncate" title="LoA Approval Level">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">LoA Approval Level</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.loaApprovalLevel}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="LoA Level before STA">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">LoA Level before STA</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.loaApprovalLevelBeforeSTA}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
+                        </tbody>
+                    </table> 
+                </div>
+            </div>
+        </article>
+        
+        <article class="slds-card">
+            <div class="slds-box">
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__figure">	  
+                            <span class="slds-icon_container" title="description of icon when needed">
+                                <c:svgIcon svgPath="/resource/SldsNew/assets/icons/doctype-sprite/svg/symbols.svg#word" class="slds-icon slds-icon_small"/>                                                                         
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <h2>          
+                                <span class="slds-text-heading_small">Approval Documents</span>          
+                            </h2>                        
+                        </div>                                           
+                    </header>                
+                </div>
+                <div class="slds-card__body custom-card">                    
+                    <aura:if isTrue="{! !empty(v.G4G5DocWrapper)}">
+                        <section aria-labelledby="gates">
+                            <h2 id="unrestricted" class="slds-section__title slds-m-top--large slds-m-bottom--small slds-m-left--small">G4/G5 Documents</h2>
+                            <table id="documentsTable" class="slds-table slds-table--bordered slds-table--striped slds-table--fixed-layout
+                                                              slds-max-medium-table--stacked-horizontal" role="grid">           
+                                <thead>
+                                    <tr class="slds-text-title--caps">
+                                        <th class="slds-text-align--left" scope="col" aria-label="Document Name">
+                                            <span class="slds-truncate slds-text-align--left" title="Document Name">Document Name</span>
+                                            <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                        </th>
+                                        <th class="slds-text-align--left" scope="col" aria-label="Document Type">
+                                            <span class="slds-truncate slds-text-align--left" title="Document Type">Document Type</span>
+                                        </th>
+                                        <th class="slds-text-align--left" scope="col" aria-label="Last Modified By">
+                                            <span class="slds-truncate slds-text-align--left" title="Last Modified By">Last Modified By</span>
+                                        </th>
+										<th class="slds-text-align--left" scope="col" aria-label="Last Modified Date">
+                                            <span class="slds-truncate slds-text-align--left" title="Last Modified Date">Last Modified Date</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.G4G5DocWrapper}" var="gateDocs">
+                                        <tr class="slds-hint-parent">
+                                            <td role="gridcell" class="slds-truncate" data-label="Document Name">
+                                                <div class="slds-truncate" title="{!gateDocs.strDocumentName}">                                            
+                                                    <button class="slds-button slds-truncate" type="button" onclick="{!c.openFileController}" id="{!gateDocs.strContentDocumentID}">
+                                                        {!gateDocs.strDocumentName}</button></div></td>
+                                            <td role="gridcell" data-label="Document Type">
+                                                <div class="slds-truncate" title="{!gateDocs.strDocumentType}">{!gateDocs.strDocumentType}</div></td>
+                                            <td role="gridcell" data-label="Last Modified By">
+                                                <div class="slds-truncate" title="{!gateDocs.strLastModifiedBy}">{!gateDocs.strLastModifiedBy}</div></td>
+												<td role="gridcell" data-label="Last Modified Date">
+                                                <div class="slds-truncate" title="{!gateDocs.strLastModifiedDate}">{!gateDocs.strLastModifiedDate}</div></td>
+                                            
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </section>
+                    </aura:if>
+                    <aura:if isTrue="{! empty(v.G4G5DocWrapper)}">
+                        <section aria-labelledby="noRecords">
+                            <div class="slds-media__body slds-truncate">
+                                <h1 id="noRecords" class="slds-section__title slds-p-around--xx-large">No G4/G5 Documents to display</h1> 
+                            </div>
+                        </section>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{! !empty(v.DocWrapper)}">
+                        <section aria-labelledby="confidential">
+                            <h2 id="unrestricted" class="slds-section__title slds-m-top--large slds-m-bottom--small slds-m-left--small">Confidential Documents</h2>
+                            <table id="confidentialTable" class="slds-table slds-table--bordered slds-table--striped slds-table--fixed-layout
+                                                                 slds-max-medium-table--stacked-horizontal" role="grid">           
+                                <thead>
+                                    <tr class="slds-text-title--caps">
+                                        <th class="slds-text-align--left" scope="col" aria-label="Document Name">
+                                            <span class="slds-truncate slds-text-align--left" title="Document Name">Document Name</span>
+                                            <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                        </th>
+                                        <th class="slds-text-align--left" scope="col" aria-label="Document Type">
+                                            <span class="slds-truncate slds-text-align--left" title="Document Type">Document Type</span>
+                                        </th>
+                                        <th class="slds-text-align--left" scope="col" aria-label="Last Modified By">
+                                            <span class="slds-truncate slds-text-align--left" title="Last Modified By">Last Modified By</span>
+                                        </th>
+                                        <th class="slds-text-align--left" scope="col" aria-label="Last Modified Date">
+                                            <span class="slds-truncate slds-text-align--left" title="Last Modified Date">Last Modified Date</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.DocWrapper}" var="confidentialDocs">
+                                        <tr class="slds-hint-parent">
+                                            <td role="gridcell" class="slds-truncate" data-label="Document Name">
+                                                <div class="slds-truncate" title="{!confidentialDocs.strDocumentName}">                                            
+                                                    <button class="slds-button slds-truncate" type="button" onclick="{!c.openConfiFileController}" id="{!confidentialDocs.strContentDocumentID}">
+                                                        {!confidentialDocs.strDocumentName}</button></div></td>
+                                            <td role="gridcell" data-label="Document Type">
+                                                <div class="slds-truncate" title="{!confidentialDocs.strDocumentType}">{!confidentialDocs.strDocumentType}</div></td>
+                                            <td role="gridcell" data-label="Last Modified By">
+                                                <div class="slds-truncate" title="{!confidentialDocs.strLastModifiedBy}">{!confidentialDocs.strLastModifiedBy}</div></td> 
+                                            <td role="gridcell" data-label="Last Modified Date">
+                                                <div class="slds-truncate" title="{!confidentialDocs.strLastModifiedDate}">{!confidentialDocs.strLastModifiedDate}</div></td> 
+                                            
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </section>
+                    </aura:if>
+                    <aura:if isTrue="{! empty(v.DocWrapper)}">
+                        <section aria-labelledby="noRecords">
+                            <div class="slds-media__body slds-truncate">
+                                <h1 id="noRecords" class="slds-section__title slds-p-around--xx-large">No Confidential Documents to display</h1> 
+                            </div>
+                        </section>
+                    </aura:if>
+                </div>
+            </div>
+        </article>
+        
+        <article class="slds-card">
+            <div class="slds-box">
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__figure">	  
+                            <span class="slds-icon_container slds-icon-standard-contact" title="description of icon when needed">
+                                <c:svgIcon svgPath="/resource/SldsNew/assets/icons/standard-sprite/svg/symbols.svg#entitlement" class="slds-icon slds-icon_medium"/>                                                                         
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <h2>          
+                                <span class="slds-text-heading_small">Approval Details</span>          
+                            </h2>                        
+                        </div>                                           
+                    </header>
+                </div>           
+                <table class="slds-table">
+                    <tbody>              
+                        <thead>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Approval Documents">Record of required approvals and validations</div>
+                            </th>
+                        </thead>
+                        <tr>
+                            <table class="slds-table slds-table--bordered slds-table--striped slds-table--fixed-layout
+                                          slds-max-medium-table--stacked-horizontal slds-table_col-bordered" role="grid">
+                                <thead>
+                                    <tr class="slds-text-title_caps slds-theme_shade">                                       
+                                        <th scope="col">
+                                            <div class="appClassOne" title="Approval Status">Approval Status</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassTwo" title="Comment">Comment</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassThree" title="Assigned To">Assigned To</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassFour" title="Assignee Type">Assignee Type</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassFive" title="Delegated To">Delegated To</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassSix" title="Role Name">Role Name</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassNine" title="BG Attribute">BG Attribute</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassSeven" title="Organization">Organization</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassEight" title="Actual Approver">Actual Approver</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="appClassNine" title="Last Modified">Date Latest Update</div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.approvalList}" var="listRec">
+                                        <tr class="slds-hint-parent">                                                 
+                                            <td role="gridcell" class="slds-truncate" data-label="Approval Status">
+                                                <aura:if isTrue="{!listRec.NF_Assignee_Type__c == 'Approver'}" > 
+                                                    <div class="appClassEleven" title="{!listRec.Apttus_Approval__Approval_Status__c}">{!listRec.Apttus_Approval__Approval_Status__c}</div>
+                                                    <aura:set attribute="else">
+                                                        <aura:if isTrue="{!!listRec.Validator_Status__c.length>0}">
+                                                            <div class="appClassEleven" title="{!listRec.Apttus_Approval__Approval_Status__c}">{!listRec.Apttus_Approval__Approval_Status__c}</div>
+                                                            <aura:set attribute="else">
+                                                                <div class="appClassEleven" title="{!listRec.Validator_Status__c}">{!listRec.Validator_Status__c}</div>
+                                                            </aura:set>
+                                                        </aura:if>                                                                                                                         
+                                                    </aura:set>
+                                                </aura:if>                                                
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="Comments">
+                                                <div class="appClassNinteen" title="{!listRec.Apttus_Approval__Approver_Comments__c}">{!listRec.Apttus_Approval__Approver_Comments__c}</div>
+                                                <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="Assigned To">
+                                                <div class="appClassThirteen" title="{!listRec.Apttus_Approval__Assigned_To_Name__c}">{!listRec.Apttus_Approval__Assigned_To_Name__c}</div>
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="Assignee Type">
+                                                <div class="appClassFourteen" title="{!listRec.NF_Assignee_Type__c}">{!listRec.NF_Assignee_Type__c}</div>
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="Delegated To">
+                                                <div class="appClassFifteen" title="{!listRec.Delegate_Approvers__c}">{!listRec.Delegate_Approvers__c}</div>
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="Role Name">
+                                                <div class="appClassSixteen" title="{!listRec.NF_Role_Name__c}">{!listRec.NF_Role_Name__c}</div>
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="BG Attribute">
+                                                <div class="appClassEighteen" title="{!listRec.NF_BG_Attribute__c}">{!listRec.NF_BG_Attribute__c}</div>
+                                                
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="Organization">
+                                                <div class="appClassSeventeen" title="{!listRec.NF_Organization_Level__c}">{!listRec.NF_Organization_Level__c}</div>
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="Actual Approver">
+                                                <div class="appClassEighteen" title="{!listRec.Apttus_Approval__ActualApproverName__c}">{!listRec.Apttus_Approval__ActualApproverName__c}</div>
+                                            </td>
+                                            <td role="gridcell" class="slds-truncate" data-label="Last Modified">
+                                                <div class="appClassTwelve" title="{!listRec.LastModifiedDate}"></div>
+                                                <ui:outputDateTime value="{!listRec.LastModifiedDate}" format="YYYY-MM-DD" class="appClassFormat"/>
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>    
+                                </tbody>
+                            </table>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+        
+        <article class="slds-card">
+            <div class="slds-box">
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__figure">	  
+                            <span class="slds-icon_container" title="description of icon when needed">
+                                <c:svgIcon svgPath="/resource/SldsNew/assets/icons/doctype-sprite/svg/symbols.svg#excel" class="slds-icon slds-icon_small"/>                                                                         
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <h2>          
+                                <span class="slds-text-heading_small">LoA Additional Information</span>          
+                            </h2>                        
+                        </div>                                           
+                    </header>                
+                </div>  
+                <table>
+                    <tbody>    
+                        <tr>
+                            <th scope="row">
+                                <div class="slds-truncate">
+                                    <div class="slds-form-element">
+                                        <span class="slds-form-element__label">Offer Description</span>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <ui:inputTextArea disabled="true" aura:id="offerDescp" value="{!v.wrapper.offerDescription}" rows="5"/>
+                                            
+                                        </div>
+                                    </div>
+                                </div>     
+                            </th> 
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <div class="slds-truncate">                        
+                                    <div class="slds-form-element">
+                                        <span class="slds-form-element__label">Approval Scope</span>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <ui:inputTextArea disabled="true" aura:id="appScope" value="{!v.wrapper.approvalScope}" rows="5"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th> 
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <div class="slds-truncate">                        
+                                    <div class="slds-form-element">
+                                        <span class="slds-form-element__label">Approval Recommendations</span>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <ui:inputTextArea disabled="true" aura:id="appRecomm" value="{!v.wrapper.approvalRecommendation}" rows="5"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th> 
+                        </tr>
+                    </tbody>
+                </table>    
+            </div>            
+        </article>
+        
+        <aura:if isTrue="{!v.modalPopUp}"> 
+            <div role="dialog" tabindex="-1" aria-labelledby="header99" class="slds-modal slds-fade-in-open ">
+                <div class="slds-modal__container">                    
+                    <div class="slds-modal__header">
+                        <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="{!c.closeModel}">
+                            X
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="header99" class="slds-text-heading--medium">Approve / Reject</h2>
+                    </div>                    
+                    <div class="slds-modal__content slds-p-around--medium">                        
+                        <iframe src="{!v.vfURL}" width="100%" height="220px;" frameBorder="0"/>
+                    </div>                    
+                    <div class="slds-modal__footer">
+                        <button class="slds-button slds-button--neutral" onclick="{!c.closeModel}" >Cancel</button>
+                        <button class="slds-button slds-button--brand" >Save</button>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+        <article class="slds-card">
+            <div class="slds-box">
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__figure">	  
+                            <span class="slds-icon_container" title="description of icon when needed">
+                                <c:svgIcon svgPath="/resource/SldsNew/assets/icons/doctype-sprite/svg/symbols.svg#txt" class="slds-icon slds-icon_small"/>                                                                         
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <h2>          
+                                <span class="slds-text-heading_small">Task Creation</span>          
+                            </h2>                        
+                        </div>                                           
+                    </header>
+                    <lightning:button variant="brand" aura:id="tskBtn" label="New Task" onclick="{!c.showTaskInformation}"/>     
+                </div>
+                <div class="slds-card__body custom-card">
+                    <aura:if isTrue="{! !empty(v.approvalCenter)}">
+                        <section aria-labelledby="unrestricteds">                                                         
+                            <div class="slds-scrollable--y">
+                                <table id="unrestrictedTable" class="slds-table slds-table--bordered slds-table--striped slds-table--fixed-layout
+                                                                     slds-max-medium-table--stacked-horizontal" role="grid">           
+                                    <thead>
+                                        <tr class="slds-text-title--caps">
+                                            <th class="slds-is-sortable slds-text-align--left" scope="col" aria-label="Subject" onclick="" style="padding-left:4px;">
+                                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-truncate slds-text-align--left" title="Subject">Subject</span>
+                                                    <div class="slds-icon_container" aria-hidden="true">
+                                                        <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#arrowdown" 
+                                                                   class="slds-icon slds-icon--x-small slds-icon-text-default slds-is-sortable__icon" />                                                                                                   
+                                                    </div>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                                </a>                                    
+                                            </th>
+                                            <th class="slds-is-sortable slds-text-align--left" scope="col" aria-label="Assigned To" onclick="">
+                                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-truncate slds-text-align--left" title="Assigned To">Assigned To</span>                                        
+                                                    <div class="slds-icon_container" aria-hidden="true">                                                
+                                                        <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#arrowdown" 
+                                                                   class="slds-icon slds-icon--x-small slds-icon-text-default slds-is-sortable__icon" />                                                                                                   
+                                                    </div>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                                </a>                                    
+                                            </th>
+                                            <th class="slds-is-sortable slds-text-align--left" scope="col" aria-label="Status" onclick="">
+                                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-truncate slds-text-align--left" title="Status">Status</span>                                        
+                                                    <div class="slds-icon_container" aria-hidden="true">                                                
+                                                        <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#arrowdown" 
+                                                                   class="slds-icon slds-icon--x-small slds-icon-text-default slds-is-sortable__icon" />                                                                                                   
+                                                    </div>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                                </a>                                    
+                                            </th>                                
+                                            <th class="slds-is-sortable slds-text-align--left" scope="col" aria-label="Due Date" onclick="">
+                                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-truncate slds-text-align--left" title="Due Date">Due Date</span>                                        
+                                                    <div class="slds-icon_container" aria-hidden="true">                                                
+                                                        <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#arrowdown" 
+                                                                   class="slds-icon slds-icon--x-small slds-icon-text-default slds-is-sortable__icon" />                                                                                                   
+                                                    </div>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                                </a>                                    
+                                            </th>
+                                            
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <aura:iteration items="{!v.approvalCenter}" var="tasklist">
+                                            <tr class="slds-hint-parent">
+                                                <td role="gridcell" class="slds-truncate" data-label="Subject">
+                                                    <div class="slds-truncate" title="{!tasklist.Subject}">
+                                                        <!--<ui:button aura:id="contentDocumentId" press="{!c.navigateToTask}"
+                                                    label="{!confidentialFile.ContentDocumentId}" value="{!confidentialFile.ContentDocumentId}"/> -->
+                                                        <button class="slds-button slds-truncate" type="button" onclick="{!c.navigateToTask}" id="{!tasklist.Id}">{!tasklist.Subject}</button>
+                                                    </div>
+                                                </td>                                                
+                                                <td role="gridcell" class="slds-truncate" data-label="Assigned To">
+                                                    <div class="slds-truncate" title="{!tasklist.Owner.Name}">{!tasklist.Owner.Name}</div></td>                                    
+                                                <td role="gridcell" class="slds-truncate" data-label="Status">
+                                                    <div class="slds-truncate" title="{!tasklist.Status}">{!tasklist.Status}</div></td>
+                                                <td role="gridcell" class="slds-truncate" data-label="Due Date">
+                                                    <div class="slds-truncate" title="{!tasklist.ActivityDate}">
+                                                        <ui:outputDate value="{!tasklist.ActivityDate}" />
+                                                    </div></td>                                    
+                                            </tr>
+                                        </aura:iteration> 
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </aura:if>
+                </div>					
+                <aura:if isTrue="{! empty(v.approvalCenter)}">
+                    <section aria-labelledby="noRecords">
+                        <div class="slds-media__body slds-truncate">
+                            <h1 id="noRecords" class="slds-section__title slds-p-around--xx-large">No Task to display</h1> 
+                        </div>
+                    </section>
+                </aura:if> 
+            </div>             
+        </article>      
+        <!-- *********************************SF1 UI******************************* -->
+        <aura:set attribute="else">
+            <article class="slds-card">
+                <div class="slds-card__header slds-button_brand">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">                        
+                        <div class="slds-media__body">
+                            <h2>          
+                                <span class="slds-text-title slds-text-color_inverse">Approval Center</span>          
+                            </h2>
+                        </div>
+                    </header>
+                    <div class="slds-no-flex">
+                        
+                    </div>
+                </div>
+                <div class="slds-card__body slds-card__body_inner">
+                    <table class="slds-table">           
+                        <tbody>            
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Gate Step">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Gate Step</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.gateStep}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th  scope="row">
+                                    <div class="slds-truncate" title="LoA Approval Level">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">LoA Approval Level</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.loaApprovalLevel}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Offer Number">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Active Offer Number</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.offerNumber}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Opportunity Name">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Opportunity Name</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.opportunityName}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>                                
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Customer">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Market/Country</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.marketOrCountry}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
+                            <!--FT-1961-->
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Customer">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">WTD Case</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.wrapper.WinTheDealLink}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
+                            <tr>
+                                <td>   
+                                    <div class="slds-truncate" title="Add Comments">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Add Comments</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <ui:inputTextarea aura:id="addComments" disabled="true"/>                                                                                                             
+                                            </div>
+                                        </div>
+                                    </div>                                        
+                                </td>  
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="slds-card__footer">
+                    <footer >
+                        <aura:if isTrue="{!v.wrapper.stakeHolderComment}">
+                            <lightning:button aura:id="stakeHolderAddCmtBtn" class="slds-button" variant="brand" value="{!v.wrapper.approvalRequestId}" onclick="{!c.validateOrRejectController}" label="Add Comment"/>
+                            <aura:set attribute="else">
+                                <aura:if isTrue="{!v.wrapper.validatorOrApprover}">
+                                    <lightning:button aura:id="validate" disabled="{!!v.wrapper.isApprovalRequested}" class="slds-button" variant="brand"  value="{!v.wrapper.approvalRequestId}"  label="Validate" onclick="{!c.validateOrRejectController}"/>
+                                    <lightning:button aura:id="ValidateReject" disabled="{!!v.wrapper.isApprovalRequested}" class="slds-button" variant="destructive" value="{!v.wrapper.approvalRequestId}"  label="Reject" onclick="{!c.validateOrRejectController}"/>                        
+                                    <aura:set attribute="else">
+                                        <lightning:button aura:id="approveButton" class="slds-button" variant="brand" onclick="{!c.approvalRequestController}" label="Approve"/>
+                                        <lightning:button aura:id="rejectButton" class="slds-button" variant="destructive" onclick="{!c.rejectionRequestController}" label="Reject"/>                        
+                                    </aura:set>
+                                </aura:if> 
+                            </aura:set>
+                        </aura:if>
+                    </footer>
+                </div>
+            </article>
+            <aura:if isTrue="{!v.strAppComments}">
+                <article class="slds-card"> 
+                    <div class="slds-card__body">
+                        <table class="slds-table"> 
+                            <tr>                
+                                <th scope="row">
+                                    <div class="slds-truncate" title="Offer Value">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Approval Requester Comments:</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <span class="slds-form-element__static">{!v.strAppComments}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th>   
+                            </tr>
+                        </table>	
+                    </div>  
+                </article>
+            </aura:if>
+            <article class="slds-card">
+                <div class="slds-card__header slds-button_brand">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">                            
+                        <div class="slds-media__body">
+                            <h2>                                          
+                                <span class="slds-text-title slds-text-color_inverse">LoA Offer Information and Access</span>          
+                            </h2>                        
+                        </div>                                                                                           
+                    </header>                       
+                </div>
+                <div class="slds-card__body">
+                    <table class="slds-table"> 
+                        <tr>                
+                            <th scope="row">
+                                <div class="slds-truncate" title="Offer Net Price">                        
+                                    <div class="slds-form-element">
+                                        <span class="slds-form-element__label">Offer Net Price (CNP) :</span>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <span class="slds-form-element__static">{!v.wrapper.offerValue_CNP}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>   
+                        </tr>
+                        <tr>                
+                            <th scope="row">
+                                <div class="slds-truncate" title="Accounting Value">                        
+                                    <div class="slds-form-element">
+                                        <span class="slds-form-element__label">Accounting Value (NS) :</span>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <span class="slds-form-element__static">{!v.wrapper.offerValue_NS}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>   
+                        </tr>
+                    </table>	
+                </div>
+            </article> 
+            <article class="slds-card">                
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">                            
+                        <div class="slds-media__body">
+                            <h2>                                          
+                                <span class="slds-text-title">(CNP/NS) Value per BG:</span>          
+                            </h2>                        
+                        </div>                                                                                            
+                    </header>                     
+                </div>
+                <div class="slds-card__body">
+                    <table class="slds-table">                            
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="CNP">CNP</div>
+                                </td>
+                            </tr>	
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="MN_CNP">MN:{!v.wrapper.netSalesMN_CNP}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="GS_CNP">GS:{!v.wrapper.netSalesGS_CNP}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="FN_CNP">FN:{!v.wrapper.netSalesFN_CNP}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="ION_CNP">ION:{!v.wrapper.netSalesION_CNP}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="NSW_CNP">NSW:{!v.wrapper.netSalesAA_CNP}</div>
+                                </td>
+                            </tr> 
+							<tr>
+                                <td>
+                                    <div class="slds-truncate" title="NEN_CNP">NSW:{!v.wrapper.netSalesNEN_CNP}</div>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="NS">NS</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="MN">MN:{!v.wrapper.netSalesMN}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="GS">GS:{!v.wrapper.netSalesGS}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="FN">FN:{!v.wrapper.netSalesFN}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="ION">ION:{!v.wrapper.netSalesION}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="NSW">NSW:{!v.wrapper.netSalesAA}</div>
+                                </td>
+                            </tr>
+							<tr>
+                                <td>
+                                    <div class="slds-truncate" title="NEN">NEN:{!v.wrapper.netSalesNEN}</div>
+                                </td>
+                            </tr> 							
+                        </tbody>                                
+                    </table>
+                </div>                
+            </article> 
+            <article class="slds-card">                
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">                            
+                        <div class="slds-media__body">
+                            <h2>                                          
+                                <span class="slds-text-title"> BG's and BU's structure:</span>          
+                            </h2>                        
+                        </div>                                                                                            
+                    </header>                     
+                </div>
+                <div class="slds-card__body">
+                    <table class="slds-table">                        
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="Lead BG">Lead BG:{!v.wrapper.leadBG}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="Lead BU">Lead BU:{!v.wrapper.leadBU}</div>
+                                </td>
+                            </tr>                            
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="Supporting BGs/BUs">Supporting BGs/BUs:{!v.wrapper.supportingBGsBUs}</div>
+                                </td>
+                            </tr>
+                            <!--tr>
+                                <td>
+                                    <div class="slds-truncate" title="Supporting BUs">Supporting BUs:{!v.wrapper.supportingBUION}</div>
+                                </td>
+                            </tr>
+							<tr>
+                                <td>
+                                    <div class="slds-truncate" title="Supporting BUs">Offer IRD (Days) :{!v.wrapper.offerIRD}</div>
+                                </td>
+                            </tr>
+							<tr>
+                                <td>
+                                    <div class="slds-truncate" title="Supporting BUs">Offer DSO (Days) :{!v.wrapper.offerDSO}</div>
+                                </td>
+                            </tr-->
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+            <article class="slds-card">                
+                <div class="slds-card__header slds-grid slds-button_brand">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">                            
+                        <div class="slds-media__body">
+                            <h2>                                          
+                                <span class="slds-text-title slds-text-color_inverse">Access to sCRM</span>          
+                            </h2>                        
+                        </div>                                                                                           
+                    </header>                       
+                </div>
+                <div class="slds-card__body custom-card">    
+                    <!-- <a>Opportunity in sCRM</a> -->
+                    <aura:if isTrue="{! !empty(v.G4G5DocWrapper)}">                            
+                        <h2 id="unrestricted" class="slds-text-heading_Small">G4/G5 Documents</h2>
+                        <table id="documentsTable" class="slds-table slds-table_bordered slds-table_cell-buffer">                                             
+                            <tbody>
+                                <aura:iteration items="{!v.G4G5DocWrapper}" var="gateDocs">
+                                    <tr class="slds-hint-parent">
+                                        <td role="gridcell" class="slds-truncate" data-label="Document Name">
+                                            <div class="slds-truncate" title="{!gateDocs.strDocumentName}">                                            
+                                                <button class="slds-button slds-truncate" type="button" onclick="{!c.openFileController}" id="{!gateDocs.strContentDocumentID}">
+                                                    {!gateDocs.strDocumentName}
+                                                </button>
+                                            </div>
+                                        </td>                                            
+                                    </tr>
+									<tr class="slds-hint-parent">
+                                            <td role="gridcell" class="slds-truncate" data-label="Document Type">
+                                                <div class="slds-truncate" title="{!gateDocs.strDocumentType}">
+                                                        {!gateDocs.strDocumentType}
+                                                </div>
+                                            </td>                                           
+                                        </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>                            
+                    </aura:if>
+                    <div class="slds-box">
+                        <aura:if isTrue="{! empty(v.G4G5DocWrapper)}">
+                            <section aria-labelledby="noRecords">
+                                <div class="slds-media__body slds-truncate">
+                                    <h2 id="unrestricted" class="slds-text-heading_Small">No G4/G5 Documents</h2> 
+                                </div>
+                            </section>
+                        </aura:if>
+                        
+                        <aura:if isTrue="{! !empty(v.DocWrapper)}">                            
+                            <h2 id="unrestricted" class="slds-text-heading_Small">Confidential Documents</h2>
+                            <table id="confidentialTable" class="slds-table slds-table_bordered slds-table_cell-buffer">                                           
+                                <tbody>
+                                    <aura:iteration items="{!v.DocWrapper}" var="confidentialDocs">
+                                        <tr class="slds-hint-parent">
+                                            <td role="gridcell" class="slds-truncate" data-label="Document Name">
+                                                <div class="slds-truncate" title="{!confidentialDocs.strDocumentName}">                                            
+                                                    <button class="slds-button slds-truncate" type="button" onclick="{!c.openConfiFileController}" id="{!confidentialDocs.strContentDocumentID}">
+                                                        {!confidentialDocs.strDocumentName}
+                                                    </button>
+                                                </div>
+                                            </td>                                           
+                                        </tr>
+										<tr class="slds-hint-parent">
+                                            <td role="gridcell" class="slds-truncate" data-label="Document Type">
+                                                <div class="slds-truncate" title="{!confidentialDocs.strDocumentType}">
+                                                        {!confidentialDocs.strDocumentType}
+                                                </div>
+                                            </td>                                           
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>                            
+                        </aura:if>
+                        <aura:if isTrue="{! empty(v.DocWrapper)}">
+                            <section aria-labelledby="noRecords">
+                                <div class="slds-media__body slds-truncate">
+                                    <h2 id="unrestricted" class="slds-text-heading_Small">No Confidential Documents</h2> 
+                                </div>
+                            </section>
+                        </aura:if>
+                    </div>
+                </div>                
+            </article>
+            <article class="slds-card">                
+                <div class="slds-card__header slds-grid slds-button_brand">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">                            
+                        <div class="slds-media__body">
+                            <h2>          
+                                <span class="slds-text-title slds-text-color_inverse">LoA Additional Information</span>          
+                            </h2>                        
+                        </div>                                           
+                    </header>                
+                </div>  
+                <div class="slds-box">
+                    <table>
+                        <tbody>                                
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate">                        
+                                        <div class="slds-form-element">
+                                            <span class="slds-form-element__label">Approval Scope</span>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <ui:inputTextArea disabled="true" aura:id="appScope" value="{!v.wrapper.approvalScope}" rows="5"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th> 
+                            </tr>
+                        </tbody>
+                    </table>    
+                </div>            
+            </article>
+            <article class="slds-card">                
+                <div class="slds-card__header slds-grid slds-button_success">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__body">
+                            <h2>                                          
+                                <span class="slds-text-title slds-text-color_inverse">Record of approval validation</span>          
+                            </h2>                        
+                        </div>                                                                                           
+                    </header>                       
+                </div>   
+                <aura:if isTrue="{!!empty(v.wrapper.approverRecList)}"> 
+                    <div class="slds-box">
+                        <div class="slds-card__body custom-card"> 
+                            <aura:iteration items="{!v.wrapper.approverRecList}" var="approvalRec">
+                                <table class="slds-table ">
+                                    <thead>
+                                        <th>
+                                            <div class="slds-truncate " title="{!approvalRec.NF_Assignee_Type__c}">{!approvalRec.NF_Assignee_Type__c}</div>
+                                        </th>
+                                    </thead>
+                                    <tbody>                                                                                                                                
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.NF_Role_Name__c}">ROLE NAME:&nbsp;{!approvalRec.NF_Role_Name__c}</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.NF_BG_Attribute__c}">BG Attribute:&nbsp;{!approvalRec.NF_BG_Attribute__c}</div>
+                                            </td>
+                                        </tr>										
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Assigned_To_Name__c}">ASSIGNED TO:&nbsp;{!approvalRec.Apttus_Approval__Assigned_To_Name__c}</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__ActualApproverName__c}">ACTUAL APPROVER:&nbsp;{!approvalRec.Apttus_Approval__ActualApproverName__c}</div>
+                                            </td>
+                                        </tr> 
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Approver_Comments__c}">COMMENT:&nbsp;{!approvalRec.Apttus_Approval__Approver_Comments__c}</div>
+                                            </td>
+                                        </tr> 
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Approval_Status__c}">APPROVAL STATUS:&nbsp;{!approvalRec.Apttus_Approval__Approval_Status__c}</div>
+                                            </td>
+                                        </tr>
+                                        
+                                    </tbody>
+                                </table>
+                                <div class = "slds-has-dividers_bottom"><hr/></div>
+                            </aura:iteration>
+                        </div>   
+                    </div>   
+                </aura:if>
+                <aura:if isTrue="{!!empty(v.wrapper.validatorRecList)}">        
+                    <div class="slds-box">
+                        <div class="slds-card__body custom-card">  
+                            <aura:iteration items="{!v.wrapper.validatorRecList}" var="approvalRec">
+                                <table class="slds-table">
+                                    <thead>
+                                        <th>
+                                            <div class="slds-truncate" title="{!approvalRec.NF_Assignee_Type__c}">{!approvalRec.NF_Assignee_Type__c}</div>
+                                        </th>
+                                    </thead>
+                                    <tbody>                                                                                                                                
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.NF_Role_Name__c}">ROLE NAME:&nbsp;{!approvalRec.NF_Role_Name__c}</div>
+                                            </td>
+                                        </tr> 
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.NF_BG_Attribute__c}">BG Attribute:&nbsp;{!approvalRec.NF_BG_Attribute__c}</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Assigned_To_Name__c}">ASSIGNED TO:&nbsp;{!approvalRec.Apttus_Approval__Assigned_To_Name__c}</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__ActualApproverName__c}">ACTUAL VALIDATOR:&nbsp;{!approvalRec.Apttus_Approval__ActualApproverName__c}</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Approver_Comments__c}">COMMENT:&nbsp;{!approvalRec.Apttus_Approval__Approver_Comments__c}</div>
+                                            </td>
+                                        </tr> 
+                                        <tr>
+                                            <td>
+                                                <aura:if isTrue="{!!approvalRec.Validator_Status__c.length>0}">
+                                                    <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Approval_Status__c}">APPROVAL STATUS:&nbsp;{!approvalRec.Apttus_Approval__Approval_Status__c}</div>                                                            
+                                                    <aura:set attribute="else">
+                                                        <div class="slds-form-element__label" title="{!approvalRec.Validator_Status__c}">APPROVAL STATUS:&nbsp;{!approvalRec.Validator_Status__c}</div>                                                                
+                                                    </aura:set>
+                                                </aura:if>                                                 
+                                            </td>
+                                        </tr>
+                                        
+                                    </tbody>
+                                </table>
+                                <div class = "slds-has-dividers_bottom"><hr/></div>
+                            </aura:iteration>                          
+                        </div>                                          
+                    </div>
+                </aura:if>
+                <!-- <aura:if isTrue="{!!empty(v.wrapper.stakeHolderRecList)}">                
+                    <div class="slds-box">
+                        <div class="slds-card__body custom-card">                          
+                            <aura:iteration items="{!v.wrapper.stakeHolderRecList}" var="approvalRec">
+                                <table class="slds-table">
+                                    <thead>
+                                        <th>
+                                            <div class="slds-truncate" title="{!approvalRec.NF_Assignee_Type__c}">{!approvalRec.NF_Assignee_Type__c}</div>
+                                        </th>
+                                    </thead>
+                                    <tbody>                                                                                                                                
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.NF_Role_Name__c}">ROLE NAME:&nbsp;{!approvalRec.NF_Role_Name__c}</div>
+                                            </td>
+                                        </tr> 
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Assigned_To_Name__c}">ASSIGNED TO:&nbsp;{!approvalRec.Apttus_Approval__Assigned_To_Name__c}</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Approver_Comments__c}">COMMENT:&nbsp;{!approvalRec.Apttus_Approval__Approver_Comments__c}</div>
+                                            </td>
+                                        </tr> 
+                                        <tr>
+                                            <td>
+                                                <div class="slds-form-element__label" title="{!approvalRec.Apttus_Approval__Approval_Status__c}">APPROVAL STATUS:&nbsp; {!approvalRec.Apttus_Approval__Approval_Status__c}</div>
+                                            </td>
+                                        </tr>                                
+                                    </tbody>
+                                </table>
+                                <div class = "slds-has-dividers_bottom"><hr/></div>
+                            </aura:iteration>
+                        </div>   
+                    </div>    
+                </aura:if> -->
+            </article>
+            <article class="slds-card">
+                <div class="slds-box">
+                    <div class="slds-card__header slds-grid">
+                        <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                            <div class="slds-media__figure">	  
+                                <span class="slds-icon_container" title="description of icon when needed">
+                                    <c:svgIcon svgPath="/resource/SldsNew/assets/icons/doctype-sprite/svg/symbols.svg#txt" class="slds-icon slds-icon_small"/>                                                                         
+                                </span>
+                            </div>
+                            <div class="slds-media__body">
+                                <h2>          
+                                    <span class="slds-text-heading_small">Task Creation</span>          
+                                </h2>                        
+                            </div>                                           
+                        </header>
+                        <lightning:button variant="brand" aura:id="tskBtn" label="New Task" onclick="{!c.showTaskInformation}"/>     
+                    </div>
+                    <div class="slds-card__body custom-card">
+                        <aura:if isTrue="{! !empty(v.approvalCenter)}">
+                            <section aria-labelledby="unrestricteds">                                                         
+                                <div class="slds-scrollable--y">
+                                    <table id="unrestrictedTable" class="slds-table slds-table--bordered slds-table--striped slds-table--fixed-layout
+                                                                         slds-max-medium-table--stacked-horizontal" role="grid">           
+                                        <thead>
+                                            <tr class="slds-text-title--caps">
+                                                <th class="slds-is-sortable slds-text-align--left" scope="col" aria-label="Subject" onclick="" style="padding-left:4px;">
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-truncate slds-text-align--left" title="Subject">Subject</span>
+                                                        <div class="slds-icon_container" aria-hidden="true">
+                                                            <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#arrowdown" 
+                                                                       class="slds-icon slds-icon--x-small slds-icon-text-default slds-is-sortable__icon" />                                                                                                   
+                                                        </div>
+                                                        <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                                    </a>                                    
+                                                </th>
+                                            </tr>
+                                            <tr class="slds-text-title--caps">
+                                                <th class="slds-is-sortable slds-text-align--left" scope="col" aria-label="Assigned To" onclick="">
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-truncate slds-text-align--left" title="Assigned To">Assigned To</span>                                        
+                                                        <div class="slds-icon_container" aria-hidden="true">                                                
+                                                            <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#arrowdown" 
+                                                                       class="slds-icon slds-icon--x-small slds-icon-text-default slds-is-sortable__icon" />                                                                                                   
+                                                        </div>
+                                                        <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                                    </a>                                    
+                                                </th>
+                                            </tr>
+                                            <tr class="slds-text-title--caps">
+                                                <th class="slds-is-sortable slds-text-align--left" scope="col" aria-label="Status" onclick="">
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-truncate slds-text-align--left" title="Status">Status</span>                                        
+                                                        <div class="slds-icon_container" aria-hidden="true">                                                
+                                                            <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#arrowdown" 
+                                                                       class="slds-icon slds-icon--x-small slds-icon-text-default slds-is-sortable__icon" />                                                                                                   
+                                                        </div>
+                                                        <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                                    </a>                                    
+                                                </th>
+                                            </tr>
+                                            <tr class="slds-text-title--caps">										
+                                                <th class="slds-is-sortable slds-text-align--left" scope="col" aria-label="Due Date" onclick="">
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-truncate slds-text-align--left" title="Due Date">Due Date</span>                                        
+                                                        <div class="slds-icon_container" aria-hidden="true">                                                
+                                                            <c:svgIcon svgPath="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#arrowdown" 
+                                                                       class="slds-icon slds-icon--x-small slds-icon-text-default slds-is-sortable__icon" />                                                                                                   
+                                                        </div>
+                                                        <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true"></span>
+                                                    </a>                                    
+                                                </th>
+                                                
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.approvalCenter}" var="tasklist">
+                                                <tr>
+                                                    <td role="gridcell" class="slds-truncate" data-label="Subject">
+                                                        <div class="slds-truncate" title="{!tasklist.Subject}">
+                                                            <!--<ui:button aura:id="contentDocumentId" press="{!c.navigateToTask}"
+                                                    label="{!confidentialFile.ContentDocumentId}" value="{!confidentialFile.ContentDocumentId}"/> -->
+                                                            <button class="slds-button slds-truncate" type="button" onclick="{!c.navigateToTask}" id="{!tasklist.Id}">{!tasklist.Subject}</button>
+                                                        </div>
+                                                    </td>                                                 
+                                                </tr>
+                                                <tr>
+                                                    <td role="gridcell" class="slds-truncate" data-label="Assigned To">
+                                                        <div class="slds-truncate" title="{!tasklist.Owner.Name}">{!tasklist.Owner.Name}</div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td role="gridcell" class="slds-truncate" data-label="Status">
+                                                        <div class="slds-truncate" title="{!tasklist.Status}">{!tasklist.Status}</div></td>
+                                                </tr>
+                                                <tr>
+                                                    <td role="gridcell" class="slds-truncate" data-label="Due Date">
+                                                        <div class="slds-truncate" title="{!tasklist.ActivityDate}">
+                                                            <ui:outputDate value="{!tasklist.ActivityDate}" />
+                                                        </div></td>                                    
+                                                </tr>
+                                                <div class = "slds-has-dividers_bottom"><hr/></div>
+                                            </aura:iteration> 
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </aura:if>
+                    </div>					
+                    <aura:if isTrue="{! empty(v.approvalCenter)}">
+                        <section aria-labelledby="noRecords">
+                            <div class="slds-media__body slds-truncate">
+                                <h1 id="noRecords" class="slds-section__title slds-p-around--xx-large">No Task to display</h1> 
+                            </div>
+                        </section>
+                    </aura:if> 
+                </div>
+            </article>
+        </aura:set>
+    </aura:if>
+</aura:component>

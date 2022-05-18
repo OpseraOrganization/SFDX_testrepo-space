@@ -1,0 +1,137 @@
+<!-- Type:  Aura Component
+  Name - CH_CA_SearchScheduleperUser
+  Description - NOKIASC-15336:View workgroup schedules for a user
+  Developer: TCS-->
+<aura:component controller= 'CH_CA_WorkgroupScheduleSearch_Controller' implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithoutHeader" access="global">
+    <!-- call doInit function on component load -->  
+    <aura:handler name="init" value="this" action="{!c.doInit}"/> 
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    
+    <!-- aura attributes-->     
+    <aura:attribute name="startDate" type="Date" />
+    <aura:attribute name="endDate" type="Date" />
+	<aura:attribute name="getDateTimeDetails" type="object" />
+    <aura:attribute name="startTime" type="Time" />
+    <aura:attribute name="endTime" type="Time" />
+    <aura:attribute type="List"     name="tblColumnsforScheduleperUser" />
+    <aura:attribute type="List"     name="searchScheduleperUser"/>
+    <aura:attribute name="sortedByValue" type="String"/>
+    <aura:attribute name="sortedDirectionUser" type="String"/>
+    <aura:attribute name="defaultSortDirection" type="String"/>     
+    <aura:attribute name="allData" type="List"/>
+    <aura:attribute name="currentPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="pageSize" type="Integer" default="5"/>
+    <aura:attribute name="totalPages" type="Integer" default="0"/>
+    <aura:attribute name="countofRecords" type="Integer" default="0"/>
+    <aura:attribute name="totalRecords" type="Integer" default="0"/>    
+    <aura:attribute name="PreviousPageNumber" type="Integer" />
+    <aura:attribute name="NextPageNumber" type="Integer" />
+    <aura:attribute name="allFilterData" type="List"/>
+    
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>       
+    <lightning:card>
+        
+        <!--header title with search button -->
+        <aura:set attribute="title">
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-2">
+                    <b><lightning:icon iconName="custom:custom25" alternativeText="Approved" title="Approved" />
+                        <span class="custom-label slds-p-around_medium">Search Schedule per User</span></b>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <div class="slds-button-group slds-float--right"  role="group">
+                        <button class="slds-button slds-button_neutral" onclick="{!c.doInit}"><b>Clear</b></button>
+                        <button class="slds-button slds-button_neutral" onclick="{!c.Search}"><b>Search</b> </button>                        
+                    </div>
+                </div>                
+            </div>            
+        </aura:set>   
+        
+        <!-- Search Schedule per User record edit form -->
+        <article class="slds-card slds-p-around_medium slds-p-top--none">         
+            <div class="slds-card__body slds-card__body_inner slds-p-around_medium">
+                <lightning:recordEditForm objectApiName="CH_Workgroup_Member__c" 
+                                          aura:id="rdScheduleperUser" >                
+                    <div class="slds-grid slds-gutters slds-m-horizontal--xx-large">                        
+                        <div class="slds-col slds-size_1-of-3" style="padding-top: 25px;">  
+                            <label class="slds-form-element__label">User</label>
+                            <lightning:inputField aura:id="user" fieldName="CH_User__c"  label="User" variant="label-hidden" />                  
+                        </div>                         
+                        <div class="slds-col slds-size_1-of-4">
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col">
+                                    <label class="slds-form-element__legend slds-form-element__label slds-form-element__label" for="Start Date">
+                                        <abbr class="slds-required" title="required">*</abbr>Start DateTime</label>
+                                    <lightning:input aura:id="startDate" type="Date"  label="Date"   value="{!v.startDate}" />
+                                </div>
+                                <div class="slds-col">       
+                                    <label class="slds-form-element__label" for="Start Time">
+                                        <abbr class="slds-required" ></abbr></label>
+                                    <lightning:input aura:id="startTime" type="Time"  label="Time" value="{!v.startTime}" />
+                                </div> 
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4">
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col">
+                                    <label class=" slds-form-element__legend slds-form-element__label slds-form-element__label" for="End Date">
+                                        <abbr class="slds-required" title="required">*</abbr>End DateTime</label>
+                                    <lightning:input aura:id="endDate" type="Date" label="Date"   value="{!v.endDate}" />
+                                </div>
+                                <div class="slds-col">     
+                                    <label class="slds-form-element__label" for="End Time">
+                                        <abbr class="slds-required" ></abbr></label>
+                                    <lightning:input aura:id="endTime" type="Time"  label="Time"  value="{!v.endTime}" />
+                                </div>
+                            </div>
+                        </div>                                 
+                    </div> 
+                </lightning:recordEditForm>
+                
+                <!-- Table to display Search Schedule per User -->          
+                <div class="slds-m-around_medium">
+                    <div class="slds-p-around_medium" >
+                        <lightning:datatable aura:id="tblScheduleperUser" 
+                                             data="{! v.searchScheduleperUser}" 
+                                             columns="{! v.tblColumnsforScheduleperUser }" 
+                                             wrapTextMaxLines="4"
+                                             keyField="Id"   
+                                             hideCheckboxColumn="true"
+                                             sortedBy="{! v.sortedByValue }"
+                                             sortedDirection="{! v.sortedDirectionUser }"
+                                             defaultSortDirection="{! v.defaultSortDirection }"                                                                                          
+                                             onsort="{! c.updateColumnSorting }"/>
+                        <lightning:layout multipleRows="true" horizontalAlign="center">
+                            <lightning:layoutItem padding="around-small" flexibility="auto">
+                                <lightning:button label="First" iconName="utility:left" iconPosition="left"
+                                                  onclick="{!c.onFirst}" disabled="{! v.PreviousPageNumber == 1}"/>
+                                
+                                <lightning:button label="Previous" iconPosition="left"
+                                                  onclick="{!c.onPrev}" disabled="{! v.PreviousPageNumber == 1}"/>
+                                
+                                <lightning:button label="Next" iconPosition="right" 
+                                                  disabled="{! v.NextPageNumber == 1}" onclick="{!c.onNext}"/>
+                                <lightning:button label="Last" iconName="utility:right" iconPosition="right" 
+                                                  disabled="{! v.NextPageNumber == 1}" onclick="{!c.onLast}"/>
+                                <span class="slds-m-slds-p-horizontal_x-small" >
+                                    <a> Total Records : {!v.countofRecords} of {!v.totalRecords}</a> 
+                                </span>  
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </div>           
+                </div>                
+            </div>        
+            <!-- End of Table -->        
+        </article>
+    </lightning:card>
+</aura:component>

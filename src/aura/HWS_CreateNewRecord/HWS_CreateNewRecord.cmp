@@ -1,0 +1,266 @@
+<aura:component controller ="HWS_Lookup_Class" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+    <aura:attribute name="objectName" type="String" />
+    <aura:attribute name="otherValues" type="String" />
+    <aura:attribute name="shippingCountry" type="String" />
+    <aura:attribute name="passingAccount" type="Id" />
+    <aura:attribute name="AccountDetails" type="Id"/>
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
+    <aura:attribute name="objectFromParent" type="String" />
+    <aura:attribute name="options" type="List" access="PRIVATE"/>
+    <aura:attribute name="SelectedAsset" type="object[]" />
+    <aura:method name="controllerFieldChange" action="{!c.onControllerFieldChange}">
+    </aura:method>
+    <aura:method name="initForPortal" action="{!c.doInit}" access="PUBLIC"/>
+    <!-- aura attributes-->  
+    <aura:attribute name="listControllingValues" type="list" default="[]" description="to store controller field values"/>
+    <aura:attribute name="listDependingValues" type="list" default="['--None--']" description="to store dependent field values"/>
+    <aura:attribute name="depnedentFieldMap" type="map" description="map to store dependent values with controlling value"/>
+    <aura:attribute name="bDisabledDependentFld" type="boolean" default="true"/> 
+    <!--NOKIASC-35956:Add Toggle button with a specific name for Ad hoc ship to address creation -->
+    <aura:attribute name="isTranslationRequired" type="boolean" default="false"/> 
+    <aura:attribute name="latinInput" type="boolean" default="false"/>  
+    <!--Use this field to get value for local language-->
+    <aura:attribute name="languageCode" type="String" default=""/>
+    <!--Use this field to get translation Required To which value-->
+    <aura:attribute name="translationRequiredTo" type="String" default="Latin"/> 
+    <aura:attribute name="isInputWrong" type="boolean" default="false"/>  
+    <aura:attribute name="showRetroAccount" type="Boolean" /> <!-- NOKIASC-36305 -->
+    <aura:attribute name="updatedRetroAccountId" type="String" />
+    <aura:attribute name="country" type="string" default="" /> <!-- NOKIASC-36305 -->
+    
+    <!--End-->
+    
+    <aura:attribute name="objDetail" type="Account" default="{'sobjectType' : 'Account'}"/> 
+    <aura:attribute name="controllingFieldAPI" type="string" default="BillingCountryCode" description="store field API name of Controller field"/>
+    <aura:attribute name="dependingFieldAPI" type="string" default="BillingStateCode" description="store field API name of dependent field"/>
+    <aura:attribute name="saveDisable" type="Boolean" default="false"/>
+    <aura:attribute name="Account" type="Account" default="{'sobjectType': 'Account',
+                                                           'Hws_Address_Line_1__c': '',
+                                                           'Hws_Address_Line_2__c': '',
+                                                           'Hws_Address_Line_3__c': '',
+                                                           'BillingCity': '',
+                                                           'BillingPostalCode': '',
+                                                           'BillingStreet': '',
+                                                           }"/>
+    <!---Ends Here -->
+    <aura:attribute name="contact" type="Contact" default="{'sobjectType': 'Contact',
+                                                           'Salutation': '',
+                                                           'FirstName': '',
+                                                           'LastName': '',
+                                                           'Email': '',
+                                                           'Phone': '',
+                                                           'Account': '',
+                                                           }"/>
+    <aura:registerEvent name="HWS_createNewRecordEvent" type="c:HWS_createNewRecordEvent"/>
+    <!--Spinnner start-->
+    <aura:attribute name="IsSpinner" type="Boolean" default="false"/>
+    <aura:if isTrue="{!v.IsSpinner}">
+        <lightning:spinner variant="brand"  size="medium" />
+    </aura:if>
+    <aura:handler event="aura:waiting" action="{!c.showWaiting}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideWaiting}"/>-->
+    <!--Spinner End-->
+    
+    <aura:if isTrue="{!v.objectName=='Account'}">
+        <!--###### MODAL BOX Start######--> 
+        <div role="dialog" tabindex="-1" aura:id = "Modalbox" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open hideDiv">
+            <aura:if isTrue="{!v.IsSpinner}">
+				<lightning:spinner variant="brand" size="medium" />
+			</aura:if>
+			<div class="slds-modal__container" aura:id = "Modalbox1">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Ship to Party Address</h2>
+                    <h1 id="modal-heading-01" class="slds-text-color_error">Ensure customer name is spelled correctly for proper usage in the future</h1>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.isInputWrong}">
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-align--absolute-center slds-m-horizontal--small">
+								<aura:if isTrue="{!v.latinInput}">
+                                    <h1 id="modal-heading-01" class="slds-text-color_error">Please enter the address in Latin/English characters or disable the toggle to input the address in Local characters.</h1>                   
+                                    <aura:set attribute="else">
+                                        <h1 id="modal-heading-01" class="slds-text-color_error">Please enter the address in local characters or enable the toggle to input the address in Latin/English characters.</h1>                   
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                        </div>
+                    </aura:if>
+                    <div class="slds-grid slds-grid--pull-padded">                        
+                        <div class="slds-p-horizontal--large slds-large-size--1-of-2 slds-medium-size--1-of-2 slds-small-size--1-of-1 slds-x-small-size--1-of-1 slds-m-bottom--medium">                                                        
+                            <lightning:input aura:id="shipPartyName" label="Ship to Party Name"
+                                             name="Name"
+                                             value="{!v.Account.Name}"
+                                             maxlength="255"
+                                             required="true"/>
+                            
+                            <lightning:input aura:id="addressLine1" label="Address Line-1"
+                                             name="Hws_Address_Line_1__c"
+                                             value="{!v.Account.Hws_Address_Line_1__c}"
+                                             maxlength="40"
+                                             required="true" onblur="{!c.HandleAddressChange}"/>
+                            <lightning:input aura:id="addressLine2" label="Address Line-2"
+                                             name="Hws_Address_Line_2__c"
+                                             value="{!v.Account.Hws_Address_Line_2__c}"
+                                             maxlength="60"
+                                             onblur="{!c.HandleAddressChange}"
+                                             />                            
+                            <lightning:input aura:id="addressLine3" label="Address Line-3"
+                                             name="Hws_Address_Line_3__c"
+                                             value="{!v.Account.Hws_Address_Line_3__c}"
+                                             maxlength="40"
+                                             onblur="{!c.HandleAddressChange}"
+                                             />
+                            <!--NOKIASC-35956:Add Toggle button with a specific name for Ad hoc ship to address creation -->
+                            <aura:if isTrue="{!v.isTranslationRequired}">
+                                <div class=" slds-m-vertical_x-small slds-p-right_medium"> 
+                                    <span style="display:flex">
+                                        <lightning:input aura:id="latinInputToggle"
+                                                         type="toggle" 
+                                                         label="Latin/English" 
+                                                         name="Translation Required" 
+                                                         checked="{!v.latinInput}" 
+                                                         messageToggleActive="On" 
+                                                         messageToggleInactive="Off" 
+                                                         class="slds-p-right--small" 
+                                                         onchange="{! c.handlelatinInputChange}"/>
+                                        <lightning:helptext content="Enable the toggle to input the address in Latin/English Character." class="customIcon"/>
+                                    </span>
+                                </div>
+                            </aura:if>
+                            
+                        </div>
+                        <div class="slds-p-horizontal--large slds-large-size--1-of-2 slds-medium-size--1-of-2 slds-small-size--1-of-1 slds-x-small-size--1-of-1 slds-m-bottom--medium">
+                            <!--Controller Field-->   
+                            <lightning:select name="controllerFld" aura:id="countryCodeId"
+                                              value="{!v.objDetail.BillingCountrycode}"
+                                              label="Country" required="true"
+                                              onchange="{!c.onControllerFieldChange}" disabled="true"> 
+                                <aura:iteration items="{!v.listControllingValues}" var="val">
+                                    <option value="{!val}"  selected="{!val==v.shippingCountry}">{!val}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                            
+                            <!--Dependent Field-->
+                            <lightning:select name="dependentFld" aura:id = "stateCodeId"
+                                              value="{!v.objDetail.BillingStatecode}"
+                                              label="State/Province"
+                                              disabled="{!v.bDisabledDependentFld}">
+                                <aura:iteration items="{!v.listDependingValues}" var="val">
+                                    <option value="{!val}">{!val}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                            
+                            <lightning:input aura:id="Billcityid" label="City"
+                                             name="BillingCity"
+                                             value="{!v.Account.BillingCity}"
+                                             maxlength="255"
+                                             required="true"/>
+                            
+                            <lightning:input aura:id="postalcodeid" label="Postal Code"
+                                             name="BillingPostalCode"
+                                             value="{!v.Account.BillingPostalCode}"
+                                             maxlength="10"
+                                             required="true"/>   
+                        </div>
+                    </div> 
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeModel }"/>
+                    <lightning:button variant="brand" 
+                                      label="Save"
+                                      title="Save"
+                                      onclick="{! c.saveShiptoParty }" disabled="{!v.saveDisable}"/>
+                </footer>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open" aura:id="Modalbackdrop"></div>
+        <!--###### MODAL BOX Part END Here ######--> 
+        <!--Ends Here --> 
+    </aura:if>
+    <aura:if isTrue="{!v.objectName=='Contact'}">
+        <!--###### MODAL BOX Start######--> 
+        <div role="dialog" tabindex="-1" aura:id = "Modalbox" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open hideDiv">
+			<aura:if isTrue="{!v.IsSpinner}">
+				<lightning:spinner variant="brand" size="medium" />
+			</aura:if>
+			<div class="slds-modal__container" aura:id = "Modalbox1">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Create New Communication Contact</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-grid slds-grid--pull-padded">
+                        <div class="slds-p-horizontal--large slds-large-size--2-of-1 slds-medium-size--1-of-2 slds-small-size--1-of-1 slds-x-small-size--1-of-1 slds-m-bottom--medium">
+                            <lightning:select class="single" value="{!v.contact.Salutation}" label="Salutation" aura:id="InputSelectSingle" >
+                                <aura:iteration items="{!v.options}" var="option">
+                                    <option text="{!option}" value="{!option}" />
+                                </aura:iteration>                        
+                            </lightning:select>
+                            <lightning:input aura:id="firstNameId" label="First Name"
+                                             name="First Name"
+                                             value="{!v.contact.FirstName}"
+                                             maxlength="255"/>
+                            <lightning:input aura:id="lastNameId" label="Last Name"
+                                             name="Last Name"
+                                             value="{!v.contact.LastName}"
+                                             maxlength="255"
+                                             required="true"/>
+                            <lightning:input aura:id="EmialId" label="Email"
+                                             name="Email"
+                                             value="{!v.contact.Email}"
+                                             maxlength="255"
+                                             required="true"/>
+                            <lightning:input aura:id="PhoneId" label="Telephone Number"
+                                             name="TelephoneNumber"
+                                             value="{!v.contact.Phone}"
+                                             maxlength="40"
+                                             required="true"/>
+                        </div>
+                        <div class="slds-p-horizontal--large slds-large-size--1-of-2 slds-medium-size--1-of-2 slds-small-size--1-of-1 slds-x-small-size--1-of-1 slds-m-bottom--medium">
+                            <lightning:input aura:id="otherLabel" label="Account"
+                                             name="Email"
+                                             maxlength="255"
+                                             readonly = "true"/>  
+                            <lightning:input aura:id="contactTypeId" label="Contact Type"
+                                             name="Email"
+                                             maxlength="255"
+                                             value="Communication Contact"
+                                             readonly = "true"/> 
+                        </div>
+                    </div> 
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeModel }"/>
+                    <lightning:button variant="brand" 
+                                      label="Save"
+                                      title="Save"
+                                      onclick="{! c.save }"/>
+                </footer>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open" aura:id="Modalbackdrop"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+    </aura:if>
+</aura:component>
