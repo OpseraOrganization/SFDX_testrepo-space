@@ -1,0 +1,234 @@
+<aura:component controller="CAPS_MultiFileUploadController" implements="force:appHostable,flexipage:availableForRecordHome,flexipage:availableForAllPageTypes,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+    <ltng:require scripts="{!join(',',  
+                           $Resource.Sha256Hash + '/sjcl/sjcl2.js',
+                           $Resource.Md5hashDigest + '/SparkMD5/SparkMD5.js')}" /> 
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="wrapper" 					type="Object" />
+    <aura:attribute name="objInfo" 					type="CH_Attachment__c" default="{sobjectType : 'CH_Attachment__c'}"/>
+    <aura:attribute name="uploadButtonIsDisabled" 	type="Boolean" 			default="true" />
+    <aura:attribute name="classifications" 			type="List"/>
+    <aura:attribute name="filesSelectedForUpload" 	type="List"/> 
+    <aura:attribute name="recordId" 				type="Id"  				description="Record to which the should be attached" />
+    <aura:attribute name="uploadWrapper" 			type="Object" />
+    <aura:attribute name="uploadStarted" 			type="Boolean" 			default="false" />
+    <aura:attribute name="status" 					type="String"			default=""/> 		
+    <aura:attribute name="isCommunity" 				type="Boolean"			default="false"/> 
+    <aura:attribute name="isMessageModalOpened" 	type="Boolean"			default="false"/>
+    <aura:attribute name="errorMessagePopup" 		type="String"			default=""/>
+    <aura:attribute name="uploadCancelled" 			type="Boolean" 			default="false" />
+    <aura:attribute name="baseURL" 					type="String"			default=""/>
+    <aura:attribute name="logApiURL" 				type="String"			default=""/>
+    <aura:attribute name="s3SignApiURL" 			type="String"			default=""/>
+    <aura:attribute name="s3SignApiV4URL" 			type="String"			default=""/>
+    <aura:attribute name="caseDetails" 				type="Object" />
+    <aura:attribute name="morethan5MBWarning" 		type="Boolean" 			default="false" />
+    <aura:registerEvent name="appEvent" 			type="c:CH_UploadEvent"/>
+    <aura:attribute name="isAllCancelled" 			type="Boolean" 			default="false" />
+    <aura:attribute name="isCaseWorkgroupMember" 	type="Boolean"			default="false"/>
+    <aura:attribute name="isErrorModalOpened" 		type="Boolean"			default="false"/>
+   
+    <article class="slds-card">
+        <aura:if isTrue="{!v.isMessageModalOpened}">
+            <div class="demo-only" style="height: 640px;">
+                <section role="dialog" tabindex="-1" aria-label="error panel" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <lightning:button class="slds-button slds-button_icon slds-modal__close" 
+                                              iconName="utility:close" 
+                                              title="Close" 
+                                              onclick="{!c.closeModal}">
+                                <!--span class="slds-assistive-text">Close</span-->
+                            </lightning:button>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" >  Messages	</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p align="center">{!v.errorMessagePopup}</p>
+                        </div>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div> 
+        </aura:if>
+       <!-- error msg for filename more than 80 char DEM0054001 --> 
+         <aura:if isTrue="{!v.isErrorModalOpened}">
+            <div class="demo-only" style="height: 640px;">
+                <section role="dialog" tabindex="-1" aria-label="error panel" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <lightning:button class="slds-button slds-button_icon slds-modal__close" 
+                                              iconName="utility:close" 
+                                              title="Close" 
+                                              onclick="{!c.closeModal}">
+                                <!--span class="slds-assistive-text">Close</span-->
+                            </lightning:button>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="color: red" >  Error	</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p align="center">{!v.errorMessagePopup}</p>
+                        </div>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div> 
+        </aura:if>
+       
+        <lightning:button class="slds-button slds-section__title-action" iconName="utility:attach" iconPosition="left">
+            <b>Upload Attachments</b> 
+        </lightning:button>
+        
+        <div class="slds-grid slds-gutters slds-p-around_medium">
+            <div class="slds-col">
+                <div align="left">
+                    <lightning:layoutItem flexibility="no-flex" class="slds-m-right_x-small">
+                        <lightning:input aura:id="fileId" 
+                                         disabled="{!v.uploadStarted || v.caseDetails.Status == 'Closed' || v.caseDetails.Status == 'Completed' || v.caseDetails.Status == 'Cancelled' || !v.isCaseWorkgroupMember}"
+                                         onchange="{!c.handleFilesChange}" 
+                                         type="file" 
+                                         name="file" 
+                                         label="Browse or Drag and Drop:" 
+                                         multiple="true"/>
+                    </lightning:layoutItem>
+                </div>
+            </div>
+            <div class="slds-col">
+                <div align="right">
+                    <div><b>{!v.status}</b></div>
+                    <lightning:button label="Cancel Upload" 
+                                      class="slds-button"
+                                      variant="destructive"
+                                      onclick="{!c.cancelUpload}" 
+                                      disabled="{!!v.uploadStarted}" />
+                    <lightning:button label="Upload" 
+                                      class="slds-button" 
+                                      variant="brand" 
+                                      onclick="{!c.doUpload}" 
+                                      disabled="{!v.uploadButtonIsDisabled}" />
+                </div>
+            </div>
+        </div>
+        <div class="slds-scrollable slds-p-bottom_medium" style="height: 300px">
+            <table class="slds-table slds-table_bordered slds-table_striped slds-table_flexible-layout"> 
+                <thead>
+                    <tr class="slds-text-heading_label">
+                        <th scope="col">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label" for="text-input-id-1">
+                                    <abbr class="slds-required" title="required">*</abbr>Filename</label>
+                            </div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label" for="text-input-id-1">
+                                    <abbr class="slds-required" title="required">*</abbr>Description</label>
+                            </div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label" for="text-input-id-1">
+                                    <abbr class="slds-required" title="required">*</abbr>Classification</label>
+                            </div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label" for="text-input-id-1">Customer Visible</label>
+                            </div>
+                        </th>  
+                        <th>
+                        	<div class="slds-form-element">
+                                <label class="slds-form-element__label" for="text-input-id-1">Progress Bar</label>
+                            </div>
+                        </th>                        
+                        <th scope="col">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label" for="text-input-id-1">Remove/Cancel</label>
+                            </div>
+                        </th> 
+                    </tr>
+                </thead>   
+                <tbody>
+                    <aura:iteration items="{!v.filesSelectedForUpload}" var="fileSelectedForUpload" indexVar="index">
+                        <tr>
+                            <td>
+                                <lightning:input title ="{!fileSelectedForUpload.File.name}" 
+                                                 style="{!'width: '+(fileSelectedForUpload.File.name.length +1)*10+'px'+ ' !important;'}"  
+                                                 disabled="true" 
+                                                 type="text" 
+                                                 data-index="true"
+                                                 aura:id="upload"
+                                                 value="{!fileSelectedForUpload.File.name}"/>
+                            </td> 
+                            <td>
+                                <!--lightning:input type="text" 
+                                                 style="{!fileSelectedForUpload.Description.length == 0 ? 'width: 175px !important;' : 'width: '+(fileSelectedForUpload.Description.length +10)*10+'px'+ ' !important;'}" 
+                                                 placeholder="Enter description" 
+                                                 title ="{!fileSelectedForUpload.Description}"
+                                                 disabled="{!v.uploadStarted}"
+                                                 value="{!fileSelectedForUpload.Description}" /-->
+                                <lightning:input type="text" 
+                                                 style="width: 300px !important;"
+                                                 placeholder="Enter description" 
+                                                 title ="{!fileSelectedForUpload.Description}"
+                                                 disabled="{!v.uploadStarted}"
+                                                 value="{!fileSelectedForUpload.Description}" />
+                            </td>
+                            <td>
+                                <lightning:combobox style="width: 300px !important;" 
+                                                    options="{!v.classifications }" 
+                                                    title ="{!fileSelectedForUpload.Classification}"
+                                                    disabled="{!v.uploadStarted}"
+                                                    value="{!fileSelectedForUpload.Classification}" />
+                            </td>
+                            <td>
+                                <ui:inputCheckbox class="disabled-inputcheckbox" disabled ="{!v.uploadStarted || v.isCommunity ? true : false}" 
+                                                  value="{!fileSelectedForUpload.CustomerVisible}" />
+                                <!--lightning:input type="checkbox"
+                                                 disabled="{!v.uploadStarted}"
+                                                 checked="{!fileSelectedForUpload.CustomerVisible}" /-->
+                            </td>
+                            <td>
+                            	<c:CAPS_ProgressBar aura:id="ProgressBarId" />
+                            </td>
+                            <td id="{!'rowId-' + index}">
+                                    <button onclick="{!c.handleRemoveItem}" data-index="{!index}" id="{!'removeId-' + index}">
+                                        <lightning:icon iconName="utility:delete" size="xx-small"
+                                                        class="iconColor"
+                                                        alternativeText="Remove from upload list"/>
+                                    </button>                                            
+                             </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+            <aura:if isTrue="{!v.morethan5MBWarning}">
+                <div class="demo-only" style="height: 640px;">
+                    <section role="dialog" tabindex="-1" aria-label="Confirm" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p align="center">Though you have customer visible file, still cannot be sent to T-mobile as Size is more than 5 MB</p>
+                                <p align="center">Please click "Continue" to upload or "Cancel" to modify</p>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" 
+                                                  label="Cancel"
+                                                  title="Cancel"
+                                                  onclick="{!c.ModifyUpload}"/>
+                                <lightning:button variant="brand" 
+                                                  label="Continue"
+                                                  title="Continue"
+                                                  onclick="{!c.confirmUpload}"/>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </div>
+            </aura:if>
+        	<br/>
+        	<br/>
+            <aura:if isTrue="{!v.caseDetails.Status == 'Closed' || v.caseDetails.Status == 'Completed' || v.caseDetails.Status == 'Cancelled'}">
+                <div class="slds-text-align_center slds-text-heading_small">
+                    This Case has been {!v.caseDetails.Status}. So, File cannot be uploaded.	
+                </div>
+            </aura:if>
+        </div>
+    </article>    
+</aura:component>

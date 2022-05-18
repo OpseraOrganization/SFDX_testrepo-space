@@ -1,0 +1,189 @@
+<aura:component controller="IRApplicationCase" >
+    <aura:attribute name="onclick" type="Aura.Action"/>
+    <aura:attribute name="save" type="Aura.Action"/>
+    <aura:attribute name="closeModal" type="Aura.Action"/>
+    <aura:attribute name="copyAddress" type="Aura.Action"/>
+    <aura:attribute name="label" type="String"/>
+    <aura:attribute name="sectionLabels" type="Map"/>
+    <aura:attribute name="optDistributor" type="List"/>
+    <aura:attribute name ="optState" type="List" default="[]"/>
+    <aura:attribute name="strt1" type="List"/>
+    <aura:attribute name="strt2" type="List"/>
+    <aura:attribute name="strt3" type="List"/>
+    <aura:attribute name="city" type="List"/>
+    <aura:attribute name="postalCode" type="List"/>   
+    <aura:attribute name="isOpen" type="String"/>
+    <aura:attribute name="isHQCountry" type="boolean" default="false"/>
+    <aura:handler name="init" value="{!this}" action="{!c.myAction}" />
+    <aura:attribute name="isSaving" type="Boolean" default="false" />
+    <!--SFPRM-->
+    <aura:attribute name="filetype" type="List" default="['.png', '.jpg', '.jpeg', '.pdf', '.pptx','.docx']" />
+    <aura:attribute name="multiple" type="Boolean" default="true" />
+    <aura:attribute name="disabled" type="Boolean" default="true" />
+    <aura:attribute name="recordId" type="String" />
+    <!--SFPRM-->
+    
+    <div class="demo-only" style="height: 640px;">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <aura:if isTrue="{!v.isSaving}">
+                <lightning:spinner alternativeText="Loading"/>
+            </aura:if>
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!v.label}</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" aura:id="modal-content-id-1" id="modal-content-id-1">
+                    <div class="slds-form--compound">
+                        To conduct business in {!v.label} on behalf of Nokia you must have a physical address in {!v.label} and a sales contact who resides in {!v.label}.
+                        <br></br>
+                        <h2 class="headercolor">Affiliates/Subsidiary Information</h2>
+                        <div class="slds-form-element__group">
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-2 ">
+                                    <lightning:input type="text" aura:id="affil" value="{! v.sectionLabels.affil}" label="Affiliate/Subsidiary Company Name" required="true"/>
+                                </div>
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    
+                                    <lightning:input type="text" aura:id="regNo"  value="{! v.sectionLabels.regno}" label="Company Registration Number" required="true" fieldLevelHelp="Please provide Registration number or other identification number as evidence of the legal existence of your business in this country. Ex. include: Local Country Registration, EIN etc."/>
+                                </div>
+                            </div>
+                            <aura:renderIf isTrue="{!v.isHQCountry}">
+                                <div class="slds-form-element__row">
+                                    <lightning:input type="checkbox" aura:id="addCheck" value="{! v.sectionLabels.checkbox}" label="Is your Affiliated/Subsidiary's address same as Headquater's address?" onchange="{!v.copyAddress}"/>
+                                </div>
+                            </aura:renderIf>
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-1 " >
+                                    <lightning:dualListbox name="Distributor" aura:id="distrOp"
+                                                           sourceLabel="Available"
+                                                           label="Select the distributor which is sponsoring your application"
+                                                           selectedLabel="Chosen"
+                                                           options="{!v.optDistributor}"
+                                                           value="{!v.sectionLabels.distributor}"
+                                                           size="4"
+                                                           fieldLevelHelp = "Partner through whom you will source Nokia products/services and that is willing to act in that role"
+                                                           required="true"/>
+                                    <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="errorDistr"></div>
+                                </div>
+                            </div>
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-1 ">
+                                    <lightning:textarea aura:id="sa1" value="{! v.sectionLabels.sa1}" label="Street Address 1" required="true"/>
+                                </div>
+                            </div>
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-1 ">
+                                    <lightning:textarea aura:id= "sa2" value="{! v.sectionLabels.sa2}" label="Street Address 2" />
+                                </div>
+                            </div>
+                            
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-1 ">
+                                    <lightning:textarea aura:id="sa3" value="{! v.sectionLabels.sa3}" label="Street Address 3" />
+                                </div>
+                            </div>
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-2 ">
+                                    <lightning:input type="text" aura:id="website" value="{! v.sectionLabels.website}" label="Company's Website" required="true"/>
+                                </div>
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input type="text" aura:id="domain" value="{! v.sectionLabels.domain}" pattern="@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5}){1,25}" messageWhenPatternMismatch="Please enter a valid email domain" label="Email Domain(e.g. @xyz.com)" required="true"/>
+                                </div>
+                            </div>
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input aura:id="country" value="{!v.label}" label="Country" readonly="true"/>
+                                </div>
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input type="tel" aura:id="phone" value="{!v.sectionLabels.phone}" label="Phone No." required="true" pattern="[-+]?[0-9]+" messageWhenPatternMismatch="Please enter a numeric value."/>
+                                </div>
+                            </div>
+                            <div class="slds-form-element__row">                                                            
+                                <div class="slds-form-element slds-size--1-of-2 ">
+                                    <lightning:combobox aura:id="state" disabled="{!(v.optState.length>0)?false:true}" label="State/Province(If Applicable)" placeholder="Select a State" options="{! v.optState }" value="{!v.sectionLabels.state}"/>
+                                    <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="errorState"></div>
+                                </div>
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input type="text" aura:id="city" value="{! v.sectionLabels.city}" label="City" required="true"/>
+                                </div>
+                            </div>
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input type="text" aura:id="postal" value="{! v.sectionLabels.postal}" label="Postal Code" required="true" patter="[-+]?[0-9]+"/>
+                                </div>
+                            </div>                           
+                        </div>
+                        <h2 class="headercolor">Sales Contact</h2>
+                        <div class="slds-form-element__group">
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-2 ">
+                                    <lightning:input type="text" aura:id="salesfname" value="{! v.sectionLabels.salesfname}" label="First Name" required="true"/>
+                                </div>
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input type="text" aura:id="saleslname" value="{! v.sectionLabels.saleslname}" label="Last Name" required="true"/>
+                                </div>
+                            </div>
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-2 ">
+                                    <lightning:input type="text" aura:id="salesemail" value="{! v.sectionLabels.salesemail}" label="Email" required="true" pattern="\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,18})+" messageWhenPatternMismatch="Please enter valid email."/>
+                                </div>
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input type="text" aura:id="salesphone" value="{! v.sectionLabels.salesphone}" label="Primary Phone" required="true" pattern="[-+]?[0-9]+"  messageWhenPatternMismatch="Please enter a numeric value."/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick="{!v.onclick}">Cancel</button>
+                        <button class="slds-button slds-button_brand"  onclick="{!v.save}">Save</button>
+                    </footer>
+                </div>
+                <div class="slds-modal__content slds-p-around_medium slds-hide" aura:id="modal-content-id-2" id="modal-content-id-2">
+                    <br/>
+                    <h2 class="headercolor">Upload Legal Documents</h2>
+                    <br/>
+                    <label>Please upload documents that provide Proof of Legal Entity, authentic official document of registration/incorporation</label>
+                    <div class="{!v.isHQCountry?'slds-hide':'slds-show'}">
+                        <br/>
+                        <div style="width:100%;align-content:center">And</div>
+                        <br/>
+                        <label style="display:block;">
+                            Please upload an official document that establishes the relationship between the parent and affiliate/subsidiary in this country
+                        </label>
+                    </div>
+                    <lightning:helptext
+                                        content="{!'Allowed file extensions: '+v.filetype}"
+                                        />
+                    <lightning:fileUpload 
+                                          label=""
+                                          name="fileUploader"
+                                          multiple="false"
+                                          accept="{!v.filetype}"
+                                          recordId="{!v.sectionLabels.Id}"
+                                          onuploadfinished="{!c.handleUploadFinished}" />
+                    <br/>
+                    <aura:if isTrue="{!v.sectionLabels.fileNames.length>0}">
+                        Uploaded Files:<br/>
+                        <aura:iteration items="{!v.sectionLabels.fileNames}" var="file">
+                            <div style="margin:5px auto">
+                                <span class="slds-pill slds-pill_link">
+                                    <a href="javascript:void(0);" class="slds-pill__action" title="{!file}" style="cursor:default">
+                                        <span class="slds-pill__label">{!file}</span>
+                                    </a>
+                                </span>
+                            </div>
+                        </aura:iteration>
+                    </aura:if>
+                    <br/>
+                    <br/>
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_brand" onclick="{!v.closeModal}">Close</button>
+                    </footer>
+                    
+                </div>     
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </div>
+</aura:component>

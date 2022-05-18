@@ -1,0 +1,259 @@
+<aura:component implements="lightning:actionOverride,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" controller="DS_SWCatalogue">    
+    <aura:attribute name="FrameContractRef" 
+                    type="List"/>
+    <aura:attribute name="PO" 
+                    type="List"/>
+    <aura:attribute name="technology" 
+                    type="List"/>
+    <aura:attribute name="useCase" 
+                    type="List"/>
+    <aura:handler name="init" 
+                  value="{!this}" 
+                  action="{!c.getPicklistValueonLoad}"/>-
+   
+ 
+  
+    
+    <aura:attribute name="listControllingValues" type="list" default="[]" description="to store controller field values"/>
+    <aura:attribute name="listDependingValues" type="list" default="['--- None ---']" description="to store dependent field values"/>
+    <aura:attribute name="depnedentFieldMap" type="map" description="map to store dependent values with controlling value"/>
+    <aura:attribute name="bDisabledDependentFld" type="boolean" default="true"/> 
+    <aura:attribute name= "contents" type="list" />
+    
+    <aura:attribute name="objDetail" type="contact" default="{'sobjectType' : 'SWx_Upsell_Proposal__c'}"/>
+    <aura:attribute name="controllingFieldAPI" type="string" default="Technology__c" description="store field API name of Controller field"/>
+    <aura:attribute name="dependingFieldAPI" type="string" default="Use_Case__c" description="store field API name of dependent field"/>
+    
+	<aura:attribute name="Blank" type="String" default=""/>
+    <aura:attribute name="ONvalue" type="String" default="ON"/>
+    <aura:attribute name="OFFvalue" type="String" default="OFF"/>
+	<aura:attribute name="selectedAgreementCache" type="String" />
+	<aura:attribute name="selectedPOcache" type="String" />
+	<aura:attribute name="selectedTechCataloguecache" type="String" />
+	<aura:attribute name="selectedUseCaseCataloguecache" type="String" />
+	<aura:attribute name="selectedStatusCatalogueCache" type="String" />
+    <aura:attribute name="DPData" type="Object"/>
+ 	<aura:attribute name="startPage" type="Integer" />
+    <aura:attribute name="endPage" type="Integer"/>
+    <aura:attribute name="totalRecords" type="Integer"/>
+    <aura:attribute name="pageSize" type="Integer" default="10"/>
+    
+    <!-- create 2 aura handler with waiting and donewaiting events--> 
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <!--create a component attributs for spinner-->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    
+   <div class="slds-grid slds-gutters">
+   <div class="slds-col  slds-size_1-of-6 slds-p-top_xx-large"  >
+   
+    <!--  value in Agreement picklist --> 
+    <lightning:Select label="Agreement"
+                       aura:id="agreement">
+    	 <option value="None"> </option>
+      	 <aura:iteration items="{!v.FrameContractRef}"
+                         var="agreementNo">
+                 	<option label="{!agreementNo}" 
+                            text="{!agreementNo}"
+							selected="{!agreementNo==v.selectedAgreementCache}">
+                    </option>
+         </aura:iteration>
+    </lightning:Select>
+    <br/>
+       
+     <!--  value in Customer Purchase Order picklist -->   
+    <lightning:Select label="Customer Purchase Order"
+                       aura:id="cpo">
+    	 <option value="None"> </option>
+      	 <aura:iteration items="{!v.PO}" 
+                         var="poNumber">
+         	<option label="{!poNumber}" 
+                    text="{!poNumber}" selected="{!poNumber==v.selectedPOcache}">
+            </option>
+         </aura:iteration>
+    </lightning:Select>
+    <br/> 
+       
+    <!--  value in Technology picklist -->   
+     <lightning:select name="controllerFld"
+                          value="{!v.objDetail.Country__c}"
+                          label="Technology"
+                          onchange="{!c.loadUseCase}"
+                          aura:id="Technology">
+            <aura:iteration items="{!v.technology}" var="techno">
+                <option value="{!techno}" selected="{!techno==v.selectedTechCataloguecache}">{!techno}</option>
+            </aura:iteration>
+        </lightning:select>
+    <br/>
+   
+   <!--  value in Usecase picklist  disabled="{!v.bDisabledDependentFld}"-->    
+   
+       <lightning:select name="dependentFld"
+                          value="{!v.objDetail.City__c}"
+                          label="Use Case"
+                         
+                          aura:id="useCase">
+            <aura:iteration items="{!v.useCase}" var="ucase">
+                <option value="{!ucase}" selected="{!ucase==v.selectedUseCaseCataloguecache}">{!ucase}</option>
+            </aura:iteration>
+        </lightning:select>
+    <br/>    
+     
+    <!--  value in Status In Network picklist -->   
+    <lightning:Select label="Status In Network"
+                      aura:id="SIN">
+         <option value="null" selected="{!v.Blank==v.selectedStatusCatalogueCache}"> </option>
+    	 <option value="ON" selected="{!v.ONvalue==v.selectedStatusCatalogueCache}">ON </option>
+      	 <option value="OFF" selected="{!v.OFFvalue==v.selectedStatusCatalogueCache}">OFF </option>
+    </lightning:Select>
+    <br/>  
+       
+    <!-- search button -->  
+    <lightning:button label="Search" 
+                      onclick="{!c.filterDP}"/>
+    <aura:if isTrue="{!v.Spinner}">
+    <div aura:id="spinnerId" class="slds-spinner_container">
+       <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+         <span class="slds-assistive-text">Loading</span>
+         <div class="slds-spinner__dot-a"></div>
+         <div class="slds-spinner__dot-b"></div>
+       </div>
+    </div>
+ </aura:if>
+
+ 
+    </div>
+       <div class="slds-col slds-size_1-of-1 slds-p-top_xx-large" style="padding-left: 1.0rem;">
+           <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+               <thead>
+                   <tr class="">
+                       <th class="slds-text-title_caps" >
+                           <div class="slds-text-title_bold" title="Status In Network">Status <br/>In Network</div>
+                       </th>
+                       <th class="slds-text-title_caps">
+                           <div class="slds-text-title_bold" title="Product Name">Product Name</div>
+                       </th>
+                       <th class="slds-text-title_caps">
+                           <div class="slds-text-title_bold" title="Product Code">Product Code</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="Feature Name">Feature <br/>Name</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="ID">ID</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="Acceptance Initiation">Acceptance<br/> Initiation</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="Delivery Execution">Delivery<br/> Execution</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="Acceptance of Delivery">Acceptance<br/> of Delivery</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="Agreement">Agreement</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="PO">PO</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="Technology">Technology</div>
+                       </th>
+                       <th class="slds-text-title_caps" scope="col">
+                           <div class="slds-text-title_bold" title="Usecase">Usecase</div>
+                       </th>
+                   </tr>
+               </thead>
+           
+               <tbody>
+                  <aura:iteration var="cell" items="{!v.contents}">
+                      <tr class="slds-hint-parent">
+                      <td>
+                            <aura:if isTrue="{!cell.statusInNetWork }" >
+                            <div class="slds-truncate slds-cell-wrap" style="" title="">  ON </div>
+                                  <aura:set attribute="else">
+                                  <div class="slds-truncate slds-cell-wrap" style="" title="">  OFF </div> 
+                                  </aura:set>
+                              </aura:if>
+                      </td>
+                       <td>
+                            <div class="slds-truncate slds-cell-wrap" style="" title="">  {!cell.productName} </div>
+                      </td>
+                           <td>
+                            <div class="slds-truncate slds-cell-wrap" style="" title="">  {!cell.productCode} </div>
+                      </td>
+                       <td>
+                            <div class="slds-truncate slds-cell-wrap" style="" title="">  {!cell.featureDescription } </div>
+                      </td>
+                   <!--    <td>
+                            <div class="slds-truncate slds-cell-wrap" style="padding-left:2.0rem;" title="">  {!cell.dpId } </div>
+                      </td> -->
+                          <td>
+                                <div class="slds-cell-wrap" title=""><lightning:button variant="base" onclick="{!c.OpenPage}" label="{!cell.dpId}" name="{!cell.dP_Id}"></lightning:button></div>
+                          </td>
+                        
+                         <td>
+                              <aura:if isTrue="{!cell.acceptanceInitiation }" >
+                            <div class="slds-truncate slds-cell-wrap greenicon " style="" title="">   </div>
+                                 
+                            <aura:set attribute="else">
+                              <div class="slds-truncate slds-cell-wrap whiteicon " style="" title="">   </div>
+                             </aura:set>
+                                   </aura:if>
+                      </td>
+                          <td>
+                              <aura:if isTrue="{!cell.deliveryExecution }" >
+                            <div class="slds-truncate slds-cell-wrap greenicon " style="" title="">   </div>
+                                 
+                            <aura:set attribute="else">
+                              <div class="slds-truncate slds-cell-wrap whiteicon " style="" title="">   </div>
+                             </aura:set>
+                                   </aura:if>
+                      </td>
+                          <td>
+                              <aura:if isTrue="{!cell.acceptanceOfDelivery }" >
+                            <div class="slds-truncate slds-cell-wrap greenicon " style="" title="">   </div>
+                                 
+                            <aura:set attribute="else">
+                              <div class="slds-truncate slds-cell-wrap whiteicon " style="" title="">   </div>
+                             </aura:set>
+                                   </aura:if>
+                      </td>
+                        
+                        <td>
+                            <div class="slds-truncate slds-cell-wrap" style="" title="">  {!cell.agreementName } - {!cell.agreement } </div>
+                      </td>   
+                         <td>
+                            <div class="slds-truncate slds-cell-wrap" style="" title="">  {!cell.po } </div>
+                      </td> 
+                           <td>
+                            <div class="slds-truncate slds-cell-wrap" style="" title="">  {!cell.technology } </div>
+                      </td> 
+                           <td>
+                            <div class="slds-truncate slds-cell-wrap" style="" title="">  {!cell.usecase } </div>
+                      </td> 
+                          
+                      </tr>
+                            </aura:iteration>
+                     
+          
+              
+               </tbody>
+           </table>
+            <lightning:buttonGroup >
+            <lightning:button label="Previous" disabled="{!v.startPage == 0}"  
+                              onclick="{!c.previous}" variant="brand"
+                              iconName='utility:back'/>
+            &nbsp; &nbsp; &nbsp;
+            <lightning:button label="Next" disabled="{!v.endPage >= v.totalRecords}" 
+                              onclick="{!c.next}" variant="brand"
+                              iconName='utility:forward' iconPosition='right'/>
+        </lightning:buttonGroup>        
+       </div>
+
+    </div>
+        
+      
+     
+</aura:component>
