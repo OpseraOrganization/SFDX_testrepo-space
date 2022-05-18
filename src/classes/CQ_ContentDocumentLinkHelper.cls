@@ -1,4 +1,4 @@
-public class CQ_ContentDocumentLinkHelper {
+public without sharing class CQ_ContentDocumentLinkHelper {
 	
 	
 /*Method Name: Sharecqfileto_CqReport
@@ -9,7 +9,6 @@ public class CQ_ContentDocumentLinkHelper {
 *Last Modified Date: 19-04-2019
 *******************************/ 
 	public static void Sharecqfileto_CqReport(List<ContentDocumentLink> contentDocLinkList){
-		
 		
 		try{
 			
@@ -41,7 +40,7 @@ public class CQ_ContentDocumentLinkHelper {
 			system.debug('QuotecontentDOcumentset--->'+QuotecontentDOcumentset);
 			
 			for(Apttus_Proposal__Proposal__c Quote:[select id,NokiaCPQ_Proposal_Id__c,RecordTypeId,RecordType.Name,Apttus_Proposal__Account__c from Apttus_Proposal__Proposal__c 
-				where id IN:entityID and ((RecordType.DeveloperName = :GlobalConstants.QuoteProposal_RecordType_1) or (RecordType.DeveloperName = :GlobalConstants.QuoteProposal_RecordType_2))])
+	where id IN:entityID and ((RecordType.DeveloperName = :GlobalConstants.QuoteProposal_RecordType_1) or (RecordType.DeveloperName = :GlobalConstants.QuoteProposal_RecordType_2) or (RecordType.DeveloperName = :GlobalConstants.CQ_New_RecordType_Edit) or (RecordType.DeveloperName = :GlobalConstants.CQ_New_RecordType_Read))])
 			{
 	QuoteReporting_map.put(Quote.ID,Quote.NokiaCPQ_Proposal_Id__c);
 	if(Quote_File_map.get(Quote.id) <> null){
@@ -172,43 +171,43 @@ public class CQ_ContentDocumentLinkHelper {
 		system.debug('IN-->'+contentDocLinkList);
 		for(ContentDocumentLink cd:contentDocLinkList)
 		{
-		  
+	
 			cdset.add(cd.ContentDocumentId);   
-			 if(cd.LinkedEntityId.getSObjectType().getDescribe().getName()==GlobalConstants.quoteProposal){
+	if(cd.LinkedEntityId.getSObjectType().getDescribe().getName()==GlobalConstants.quoteProposal){
 			set_quoteid.add(cd.LinkedEntityId);
 			}
 			system.debug('set_quoteid-->'+set_quoteid);
 			system.debug('cd.LinkedEntityId-->'+cd.LinkedEntityId);
-			 
+	
 		}
-	   
-		for(Apttus_Proposal__Proposal__c qt :[select id, isCQ__c from Apttus_Proposal__Proposal__c where isCQ__c= true AND id IN: set_quoteid] )					   
+	
+		for(Apttus_Proposal__Proposal__c qt :[select id, isCQ__c from Apttus_Proposal__Proposal__c where isCQ__c= true AND id IN: set_quoteid] )		
 			set_entityid.add(qt.id);
-	   
+	
 		for(ContentVersion cv:[Select ContentDocumentId,Document_Type_POC__c,RecordType.Name from ContentVersion Where ContentDocumentId In :cdset])
 		{
 			cvmap.put(cv.ContentDocumentId,cv.Document_Type_POC__c+GlobalConstants.Comma+cv.RecordType.Name);
 		}
 		system.debug('cvmap'+cvmap);
-	   /* pset=[Select PermissionSetId from PermissionSetAssignment
-			  where AssigneeId =:UserInfo.getUserId()
-			 and PermissionSet.Name=:GlobalConstants.CQ_Business_admin];*/
+	/* pset=[Select PermissionSetId from PermissionSetAssignment
+	 where AssigneeId =:UserInfo.getUserId()
+	and PermissionSet.Name=:GlobalConstants.CQ_Business_admin];*/
 		Boolean hasCustomPermission = FeatureManagement.checkPermission(GlobalConstants.CQ_Business_admin);
 		system.debug(pset);
-	   
+	
 		if(hasCustomPermission){
-		   
+	 
 			for(ContentDocumentLink cd:contentDocLinkList)
 			{	 
-				//if(cvmap.get(cd.ContentDocumentId)==GlobalConstants.NA)
-				if(set_entityid.contains(cd.LinkedEntityId)){
-					if(cvmap.get(cd.ContentDocumentId).substringBefore(GlobalConstants.Comma) == GlobalConstants.NA)
-						cd.addError(GlobalConstants.SelectDocType);
-					else if(cvmap.get(cd.ContentDocumentId).substringAfter(GlobalConstants.Comma) != GlobalConstants.UnrestrictedFileToOther)
-						cd.addError(GlobalConstants.SelectRecType);
-				}
+	//if(cvmap.get(cd.ContentDocumentId)==GlobalConstants.NA)
+	if(set_entityid.contains(cd.LinkedEntityId)){
+		if(cvmap.get(cd.ContentDocumentId).substringBefore(GlobalConstants.Comma) == GlobalConstants.NA)
+			cd.addError(GlobalConstants.SelectDocType);
+		else if(cvmap.get(cd.ContentDocumentId).substringAfter(GlobalConstants.Comma) != GlobalConstants.UnrestrictedFileToOther)
+			cd.addError(GlobalConstants.SelectRecType);
+	}
 			}
 		}
-	   
+	
 	}   
 }

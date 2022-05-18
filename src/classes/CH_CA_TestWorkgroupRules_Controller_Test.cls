@@ -3,6 +3,7 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 	@testSetup
 	public static void setup(){
 		test.startTest();
+		insert new Global_Control__c(ObjectTriggerByPass__c='ACCT,CNTCT,ACC_CNTCT_REL,USER,SVCNTRT,ASSET,PRODUCT,CLI,ENT');
 		CH_UTIL_TEST.setupCase(false); 
 		test.stopTest();
 	}
@@ -13,7 +14,7 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 		string customerId = [SELECT Id FROM Account WHERE name = :CH_UTIL_TEST.ACCOUNT_NAME LIMIT 1].Id;
 		createRule(null, null, null, null, null, customerId, null, null, null, 'No','Any','');
 		// Search rule
-		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', customerId, '', '', '', 'No','Any','','','','','','');
+		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', customerId, '', '', '', 'No','Any','','','','','','','');
 		// Search should return this created rule + 1 from CH_UTIL_TEST and catch all
 		System.assert(foundWorkgroupRules.size() == 3, 'Expect: 3 rule returned. Actual: ' + foundWorkgroupRules.size());
 		System.assert(foundWorkgroupRules[0].CH_OrderNumber__c == 1, 'Only rule 1 should be returned');
@@ -27,7 +28,7 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 		string productId = [SELECT Id FROM Product2 WHERE name = :CH_UTIL_TEST.PRODUCT_NAME LIMIT 1].Id;
 		createRule(null, null, null, null, null, null, null, productId, null, 'No','Any','');
 		// Search rule
-		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', productId, '', 'No','Any','','','','','','');
+		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', productId, '', 'No','Any','','','','','','','');
 		// Search should return this created rule + 1 from CH_UTIL_TEST and catch all
 		System.assert(foundWorkgroupRules.size() == 3, 'Expect: 3 rule returned. Actual: ' + foundWorkgroupRules.size());
 		System.assert(foundWorkgroupRules[0].CH_OrderNumber__c == 1, 'Only rule 1 should be returned');
@@ -46,7 +47,7 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 		createRule(null, 'Minor', 'Market Middle East & Africa', 'Morocco', 'Advanced Support', null, customerGroupId, null, productGroupId, '','Any','');
 		
 		// Search rule
-		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('Test', 'Major', 'Market Europe', 'Austria', 'Initial Support', customerId, null, productId, null, 'Any','Any','','','','','','');
+		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('Test', 'Major', 'Market Europe', 'Austria', 'Initial Support', customerId, null, productId, null, 'Any','Any','','','','','','','');
 		// Check result 2 rules should be returned. This one and 1 catch all from the setup.
 		System.assert(foundWorkgroupRules.size() == 3, 'Expect: 3 rule returned. Actual: ' + foundWorkgroupRules.size());
 		System.assert(foundWorkgroupRules[0].CH_OrderNumber__c == 1, 'Expect: rule 1 Actual: ' + foundWorkgroupRules[0].CH_OrderNumber__c);
@@ -54,13 +55,13 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 		System.assert(foundWorkgroupRules[0].CH_Severity__c == 'Major', 'Severity should be returned ');
 		
 		// Search rule
-		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('Test2', 'Minor', 'Market Middle East & Africa', 'Morocco', 'Advanced Support', null, customerGroupId, null, productGroupId, 'Any','Any',null,'','','','','');
+		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('Test2', 'Minor', 'Market Middle East & Africa', 'Morocco', 'Advanced Support', null, customerGroupId, null, productGroupId, 'Any','Any',null,'','','','','','');
 		// Check result 2 rules should be returned. This one and 1 catch all from the setup.
 		System.assert(foundWorkgroupRules.size() == 2, 'Expect: 2 rule returned. Actual: ' + foundWorkgroupRules.size());
 		System.assert(foundWorkgroupRules[0].CH_OrderNumber__c == 9, 'Expect: rule# 100 Actual: ' + foundWorkgroupRules[0].CH_OrderNumber__c);
 		
 		// Search rule
-		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', customerId, null, productId, null, 'Any','','','','','','','');
+		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', customerId, null, productId, null, 'Any','','','','','','','','');
 		// Check result 2 rules should be returned. This one and 1 catch all from the setup.
 		System.assert(foundWorkgroupRules.size() == 4, 'Expect: 4 rule returned. Actual: ' + foundWorkgroupRules.size());
 		System.assert(foundWorkgroupRules[0].CH_OrderNumber__c == 1, 'Expect: rule 1 Actual: ' + foundWorkgroupRules[0].CH_OrderNumber__c);
@@ -78,15 +79,15 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 		createRule(null, null, null, null, null, null, null, null, null, 'No','Yes','');
 		
 		//Search rule with option as Active='Any'
-		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Any','Any','','','','','','');
+		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Any','Any','','','','','','','');
 		System.assert(foundWorkgroupRules.size() == 5, 'Expect: 5 rule returned. Actual: ' + foundWorkgroupRules.size());
 		
 		//Search rule with option as Active='No'
-		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Yes','No','','','','','','');
+		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Yes','No','','','','','','','');
 		System.assert(foundWorkgroupRules.size() == 1, 'Expect: 1 rule returned. Actual: ' + foundWorkgroupRules.size());
 		
 		//Search rule with option as Active='Yes' 
-		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'No','Yes','','','','','','');
+		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'No','Yes','','','','','','','');
 		// Search should return 3 created rule + 1 from CH_UTIL_TEST and catch all
 		System.assert(foundWorkgroupRules.size() == 3, 'Expect: 3 rule returned. Actual: ' + foundWorkgroupRules.size());
 		Test.stopTest(); 
@@ -101,19 +102,19 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 		createRule(null, null, null, null, null, null, null, null, null, '','Any','');
 		// Search rule
 		
-		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Any','Any','','','','','','');
+		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Any','Any','','','','','','','');
 		// Search for any should return all rules
 		System.assert(foundWorkgroupRules.size() == 5, 'Expect: 5 rule returned. Actual: ' + foundWorkgroupRules.size());
 		System.assert(foundWorkgroupRules[0].CH_OrderNumber__c == 1, 'Only rule 1 should be returned');
 		
 		// Search rule
-		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Yes','Any','','','','','','');
+		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Yes','Any','','','','','','','');
 		// Search should return 3 created rule + 1 from CH_UTIL_TEST and catch all
 		System.assert(foundWorkgroupRules.size() == 3, 'Expect: 3 rule returned. Actual: ' + foundWorkgroupRules.size());
 		System.assert(foundWorkgroupRules[0].CH_OrderNumber__c == 1, 'Only rule 1 should be returned');
 		
 		// Search rule 
-		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'No','Any','','','','','','');
+		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'No','Any','','','','','','','');
 		// Search should return 3 created rule + 1 from CH_UTIL_TEST and catch all
 		System.assert(foundWorkgroupRules.size() == 3, 'Expect: 3 rule returned. Actual: ' + foundWorkgroupRules.size());
 		System.assert(foundWorkgroupRules[0].CH_OrderNumber__c == 1, 'Only rule 1 should be returned');
@@ -129,13 +130,13 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 		createRule(null, null, null, null, null, null, null, null, null, '','No','Expert');
 		
 		//Search rule with option as WorkgroupType='Engineer'
-		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Any','Any','Engineer','','','','','');
-		System.assert(foundWorkgroupRules.size() == 3, 'Expect: 3 rule returned. Actual: ' + foundWorkgroupRules.size());	   
+		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Any','Any','Engineer','','','','','','');
+		System.assert(foundWorkgroupRules.size() == 3, 'Expect: 3 rule returned. Actual: ' + foundWorkgroupRules.size());	
 		
 		//Search rule with option as WorkgroupType='Expert'
-		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Yes','No','Expert','','','','','');
+		foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', '', '', 'Yes','No','Expert','','','','','','');
 		System.assert(foundWorkgroupRules.size() == 0, 'Expect: 0 rule returned. Actual: ' + foundWorkgroupRules.size());
-		List<String> strValue=CH_CA_TestWorkgroupRules_Controller.getRecords();
+		CH_CA_TestWorkgroupRules_Controller.getRecords();
 		Test.stopTest();
 		
 	}
@@ -187,6 +188,7 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 			workgroupRule.CH_Region1__c = region;
 			workgroupRule.CH_Country1__c = country;
 			workgroupRule.CH_Account__c = customer;
+			workgroupRule.CH_Workgroup_Type__c = workgroupType;
 			workgroupRule.CH_Customer_Group__c = customerGroup;
 			workgroupRule.CH_Product__c = product;
 			workgroupRule.CH_Product_Group__c = productGroup;
@@ -194,7 +196,7 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 			workgroupRule.CH_Outage__c = outage;
 			CH_Workgroup__c workgroup = [SELECT Id FROM CH_Workgroup__c WHERE Name =:CH_UTIL_TEST.WORKGROUPNAME];
 			workgroupRule.CH_Workgroup__c = workgroup.Id;
-		   
+	 
 			
 			//Changes w.r.t 17116  starts
 			if (!String.isBlank(active) && active!= 'Any'){
@@ -207,4 +209,30 @@ public class CH_CA_TestWorkgroupRules_Controller_Test {
 			insert workgroupRule; 
 			CH_CA_WorkGroup_Rule_Controller.getWGRuleDetails(workgroupRule.Id);   
 	 }
+	
+	//Below method added under NOKIASC-32652
+	static testMethod void TestSearchProductRelease() {
+		Test.startTest(); 
+		string productId = [SELECT Id FROM Product2 WHERE name = :CH_UTIL_TEST.PRODUCT_NAME LIMIT 1].Id;
+		createRule(null, null, null, null, null, null, null, productId, null, 'No','Any','');
+		// Search rule
+		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', productId, '', 'No','Any','','','','','','','');
+		// Search should return this created rule + 1 from CH_UTIL_TEST and catch all
+		List<CH_ProductRelease__c> prodRelList= CH_CA_TestWorkgroupRules_Controller.fetchProductRelRecords(null,productId);
+		System.assert(foundWorkgroupRules[0].CH_Product__C == productId, 'Product should be returned ');
+		Test.stopTest(); // Modification w.r.t 13537
+	}
+	
+	//Below method added under NOKIASC-32652
+	static testMethod void TestSearchProductReleaseWithSearchVal() {
+		Test.startTest(); 
+		string productId = [SELECT Id FROM Product2 WHERE name = :CH_UTIL_TEST.PRODUCT_NAME LIMIT 1].Id;
+		createRule(null, null, null, null, null, null, null, productId, null, 'No','Any','');
+		// Search rule
+		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_TestWorkgroupRules_Controller.fetchFilterValues('', '', '', '', '', '', '', productId, '', 'No','Any','','','','','','','');
+		// Search should return this created rule + 1 from CH_UTIL_TEST and catch all
+		List<CH_ProductRelease__c> prodRelList= CH_CA_TestWorkgroupRules_Controller.fetchProductRelRecords('Test',productId);
+		System.assert(foundWorkgroupRules[0].CH_Product__C == productId, 'Product should be returned ');
+		Test.stopTest(); // Modification w.r.t 13537
+	}
 }

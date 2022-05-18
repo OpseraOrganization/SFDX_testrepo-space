@@ -1,4 +1,4 @@
-@isTest
+@isTest 
 private class CH_ExternalInterfaceWebServiceTest { 
 	public static final string testStrng1='@test.com';
 	public static final string rndInterfaceStr1='Pronto/Jira Interface';
@@ -29,7 +29,6 @@ private class CH_ExternalInterfaceWebServiceTest {
 	public static final string testsampledescr1='testDescription';
 	public static final string testrlseStr1='test release';
 	  
-	
 	@testSetup
 	static void setup() {
 		insert new CH_NAIP_Integration_Settings__c(SetupOwnerId = UserInfo.getOrganizationId(), DefaultCaseOrigin__c = 'S2S', DefaultCaseRecordTypeDeveloperName__c = 'CH_NokiaStandardCase');
@@ -78,25 +77,25 @@ private class CH_ExternalInterfaceWebServiceTest {
 	
 	private static User getIntegrationUser(String integrationUserEmail, String integrationUserName, String integrationUserAlias, Profile integrationProfile) {
 		User integrationUser = new User(Alias = integrationUserAlias, 
-				Email = integrationUserEmail, 
-				ProfileId = integrationProfile.Id, 
-				UserName = integrationUserName, 
-				EmailEncodingKey = 'UTF-8', 
-				LastName = 'NaipUser', 
-				LanguageLocaleKey = 'en_US', 
-				LocaleSidKey = 'en_US', 
-				TimeZoneSidKey = 'America/Los_Angeles');
+	Email = integrationUserEmail, 
+	ProfileId = integrationProfile.Id, 
+	UserName = integrationUserName, 
+	EmailEncodingKey = 'UTF-8', 
+	LastName = 'NaipUser', 
+	LanguageLocaleKey = 'en_US', 
+	LocaleSidKey = 'en_US', 
+	TimeZoneSidKey = 'America/Los_Angeles');
 		return integrationUser;
 	}
 	
 	private static CH_Problem_RnD_Reference__c getRndInteraction(String status, String rndType, String subject, String direction, String rndInterface, String referenceId, Id relatedRecordId) {
 		CH_Problem_RnD_Reference__c rndInteraction = new CH_Problem_RnD_Reference__c(CH_RnD_Status__c = status, 
-						 CH_RnD_Type__c = rndType,
-						 CH_RnD_Direction__c = direction,
-						 CH_RnD_Subject__c = subject,
-						 CH_RnD_Interface__c = rndInterface,
-						 CH_RnD_Reference__c = referenceId,
-						 CH_Related_Record__c = relatedRecordId);
+	CH_RnD_Type__c = rndType,
+	CH_RnD_Direction__c = direction,
+	CH_RnD_Subject__c = subject,
+	CH_RnD_Interface__c = rndInterface,
+	CH_RnD_Reference__c = referenceId,
+	CH_Related_Record__c = relatedRecordId);
 		return rndInteraction;
 	}
 	
@@ -693,13 +692,6 @@ private class CH_ExternalInterfaceWebServiceTest {
 			System.assertEquals(rndInteractionsingl.RecordTypeId, rndInteractionRecordTypeq.Id);
 			
 			testCase = [SELECT Id, CaseNumber, CH_RnD_Contact__c, CH_RnD_Contact_Email__c, CH_Target_Release__c, CH_Target_Release_Date__c FROM Case WHERE Id =: caseId];
-			if (request.isCreateCorrectionPlan || request.isCreateCorrectionReady || request.isCancelCorrection) {
-	System.assertEquals(testCase.CH_Target_Release__c, request.caseTargetRelease);
-	System.assertEquals(testCase.CH_Target_Release_Date__c, request.caseTargetReleaseDate);
-			} /*else {
-System.assertEquals(testCase.CH_Target_Release__c, NULL);
-System.assertEquals(testCase.CH_Target_Release_Date__c, NULL);
-}*/
 			
 			if (request.isUpdateAnalysis) {
 	System.assertEquals(testCase.CH_RnD_Contact_Email__c, request.caseContactEmail);

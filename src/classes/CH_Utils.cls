@@ -207,16 +207,17 @@ public without sharing class CH_Utils {
 			FROM Case
 			WHERE Id=:caseId];
 		List<CaseTeamMember> caseTeamMemberList =[SELECT MemberId ,TeamRoleId ,ParentId 
-			  FROM CaseTeamMember 
-			  WHERE ParentId=:caseId 
-			  LIMIT :(Limits.getLimitQueryRows() - Limits.getQueryRows())];
+	 FROM CaseTeamMember 
+	 WHERE ParentId=:caseId 
+	 LIMIT :(Limits.getLimitQueryRows() - Limits.getQueryRows())];
 		Id profileId=userinfo.getProfileId();
 		String profileName=[Select Id,Name from Profile where Id=:profileId].Name;
+		Integer runTeamCnt = [SELECT count() FROM PermissionSetAssignment Where AssigneeId =:userinfo.getUserId() AND PermissionSet.Name=:SWS_Constants.CHRUNTEAM];
 		if(fetchCase!=NULL){
 			for(caseTeamMember member : caseTeamMemberList){
-	if(member.MemberId == UserInfo.getUserId()){
-		flag=true;
-	}
+				if(member.MemberId == UserInfo.getUserId()){
+					flag=true;
+				}
 			}
 			if((fetchCase.Status=='Assigned'|| fetchCase.Status=='Created') &&  isCreateArticle)
 			{
@@ -228,11 +229,13 @@ public without sharing class CH_Utils {
 			if(profileName == 'CH_Agent' || profileName == 'System Administrator'){
 	flag=true;
 			}
+			if(runTeamCnt !=0){
+				flag=true;
+			}
 		}
 		else{
 			flag=false;
 		}
-		
 		return flag;
 	}
 	

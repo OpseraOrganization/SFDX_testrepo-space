@@ -66,7 +66,8 @@ public with sharing class CH_WorkgroupRuleHandler_TH extends TriggerHandler {
 	*/
 	public override void beforeDelete(){
 		if (!PAD.cantRun(OBJECT_NAME)){
-			//METHOD CALL TL
+			//Changes added as a part of NOKIASC-36242
+			CH_WorkgroupRuleHandler_TL.isValidUser(oldList);
 		}
 	}
 

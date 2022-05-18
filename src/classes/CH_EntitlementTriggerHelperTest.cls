@@ -92,7 +92,6 @@ public class CH_EntitlementTriggerHelperTest {
 			entMap1.put(entObjTest1.id,entObjTest1);
 		}
 		update entMap1.values(); 
-		Test.startTest();
 		List<Entitlement> newentitlementlist =new List<Entitlement>();
 		
 			Entitlement entiObj = new Entitlement();
@@ -102,13 +101,13 @@ public class CH_EntitlementTriggerHelperTest {
 			entiObj.StartDate = System.today();
 			entiObj.EndDate = System.today() + 10;
 			entiObj.ContractLineItemId = ContractLineItemList[0].id;
-		  
+	
 			entiObj.CH_EntitlementType__c = 'Entitled Asset';
 			entiObj.CH_ServiceMappingId__c = 'Customer Support Service - Critical 24x7 for IR & Restore';
 			entiobj.ServiceContractId = ServiceContractlist[0].id;
 			newentitlementlist.add(entiObj);
 			insert newentitlementlist;
-		   
+	 
 		 List<ContractLineItem> newContractLineItemList =new List<ContractLineItem>();
 		
 			ContractLineItem contLine = new ContractLineItem();
@@ -126,6 +125,5 @@ public class CH_EntitlementTriggerHelperTest {
 		insert newContractLineItemList;
 		CH_EntitlementTriggerHelper.populateSLAProcessIds(newentitlementlist);
 		CH_EntitlementTriggerHelper.updateContractLineItemRecordsOnInsert(newentitlementlist);
-		Test.StopTest();
 		}
 }

@@ -66,9 +66,9 @@ Details - NOKIASC-25121 - Only NE Admin Permission User Should have access to cr
 	public static Boolean validatePermissionSet(){
 		Boolean hasAccess = false;
 		List<PermissionSetAssignment> lstcurrentUserPerSet =	[SELECT Id, PermissionSet.Name,AssigneeId
-				 FROM PermissionSetAssignment
-				 WHERE AssigneeId = :Userinfo.getUserId() 
-				 and PermissionSet.Name ='CH_NEAssetAdmin'  ];
+	 FROM PermissionSetAssignment
+	 WHERE AssigneeId = :Userinfo.getUserId() 
+	 and PermissionSet.Name ='CH_NEAssetAdmin'  ];
 		if( !lstcurrentUserPerSet.isempty() && lstcurrentUserPerSet.size() >0){
 			hasAccess = true;
 		}
@@ -83,7 +83,7 @@ Details - NOKIASC-25121 - Only NE Admin Permission User Should have access to cr
 	public static Boolean CheckforButton(Id idCLI){
 		Boolean hasAccess = true;
 		List<ContractLineItem> CheckFieldValue = [SELECT Id, CH_ServiceType__c,CH_ServiceClassification__c, ServiceContractId, ServiceContract.CH_InternalCDBServiceType__c 
-			  FROM ContractLineItem WHERE id = :idCLI];
+	 FROM ContractLineItem WHERE id = :idCLI];
 			
 			if (CheckFieldValue.size() > 0 && ((CheckFieldValue[0].CH_ServiceClassification__c == '' || CheckFieldValue[0].CH_ServiceClassification__c == null)
 	|| (CheckFieldValue[0].ServiceContractId !=null &&  CheckFieldValue[0].ServiceContract.CH_InternalCDBServiceType__c)))	
@@ -107,5 +107,15 @@ Details - NOKIASC-25121 - Only NE Admin Permission User Should have access to cr
 	@AuraEnabled
 	public static SObject getAccountLocation(String accountId, String accountNumber) {
 		return [SELECT Id FROM Location WHERE Name = :accountNumber AND CH_AccountName__c = :accountId LIMIT 1];
+	}
+/****************************************
+* Method Name : getCountryName
+* Returns : ISO_Country_Codes__c 
+* Date : 07/07/2021
+* NOKIASC-36196
+*****************************************/
+	@AuraEnabled
+	public static List<ISO_Country_Codes__c> getCountryName(){			
+	  return [SELECT Country_Name__c,Name FROM ISO_Country_Codes__c ORDER BY Country_Name__c ] ;	
 	}
 }

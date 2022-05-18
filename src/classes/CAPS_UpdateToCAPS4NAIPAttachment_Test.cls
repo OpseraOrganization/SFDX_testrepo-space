@@ -155,6 +155,7 @@ public class CAPS_UpdateToCAPS4NAIPAttachment_Test {
 		caseObj.AssetId = assetObjList[0].id;
 		caseObj.EntitlementId = entitlementlist[0].id;
 		caseObj.ownerId = Userinfo.getUserId();
+		caseobj.Reference_Number__c = 'Reference123';
 		System.runAs(dataLoaderUser){
 		insert caseObj;
 		}
@@ -203,6 +204,7 @@ public class CAPS_UpdateToCAPS4NAIPAttachment_Test {
 		CH_Integration__c Integ = new CH_Integration__c();
 		Integ.EnableIntegration__c = true;
 		insert Integ;
+		Test.startTest();
 		Map<Id,Case> OldCaseMap = new Map<Id,Case>();
 		 List<case> caseObjList = [SELECT id,CaseNumber,AccountId,Origin,ProductId,CH_Product_Release__c,Subject,Description,CH_CAPS_AttachmentMetadatafromNAIP__c,
 					   ContactId,Severity__c,CH_Outage__c,AssetId,EntitlementId,CH_Defect__c,
@@ -218,7 +220,7 @@ public class CAPS_UpdateToCAPS4NAIPAttachment_Test {
 		string caseJson = '['+CaseJsonString+']';
 		system.debug('case Json####'+caseJson);
 		
-		Test.startTest();
+		
 		Test.setMock(HttpCalloutMock.class, new Caps_updateNAIPAttachmentcallout_Test(true,caseJson));
 		CAPS_UpdateToCAPS4NAIPAttachment.processCAPSAttachment(caseJson,True);
 		CAPS_UpdateToCAPS4NAIPAttachment.processProntoAttachments(caseJson,True);

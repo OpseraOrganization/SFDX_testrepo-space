@@ -7,8 +7,8 @@ public with sharing class InterfaceLogTriggerHandler{
 		//判断是否需要重新发送
 		for (Interface_Log__c lg : list_interface) {
 			if (lg.resend__c == true && lg.Interface_Type__c == 'Prospect Creation Interface' 
-				) {
-				list_needupdate.add(lg);
+	) {
+	list_needupdate.add(lg);
 System.debug('list_needupdate====='+list_needupdate+'lg==='+lg);
 			}
 		}

@@ -20,19 +20,16 @@ private class BuildARHistorywithARDeletionTest {
 			Apttus_Approval__Approval_Request__c ar = new Apttus_Approval__Approval_Request__c ();
 			
 			Id userId;
-			//ar.Approver_User_Check__c = false;
 			if(userList != null && userList.size() > 0){
 	userId = userList[0].Id;
 			}
 			ar.Approver_User__c = userId;
 			ar.Tech_Approval_Date__c  = System.Today()-15;
-			//ar.Apttus_Approval__Action_Approve_Id__c = '';
 			ar.Apttus_Approval__Related_Opportunity__c = oppList[0].id;
 			ar.Apttus_Approval__Active__c = true;
 			ar.Apttus_Approval__ApprovalFromEmail__c = false;
 			ar.Apttus_Approval__Approval_Process__c = '';
 			ar.Apttus_Approval__Approval_Status__c = 'Notified';
-			//ar.Apttus_Approval__Approver_Comments__c = '';
 			ar.Apttus_Approval__Assigned_To_Id__c = userId;
 			ar.Apttus_Approval__Assigned_To_Name__c = 'Nokia CRM';
 			ar.Apttus_Approval__Assigned_To_Type__c = 'User';
@@ -49,23 +46,16 @@ private class BuildARHistorywithARDeletionTest {
 			ar.Apttus_Approval__Initial_Submitter__c = userId;
 			ar.Apttus_Approval__Object_Type__c = 'Opportunity';
 			ar.Apttus_Approval__Object_Name__c = 'Smoke_PRM Prospect 2';
-			//ar.Apttus_Approval__ParentRequestId__c = '';
 			ar.Apttus_Approval__RequestType__c = 'Standard';
 			ar.Apttus_Approval__Request_Comments__c = '(Sales Phase = Identify Opportunity)';
 			ar.Apttus_Approval__Send_Email__c = False;
 			ar.Apttus_Approval__StepLabel__c = 'Notify - CT Head';
-			//ar.Apttus_Approval__StepNameLink__c = 'Gate 2';
-			//ar.Apttus_Approval__StepSequenceString__c = 11;
 			ar.Apttus_Approval__Step_Group_Seq_Number__c = 1001;
 			ar.Apttus_Approval__Step_Name__c = 'Gate 2';
 			ar.Apttus_Approval__SubprocessName__c = 'RE-0000007602';
 			ar.Apttus_Approval__SubprocessSequence__c = 10;
-			ar.Apttus_Approval__SubstepName__c = 'RA-0000018697';
-			//ar.Apttus_Approval__SubstepSequence__c = 10;
-			//ar.Apttus_Approval__Workflow_Trigger_Added_Comments__c = false;
-			//ar.NF_Approval_Visibility_Status__c = false;
-			ar.NF_Assignee_Type__c = 'Information';
-			// ar.NF_Assignee_Value__c = 'Sales_Role__c(Role_Code__c LIKE '%\_COCT' AND (O__c=':Org_L4__c' OR O__c=':Org_L5__c' OR O__c=':Org_L6__c' OR O__c=':Org_L7__c') AND Active__c=true).User__c';
+			ar.Apttus_Approval__SubstepName__c = 'RA-0000018697';			
+			ar.NF_Assignee_Type__c = 'Information';			
 			ar.NF_Remaindercount__c = 10;
 			arList.add(ar);
 		}
@@ -75,9 +65,8 @@ private class BuildARHistorywithARDeletionTest {
 			System.debug(arList);
 			
 			Test.startTest();
-	BuildARHistorywithARDeletion obj = new BuildARHistorywithARDeletion();
-	Database.executeBatch(obj,200);
+			BuildARHistorywithARDeletion obj = new BuildARHistorywithARDeletion();
+			Database.executeBatch(obj,200);
 			Test.stopTest();
-
 	}
 }

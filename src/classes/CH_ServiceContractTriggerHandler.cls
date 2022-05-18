@@ -52,26 +52,27 @@ public class CH_ServiceContractTriggerHandler extends TriggerHandler {
 			// Process batch class logic to copy all authorized contacts of previous serivce contract only if previous contract ids are populated
 			List <ServiceContract> contractWithPreviousContractIds = isolateContractWithHavingPreviousContractIds(newContractList);
 			if(contractWithPreviousContractIds != null && !contractWithPreviousContractIds.isEmpty()) {
-				// Process batch to copy all authorized accounts of previous contract ids 
-				defaultProcessContractList = CH_ServiceContractTriggerHelper.copyPreviousContractsAuthorizedAccounts(contractWithPreviousContractIds);
-				// Process batch to copy all authorized contacts of previous contract ids 
-				CH_ServiceContractTriggerHelper.copyPreviousContractsAuthorizedContacts(contractWithPreviousContractIds);
+	// Process batch to copy all authorized accounts of previous contract ids 
+	defaultProcessContractList = CH_ServiceContractTriggerHelper.copyPreviousContractsAuthorizedAccounts(contractWithPreviousContractIds);
+	// Process batch to copy all authorized contacts of previous contract ids 
+	CH_ServiceContractTriggerHelper.copyPreviousContractsAuthorizedContacts(contractWithPreviousContractIds);
 			}
 			
 			// Procss trigger logic if service contract does not have previous contract id set
 			List <ServiceContract> contractWithoutPreviousContractIds = isolateContractWithoutHavingPreviousContractIds(newContractList);
 			
 			if(!defaultProcessContractList.isEmpty()) {
-				contractWithoutPreviousContractIds.addAll(defaultProcessContractList);
+	contractWithoutPreviousContractIds.addAll(defaultProcessContractList);
 			}
 			
 			if(contractWithoutPreviousContractIds != null && !contractWithoutPreviousContractIds.isEmpty()) {
-				CH_ServiceContractTriggerHelper.createAuthorizedAccount(new Map <Id, ServiceContract> (contractWithoutPreviousContractIds));
+	CH_ServiceContractTriggerHelper.createAuthorizedAccount(new Map <Id, ServiceContract> (contractWithoutPreviousContractIds));
 			}
 			//update HWS portal
 			CH_ServiceContractTriggerHelper.updateHWSPortal(newContractList);
 			CH_SecurityUtils.createNewSecurityRules(newContractList); //NOKIASC-25016
 			CH_ServiceContractTriggerHelper.ServiceContractSharing(oldMap, newMap);
+			CH_ServiceContractTriggerHelper.createAuthorizedContact(new Map <Id, ServiceContract> (newContractList));//NOKIASC-35113
 		}
 	}
 	
@@ -89,8 +90,12 @@ public class CH_ServiceContractTriggerHandler extends TriggerHandler {
 	* @description : afterUpdate handle the ServiceContract afterUpdate event on ServiceContract.
 	*/
 	public override void afterUpdate(){
-		if(CH_AvoidRecursion.runOnce()) {
+		CH_ServiceContractTriggerHelper.deleteCompetitorAC(oldMap, newMap);
+		if(CH_AvoidRecursion.runOnce()){
 			CH_ServiceContractTriggerHelper.ServiceContractSharing(oldMap, newMap);
+			//Changes added for NOKIASC-35113
+			List <ServiceContract> newContrctList = isolateCaseHandlingRecordType(newList);
+			CH_ServiceContractTriggerHelper.updateAuthorizedContact(oldMap, newContrctList);
 		}
 	}
 	
@@ -117,7 +122,8 @@ public class CH_ServiceContractTriggerHandler extends TriggerHandler {
 		List < ServiceContract > contractWithoutPreviousContractIds = new List < ServiceContract > ();
 		for (ServiceContract contractObj: newContractList) {
 			// Checks previous contract id field to add into contractWithoutPreviousContractIds
-			if (String.isBlank(contractObj.CH_CDB_PreviousContractId__c)) {
+			Boolean retrofitCheck = (contractObj.HWS_Retrofit_Type__c == null);
+			if (String.isBlank(contractObj.CH_CDB_PreviousContractId__c) && retrofitCheck) {
 	contractWithoutPreviousContractIds.add(contractObj);
 			}
 		}
@@ -133,7 +139,8 @@ public class CH_ServiceContractTriggerHandler extends TriggerHandler {
 		List < ServiceContract > contractWithPreviousContractIds = new List < ServiceContract > ();
 		for (ServiceContract contractObj: newContractList) {
 			// Checks previous contract id field to add into contractWithPreviousContractIds
-			if (String.isNotBlank(contractObj.CH_CDB_PreviousContractId__c)) {
+			Boolean retrofitCheck = (contractObj.HWS_Retrofit_Type__c == null);
+			if (String.isNotBlank(contractObj.CH_CDB_PreviousContractId__c) && retrofitCheck) {
 	contractWithPreviousContractIds.add(contractObj);
 			}
 		}
@@ -149,7 +156,7 @@ public class CH_ServiceContractTriggerHandler extends TriggerHandler {
 		List < ServiceContract > chContractList = new List < ServiceContract > ();
 		for (ServiceContract contractObj: newContractList) {
 			// Checks hidden field on ServiceContract that is a formula field - boolean that returns true for the CH_ServiceContract Record Types
-			if (contractObj.CH_RecordTypeCheck__c) {
+			if (contractObj.CH_RecordTypeCheck__c ) {
 	chContractList.add(contractObj);
 			}
 		}

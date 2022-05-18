@@ -7,7 +7,7 @@ public without sharing class IndirectCPQ_OpportunityTriggerHelper {
 	/******************************
 *Method Name: completeOpptyInfo
 *Description: This Method is used to add mandatory opportunity fields when partner user creates oppty.
-********************************/			
+********************************/		   
  public static void completeOpptyInfo(List<Opportunity> optyList){ 
 		
 		try{
@@ -71,7 +71,7 @@ public without sharing class IndirectCPQ_OpportunityTriggerHelper {
 	/******************************
 *Method Name: updateOpty_afterinsert
 *Description: This Method is used to add mandatory opportunity fields when partner user creates oppty.
-********************************/	
+********************************/   
 	public static void updateOpty_afterinsert(List<Opportunity> optyList){
 		try{
 			System.debug('updateOpty_afterinsert>>>'+optyList);
@@ -111,11 +111,12 @@ public without sharing class IndirectCPQ_OpportunityTriggerHelper {
 			  optyRecord.CurrencyIsoCode = optyRecord.Account.CurrencyIsoCode ;
 	 System.debug('finalmapvalue>>>'+referenceOptyIDMap.get(marketToOpptyMap.get(optyRecord.Account.GEOLevel1ID__c)));
 			  optyRecord.Reference_Opportunity__c = referenceOptyIDMap.get(marketToOpptyMap.get(optyRecord.Account.GEOLevel1ID__c));
-			  if(optyRecord.Account.BusinessPartnerRole__c.equals(GlobalConstants.Alliance)){
+			  /*if(optyRecord.Account.BusinessPartnerRole__c.equals(GlobalConstants.Alliance)){
 			   optyRecord.Account_Role__c = GlobalConstants.AlliancePartner ;  
-			  }
-			  else if(optyRecord.Account.BusinessPartnerRole__c.equals(GlobalConstants.Distributor)){
-			   optyRecord.Account_Role__c = GlobalConstants.GPPDistributorPartner;  
+			  }*/  // changed for SH2022; Alliance was deactivated
+			  //else if(optyRecord.Account.BusinessPartnerRole__c.equals(GlobalConstants.Distributor)){// changed for SH2022
+			  if(optyRecord.Account.BusinessPartnerRole__c.equals(GlobalConstants.Distributor)){  
+					optyRecord.Account_Role__c = GlobalConstants.GPPDistributorPartner;  
 			  }
 			  else if(optyRecord.Account.BusinessPartnerRole__c.equals(GlobalConstants.DirectCustomer)){
 			   optyRecord.Account_Role__c = GlobalConstants.GPPSPAAPpartner ;  
@@ -258,8 +259,8 @@ public without sharing class IndirectCPQ_OpportunityTriggerHelper {
 	mentionSegmentInput = new ConnectApi.MentionSegmentInput();
 	String chatterText;
 	
-	//chatterText  = GlobalConstants.NEWLINE + opty.CreatedBy.Name + GlobalConstants.fromString +  opty.Account.name + GlobalConstants.chattermsg1 + opty.Name + GlobalConstants.chattermsg2;	  
-	chatterText  = GlobalConstants.NEWLINE + opty.CreatedBy.Name + GlobalConstants.chattermsg1 + opty.Name +  GlobalConstants.forString + opty.Account.name + GlobalConstants.chattermsg2;	  
+	//chatterText  = GlobalConstants.NEWLINE + opty.CreatedBy.Name + GlobalConstants.fromString +  opty.Account.name + GlobalConstants.chattermsg1 + opty.Name + GlobalConstants.chattermsg2;	 
+	chatterText  = GlobalConstants.NEWLINE + opty.CreatedBy.Name + GlobalConstants.chattermsg1 + opty.Name +  GlobalConstants.forString + opty.Account.name + GlobalConstants.chattermsg2;	
 	
 	mentionSegmentInput.Id = opty.Account.OwnerID; 
 	messageBodyInput.messageSegments.add(mentionSegmentInput);
@@ -289,7 +290,7 @@ public without sharing class IndirectCPQ_OpportunityTriggerHelper {
 			if(string.isNotBlank(a.GEOLevel1ID__c)){
 	List<Opportunity> opttyList = oppoMap.get(a.id);
 	for (Opportunity opp : opttyList) {
-		opp.NokiaCPQ_Region__c= a.GEOLevel1ID__c;	   
+		opp.NokiaCPQ_Region__c= a.GEOLevel1ID__c;	  
 	}
 			} 
 		}

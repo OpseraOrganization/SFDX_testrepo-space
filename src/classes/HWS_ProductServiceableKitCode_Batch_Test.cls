@@ -7,7 +7,7 @@
  * Description : 
 *****************************************/
 @isTest
-public class HWS_ProductServiceableKitCode_Batch_Test {
+public class HWS_ProductServiceableKitCode_Batch_Test { 
   
 	public static final String ciPath = 'https://edpqaapi.azurewebsites.net/api/Product_ServicableKitBundle';
 	public static final String tokenPath = 'https://login.microsoftonline.com/5d471751-9675-428d-917b-70f44f9630b0/oauth2/token';

@@ -1,4 +1,4 @@
-@IsTest 
+@IsTest
 public class QTO_CDToCDComparisonControllerTest {
 	@isTest
 	private static void positiveTest() {
@@ -22,10 +22,21 @@ public class QTO_CDToCDComparisonControllerTest {
 	   System.debug('ncd:::::' + nCd);
 	   Customer_Document_Line_Items__c nCdLine = QTO_TestDataFactory.createCustomerDocumentLineItem(nCd);
 	   nCdLine.Contract_Item_Number__c = 'ABCD';
-	   
-		cdLines.add(nCdLine); 
+	   nCDLine.Quantity__c='1';
+	   nCDLine.QTO_Unit_of_Measure__c='PCE';
+	   nCDLine.QTO_Unit_Price__c=2000;
+	   nCDLine.Total_Value__c=2000;
+	   nCDLine.QTO_Requested_Delivery_Date__c=System.Today();
+	   cdLines.add(nCdLine); 
 		
 		insert cdLines;
+		
+	   nCDLine.Quantity__c='2';
+	   nCDLine.QTO_Unit_of_Measure__c='ABC';
+	   nCDLine.QTO_Unit_Price__c=3000;
+	   nCDLine.Total_Value__c=3000;
+	   nCDLine.QTO_Requested_Delivery_Date__c=System.Today()+1;
+	   update nCDLine;
 		
 	   System.debug('nCdLine:::::' + nCdLine);
 		

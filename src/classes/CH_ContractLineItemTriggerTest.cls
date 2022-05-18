@@ -21,9 +21,11 @@
 * See the Apex Language Reference for more information about Testing and Code Coverage.
 */
 
+
 @isTest
-public class CH_ContractLineItemTriggerTest { 
+public class CH_ContractLineItemTriggerTest {
 	private static testMethod void test() {
+		
 		integer j = 5;
 		
 		CH_EntitlementTestData.createCustomSettingData();
@@ -31,13 +33,13 @@ public class CH_ContractLineItemTriggerTest {
 		List <Account> AccountListNL = new List<Account>();
 		AccountListNL = CH_EntitlementTestData.createAccountRecord(j, 'Prospect', null);
 		insert AccountListNL;
-				
+	
 		List <Account> AccountListLE = new List<Account>();
 		AccountListLE = CH_EntitlementTestData.createAccountRecord(j, 'Legal_Entity', AccountListNL);
 		insert AccountListLE;
 		
 		BusinessHours stdBusinessHours = [SELECT Id, Name FROM BusinessHours WHERE IsActive = true AND IsDefault = true];
-	   
+	
 		List<Product2> productlist =new List<Product2>();
 		productlist = CH_EntitlementTestData.createProductRecord(j);
 		insert productlist;
@@ -61,6 +63,7 @@ public class CH_ContractLineItemTriggerTest {
 		ContractLineItemList = CH_EntitlementTestData.createContractLineItemRecord(j, Custompricebook,ServiceContractlist);
 		ContractLineItemList[0].CH_CountryISO2__c = 'BG';
 		ContractLineItemList[0].CH_PreviousCDBEntitlementId__c = 'CDB12345';
+		ContractLineItemList[0].CH_CDB_EntitlementId__c = 'CurrCDB12345';
 		
 		insert ContractLineItemList;  
 		
@@ -72,9 +75,9 @@ public class CH_ContractLineItemTriggerTest {
 		List<Entitlement> Entitlementlist1 = [Select ID from Entitlement where id IN : entitlementlist];
 		For(Entitlement entObj1: Entitlementlist1){
 			for(Integer i=0;i<j;i++){
-				entObj1.CH_CDB_EntitlementId__c='123';
-				entMap.put(entObj1.id, entObj1);
-			}			 
+	entObj1.CH_CDB_EntitlementId__c='123';
+	entMap.put(entObj1.id, entObj1);
+			}	
 		}
 		update entMap.values();
 		
@@ -82,24 +85,21 @@ public class CH_ContractLineItemTriggerTest {
 		List<ContractLineItem> ContractLineItemList1 = [Select ID from ContractLineItem where id IN : ContractLineItemList];
 		For(ContractLineItem contLine: ContractLineItemList1){
 			for(Integer i=0;i<j;i++){
-				contLine.CH_CDB_EntitlementId__c = Entitlementlist1[i].CH_CDB_EntitlementId__c;
-				contLineMap.put(contLine.id, contLine);
-			}			 
+	contLine.CH_CDB_EntitlementId__c = Entitlementlist1[i].CH_CDB_EntitlementId__c;
+	contLineMap.put(contLine.id, contLine);
+			}	
 		}
-		test.startTest();
 		update contLineMap.values();
 		
+		test.startTest();
 		CH_ContractLineItemTriggerHelper.linkToVendorContract(contLineMap, ContractLineItemList);
 		CH_ContractLineItemTriggerHelper.getListCHAndSupportServiceContracts(ContractLineItemList,'Cares');
 		CH_ContractLineItemTriggerHelper.getListCHAndSupportServiceContracts(ContractLineItemList,'Support Portal');
 		CH_ContractLineItemTriggerHelper.updateLookupIds(contLineMap, ContractLineItemList);
 		CH_ContractLineItemTriggerHelper.populateLookupIds(ContractLineItemList);
 		CH_ContractLineItemTriggerHelper.populateCountryName(ContractLineItemList);
-	   
-	
-	
+		
 		test.stopTest();
 	}
-	
 	
 }

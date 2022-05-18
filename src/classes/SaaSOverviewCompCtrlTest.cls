@@ -30,7 +30,7 @@ private class SaaSOverviewCompCtrlTest
 	 insert deliverysetup;
 	 
 	 Value_Delivery_User_Config__c vdU = new Value_Delivery_User_Config__c();
-	 vdu.Name = 'TestUser';		   
+	 vdu.Name = 'TestUser';		
 	 vdu.Selected_Session__c = ValueDeliverySetup.id;
 	 insert vdu;
 
@@ -38,7 +38,7 @@ private class SaaSOverviewCompCtrlTest
 	 ApexPages.CurrentPage().getparameters().put('valueDeliveryObjID', vds.id);  
 
 	 SaaSOverviewCompCtrl Comp= new SaaSOverviewCompCtrl();
-	 comp.newObjectivesOptions = deliverysetup;	 
+	 comp.newObjectivesOptions = deliverysetup;  
 	 comp.valueDeliveryObjectiveObj = vds;
 	 comp.valueDeliveryObj = vds;
 	 comp.itemList = vds;
@@ -51,19 +51,19 @@ private class SaaSOverviewCompCtrlTest
 	 comp.getValueDeliveryOption();
 	 
 	 
-	 comp.addValueDelivery();		   
+	 comp.addValueDelivery();		  
 	 comp.valueDeliveryObj = new Value_Delivery_Setup__c();
 	 comp.valueDeliveryObj.Component_Title__c ='Test';
 	 comp.valueDeliveryObj.Sequence_Order__c =1;
 	 comp.bussinesOnjectiveOption = 'ss \n dd';
 	 
-	 comp.addValueDelivery();		   
+	 comp.addValueDelivery();		  
 	 comp.valueDeliveryObj = new Value_Delivery_Setup__c();
 	 comp.valueDeliveryObj.Component_Title__c ='Test';
-	 comp.valueDeliveryObj.Sequence_Order__c =-1;
+	 comp.valueDeliveryObj.Sequence_Order__c = -1;
 	 comp.bussinesOnjectiveOption = 'ss \n dd';
 	 
-	 comp.addValueDelivery();		   
+	 comp.addValueDelivery();		  
 	 
 	 comp.updateValueDeliveryObjective();
 	 
@@ -97,7 +97,7 @@ private class SaaSOverviewCompCtrlTest
 	 insert deliverysetup;
 	 
 	 Value_Delivery_User_Config__c vdU = new Value_Delivery_User_Config__c();
-	 vdu.Name = 'TestUser';		   
+	 vdu.Name = 'TestUser';		
 	 vdu.Selected_Session__c = ValueDeliverySetup.id;
 	 insert vdu;
 	 
@@ -105,7 +105,7 @@ private class SaaSOverviewCompCtrlTest
 	 ApexPages.CurrentPage().getparameters().put('valueDeliveryObjID', vds.id);  
 
 	 SaaSOverviewCompCtrl Comp= new SaaSOverviewCompCtrl();
-	 comp.newObjectivesOptions = deliverysetup;	 
+	 comp.newObjectivesOptions = deliverysetup;  
 	 comp.valueDeliveryObjectiveObj = vds;
 	 comp.valueDeliveryObj = vdsp;
 	 comp.itemList = vds;

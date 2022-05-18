@@ -27,7 +27,7 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 		
 		WarrantyQuotationWrapper objOarrantyQuotationWrapper =  new WarrantyQuotationWrapper();
 		Set<String> setlabelName=new Set<String>(); 
-	   
+		
 		Set<String> HWS_W_AND_Q_CONDITION =new Set<String>(); 
 		//set contain concat value  of quotation required and warranty status 
 		Set<String> QuotationRequired_WarrantyStatus =new Set<String>();  
@@ -48,12 +48,9 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 				return objOarrantyQuotationWrapper; 
 			} 
 			else{
-				for ( Case parentCase :caseList ){			  
+				for ( Case parentCase :caseList ){	 
 					for(Case child :parentCase.Cases){
-			//34587
-						/*if(child.HWS_Faulty_Serial_Number__c !=null && child.HWS_isQuoteRequired__c && (child.HWS_WarrantyStatus__c == 'In Warranty' || child.HWS_WarrantyStatus__c =='Out of Warranty')){
-							HWS_W_AND_Q_CONDITION.add(HWS_Constants.WCUnknowns);
-						}*/
+						
 						HWS_W_AND_Q_CONDITION.add(child.HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c);
 						QuotationRequiredSet.add(String.valueof(child.HWS_isQuoteRequired__c));
 						WarrantyStatusSet.add(child.HWS_WarrantyStatus__c);
@@ -75,67 +72,102 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 			return objOarrantyQuotationWrapper;  
 		}  
 		//34587
-
-		// Order#2:Splitcasefew WU OR few qr TRUE and Others split required
-	   
-		 if((QuotationRequired_WarrantyStatus.contains('true-In Warranty') || QuotationRequired_WarrantyStatus.contains('true-Out of Warranty')|| QuotationRequired_WarrantyStatus.contains('false-Warranty Unknown')) && 
-			(QuotationRequired_WarrantyStatus.contains('false-Out of Warranty') || QuotationRequired_WarrantyStatus.contains('false-Not Applicable') || QuotationRequired_WarrantyStatus.contains('false-In Warranty')))
-			{
-	setlabelName.add('FewWUorQR,HWS_WCheck_UnKnowns');
-	objOarrantyQuotationWrapper.sLabelName=setlabelName; 
-	objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-	return objOarrantyQuotationWrapper;  
-			}
-	   
-		//No Split ALL wu and all QR req
-		 //Order#3:NOKIASC-34095:Use Case 1- All Unknown Warranty Required=No here split will not happen 
-		  if(WarrantyStatusSet.contains(HWS_Constants.HWS_WCheck_UnKnowns)|| QuotationRequiredSet.contains('true') ){
-					setlabelName.add('HWS_WCheck_UnKnowns');
-					objOarrantyQuotationWrapper.sLabelName=setlabelName; 
-					return objOarrantyQuotationWrapper;  
-		 }
-   
-		System.debug('QuotationRequired_WarrantyStatus'+QuotationRequired_WarrantyStatus);
-		System.debug('caseList'+caseList);
 		
-		//below code - we need to check if the condition matched with any child records then add if block with return value.for example NOKIASC-34093	   
+		// Order#2:Splitcasefew WU OR few qr TRUE and Others split required
+		//Modified NOKIASC-36633 Few unknowns + few quotation required + other scenarios
+		//Modified NOKIASC-36633
+		if((QuotationRequired_WarrantyStatus.contains('false-Warranty Unknown')||QuotationRequired_WarrantyStatus.contains('true-Warranty Unknown')) 
+		   &&(QuotationRequired_WarrantyStatus.contains('true-In Warranty') || QuotationRequired_WarrantyStatus.contains('true-Out of Warranty')|| 
+			  QuotationRequired_WarrantyStatus.contains('true-Not Applicable'))&&
+		   (QuotationRequired_WarrantyStatus.contains('false-Out of Warranty') || QuotationRequired_WarrantyStatus.contains('false-Not Applicable')||
+			QuotationRequired_WarrantyStatus.contains('false-In Warranty'))){
+				setlabelName.add('FewWUorQR,HWS_WCheck_UnKnowns_Split');
+				objOarrantyQuotationWrapper.sLabelName=setlabelName; 
+				objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+				return objOarrantyQuotationWrapper;  
+			}
+		
+		//Modified NOKIASC-36633 Few unknowns + other scenarios
+		if((QuotationRequired_WarrantyStatus.contains('false-Warranty Unknown')||QuotationRequired_WarrantyStatus.contains('true-Warranty Unknown')) 
+		   &&
+		   (QuotationRequired_WarrantyStatus.contains('false-Out of Warranty') || QuotationRequired_WarrantyStatus.contains('false-Not Applicable')||
+			QuotationRequired_WarrantyStatus.contains('false-In Warranty'))){
+				setlabelName.add('FewWUorQR,HWS_WCheck_UnKnowns_Split');
+				objOarrantyQuotationWrapper.sLabelName=setlabelName; 
+				objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+				return objOarrantyQuotationWrapper;  
+			}
+		//Added NOKIASC-36633 Few quotation required + other scenarios
+		//Added NOKIASC-36633
+		if((QuotationRequired_WarrantyStatus.contains('true-In Warranty')|| QuotationRequired_WarrantyStatus.contains('true-Out of Warranty')||QuotationRequired_WarrantyStatus.contains('true-Not Applicable'))&&
+		   (QuotationRequired_WarrantyStatus.contains('false-Out of Warranty')||QuotationRequired_WarrantyStatus.contains('false-Not Applicable')|| QuotationRequired_WarrantyStatus.contains('false-In Warranty'))){
+			   setlabelName.add('FewWUorQR,HWS_WCheck_All_QuoteRequired_Split');
+			   System.debug('setlabelName***'+setlabelName);
+			   objOarrantyQuotationWrapper.sLabelName=setlabelName; 
+			   objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+			   return objOarrantyQuotationWrapper;  
+		   }
+		//Order#3:No Split ALL wu and all QR req
+		
+		//Added NOKIASC-36633
+		//Added NOKIASC-36633
+		if(WarrantyStatusSet.contains(HWS_Constants.HWS_WCheck_UnKnowns) ){
+			setlabelName.add('HWS_WCheck_UnKnowns');
+			objOarrantyQuotationWrapper.sLabelName=setlabelName; 
+			return objOarrantyQuotationWrapper;  
+		}
+		//Added NOKIASC-36633
+		if(QuotationRequiredSet.size()==1 && QuotationRequiredSet.contains('true') ){
+			setlabelName.add('HWS_WCheck_All_QuoteRequired');
+			objOarrantyQuotationWrapper.sLabelName=setlabelName; 
+			objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+			return objOarrantyQuotationWrapper;  
+		}
+		//Order#3:NOKIASC-34095:Use Case 1- All Unknown Warranty Required=No here split will not happen 
+		/* if(WarrantyStatusSet.contains(HWS_Constants.HWS_WCheck_UnKnowns)|| QuotationRequiredSet.contains('true') ){
+setlabelName.add('HWS_WCheck_UnKnowns');
+objOarrantyQuotationWrapper.sLabelName=setlabelName; 
+return objOarrantyQuotationWrapper;  
+}*/
+		//added for NOKIASC-37056
+		if(WarrantyStatusSet.size() == 1 && (new List<String> (WarrantyStatusSet).get(0)) == null){
+			setlabelName.add('HWS_MSG_WarrantyCheckInProgress');
+			objOarrantyQuotationWrapper.sLabelName=setlabelName; 
+			return objOarrantyQuotationWrapper;  
+		}
+		
+		//below code - we need to check if the condition matched with any child records then add if block with return value.for example NOKIASC-34093	
 		switch on QuotationRequired_WarrantyStatus.size() {
 			//When we need not check all child cases in same cindition 
 			//all cases quotation required false and warranty status is in Warranty 
 			//all cases quotation required false and warranty status is Out Warranty 
 			//all cases quotation required false and warranty status is Warranty Unknown
 			when 1 {
-				 //NOKIASC-34090:Use Case 1- All In Warranty/Warranty Check Required=No
+				//NOKIASC-34090:Use Case 1- All In Warranty/Warranty Check Required=No
 				//NOKIASC-34121:UC2a- All In Warranty/Warranty Check Required=No : Console & Portal
 				if(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty) || QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable)){
 					setlabelName.add('HWS_WCheck_VALIDATE_SUBMIT'); 
 					objOarrantyQuotationWrapper.sLabelName=setlabelName;
 					objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
 					return objOarrantyQuotationWrapper;
-				}							   
-				//NOKIASC-34091:Use Case 1- All Out of Warranty/Warranty Check Required=No  and 34119 : based Few out of warranty 
-			   /* if(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)){
-					setlabelName.add('HWS_WCheck_OOW');
-					objOarrantyQuotationWrapper.sLabelName=setlabelName;
-					objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-					return objOarrantyQuotationWrapper;
-				}*/
-		  //ALL OOW Autocancel cases:'HWS_W_AND_Q_UC_1', 'HWS_W_AND_Q_UC_8','HWS_W_AND_Q_UC_2A','HWS_W_AND_Q_UC_2B'
-					   if(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)&&
-						   (HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_1')||
-							HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_8')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2A')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2B'))){
-					setlabelName.add('HWS_WCheck_OOW');
+				}	
+				
+				//ALL OOW Autocancel cases:'HWS_W_AND_Q_UC_1', 'HWS_W_AND_Q_UC_8','HWS_W_AND_Q_UC_2A','HWS_W_AND_Q_UC_2B'
+				if(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)&&
+				   (HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_1')||
+					HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_8')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2A')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2B'))){
+						setlabelName.add('HWS_WCheck_OOW');
+						objOarrantyQuotationWrapper.sLabelName=setlabelName; 
+						objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+						return objOarrantyQuotationWrapper;
+					}//ALL OOW Autocancel "No" cases:HWS_W_AND_Q_UC_9,HWS_W_AND_Q_UC_6_7
+				if(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)){//ALL OOW but not cancelled cases
+					
+					setlabelName.add('HWS_WCheck_VALIDATE_SUBMIT');  
 					objOarrantyQuotationWrapper.sLabelName=setlabelName; 
 					objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-					return objOarrantyQuotationWrapper;
-				}//ALL OOW Autocancel "No" cases:HWS_W_AND_Q_UC_9,HWS_W_AND_Q_UC_6_7
-			if(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)){//ALL OOW but not cancelled cases
-		
-				setlabelName.add('HWS_WCheck_VALIDATE_SUBMIT');  
-				objOarrantyQuotationWrapper.sLabelName=setlabelName; 
-				objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-				return objOarrantyQuotationWrapper;  
-			 }
+					return objOarrantyQuotationWrapper;  
+				}
 				
 			}
 			//When we need not check two condtion like All cases quotation required false and few warranty status is in Warranty and Not Applicable
@@ -143,63 +175,63 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 			//All cases quotation required false/true and few warranty status is Out Warranty and Not Applicable
 			//All cases quotation required false/true and few warranty status is Warranty Unknown and Not Applicable
 			when 2 {
-			   //NOKIASC-34090:Use Case 1- All In Warranty/Warranty Check Required=No
+				//NOKIASC-34090:Use Case 1- All In Warranty/Warranty Check Required=No
 				//NOKIASC-34121:UC2a- All In Warranty/Warranty Check Required=No : Console & Portal
 				if(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty) && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable)){
 					setlabelName.add('HWS_WCheck_VALIDATE_SUBMIT');			
 					objOarrantyQuotationWrapper.sLabelName=setlabelName;
 					objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-					return objOarrantyQuotationWrapper;				
+					return objOarrantyQuotationWrapper;	
 				}
 				//34119 : possible in all 1,2,3--based on out of warrnty approved values 
 				if( (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable) 
-	   && (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)&&(HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_1')||
-							HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_8')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2A')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2B'))))
-							|| (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty) )
-				&& (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)&&(HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_1')||
-							HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_8')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2A')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2B') )))
-	{
-		setlabelName.add('HWS_WCheck_OOW');
-		objOarrantyQuotationWrapper.sLabelName=setlabelName;
-		objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-		return objOarrantyQuotationWrapper;
-	}   
-	if( (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable) 
-	   && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)) || (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty) 
-	   && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)))
-	{
-		setlabelName.add('HWS_WCheck_VALIDATE_SUBMIT');
-		objOarrantyQuotationWrapper.sLabelName=setlabelName;
-		objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-		return objOarrantyQuotationWrapper;
-	}	   
+					 && (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)&&(HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_1')||
+																										HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_8')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2A')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2B'))))
+				   || (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty) )
+				   && (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)&&(HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_1')||
+																									  HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_8')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2A')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2B') )))
+				{
+					setlabelName.add('HWS_WCheck_OOW');
+					objOarrantyQuotationWrapper.sLabelName=setlabelName;
+					objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+					return objOarrantyQuotationWrapper;
+				}   
+				if( (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable) 
+					 && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)) || (QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty) 
+																										  && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)))
+				{
+					setlabelName.add('HWS_WCheck_VALIDATE_SUBMIT');
+					objOarrantyQuotationWrapper.sLabelName=setlabelName;
+					objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+					return objOarrantyQuotationWrapper;
+				}	
 			}
 			when 3 {
 				//34119
-				 if( QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable)
-					&&QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty)
-		&&(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)&& (HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_1')||
-							HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_8')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2A')
-																									   ||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2B')))
-					 )
-	{
-		setlabelName.add('HWS_WCheck_OOW');
-		objOarrantyQuotationWrapper.sLabelName=setlabelName;
-		objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-		return objOarrantyQuotationWrapper;
-	}
+				if( QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable)
+				   &&QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty)
+				   &&(QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty)&& (HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_1')||
+																									  HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_8')||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2A')
+																									  ||HWS_W_AND_Q_CONDITION.contains('HWS_W_AND_Q_UC_2B')))
+				  )
+				{
+					setlabelName.add('HWS_WCheck_OOW');
+					objOarrantyQuotationWrapper.sLabelName=setlabelName;
+					objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+					return objOarrantyQuotationWrapper;
+				}
 				
-	 if( QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable) 
-	   && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty) && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty) )
-	{
-		setlabelName.add('HWS_WCheck_VALIDATE_SUBMIT');
-		objOarrantyQuotationWrapper.sLabelName=setlabelName;
-		objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
-		return objOarrantyQuotationWrapper;
-	}
+				if( QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_NotApplicable) 
+				   && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_OutofWarranty) && QuotationRequired_WarrantyStatus.contains(HWS_Constants.false_InWarranty) )
+				{
+					setlabelName.add('HWS_WCheck_VALIDATE_SUBMIT');
+					objOarrantyQuotationWrapper.sLabelName=setlabelName;
+					objOarrantyQuotationWrapper.sAfterLabelName='HWS_WCheck_SUBMIT';
+					return objOarrantyQuotationWrapper;
+				}
 				
 			}
-		 
+			
 			when else{ 
 				//Do Nothing
 			}  
@@ -228,7 +260,7 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 	public static void updateCaseValues(List<Case> editedCaseList){
 		try{
 			update editedCaseList; 
-		   
+			
 		} 
 		catch(Exception e){ 
 			system.debug('Exception Occured: '+e);
@@ -243,7 +275,7 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 		System.debug('Calling API');
 		//NOKIASC-35984 | 13-May-2021 | Start 
 		Case cs=[Select id,Status,HWS_Faulty_Serial_Number__c,Asset.HWS_SourceSystem__c, HWS_Stockable_Product__r.Name,HWS_Part_Code__c from Case where id=:caseRecord.id];
-				   
+		
 		string sourcesystem = cs.Asset.HWS_SourceSystem__c;
 		string meterialcode = '';
 		if(sourcesystem == 'PUMA1')
@@ -252,7 +284,7 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 			meterialcode = cs.HWS_Part_Code__c; 
 		
 		String warrantyStatus = HWS_CheckWarranty_SVC.getWarrentStatus(meterialcode, cs.HWS_Faulty_Serial_Number__c, sourcesystem );
-
+		
 		//String warrantyStatus = HWS_CheckWarranty_SVC.getWarrentStatus(caseRecord.HWS_Part_Code__c, caseRecord.HWS_Faulty_Serial_Number__c, 'both');
 		//NOKIASC-35984 | 13-May-2021 | End
 		System.debug('Succesfully Called API');
@@ -300,7 +332,7 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 		case ca = new case();
 		ca.Id= ParentRecId;
 		for (Case cas :[SELECT Id, HWS_WarrantyStatus__c,HWS_isQuoteRequired__c FROM Case WHERE ParentId =:ParentRecId]) {
-		   
+			
 			if(cas.HWS_WarrantyStatus__c == WarrantyUnknown){
 				warrantyVerificationRequired = true;
 				QuoteRequired = false;
@@ -308,18 +340,20 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 			}else if(cas.HWS_isQuoteRequired__c){
 				QuoteRequired = true;
 			}
-			 
+			
 		}   
 		if(warrantyVerificationRequired == true){
-				ca.CH_InternalStatus__c = 'Warranty Verification required';
-			}else{
-				ca.CH_InternalStatus__c ='Quotation Required';
-			}
-			updateCaseList.add(ca);
+			ca.CH_InternalStatus__c = 'Warranty Verification required';
+		}else{
+			ca.CH_InternalStatus__c ='Quotation Required';
+		}
+		updateCaseList.add(ca);
 		if (!updateCaseList.isEmpty()) {
-		   
+			
 			Update updateCaseList;  
 		}
+		//NOKIASC-37553
+		HWS_EmailNotifications.workgroupEmailAssignment(ParentRecId, 'Pending Order Summary Auto split',null,null);
 	}//NOKIASC-34650-End
 	@AuraEnabled
 	public Static void updateParentCaseStatus(String childCaseId) {
@@ -342,22 +376,14 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 	}
 	//Nokiasc-34880:updating parent internal status blank for all cancelled cases
 	@AuraEnabled
-	public Static void updateParentCaseStatusBlank(String childCaseId) {
-		Case caseRecord =[SELECT Id, ParentId FROM Case WHERE Id =:childCaseId] ;
-		List<Case> updateParentCaseList = new List<case>();
-		if (caseRecord.ParentId != null) {
-			for (Case Cancase :[SELECT Id, CH_InternalStatus__c FROM Case WHERE Id =:caseRecord.ParentId]) {
-				case ca1 = new case();
-				ca1.Id= Cancase.Id;
-				ca1.CH_InternalStatus__c= null;
-				updateParentCaseList.add(ca1);  
-			}   
-		} 
-		if (!updateParentCaseList.isEmpty()) {
-			Update updateParentCaseList;   
+	public Static void updateParentCaseStatusBlank(String parentCaseId) {
+		Case caseRecord =[SELECT Id, CH_InternalStatus__c FROM Case WHERE Id =:parentCaseId];
+		if (caseRecord.Id != null) {
+			caseRecord.CH_InternalStatus__c= null;  
+			Update caseRecord;
 		}
 	}
-
+	
 	@auraEnabled
 	public static String getPayPerUse(Id parentCaseId){
 		String isValue='';
@@ -366,9 +392,9 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 								Asset.HWS_Price__c,HWS_ServiceType__c,HWS_Contract_Line_Item__r.HWS_InvoicingType__c
 								FROM Cases where Status!='Cancelled')
 							   FROM Case where Id =:parentCaseId  LIMIT 1];
-		if(parentCase.Size()>0){						
+		if(parentCase.Size()>0){			
 			for ( Case pCase :parentCase ){
-				if(String.isBlank(pCase.HWS_Customer_PO__c)){					
+				if(String.isBlank(pCase.HWS_Customer_PO__c)){		
 					for(Case getChildCaseValues:pCase.Cases){   
 						string serviceItemDescription=getChildCaseValues.Asset.HWS_ServiceOffering__c;  
 						string servicetype =getChildCaseValues.HWS_ServiceType__c;	  
@@ -377,9 +403,9 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 							   isValue='PO Error';  
 							   break;   
 						   }	
-					}				
+					}	
 				}
-			}		   
+			}	 
 		}
 		return isValue;
 	}
@@ -392,11 +418,11 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 	public static Boolean cancelChildCases(Id parentCaseId,List<String> condition){
 		
 		
-		List<Case> oowCases = [Select id,CaseNumber from case 
-							   where HWS_WarrantyStatus__c='Out of Warranty' 
-							   and Status!='Cancelled' 
-							   and HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c IN: condition
-							   and ParentId  =: parentCaseId];
+		List<Case> oowCases = [Select id,CaseNumber from case where Status!='Cancelled'		 
+							   and HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c IN: condition	
+							   and ParentId  =: parentCaseId and ( CH_EntitlementException__c ='Out of Warranty'  OR 
+																  (HWS_WarrantyStatus__c='Out of Warranty' and  CH_EntitlementException__c ='Out of Warranty')  
+																 )];
 		List<Case> cancelledCaseList=new List<Case>();
 		for(Case cs:oowCases)
 		{
@@ -406,9 +432,9 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 			cancelledCaseList.add(cs);
 		}
 		try{
-		   
+			
 			if(cancelledCaseList.size()>0){
-				 HWS_BypassStatusChangeValidation__c custSetting= HWS_BypassStatusChangeValidation__c.getInstance(); 
+				HWS_BypassStatusChangeValidation__c custSetting= HWS_BypassStatusChangeValidation__c.getInstance(); 
 				custSetting.HWS_BypassCaseStatusValidation__c = true;
 				upsert custSetting;
 				
@@ -427,7 +453,7 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 			return false;
 		}
 	}
-
+	
 	
 	public class WarrantyQuotationWrapper{
 		@AuraEnabled public List<Case> listofCases {get;set;}	
@@ -436,17 +462,17 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 	}
 	
 	/****************************************
-	* Name : cloneCases
-	* Description : This method is used to get clone the HWS cases
-	* By Satya Pagadala
-	* Created Date: 12 Feb 2021
-	* User story : NOKIASC-34093
-	*****************************************/ 
+* Name : cloneCases
+* Description : This method is used to get clone the HWS cases
+* By Satya Pagadala
+* Created Date: 12 Feb 2021
+* User story : NOKIASC-34093
+*****************************************/ 
 	@AuraEnabled
 	public static String cloneCases(Id parentCaseId, List<Case> childCaseLst, String emailType){
 		//Set save point
 		Savepoint sp = Database.setSavepoint();
-		 List<Case> parentCaseList = new List<Case>();
+		List<Case> parentCaseList = new List<Case>();
 		//get all fields for query dynamically
 		String query = HWS_Utilty.getCreatableFieldsSOQL('Case');
 		try {
@@ -460,7 +486,7 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 			Boolean warrantyVerificationRequired = false;
 			Boolean QuoteRequired = false;
 			for(Case caseRec : childCaseLst){
-				if(caseRec.HWS_WarrantyStatus__c == WarrantyUnknown){
+				if(caseRec.HWS_WarrantyStatus__c ==HWS_Constants.WS_FailDWarranty || (caseRec.HWS_WarrantyStatus__c==HWS_Constants.WS_UKWarranty && caseRec.CH_EntitlementException__c == WarrantyUnknown)){//NOKIASC-38437	
 					warrantyVerificationRequired = true;
 					QuoteRequired = false;
 					break;
@@ -469,7 +495,7 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 				}
 			}
 			if(warrantyVerificationRequired == true){
-				clonedParentCase.CH_InternalStatus__c = 'Warranty Verification required';
+				clonedParentCase.CH_InternalStatus__c = 'Warranty Verification Required';
 			}else{
 				clonedParentCase.CH_InternalStatus__c ='Quotation Required';
 			}
@@ -488,23 +514,24 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 				if(!childCasesToClone.isEmpty()){
 					//delete existing child cases
 					delete childCaseLst;
-		
-		//insert cloned child cases
+					
+					//insert cloned child cases
+					HWS_CasetriggerHandler.isNewCase=true;//added for 38095
 					insert childCasesToClone;
 					// NOKIASC-36642 Split scenario parent case cancel code
 					List<Case> csList=[Select id,RecordTypeId,ParentId,status,HWS_CancelConfirm__c from Case where ParentId=:parentCaseId];
-		HWS_CaseTriggerHelper.changeParentCaseStatus(csList);
-		 HWS_CaseTriggerHelper.passiveAssignmentHWSParentCase(null, parentCaseList);//NOKIASC-36798
+					HWS_CaseTriggerHelper.changeParentCaseStatus(csList);
+					HWS_CaseTriggerHelper.passiveAssignmentHWSParentCase(null, parentCaseList);//NOKIASC-36798
 				}
-				 //34830 -- to send email
-	if(emailType != null){
-		HWS_EmailNotifications.workgroupEmailAssignment(clonedParentCase.Id, emailType,null,null);
-	}			 
+				//34830 -- to send email
+				if(emailType != null){
+					HWS_EmailNotifications.workgroupEmailAssignment(clonedParentCase.Id, emailType,null,null);
+				}	
 			}
-	return clonedParentCase.Id;
-			//commented due to blocker issue NOKIASC-36056
-			/*clonedParentCase= [SELECT Id, CaseNumber FROM Case WHERE Id = :clonedParentCase.Id];
-			return JSON.serialize(clonedParentCase);*/
+			//return clonedParentCase.Id;
+			// NOKIASC-36633
+			clonedParentCase= [SELECT Id, CaseNumber FROM Case WHERE Id = :clonedParentCase.Id];
+			return JSON.serialize(clonedParentCase);
 		}
 		catch(Exception e) {
 			Database.rollback(sp);
@@ -531,9 +558,9 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 	
 	//NOKIASC-34599
 	@AuraEnabled(cacheable=false)
-	public static Case escalateCases(Id parentCaseId, List<Case> oChildCaseList, Boolean skipSplit){
+	public static Case escalateCases(Id parentCaseId, List<Case> oChildCaseList, Boolean skipSplit,String emailType){
 		Case oNewParentCase;
-		 List<Case> parentCaseList = new List<Case>();
+		List<Case> parentCaseList = new List<Case>();
 		if(!oChildCaseList.isEmpty()){
 			String query = HWS_Utilty.getCreatableFieldsSOQL('Case');
 			Case oParentCase = Database.query(query+' WHERE Id = :parentCaseId');
@@ -560,6 +587,8 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 						oChildCase.CH_EntitlementException__c = 'Out of Warranty Dispute';
 						oChildCase.Status = 'On Hold';
 					}
+					//37186 Fix for cloned cases to set proper EntitlementException and Entitlementstatus values
+					HWS_CaseTriggerHandler.isNewCase= true;
 					insert oNewChildCaseList;
 				}
 				else{
@@ -568,8 +597,10 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 						oChildCase.CH_EntitlementException__c = 'Out of Warranty Dispute';
 						oChildCase.Status = 'On Hold';
 					}
+					HWS_CaseTriggerHandler.isNewCase= true;
 					update oNewChildCaseList;
 				}
+				
 			}
 			else {
 				if(!skipSplit) {
@@ -579,8 +610,16 @@ public  without sharing class HWS_WarrantyQuotation_Controller {
 			}
 		}
 		//NOKIASC-36798
-	 parentCaseList.add(oNewParentCase);
+		parentCaseList.add(oNewParentCase);
 		HWS_CaseTriggerHelper.passiveAssignmentHWSParentCase(null, parentCaseList);
+		//added for NOKIASC-36876
+		if(emailType != null){
+			HWS_EmailNotifications.workgroupEmailAssignment(oNewParentCase.Id, emailType,null,null);
+		}  
+		//NOKIASC-36633
+		if(oNewParentCase!=null){
+			oNewParentCase= [SELECT Id, CaseNumber,CH_InternalStatus__c,CH_Originating_Incident_Number__c FROM Case WHERE Id = :oNewParentCase.Id];  
+		}
 		return oNewParentCase;
 	}
 }

@@ -3,7 +3,7 @@
  * ----- 
  * @Description	  : Case Handling Contact Object Utility Class.
  * @TestClass		: CH_ContactUtils_Test.
- * @Project		  : Case Handling.
+ * @Project	: Case Handling.
  * @Modification Log : 
  *  Created  : 2019 12 04 – tiago.almeida@nokia.com
  * ----- 
@@ -34,11 +34,11 @@ public without sharing class CH_ContactUtils {
 		String result = '';
 		if(contactId != null) {
 			try {
-				List<Contact> oContactList = DML.doSelect('Id, Name').doWhere('Id = "'+contactId+'"').setOptions('LIMIT 1').doQuery();
-				result = (oContactList.get(0) != null ? oContactList.get(0).Name : 'Contact object not found');
+	List<Contact> oContactList = DML.doSelect('Id, Name').doWhere('Id = "'+contactId+'"').setOptions('LIMIT 1').doQuery();
+	result = (oContactList.get(0) != null ? oContactList.get(0).Name : 'Contact object not found');
 			} catch (Exception e) {
-				System.debug('CH_ContactUtils Error: No User or Contact found!');
-				throw new AuraHandledException('No Country found!');
+	System.debug('CH_ContactUtils Error: No User or Contact found!');
+	throw new AuraHandledException('No Country found!');
 			}
 		}
 		return result;
@@ -46,7 +46,7 @@ public without sharing class CH_ContactUtils {
 	
 	/**
 	 * @description : Check if Contact is authorized to Internal Support Happy Path - NOKIASC-27047
-	 * @param	   : Id contactId
+	 * @param	: Id contactId
 	 * @return	  : Boolean
 	**/
 	public static Boolean contactIsInternalAuthorized(Id contactId) {
@@ -58,7 +58,7 @@ public without sharing class CH_ContactUtils {
 	
 	/**
 	 * @description : 
-	 * @param	   : Id recordId
+	 * @param	: Id recordId
 	 * @return	  : List<SObject>
 	**/
 	public static List<SObject> searchContacts(Id oContractId, String contactGlobalSearch, String contactId, String email, String accountName) {
@@ -68,15 +68,15 @@ public without sharing class CH_ContactUtils {
 			String sWhere = 'AccountId NOT IN ' + DML_SObject.setToString(oAccountIdSet) + ' AND CH_Legal_Entity_Name__c != null ';
 			if(String.isNotBlank(contactId)) sWhere += 'AND CH_ContactId__c  LIKE "%' + String.escapeSingleQuotes(contactId.trim()) + '%" ';
 			if(String.isNotBlank(contactGlobalSearch)) {
-				List<List<SObject>> oContactList = DML_SObject.doSearch('FIND {*' + String.escapeSingleQuotes(contactGlobalSearch.trim()) + '*} IN All FIELDS RETURNING Contact(Id)');
-				if(!oContactList.isEmpty()) {
-					Set<String> oSearchContactIdSet = new Map<String, SObject>(oContactList.get(0)).keySet();
-					if(!oSearchContactIdSet.isEmpty()) sWhere += 'AND Id IN ' + DML_SObject.setToString(oSearchContactIdSet) + ' ';
-				}
+	List<List<SObject>> oContactList = DML_SObject.doSearch('FIND {*' + String.escapeSingleQuotes(contactGlobalSearch.trim()) + '*} IN All FIELDS RETURNING Contact(Id)');
+	if(!oContactList.isEmpty()) {
+		Set<String> oSearchContactIdSet = new Map<String, SObject>(oContactList.get(0)).keySet();
+		if(!oSearchContactIdSet.isEmpty()) sWhere += 'AND Id IN ' + DML_SObject.setToString(oSearchContactIdSet) + ' ';
+	}
 			}
 			if(String.isNotBlank(email)) sWhere += 'AND Email LIKE "%' + String.escapeSingleQuotes(email.trim()) + '%" ';
 			if(String.isNotBlank(accountName)) sWhere += 'AND CH_Legal_Entity_Name__c LIKE "%' + String.escapeSingleQuotes(accountName.trim()) + '%" ';
-			result = DML.doSelect('Id, Name, IsActive__c, Phone, MobilePhone, Email, CH_Legal_Entity_Name__c, CH_ContactTimeZone__c, Country__c').doWhere(sWhere).doQuery();			   
+			result = DML.doSelect('Id, Name, IsActive__c, Phone, MobilePhone, Email, CH_Legal_Entity_Name__c, CH_ContactTimeZone__c, Country__c, CH_ContactType__c').doWhere(sWhere).doQuery();	  
 		}
 		return result;
 	}

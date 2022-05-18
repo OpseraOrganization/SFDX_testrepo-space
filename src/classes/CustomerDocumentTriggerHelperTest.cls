@@ -2,7 +2,7 @@
 Name : CustomerDocumentTriggerHelperTest
 Created Date: 7 July 2019
 Created by: Accenture
-Modified by: Györgyi Kovács, Nokia 
+Modified by: Györgyi Kovács, Nokia
 Description : This class is test class for CustomerDocumentTrigger
 *********************************************************************************************************/
 @isTest
@@ -120,7 +120,7 @@ Parameter :
 			//Opportunity
 			Opportunity oppty = TestDataFactory.OpportunityCreation(1, soldtopartyAcc)[0];
 			oppty.StageName = CSWXGlobalConstant.DEVELOP_OPPTY;
-			oppty.RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(CSWXGlobalConstant.DIRECTRECORDTYPEOPPORTUNITY).getRecordTypeId();
+			oppty.RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get(CSWXGlobalConstant.directOppty).getRecordTypeId();
 			oppty.Lead_BG__c = 'MN';
 			oppty.Phase_Status__c = CSWXGlobalConstant.Opty_phase_Status;
 			//Database.insert(oppty);
@@ -131,7 +131,7 @@ Parameter :
 			quoteProposal.NokiaCPQ_Portfolio__c = 'IP Routing';
 			quoteProposal.NokiaCPQ_SSP_Level__c = 'Unlimited';
 			quoteProposal.Analytics_Source__c = CSWXGlobalConstant.AnalyticsSource_CCRE;
-			quoteProposal.RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('CCRE_Proposal').getRecordTypeId();
+			quoteProposal.RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('SWx/CCRE Proposal').getRecordTypeId();
 			quoteProposal.Prices_Aligned__c = true;
 			quoteProposal.Apttus_Proposal__Account__c = soldtopartyAcc.Id;
 			quoteProposal.Apttus_Proposal__Approval_Stage__c = 'Approved';

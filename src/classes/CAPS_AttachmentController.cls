@@ -272,15 +272,15 @@ public without sharing class CAPS_AttachmentController {
 	*******************************************/ 
 	@AuraEnabled
 	public static String shareAttachmentsWithRnd(Id caseid, String interfaceName, String subject, String combinedDescription, String comments, List<Id> attachmentIdList) {
-		Case c = [SELECT Id, CaseNumber, Severity__c, Priority, CH_CRNumber__c, CH_Originating_Incident_Number__c, CH_Originating_Incident_Number__r.CaseNumber  FROM Case WHERE  Id =: caseid];
+		Case c = [SELECT Id, CaseNumber, CH_ReportedDate__c, Severity__c, Priority, CH_CRNumber__c, CH_Originating_Incident_Number__c, CH_Originating_Incident_Number__r.CaseNumber  FROM Case WHERE  Id =: caseid];
 		CH_Problem_RnD_Reference__c rndInteraction = new CH_Problem_RnD_Reference__c(CH_RnD_Subject__c = subject,
-			 CH_RnD_Description__c = combinedDescription,
-			 CH_RnD_Comment__c = comments,
-			 CH_RnD_Interface__c = interfaceName,
-			 CH_Related_Record__c = caseid,
-			 CH_RnD_Reference__c = c.CH_CRNumber__c,
-			 CH_RnD_Direction__c = 'outbound',
-			 CH_RnD_Type__c = 'Update to R&D');
+	CH_RnD_Description__c = combinedDescription,
+	CH_RnD_Comment__c = comments,
+	CH_RnD_Interface__c = interfaceName,
+	CH_Related_Record__c = caseid,
+	CH_RnD_Reference__c = c.CH_CRNumber__c,
+	CH_RnD_Direction__c = 'outbound',
+	CH_RnD_Type__c = 'Update to R&D');
 
 		rndInteraction = CH_ExternalInterfaceUTIL.sendCaseAttachments(rndInteraction, c, new Set<Id>(attachmentIdList));
 		return rndInteraction.Id;

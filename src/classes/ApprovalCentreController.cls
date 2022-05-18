@@ -10,183 +10,162 @@
 * ============================================================================
 */
 public without sharing class ApprovalCentreController{
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Nov-2016
-	* Param: String searchKeyWord
-	* Return: List<WrapperWildCardSearch>
-	* Description: Retrieve all records from Account,Opportunity,offer and Document objects depending on the input passed to the menthod
-	* High Level Process :
-	********************************************************************************************************************* */
+* author: Accenture
+* Date: Nov-2016
+* Param: String searchKeyWord
+* Return: List<WrapperWildCardSearch>
+* Description: Retrieve all records from Account,Opportunity,offer and Document objects depending on the input passed to the menthod
+* High Level Process :
+********************************************************************************************************************* */
 	@AuraEnabled
 	public static ApprovalCentreWrapper basicApprovalDetails(String oppRecordId) {
 		List<ApprovalCentreWrapper> wrapperList = new List<ApprovalCentreWrapper>();
-		List<String> args = new String[]{GlobalConstants.ZERO,GlobalConstants.NUMBER_FORMAT,GlobalConstants.DATE_FORMAT};
-			Set<String> phaseStatusValues = getOpportunityPhaseStatusValues();
+		Set<String> phaseStatusValues = getOpportunityPhaseStatusValues();
 		ApprovalCentreWrapper wrapperObj = getNewApprovalCentreWrapperObj();
-
+		
 		try{
-			String approvalDateStr = GlobalConstants.BLANK_VALUE;
 			Opportunity oppObj = new Opportunity();
 			oppObj = [select Id,StageName,Name,Account.Market__c,Account.Country__c,FORMAT(G2_Approval_Date__c),FORMAT(G3_Approval_Date__c),
-		  FORMAT(G4_Approval_Date__c),FORMAT(G5_Approval_Date__c),FORMAT(G6_Approval_Date__c),Account.Name, Supporting_BGs_BUs__c,Lead_BG__c,Lead_BU__c,Phase_Status__c,
-		  (select Approval_Recommendation__c,Approval_Scope__c,
-		LoA_Currency__c, Offer_Description__c,Offer_Number__c,Lead_BG__c,Lead_BU__c,LoA_Approval_Level__c,
-		LoA_Level_Before_Trigger_Approval__c,Offer_DSO__c,Offer_IRD__c, WTD_Case__c /*BP-FT-1961*/
-		from Offers__r where ActiveOffer__c =: true limit 1) from Opportunity where id =: oppRecordId limit 1];
+					  FORMAT(G4_Approval_Date__c),FORMAT(G5_Approval_Date__c),FORMAT(G6_Approval_Date__c),Account.Name, Supporting_BGs_BUs__c,Lead_BG__c,Lead_BU__c,Phase_Status__c,
+					  (select Approval_Scope__c,
+					   LoA_Currency__c, Offer_Description__c,Offer_Number__c,Lead_BG__c,Lead_BU__c,LoA_Approval_Level__c,
+					   LoA_Level_Before_Trigger_Approval__c, WTD_Case__c /*BP-FT-1961*/
+					   from Offers__r where ActiveOffer__c =: true limit 1) from Opportunity where id =: oppRecordId limit 1];
 			List<Apttus_Approval__Approval_Request__c> approvalCreaterDetailsObj = [SELECT Id,Tech_Status__c,Aproval_Completion_days__c,Apttus_Approval__ActualApproverName__c,Validator_Status__c,Apttus_Approval__Date__c,Apttus_Approval__Assigned_To_Id__c,CreatedBy.Name,CreatedBy.SmallPhotoUrl,NF_Role_Name__c,Apttus_Approval__Assigned_To_Name__c,Apttus_Approval__Approver_Comments__c,Apttus_Approval__Approval_Status__c,NF_Assignee_Type__c,APTSCU_Approval_Action__c,Apttus_Approval__DelegateApproverIds__c,Delegate_Approvers__c FROM Apttus_Approval__Approval_Request__c WHERE Apttus_Approval__Object_Id__c =: oppObj.Id and NF_Assignee_Type__c IN (:GlobalConstants.VALIDATOR,:GlobalConstants.APPROVER, :GlobalConstants.STAKEHOLDER_INFORMATION) Order by createdDate desc Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
 			approvalCreaterDetailsObj = removeCommentsSystemInfo(approvalCreaterDetailsObj);
 			System.debug('approvalCreaterDetailsObj:::>'+approvalCreaterDetailsObj);
 			for(String gateValue : phaseStatusValues){
-	// Date approvalDate = Date.valueof(oppObj.get(gateApprovalDateMap.get(gateValue)));
-	if(oppObj.StageName.equalsIgnoreCase(GlobalConstants.WITH_DRAW_BY_NOKIA)||oppObj.StageName.equalsIgnoreCase(GlobalConstants.LOST_TO_COMPETITOR)||oppObj.StageName.equalsIgnoreCase(GlobalConstants.OBSOLETE)||oppObj.StageName.equalsIgnoreCase(GlobalConstants.COMPLETED_OPPTY)||oppObj.StageName.equalsIgnoreCase(GlobalConstants.CANCELLED_BY_CUSTOMER)){
-		wrapperObj.notAllowToCreateTask = true;
-		break;
-	}
-
-	if(oppObj.Phase_Status__c.contains(gateValue))
-	{
-		wrapperObj.gateStep = gateValue;
-		break;
-	}else{
-		wrapperObj.gateStep = GlobalConstants.CURRENTLY_NO_GATE;
-		wrapperObj.approvalReqDate = null;
-	}
+				if(oppObj.StageName.equalsIgnoreCase(GlobalConstants.WITH_DRAW_BY_NOKIA)||oppObj.StageName.equalsIgnoreCase(GlobalConstants.LOST_TO_COMPETITOR)||oppObj.StageName.equalsIgnoreCase(GlobalConstants.OBSOLETE)||oppObj.StageName.equalsIgnoreCase(GlobalConstants.COMPLETED_OPPTY)||oppObj.StageName.equalsIgnoreCase(GlobalConstants.CANCELLED_BY_CUSTOMER)){
+					wrapperObj.notAllowToCreateTask = true;
+					break;
+				}
+				
+				if(oppObj.Phase_Status__c.contains(gateValue))
+				{
+					wrapperObj.gateStep = gateValue;
+					break;
+				}else{
+					wrapperObj.gateStep = GlobalConstants.CURRENTLY_NO_GATE;
+					wrapperObj.approvalReqDate = null;
+				}
 			}
-
+			
 			wrapperObj.opportunityName = oppObj.Name;
 			wrapperObj.opportunityId = oppObj.Id;
 			wrapperObj.customer = oppObj.Account.Name;
-
+			
 			if(approvalCreaterDetailsObj.size()>0)
 			{
-	if(approvalCreaterDetailsObj[0].Apttus_Approval__Date__c != null && !wrapperObj.gateStep.equalsIgnoreCase(GlobalConstants.CURRENTLY_NO_GATE))
-	{
-		wrapperObj.approvalReqDate =  Date.valueof(approvalCreaterDetailsObj[0].Apttus_Approval__Date__c );
-	}
-	if(approvalCreaterDetailsObj[0].CreatedBy.SmallPhotoUrl != null)
-	{
-		wrapperObj.approverPhotoURL =  approvalCreaterDetailsObj[0].CreatedBy.SmallPhotoUrl;
-		System.debug('approverPhotoURL:::>'+approvalCreaterDetailsObj[0].CreatedBy.SmallPhotoUrl);
-	}
+				if(approvalCreaterDetailsObj[0].Apttus_Approval__Date__c != null && !wrapperObj.gateStep.equalsIgnoreCase(GlobalConstants.CURRENTLY_NO_GATE))
+				{
+					wrapperObj.approvalReqDate =  Date.valueof(approvalCreaterDetailsObj[0].Apttus_Approval__Date__c );
+				}
+				if(approvalCreaterDetailsObj[0].CreatedBy.SmallPhotoUrl != null)
+				{
+					wrapperObj.approverPhotoURL =  approvalCreaterDetailsObj[0].CreatedBy.SmallPhotoUrl;
+					System.debug('approverPhotoURL:::>'+approvalCreaterDetailsObj[0].CreatedBy.SmallPhotoUrl);
+				}
 			}
 			if(oppObj.Account.Market__c != Null && oppObj.Account.Country__c == Null)
 			{
-	wrapperObj.marketOrCountry = oppObj.Account.Market__c;
+				wrapperObj.marketOrCountry = oppObj.Account.Market__c;
 			}
 			else if(oppObj.Account.Market__c == Null && oppObj.Account.Country__c != Null)
 			{
-	wrapperObj.marketOrCountry = oppObj.Account.Country__c;
+				wrapperObj.marketOrCountry = oppObj.Account.Country__c;
 			}
 			else if (oppObj.Account.Market__c != Null && oppObj.Account.Country__c != Null)
 			{
-	wrapperObj.marketOrCountry = oppObj.Account.Market__c+GlobalConstants.FORWARD_SLASH+oppObj.Account.Country__c;
+				wrapperObj.marketOrCountry = oppObj.Account.Market__c+GlobalConstants.FORWARD_SLASH+oppObj.Account.Country__c;
 			}
 			else if(oppObj.Account.Market__c == Null && oppObj.Account.Country__c == Null)
 			{
-	wrapperObj.marketOrCountry = GlobalConstants.BLANK_VALUE;
+				wrapperObj.marketOrCountry = GlobalConstants.BLANK_VALUE;
 			}
 			else
 			{
-	System.debug('Nothing');
+				System.debug('Nothing');
 			}
 			if(oppObj.Lead_BG__c != null)
 			{
-	wrapperObj.leadBG = oppObj.Lead_BG__c;
+				wrapperObj.leadBG = oppObj.Lead_BG__c;
 			}
 			if(oppObj.Lead_BU__c != null)
 			{
-	wrapperObj.leadBU = oppObj.Lead_BU__c;
+				wrapperObj.leadBU = oppObj.Lead_BU__c;
 			}
 			if(oppObj.Supporting_BGs_BUs__c != null)
 			{
-	wrapperObj.supportingBGsBUs = oppObj.Supporting_BGs_BUs__c;
+				wrapperObj.supportingBGsBUs = oppObj.Supporting_BGs_BUs__c;
 			}
 			if(!oppObj.Offers__r.isEmpty())
 			{
-	//BP-FT-1961
-	if(!String.isBlank(oppObj.Offers__r[0].WTD_Case__c))
-		wrapperObj.WinTheDealLink = oppObj.Offers__r[0].WTD_Case__c;
-	if(oppObj.Offers__r[0].Offer_Number__c != null)
-	{
-		wrapperObj.offerNumber = oppObj.Offers__r[0].Offer_Number__c;
-	}
-
-	if(oppObj.Offers__r[0].LoA_Approval_Level__c != null)
-	{
-		wrapperObj.loaApprovalLevel = oppObj.Offers__r[0].LoA_Approval_Level__c;
-	}
-	if(oppObj.Offers__r[0].LoA_Level_Before_Trigger_Approval__c != null)
-	{
-		wrapperObj.loaApprovalLevelBeforeSTA = oppObj.Offers__r[0].LoA_Level_Before_Trigger_Approval__c;
-	}
-	String loACurrency;
-	If(oppObj.Offers__r[0].LoA_Currency__c == Null){
-		loACurrency=GlobalConstants.BLANK_VALUE;
-	}
-	else{
-		loACurrency=oppObj.Offers__r[0].LoA_Currency__c;
-	}
-
-	if(oppObj.Offers__r[0].Approval_Recommendation__c != null)
-	{
-		wrapperObj.approvalRecommendation = oppObj.Offers__r[0].Approval_Recommendation__c;
-	}
-	if(oppObj.Offers__r[0].Approval_Scope__c!= null)
-	{
-		wrapperObj.approvalScope = oppObj.Offers__r[0].Approval_Scope__c;
-	}
-	if(oppObj.Offers__r[0].Offer_Description__c != null)
-	{
-		wrapperObj.offerDescription = String.valueOf(oppObj.Offers__r[0].Offer_Description__c).replaceAll(GlobalConstants.REMOVE_PARA_TAG ,GlobalConstants.BLANK_VALUE);
-	}
-	if(oppObj.Offers__r[0].Offer_DSO__c != null)
-	{
-		String[] arrTest = String.valueOf(oppObj.Offers__r[0].Offer_DSO__c).split('\\.');
-
-		wrapperObj.offerDSO = arrTest[0].replaceAll(GlobalConstants.REMOVE_PARA_TAG ,GlobalConstants.BLANK_VALUE);
-	}
-	if(oppObj.Offers__r[0].Offer_IRD__c != null)
-	{
-		String[] arrTest1 = String.valueOf(oppObj.Offers__r[0].Offer_IRD__c).split('\\.');
-
-		wrapperObj.offerIRD = arrTest1[0].replaceAll(GlobalConstants.REMOVE_PARA_TAG ,GlobalConstants.BLANK_VALUE);
-	}
-	else
-	{
-		System.debug('Nothing');
-	}
+				//BP-FT-1961
+				if(!String.isBlank(oppObj.Offers__r[0].WTD_Case__c))
+					wrapperObj.WinTheDealLink = oppObj.Offers__r[0].WTD_Case__c;
+				if(oppObj.Offers__r[0].Offer_Number__c != null)
+				{
+					wrapperObj.offerNumber = oppObj.Offers__r[0].Offer_Number__c;
+				}
+				
+				if(oppObj.Offers__r[0].LoA_Approval_Level__c != null)
+				{
+					wrapperObj.loaApprovalLevel = oppObj.Offers__r[0].LoA_Approval_Level__c;
+				}
+				if(oppObj.Offers__r[0].LoA_Level_Before_Trigger_Approval__c != null)
+				{
+					wrapperObj.loaApprovalLevelBeforeSTA = oppObj.Offers__r[0].LoA_Level_Before_Trigger_Approval__c;
+				}
+				String loACurrency;
+				If(oppObj.Offers__r[0].LoA_Currency__c == Null){
+					loACurrency=GlobalConstants.BLANK_VALUE;
+				}
+				else{
+					loACurrency=oppObj.Offers__r[0].LoA_Currency__c;
+				}
+				if(oppObj.Offers__r[0].Approval_Scope__c!= null)
+				{
+					wrapperObj.approvalScope = oppObj.Offers__r[0].Approval_Scope__c;
+				}
+				if(oppObj.Offers__r[0].Offer_Description__c != null)
+				{
+					wrapperObj.offerDescription = String.valueOf(oppObj.Offers__r[0].Offer_Description__c).replaceAll(GlobalConstants.REMOVE_PARA_TAG ,GlobalConstants.BLANK_VALUE);
+				}
+				else
+				{
+					System.debug('Nothing');
+				}
 			}else{
-	wrapperObj.offerNumber = GlobalConstants.BLANK_VALUE;
+				wrapperObj.offerNumber = GlobalConstants.BLANK_VALUE;
 			}
 			if(approvalCreaterDetailsObj.size()>0)
 			{
-	List<Apttus_Approval__Approval_Request__c> appoverRecoList = new List<Apttus_Approval__Approval_Request__c>();
-	List<Apttus_Approval__Approval_Request__c> validatorRecoList = new List<Apttus_Approval__Approval_Request__c>();
-	//List<> stakeHolderRecoList = new List<Apttus_Approval__Approval_Request__c>();
-	System.debug('approvalCreaterDetailsObj:::>'+approvalCreaterDetailsObj);
-
-	wrapperObj.approvalRequester = approvalCreaterDetailsObj[0].CreatedBy.Name;
-	for(Apttus_Approval__Approval_Request__c approvalObj : approvalCreaterDetailsObj)
-	{
-		if(approvalObj.NF_Assignee_Type__c.equalSIgnoreCase(GlobalConstants.VALIDATOR))
-		{
-			validatorRecoList.add(approvalObj);
-		}
-		else if(approvalObj.NF_Assignee_Type__c.equalSIgnoreCase(GlobalConstants.APPROVER))
-		{
-			appoverRecoList.add(approvalObj);
-		}
-	}
-	wrapperObj.validatorRecList =validatorRecoList;
-	wrapperObj.approverRecList = appoverRecoList;
-	System.debug('validatorRecoList::>'+validatorRecoList);
-	System.debug('appoverRecoList::>'+appoverRecoList);
+				List<Apttus_Approval__Approval_Request__c> appoverRecoList = new List<Apttus_Approval__Approval_Request__c>();
+				List<Apttus_Approval__Approval_Request__c> validatorRecoList = new List<Apttus_Approval__Approval_Request__c>();
+				System.debug('approvalCreaterDetailsObj:::>'+approvalCreaterDetailsObj);
+				
+				wrapperObj.approvalRequester = approvalCreaterDetailsObj[0].CreatedBy.Name;
+				for(Apttus_Approval__Approval_Request__c approvalObj : approvalCreaterDetailsObj)
+				{
+					if(approvalObj.NF_Assignee_Type__c.equalSIgnoreCase(GlobalConstants.VALIDATOR))
+					{
+						validatorRecoList.add(approvalObj);
+					}
+					else if(approvalObj.NF_Assignee_Type__c.equalSIgnoreCase(GlobalConstants.APPROVER))
+					{
+						appoverRecoList.add(approvalObj);
+					}
+				}
+				wrapperObj.validatorRecList =validatorRecoList;
+				wrapperObj.approverRecList = appoverRecoList;
+				System.debug('validatorRecoList::>'+validatorRecoList);
+				System.debug('appoverRecoList::>'+appoverRecoList);
 			}
 			else
 			{
-	wrapperObj.approvalRequester = GlobalConstants.NO_APPROVAL_REQ;
+				wrapperObj.approvalRequester = GlobalConstants.NO_APPROVAL_REQ;
 			}
 			wrapperObj = returnApprovalStatusInfo(approvalCreaterDetailsObj,wrapperObj);
 			System.debug('wrapperObj::>'+wrapperObj);
@@ -199,22 +178,19 @@ public without sharing class ApprovalCentreController{
 		}
 		return wrapperObj;
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Nov-2016
-	* Param: Id recordId
-	* Return: Map<String, List<Document__c>>
-	* Description: Retrieve all related list records of a object for current user
-	- New Req. Change : 4703 : Updates in LoA based on new DocStrategy ReDesign
-	* High Level Process :
-	********************************************************************************************************************* */
+* author: Accenture
+* Date: Nov-2016
+* Param: Id recordId
+* Return: Map<String, List<Document__c>>
+* Description: Retrieve all related list records of a object for current user
+- New Req. Change : 4703 : Updates in LoA based on new DocStrategy ReDesign
+* High Level Process :
+********************************************************************************************************************* */
 	@AuraEnabled
 	public static  List<DocumentWrapper> getConfidentialDocs(Id currentRecordId)
 	{
-
-		String confidentialValue = GlobalConstants.CONFIDENTIAL_VALUE;
-		Set<String> gateDocumentTypes = new Set<String>();
 		List<Confidential_File__c> lstConfiDocs = new List<Confidential_File__c>();
 		List<DocumentWrapper> lstConfiDocsWrapper = new List<DocumentWrapper>();
 		DocumentWrapper objDocumentWrapper ;
@@ -254,16 +230,16 @@ public without sharing class ApprovalCentreController{
 		
 		return lstConfiDocsWrapper;
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Nov-2016
-	* Param: Id recordId
-	* Return: Map<String, List<Document__c>>
-	* Description: Retrieve all related list records of a object for current user
-	- New Req. Change : 4703 : Updates in LoA based on new DocStrategy ReDesign
-	* High Level Process :
-	********************************************************************************************************************* */
+* author: Accenture
+* Date: Nov-2016
+* Param: Id recordId
+* Return: Map<String, List<Document__c>>
+* Description: Retrieve all related list records of a object for current user
+- New Req. Change : 4703 : Updates in LoA based on new DocStrategy ReDesign
+* High Level Process :
+********************************************************************************************************************* */
 	@AuraEnabled
 	public static  List<DocumentWrapper> getG4_G5_Docs(Id currentRecordId)
 	{
@@ -331,16 +307,16 @@ public without sharing class ApprovalCentreController{
 		System.debug('lstG4G5DocsWrapper'+lstG4G5DocsWrapper);
 		return lstG4G5DocsWrapper;
 	}
-
-
+	
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Feb-2017
-	* Param: None
-	* Return: WrapperWildCardSearch
-	* Description: Returns new instance of WrapperWildCardSearch
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Feb-2017
+* Param: None
+* Return: WrapperWildCardSearch
+* Description: Returns new instance of WrapperWildCardSearch
+* High Level Process :
+**********************************************************************************************************************/
 	@AuraEnabled
 	public static String approvalRequest(String approvalRequestId, String comment)
 	{
@@ -357,15 +333,15 @@ public without sharing class ApprovalCentreController{
 			return ex.getMessage();
 		}
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Feb-2017
-	* Param: None
-	* Return: WrapperWildCardSearch
-	* Description: Returns new instance of WrapperWildCardSearch
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Feb-2017
+* Param: None
+* Return: WrapperWildCardSearch
+* Description: Returns new instance of WrapperWildCardSearch
+* High Level Process :
+**********************************************************************************************************************/
 	@AuraEnabled
 	public static String rejectionRequest(String approvalRequestId, String comment)
 	{
@@ -380,16 +356,16 @@ public without sharing class ApprovalCentreController{
 			return ex.getMessage();
 		}
 	}
-
-
+	
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Dec-2016
-	* Param:
-	* Return: ContentDocumentLink
-	* Description: Returns new instance of ContentDocumentLink
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Dec-2016
+* Param:
+* Return: ContentDocumentLink
+* Description: Returns new instance of ContentDocumentLink
+* High Level Process :
+**********************************************************************************************************************/
 	public static Set<String> getOpportunityPhaseStatusValues(){
 		Set<String> phaseStatusValues = new Set<String>();
 		try{
@@ -406,27 +382,27 @@ public without sharing class ApprovalCentreController{
 		}
 		return phaseStatusValues;
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Feb-2017
-	* Param: None
-	* Return: WrapperWildCardSearch
-	* Description: Returns new instance of WrapperWildCardSearch
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Feb-2017
+* Param: None
+* Return: WrapperWildCardSearch
+* Description: Returns new instance of WrapperWildCardSearch
+* High Level Process :
+**********************************************************************************************************************/
 	private static ApprovalCentreWrapper getNewApprovalCentreWrapperObj(){
 		return new ApprovalCentreWrapper();
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Feb-2017
-	* Param: Apttus_Approval__Approval_Request__c Object Id.
-	* Return: Apttus_Approval__Approval_Request__c Object fields value.
-	* Description: Populates the field values of Apttus_Approval__Approval_Request__c Object
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Feb-2017
+* Param: Apttus_Approval__Approval_Request__c Object Id.
+* Return: Apttus_Approval__Approval_Request__c Object fields value.
+* Description: Populates the field values of Apttus_Approval__Approval_Request__c Object
+* High Level Process :
+**********************************************************************************************************************/
 	@AuraEnabled
 	public static List<Apttus_Approval__Approval_Request__c> getApprovalsDetailsRec(Id oppRecordId)
 	{
@@ -437,11 +413,11 @@ public without sharing class ApprovalCentreController{
 			Id currentLoggedInUserId;
 			currentLoggedInUserId = UserInfo.getUserId();
 			approvalRecList = [SELECT Id,NF_BG_Attribute__c,Validator_Status__c,Apttus_Approval__Approver_Comments__c,Apttus_Approval__Step_Name__c,Apttus_Approval__Approval_Status__c,Apttus_Approval__Date__c,
-	Apttus_Approval__Assigned_To_Name__c,NF_Assignee_Type__c,Delegate_Approvers__c,FORMAT(LastModifiedDate),Apttus_Approval__SubmissionComment1__c,Apttus_Approval__SubmissionComment2__c,Apttus_Approval__SubmissionComment3__c,
-	NF_Role_Name__c,NF_Organization_Level__c,Apttus_Approval__ActualApproverName__c,Apttus_Approval__Request_Comments__c
-	FROM Apttus_Approval__Approval_Request__c where Apttus_Approval__Object_Id__c =: oppRecordId and NF_Assignee_Type__c != NULL  and (NF_Assignee_Type__c =: GlobalConstants.APPROVER or NF_Assignee_Type__c =: GlobalConstants.VALIDATOR) Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
+							   Apttus_Approval__Assigned_To_Name__c,NF_Assignee_Type__c,Delegate_Approvers__c,FORMAT(LastModifiedDate),Apttus_Approval__SubmissionComment1__c,Apttus_Approval__SubmissionComment2__c,Apttus_Approval__SubmissionComment3__c,
+							   NF_Role_Name__c,NF_Organization_Level__c,Apttus_Approval__ActualApproverName__c,Apttus_Approval__Request_Comments__c
+							   FROM Apttus_Approval__Approval_Request__c where Apttus_Approval__Object_Id__c =: oppRecordId and NF_Assignee_Type__c != NULL  and (NF_Assignee_Type__c =: GlobalConstants.APPROVER or NF_Assignee_Type__c =: GlobalConstants.VALIDATOR) Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
 			modifiedApprovalRecList = removeCommentsSystemInfo(approvalRecList);
-
+			
 		}
 		catch(Exception ex)
 		{
@@ -449,15 +425,15 @@ public without sharing class ApprovalCentreController{
 		}
 		return modifiedApprovalRecList;
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Aug-2017
-	* Param: Apttus_Approval__Approval_Request__c Id , Validator Comment, Validate or Reject action .
-	* Return: Apttus_Approval__Approval_Request__c Object fields value.
-	* Description: Populates the field values of Apttus_Approval__Approval_Request__c Object
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Aug-2017
+* Param: Apttus_Approval__Approval_Request__c Id , Validator Comment, Validate or Reject action .
+* Return: Apttus_Approval__Approval_Request__c Object fields value.
+* Description: Populates the field values of Apttus_Approval__Approval_Request__c Object
+* High Level Process :
+**********************************************************************************************************************/
 	@AuraEnabled
 	public static String validateOrReject (String approvalReqId, String comment, String validateOrRej)
 	{
@@ -492,15 +468,15 @@ public without sharing class ApprovalCentreController{
 			return ex.getMessage();
 		}
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Aug-2017
-	* Param: Apttus_Approval__Approval_Request__c list .
-	* Return: Apttus_Approval__Approval_Request__c list.
-	* Description: Removes unwanted system information from comment field
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Aug-2017
+* Param: Apttus_Approval__Approval_Request__c list .
+* Return: Apttus_Approval__Approval_Request__c list.
+* Description: Removes unwanted system information from comment field
+* High Level Process :
+**********************************************************************************************************************/
 	public static List<Apttus_Approval__Approval_Request__c> removeCommentsSystemInfo(List<Apttus_Approval__Approval_Request__c> approvalRecList)
 	{
 		List<Apttus_Approval__Approval_Request__c> modifiedApprovalList = new List<Apttus_Approval__Approval_Request__c>();
@@ -567,15 +543,15 @@ public without sharing class ApprovalCentreController{
 		}
 		return modifiedApprovalList;
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Aug-2017
-	* Param: Apttus_Approval__Approval_Request__c list .
-	* Return: Apttus_Approval__Approval_Request__c list.
-	* Description: Removes unwanted system information from comment field
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Aug-2017
+* Param: Apttus_Approval__Approval_Request__c list .
+* Return: Apttus_Approval__Approval_Request__c list.
+* Description: Removes unwanted system information from comment field
+* High Level Process :
+**********************************************************************************************************************/
 	public static ApprovalCentreWrapper returnApprovalStatusInfo(List<Apttus_Approval__Approval_Request__c> approvalRecList, ApprovalCentreWrapper approvalWrapperObj)
 	{
 		ApprovalCentreWrapper wrapperObj = approvalWrapperObj;
@@ -599,7 +575,6 @@ public without sharing class ApprovalCentreController{
 						System.debug('Approver:::>');
 						wrapperObj.approvalRequestId = apReq.id;
 						wrapperObj.isApprovalRequested = true;
-						//wrapperObj.stakeHolderComment = false;
 						if(apReq.Apttus_Approval__Assigned_To_Id__c == UserInfo.getUserId())
 						{
 							wrapperObj.type = GlobalConstants.APPROVING_AS_APPROVER;
@@ -665,7 +640,6 @@ public without sharing class ApprovalCentreController{
 					wrapperObj.isApprovalRequested = false;
 					wrapperObj.type = GlobalConstants.REQUEST_CLOSED;
 					wrapperObj.validatorOrApprover = false;
-					// wrapperObj.stakeHolderComment = false;
 				}
 				delegateApproversId.clear();
 			}
@@ -677,13 +651,13 @@ public without sharing class ApprovalCentreController{
 		return wrapperObj;
 	}
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Aug-2017
-	* Param: Id oppRecordId .
-	* Return: Task Record list.
-	* Description: Get all the related task of the opportunity
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Aug-2017
+* Param: Id oppRecordId .
+* Return: Task Record list.
+* Description: Get all the related task of the opportunity
+* High Level Process :
+**********************************************************************************************************************/
 	@AuraEnabled
 	public static List<Task> getTaskDetails(Id oppRecordId)
 	{
@@ -691,7 +665,6 @@ public without sharing class ApprovalCentreController{
 		List<Task> taskRecList;
 		try
 		{	
-			//ApprovalCentreWrapper wrapperObj = new ApprovalCentreWrapper();
 			taskRecList = [SELECT Id,Subject,Description,ActivityDate,Status,Owner.Name,WhoId,WhatId FROM Task WHERE Created_At__c != NULL AND WhatId =: oppRecordId AND Recordtypeid =: approval_RecordType_ID Order By CreatedDate desc Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
 			System.debug('taskRecList::::'+taskRecList);
 		}
@@ -699,24 +672,24 @@ public without sharing class ApprovalCentreController{
 		{
 			ExceptionHandler.addException(ex, ApprovalCentreController.class.getName(), GlobalConstants.METHOD_RETURN_APPROVAL_STATUS_INFO);
 		}
-
+		
 		return taskRecList;
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Feb-2018
-	* Param: Apttus_Approval__Approval_Request__c Object Id.
-	* Return: Apttus_Approval__Approval_Request__c Object fields value.
-	* Description: Populates the field value of Apttus_Approval__Approval_Request__c Object
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Feb-2018
+* Param: Apttus_Approval__Approval_Request__c Object Id.
+* Return: Apttus_Approval__Approval_Request__c Object fields value.
+* Description: Populates the field value of Apttus_Approval__Approval_Request__c Object
+* High Level Process :
+**********************************************************************************************************************/
 	@AuraEnabled
 	public static string getRequestorComment(Id oppRecordId)
 	{
 		string strComment ;
 		List<String> lstPhaseStatus = new List<String>{GlobalConstants.SUBMITTED_FOR_G2_APPROVAL,GlobalConstants.SUBMITTED_FOR_G3_APPROVAL,GlobalConstants.SUBMITTED_FOR_G4_APPROVAL,GlobalConstants.SUBMITTED_FOR_G5_APPROVAL,GlobalConstants.SUBMITTED_FOR_G6_APPROVAL};
-		try
+			try
 		{
 			opportunity oppComment = [SELECT Id,Submission_Comments__c
 									  FROM
@@ -735,15 +708,15 @@ public without sharing class ApprovalCentreController{
 		}
 		return strComment;
 	}
-
+	
 	/**********************************************************************************************************************
-	* author: Accenture
-	* Date: Aug-2017
-	* Param: Id oppRecordId .
-	* Return: Task Record list.
-	* Description: Get all the related task of the opportunity
-	* High Level Process :
-	**********************************************************************************************************************/
+* author: Accenture
+* Date: Aug-2017
+* Param: Id oppRecordId .
+* Return: Task Record list.
+* Description: Get all the related task of the opportunity
+* High Level Process :
+**********************************************************************************************************************/
 	@AuraEnabled
 	public static Boolean getUserRestriction()
 	{

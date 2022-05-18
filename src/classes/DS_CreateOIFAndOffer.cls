@@ -133,7 +133,6 @@ Parameter: List of Opportunities: opptyList
 		Date myDate = date.newinstance(dT.year(), dT.month(), dT.day());
 		offer.Customer_Offer_Due_Date__c = myDate;
 		if(opp.SWx_Upsell_Proposal__c != null){
-			offer.Expected_LoA_G4_Approval_Level__c = CSWXGlobalConstant.LOABYPASS;
 			offer.LOA_Bypass__c = CSWXGlobalConstant.NOLOA;
 		}
 		else{
@@ -167,17 +166,17 @@ Parameter: List of Opportunities: opptyList
 			system.debug('Inside UpdateApprovalHistoryData>>>>>>>>>>>>>>');
 			system.debug('oppId>>>'+oppId);
 			List<Apttus_Approval__ApprovalProcessInstance__c> approvalProcessList = [SELECT Id, name,Apttus_Approval__PrevProcessInstanceId__c,Apttus_Approval__InstanceNumber__c,Apttus_Approval__BusinessObjectId__c
-			 FROM Apttus_Approval__ApprovalProcessInstance__c
-			 WHERE name like: CSWXGlobalConstant.G2ProcessId limit 1];
-			 
-			 System.debug('approvalProcessList-->'+approvalProcessList);
+	FROM Apttus_Approval__ApprovalProcessInstance__c
+	WHERE name like: CSWXGlobalConstant.G2ProcessId limit 1];
+	
+	System.debug('approvalProcessList-->'+approvalProcessList);
 			List<Apttus_Approval__Approval_Request_History__c> approvalDataHistory = new List<Apttus_Approval__Approval_Request_History__c>();
 			for(Apttus_Approval__Approval_Request__c approvalData:[SELECT id,Name,Apttus_Approval__StepNameLink__c,Apttus_Approval__Step_Name__c,
-	   Apttus_Approval__Request_Comments__c,Apttus_Approval__Assigned_To_Type__c,Apttus_Approval__Related_Opportunity__c,
-	   Apttus_Approval__ProcessInstanceId__c,Apttus_Approval__Approver_Comments__c,Apttus_Approval__StepSequenceString__c,
-	   NF_Assignee_Type__c,Apttus_Approval__Approval_Status__c,Apttus_Approval__Active__c,Apttus_Approval__Object_Id__c,Apttus_Approval__Object_Type__c,
-	   Apttus_Approval__StepLabel__c,Apttus_Approval__RequestType__c,Apttus_Approval__Notify_Only__c,Apttus_Approval__Initial_Submitter__c,Apttus_Approval__Assigned_To_Name__c,Apttus_Approval__Date__c
-	   FROM Apttus_Approval__Approval_Request__c where Apttus_Approval__Related_Opportunity__c=:oppId LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]){
+	Apttus_Approval__Request_Comments__c,Apttus_Approval__Assigned_To_Type__c,Apttus_Approval__Related_Opportunity__c,
+	Apttus_Approval__ProcessInstanceId__c,Apttus_Approval__Approver_Comments__c,Apttus_Approval__StepSequenceString__c,
+	NF_Assignee_Type__c,Apttus_Approval__Approval_Status__c,Apttus_Approval__Active__c,Apttus_Approval__Object_Id__c,Apttus_Approval__Object_Type__c,
+	Apttus_Approval__StepLabel__c,Apttus_Approval__RequestType__c,Apttus_Approval__Notify_Only__c,Apttus_Approval__Initial_Submitter__c,Apttus_Approval__Assigned_To_Name__c,Apttus_Approval__Date__c
+	FROM Apttus_Approval__Approval_Request__c where Apttus_Approval__Related_Opportunity__c=:oppId LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]){
 	  System.debug('approvalData---->'+approvalData);
 		
 		Apttus_Approval__Approval_Request_History__c approvalHisObj = new Apttus_Approval__Approval_Request_History__c();
@@ -209,7 +208,7 @@ Parameter: List of Opportunities: opptyList
 		}
 		approvalHisObj.Apttus_Approval__Date__c = System.now();
 		approvalDataHistory.add(approvalHisObj);
-	   }
+	}
 			Insert approvalDataHistory;
 			system.debug('approvalDataHistory>>>'+approvalDataHistory);
 			if(!Test.isRunningTest()) {

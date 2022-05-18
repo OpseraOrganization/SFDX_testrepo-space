@@ -1,15 +1,15 @@
 /**
- * @description	   : 
+ * @description	: 
  * @author			: Yashdeep Prajapati
- * @group			 : 
+ * @group	: 
  * @last modified on  : 06-24-2021
  * @last modified by  : Yashdeep Prajapati
  * Modifications Log 
- * Ver   Date		 Author			   Modification
+ * Ver   Date		 Author	  Modification
  * 1.0   05-26-2021   Yashdeep Prajapati   Initial Version
 **/
 @isTest  
-public class ProposalTriggerTest{ 
+public class ProposalTriggerTest { 
 
 	static testMethod void test()
 	{	
@@ -21,7 +21,6 @@ public class ProposalTriggerTest{
 		accounts1[0].Partner_Type__c = '';
 		accounts1[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 		insert accounts1;
-
 		//create Accreditation
 		List<Accreditation__c > accreditations = NOKIA_CPQ_TestDataFactory.createAccreditation(2);
 		accreditations[0].partner__c = accounts[0].Id;
@@ -74,7 +73,7 @@ public class ProposalTriggerTest{
 		proposals[0].Apttus_Proposal__Account__c = accounts[0].Id;
 		proposals[0].Apttus_Proposal__Opportunity__c = opportunities1[0].Id;
 		 proposals[0].NokiaCPQ_Is_Maintenance_Quote__c=false;
-	   
+	
 		proposals[0].NokiaCPQ_Portfolio__c = 'IP Routing'; //MN airscale wifi portfolio
 		//proposals[0].RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Indirect Quote').getRecordTypeId();
 		insert proposals;	 
@@ -116,7 +115,7 @@ public class ProposalTriggerTest{
 			NokiaCPQ_Spare__c=true,
 			Apttus_Config2__PrimaryLineNumber__c = 1,
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
-		   
+	 
 			
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
@@ -142,7 +141,7 @@ public class ProposalTriggerTest{
 			NokiaCPQ_Spare__c=true,
 			Apttus_Config2__PrimaryLineNumber__c = 1,
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
-		   
+	 
 			
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
@@ -165,7 +164,7 @@ public class ProposalTriggerTest{
 			NokiaCPQ_Spare__c=true,
 			Apttus_Config2__ListPrice__c = 300,
 			Apttus_Config2__Quantity__c = 1,
-		   
+	 
 			Apttus_Config2__PrimaryLineNumber__c = 1,
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			

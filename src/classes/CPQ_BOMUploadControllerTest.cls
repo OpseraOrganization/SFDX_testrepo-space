@@ -63,7 +63,7 @@ public class CPQ_BOMUploadControllerTest {
 		proposals[0].Apttus_Proposal__Account__c = accounts[0].Id;
 		proposals[0].Apttus_Proposal__Opportunity__c = opportunities1[0].Id;
 		 proposals[0].NokiaCPQ_Is_Maintenance_Quote__c=false;
-	   
+	
 		proposals[0].NokiaCPQ_Portfolio__c = 'IP Routing'; //MN airscale wifi portfolio
 		//proposals[0].RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Indirect Quote').getRecordTypeId();
 		insert proposals;	 
@@ -87,12 +87,12 @@ public class CPQ_BOMUploadControllerTest {
 		
 		String csv = 'Line No,Product Code,Parent Line No,Quantity,Proposed Price,Product Description,Sub Heading,Flexible Group\n1,300465598,,1,100,Service "Test" Product,subheading,group1';
 		
-		  Blob b = Blob.valueOf(csv);
-		  Attachment attachment = new Attachment();
-		  attachment.ParentId = dm.Id;
-		  attachment.Name = 'Test Attachment for Parent';
-		  attachment.Body = b;
-		  insert attachment;
+	Blob b = Blob.valueOf(csv);
+	Attachment attachment = new Attachment();
+	attachment.ParentId = dm.Id;
+	attachment.Name = 'Test Attachment for Parent';
+	attachment.Body = b;
+	insert attachment;
 		
 		//Test.startTest();
 		CPQ_BOMUploadController.WrapperData wrapper = new CPQ_BOMUploadController.WrapperData();

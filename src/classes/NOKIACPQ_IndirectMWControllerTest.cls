@@ -61,7 +61,6 @@ public class NOKIACPQ_IndirectMWControllerTest {
 		ActiveOffer__c =true,
 		//Authorized_for_Pricing_Manager__c = false,
 		Pre_approved_Price_List_for_Acc_Managers__c = false,
-		Expected_LoA_G4_Approval_Level__c = 'LoA Bypass',
 		LoA_Approval_Level__c='LoA Bypass',
 		LOA_Bypass__c = 'No LoA',
 		Opportunity__c = opportunities[1].Id
@@ -250,7 +249,6 @@ public class NOKIACPQ_IndirectMWControllerTest {
 	ActiveOffer__c =true,
 	//Authorized_for_Pricing_Manager__c = false,
 	Pre_approved_Price_List_for_Acc_Managers__c = false,
-	Expected_LoA_G4_Approval_Level__c = 'LoA Bypass',
 	LoA_Approval_Level__c='E',
 	LOA_Bypass__c = '',
 	Opportunity__c = opportunities[1].Id

@@ -37,7 +37,5 @@ Private class PSR_Approval_ApprovalNotificationTest{
 			List<Apttus_Approval__Approval_Request__c> oppApprovalRequests = cmp.oppApprovalRequests;
 			Test.stopTest();
 		}
-
 	}
-	
 }

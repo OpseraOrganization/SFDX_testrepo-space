@@ -1,6 +1,6 @@
 /****************************************
 * Class Name : HWS_EntitlementCheck_Controller
-* User Story : NOKIASC-32636
+* User Story : NOKIASC-32636 
 * Created Date: 26 Oct 2020
 * Created By : TCS - Satya Pagadala
 * Last Modified by: 
@@ -20,8 +20,7 @@ public without sharing class HWS_EntitlementCheck_Controller {
 	public static Boolean isInwarranty = false;
 	@AuraEnabled
 	public static List<Case> getChildCaseDetails(Id caseId){
-	 
-		return [SELECT Id, CaseNumber, Subject, Status, HWS_WarrantyStatus__c, HWS_Part_Code__c, HWS_Faulty_Serial_Number__c, CH_EntitlementException__c, CH_EntitlementStatus__c, parent.HWS_Is_Error__c,parent.HWS_ErrorReason__c, Parent.CH_Status__c,Parent.HWS_Sent_To_SOO__c
+		return [SELECT Id, CaseNumber, Subject, Status, HWS_WarrantyStatus__c, HWS_Part_Code__c, HWS_Faulty_Serial_Number__c, CH_EntitlementException__c, CH_EntitlementStatus__c, parent.HWS_Is_Error__c,parent.HWS_ErrorReason__c, Parent.CH_Status__c,Parent.Status,Parent.HWS_Sent_To_SOO__c
 	FROM Case 
 	WHERE ParentId =: caseId ORDER BY Subject ASC];
 	}
@@ -40,40 +39,40 @@ public without sharing class HWS_EntitlementCheck_Controller {
 			String errorMessage='';
 			errorMessage=validateUser(parentCaseId);			
 			if(String.isBlank(errorMessage)){
-				//NOKIASC-35984 | 13-May-2021 | Start 
-				Case cs=[Select id,Status,HWS_Faulty_Serial_Number__c,Asset.HWS_SourceSystem__c, HWS_Stockable_Product__r.Name,HWS_Part_Code__c from Case where id=:editedCaseList[0].id];		
-				if(editedCaseList[0].HWS_Faulty_Serial_Number__c!=cs.HWS_Faulty_Serial_Number__c)
-				{		  
-					string sourcesystem = cs.Asset.HWS_SourceSystem__c;
-					string meterialcode = '';
-					if(sourcesystem == 'PUMA1'){
-						meterialcode = cs.HWS_Stockable_Product__r.Name;
-					}					
-					else {
-						meterialcode = cs.HWS_Part_Code__c; 
-					}				   
-					String warrantyStatus = HWS_CheckWarranty_SVC.getWarrentStatus(meterialcode, cs.HWS_Faulty_Serial_Number__c, sourcesystem );
-					
-					//String warrantyStatus = HWS_CheckWarranty_SVC.getWarrentStatus(editedCaseList[0].HWS_Part_Code__c, editedCaseList[0].HWS_Faulty_Serial_Number__c, 'both');
-					//NOKIASC-35984 | 13-May-2021 | End
-					editedCaseList[0].HWS_WarrantyStatus__c=warrantyStatus;
-				}
-				update editedCaseList;	
-				//NOKIASC-33573
-				if(editedCaseList.size()==1){
-					updateParentInternalStatus(editedCaseList[0].ParentId);
-				}
+	//NOKIASC-35984 | 13-May-2021 | Start 
+	Case cs=[Select id,Status,HWS_Faulty_Serial_Number__c,Asset.HWS_SourceSystem__c, HWS_Stockable_Product__r.Name,HWS_Part_Code__c from Case where id=:editedCaseList[0].id];		
+	if(editedCaseList[0].HWS_Faulty_Serial_Number__c!=cs.HWS_Faulty_Serial_Number__c)
+	{	
+		string sourcesystem = cs.Asset.HWS_SourceSystem__c;
+		string meterialcode = '';
+		if(sourcesystem == 'PUMA1'){
+			meterialcode = cs.HWS_Stockable_Product__r.Name;
+		}		
+		else {
+			meterialcode = cs.HWS_Part_Code__c; 
+		}	
+		String warrantyStatus = HWS_CheckWarranty_SVC.getWarrentStatus(meterialcode, cs.HWS_Faulty_Serial_Number__c, sourcesystem );
+		
+		//String warrantyStatus = HWS_CheckWarranty_SVC.getWarrentStatus(editedCaseList[0].HWS_Part_Code__c, editedCaseList[0].HWS_Faulty_Serial_Number__c, 'both');
+		//NOKIASC-35984 | 13-May-2021 | End
+		editedCaseList[0].HWS_WarrantyStatus__c=warrantyStatus;
+	}
+	update editedCaseList;	
+	//NOKIASC-33573
+	 if(editedCaseList.size()==1){
+		updateParentInternalStatus(editedCaseList[0].ParentId);
+	}
 			} 
 			else{
-				
-				AuraHandledException auraExp = new AuraHandledException('');
-				auraExp.setMessage(errorMessage);	
-				throw auraExp;
+	
+	AuraHandledException auraExp = new AuraHandledException('');
+	auraExp.setMessage(errorMessage);	
+	throw auraExp;
 			}
 		}		 
 		catch(DmlException e){	 
 			for (Integer i = 0; i < e.getNumDml(); i++) {
-				errorMsg =+ e.getDmlMessage(i) +  '\n' ;
+	errorMsg =+ e.getDmlMessage(i) +  '\n' ;
 			}
 			throw new AuraHandledException(errorMsg);
 		}
@@ -132,7 +131,7 @@ public without sharing class HWS_EntitlementCheck_Controller {
 			}
 			caseRecord.HWS_WarrantyStatus__c = warrantyStatus;
 			if(toUpdate){
-					updateCaseValues(new List<Case>{caseRecord},caseRecord.parentId);
+		updateCaseValues(new List<Case>{caseRecord},caseRecord.parentId);
 			}
 			
 		}
@@ -149,8 +148,41 @@ public without sharing class HWS_EntitlementCheck_Controller {
 	* User story : NOKIASC-32645
 	*****************************************/ 
 	@auraEnabled
-	public static void updateParentInternalStatus(Id parentCaseId){		
-		HWS_Utilty.updateParentInternalStatus(new Set<Id>{parentCaseId});
+	public static void updateParentInternalStatus(Id parentCaseId){
+	HWS_Utilty.updateParentInternalStatus(new Set<Id>{parentCaseId});
+	
+	}
+	/****************************************
+	* Name : updateParentInternalStatus
+	* Description : This method is used to update Internal status to update Quotation Required automatically for verified Quotation cases
+	* By TCS
+	* Created Date: 19 July 2021
+	* User story : NOKIASC-36933
+	*****************************************/
+	 @auraEnabled
+	public static Case modifyInternalStatusToQuoteReq(Id parentCaseId){
+		Case parentWG =new Case();
+		//NOKIASC-36933:Internal status to update automatically for verified Quotation cases
+		List<Case> parentCaseToUpdate = new List<Case>();
+		for(Case parentCase: [Select Id, CH_InternalStatus__c, (SELECT CH_EntitlementException__c, CH_EntitlementStatus__c,HWS_isQuoteRequired__c FROM Cases) from Case where Id = :parentCaseId]){
+			Integer increment=0;
+			 if(!(parentCase.Cases).isEmpty()){
+				for(Case c :parentCase.Cases){
+					if(c.HWS_isQuoteRequired__c){
+						increment++;
+					}
+				}
+			}	   
+			if(parentCase.Cases.size()==increment &&  parentCase.CH_InternalStatus__c!='Quotation Required'){
+				parentCase.CH_InternalStatus__c='Quotation Required'; 
+				parentCaseToUpdate.add(parentCase); 
+			}
+		}
+		if(!parentCaseToUpdate.isEmpty()){
+			update parentCaseToUpdate; 
+			parentWG=[SELECT CH_Workgroup__r.name,CH_Workgroup__c FROM Case WHERE Id = :parentCaseId LIMIT 1];
+		}
+		return parentWG;
 	}
 	/****************************************
 	* Name : checkInternalStatus
@@ -175,11 +207,11 @@ public without sharing class HWS_EntitlementCheck_Controller {
 	public static boolean cancelChildCases(Id parentCaseId,List<String> condition){
 		
 		
-		List<Case> oowCases = [Select id,CaseNumber from case 
-		  where HWS_WarrantyStatus__c='Out of Warranty' 
-		  and Status!='Cancelled' 
-		  and HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c IN: condition
-		  and ParentId  =: parentCaseId];
+		List<Case> oowCases = [Select id,CaseNumber from case where Status!='Cancelled'		 
+	and HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c IN: condition	
+	and ParentId  =: parentCaseId and ( CH_EntitlementException__c ='Out of Warranty'  OR 
+	(HWS_WarrantyStatus__c='Out of Warranty' and  CH_EntitlementException__c ='Out of Warranty')  
+	  )]; // Modified as per uat defect
 		List<Case> cancelledCaseList=new List<Case>();
 		for(Case cs:oowCases){
 	
@@ -297,8 +329,8 @@ public without sharing class HWS_EntitlementCheck_Controller {
 		
 		try{
 			List<Case> childCaseList=[SELECT Id,HWS_SupportTicketReference__c,CH_EntitlementStatus__c,
-			  HWS_QuotationAcceptedDate__c,HWS_QuotationRejectedDate__c,Parent.HWS_Customer_PO__c from Case WHERE Id IN:caseSet];		
-			ID parentCaseID = childCaseList[0].ParentId;
+	 HWS_QuotationAcceptedDate__c,HWS_QuotationRejectedDate__c,Parent.HWS_Customer_PO__c from Case WHERE Id IN:caseSet];
+	 ID parentCaseID = childCaseList[0].ParentId;
 			for(Case childCase:childCaseList){
 	//Validate Customer Purchase Order Number avaliable or not in parent case
 	if(String.isBlank(childCase.Parent.HWS_Customer_PO__c) && action=='acceptQuote'){
@@ -308,21 +340,21 @@ public without sharing class HWS_EntitlementCheck_Controller {
 	//For Accept Quote "Quotation Accepted Date" should be blank
 	////For Reject Quote "Quotation Rejected Date" should be blank
 	if((childCase.HWS_QuotationAcceptedDate__c!=Null && action=='acceptQuote') 
-	   || (childCase.HWS_QuotationRejectedDate__c!=Null && action=='rejectQuote')){		
+	|| (childCase.HWS_QuotationRejectedDate__c!=Null && action=='rejectQuote')){		
 		continue;
-	   }
+	}
 	if((childCase.HWS_QuotationRejectedDate__c!=Null && action=='acceptQuote') 
-	   || (childCase.HWS_QuotationAcceptedDate__c!=Null && action=='rejectQuote')){		
+	|| (childCase.HWS_QuotationAcceptedDate__c!=Null && action=='rejectQuote')){		
 		errorMessage='One or more selected RMA(s) have already been '+(action=='acceptQuote'?'rejected':'accepted')+'.';
 		break;
-	   }
+	}
 	//Create case object for field update
 	Case updateCase=new Case();
 	updateCase.Id=childCase.Id;
 	//Update Quotation Accepted Date when action is acceptQuote
 	if(action=='acceptQuote'){
 		updateCase.HWS_QuotationAcceptedDate__c=Datetime.now();
-	   
+	
 		updateCase.CH_EntitlementStatus__c='Quotation Accepted and PO Received';
 	}
 	//Update Quotation Rejected Date when action is rejectQuote
@@ -343,7 +375,7 @@ public without sharing class HWS_EntitlementCheck_Controller {
 			//Update child case list
 			if(updatechildCaseList.size()>0){
 	update updatechildCaseList;
-	updateParentInternalStatus(parentCaseID);//making iternal status blank while acceptQuote
+	updateParentInternalStatus(parentCaseID);//making iternal status blank
 			}
 			else if (updatechildCaseList.size()==0){
 	errorMessage='Selected RMA(s) have already been '+(action=='acceptQuote'?'accepted':'rejected')+'.';
@@ -365,7 +397,8 @@ public without sharing class HWS_EntitlementCheck_Controller {
 *****************************************/
 	@AuraEnabled 
 	public static Map<String, List<String>> getDependentMap(sObject objDetail, string contrfieldApiName,string depfieldApiName) {
-		Map<String, List<String>> objResults = HWS_Utilty.getDependentMap(objDetail, contrfieldApiName,depfieldApiName);
+		String Param='';
+		Map<String, List<String>> objResults = HWS_Utilty.getDependentMap(objDetail, contrfieldApiName,depfieldApiName,Param);
 		return objResults;
 	}
 	/****************************************
@@ -397,21 +430,21 @@ public without sharing class HWS_EntitlementCheck_Controller {
 			//Check if login user is in valid Security group 
 			List<GroupMember> grpNameList   = [select Group.Name from groupmember where userorgroupid = :loginUserId ];
 			for (GroupMember grpName : grpNameList){	 
-				if (grpName.Group.Name =='SEC_GWC|ALL' || grpName.Group.Name =='SEC_GWC|NSB'){
-					return errorMessage;
-				}
+	if (grpName.Group.Name =='SEC_GWC|ALL' || grpName.Group.Name =='SEC_GWC|NSB'){
+		return errorMessage;
+	}
 			} 
-		}			   
+		}	  
 		if(String.isBlank(errorMessage)){
 			//Check if login user is a part of Case Team
 			Integer caseTeamMembercount= [SELECT count()
-										  FROM CaseTeamMember 
-										  WHERE ParentId =: currentCase.Id AND MemberId= : loginUserID limit 1 ];
+			FROM CaseTeamMember 
+			WHERE ParentId =: currentCase.Id AND MemberId= : loginUserID limit 1 ];
 			if (caseTeamMemberCount == 0){	 
-				errorMessage='Login User is not part of the Case Team and cannot update the record.';	  
+	errorMessage='Login User is not part of the Case Team and cannot update the record.';	  
 			}
 			if(caseTeamMemberCount > 0){	
-				return errorMessage;
+	return errorMessage;
 			}
 		}
 		return errorMessage;

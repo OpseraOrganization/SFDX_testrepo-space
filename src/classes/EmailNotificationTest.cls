@@ -6,7 +6,7 @@
 * History:
 * -------
 * * VERSION AUTHOR	DATE		DETAIL			FEATURES/CSR/TTP
-* 1.0	   26/01/2017   Sprint 4 Doc Stretegy & LoA requirements.
+* 1.0	26/01/2017   Sprint 4 Doc Stretegy & LoA requirements.
 * ============================================================================ 
 */
 @isTest
@@ -74,7 +74,7 @@ private class EmailNotificationTest {
 		oppty[0].PRMOther_Support_Requested__c  =true;
 		oppty[0].PRMPricing_Support_Requested__c  =true;
 		oppty[0].PRMTechnical_Support_Requested__c = true;
-		oppty[0]. Account_Role__c = 'Alliance Partner';
+		oppty[0]. Account_Role__c = 'NFS-SPaaP';
 		oppty[0]. End_Customer_Information__c = 'Multiple End Customer';
 		oppty[0].Multiple_or_Unknown_EC_Activity_Sector__c = 'CABL - CABLE OPERATORS';
 		oppty[0].Multiple_or_Unknown_EC_Country__c = 'Test';
@@ -143,7 +143,7 @@ private class EmailNotificationTest {
 		oppty[0].PRMOther_Support_Requested__c  =true;
 		oppty[0].PRMPricing_Support_Requested__c  =true;
 		oppty[0].PRMTechnical_Support_Requested__c = true;
-		oppty[0]. Account_Role__c = 'Alliance Partner';
+		oppty[0]. Account_Role__c = 'NFS-SPaaP';
 		oppty[0]. End_Customer_Information__c = 'Multiple End Customer';
 		oppty[0].Multiple_or_Unknown_EC_Activity_Sector__c = 'CABL - CABLE OPERATORS';
 		oppty[0].Multiple_or_Unknown_EC_Country__c = 'Test';
@@ -214,7 +214,7 @@ private class EmailNotificationTest {
 		oppty[0].PRMOther_Support_Requested__c  =true;
 		oppty[0].PRMPricing_Support_Requested__c  =true;
 		oppty[0].PRMTechnical_Support_Requested__c = true;
-		oppty[0]. Account_Role__c = 'Alliance Partner';
+		oppty[0]. Account_Role__c = 'NFS-SPaaP';
 		oppty[0]. End_Customer_Information__c = 'Multiple End Customer';
 		oppty[0].Multiple_or_Unknown_EC_Activity_Sector__c = 'CABL - CABLE OPERATORS';
 		oppty[0].Multiple_or_Unknown_EC_Country__c = 'Test';
@@ -352,7 +352,7 @@ private class EmailNotificationTest {
 		oppty[0].PRMOther_Support_Requested__c  =true;
 		oppty[0].PRMPricing_Support_Requested__c  =true;
 		oppty[0].PRMTechnical_Support_Requested__c = true;
-		oppty[0]. Account_Role__c = 'Alliance Partner';
+		oppty[0]. Account_Role__c = 'NFS-SPaaP';
 		oppty[0]. End_Customer_Information__c = 'Multiple End Customer';
 		oppty[0].Multiple_or_Unknown_EC_Activity_Sector__c = 'CABL - CABLE OPERATORS';
 		oppty[0].Multiple_or_Unknown_EC_Country__c = 'Test';

@@ -42,23 +42,23 @@ public class CH_GeneratePdfApexTest {
 			productObj.PMD_Portfolio_Classification__c='Product';
 			insert productObj;
 			
-		  
+	
 			
-			 List<Account> accountList = new  List<Account>();
-			   
-				Id LERecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
-				Id custRecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId(); 
-				accountList = TestDataFactory.createAccount(2);
-				accountList[0].recordtypeid = custRecordTypeId;
-				accountList[1].recordtypeid = LERecordTypeId;
-				
-				database.insert(accountList[0]); 
-				accountList[1].parentid = accountList[0].id;
-				accountList[1].Default_Legal_Entity__c = false;
-				accountList[1].AccountNumber = '1000087011';
-				database.insert(accountList[1]); 
+	List<Account> accountList = new  List<Account>();
+	  
+	Id LERecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
+	Id custRecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId(); 
+	accountList = TestDataFactory.createAccount(2);
+	accountList[0].recordtypeid = custRecordTypeId;
+	accountList[1].recordtypeid = LERecordTypeId;
+	
+	database.insert(accountList[0]); 
+	accountList[1].parentid = accountList[0].id;
+	accountList[1].Default_Legal_Entity__c = false;
+	accountList[1].AccountNumber = '1000087011';
+	database.insert(accountList[1]); 
 			
-		  
+	
 			
 			
 			Contact con = new Contact();
@@ -74,13 +74,13 @@ public class CH_GeneratePdfApexTest {
 			con.accountId = accountobj.Id;
 			Insert con; 
 			
-		   
+	 
 			
 			List<Case> listCase = new List<Case>();
 			Case caseObj = new Case();
 			caseObj.AccountId =accountList[1].Id ;
 			caseObj.ProductId = productObj.Id;
-		   
+	 
 			caseObj.CreatedDate=Date.today();
 			caseObj.OwnerId = UserInfo.getUserId();
 			caseObj.Status = 'Created';
@@ -105,7 +105,7 @@ public class CH_GeneratePdfApexTest {
 			caseObj.CH_SolutionDetails__c = 'test';
 			insert caseObj;
 			listCase.add(caseObj);
-		  
+	
 	}
 	}
 	
@@ -122,7 +122,7 @@ public class CH_GeneratePdfApexTest {
 		ApexPages.StandardController sc = new ApexPages.standardController(caseObj);
 		CH_GeneratePdfApex testController = new CH_GeneratePdfApex(sc);
 		User abc = CH_GeneratePdfApex.userDetails;
-		  
+	
 			List<CaseTeamMember> caseMemberList = new List<CaseTeamMember>();
 			CaseTeamMember memberObj = new CaseTeamMember();
 			memberObj.ParentId = caseObj.id;
@@ -130,7 +130,7 @@ public class CH_GeneratePdfApexTest {
 			memberObj.TeamRoleId = [SELECT Id , Name FROM CaseTeamRole WHERE Name='Customer Care Manager' LIMIT 1].Id;
 			caseMemberList.add(memberObj);
 			if(!caseMemberList.isEmpty()){
-				insert caseMemberList;
+	insert caseMemberList;
 			}
 			
 		 system.debug('caseObj.Id===>'+caseObj.Id);

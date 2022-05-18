@@ -129,9 +129,9 @@ public class CoopFundTriggerTest {
 	  insert activityList;
 	  
 	  list<Claim__c> claimList = new list<Claim__c>();
-	  Claim__c claim1 = new Claim__c(Partner_Account__c = acc.id, Fund__c= fund1.id, Activity_Number__c = activity1.id, HFLOF_Amount__c = 10, Claim_Status__c = 'Submitted', Claim_Amount_Passed_Audit__c = 100);
+	  Claim__c claim1 = new Claim__c(Partner_Account__c = acc.id, Fund__c= fund1.id, Activity_Number__c = activity1.id, HFLOF_Amount__c = 10, Claim_Status__c = 'Submitted', Claim_Amount_Passed_Audit__c = 100,Activity_Claim_Amount__c=50);
 	  claimList.add(claim1);
-	  Claim__c claim2 = new Claim__c(Partner_Account__c = acc.id, Fund__c= fund1.id, Activity_Number__c = activity1.id, HFLOF_Amount__c = 150, Claim_Status__c = 'Submitted', Claim_Amount_Passed_Audit__c = 300, Is_this_Last_Claim__c = PRMGlobalConstants.YES);
+	  Claim__c claim2 = new Claim__c(Partner_Account__c = acc.id, Fund__c= fund1.id, Activity_Number__c = activity1.id, HFLOF_Amount__c = 150, Claim_Status__c = 'HFLOF', Claim_Amount_Passed_Audit__c = 300, Is_this_Last_Claim__c = PRMGlobalConstants.YES,Activity_Claim_Amount__c=50);
 	  claimList.add(claim2);
    Claim__c claim3 = new Claim__c(Partner_Account__c = acc.id, Fund__c= fund1.id, Activity_Number__c = activity1.id, HFLOF_Amount__c = 150, Claim_Status__c = 'created', Claim_Amount_Passed_Audit__c = 300, Is_this_Last_Claim__c = PRMGlobalConstants.YES);
 	  claimList.add(claim3);
@@ -140,12 +140,12 @@ public class CoopFundTriggerTest {
 	  insert claimList;
    
 	  List<Accrual_junction__c> accrualjuncList = new List<Accrual_junction__c>();
-	  Accrual_junction__c accrualjunc1 = new Accrual_junction__c(Accrual__c = allocation1.id,Partner_Fund_Claim__c = claim1.id,Amount_deducted_from_accrual__c = 30);
+	  Accrual_junction__c accrualjunc1 = new Accrual_junction__c(Accrual__c = allocation1.id,Partner_Fund_Claim__c = claim1.id,Amount_deducted_from_accrual__c = 30,Reimbursed_Type__c='Normal',Status__c='Submitted');
 	  accrualjuncList.add(accrualjunc1);
 	  Accrual_junction__c accrualjunc2 = new Accrual_junction__c(Accrual__c = allocation1.id,Partner_Fund_Claim__c = claim1.id,Amount_deducted_from_accrual__c = 10);
 	  accrualjuncList.add(accrualjunc2);
-  // Accrual_junction__c accrualjunc3 = new Accrual_junction__c(Accrual__c = allocation1.id,Partner_Fund_Claim__c = claim1.id,Amount_deducted_from_accrual__c = 20);
-	//  accrualjuncList.add(accrualjunc3);
+	  Accrual_junction__c accrualjunc5 = new Accrual_junction__c(Accrual__c = allocation1.id,Partner_Fund_Claim__c = claim1.id,Amount_deducted_from_accrual__c = 40,Reimbursed_Type__c='Normal',Status__c='Submitted');
+	  accrualjuncList.add(accrualjunc5);
 	  Accrual_junction__c accrualjunc3 = new Accrual_junction__c(Accrual__c = allocation3.id,Partner_Fund_Claim__c = claim1.id,Amount_deducted_from_accrual__c = 30);
 	  accrualjuncList.add(accrualjunc3);
 	  Accrual_junction__c accrualjunc4 = new Accrual_junction__c(Accrual__c = allocation3.id,Partner_Fund_Claim__c = claim1.id,Amount_deducted_from_accrual__c = 10);

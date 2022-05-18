@@ -24,7 +24,7 @@ public with sharing class MetadataWrapperApiLoader extends MetadataLoader {
 
 			if (!response.isSuccess()) {
 				throw new MetadataMigrationException(Label.ERROR_OP_FAILED);
-				return;
+				//return;
 			}
 			MetadataObjectCreator.createCustomObject(mappingInfo);
 			MetadataObjectCreator.createCustomField(mappingInfo);

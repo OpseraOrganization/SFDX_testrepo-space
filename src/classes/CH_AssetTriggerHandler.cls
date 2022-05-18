@@ -33,8 +33,6 @@ public class CH_AssetTriggerHandler extends TriggerHandler {
 		CH_AssetTriggerHelper.populateAssetName(newList);
 		//Replicating CH_copyNIDtoAssetName workflow here. Its not firing on the CreateNEA lightning page
 		//Prateek - 24956 
-		CH_AssetTriggerHelper.assetName_NIDValidation(null, newList);
-		CH_AssetTriggerHelper.CheckDuplicateBeforeInsert(newList, 'Insert');
 	}
 	
 	/*
@@ -55,8 +53,7 @@ public class CH_AssetTriggerHandler extends TriggerHandler {
 		CH_AssetTriggerHelper.validationRules(oldMap, newList);
 		//Replicating CH_copyNIDtoAssetName workflow here. Its not firing on the CreateNEA lightning page
 		//Prateek - 24956 
-		CH_AssetTriggerHelper.assetName_NIDValidation(oldMap, newList);
-		CH_AssetTriggerHelper.CheckDuplicateBeforeUpdate(oldMap, newList);
+		/*CH_AssetTriggerHelper.CheckDuplicateBeforeUpdate(oldMap, newList);*/ //NOKIASC-36188
 		CH_AssetTriggerHelper.assetStatusCheck(oldMap, newList);
 	}
 	

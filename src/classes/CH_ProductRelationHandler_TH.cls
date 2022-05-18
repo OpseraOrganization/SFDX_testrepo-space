@@ -1,4 +1,4 @@
-/**
+/** 
 About
 -----
 Description: This Class is used as handler for CH_ProductRelationTrigger
@@ -25,30 +25,11 @@ public with sharing class CH_ProductRelationHandler_TH extends TriggerHandler {
 	}
 
 	/*
-	* @description : beforeInsert handle the CH_Workgroup afterInsert event on CH_ProductRelation__c.
-	*/
-	public override void beforeInsert(){
-
-	}
-
-	/*
 	* @description : afterInsert handle the CH_Workgroup afterInsert event on CH_ProductRelation__c.	
 	*/
 	public override void afterInsert(){
-		CH_ProductRelationHandler_TL.updateKBProducts(newList);
-	}
-
-	/*
-	* @description beforeUpdate handle the CH_Workgroup afterUpdate event on CH_ProductRelation__c.
-	*/
-	public override void beforeUpdate(){
-
-	}
-
-	/*
-	* @description afterUpdate handle the CH_Workgroup afterUpdate event on CH_ProductRelation__c.
-	*/ 
-	public override void afterUpdate(){
-		
+	 if(UserInfo.getProfileId().equalsIgnoreCase(system.Label.Data_Loader_Profile_Id) || Test.isRunningTest()){
+			System.enqueuejob(new CH_UpdateKBProductsQueueable(newList));
+		}
 	}
 }

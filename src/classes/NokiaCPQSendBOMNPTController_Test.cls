@@ -1,7 +1,7 @@
 @isTest(SeeAllData=false)
 public class NokiaCPQSendBOMNPTController_Test  {
 	static testMethod void testNPTMethod()
-	{	   
+	{	
 		 //create account
 		 List<Account> accounts = NOKIA_CPQ_TestDataFactory_MPW.getAccounts(1);
 		insert accounts;
@@ -37,7 +37,6 @@ public class NokiaCPQSendBOMNPTController_Test  {
 		ActiveOffer__c =true,
 		Authorized_for_Pricing_Manager__c = true,
 		Pre_approved_Price_List_for_Acc_Managers__c = false,
-		Expected_LoA_G4_Approval_Level__c = 'LoA Bypass',
 		LOA_Bypass__c = '',
 		Opportunity__c = opportunities1[0].Id
 		); 
@@ -64,8 +63,8 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			CurrencyIsoCode = 'EUR',
 			IsActive = true,
 			Capacity__c = 'full',
-			 Portfolio__c = Nokia_CPQ_Constants.MPW_NETWORK_SOLUTION,
-			 //NokiaCPQ_Portfolio_Package_Code__c = 'tetet',
+	Portfolio__c = Nokia_CPQ_Constants.MPW_NETWORK_SOLUTION,
+	//NokiaCPQ_Portfolio_Package_Code__c = 'tetet',
 			Apttus_Config2__ConfigurationType__c='Bundle'
 		); 
 		prods.add(prod2);
@@ -118,7 +117,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 		proposals.NokiaCPQ_No_of_Years__c = '3';
 		proposals.NokiaCPQ_Portfolio__c = Nokia_CPQ_Constants.MPW_NETWORK_SOLUTION; 
 		//proposals[0].RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Indirect Quote').getRecordTypeId();
-		insert proposals;	   
+		insert proposals;	
 		
 		//create product configuration
 		Apttus_Config2__ProductConfiguration__c ProdConfig = new Apttus_Config2__ProductConfiguration__c(
@@ -160,7 +159,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem1);
 		
 		Apttus_Config2__LineItem__c LineItem2 =new Apttus_Config2__LineItem__c(
@@ -178,14 +177,14 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__Frequency__c = 'One Time',
 			Apttus_Config2__AdjustmentAmount__c = 10,
 			Apttus_Config2__ListPrice__c = 100,
-			Apttus_Config2__Quantity__c = 1,	   
+			Apttus_Config2__Quantity__c = 1,	
 			is_Custom_Product__c=false,
 			NokiaCPQ_Spare__c=false,
 			Apttus_Config2__PrimaryLineNumber__c = 1,
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem2);
 		
 		Apttus_Config2__LineItem__c LineItem3 =new Apttus_Config2__LineItem__c(
@@ -203,7 +202,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__Frequency__c = 'One Time',
 			Apttus_Config2__AdjustmentAmount__c = 10,
 			Apttus_Config2__ListPrice__c = 100,
-			Apttus_Config2__Quantity__c = 1,	   
+			Apttus_Config2__Quantity__c = 1,	
 			is_Custom_Product__c=false,
 			NokiaCPQ_Spare__c=false,
 			Apttus_Config2__PrimaryLineNumber__c = 1,
@@ -211,7 +210,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__ParentBundleNumber__c = 1,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem3);
 		Apttus_Config2__LineItem__c LineItem4 =new Apttus_Config2__LineItem__c(
 			Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
@@ -228,7 +227,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__Frequency__c = 'One Time',
 			Apttus_Config2__AdjustmentAmount__c = 10,
 			Apttus_Config2__ListPrice__c = 100,
-			Apttus_Config2__Quantity__c = 1,	   
+			Apttus_Config2__Quantity__c = 1,	
 			is_Custom_Product__c=false,
 			NokiaCPQ_Spare__c=false,
 			NCPQ_Unitary_CLP__c = 5,
@@ -236,7 +235,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem4);
 		insert allLineItems;
 		 //Create summary Group
@@ -331,7 +330,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			//system.debug('eee2 '+prodConfigs[0].Id);  //a683K000000NfnnQAC
 			ctrlr.getNPTBomRequestBody(ProdConfig.Id);   //('a683K000000NfZWQA0');  kamlesh
 			//ctrlr.getNPTBomRequestBody_MW(ProdConfig.Id);
-		   // NokiaCPQSendBOMNPTController.getJsonStatus('');
+	 // NokiaCPQSendBOMNPTController.getJsonStatus('');
 			//NokiaCPQSendBOMNPTController.getNPTtoken();
 			//ctrlr.NokiaCPQSendBOMNPTControllerAction_MPW(ProdConfig.Id);
 			//ctrlr.getNPTBomRequestBody('a683K000000NfZWQA0');
@@ -340,7 +339,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 		//} 
 	}
   static testMethod void testNPTMethod2()
-	{	   
+	{	
 		 //create account
 		 List<Account> accounts = NOKIA_CPQ_TestDataFactory_MPW.getAccounts(1);
 		insert accounts;
@@ -376,7 +375,6 @@ public class NokiaCPQSendBOMNPTController_Test  {
 		ActiveOffer__c =true,
 		Authorized_for_Pricing_Manager__c = true,
 		Pre_approved_Price_List_for_Acc_Managers__c = false,
-		Expected_LoA_G4_Approval_Level__c = 'LoA Bypass',
 		LOA_Bypass__c = '',
 		Opportunity__c = opportunities1[0].Id
 		); 
@@ -403,7 +401,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			CurrencyIsoCode = 'EUR',
 			IsActive = true,
 			Capacity__c = 'full',
-			 //NokiaCPQ_Portfolio_Package_Code__c = 'tetet',
+	//NokiaCPQ_Portfolio_Package_Code__c = 'tetet',
 			Apttus_Config2__ConfigurationType__c='Bundle'
 		); 
 		prods.add(prod2);
@@ -416,7 +414,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			IsActive = true,
 			Capacity__c = 'full',
 			NokiaCPQ_Item_Type__c = 'Software',
-			 NokiaCPQ_Portfolio_Package_Code__c = 'tetet',
+	NokiaCPQ_Portfolio_Package_Code__c = 'tetet',
 			Apttus_Config2__ConfigurationType__c='Bundle'
 		); 
 		prods.add(prod3);
@@ -479,7 +477,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 		proposals.NokiaCPQ_No_of_Years__c = '3';
 		proposals.NokiaCPQ_Portfolio__c = Nokia_CPQ_Constants.MPW_NETWORK_SOLUTION; 
 		//proposals[0].RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Indirect Quote').getRecordTypeId();
-		insert proposals;	   
+		insert proposals;	
 		
 		//create product configuration
 		Apttus_Config2__ProductConfiguration__c ProdConfig = new Apttus_Config2__ProductConfiguration__c(
@@ -521,7 +519,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem1);
 		
 		Apttus_Config2__LineItem__c LineItem2 =new Apttus_Config2__LineItem__c(
@@ -539,14 +537,14 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__Frequency__c = 'One Time',
 			Apttus_Config2__AdjustmentAmount__c = 10,
 			Apttus_Config2__ListPrice__c = 100,
-			Apttus_Config2__Quantity__c = 1,	   
+			Apttus_Config2__Quantity__c = 1,	
 			is_Custom_Product__c=false,
 			NokiaCPQ_Spare__c=false,
 			Apttus_Config2__PrimaryLineNumber__c = 1,
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem2);
 		
 		Apttus_Config2__LineItem__c LineItem3 =new Apttus_Config2__LineItem__c(
@@ -564,7 +562,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__Frequency__c = 'One Time',
 			Apttus_Config2__AdjustmentAmount__c = 10,
 			Apttus_Config2__ListPrice__c = 100,
-			Apttus_Config2__Quantity__c = 1,	   
+			Apttus_Config2__Quantity__c = 1,	
 			is_Custom_Product__c=false,
 			NokiaCPQ_Spare__c=false,
 			Apttus_Config2__PrimaryLineNumber__c = 1,
@@ -572,7 +570,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__ParentBundleNumber__c = 2,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem3);
 		
 		Apttus_Config2__LineItem__c LineItem4 =new Apttus_Config2__LineItem__c(
@@ -590,7 +588,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__Frequency__c = 'One Time',
 			Apttus_Config2__AdjustmentAmount__c = 10,
 			Apttus_Config2__ListPrice__c = 100,
-			Apttus_Config2__Quantity__c = 1,	   
+			Apttus_Config2__Quantity__c = 1,	
 			//is_Custom_Product__c=false,
 			NokiaCPQ_Spare__c=false,
 			Apttus_Config2__PrimaryLineNumber__c = 1,
@@ -602,7 +600,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__AddedBy__c = 'added by code',
 			NCPQ_Unitary_CLP__c = 6
 		);
-	   
+	
 		allLineItems.add(LineItem4);
 		
 		Apttus_Config2__LineItem__c LineItem5 =new Apttus_Config2__LineItem__c(
@@ -620,7 +618,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__Frequency__c = 'One Time',
 			Apttus_Config2__AdjustmentAmount__c = 10,
 			Apttus_Config2__ListPrice__c = 100,
-			Apttus_Config2__Quantity__c = 1,	   
+			Apttus_Config2__Quantity__c = 1,	
 			//is_Custom_Product__c=false,
 			NokiaCPQ_Spare__c=false,
 			Apttus_Config2__PrimaryLineNumber__c = null,
@@ -632,7 +630,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__AddedBy__c = 'added by code',
 			NCPQ_Unitary_CLP__c = 6
 		);
-	   
+	
 		allLineItems.add(LineItem5);
 		insert allLineItems;
 		 //Create summary Group
@@ -702,7 +700,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			NokiaCPQSendBOMNPTController ctrlr = new NokiaCPQSendBOMNPTController();
 			//NokiaCPQSendBOMNPTController.getNPTtoken();
 			//system.debug('eee2 '+prodConfigs[0].Id);  //a683K000000NfnnQAC
-		   ctrlr.getNPTBomRequestBody(ProdConfig.Id);   //('a683K000000NfZWQA0');  kamlesh
+	 ctrlr.getNPTBomRequestBody(ProdConfig.Id);   //('a683K000000NfZWQA0');  kamlesh
 			//ctrlr.getNPTBomRequestBody('a683K000000NfZWQA0');
 		//system.debug('eee '+ctrlr.getNPTBomRequestBody(prodConfigs[0].Id));
 			Test.stopTest();
@@ -735,7 +733,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 		accreditations[1].Pricing_Level_Override__c = 'Nokia Brand Of Service';   
 		insert accreditations;
 		
-				
+	
 		//Create Opportunity
 		List<opportunity> opportunities1 = NOKIA_CPQ_TestDataFactory_MPW.getOpportunities(1,accounts);
 		opportunities1[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Indirect_Record_Type').getRecordTypeId();
@@ -749,7 +747,6 @@ public class NokiaCPQSendBOMNPTController_Test  {
 		ActiveOffer__c =true,
 		Authorized_for_Pricing_Manager__c = true,
 		Pre_approved_Price_List_for_Acc_Managers__c = false,
-		Expected_LoA_G4_Approval_Level__c = 'LoA Bypass',
 		LOA_Bypass__c = '',
 		Opportunity__c = opportunities1[0].Id
 		); 
@@ -895,7 +892,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem1);
 		
 		Apttus_Config2__LineItem__c LineItem2 =new Apttus_Config2__LineItem__c(
@@ -923,7 +920,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem2);
 		 Apttus_Config2__LineItem__c LineItem3 =new Apttus_Config2__LineItem__c(
 			Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
@@ -952,7 +949,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			Apttus_Config2__ShipToAccountId__c = accounts[0].Id,
 			Apttus_Config2__AddedBy__c = 'added by code'
 		);
-	   
+	
 		allLineItems.add(LineItem3);
 		
 		Insert allLineItems;
@@ -1036,7 +1033,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 			
 		insert interfaceL;
 		
-			   
+	  
 		NokiaCPQSendBOMNPTController ctrlr = new NokiaCPQSendBOMNPTController();	
 		ctrlr.getNPTBomRequestBody_MW(ProdConfig.Id);  
 		
@@ -1046,7 +1043,7 @@ public class NokiaCPQSendBOMNPTController_Test  {
 	
    /* static testMethod void testNPTMethod_callout()
 	{
-	   
+	
 	  MultiStaticResourceCalloutMock multimock = new MultiStaticResourceCalloutMock();
 		String tokenpath = 'https://login.microsoftonline.com/5d471751-9675-428d-917b-70f44f9630b0/oauth2/token';
 		String calloutpath = 'callout:NPT_Login';

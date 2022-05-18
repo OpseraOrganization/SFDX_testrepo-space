@@ -23,11 +23,10 @@ public with sharing class NCP_TileService_COM {
 	private static final String user_NCP_Relation_Supplier = NCP_Constants.USER_NCP_RELATIONS_SUPPLIER;
 	private static final String NCP_chACCESS_TYPE = NCP_Constants.NCP_chACCESS_TYPE;
 	private static final String NCP_chhwsACCESS_TYPE = NCP_Constants.NCP_chhwsACCESS_TYPE;
-	public static Final User connectedUser =  [Select Id,contactId from user where id =: UserInfo.getUserId()];
+	public static Final User userRecord =  [Select Id,contactId, NCP_IsHorizontal__c, NCP_Relationship__c, CountryCode from user where id =: UserInfo.getUserId()];
 	
 	@AuraEnabled
-	public static List<NCP_TileService_Wrapper> getTiles() {
-		
+	public static List<NCP_TileService_Wrapper> getTiles() {		
 		Set<String> accessList;
 		if (NCP_Utils.isInternalUser()) {
 			accessList = NCP_InternalEntitlements.searchInternalEntitlements();
@@ -36,7 +35,7 @@ public with sharing class NCP_TileService_COM {
 			Set<String> OtherServices = NCP_Entitlements.SearchEntitlementsOtherServices(null).get(null);
 			if (OtherServices != null) accessList.addAll(OtherServices);
 			List<List<EntitlementContact>> entitledCntCHList = new List<List<EntitlementContact>>();
-			entitledCntCHList = NCP_CaseCreationOnSP.checkforCHTileDisplay(connectedUser);
+			entitledCntCHList = NCP_CaseCreationOnSP.checkforCHTileDisplay(userRecord);
 			if(entitledCntCHList[0].size()>0){
 				accessList.add(NCP_chACCESS_TYPE);
 			}
@@ -46,11 +45,12 @@ public with sharing class NCP_TileService_COM {
 		}
 		
 		List<NCP_TileService_Wrapper> tiles = new List<NCP_TileService_Wrapper>();
-		User HorizontalUser = [Select NCP_IsHorizontal__c,NCP_Relationship__c from user where id = :UserInfo.getUserId()];
+		//User userRecord = [Select NCP_IsHorizontal__c,NCP_Relationship__c from user where id = :UserInfo.getUserId()];
 		
 		for (NCP_Service_Tile__mdt tile : [
 			SELECT NCP_Public_Access__c, NCP_Default_Access__c, NCP_Horizontal_User__c, NCP_Title__c, NCP_Description__c,
-			NCP_Entitlement_Access_Type__c, NCP_URL__c, NCP_QA_URL__c, NCP_Image_Name__c, NCP_Image_URL__c, NCP_Priority__c
+				NCP_Entitlement_Access_Type__c, NCP_URL__c, NCP_QA_URL__c, NCP_Image_Name__c, NCP_Image_URL__c, NCP_Priority__c, 
+				NCP_Show_for_Embargo_Countries__c
 			FROM NCP_Service_Tile__mdt
 		]) {
 			if (!isAuthenticated()) {
@@ -60,24 +60,20 @@ public with sharing class NCP_TileService_COM {
 				}
 			}
 			// return all the ones the user is entitled to, plus the public ones - For Partner
-			else if (
-				(tile.NCP_Default_Access__c && !HorizontalUser.NCP_IsHorizontal__c) ||
-				accessList.contains(tile.NCP_Entitlement_Access_Type__c) ||
-				(tile.NCP_Horizontal_User__c == true && HorizontalUser.NCP_IsHorizontal__c) ||
-				(tile.NCP_Entitlement_Access_Type__c == access_Type_Partner_Portal
-				 && HorizontalUser.NCP_Relationship__c == user_NCP_Relation_Partner) ||
-				tile.NCP_Public_Access__c
-			) {
-				tiles.add(getTileInstance(tile));
-			}
 			// return all the ones the user is entitled to, plus the public ones - For Supplier
 			else if (
-				(tile.NCP_Default_Access__c && !HorizontalUser.NCP_IsHorizontal__c) ||
-				accessList.contains(tile.NCP_Entitlement_Access_Type__c) ||
-				(tile.NCP_Horizontal_User__c == true && HorizontalUser.NCP_IsHorizontal__c) ||
-				(tile.NCP_Entitlement_Access_Type__c == access_Type_Supplier_Portal
-				 && HorizontalUser.NCP_Relationship__c == user_NCP_Relation_Supplier) ||
-				tile.NCP_Public_Access__c
+				!(tile.NCP_Horizontal_User__c && userRecord.NCP_IsHorizontal__c) && 
+	(String.isBlank(userRecord.CountryCode) || (String.isNotBlank(Label.NCP_EmbargoCountriesForTiles) && (String.isNotBlank(userRecord.CountryCode)) && (
+					((Label.NCP_EmbargoCountriesForTiles.containsIgnoreCase(userRecord.CountryCode)) && tile.NCP_Show_for_Embargo_Countries__c
+					) || !(Label.NCP_EmbargoCountriesForTiles.containsIgnoreCase(userRecord.CountryCode))
+				))) && 
+	(
+					tile.NCP_Default_Access__c  ||
+					accessList.contains(tile.NCP_Entitlement_Access_Type__c) ||
+					(tile.NCP_Entitlement_Access_Type__c == access_Type_Partner_Portal && userRecord.NCP_Relationship__c == user_NCP_Relation_Partner) ||
+					(tile.NCP_Entitlement_Access_Type__c == access_Type_Supplier_Portal && userRecord.NCP_Relationship__c == user_NCP_Relation_Supplier) ||
+					tile.NCP_Public_Access__c
+	)
 			) {
 				tiles.add(getTileInstance(tile));
 			}
@@ -87,8 +83,9 @@ public with sharing class NCP_TileService_COM {
 		for(NCP_TileService_Wrapper tsw : tiles){
 			entlmntSet.add(tsw.entitlementAccessType);
 		}
-		if(entlmntSet.contains(NCP_chACCESS_TYPE) || entlmntSet.contains(NCP_chhwsACCESS_TYPE))
+		if(entlmntSet.contains(NCP_chACCESS_TYPE) || entlmntSet.contains(NCP_chhwsACCESS_TYPE)){
 			tiles.add(getTileInstance(NCP_Service_Tile__mdt.getInstance('Manage_Support_Tickets')));
+		}
 		return tiles;
 	}
 	

@@ -1,5 +1,5 @@
 @isTest(SeeAllData=true)
-public class CH_CPA_PosttoChatter_Test {
+public class CH_CPA_PosttoChatter_Test { 
 	
 	// Success Case
 	public static testMethod void ProcessApplicantTest(){
@@ -50,7 +50,7 @@ public class CH_CPA_PosttoChatter_Test {
 		binaryAttachment.Filename = 'test.txt';
 		String algorithmName = 'HMacSHA1';
 		Blob b = Crypto.generateMac(algorithmName, Blob.valueOf('test'),
-									Blob.valueOf('test_key'));
+			Blob.valueOf('test_key'));
 		binaryAttachment.Body = b;
 		binaryAttachments[0] =  binaryAttachment ;
 		email.binaryAttachments = binaryAttachments ;

@@ -17,13 +17,13 @@ public class CCRE_ContentDocLinkTriggerHelperTest {
 	  Account acct = TestDataFactory.createAccount(1)[0];
 	  acct.AccountNumber='8990767834';  
 	  database.insert(acct);
-		   
+	 
 	  List <ContentDocumentLink> contentdoclist = new list<ContentDocumentLink>();
 	  File_Upload__c fu = new File_Upload__c();
 	  fu.Technology__c=CSWXGlobalConstant.Technology ;
 	  fu.Account__c = acct.id;
 	  insert fu;
-		  
+	
 	  
 	  ContentVersion contentVersion = new ContentVersion();
 	  ContentDocumentLink contentlink = new ContentDocumentLink();
@@ -32,7 +32,7 @@ public class CCRE_ContentDocLinkTriggerHelperTest {
 	  contentVersion = TestDataFactory.createContentVersion(1)[0];  
 		 
 	  contentVersion.title = CSWXGlobalConstant.InstalledBase;
-	  database.insert(contentVersion) ;					 
+	  database.insert(contentVersion) ;		 
 	  
 	  Id theContentDocumentId = [select ContentDocumentId from ContentVersion where Id =: contentVersion.Id limit 1].ContentDocumentId;
 		 
@@ -59,9 +59,9 @@ public static testmethod void restrictUploadTest(){
 	  Account acct = TestDataFactory.createAccount(1)[0];
 	  acct.AccountNumber='8990767834';  
 	  database.insert(acct);
-		  
+	
 		
-		  
+	
 	  SWx_Upsell_Proposal__c DigitalProposal = TestDataFactory.upsellList(1,acct)[0];
 	  DigitalProposal.Account_ID__c=acct.id;
 	  DigitalProposal.Analytics_Source__c='CXM';
@@ -80,11 +80,11 @@ public static testmethod void restrictUploadTest(){
 	  contentVersion = TestDataFactory.createContentVersion(1)[0];  
 		 
 	  contentVersion.title = CSWXGlobalConstant.Benchmarking;
-	  database.insert(contentVersion) ;					 
+	  database.insert(contentVersion) ;		 
 	  
 	  Id theContentDocumentId = [select ContentDocumentId from ContentVersion where Id =: contentVersion.Id limit 1].ContentDocumentId;
 	
-		  
+	
 	  contentlink = TestDataFactory.createContentDocumentLink(1,acct.id, theContentDocumentId)[0];
 	  contentlink.LinkedEntityId=DigitalProposal.id;
 	  database.insert(contentlink) ; 
@@ -94,7 +94,7 @@ public static testmethod void restrictUploadTest(){
 	  CCRE_ContentDocumentLinkTriggerHandler.afterInsert(contentdoclinklist);
 	  Test.stopTest();
 	  
-		  
+	
 		}
 			
 	}
@@ -108,7 +108,7 @@ public static testmethod void restrictUploadTest(){
 	 Account acct = TestDataFactory.createAccount(1)[0];
 	 acct.AccountNumber='8990767834';  
 	 database.insert(acct);
-		  
+	
 	 Opportunity oppty = TestDataFactory.OpportunityCreation(1,acct)[0];
 	 oppty.StageName = 'Develop Opportunity';//
 	 oppty.Phase_Status__c = 'Opportunity in Progress';
@@ -116,7 +116,7 @@ public static testmethod void restrictUploadTest(){
 	 insert new File_Sharing_Custom_Setting__c(Name = GlobalConstants.OPPORTUNITY_DOC_FREEZE_STAGE,Value__c='7');
 	 database.insert(oppty);
 		 
-		  
+	
 	 Apttus_Proposal__Proposal__c quoteProposal = NOKIA_CPQ_TestDataFactory.createProposal(1)[0]; 
 	 quoteProposal.NokiaCPQ_Portfolio__c = 'IP Routing';
 	 quoteProposal.Apttus_Proposal__Approval_Stage__c='Draft';
@@ -134,14 +134,14 @@ public static testmethod void restrictUploadTest(){
 	  contentVersion = TestDataFactory.createContentVersion(1)[0];  
 		 
 	  contentVersion.title = CSWXGlobalConstant.Benchmarking;
-	  database.insert(contentVersion) ;					 
+	  database.insert(contentVersion) ;		 
 	  
 	  Id theContentDocumentId = [select ContentDocumentId from ContentVersion where Id =: contentVersion.Id limit 1].ContentDocumentId;
 	  contentlinkQP = TestDataFactory.createContentDocumentLink(2,acct.id, theContentDocumentId)[1];
 	  contentlinkQP.LinkedEntityId=quoteProposal.id;
 	  database.insert(contentlinkQP) ; 
 	  contentdoclinklist.add(contentlinkQP);
-		  
+	
 	 
 	  CCRE_ContentDocumentLinkTriggerHandler.afterInsert(contentdoclinklist);
 	  List <ContentDocumentLink> contentdoclinklist2 = new list<ContentDocumentLink>();

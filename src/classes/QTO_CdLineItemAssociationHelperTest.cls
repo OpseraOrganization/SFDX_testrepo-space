@@ -3,17 +3,17 @@ Class Name: QTO_CdLineItemAssociationHelperTest
 Created by: Shaik Johny Basha
 Created Date: 29 June 2021
 Last modified by: Shaik Johny Basha
-Description: Test class for QTO_CdLineItemAssociationHelper 
+Description: Test class for QTO_CdLineItemAssociationHelper  
 UserStory : DSI-2151
 ***************************************************************************/
-@isTest
+@isTest 
 public with sharing class QTO_CdLineItemAssociationHelperTest {
 	
 	/* This method is to setup testdata */
 	@testsetup
 	static void associateCdLineItemsTest() {
 		
-		List<Account> accList = QTO_TestDataFactory.createAccount(1);
+		List<Account> accList = QTO_TestDataFactory.createAccount(2);
 		insert accList; 
 		
 		List<Account> accList1 = QTO_TestDataFactory.createAccount(1);
@@ -82,9 +82,10 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		Opportunity opp = QTO_TestDataFactory.OpportunityCreation(accList[0]);
 		insert opp;
 		
-		Apttus__APTS_Agreement__c agr = QTO_TestDataFactory.createAgreement(accList[0]);
+		Apttus__APTS_Agreement__c agr = QTO_TestDataFactory.createAgreement(accList[0], opp, accList[1]);
 		agr.Apttus__Status_Category__c = 'In Effect';
 		agr.Apttus__Status__c = 'Activated';
+		agr.CurrencyIsoCode = 'EUR';
 		agr.Apttus__Contract_End_Date__c = System.today()+10;
 		insert agr; 
 		
@@ -94,31 +95,46 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		agLine0.Apttus__AgreementId__c = agr.Id;
 		agLine0.Apttus__Description__c = 'My SFR Cutlery desc';
 		agLine0.Contract_Item_Number__c = 'My SFR Cutlery';
+		agLine0.CLM_CFE_Reference__c = 'My SFR Cutlery';
 		agLine0.Apttus__ProductId__c = productList[0].Id;
 		agLine0.Apttus__Quantity__c = 0;
+		agLine0.Apttus_CMConfig__Uom__c = 'PCE';
+		agLine0.Apttus_CMConfig__NetUnitPrice__c = 2222.00;
+		agLine0.Apttus__NetPrice__c = 2222.00;
 		
-		
+			
 		Apttus__AgreementLineItem__c agLine1 = new Apttus__AgreementLineItem__c();
 		agLine1.Apttus__AgreementId__c = agr.Id;
 		agLine1.Apttus__Description__c = 'My SFR Cutlery desc';
 		agLine1.Contract_Item_Number__c = 'My SFR Cutlery';
+		agLine1.CLM_CFE_Reference__c = 'My SFR Cutlery';
 		agLine1.Apttus__ProductId__c = productList[1].Id;
 		agLine1.Apttus__Quantity__c = 10;
-		
+		agLine1.Apttus_CMConfig__Uom__c = 'PCE';
+		agLine1.Apttus_CMConfig__NetUnitPrice__c = 2222.00;
+		agLine1.Apttus__NetPrice__c = 2222.00;
 		
 		Apttus__AgreementLineItem__c agLine2 = new Apttus__AgreementLineItem__c();
 		agLine2.Apttus__AgreementId__c = agr.Id;
 		agLine2.Apttus__Description__c = 'My SFR Cutlery desc';
 		agLine2.Contract_Item_Number__c = 'My SFR Cutlery1';
+		agLine2.CLM_CFE_Reference__c = 'My SFR Cutlery1';
 		agLine2.Apttus__ProductId__c = product2.Id;
 		agLine2.Apttus__Quantity__c = 20;
+		agLine2.Apttus_CMConfig__Uom__c = 'PCE';
+		agLine2.Apttus_CMConfig__NetUnitPrice__c = 2222.00;
+		agLine2.Apttus__NetPrice__c = 2222.00;
 		
 		Apttus__AgreementLineItem__c agLine3 = new Apttus__AgreementLineItem__c();
 		agLine3.Apttus__AgreementId__c = agr.Id;
 		agLine3.Apttus__Description__c = 'My SFR Cutlery desc';
 		agLine3.Contract_Item_Number__c = 'My SFR Cutlery1';
+		agLine3.CLM_CFE_Reference__c = 'My SFR Cutlery1';
 		agLine3.Apttus__ProductId__c = product1.Id;
 		agLine3.Apttus__Quantity__c = 40;
+		agLine3.Apttus_CMConfig__Uom__c = 'PCE';
+		agLine3.Apttus_CMConfig__NetUnitPrice__c = 2222.00;
+		agLine3.Apttus__NetPrice__c = 2222.00;
 		
 		agList.add(agLine0);
 		agList.add(agLine1);
@@ -136,6 +152,7 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		quotes[0].Price_List__c=priceList.Id;
 		quotes[0].Agreement_Lookup__c=agr.Id;
 		quotes[0].Apttus_Proposal__Opportunity__c=opp.Id;
+		quotes[0].CurrencyIsoCode = 'EUR';
 		insert quotes;
 		
 		List<Apttus_Proposal__Proposal_Line_Item__c> quoteLinesList = new List<Apttus_Proposal__Proposal_Line_Item__c>();
@@ -143,32 +160,35 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		quoteLines1.Apttus_Proposal__Product__c = productList[0].Id;
 		quoteLines1.Apttus_QPConfig__PriceListItemId__c = priceListItem[0].Id;
 		quoteLines1.Apttus_QPConfig__Quantity2__c = 100;
+		quoteLines1.Apttus_QPConfig__Uom__c = 'PCE';
+		quoteLines1.Apttus_QPConfig__NetUnitPrice__c = 2222.00;
 		quoteLinesList.add(quoteLines1);
 		
 		Apttus_Proposal__Proposal_Line_Item__c quoteLines2 = QTO_TestDataFactory.proposalLineItemCreation(quotes[0].id,priceListItem[1]); 
 		quoteLines2.Apttus_Proposal__Product__c = productList[1].Id;
 		quoteLines2.Apttus_QPConfig__PriceListItemId__c = priceListItem[1].Id;
 		quoteLines2.Apttus_QPConfig__Quantity2__c = 100;
+		quoteLines2.Apttus_QPConfig__Uom__c = 'PCE';
+		quoteLines2.Apttus_QPConfig__NetUnitPrice__c = 2222.00;
 		quoteLinesList.add(quoteLines2);
 		
 		Apttus_Proposal__Proposal_Line_Item__c quoteLines3 = QTO_TestDataFactory.proposalLineItemCreation(quotes[0].id,priceListItem[1]); 
 		quoteLines3.Apttus_Proposal__Product__c = productList[1].Id;
 		quoteLines3.Apttus_QPConfig__PriceListItemId__c = priceListItem[1].Id;
 		quoteLines3.Apttus_QPConfig__Quantity2__c = 10;
+		quoteLines3.Apttus_QPConfig__Uom__c = 'PCE';
+		quoteLines3.Apttus_QPConfig__NetUnitPrice__c = 2222.00;
 		quoteLinesList.add(quoteLines3);
 		
 		Apttus_Proposal__Proposal_Line_Item__c quoteLines4 = QTO_TestDataFactory.proposalLineItemCreation(quotes[0].id,priceListItem[1]); 
 		quoteLines4.Apttus_Proposal__Product__c = productList[1].Id;
 		quoteLines4.Apttus_QPConfig__PriceListItemId__c = priceListItem[1].Id;
 		quoteLines4.Apttus_QPConfig__Quantity2__c = 30;
+		quoteLines4.Apttus_QPConfig__Uom__c = 'PCE';
+		quoteLines4.Apttus_QPConfig__NetUnitPrice__c = 2222.00;
 		quoteLinesList.add(quoteLines4);
 		insert quoteLinesList;  
-		
-		
-		
-		
-		
-		
+	
 		Customer_Document__c cd = QTO_TestDataFactory.createCustomerDocument();
 		cd.Status__c = 'Draft';
 		cd.Customer_Document_ID__c = '12435678';
@@ -209,9 +229,9 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		cdli0.QTO_Unit_Price__c = 2222.00;
 		cdli0.Customer_Document__c = cd.Id;
 		cdli0.QTO_Unit_of_Measure__c = 'PCE';
-		cdli0.QTO_PDF_Total_Value__c = '624.70';														
-		cdli0.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021';											  
-		cdli0.Status__c='Enriched(Lines)';														  
+		cdli0.QTO_PDF_Total_Value__c = '624.70';					
+		cdli0.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021';			 
+		cdli0.Status__c='Enriched(Lines)';				
 		customerDocLines.add(cdli0);
 		
 		
@@ -235,9 +255,10 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		cdli1.QTO_Unit_Price__c = 2222.00;
 		cdli1.Customer_Document__c = cd.Id;
 		cdli1.QTO_Unit_of_Measure__c = 'PCE';
-		cdli1.QTO_PDF_Total_Value__c = '624.70';														
-		cdli1.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021';											  
-		cdli1.Status__c='Enriched(Lines)';														  
+		cdli1.QTO_PDF_Total_Value__c = '624.70';					
+		cdli1.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021';			 
+		cdli1.Status__c='Enriched(Lines)';	
+		cdli1.Association_Comment__c='Association Successful'; 
 		customerDocLines.add(cdli1);
 		
 		Customer_Document_Line_Items__c cdli2 = new Customer_Document_Line_Items__c();
@@ -261,7 +282,7 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		cdli2.Customer_Document__c = cd.Id;
 		cdli2.QTO_Product_Name__c = product2.Id;
 		cdli2.QTO_Unit_of_Measure__c = 'PCE';
-		cdli2.QTO_PDF_Total_Value__c = '624.70';														
+		cdli2.QTO_PDF_Total_Value__c = '624.70';					
 		cdli2.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021';	
 		cdli2.Status__c='Enriched(Lines)';
 		customerDocLines.add(cdli2);
@@ -287,7 +308,7 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		cdli3.Customer_Document__c = cd.Id;
 		cdli3.QTO_Product_Name__c = product2.Id;
 		cdli3.QTO_Unit_of_Measure__c = 'PCE';
-		cdli3.QTO_PDF_Total_Value__c = '624.70';														
+		cdli3.QTO_PDF_Total_Value__c = '624.70';					
 		cdli3.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021'; 
 		cdli3.Status__c='Enriched(Lines)';
 		customerDocLines.add(cdli3);
@@ -313,7 +334,7 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		cdli4.Customer_Document__c = cd.Id;
 		cdli4.QTO_Product_Name__c = product2.Id;
 		cdli4.QTO_Unit_of_Measure__c = 'PCE';
-		cdli4.QTO_PDF_Total_Value__c = '624.70';														
+		cdli4.QTO_PDF_Total_Value__c = '624.70';					
 		cdli4.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021'; 
 		cdli4.Status__c='Enriched(Lines)';
 		customerDocLines.add(cdli4);
@@ -339,7 +360,7 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		cdli5.Customer_Document__c = cd.Id;
 		cdli5.QTO_Product_Name__c = product2.Id;
 		cdli5.QTO_Unit_of_Measure__c = 'PCE';
-		cdli5.QTO_PDF_Total_Value__c = '624.70';														
+		cdli5.QTO_PDF_Total_Value__c = '624.70';					
 		cdli5.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021'; 
 		cdli5.Status__c='Exception-Enrichment(Lines)';
 		customerDocLines.add(cdli5);
@@ -366,7 +387,7 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		cdli6.Customer_Document__c = cd.Id;
 		cdli6.QTO_Product_Name__c = product2.Id;
 		cdli6.QTO_Unit_of_Measure__c = 'PCE';
-		cdli6.QTO_PDF_Total_Value__c = '624.70';														
+		cdli6.QTO_PDF_Total_Value__c = '624.70';					
 		cdli6.QTO_PDF_Requested_Delivery_Date__c = '08.08.2021'; 
 		cdli6.Status__c='Exception-Matching(Lines)';
 		customerDocLines.add(cdli6);
@@ -461,18 +482,21 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 	@isTest
 	static void cdLineAssociationTest1(){
 		test.startTest();
-		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
-																		Detailed_Product__c,Detailed_Product_Description__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
-																		from Customer_Document_Line_Items__c];
+		List<Customer_Document_Line_Items__c>  customerDocumentLines = 
+			[
+	Select Id,High_level_Product__c,High_level_Product_Description__c,QTO_PDF_Unit_Of_Measure__c,QTO_PDF_Quantity__c,QTO_PDF_Unit_Price__c,
+	QTO_PDF_Currency_Code__c,Detailed_Product__c,Detailed_Product_Description__c, Quantity__c, QTO_Unit_of_Measure__c, QTO_Unit_Price__c, CurrencyIsoCode,
+	QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,QTO_PDF_Total_Value__c,QTO_PDF_Requested_Delivery_Date__c,
+	Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c, QTO_CDLI_Matched_Quoted_Quantity__c, QTO_CDLI_Matched_Contracted_Quantity__c, Customer_Document__r.QTO_Currency__c
+	from Customer_Document_Line_Items__c
+			]; 
 		
 		System.debug('customerDocumentLines>>>>>'+customerDocumentLines.size());
 		
 		QTO_CdLineItemAssociationHelper.associateCdLineItems(customerDocumentLines);
 		QTO_CDLineItemMatchingHelper.matchCdLineItems(customerDocumentLines); 
-		QTO_CDLineItemMatchingHelper.updateCDocStatus(customerDocumentLines);  
-		
+		//QTO_CDLineItemMatchingHelper.updateCDocStatus(customerDocumentLines);  
+		QTO_CDLineItemMatchingHelper.updateQuoteAndAgreementAcceptance(customerDocumentLines); 
 		test.stopTest();	
 	}
 	
@@ -482,12 +506,14 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		Customer_facing_Attribute__c cfa = [Select Id from Customer_facing_Attribute__c where Attribute_Label__c='PDF QUOTE REF'];
 		delete cfa;
 		
-		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
-																		Detailed_Product__c,Detailed_Product_Description__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
-																		from Customer_Document_Line_Items__c];
-		
+		List<Customer_Document_Line_Items__c>  customerDocumentLines = 
+			[
+	Select Id,High_level_Product__c,High_level_Product_Description__c,QTO_PDF_Unit_Of_Measure__c,QTO_PDF_Quantity__c,QTO_PDF_Unit_Price__c,
+	QTO_PDF_Currency_Code__c,Detailed_Product__c,Detailed_Product_Description__c, Quantity__c, QTO_Unit_of_Measure__c, QTO_Unit_Price__c, CurrencyIsoCode,
+	QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,QTO_PDF_Total_Value__c,QTO_PDF_Requested_Delivery_Date__c,
+	Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c, QTO_CDLI_Matched_Quoted_Quantity__c, QTO_CDLI_Matched_Contracted_Quantity__c,Customer_Document__r.QTO_Currency__c
+	from Customer_Document_Line_Items__c
+			]; 
 		System.debug('customerDocumentLines>>>>>'+customerDocumentLines.size());
 		
 		QTO_CdLineItemAssociationHelper.associateCdLineItems(customerDocumentLines);
@@ -499,11 +525,14 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		List<Customer_facing_Attribute__c> cfa = [Select Id from Customer_facing_Attribute__c where Attribute_Label__c='PDF SITE CODE'];
 		delete cfa;
 		
-		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
-																		Detailed_Product__c,Detailed_Product_Description__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
-																		from Customer_Document_Line_Items__c];
+		List<Customer_Document_Line_Items__c>  customerDocumentLines = 
+			[
+	Select Id,High_level_Product__c,High_level_Product_Description__c,QTO_PDF_Unit_Of_Measure__c,QTO_PDF_Quantity__c,QTO_PDF_Unit_Price__c,
+	QTO_PDF_Currency_Code__c,Detailed_Product__c,Detailed_Product_Description__c, Quantity__c, QTO_Unit_of_Measure__c, QTO_Unit_Price__c, CurrencyIsoCode,
+	QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,QTO_PDF_Total_Value__c,QTO_PDF_Requested_Delivery_Date__c,
+	Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c, QTO_CDLI_Matched_Quoted_Quantity__c, QTO_CDLI_Matched_Contracted_Quantity__c,Customer_Document__r.QTO_Currency__c
+	from Customer_Document_Line_Items__c
+			]; 
 		
 		System.debug('customerDocumentLines>>>>>'+customerDocumentLines.size());
 		
@@ -517,12 +546,14 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		List<Customer_facing_Attribute__c> cfa = [Select Id from Customer_facing_Attribute__c where Attribute_Label__c IN ('PDF SITE CODE', 'PDF QUOTE REF','ANTICIPATION REF')];
 		delete cfa;
 		
-		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,Detailed_Product_Code__c,Detailed_Product_Description__c,Site__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,QTO_Product_Name__r.Name,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c, Status__c, Association_Comment__c, QTO_CDLI_Matching_Comment__c,QTO_Association__c , Customer_Document__r.Customer__c, 
-																		Quantity__c, QTO_CDLI_Matched_Quoted_Quantity__c,QTO_CDLI_Matched_Contracted_Quantity__c, Customer_Document__r.Status__c 
-																		from Customer_Document_Line_Items__c];
-		
+		List<Customer_Document_Line_Items__c>  customerDocumentLines = 
+			[
+	Select Id,High_level_Product__c,High_level_Product_Description__c,QTO_PDF_Unit_Of_Measure__c,QTO_PDF_Quantity__c,QTO_PDF_Unit_Price__c,
+	QTO_PDF_Currency_Code__c,Detailed_Product__c,Detailed_Product_Description__c, Quantity__c, QTO_Unit_of_Measure__c, QTO_Unit_Price__c, CurrencyIsoCode,
+	QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,QTO_PDF_Total_Value__c,QTO_PDF_Requested_Delivery_Date__c,
+	Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c, QTO_CDLI_Matched_Quoted_Quantity__c, QTO_CDLI_Matched_Contracted_Quantity__c,Customer_Document__r.QTO_Currency__c
+	from Customer_Document_Line_Items__c
+			]; 
 		System.debug('customerDocumentLines>>>>>'+customerDocumentLines.size());
 		
 		QTO_CdLineItemAssociationHelper.associateCdLineItems(customerDocumentLines);
@@ -533,18 +564,22 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 	@isTest
 	static void cdLineAssociationTest5(){
 		test.startTest();
-		List<Customer_Document_Line_Items__c>  customerDocLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,Detailed_Product_Code__c,Detailed_Product_Description__c,Site__c,
-																   QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,QTO_Product_Name__r.Name,Contract_Item_Number__c,
-																   Price_List_Item__c,Customer_Document__c, Status__c, Association_Comment__c, QTO_CDLI_Matching_Comment__c,QTO_Association__c , Customer_Document__r.Customer__c, 
-																   Quantity__c, QTO_CDLI_Matched_Quoted_Quantity__c,QTO_CDLI_Matched_Contracted_Quantity__c, Customer_Document__r.Status__c 
-																   from Customer_Document_Line_Items__c];
-		
+		List<Customer_Document_Line_Items__c>  customerDocLines = 
+			[
+	Select Id,High_level_Product__c,High_level_Product_Description__c,QTO_PDF_Unit_Of_Measure__c,QTO_PDF_Quantity__c,QTO_PDF_Unit_Price__c,
+	QTO_PDF_Currency_Code__c,Detailed_Product__c,Detailed_Product_Description__c, Quantity__c, QTO_Unit_of_Measure__c, QTO_Unit_Price__c, CurrencyIsoCode,
+	QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,QTO_PDF_Total_Value__c,QTO_PDF_Requested_Delivery_Date__c,
+	Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c, Customer_Document__r.Sub_Classification__c, QTO_CDLI_Matched_Quoted_Quantity__c, QTO_CDLI_Matched_Contracted_Quantity__c,Customer_Document__r.QTO_Currency__c
+	from Customer_Document_Line_Items__c
+			]; 
 		
 		List<Apttus_Proposal__Proposal_Line_Item__c> quoteLinesList = [Select Id,Name,NokiaCPQ_Product_Name__c,Apttus_QPConfig__PriceListItemId__c,
-																	   Apttus_Proposal__Proposal__c,Apttus_Proposal__Proposal__r.Name, Apttus_Proposal__Proposal__r.NokiaCPQ_Proposal_Id__c,
-																	   Apttus_Proposal__Proposal__r.Id, Apttus_Proposal__Product__c,DS_Grouping_Name__c,Product_Code__c,
-																	   Apttus_Proposal__Product__r.ProductCode,External_Reference__c, Apttus_Proposal__Quantity__c, 	Apttus_QPConfig__Quantity2__c 
-																	   from Apttus_Proposal__Proposal_Line_Item__c];
+					Apttus_Proposal__Proposal__c,Apttus_Proposal__Proposal__r.Name, Apttus_Proposal__Proposal__r.NokiaCPQ_Proposal_Id__c,
+					Apttus_Proposal__Proposal__r.Id, Apttus_Proposal__Product__c,DS_Grouping_Name__c,Product_Code__c,
+					Apttus_Proposal__Product__r.ProductCode,External_Reference__c, Apttus_Proposal__Quantity__c,
+					Apttus_QPConfig__Uom__c, Apttus_QPConfig__NetUnitPrice__c, Apttus_Proposal__Proposal__r.CurrencyIsoCode,
+					Apttus_QPConfig__Quantity2__c, QTO_QLI_Matched_Risk_Quantity__c  
+					from Apttus_Proposal__Proposal_Line_Item__c];
 		
 		System.debug('customerDocumentLines 5 >>>>>'+customerDocLines.size());
 		QTO_CdLineItemAssociationHelper.associateCdLineItems(customerDocLines);
@@ -568,7 +603,7 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		QTO_Customer_Document_Quote_Line__c quoteAssociation4 = new QTO_Customer_Document_Quote_Line__c();
 		quoteAssociation4.QTO_Customer_Document_Line_Items__c =  customerDocLines[3].Id;
 		quoteAssociation4.QTO_Proposal_Line_Item__c = quoteLinesList[3].id;
-		quoteAssociationList.add(quoteAssociation4);				
+		quoteAssociationList.add(quoteAssociation4);	
 		
 		QTO_Customer_Document_Quote_Line__c quoteAssociation5 = new QTO_Customer_Document_Quote_Line__c();
 		quoteAssociation5.QTO_Proposal_Line_Item__c = quoteLinesList[0].id;
@@ -583,13 +618,13 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		
 		insert quoteAssociationList;
 		Map<Id,Apttus_Proposal__Proposal_Line_Item__c>  updateQuoteLineItems = new  Map<Id,Apttus_Proposal__Proposal_Line_Item__c>();
-		
-		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation1, customerDocLines[0], quoteLinesList[0] ,updateQuoteLineItems);
-		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation2, customerDocLines[1], quoteLinesList[1] ,updateQuoteLineItems);
-		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation3, customerDocLines[2], quoteLinesList[2] ,updateQuoteLineItems) ; 
-		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation4, customerDocLines[3], quoteLinesList[3] ,updateQuoteLineItems) ;
-		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation5, customerDocLines[4], quoteLinesList[0] ,updateQuoteLineItems) ;
-		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation6, customerDocLines[0], quoteLinesList[2] ,updateQuoteLineItems) ;
+		List<QTO_Customer_Document_Issue_Log__c> issueLogList = new List<QTO_Customer_Document_Issue_Log__c>();
+		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation1, customerDocLines[0], quoteLinesList[0] ,updateQuoteLineItems, issueLogList);
+		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation2, customerDocLines[1], quoteLinesList[1] ,updateQuoteLineItems, issueLogList);
+		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation3, customerDocLines[2], quoteLinesList[2] ,updateQuoteLineItems, issueLogList) ; 
+		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation4, customerDocLines[3], quoteLinesList[3] ,updateQuoteLineItems, issueLogList) ;
+		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation5, customerDocLines[4], quoteLinesList[0] ,updateQuoteLineItems, issueLogList) ;
+		QTO_CdLineItemAssociationHelper.updateMatchedQuoteQuantity(quoteAssociation6, customerDocLines[0], quoteLinesList[2] ,updateQuoteLineItems, issueLogList) ;
 		
 		
 		test.stopTest();	
@@ -602,15 +637,19 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		List<Customer_facing_Attribute__c> cfa = [Select Id from Customer_facing_Attribute__c where Attribute_Label__c IN ('PDF SITE CODE', 'PDF QUOTE REF','ANTICIPATION REF')];
 		delete cfa;
 		
-		List<Customer_Document_Line_Items__c>  customerDocLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,Detailed_Product_Code__c,Detailed_Product_Description__c,Site__c,
-																   QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,QTO_Product_Name__r.Name,Contract_Item_Number__c,
-																   Price_List_Item__c,Customer_Document__c, Status__c, Association_Comment__c, QTO_CDLI_Matching_Comment__c,QTO_Association__c , Customer_Document__r.Customer__c, 
-																   Quantity__c, QTO_CDLI_Matched_Quoted_Quantity__c,QTO_CDLI_Matched_Contracted_Quantity__c, Customer_Document__r.Status__c 
-																   from Customer_Document_Line_Items__c];
+		List<Customer_Document_Line_Items__c>  customerDocLines = 
+			[
+	Select Id,High_level_Product__c,High_level_Product_Description__c,QTO_PDF_Unit_Of_Measure__c,QTO_PDF_Quantity__c,QTO_PDF_Unit_Price__c,
+	QTO_PDF_Currency_Code__c,Detailed_Product__c,Detailed_Product_Description__c, Quantity__c, QTO_Unit_of_Measure__c, QTO_Unit_Price__c, CurrencyIsoCode,
+	QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,QTO_PDF_Total_Value__c,QTO_PDF_Requested_Delivery_Date__c,
+	Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c,QTO_CDLI_Matched_Quoted_Quantity__c,  QTO_CDLI_Matched_Contracted_Quantity__c,Customer_Document__r.QTO_Currency__c
+	from Customer_Document_Line_Items__c
+			]; 
 		
 		List<Apttus__AgreementLineItem__c> agList = [Select Id,Apttus__AgreementId__c,Name,Apttus__Description__c,Contract_Item_Number__c,
-													 Apttus__ProductId__c,Apttus__ProductId__r.ProductCode,Product_Code__c, Apttus__Quantity__c, QTO_ALI_Matched_Contracted_Quantity__c 
-													 From Apttus__AgreementLineItem__c];
+				 Apttus__ProductId__c,Apttus__ProductId__r.ProductCode,Product_Code__c, Apttus__Quantity__c, 
+				 QTO_ALI_Matched_Contracted_Quantity__c ,Apttus_CMConfig__Uom__c,Apttus__NetPrice__c,  Apttus_CMConfig__NetUnitPrice__c, Apttus__AgreementId__r.CurrencyIsoCode 
+				 From Apttus__AgreementLineItem__c];
 		System.debug('customerDocumentLines 6 >>>>>'+customerDocLines.size());
 		
 		QTO_CdLineItemAssociationHelper.associateCdLineItems(customerDocLines);
@@ -645,13 +684,14 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		
 		insert aggAssociationList; 
 		
-		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline1, customerDocLines[0], agList[0] ,updateAgreementLineItems);
-		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline2, customerDocLines[1], agList[1] ,updateAgreementLineItems);
-		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline3, customerDocLines[2], agList[0] ,updateAgreementLineItems); 
-		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline4, customerDocLines[3], agList[1] ,updateAgreementLineItems);
-		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline5, customerDocLines[4], agList[0] ,updateAgreementLineItems);
+		List<QTO_Customer_Document_Issue_Log__c> issueLogList = new List<QTO_Customer_Document_Issue_Log__c>();
+		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline1, customerDocLines[0], agList[0] ,updateAgreementLineItems, issueLogList);
+		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline2, customerDocLines[1], agList[1] ,updateAgreementLineItems, issueLogList);
+		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline3, customerDocLines[2], agList[0] ,updateAgreementLineItems, issueLogList); 
+		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline4, customerDocLines[3], agList[1] ,updateAgreementLineItems, issueLogList);
+		QTO_CdLineItemAssociationHelper.updateMatchedAgreementQuantity(qtoagline5, customerDocLines[4], agList[0] ,updateAgreementLineItems, issueLogList);
 		
-		
+	
 		
 		
 		test.stopTest();	
@@ -668,15 +708,39 @@ public with sharing class QTO_CdLineItemAssociationHelperTest {
 		
 		
 		
-		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,Detailed_Product_Code__c,Detailed_Product_Description__c,Site__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,QTO_Product_Name__r.Name,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c, Status__c, Association_Comment__c, QTO_CDLI_Matching_Comment__c,QTO_Association__c , Customer_Document__r.Customer__c, 
-																		Quantity__c, QTO_CDLI_Matched_Quoted_Quantity__c,QTO_CDLI_Matched_Contracted_Quantity__c, Customer_Document__r.Status__c 
-																		from Customer_Document_Line_Items__c];
+		List<Customer_Document_Line_Items__c>  customerDocumentLines = 
+			[
+	Select Id,High_level_Product__c,High_level_Product_Description__c,QTO_PDF_Unit_Of_Measure__c,QTO_PDF_Quantity__c,QTO_PDF_Unit_Price__c,
+	QTO_PDF_Currency_Code__c,Detailed_Product__c,Detailed_Product_Description__c, Quantity__c, QTO_Unit_of_Measure__c, QTO_Unit_Price__c, CurrencyIsoCode,
+	QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,QTO_PDF_Total_Value__c,QTO_PDF_Requested_Delivery_Date__c,
+	Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c, QTO_CDLI_Matched_Quoted_Quantity__c, QTO_CDLI_Matched_Contracted_Quantity__c, Customer_Document__r.QTO_Currency__c
+	from Customer_Document_Line_Items__c
+			]; 
 		
 		System.debug('customerDocumentLines>>>>>'+customerDocumentLines.size());
 		
 		QTO_CdLineItemAssociationHelper.associateCdLineItems(customerDocumentLines);
 		test.stopTest();	
 	}
+	
+	@isTest
+	static void cdLineAssociationTest8(){
+		test.startTest();
+		List<Customer_Document_Line_Items__c>  customerDocumentLines = 
+			[
+	Select Id,High_level_Product__c,High_level_Product_Description__c,QTO_PDF_Unit_Of_Measure__c,QTO_PDF_Quantity__c,QTO_PDF_Unit_Price__c,
+	QTO_PDF_Currency_Code__c,Detailed_Product__c,Detailed_Product_Description__c, Quantity__c, QTO_Unit_of_Measure__c, QTO_Unit_Price__c, CurrencyIsoCode,
+	QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,QTO_PDF_Total_Value__c,QTO_PDF_Requested_Delivery_Date__c,
+	Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c, QTO_CDLI_Matched_Quoted_Quantity__c, QTO_CDLI_Matched_Contracted_Quantity__c, Customer_Document__r.QTO_Currency__c
+	from Customer_Document_Line_Items__c
+			]; 
+		
+		System.debug('customerDocumentLines>>>>>'+customerDocumentLines.size());
+		
+		QTO_CDLineItemMatchingHelper.updateCDocStatus(customerDocumentLines);  
+
+		test.stopTest();	
+	}
+	
+	
 }

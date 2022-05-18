@@ -130,6 +130,7 @@ public class DS_CreateOIFAndOfferTest {
 			Apttus_Approval__Approval_Request__c approvalData = new Apttus_Approval__Approval_Request__c();
 			approvalData.Apttus_Approval__Related_Opportunity__c = optyCreation[0].id;   
 			database.insert(approvalData);
+			
 			system.debug('*****11*** ');
 			system.debug('optyCreation[0]--->'+optyCreation[0]);
 			system.debug('oppty-SWx_Upsell_Proposal__c--> '+oppty[0].SWx_Upsell_Proposal__c);

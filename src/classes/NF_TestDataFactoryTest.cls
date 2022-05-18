@@ -1,7 +1,7 @@
 @isTest
 public class NF_TestDataFactoryTest
 {
-	testMethod static void testClass()
+	testMethod static void testClass() 
 	{
 		User testUser1 = NF_TestDataFactory.createAdminUser('System Administrator');
 		List<User> users = NF_TestDataFactory.getUsers(1,'System Administrator');

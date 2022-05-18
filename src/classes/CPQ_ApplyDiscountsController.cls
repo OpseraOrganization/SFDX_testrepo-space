@@ -20,6 +20,7 @@ public with sharing class CPQ_ApplyDiscountsController {
 
 	@AuraEnabled
 	public static InitData initializePage(String cartId) {
+		String errorMessage = '';
 		try {
 			InitData initData = new InitData();
 
@@ -33,6 +34,7 @@ public with sharing class CPQ_ApplyDiscountsController {
 
 			if(standaloneLineItems == null || standaloneLineItems.isEmpty()) {
 				AuraHandledException auraError = new AuraHandledException('No discounts eligible line items found.');
+				errorMessage = 'No discounts eligible line items found.';
 				throw auraError;
 			}
 			//get master quote conditions & quoteId
@@ -122,7 +124,10 @@ public with sharing class CPQ_ApplyDiscountsController {
 			return initData;
 		} catch(Exception e) {
 			System.debug('Surround: Error initializing apply discounts page : ' + e.getStackTraceString());
-			AuraHandledException auraError = new AuraHandledException('Some unexpected error occurred while initializing the page. Please contact the system admin.');
+			if(String.isBlank(errorMessage)) {
+				errorMessage = 'Some unexpected error occurred while initializing the page. Please contact the system admin.';
+			}
+			AuraHandledException auraError = new AuraHandledException(errorMessage);
 			throw auraError; 
 		}
 	}
@@ -266,6 +271,14 @@ public with sharing class CPQ_ApplyDiscountsController {
 	@AuraEnabled
 	public static Boolean repriceCart(Id cartId) {
 		Boolean IsPricePending = true;
+		List<Apttus_Config2__ProductConfiguration__c> config =  [select Apttus_QPConfig__Proposald__r.Is_Turbo_Pricing__c from Apttus_Config2__ProductConfiguration__c where id = :cartId];
+		
+		if(config == null || config.isEmpty()) return false;
+
+		if(config[0].Apttus_QPConfig__Proposald__r.Is_Turbo_Pricing__c) {
+			return false;
+		}
+
 		Apttus_CPQApi.CPQ.UpdatePriceRequestDO priceReqDO = new Apttus_CPQApi.CPQ.UpdatePriceRequestDO();
 		priceReqDO.cartID = cartId;
 		Apttus_CPQApi.CPQ.UpdatePriceResponseDO priceRespDO = Apttus_CPQApi.CPQWebService.updatePriceForCart(priceReqDO);	

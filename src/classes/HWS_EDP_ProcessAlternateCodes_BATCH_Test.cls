@@ -16,6 +16,26 @@ public class HWS_EDP_ProcessAlternateCodes_BATCH_Test {
 		insert HWVList;
 		
 		list<HWS_AlternateProductCode__c> altcodelist = new list<HWS_AlternateProductCode__c>();
+		HWS_AlternateProductCode__c alt2 = new HWS_AlternateProductCode__c();
+		alt2.HWS_VersionItem__c=HWVList[0].id;
+		alt2.HWS_PartType__c='PART';
+		alt2.HWS_AlternateCodeType__c = 'CARESID';
+		alt2.Name='test';
+		alt2.HWS_IsProcessed__c=true;
+		alt2.HWS_EDP_DeletedAtSource__c=true;
+		alt2.HWS_NSNCode__c='NSN123';
+		altcodelist.add(alt2);
+		
+		HWS_AlternateProductCode__c alt3 = new HWS_AlternateProductCode__c();
+		alt3.HWS_VersionItem__c=HWVList[0].id;
+		alt3.HWS_PartType__c='PART';
+		alt3.HWS_AlternateCodeType__c = 'CARESID';
+		alt3.Name='test';
+		alt3.HWS_IsProcessed__c=true;
+		alt3.HWS_EDP_DeletedAtSource__c=true;
+		alt3.HWS_NSNCode__c='NSN456';
+		altcodelist.add(alt3);
+		
 		HWS_AlternateProductCode__c alt = new HWS_AlternateProductCode__c();
 		alt.HWS_VersionItem__c=HWVList[0].id;
 		alt.HWS_PartType__c='PART';

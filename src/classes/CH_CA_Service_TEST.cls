@@ -1,6 +1,5 @@
-@isTest
+@isTest 
 public class CH_CA_Service_TEST {
-
 	public static final string NSC='CH_NokiaStandardCase';
 	public static final string sampleexpt = 'Expected 3. Actual ';
 	public static final string sampleexpt1 = 'Expected 6. Actual ';
@@ -12,8 +11,8 @@ public class CH_CA_Service_TEST {
 		CH_UTIL_TEST.setupCase(false);   
 		Test.stopTest();
 	}
-	
-	// Get the all workgroup members for active assignment with hotline
+	 
+	//Get the all workgroup members for active assignment with hotline
 	@isTest
 	static void testGetActiveCaseAssignmentWorkgroupMembersHotline(){ 
 		Test.startTest();
@@ -61,7 +60,7 @@ public class CH_CA_Service_TEST {
 		Test.Stoptest();
 		CH_CA_Service service = new CH_CA_Service(newCase.id);
 		List<CH_CA_DTO.WorkgroupMemberDTO> workgroupMembers = service.getCaseAssignmentWorkgroupMembers();
-		System.assert(workgroupMembers.size() == 5,sampleexpt1 + workgroupMembers.size());
+		System.assert(workgroupMembers.size() == 5,'Expected 5. Actual ' + workgroupMembers.size());
 		
 	}
 	
@@ -279,7 +278,7 @@ public class CH_CA_Service_TEST {
 		Insert newCase;
 		CH_CA_Service service = new CH_CA_Service(newCase.id);
 		List<CH_CA_DTO.WorkgroupMemberDTO> wgDTO = service.getWorkgroupMembersOnInitialLoad(wgList);
-		List<CH_CA_DTO.WorkgroupMemberDTO> caDTO = service.checkWGMembersSecurityDesktop(wgDTO);
+		service.checkWGMembersSecurityDesktop(wgDTO);
 		test.stopTest();
 	}
 	@istest
@@ -356,5 +355,5 @@ public class CH_CA_Service_TEST {
 		System.assert(workgroupMembers.Name == 'MN_GWC_R_All-Products','Actual TEST Expected ' + workgroupMembers.Name);
 		
 	}
-		
+	
 }

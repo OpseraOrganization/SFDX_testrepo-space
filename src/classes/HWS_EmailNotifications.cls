@@ -64,7 +64,7 @@ public without sharing class HWS_EmailNotifications {
 * Developer : Nikhil
 * Description : To send email notifications to Sharepoint
 *****************************************/
-	@future (callout=true)
+   //Removed Future annotation for PROD Defect 37600
 	public static void RequestHWFMARCA(Set<Id> caseSet){	 
 		Set<Id> HWSRecordTypeIdSet = new Set<Id>();
 		Set<String> HWSRecordTypeSet = new Set<String>{'HWS_Advance_Exchange_In_Days','HWS_Advance_Exchange_In_Hours','HWS_Child_Case_Read_Only','HWS_Return_For_Repair'};
@@ -165,6 +165,11 @@ public without sharing class HWS_EmailNotifications {
 					createEmail.CH_Bind_16__c = cs.CH_Originating_Incident_Number__r.CaseNumber;
 					createEmail.CH_Bind_17__c = string.valueof(cs.Cases.size());
 				}
+	else if(alertName == 'HWS Order Acknowledgement Escalated Case'){ //added for NOKIASC-36876
+					createEmail.CH_Bind_16__c = cs.CH_Originating_Incident_Number__r.CaseNumber;
+					createEmail.CH_Bind_17__c = string.valueof(cs.Cases.size());
+					createEmail.CH_Bind15__c = cs.Contact.Email;
+				}
 				else{
 		createEmail.CH_Bind19__c = cs.CH_Workgroup__r.Name;
 					if(alertName == 'Workgroup Assign Emails'){
@@ -212,6 +217,8 @@ public without sharing class HWS_EmailNotifications {
 	 //NOKIASC-35000
 	public Id parentCaseRecId {get;set;}
 	public String displayTable {get;set;}
+	public String alertType {get;set;} //added for NOKIASC-36876
+	
 	//34830
 	public Boolean entExceptionCheck {get{
 		if(entExceptionCheck == null){
@@ -222,7 +229,7 @@ public without sharing class HWS_EmailNotifications {
 	public List<CaseWrapper> getCases()
 	{
 		List<CaseWrapper> caseList = new List<CaseWrapper>();
-		
+		if(parentCaseRecId!=null){
 			for(Case c :[SELECT HWS_Part_Code__c, HWS_Faulty_Serial_Number__c,CaseNumber,HWS_RMA_Number__c,CH_EntitlementStatus__c,HWS_Sellable_Product__r.Name,HWS_ServiceType__c,CH_EntitlementException__c,HWS_EntitlementException__c,HWS_Customer_Reference_Number__c FROM Case WHERE ParentId =: parentCaseRecId]){
 	CaseWrapper wrapper = new CaseWrapper();
 				wrapper.CaseNumber = c.HWS_RMA_Number__c;
@@ -232,12 +239,17 @@ public without sharing class HWS_EmailNotifications {
 				wrapper.HWS_Faulty_Serial_Number = c.HWS_Faulty_Serial_Number__c;
 				wrapper.HWS_ServiceType = c.HWS_ServiceType__c;
 				if(entExceptionCheck){
-					wrapper.HWS_EntitlementException = HWS_OrderConfirmationNotification.getWarrantyStatusandOrderStatusForPortal(c);
+					//added for NOKIASC-36876 
+					if(alertType == 'HWS Order Acknowledgement Escalated Case'){
+						wrapper.HWS_EntitlementException = 'Verifying Warranty';
+					}else{
+						wrapper.HWS_EntitlementException = HWS_OrderConfirmationNotification.getWarrantyStatusandOrderStatusForPortal(c);
+					}
 				}else{
 				   wrapper.HWS_EntitlementException = c.HWS_EntitlementException__c; 
 				}
 	caseList.add(wrapper);
-			}
+			}}
 			return caseList;
 		}
 		
@@ -250,5 +262,134 @@ public without sharing class HWS_EmailNotifications {
 		public String HWS_EntitlementException { get; set; }
 		public String HWS_ServiceType { get; set; }
 		public String HWS_Customer_Reference_Number { get; set; }
+	}
+	//added for HWSDDP-99
+	public Id quotationId{get;set;}
+	public class QuotationWrapper {
+		public String QuoteNumber { get; set; }
+		public String RmaNumber { get; set; }
+		public String ChildCaseNumber { get; set; }
+		public String PartNumber { get; set;}
+		public String PartDescription { get; set; }
+		public String FaultySerialNumber { get; set; }
+		public String QuoteStatus { get; set; }
+		public String QuoteOwner { get; set; }
+		public String QuoteType { get; set; }
+	}
+	public List<QuotationWrapper> getQuotation(){
+		List<QuotationWrapper> quoteList = new List<QuotationWrapper>();
+		for(HWS_Service_Quote__c sq : [SELECT Id,Name,HWS_Support_Ticket__c,HWS_Support_Ticket__r.CaseNumber,HWS_Support_Ticket__r.HWS_Part_Code__c,HWS_RMA_Number__c,
+							HWS_Support_Ticket__r.HWS_Sellable_Product__r.Name,HWS_Support_Ticket__r.HWS_Faulty_Serial_Number__c,HWS_Quote_Status__c,Owner.Name,RecordType.Name
+								FROM HWS_Service_Quote__c WHERE Id=: quotationId]){
+			QuotationWrapper quoteWrap = new QuotationWrapper();   
+			quoteWrap.QuoteNumber = sq.Name;
+			quoteWrap.RmaNumber = sq.HWS_RMA_Number__c;
+			quoteWrap.ChildCaseNumber = sq.HWS_Support_Ticket__r.CaseNumber;
+			quoteWrap.PartNumber = sq.HWS_Support_Ticket__r.HWS_Part_Code__c;
+			quoteWrap.PartDescription = sq.HWS_Support_Ticket__r.HWS_Sellable_Product__r.Name;
+			quoteWrap.FaultySerialNumber = sq.HWS_Support_Ticket__r.HWS_Faulty_Serial_Number__c; 
+			quoteWrap.QuoteStatus = sq.HWS_Quote_Status__c;
+			quoteWrap.QuoteOwner = sq.Owner.Name;
+			quoteWrap.QuoteType = sq.RecordType.Name;
+			quoteList.add(quoteWrap);
+		}
+		return quoteList;
+	}
+	 /*******************************************************
+	* Method Name : serviceQuoteWGAssignmentEmail 
+	* Description : sends email to all workgroup members when 
+					WG is changed and owner is CH Queue
+					created for HWSDDP-99
+	*********************************************************/ 
+	public static void serviceQuoteWGAssignmentEmail(List<HWS_Service_Quote__c> servQuoteWgAssignmentLst){
+		List<Id> quotationIdLst = new List<Id>();
+		for(HWS_Service_Quote__c sq : servQuoteWgAssignmentLst ){
+			quotationIdLst.add(sq.Id);
+		}
+		//get details of Service quote and related case
+		Map<Id,HWS_Service_Quote__c> servQuoteMap = new Map<Id,HWS_Service_Quote__c>([SELECT Id,Name,HWS_RMA_Number__c,HWS_Support_Ticket__c,HWS_Account_Name__c,HWS_Support_Ticket__r.CaseNumber,HWS_Support_Ticket__r.HWS_Part_Code__c,CreatedDate,HWS_Workgroup__r.Name,HWS_Workgroup__c,
+					HWS_Support_Ticket__r.Description,HWS_Support_Ticket__r.HWS_Faulty_Serial_Number__c,HWS_Quote_Status__c,Owner.Name,RecordType.Name,HWS_Support_Ticket__r.NCP_Service_Contract__c,HWS_Support_Ticket__r.NCP_Service_Contract__r.Name,HWS_Support_Ticket__r.Account.Name
+					FROM HWS_Service_Quote__c WHERE Id IN : quotationIdLst]);
+		List<Id> wgIdList = new List<Id>();
+		for(HWS_Service_Quote__c sq : servQuoteMap.values()){
+			wgIdList.add(sq.HWS_Workgroup__c);
+		}	
+		Map<Id,String> wgUserEmailMap = new Map<Id,String>();
+		List<CH_Workgroup_Member__c> wgMemberList = [SELECT Id,CH_User__c,CH_User__r.Email,CH_Workgroup__c,CH_Workgroup__r.CH_Type__c,CH_Queue_Email__c FROM CH_Workgroup_Member__c WHERE CH_Workgroup__c IN : wgIdList AND CH_Workgroup_Member_Type__c = 'Queue'];
+		if(!wgMemberList.isEmpty()){
+			for(CH_Workgroup_Member__c wgm : wgMemberList){
+				wgUserEmailMap.put(wgm.CH_Workgroup__c,wgm.CH_Queue_Email__c);
+			}
+		} 
+		List<CH_EmailAlert__c> emailAlertList = new List<CH_EmailAlert__c>();
+		for(Id quote : quotationIdLst){
+			CH_EmailAlert__c createEmail = new CH_EmailAlert__c();
+			createEmail.CH_Bind3__c = servQuoteMap.get(quote).HWS_RMA_Number__c;
+			createEmail.CH_Bind5__c = servQuoteMap.get(quote).HWS_Workgroup__r.Name;
+			createEmail.CH_Bind1__c = servQuoteMap.get(quote).Id ;
+			createEmail.CH_Bind2__c = servQuoteMap.get(quote).Name;
+			createEmail.CH_Bind4__c = servQuoteMap.get(quote).HWS_Support_Ticket__c;
+			createEmail.CH_Bind10__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.CaseNumber;
+			createEmail.CH_Bind6__c = servQuoteMap.get(quote).CreatedDate.format('yyyy-MM-dd');
+			createEmail.CH_Bind7__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.Account.Name;
+			createEmail.CH_Bind8__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.NCP_Service_Contract__c;
+			createEmail.CH_Bind9__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.NCP_Service_Contract__r.Name;
+			createEmail.CH_BindEmail1__c = wgUserEmailMap.get(servQuoteMap.get(quote).HWS_Workgroup__c);
+			createEmail.CH_EmailAlertName__c = 'HWS_Quotation_WG_Assignment_Email';
+			if(createEmail.CH_BindEmail1__c != ''){
+				emailAlertList.add(createEmail);
+			}
+		}	   
+		if(emailAlertList.size()>0 && !Test.isRunningTest()){
+			try{
+				Database.insert(emailAlertList,false);
+			} catch(Exception e){
+				System.debug('Exception'+e.getMessage());
+			}
+		}	
+	}
+
+	/*******************************************************
+	* Method Name : ownerReAssignmentEmail 
+	* Description : sends email to new quote owner when 
+				   owner is reassigned, created for HwSDDP-99
+	*********************************************************/ 
+	public static void ownerReAssignmentEmail(List<Id> quotationIdLst){
+		//get details of Service quote and related case
+		Map<Id,HWS_Service_Quote__c> servQuoteMap = new Map<Id,HWS_Service_Quote__c>([SELECT Id,Name,HWS_RMA_Number__c,HWS_Support_Ticket__c,HWS_Account_Name__c,HWS_Support_Ticket__r.CaseNumber,HWS_Support_Ticket__r.HWS_Part_Code__c,CreatedDate,HWS_Workgroup__r.Name,HWS_Workgroup__c,
+					HWS_Support_Ticket__r.Description,HWS_Support_Ticket__r.HWS_Faulty_Serial_Number__c,HWS_Quote_Status__c,Owner.Name,Owner.Email,RecordType.Name,HWS_Support_Ticket__r.NCP_Service_Contract__c,HWS_Support_Ticket__r.NCP_Service_Contract__r.Name,HWS_Support_Ticket__r.Account.Name,
+					HWS_Support_Ticket__r.Contact.Name,HWS_Support_Ticket__r.ContactId,HWS_Support_Ticket__r.Contact.MobilePhone,HWS_Support_Ticket__r.Contact.Phone,HWS_Support_Ticket__r.Contact.Email,HWS_Support_Ticket__r.Contact.Account.Name
+					FROM HWS_Service_Quote__c WHERE Id IN : quotationIdLst]);
+		List<CH_EmailAlert__c> emailAlertList = new List<CH_EmailAlert__c>();
+		for(Id quote : quotationIdLst){
+			CH_EmailAlert__c createEmail = new CH_EmailAlert__c();
+			createEmail.CH_Bind1__c = servQuoteMap.get(quote).Owner.Name;
+			createEmail.CH_Bind2__c = servQuoteMap.get(quote).HWS_RMA_Number__c;
+			createEmail.CH_Bind3__c = servQuoteMap.get(quote).Name;
+			createEmail.CH_Bind4__c = servQuoteMap.get(quote).Id ;
+			createEmail.CH_Bind5__c = servQuoteMap.get(quote).HWS_Support_Ticket__c;
+			createEmail.CH_Bind_17__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.CaseNumber;
+			createEmail.CH_Bind6__c = servQuoteMap.get(quote).CreatedDate.format('yyyy-MM-dd');
+			createEmail.CH_Bind7__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.Account.Name;
+			createEmail.CH_Bind8__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.Contact.Account.Name;
+			createEmail.CH_Bind9__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.Contact.Name;
+			createEmail.CH_Bind10__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.Contact.Phone;
+			createEmail.CH_Bind11__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.Contact.MobilePhone;
+			createEmail.CH_Bind12__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.Contact.Email;
+			createEmail.CH_Bind13__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.NCP_Service_Contract__c;
+			createEmail.CH_Bind_16__c = servQuoteMap.get(quote).HWS_Support_Ticket__r.NCP_Service_Contract__r.Name;
+			createEmail.CH_BindEmail1__c = servQuoteMap.get(quote).Owner.Email;
+			createEmail.CH_EmailAlertName__c = 'HWS_Quotation_Owner_ReAssignment_Email';
+			if(createEmail.CH_BindEmail1__c != ''){
+				emailAlertList.add(createEmail);
+			}
+		}	   
+		if(emailAlertList.size()>0 && !Test.isRunningTest()){
+			try{
+				Database.insert(emailAlertList,false);
+			} catch(Exception e){
+				System.debug('Exception'+e.getMessage());
+			}
+		}
 	}
 }

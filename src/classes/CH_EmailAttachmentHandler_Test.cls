@@ -27,8 +27,7 @@ public class CH_EmailAttachmentHandler_Test {
 		CH_AvoidRecursion.afterUpdate = false;
 		CH_AvoidRecursion.doNtExcuteCseTrggr4NotfcationBtch = false;
 		CH_UTIL_TEST.setupCase(false);
-		
-	}
+	} 
 	
 	static Case createNewCHcase(){
 		
@@ -52,7 +51,7 @@ public class CH_EmailAttachmentHandler_Test {
 		
 		Test.startTest(); 
 		
-	   
+	
 		
 		// create a new email and envelope object
 		Messaging.InboundEmail email = new Messaging.InboundEmail() ;
@@ -70,11 +69,11 @@ public class CH_EmailAttachmentHandler_Test {
 		CH_EmailAttachmentHandler inbound = new CH_EmailAttachmentHandler();
 		inbound.caseId = null;
 		inbound.handleInboundEmail(email, env);
-			
+		Test.stopTest();	
 		
 		list<EmailMessage> message = new list<EmailMessage>([SELECT Id FROM EmailMessage WHERE Subject =:threadId ]);
 		system.assert(message.isEmpty(), 'No message should be found');
-		Test.stopTest();
+		
 	}
 	// Test that an email without an email chain gets discarded
 	@isTest static void sendNewEmail(){
@@ -115,11 +114,10 @@ public class CH_EmailAttachmentHandler_Test {
 		inbound.caseId = newCase.Id;
 		inbound.handleInboundEmail(email, env);
 		
+		Test.stopTest();	
 		
 		list<EmailMessage> message = new list<EmailMessage>([SELECT Id FROM EmailMessage WHERE Subject =: threadId]);
 		system.assert(message.isEmpty(), 'No message should be found');
-		Test.stopTest();	
-		
 	}
 	
 	
@@ -184,9 +182,9 @@ public class CH_EmailAttachmentHandler_Test {
 		
 		email.headers = new Messaging.InboundEmail.Header[]{header1,header2};
 			email.binaryAttachments = new Messaging.inboundEmail.BinaryAttachment[] { attachment, attachment2 };
-				
-				// add an Text atatchment
-				Messaging.InboundEmail.TextAttachment attachmenttext = new Messaging.InboundEmail.TextAttachment();
+	
+	// add an Text atatchment
+	Messaging.InboundEmail.TextAttachment attachmenttext = new Messaging.InboundEmail.TextAttachment();
 		attachmenttext.body = attachmenttextbody;
 		attachmenttext.fileName = attachmenttextfileName;
 		attachment.mimeTypeSubType = attachmentSubType;
@@ -382,10 +380,10 @@ public class CH_EmailAttachmentHandler_Test {
 		attachment.headers = headers;
 		
 		email3.headers = new Messaging.InboundEmail.Header[]{header1,header2};
-			email3.binaryAttachments = new Messaging.inboundEmail.BinaryAttachment[] { attachment, attachment2 };
-				
-				// add an Text atatchment
-				Messaging.InboundEmail.TextAttachment attachmenttext = new Messaging.InboundEmail.TextAttachment();
+		email3.binaryAttachments = new Messaging.inboundEmail.BinaryAttachment[] { attachment, attachment2 };
+	
+	// add an Text atatchment
+	Messaging.InboundEmail.TextAttachment attachmenttext = new Messaging.InboundEmail.TextAttachment();
 		attachmenttext.body = attachmenttextbody;
 		attachmenttext.fileName = attachmenttextfileName;
 		attachment.mimeTypeSubType = attachmentSubType;
@@ -394,16 +392,8 @@ public class CH_EmailAttachmentHandler_Test {
 			Test.setMock(HttpCalloutMock.class, new MockHttpCAPSresponse());
 		// call the email service class  
 		CH_EmailAttachmentHandler inbound = new CH_EmailAttachmentHandler();
-		
-		
-	 
-		
-		
 		inbound.caseId = cancelledCase.Id;
-		
 		inbound.handleInboundEmail(email3, env3);
-		
-		
 		Test.stopTest();
 	}
 }

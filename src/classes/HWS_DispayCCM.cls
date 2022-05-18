@@ -6,6 +6,8 @@
 * Test Class : HWS_DisplayCCM_Test
 ****************************************/
 
+ 
+
 public with sharing class HWS_DispayCCM {
 	
 	/****************************************
@@ -20,12 +22,18 @@ public with sharing class HWS_DispayCCM {
 	@auraEnabled
 	public static List<user> getUserInfo(Id caseId){
 		Set<Id> ownerIds = new Set<Id>();
+		Set<Id> DataLoaderUserIds = new Set<Id>();
+		
+		List<User> DataLoaderUsersList = [SELECT Id FROM User WHERE Profile.Name = 'Data Loader Profile'];
+		for(User user: DataLoaderUsersList){
+			DataLoaderUserIds.add(user.Id);
+		}
+		
 		List<user> ownerList = new List<user>();
 		Case cse = [SELECT Id, AccountId FROM Case WHERE Id=: caseId ];
 		if(cse != null){
 			//adding WITH SECURITY_ENFORCED for PMD error- Validate CRUD permission before SOQL/DML operation- NOKIASC-32425
-			List<ServiceContract> serCntract = [SELECT Id, OwnerId  FROM ServiceContract WHERE AccountId =:cse.AccountId AND OwnerId!=:Label.CH_IPaas_User_Id AND (Status='Active' OR EndDate=LAST_N_Months:6)];
-		 
+			List<ServiceContract> serCntract = [SELECT Id, OwnerId FROM ServiceContract WHERE AccountId =:cse.AccountId AND OwnerId!=:Label.CH_IPaas_User_Id AND (Status='Active' OR EndDate=LAST_N_Months:6) AND RecordType.DeveloperName =:'CH_ServiceContract' AND OwnerId NOT IN:DataLoaderUserIds];
 			for(ServiceContract serRec: serCntract){
 				ownerIds.add(serRec.OwnerId);
 			}
