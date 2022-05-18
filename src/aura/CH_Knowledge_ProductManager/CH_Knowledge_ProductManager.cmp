@@ -1,0 +1,122 @@
+<aura:component controller="CH_Knowledge_ProductManager_Controller" implements="force:appHostable,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" >
+    
+    <!-- Initial Function -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!-- Product Attributes -->
+    <aura:attribute name="editable" type = "boolean" access="private" default="false"/>
+    <aura:attribute name="products" type = "object" access="private" description=""/>
+    <aura:attribute name="select" type = "string" access="private" default=""/>
+    <aura:attribute name="selectParent" type = "string" access="private" default=""/>
+    <aura:attribute name="selectHandler" type = "object" access="private" description=""/>
+    <aura:attribute name="remove" type = "string" access="private" default=""/>
+    <aura:attribute name="removeHandler" type = "string" access="private" description=""/>
+    <!-- Design Attributes -->
+    <aura:attribute name="actionCounter" type="Integer" default="0" access="private" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" access="private" description="To display spinner" />
+    
+    <aura:if isTrue="{! v.select != ''}">
+        <div class="panel slds-modal slds-fade-in-open" style="background: rgba(8, 7, 7, 0.6);">
+            <div class="closeQuickActionBox">
+            	<lightning:buttonIcon class="close" iconName="utility:close" variant="bare-inverse" title="Close this window" alternativeText="Close this window" onclick="{!c.cancelSelection}"/>
+            </div> 
+            <div class="quickActionBox">
+                <div class="modal-header slds-modal__header slds-size_1-of-1">
+                    <h4 class="title slds-text-heading--medium" >{!v.select} Selection</h4>
+                </div>
+                
+                <!-- Content -->    
+                <div class="slds-modal__content slds-p-around--x-small centeredElems slds-size_1-of-1 slds-is-relative">
+                    <aura:if isTrue="{!v.selectHandler.length == 0}">
+                        <h2 class="slds-m-horizontal_large" style="margin-top: 50px;">This Article has no {!v.select}s to be added.</h2>                        
+                    </aura:if>
+                    <aura:if isTrue="{!v.selectHandler.length > 0}">
+                        <h2 class="slds-m-horizontal_large" style="margin-top: 50px;">Select a {!v.select}:</h2>
+                        <select class="slds-col slds-size_11-of-12 slds-m-around_large" id="smartSelector">
+                            <option style="display: none;">None</option>
+                            <aura:iteration items="{!v.selectHandler}" var="obj">
+                                <option value="{!obj.Id}">{!obj.Name}</option>
+                            </aura:iteration>
+                        </select>
+                    </aura:if>
+                </div>
+                
+                <!-- Footer -->
+                <div class="modal-footer slds-modal__footer slds-size_1-of-1" style="position: absolute; bottom: 0;">
+                    <ui:button class="slds-button slds-button--neutral" label="Cancel" press="{!c.cancelSelection}"/>
+                    <aura:if isTrue="{!v.selectHandler.length > 0}">
+                    	<ui:button class="slds-button slds-button--brand" label="Save" press="{!c.saveSelection}"/>
+                    </aura:if>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{! v.remove != ''}">
+        <div class="panel slds-modal slds-fade-in-open" style="background: rgba(8, 7, 7, 0.6);">
+            <div class="closeQuickActionBox" style="height: 260px;">
+            	<lightning:buttonIcon class="close" iconName="utility:close" variant="bare-inverse" title="Close this window" alternativeText="Close this window" onclick="{!c.cancelRemove}"/>
+            </div> 
+            <div class="quickActionBox" style="height: 180px;">
+                <div class="modal-header slds-modal__header slds-size_1-of-1">
+                    <h4 class="title slds-text-heading--medium" >Delete {!v.remove}</h4>
+                </div>
+                
+                <!-- Content -->    
+                <div class="slds-modal__content slds-p-around--x-small centeredElems slds-size_1-of-1 slds-is-relative">
+                    <h1 class="slds-m-horizontal_large slds-m-vertical_small" style="font-size: 1rem; text-align: center;">Are you sure you want to delete this {!v.remove}?</h1>
+                </div>
+                
+                <!-- Footer -->
+                <div class="modal-footer slds-modal__footer slds-size_1-of-1" style="position: absolute; bottom: 0;">
+                    <ui:button class="slds-button slds-button--neutral" label="Cancel" press="{!c.cancelRemove}"/>
+                    <ui:button class="slds-button slds-button--brand" label="Confirm" press="{!c.confirmRemove}"/>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    <div class="slds-grid slds-wrap" style="position: relative;">
+        <!--Loading Spinner-->
+        <aura:if isTrue="{! v.showSpinner }">
+            <div class="slds-align_absolute-center">
+                <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+            </div>
+        </aura:if>
+        <!--Component-->
+        <aura:if isTrue="{!v.products.length == 0}">
+            <div class="slds-col slds-size_12-of-12 slds-p-around_x-small slds-m-top_medium" style="">
+                This Article has no Products associated.
+            </div>
+        </aura:if>
+        <div class="slds-grid slds-wrap slds-col slds-size_12-of-12" style="">
+            <aura:iteration items="{!v.products}" var="product" indexVar="pIndex">
+                <div class="{! (pIndex==0?'slds-grid slds-wrap slds-col slds-size_12-of-12 slds-p-around_medium':'slds-grid slds-wrap slds-col slds-size_12-of-12 slds-p-around_medium slds-border_top')}">
+                    <div class="slds-col slds-size_12-of-12">
+                        <lightning:icon iconName="standard:product" alternativeText="Product"/>
+                        &emsp;Product: <a href="{!'../../Product2/'+product.Id+'/view'}"> {!product.Name}</a>
+                        <aura:if isTrue="{!v.editable}">
+                        	<lightning:button label="Remove" title="Remove" variant="neutral" class="slds-float_right" value="{!product.Id}" onclick="{!c.removeProduct}"/>
+                        </aura:if>
+                    </div>
+                    <aura:iteration items="{!product.releases}" var="release" indexVar="rIndex">
+                        <div class="slds-col slds-size_12-of-12 slds-p-vertical_small slds-p-left_xx-large" style="{!rIndex == 0?'padding-top: 1.5rem;':''}">
+                            <!--lightning:icon iconName="standard:product" alternativeText="Product Release"/-->
+                            &emsp;Product Release {!rIndex+1}: <a href="{!'../../CH_ProductRelease__c/'+release.Id+'/view'}"> {!release.Name}</a>
+                        	<aura:if isTrue="{!v.editable}">
+                            	<lightning:button label="Remove" title="Remove" variant="neutral" class="slds-float_right" value="{!release.Id}" onclick="{!c.removeProductRelease}"/>
+                            </aura:if>
+                        </div>
+                	</aura:iteration>
+                    <aura:if isTrue="{!v.editable}">
+                        <div class="slds-col slds-size_12-of-12 slds-p-vertical_medium" style="text-align: right;">
+                            <lightning:button label="Add Release" title="Add Release" variant="brand" value="{!product.Id}" onclick="{!c.addProductRelease}"/>
+                        </div>
+                    </aura:if>
+            	</div>
+            </aura:iteration>
+        </div>
+        <aura:if isTrue="{!v.editable}">
+            <div class="slds-col slds-size_12-of-12 slds-p-around_medium slds-border_top" style="text-align: right;">
+                    <lightning:button label="Add Product" title="Add Product" variant="brand" onclick="{!c.addProduct}"/>
+            </div>
+        </aura:if>
+    </div>
+</aura:component>

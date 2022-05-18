@@ -1,0 +1,361 @@
+<aura:component implements="lightning:actionOverride,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:appHostable" access="global" controller="DS_TabRendering">    
+    <aura:attribute name="arrowDirection" type="string" default="arrowup" description="Use for change arrow sign direction on header based on click"/>
+    <aura:attribute name="selectedTabsoft" type="string" default="OfferId" description="Use for show/hide arraow sign on header based on conditions"/>
+    <aura:attribute name="isAsc" type="boolean" default="true" description="boolean flag for pass sorting condition to apex class"/> 
+    <aura:attribute name="technology" type="list" default="[]"/>
+    <aura:attribute name="Typeinfo" type="list" default="[]"/>
+    <aura:attribute name="Entitlementinfo" type="list" default="[]"/>
+    <aura:attribute name="usecase" type="list" default="[]"/>
+    <aura:attribute name="BenchMarkingFileURL" type="String"/>
+    <aura:attribute name="UseCaseFileURL" type="String"/>
+    <aura:attribute name="MapViewFileURL" type="String"/>
+    <aura:attribute name="FeatureDetailsFileURL" type="String"/>
+    <aura:attribute name="InstructionsURL" type="String"/>
+    <aura:attribute name="filesRecord" type="Object[]"/>
+    <aura:attribute name="fileURL" type="Map" />
+    <aura:attribute name="noValue" type="String" default="null"/>
+    <aura:attribute name="isNull" type="Integer"/>
+    <aura:attribute name ="tabId" type ="String"/>
+    <aura:attribute name="allPro" type="String" default="All Proposal"/>
+    <aura:attribute name="closedPro" type="String" default="Closed Proposal"/>
+    <aura:attribute name="AllProposal" type="String" default="All Proposal"/>
+    <aura:attribute name="ForURReviewPro" type="String" default="For Your Review"/>
+    <aura:attribute name="validatedPro" type="String" default="Validated Proposal"/> 
+    <aura:attribute name="Pendingent" type="String" default="Pending"/>
+    <aura:attribute name="Quoteneedent" type="String" default="Quote Needed"/>
+    <aura:attribute name="CanBeEntitled" type="String" default="Can Be Entitled"/>
+    <aura:attribute name="Entitledent" type="String" default="Entitled"/>
+    <aura:attribute name="selectedTechCache" type="String"/>
+    <aura:attribute name="selectedUsecaseCache" type="String"/>
+    <aura:attribute name="selectedStatusCache" type="String"/>
+    <aura:attribute name="selectedentitlementCache" type="String"/>
+	<aura:attribute name="selectedTypCache" type="String"/>
+    <aura:attribute name="DPData" type="Object"/>
+    <aura:attribute name="startPage" type="Integer" />
+    <aura:attribute name="endPage" type="Integer"/>
+    <aura:attribute name="PAgenumber" type="Integer"/>
+    <aura:attribute name="maxpagenumber" type="Integer"/>
+    <aura:attribute name="totalRecords" type="Integer"/>
+    <aura:attribute name="pageSize" type="Integer" default="10"/>
+    <aura:attribute name="showbutton" type="boolean" default="false"/>
+    <aura:attribute name="showmessage" type="boolean" default="false"/>
+    <!-- attributes for fetching technology and use case values from custom fields-->
+    <aura:attribute name="depnedentFieldMap" type="map" description="map to store dependent values with controlling value"/>
+    <aura:attribute name="bDisabledDependentFld" type="boolean" default="false"/>
+    <aura:attribute name="objDetail" type="SWx_Upsell_Proposal__c" default="{'sobjectType' : 'SWx_Upsell_Proposal__c'}"/>
+    <aura:attribute name="controllingFieldAPI" type="string" default="Technology__c" description="store field API name of Controller field"/>
+    <aura:attribute name="dependingFieldAPI" type="string" default="Use_Case__c" description="store field API name of dependent field"/>
+    <!-- create 2 aura handler with waiting and donewaiting events--> 
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <!--create a component attributs for spinner-->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <!-- onload -->
+    <aura:handler name="init" value="{!this}" action="{!c.getDPonLoad}"/>
+    <aura:attribute name="DigitalProposal" type="list" /> 
+    <aura:attribute name="objInfo" type="File_Upload__c" default="{sobjectType : 'File_Upload__c'}" />
+    
+    <!-- -->
+    <!-- Event for breadcrums -->
+    
+<!--
+    <div class="slds-page-header">
+  		<div class="slds-grid">
+            <div class="slds-col">
+                <lightning:icon iconName="custom:custom29" size="large" />
+            </div>
+            <div class="slds-col slds-box_x-small">
+                <p class="slds-line-height_reset">Recommendation status</p>
+                <h2 title="Digital proposals" class="slds-page-header__title slds-m-right_small slds-align-middle slds-truncate">Recommendations for Review</h2>
+            </div>
+        </div>
+   	</div>
+    -->
+    
+    
+  
+    
+    <lightning:accordion aura:id="accordion" activeSectionName="A" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="A" label="Filter Selectors" class="table-filter">
+            <aura:set attribute="body">
+                	<lightning:layout horizontalAlign="spread" multipleRows="true">
+                        <lightning:layoutItem class="" flexibility="grow" size="12" mediumDeviceSize="10" largeDeviceSize="10">
+                            <lightning:layout horizontalAlign="spread" multipleRows="true">
+                                <lightning:layoutItem class="" padding="around-small" flexibility="grow" size="12" mediumDeviceSize="6" largeDeviceSize="2"> 
+										<lightning:select name="select1"   aura:Id="Type" label="Recommendation Type" >
+                                            <aura:iteration items="{!v.Typeinfo}" var="Typeopt">
+                                                <option label="{!Typeopt}" text="{!Typeopt}" value="{!Typeopt}"  selected="{!Typeopt == v.selectedTypCache}" ></option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                </lightning:layoutItem>    
+                                <lightning:layoutItem class="" padding="around-small" flexibility="grow" size="12" mediumDeviceSize="6" largeDeviceSize="2">
+                                        <lightning:Select label="Technology" aura:id="tech" onchange="{!c.loadUseCase}"   > 
+                                            <aura:iteration items="{!v.technology}" var="techno">
+                                                <option label="{!techno}" text="{!techno}" value="{!techno}"  selected="{!techno == v.selectedTechCache}" ></option>
+                                                <!--selected="{!techno == v.selectedTechCache}"-->
+                                            </aura:iteration>
+                                        </lightning:Select>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem class="" padding="around-small" flexibility="grow" size="12" mediumDeviceSize="6" largeDeviceSize="2">
+                                        <lightning:Select label="Use Case" aura:id="usecase1" disabled="{!v.bDisabledDependentFld}" >
+                                            <aura:iteration items="{!v.usecase}" var="ucase">
+                                                <option label="{!ucase}" text="{!ucase}"  value="{!ucase}" selected="{!ucase==v.selectedUsecaseCache}" ></option>
+                                                <!--selected="{!ucase==v.selectedUsecaseCache}"-->
+                                            </aura:iteration>
+                                        </lightning:Select>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem class="" padding="around-small" flexibility="grow" size="12" mediumDeviceSize="6" largeDeviceSize="2">
+                                        <lightning:select name="select1"   aura:Id="listview" label="Status" >
+                                            <option selected = "{!v.AllProposal==v.selectedStatusCache}"  value="All Proposal" >--None--</option>
+                                            <option selected = "{!v.closedPro==v.selectedStatusCache}" value="Closed Proposal" >Closed Proposal</option>
+                                            <option selected = "{!v.ForURReviewPro==v.selectedStatusCache}" value="For Your Review"  >For Your Review</option>
+                                            <option selected = "{!v.validatedPro==v.selectedStatusCache}" value="Validated Proposal"  >Validated Proposal</option>
+                                         </lightning:select>
+                                         <!--
+                                            selected = "{!v.AllProposal==v.selectedStatusCache}"
+                                            selected = "{!v.closedPro==v.selectedStatusCache}"
+                                            selected = "{!v.ForURReviewPro==v.selectedStatusCache}"
+                                            selected = "{!v.validatedPro==v.selectedStatusCache}"
+                                         -->
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem class="" padding="around-small" flexibility="grow" size="12" mediumDeviceSize="6" largeDeviceSize="2">
+                                        <lightning:select name="select1"   aura:Id="Entitlement" label="Entitlement Status" >
+                                            <aura:iteration items="{!v.Entitlementinfo}" var="Entitle">
+                                                <option label="{!Entitle}" text="{!Entitle}" value="{!Entitle}"  selected="{!Entitle == v.selectedentitlementCache}" ></option>
+                                            </aura:iteration>
+                                            
+                                        </lightning:select>
+									</lightning:layoutItem>
+                                	
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                           <lightning:layoutItem class="" flexibility="grow" size="12" mediumDeviceSize="8" largeDeviceSize="2">
+                            <lightning:layout horizontalAlign="spread" multipleRows="true">
+                                <lightning:layoutItem class="searchBt" padding="around-medium" flexibility="grow" size="12" mediumDeviceSize="12" largeDeviceSize="12">
+                                    <br /><lightning:button label="Search" class="slds-button "  value="{!techno}" name="{!ucase}" onclick="{!c.filterDP}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem> 
+                    </lightning:layout>
+            </aura:set>
+        </lightning:accordionSection>
+                  
+    </lightning:accordion>
+    
+    
+ 	<lightning:layout horizontalAlign="spread" multipleRows="true">
+    	<aura:if isTrue="{!v.Spinner}">
+            <lightning:layoutItem class="" flexibility="grow" size="12">
+                <div aura:id="spinnerId" class="slds-spinner_container">
+                    <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+            </lightning:layoutItem>
+        </aura:if>
+        
+        
+        <lightning:layoutItem class="" flexibility="grow" size="12">
+            <div class="slds-grid">
+                 <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal">
+                 	<thead>
+                    	<tr class="slds-line-height_reset">
+                    		<th class="slds-is-sortable slds-text-title--caps" onclick="{!c.sortProposalId}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap " title="ProposalID">ID</span> 
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'ProposalID') }">&nbsp;
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'ProposalID') }"> &nbsp; 
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                            <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortTypeinfo}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Recommendation Type" >Recommendation Type</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'TypeInfo') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'TypeInfo') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                            <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortEntitlementinfo}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Entitlement status" >Entitlement status</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'EntitlementInfo') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'EntitlementInfo') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                    		<th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortCreationDate}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Creation Date">Creation Date</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'CreationDate') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'CreationDate') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                            <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sorttechnology}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Technology">Technology</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Technology') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Technology') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                            <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortusecase}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Use Case">Use Case</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'usecase') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'usecase') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                            <!--th class="slds-text-title_caps" scope="col">
+                            	<div class="slds-truncate" title="Collection Dates">Collection Dates</div>
+                            </th-->
+                            <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortcollectiondates}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Collection Dates">Collection Dates</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'collectiondates') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'collectiondates') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                            <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortidentifiedcells}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Identified cells">Identified cells</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Identifiedcells') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Identifiedcells') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                            <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortscope}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Analysed Cells">Analysed Cells</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Scope') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Scope') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                            <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortProposalStatus}">
+                                <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                    <span class="slds-assistive-text">Sort</span>
+                                    <span class="slds-truncate slds-cell-wrap" title="Status">Status</span>  
+                                    <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Status') }">&nbsp;  
+                                        <lightning:icon iconName="utility:arrowdown" size="x-small" />
+                                    </aura:if>  
+                                    <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Status') }"> &nbsp;  
+                                        <lightning:icon iconName="utility:arrowup" size="x-small" />
+                                    </aura:if>                        
+                                </a> 
+                            </th>
+                    	</tr>
+                    </thead>
+                    <tbody>
+                    	<aura:iteration var="cell" items="{!v.DigitalProposal}">
+                        	<tr class="slds-hint-parent">
+                                <th data-label="ID" scope="row" class="headerspace">
+                            		<div class="slds-truncate" title="{!cell.Name}">
+                                    	<lightning:button variant="base" onclick="{!c.OpenPage}" label="{!cell.Name}" name="{!cell.Id}"></lightning:button>
+                                	</div>
+                            	</th>
+                                <td data-label="Recommendation Type">
+                            		<div class="slds-truncate slds-cell-wrap" title="{!cell.Recommendation_Type__c}">{!cell.Recommendation_Type__c}</div>
+                            	</td>
+                                <td data-label="Entitlement Status">
+                            		<div class="slds-truncate slds-cell-wrap" title="{!cell.Entitlement_Info__c}">{!cell.Entitlement_Info__c}</div>
+                            	</td>
+                                <td data-label="Creation Date">
+                            		<div class="slds-truncate" title="{!cell.Creation_Date__c }">
+                                        <lightning:formattedDateTime value="{!cell.Creation_Date__c}" timeZone="{! $Locale.timezone}" year="numeric" month="numeric" day="numeric"/>
+                                    </div>
+                            	</td>
+                                <td data-label="Technology">
+                            		<div class="slds-truncate slds-cell-wrap" title="{!cell.Technology__c }">{!cell.Technology__c }</div>
+                            	</td>
+                                <td data-label="Use Case">
+                            		<div class="slds-truncate slds-cell-wrap" title="{!cell.Use_Case__c }">{!cell.Use_Case__c }</div>
+                            	</td>
+                                <td data-label="Collection Dates">
+                            		<div class="slds-truncate slds-cell-wrap" title="{!cell.Collection_Period_Start_Date__c +' - '+ cell.Collection_Period_End_Date__c }">
+                                        <!--{!cell.Collection_Period_Start_Date__c } - {!cell.Collection_Period_End_Date__c }-->
+                                        <lightning:formattedDateTime value="{!cell.Collection_Period_Start_Date__c}" timeZone="{! $Locale.timezone}" year="numeric" month="numeric" day="numeric"/>
+                                        -
+                                        <lightning:formattedDateTime value="{!cell.Collection_Period_End_Date__c}" timeZone="{! $Locale.timezone}" year="numeric" month="numeric" day="numeric"/>
+									</div>
+                            	</td>
+                                <td data-label="Identified Cells">
+                            		<div class="slds-truncate slds-cell-wrap" title="{!cell.Identified_Cells__c }">{!cell.Identified_Cells__c }</div>
+                            	</td>
+                                <td data-label="Analysed Cells">
+                            		<div class="slds-truncate slds-cell-wrap" title="{!cell.Analysed_Cells__c }">{!cell.Analysed_Cells__c }</div>
+                            	</td>
+                                <td data-label="Status">
+                            		<div class="slds-truncate slds-cell-wrap" title="{!cell.Proposal_Status__c }">{!cell.Proposal_Status__c }</div>
+                            	</td>
+                              </tr>
+                        </aura:iteration>
+                    </tbody>
+                 </table>
+            </div>
+            
+            <aura:if isTrue="{!v.showmessage}">
+        		<br />
+                <div class="slds-align_absolute-center">No Digital Proposal Records found.</div>
+                <hr />
+    		</aura:if>
+        </lightning:layoutItem>
+        <aura:if isTrue="{!v.showbutton}">
+        	<lightning:layoutItem class="" flexibility="grow" size="12">
+                <div class="table-pagination">
+                    <lightning:buttonGroup >
+                        <lightning:button disabled="{!v.startPage == 0}"  
+                                          onclick="{!c.previous}" variant="brand"
+                                          iconName='utility:left'/>
+                        <small><span>Page {!v.PAgenumber} of {!v.maxpagenumber}</span></small>
+                        <lightning:button disabled="{!v.endPage >= v.totalRecords}" 
+                                          onclick="{!c.next}" variant="brand"
+                                          iconName='utility:right' />
+                    </lightning:buttonGroup>
+                </div>
+            </lightning:layoutItem>
+        </aura:if>
+    </lightning:layout>
+     
+</aura:component>

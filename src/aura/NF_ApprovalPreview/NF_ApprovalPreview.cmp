@@ -1,0 +1,329 @@
+<aura:component controller='NF_ApprovalController'  implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:attribute name="recordId" type="Id" />
+    <aura:handler name="init" value="{!this}" action="{!c.getGateParticipants}" />
+    <!--check-->
+    <aura:attribute name="RefreshBlock" type="boolean" default="false"/>
+    <!--end-->
+    <!--Attributes start-->
+    <aura:attribute name="Currentopp" type="Object"/>
+    <aura:attribute name="MyApprovalList" type="Object[]"/>
+    <aura:attribute name="MyApprovalEmailList" type="List"/>
+    <aura:attribute name="Nogate_byapss" type="boolean" default="false"/>
+    <aura:attribute name="mailbody" type="string"/>
+    <aura:attribute name="Bypassmsg" type="string"/>
+    <aura:attribute name="subject" type="string"/>
+    <aura:attribute name="Gateuser_msgval" type="string"/>
+    <aura:attribute name="SH_users" type="String"/>
+    <aura:attribute name="AV_users" type="String"/>
+    <aura:attribute name="SH_usersForemail" type="String"/>
+    <aura:attribute name="AV_usersforemail" type="String"/>
+    
+    
+    <aura:attribute name="needtorefresh" type="boolean" default="true"/>
+    <aura:attribute name="Gateuser_msg" type="Boolean"/>
+    <aura:attribute name="IsSpinner" type="Boolean"/>
+    <aura:attribute name="EmailBlock" type="Boolean"/>
+    <aura:attribute name="isOpenmodal" type="Boolean"/>
+    <aura:attribute name="HiddenEmailbutton" type="Boolean" default='false'/>
+    <!--Attributes end-->
+    
+    <div class="slds-page-header">
+        <div class="slds-media">
+            <div class="slds-media__figure">       
+                <span class="slds-icon_container slds-icon-action-approval" >
+                    <lightning:icon iconName="action:approval" size="X-small" />
+                </span>
+            </div>
+            <div class="slds-media__body">
+                <h1 class="slds-page-header__title slds-truncate slds-align-middle" title="Approval Stakeholders Preview">Approval Stakeholders Preview</h1>
+                <aura:if isTrue="{!(empty(v.Currentopp.PSR_LoA_Level__c))}">
+              		<p class="slds-text-body_small slds-line-height_reset">Stage Name: {!v.Currentopp.StageName}</p>
+                </aura:if>
+                <aura:if isTrue="{!v.Nogate_bypass}">
+                 	<p class="slds-text-body_small slds-line-height_reset">Approval level is not Available/Applicable</p>
+                <aura:set attribute = "else">
+                    <aura:if isTrue="{!not(empty(v.Bypassmsg))}">
+                        <p class="slds-text-body_small slds-line-height_reset">{!v.Bypassmsg}</p>
+                    <aura:set attribute = "else">  
+                        <aura:if isTrue="{!not(empty(v.Currentopp.LOA_Level__c))}">
+                            <p class="slds-text-body_small slds-line-height_reset">Approval Level: {!v.Currentopp.LOA_Level__c}</p>
+                            <aura:set attribute = "else">
+                                <aura:if isTrue="{!not(empty(v.Currentopp.PSR_LoA_Level__c))}">
+                                    <p class="slds-text-body_small slds-line-height_reset"> Approval Level Pre-Sales: {!v.Currentopp.PSR_LoA_Level__c}</p>
+                                    <aura:set attribute = "else">
+                                        <p class="slds-text-body_small slds-line-height_reset">Approval level is not Available/Applicable</p>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:set>
+                        </aura:if>
+               		</aura:set>
+                	</aura:if>
+          		</aura:set>
+                </aura:if>
+        	</div>
+            
+            <lightning:button  label="Refresh" iconName="utility:refresh" iconPosition="left" disabled="" onclick="{! c.UpdateGatePArticipants}"  />
+            <aura:if isTrue="{!!v.Gateuser_msg}">
+                <lightning:button class="slds-button slds-button_outline-brand" label="Download" iconName="utility:download" iconPosition="left" disabled="{!v.Gateuser_msg}" onclick="{! c.downloadGatePArticipants}" />
+                <lightning:button class="slds-button slds-button_brand"   iconName="utility:copy_to_clipboard" iconPosition="left" value="{!v.AV_users}" aura:id="AV_Emails" disabled="{!(empty(v.AV_users))}" label="Copy Approvers/Validators"  onclick="{! c.Copytoclipboard }" />
+                <lightning:button class="slds-button slds-button_brand"  iconName="utility:copy_to_clipboard" iconPosition="left" value="{!v.SH_users}" aura:id="SH_Emails" disabled="{!(empty(v.SH_users))}" label="Copy Stakeholders"  onclick="{! c.Copytoclipboard }"  />
+                
+            </aura:if>
+        </div>
+    </div>
+    
+    
+    <lightning:layout horizontalAlign="spread" multipleRows="true">
+        
+        <lightning:layoutItem class="" flexibility="grow" size="12">
+            <aura:if isTrue="{!v.IsSpinner}">
+                <lightning:spinner variant="brand"  size="large" />
+            </aura:if>
+        </lightning:layoutItem>
+        
+        
+        <aura:if isTrue="{!v.Gateuser_msg}"> 
+            <lightning:layoutItem class="" flexibility="grow" size="12">
+                <div class="slds-notify slds-media slds-notify_alert slds-theme_alert-texture slds-theme_info" role="alert">
+                    <span class="slds-assistive-text">info</span>
+                    <span class="slds-media__figure">
+                        <span class="slds-icon_container" title="Description of icon when needed">
+                            <lightning:icon iconName="info" class="slds-icon slds-icon_small" size="small" alternativeText="icon"/>
+                            <span class="slds-assistive-text">Description of icon</span>
+                        </span>
+                    </span>
+                    <h2>{!v.Gateuser_msgval}</h2>
+                </div>
+            </lightning:layoutItem>
+        </aura:if>
+        <aura:if isTrue="{!v.EmailBlock}">
+            <lightning:layoutItem class="" flexibility="grow" size="12">
+                <div class="slds-grid">
+                    <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal slds-table_cell-buffer
+                                  "> 
+                        <thead>
+                            <tr class="slds-text-title_caps">
+                                <th scope="col">
+                                    <span class="slds-truncate  slds-cell-wrap"   title="User">User</span>
+                                </th>
+                                <th scope="col">
+                                    <span class="slds-truncate  slds-cell-wrap"   title="RoleName">RoleName</span>
+                                </th>
+                                <th scope="col">
+                                    <span class="slds-truncate  slds-cell-wrap"   title="Assignee Type">Assignee Type</span>
+                                </th>
+                                <th scope="col">
+                                    <span class="slds-truncate  slds-cell-wrap"   title="BG Attribute">BG Attribute</span>
+                                </th>
+                                <th scope="col">
+                                    <span class="slds-truncate  slds-cell-wrap"   title="Organisation">Organisation</span>
+                                </th>
+                                <th scope="col">
+                                    <span class="slds-truncate  slds-cell-wrap"   title="Delegate Users">Delegate Users</span>
+                                </th>
+                                <th scope="col">
+                                    <span class="slds-truncate  slds-cell-wrap"   title="Email">Email</span>
+                                </th>
+                            </tr>
+                        </thead>     
+                        <tbody> 
+                            <aura:iteration items="{!v.MyApprovalList}" var="Approval">
+                                <tr class="slds-hint-parent">
+                                    <th  data-label="User" scope="row">
+                                        <a href="{!'/one/one.app?#/sObject/'+ Approval.User.Id + '/view'}" target="_blank">{!Approval.User.Name}</a> 
+                                        <!--
+                                    <lightning:button variant="base" name="{!Approval.User.Name}" aura:id="Approvername" title="{!Approval.User.Name}" value="{!Approval.User.Id}" label="{!Approval.User.Name}" onclick="{!c.viewfunction}"></lightning:button>
+                              -->
+                                    </th> 
+                                    <td data-label="Rolename">
+                                        <div class="slds-truncate slds-cell-wrap" >{!Approval.ApprovalRequest.NF_Role_Name__c}</div>
+                                    </td> 
+                                    <td   data-label="Assigneetype">
+                                        <div class="slds-truncate slds-cell-wrap" >{!Approval.ApprovalRequest.NF_Assignee_Type__c}</div>
+                                    </td>
+                                    <td   data-label="Bg attribute">
+                                        <div class="slds-truncate slds-cell-wrap" >{!Approval.ApprovalRequest.NF_BG_Attribute__c}</div>
+                                    </td>
+                                    <td   data-label="Organisation">
+                                        <div class="slds-truncate slds-cell-wrap" >{!Approval.ApprovalRequest.NF_Organization_Level__c}</div>
+                                    </td>
+                                    <td   data-label="Delegate Users">
+                                        <div class="slds-truncate slds-cell-wrap" >{!Approval.DelegateUsers}</div>
+                                    </td>
+                                    <td  data-label="Email">
+                                        <ui:outputEmail value="{!Approval.User.Email}"/>
+                                    </td>
+                                </tr>             
+                            </aura:iteration>        
+                        </tbody>        
+                    </table> 
+                </div>
+                <!--
+ <aura:iteration items="{!v.MyApprovalEmailList}" var="Email">    
+        <p><lightning:formattedEmail value="{!Email}" /></p>
+    </aura:iteration>
+             -->
+                
+                <div class="slds-form-element hidetext_areas">
+                    <label class="slds-form-element__label" for="textarea-id-01">Approver,Vaidator Emails</label>
+                    <div class="slds-form-element__control">
+                        <textarea id="AV_Emails" style="font-size: 13px; color: #1798c1; font-weight: normal;" class="slds-textarea" value="{!v.AV_users}"  />  
+                    </div>
+                </div>
+                <div class="slds-form-element hidetext_areas">
+                    <label class="slds-form-element__label" for="textarea-id-01">Stakeholder Emails</label>
+                    <div class="slds-form-element__control">
+                        <textarea id="SH_Emails" style="font-size: 13px; color: #1798c1; font-weight: normal;" class="slds-textarea" value="{!v.SH_users}" />   </div>
+                </div>
+                <!--
+                <ui:inputText label="Subject" class="slds-input" aura:id="subject"  value="{!v.subject}" placeholder="Subject"/>
+                <lightning:textarea  type="text" aura:id="body" label="Mail Body" value="{!v.mailbody}" />
+                -->
+                
+                
+                <div class="slds-align_absolute-center" style="height: 5rem;">
+                    <lightning:button variant="brand" iconName="utility:email" disabled="{!!v.HiddenEmailbutton}" iconPosition="left"  label="Send Meeting Invite / Email"  onclick="{! c.OpenmodalEmail }" />
+                               <!--
+                    <aura:if isTrue="{!!(empty(v.AV_users))}">
+                        <lightning:button >  
+                            <lightning:formattedEmail class="slds slds-not-selected" value="{!v.AV_users}" label="Send Email" />
+                        </lightning:button>
+                        
+                        <aura:set attribute = "else">
+                            <lightning:button > 
+                                <lightning:formattedEmail class="slds slds-not-selected" value="{!v.SH_users}" label="Send Email" />
+                            </lightning:button>
+                        </aura:set>
+                    </aura:if>
+                    -->
+                    <!--  
+                    <lightning:button variant="brand" label="Invite via External"  onclick="{! c.launchoutlook }" >Invite via External</lightning:button>
+                    <lightning:button variant="brand" label="NEW Event"  onclick="{! c.NEWEVEntCreation }" >New Event</lightning:button>
+                    -->
+                </div>
+            </lightning:layoutItem>   
+            
+        </aura:if>
+        
+        <aura:if isTrue="{!v.isOpenmodal}"><!--slds-modal_medium-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.Closemodelemail }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-form--stacked">
+                            <!---->
+                            <div class="slds-form slds-form_compound">
+                                <div class="slds-form-element__group">  
+                                    <div class="slds-form-element__row ">
+                                        <div class="slds-form-element slds-size_1-of-2">
+                                            <label class="slds-checkbox_toggle slds-grid">
+                                                <span class="slds-form-element__label slds-m-bottom_none">Show Email Addresses</span>
+                                                <div class="slds-form-element__control">
+                                                    <ui:inputCheckbox aura:id="Showemails" change="{!c.ToggleforEmailaddresses}"/>
+                                                    <span id="toggle-desc" class="slds-checkbox_faux_container" aria-live="assertive">
+                                                        <span class="slds-checkbox_faux"></span>
+                                                        <span class="slds-checkbox_on">Show</span>
+                                                        <span class="slds-checkbox_off">Hide</span>
+                                                    </span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div class="slds-form-element slds-size_1-of-2">
+                                            <label class="slds-checkbox_toggle slds-grid">
+                                                <span class="slds-form-element__label slds-m-bottom_none">Send Meeting Invite</span>
+                                                <div class="slds-form-element__control">
+                                                    <ui:inputCheckbox  aura:id="sendattachment" change="{!c.ToggleformeetingChange}"/>
+                                                    <span id="toggle-desc" class="slds-checkbox_faux_container" aria-live="assertive">
+                                                        <span class="slds-checkbox_faux"></span>
+                                                        <span class="slds-checkbox_on">Yes</span>
+                                                        <span class="slds-checkbox_off">No</span>
+                                                    </span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div aura:id="ShowEmails" class="slds-hide">
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="CC">Email To</label>
+                                    <div class="slds-form-element__control">
+                                        <ui:inputEmail class="slds-input" aura:id="toemail" value="{!v.AV_usersforemail}" required="true" placeholder="abc@email.com"/>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="CC">CC</label>
+                                    <div class="slds-form-element__control">
+                                        <ui:inputEmail class="slds-input" aura:id="CCmail" value="{!v.SH_usersForemail}" required="true" placeholder="abc@email.com"/>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            
+                            <div aura:id="Showmeeting" class="slds-hide">
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="Location">Location</label>
+                                    <div class="slds-form-element__control">
+                                        <ui:inputText class="slds-input" aura:id="Location"  value="" placeholder="Location"/>
+                                    </div>
+                                </div>
+                                <lightning:input type="datetime" name="Start-date" onchange="{!c.startDateUpdated}" label="Meeting start date/time" aura:id="start_date_Email"/>
+                                <lightning:input type="datetime" name="end-date" onchange="{!c.endDateUpdated}" label="Meeting End date/time" aura:id="end_date_Email"/>
+                            </div>
+                            <!--
+                          <div class="slds-form-element">
+                            <label class="slds-form-element__label" for="CC">Reply to</label>
+                            <div class="slds-form-element__control">
+                                <ui:inputEmail class="slds-input" aura:id="Replyto" value="" required="true" placeholder="abc@email.com"/>
+                            </div>
+                        </div>
+                       --> 
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label" for="CC">Subject</label>
+                                <div class="slds-form-element__control">
+                                    <ui:inputText class="slds-input" aura:id="subject"  value="{!v.subject}" placeholder="Subject"/>
+                                </div>
+                            </div>
+                            <div class="slds-form-element">
+                                <h1 class="slds-m-top_large slds-text-heading_small">
+                                    Mail Body Input
+                                </h1>
+                                <div class="slds-form-element__control">
+                                    <!--  
+                                  <lightning:inputRichText aura:id="body" value="{!v.mailbody}" />
+                                      <lightning:textarea  type="text" aura:id="body" value="{!v.mailbody}" />
+                                  -->
+                                    <lightning:inputRichText variant="bottom-toolbar"
+                                                             value="{!v.mailbody}" 
+                                                             placeholder="Type something interesting"/>
+                                    <h1 class="slds-m-top_large slds-text-heading_small">Mail Body Output</h1>
+                                    <div aura:id="output" class="slds-box editor slds-text-longform">
+                                        <lightning:formattedRichText value="{!v.mailbody}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" 
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.Closemodelemail }"/>
+                        <lightning:button variant="brand" 
+                                          label="Send Email"
+                                          aura:id="Sendemailbutton"
+                                          title="Send Email"
+                                          onclick="{! c.sendemail }"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </lightning:layout>
+</aura:component>

@@ -1,0 +1,168 @@
+<aura:component controller="CH_DisplayWorkgroup" implements="force:appHostable,force:hasRecordId,force:lightningQuickAction,flexipage:availableForAllPageTypes">
+    
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="workgroupMembers" type="List" /> 
+    <aura:attribute name="assignmentType" type="Boolean"  />
+    <aura:attribute name="initialAssignment" type="Boolean"  />
+    <aura:attribute name="workgroupRule" type="List" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="isDisplay" type="Boolean"  default="false"/> 
+
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+           <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+             <span class="slds-assistive-text">Loading</span>
+             <div class="slds-spinner__dot-a"></div>
+             <div class="slds-spinner__dot-b"></div>
+           </div>
+        </div>
+ 	</aura:if>
+    
+    <article class="slds-card">        
+        <div class="slds-card__body slds-card__body_inner">
+            <div class="slds-p-top_xx-small">
+                <label class="slds-form-element__label" for="textarea-id-01" >{!v.workgroupMembers[0].CH_Workgroup__r.Name} </label>
+                <span class="slds-float_right">
+	                <lightning:buttonIcon iconName="utility:close" size="small" variant="bare" onclick="{!c.hideComponent}" />
+                </span>
+            </div>
+            <div class="slds-form-element__control slds-p-top_xx-small">
+                <textarea id="textarea-id-01" class="slds-textarea" value="{!v.workgroupMembers[0].CH_Workgroup__r.CH_Workgroup_Instructions__c}" disabled="true"></textarea>
+            </div>
+            <!-- Initial Assignment -->
+            <aura:if isTrue="{!v.initialAssignment}">
+                <div class="slds-scrollable slds-p-top_xx-small">
+                    <table class="slds-table slds-table_bordered slds-table_striped slds-table_flexible-layout " >
+                        <thead>
+                            <tr class="slds-text-heading_label">
+                                <th scope="col"><div class="slds-truncate">Options</div></th>
+                                <th scope="col"><div class="slds-truncate"></div></th>
+                                <th scope="col"><div class="slds-truncate">Member Details</div></th>
+                                <th scope="col"><div class="slds-truncate">Rota Type</div></th>
+                                <th scope="col"><div class="slds-truncate">Role</div></th>
+                                <th scope="col"><div class="slds-truncate">Phone</div></th>
+                                <th scope="col"><div class="slds-truncate">Last Case Assigned</div></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.workgroupMembers}" var="workgroupMember">
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="AssignAndConnect">
+                                            <aura:if isTrue="{!workgroupMember.CH_Role__c != 'Queue'}">
+                                                <lightning:button label="Connect" onclick="{!c.Connect}" value="{!workgroupMember.CH_User__r.Email}"/>
+                                            </aura:if>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="slds-truncate" title="AssignAndConnect">
+                                            <aura:if isTrue="{!workgroupMember.CH_Role__c == 'Engineer' || workgroupMember.CH_Role__c == 'Manager 1' || workgroupMember.CH_Role__c == 'Manager 2' || workgroupMember.CH_Role__c == 'Manager 3'}">
+                                                <lightning:button label="Assign" onclick="{!c.Assign}" value="{!workgroupMember.Id}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!workgroupMember.CH_Role__c == 'Queue'}">
+                                                <lightning:button label="Assign" onclick="{!c.Assign}" value="{!workgroupMember.Id}"/>
+                                            </aura:if>                                             
+                                        </div>
+                                    </td>                                    
+                                    <td>
+                                        <aura:if isTrue="{!workgroupMember.CH_Role__c == 'Hotline'}">
+                                            <div class="slds-truncate" title="{!'Contact Number: ' + workgroupMember.CH_HotlinePhone__c}" >{!workgroupMember.CH_HotlinePhone__c}</div>                                            
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!workgroupMember.CH_Role__c == 'Queue'}">
+                                                    <div class="slds-truncate" title="{!'Workgroup Owner: ' + workgroupMember.CH_Workgroup__r.Owner.FirstName + ' ' + workgroupMember.CH_Workgroup__r.Owner.LastName + '\nContact Number: ' + workgroupMember.CH_Workgroup__r.CH_Owner_MobilePhone__c}">{!workgroupMember.CH_Queue__c}</div>
+                                                    <aura:set attribute="else">
+                                                        <div class="slds-truncate" title="{!'Name: ' + workgroupMember.CH_User__r.Name + '\nContact Number: ' + workgroupMember.CH_User__r.MobilePhone}" >{!workgroupMember.CH_User__r.Email}</div>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>                                       
+                                    </td>
+                                    <td>
+                                        <aura:iteration items="{!workgroupMember.Workgroup_Rotas__r}" var="rotaDetails">
+                                            <div class="slds-truncate" title="Rota Type">{!rotaDetails.CH_SupportType__c}</div>
+                                        </aura:iteration>
+                                    </td>
+                                    <td><div class="slds-truncate" title="Role">{!workgroupMember.CH_Role__c}</div></td>
+                                    <td><div class="slds-truncate" title="Mobile Phone">{!workgroupMember.CH_User__r.MobilePhone}</div></td>
+                                    <td>
+                                        <lightning:formattedDateTime value="{!workgroupMember.CH_User__r.CH_LastCaseAssigned__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" timeZone="UTC" timeZoneName="short" hour12="false"/>                                
+                                    </td>
+                                </tr>                       
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div>            
+                <!-- Reassignment -->
+                <aura:set attribute="else">
+                    <div class="slds-scrollable slds-p-top_xx-small">
+                        <table class="slds-table slds-table_bordered slds-table_striped slds-table_cell-buffer slds-table_flexible-layout ">
+                            <thead>
+                                <tr class="slds-text-heading_label">
+                                    <th scope="col"><div class="slds-truncate">Options</div></th>
+                                    <th scope="col"><div class="slds-truncate"></div></th>
+                                    <th scope="col"><div class="slds-truncate">Member Details</div></th>
+                                    <th scope="col"><div class="slds-truncate">Rota Type</div></th>
+                                    <th scope="col"><div class="slds-truncate">Role</div></th>
+                                    <th scope="col"><div class="slds-truncate">Level of Support</div></th>
+                                    <th scope="col"><div class="slds-truncate">Phone</div></th>
+                                    <th scope="col"><div class="slds-truncate">Workgroup Name</div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.workgroupMembers}" var="workgroupMember">
+                                    <tr>
+                                        <td>
+                                            <div class="slds-truncate" title="AssignAndConnect">
+                                                <aura:if isTrue="{!workgroupMember.CH_Role__c != 'Queue'}">
+                                                    <lightning:button label="Connect" onclick="{!c.Connect}" value="{!workgroupMember.CH_User__r.Email}"/>
+                                                </aura:if>
+                                            </div>
+                                        </td>                                         
+                                        <td>
+                                            <div class="slds-truncate" title="AssignAndConnect">
+                                                <aura:if isTrue="{!workgroupMember.CH_Role__c == 'Engineer' || workgroupMember.CH_Role__c == 'Manager 1' || workgroupMember.CH_Role__c == 'Manager 2' || workgroupMember.CH_Role__c == 'Manager 3'}">
+                                                    <lightning:button label="Assign" onclick="{!c.Assign}" value="{!workgroupMember.Id}"/>
+                                                </aura:if>
+                                                <aura:if isTrue="{!workgroupMember.CH_Role__c == 'Queue'}">
+                                                    <lightning:button label="Assign" onclick="{!c.Assign}" value="{!workgroupMember.Id}"/>
+                                                </aura:if>                                             
+                                            </div>
+                                        </td>                        
+                                        <td>
+                                            <aura:if isTrue="{!workgroupMember.CH_Role__c == 'Hotline'}">
+                                                <div class="slds-truncate" title="{!'Contact Number: ' + workgroupMember.CH_HotlinePhone__c}" >{!workgroupMember.CH_HotlinePhone__c}</div>                                            
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!workgroupMember.CH_Role__c == 'Queue'}">
+                                                        <div class="slds-truncate" title="{!'Workgroup Owner: ' + workgroupMember.CH_Workgroup__r.Owner.FirstName + ' ' + workgroupMember.CH_Workgroup__r.Owner.LastName + '\nContact Number: ' + workgroupMember.CH_Workgroup__r.CH_Owner_MobilePhone__c}">{!workgroupMember.CH_Queue__c}</div>
+                                                        <aura:set attribute="else">
+                                                            <div class="slds-truncate" title="{!'Name: ' + workgroupMember.CH_User__r.Name + '\nContact Number: ' + workgroupMember.CH_User__r.MobilePhone}" >{!workgroupMember.CH_User__r.Email}</div>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                        	</aura:if>                                       
+                                        </td>
+                                        <td>
+                                            <aura:iteration items="{!workgroupMember.Workgroup_Rotas__r}" var="rotaDetails">
+                                                <div class="slds-truncate" title="Rota Type">{!rotaDetails.CH_SupportType__c}</div>
+                                            </aura:iteration>
+                                        </td>                                       
+                                        <td><div class="slds-truncate" title="Role">{!workgroupMember.CH_Role__c}</div></td>
+                                        <td>
+                                            <div class="slds-truncate" title="Level Of Support">{!workgroupMember.CH_Workgroup__r.CH_LevelOfSupport__c}</div>
+                                        </td>
+                                        <td><div class="slds-truncate" title="Mobile Phone">{!workgroupMember.CH_User__r.MobilePhone}</div></td>
+                                        <td>
+                                            <div class="slds-truncate" title="WorkgroupName">{!workgroupMember.CH_Workgroup__r.Name}</div>
+                                        </td>
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </div>
+                </aura:set>
+            </aura:if>
+        </div>
+    </article>
+</aura:component>

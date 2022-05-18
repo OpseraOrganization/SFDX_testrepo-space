@@ -1,0 +1,299 @@
+<aura:component controller='CQ_SendQuoteController'  implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <aura:handler name="init" value="{!this}" action="{!c.GetQuoterelatedDetails}" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="IsSpinner" type="Boolean"/>
+    <aura:attribute name="CurrentQUote" type="Object"/>
+    <aura:attribute name="Customercontact" type="List"/>
+    <aura:attribute name="Quoteteam" type="List"/>
+    <aura:attribute name="Documents" type="List"/>
+    <aura:attribute name="Email_Templates" type="List"/>
+    <aura:attribute name="QuoteteammemberBlock" type="boolean" default="true"/>
+    <aura:attribute name="CustomercontactBlock" type="boolean" default="true"/>
+    <aura:attribute name="OpenUserBlock" type="boolean" default="true"/>
+    <aura:attribute name="ShowDocumentBlock" type="boolean" default="true"/>
+    <aura:attribute name="Showerrormsg" type="boolean" default="false"/>
+    <aura:attribute name="ErrorMsg" type="string" />
+    <aura:attribute name="isOpenmodal" type="Boolean"/>
+    <aura:attribute name="mailbody" type="string"/>   
+    <aura:attribute name="subject" type="string"/>
+    <aura:attribute name="Quote_Number" type="string"/>
+      <aura:attribute name="Helptext" type="string"/>
+    
+    
+    
+     <lightning:layout horizontalAlign="spread" multipleRows="true">
+ <lightning:layoutItem class="" flexibility="grow" size="12" mediumDeviceSize="10" largeDeviceSize="8">
+    <aura:if isTrue="{!v.isOpenmodal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.Closemodelemail }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2  class="slds-text-heading_medium">Send Quote</h2>
+                    
+                    <aura:if isTrue="{!v.Showerrormsg}">
+                        <div class="slds-m-vertical--large"></div>
+                        
+                        <div class="slds-box slds-box_x-small  slds-theme_alert-texture slds-theme--error  " >
+                            <lightning:icon iconName="utility:error" size="xx-small"   /> <span class="" > {!v.ErrorMsg}</span>
+                            <lightning:icon class="slds-float_right" iconName="utility:close" size="small" onclick="{!c.Closeerrormsg}"   />
+                        </div>
+                    </aura:if>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:card > 
+                        <aura:if isTrue="{!v.IsSpinner}">
+                            <lightning:spinner variant="brand"  size="medium" />
+                        </aura:if>
+                        <div class="slds-box Lightblue slds-box_xx-small slds-text-heading_small " >
+                            <span  class="slds-text-heading_small">Quote Details</span>
+                        </div>
+                        <div class="slds-box slds-box_xx-small " >
+                            <h2 class="Paddingarroundval">
+                                            	<lightning:layout  horizontalAlign="spread" multipleRows="true" >
+                	<lightning:layoutItem class="paddingleftsmall" padding="" flexibility="grow" size="12" mediumDeviceSize="6" largeDeviceSize="6">
+
+                                <span class="Fontbold">Quote Name:  <a href="{!'/one/one.app?#/sObject/'+ v.CurrentQUote.Id + '/view'}" target="_blank">{!v.CurrentQUote.Apttus_Proposal__Proposal_Name__c}</a> </span>
+                                                    </lightning:layoutItem>
+                        <lightning:layoutItem class="paddingleft" padding="" flexibility="grow" size="12" mediumDeviceSize="6" largeDeviceSize="6">
+                        <span class="Fontbold">Quote Number: </span><ui:outputText value="{!v.CurrentQUote.NokiaCPQ_Proposal_Id__c}"/>
+                                                    </lightning:layoutItem>
+                                                    </lightning:layout>
+                                </h2>
+                        </div>
+                        <div></div>
+                        <div class="slds-box Lightblue slds-box_xx-small Whitely" >
+                            <lightning:icon iconName="{!((v.OpenUserBlock==true)? 'utility:chevrondown' : 'utility:chevronright')}"  size="xx-small" alternativeText="Utility:chevronright" onclick="{!c.ChangeChevronandDrop}" aura:id="v.OpenUserBlock"  />
+                            <span class="slds-m-left--small"></span><span  class="slds-text-heading_small">User Details</span>
+                        </div>
+                        
+                        <aura:if isTrue="{!v.OpenUserBlock}">
+                            <div></div>
+                            <div class="slds-box slds-box_xx-small blackly" >
+                                <lightning:icon class="slds-p-left_xx-small" iconName="{!((v.QuoteteammemberBlock==true)? 'utility:chevrondown' : 'utility:chevronright')}" size="xx-small" alternativeText="Utility:chevronright" onclick="{!c.ChangeChevronandDrop}" aura:id="v.QuoteteammemberBlock"  />
+                                <span class="Paddingarround"></span><span  class="UserDetail_in">Quote Team Details</span>
+                            </div>
+                            <aura:if isTrue="{!v.QuoteteammemberBlock}">
+                                <aura:if isTrue="{!!empty(v.Quoteteam)}"> 
+                                    <lightning:layoutItem class="" flexibility="grow" size="12">
+                                        <div class="slds-grid">
+                                            <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal slds-table_cell-buffer slds-table_striped"> 
+                                                <thead >
+                                                    <tr class="slds-text-title_caps">
+                                                        <th scope="col">
+                                                            <lightning:input  class="" type="checkbox-button" label="Select All" aura:id="SelectAll_QuoteTeam" checked="false" onclick="{!c.OnchangeSelectAll}" />
+                                                        </th>
+                                                        <th scope="col">
+                                                            <span class="slds-truncate  slds-cell-wrap"   title="User">User</span>
+                                                        </th>
+                                                        <th scope="col">
+                                                            <span class="slds-truncate  slds-cell-wrap"   title="Email">Email</span>
+                                                        </th>
+                                                    </tr>
+                                                </thead>     
+                                                <tbody> 
+                                                    <aura:iteration items="{!v.Quoteteam}" var="Team">
+                                                        <tr class="slds-hint-parent">
+                                                            <th  data-label="User" scope="row">
+                                                                <lightning:input type="checkbox-button" aura:id="CurrentQuoteteam" checked="{!Team.isselected}" onclick="{!c.OnchangeSelectAll}"  />
+                                                            </th>
+                                                            <th  data-label="User" scope="row">
+                                                                <a href="{!'/one/one.app?#/sObject/'+ Team.Quoteteam.CQ_Quote_Team_Member__c + '/view'}" target="_blank">{!Team.Quoteteam.CQ_Quote_Team_Member__r.Name}</a> 
+                                                            </th> 
+                                                            
+                                                            <td  data-label="Email">
+                                                                <ui:outputEmail value="{!Team.Quoteteam.CQ_Quote_Team_Member__r.Email}"/>
+                                                            </td>
+                                                        </tr>             
+                                                    </aura:iteration>        
+                                                </tbody>        
+                                            </table> 
+                                        </div>
+                                    </lightning:layoutItem>   
+                                    <aura:set attribute = "else">
+                                        <div class="slds-box slds-box_x-small  slds-text-align_center slds-text-color_error" >
+                                            <h2>Quote team members are not available for Current Quote</h2>
+                                        </div>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:if>
+                            
+                            <div></div>
+                            <div class="slds-box slds-box_xx-small blackly" >
+                                <lightning:icon class="slds-p-left_xx-small" iconName="{!((v.CustomercontactBlock==true)? 'utility:chevrondown' : 'utility:chevronright')}" size="xx-small" alternativeText="Utility:chevronright" onclick="{!c.ChangeChevronandDrop}" aura:id="v.CustomercontactBlock"  />
+                                <span class="Paddingarround"></span><span  class="UserDetail_in ">Customer Contact Details</span>
+                            </div>
+                            <aura:if isTrue="{!v.CustomercontactBlock}">
+                                <aura:if isTrue="{!!empty(v.Customercontact)}"> 
+                                    <lightning:layoutItem class="" flexibility="grow" size="12">
+                                        <div class="slds-grid">
+                                            <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal slds-table_cell-buffer slds-table_striped"> 
+                                                <thead>
+                                                    <tr class="slds-hint-parent">
+                                                        <th scope="col">
+                                                            <lightning:input type="checkbox-button" label="Select All" aura:id="SelectAll_CustomerContact" checked="false" onclick="{!c.OnchangeSelectAll}" />
+                                                        </th>
+                                                        <th scope="col">
+                                                            <span class="slds-truncate slds-cell-wrap"   title="User">User</span>
+                                                        </th>
+                                                        <th scope="col">
+                                                            <span class="slds-truncate  slds-cell-wrap"   title="Email">Email</span>
+                                                        </th>
+                                                        <th scope="col">
+                                                            <span class="slds-truncate  slds-cell-wrap"   title="Is Primary">Is Primary</span>
+                                                        </th>
+                                                    </tr>
+                                                </thead>     
+                                                <tbody> 
+                                                    <aura:iteration items="{!v.Customercontact}" var="Customer">
+                                                        <tr class="slds-hint-parent">
+                                                            <th  data-label="User" scope="row">
+                                                                <lightning:input type="checkbox-button" aura:id="CurrentCustomerContact" checked="{!Customer.isselected}" class="SizingCheckbox" onclick="{!c.OnchangeSelectAll}" disabled="{!Customer.CustomerContact.CQ_Is_Primary__c}" />
+                                                            </th>
+                                                            <th  data-label="User" scope="row">
+                                                                <a href="{!'/one/one.app?#/sObject/'+ Customer.CustomerContact.CQ_Contact__c + '/view'}" target="_blank">{!Customer.CustomerContact.CQ_Contact__r.Name}</a> 
+                                                            </th> 
+                                                            
+                                                            <td  data-label="Email">
+                                                                <ui:outputEmail value="{!Customer.CustomerContact.CQ_Contact__r.Email}"/>
+                                                            </td>
+                                                            
+                                                            <td   data-label="Is Primary">
+                                                                <ui:outputCheckbox value="{!Customer.CustomerContact.CQ_Is_Primary__c}"/>
+                                                            </td>
+                                                        </tr>             
+                                                    </aura:iteration>        
+                                                </tbody>        
+                                            </table> 
+                                        </div>
+                                    </lightning:layoutItem>   
+                                    <aura:set attribute = "else">
+                                        <div class="slds-box slds-box_x-small  slds-text-align_center slds-text-color_error" >
+                                            <h2>Customer Contacts are not available for Current Quote</h2>
+                                        </div>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:if>
+                        </aura:if>
+                        
+                        <div></div>
+                        
+                        <div class="slds-box Lightblue slds-box_xx-small Whitely" >
+                            <lightning:icon iconName="{!((v.ShowDocumentBlock==true)? 'utility:chevrondown' : 'utility:chevronright')}" size="xx-small"  alternativeText="Utility:chevronright" onclick="{!c.ChangeChevronandDrop}" aura:id="v.ShowDocumentBlock"  />
+                            <span class="slds-m-left--small"></span><span  class="slds-text-heading_small">Document Details</span>
+                        </div>
+                        
+                        <aura:if isTrue="{!v.ShowDocumentBlock}">
+                            <div></div>
+                            <aura:if isTrue="{!!empty(v.Documents)}"> 
+                                
+                                <lightning:layoutItem class="" flexibility="grow" size="12">
+                                    <div class="slds-grid">
+                                        <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal slds-table_cell-buffer slds-table_striped"> 
+                                            <thead>
+                                                <tr class="slds-text-title_caps">
+                                                    <th scope="col">
+                                                        <lightning:input type="checkbox-button" size="xx-small" label="Select All" aura:id="SelectAll_Documents" checked="false" onclick="{!c.OnchangeSelectAll}" />
+                                                    </th>
+                                                    <th scope="col">
+                                                        <span class="slds-truncate  slds-cell-wrap"   title="Role">Document Name</span>
+                                                    </th>
+                                                    <th scope="col">
+                                                        <span class="slds-truncate  slds-cell-wrap"   title="Role">Document Type</span>
+                                                    </th>
+                                                </tr>
+                                            </thead>     
+                                            <tbody> 
+                                                <aura:iteration items="{!v.Documents}" var="Doc">
+                                                    <tr class="slds-hint-parent">
+                                                        <th  data-label="User" scope="row">
+                                                            <lightning:input type="checkbox-button" size="xx-small" aura:id="CurrentDocument" checked="{!Doc.isselected}" onclick="{!c.OnchangeSelectAll}" disabled="{!Doc.disabled}" />
+                                                        </th>
+                                                        <td   data-label="Role">
+                                                            <a href="{!'/one/one.app?#/sObject/'+ Doc.ContDoc_link.ContentDocument.Id + '/view'}" target="_blank">{!Doc.ContDoc_link.ContentDocument.Title}</a> 
+                                                        </td>
+                                                        <td   data-label="Role">
+                                                            <ui:outputText value="{!Doc.docType}"/> 
+                                                        </td>
+                                                    </tr>             
+                                                </aura:iteration>        
+                                            </tbody>        
+                                        </table> 
+                                    </div>
+                                </lightning:layoutItem>  
+                                <aura:set attribute = "else">
+                                    <div class="slds-box slds-box_x-small  slds-text-align_center slds-text-color_error" >
+                                        <h2>Documents are not available for Current Quote</h2>
+                                    </div>
+                                </aura:set>
+                            </aura:if>
+                        </aura:if>
+                        <h1 class="slds-m-top_large slds-text-heading_small">  </h1>
+                        <label class="slds-text-heading_small" >Additional Recipients</label>
+                        <lightning:helptext content="{!v.Helptext}" class="customIcon"/> 
+                        <lightning:input aura:id="ExtraEmails" label="Email to:" type="text" placeholder="Enter email ids separated by a semi-colon"  variant="label-hidden" />
+                        <div class="slds-form-element">
+                            <label class="" >                          
+                                <h1 class="slds-m-top_large slds-text-heading_small">
+                                    Subject: </h1>
+                            </label>
+                            <div>
+                                {!v.Quote_Number} - {!v.CurrentQUote.Apttus_Proposal__Proposal_Name__c} -
+                            </div>
+                            <lightning:input type="text"  variant = "label-hidden" value="{!v.subject}"  />
+                            
+                            <lightning:layoutItem class=""  size="12" mediumDeviceSize="8" largeDeviceSize="8">
+                                <div class="slds-m-top_large slds-form__row">
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_horizontal">
+                                            <label class="slds-form-element__label slds-text-heading_small" >Mail Body Template:</label>
+                                            <lightning:Select label="Email Templates"   aura:id="Etemps" disabled="{!empty(v.Email_Templates)}" variant = "label-hidden" onchange="{!c.LoadHtmlValue}" >
+                                                <aura:iteration items="{!v.Email_Templates}" var="Etemp">
+                                                    <option label="{!Etemp.Name}" text="{!Etemp.Name}" value="{!Etemp.HtmlValue}"  ></option>
+                                                </aura:iteration>
+                                            </lightning:Select>   
+                                        </div>
+                                    </div>
+                                </div>
+                            </lightning:layoutItem> 
+                            <!--
+                            <h1 class="slds-m-top_large slds-text-heading_small">
+                                Mail Body Input
+                            </h1>
+-->
+                            <div class="slds-form-element__control">
+                                <lightning:inputRichText  aura:id="Mailbodyoutput" variant="bottom-toolbar"         
+                                                         formats="['font', 'size', 'bold', 'italic', 'underline',
+                                                                  'strike', 'list', 'indent', 'align', 'link',
+                                                                  'image', 'clean', 'table', 'header', 'color',
+                                                                  'background','code','script']"
+                                                         value="{!v.mailbody}" 
+                                                         placeholder="Type something interesting" />
+                            </div>
+                        </div>
+                    </lightning:card>            
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      aura:id="Cancelbutton"
+                                      title="Cancel"
+                                      onclick="{! c.Closemodelemail }"/>
+                    <lightning:button variant="brand" 
+                                      label="Send Quote"
+                                      aura:id="Sendemailbutton"
+                                      title="Send Quote"
+                                      onclick="{! c.sendemail }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        
+    </aura:if>
+         </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

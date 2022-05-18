@@ -1,0 +1,252 @@
+<aura:component controller='FlexibleGroupController' implements="flexipage:availableForAllPageTypes" access="global">
+    
+    <aura:attribute type="Id" name="configId" default="a6856000000E8VBAA0"/><!--a6856000000E0TqAAK USD,a6856000000Dy8l -->
+    <aura:attribute name="lineitemdata" type="Object"/>
+    <aura:attribute name="lineitemcolumns" type="List"/>
+    <aura:attribute name="width" type="integer" default="900"/>
+    <aura:attribute name="height" type="string" default="25rem"/>
+    <aura:attribute name="ErrorMsg" type="string"/>
+    <aura:attribute name="newgroupname" type="string" default=""/>
+    <aura:attribute name="iserror" type="boolean" default="false"/>
+    <aura:attribute name="isnewgroup" type="boolean" default="false"/>
+    <aura:attribute name="treecolumns" type="List" />
+    <aura:attribute name="treedata" type="Object"/>
+    <aura:attribute name="groupoptions" type="List" />
+    <aura:attribute name="adjustmentTypeOptions" type="List" /><!-- added by jithin - flexible group -->
+    <aura:attribute name="bundlecolumns" type="List" />
+    <aura:attribute name="bundledata" type="Object" />
+    <aura:attribute name="selectedRowsCount" type="Integer" default="0"/>
+    <aura:attribute name="unassignedrows" type="Integer" default="0"/>
+    <aura:attribute name="bundlerowCnt" type="Integer" default="0"/>
+    <aura:attribute name="BundleRows" type="Integer" default="0"/>
+    <aura:attribute name="quantity" type="integer" default="1" />
+    <aura:attribute name="selectedRows" type="List" />
+    <aura:attribute name="selectedbundlerows" type="List" />
+    <aura:attribute name="options" type="List" default="[]"/>
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:attribute name="Spinner2" type="boolean" default="false"/>
+    <aura:attribute name="bundleoptionselected" type="string" default="new"/>
+    <aura:attribute name="adjustmentTypeSelected" type="string" default="Price Override"/><!-- added by jithin - flexible group -->
+    <aura:attribute name="unitOverridePrice" type="Decimal"/><!-- added by jithin - flexible group -->
+    <aura:attribute name="adjustmentAmount" type="Decimal"/><!-- added by jithin - flexible group -->
+    <aura:attribute name="RollupData" type="Object"/>
+    <aura:attribute name="qtychanged" type="boolean" default="false"/>
+    <aura:attribute name="namechanged" type="boolean" default="false"/>
+    <aura:attribute name="adjustmentTypeChanged" type="boolean" default="false"/>
+    <aura:attribute name="unitPriceOverrideChanged" type="boolean" default="false"/>
+    <aura:attribute name="gridExpandedRows" type="List" access="PRIVATE" />
+    
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem class="" flexibility="grow" size="12" mediumDeviceSize="10" largeDeviceSize="8">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-modal_medium slds-fade-in-open">
+                
+                <div class="slds-modal__container">
+                    
+                    <header class="slds-modal__header slds-modal__header_empty">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.RedirectToCart }"
+                                              alternativeText="close"
+                                              variant="border-inverse"
+                                              class="slds-modal__close"/>
+                        
+                        
+                        <aura:if isTrue="{!v.iserror}">
+                            <div class="slds-m-vertical--large"></div>
+                            
+                            <div class="slds-box slds-box_x-small  slds-theme_alert-texture slds-theme--error  " >
+                                <lightning:icon iconName="utility:error" size="xx-small"   /> <span class="" >  {!v.ErrorMsg}</span>
+                                <lightning:icon class="slds-float_right" iconName="utility:close" size="small" onclick="{!c.Closeerrormsg}"   />
+                            </div>
+                        </aura:if>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <lightning:card title=''>
+                        <lightning:tabset variant="scoped">
+                            <lightning:tab label="Manage Groups" id="badge" >
+                                
+                                <!-- <aura:if isTrue="{!v.Spinner}">
+                            <div aura:id="spinnerId" class="slds-spinner_container ">
+                                <div class="slds-spinner_brand slds-spinner slds-spinner_medium" role="alert">
+                                    <span class="slds-assistive-text">Loading</span>
+                                    <div class="slds-spinner__dot-a"></div>
+                                    <div class="slds-spinner__dot-b"></div>
+                                </div>
+                            </div> 
+                                </aura:if>-->
+                                <aura:if isTrue="{!v.Spinner}">
+                                    <div class="spinner">
+                                        
+                                        <lightning:spinner aura:id="mySpinner" variant="brand" size="medium"  alternativeText="Fetching Data"/>
+                                    </div>   
+                                </aura:if>
+                                
+                                <lightning:layout verticalAlign="end">
+                                    
+                                    <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-5">
+                                        <lightning:select name="groupname" label="Select Group" aura:id="GroupId" value="{!v.bundleoptionselected}" class="font" onchange="{! c.handleoptionChange }">
+                                            <aura:iteration items="{!v.groupoptions}" var="option">
+                                                <option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-5">
+                                        <lightning:input type="text" 
+                                                         name="newgroup" 
+                                                         value="{! v.newgroupname }" 
+                                                         label="New Group Name"
+                                                         class="font" 
+                                                         onchange="{! c.setnamechange }"/>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-5">
+                                        <lightning:input type="number" 
+                                                         name="Quantity" 
+                                                         value="{! v.quantity }" 
+                                                         label="Quantity"
+                                                         class="font"
+                                                         onchange="{! c.setquantitychange }"
+                                                         />
+                                    </lightning:layoutItem>
+                                <!-- </lightning:layout> -->
+                                <!-- added by jithin - flexible group - start -->
+                                <!-- <lightning:layout verticalAlign="end"> -->
+                                    <aura:if isTrue="false">
+                                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-5" >
+                                            <!-- {! c.handleAdjustmentTypeOptionChange } -->
+                                            <lightning:select name="adjustmentType" label="Select Adjustment Type" aura:id="AdjustmentTypeId" value="{!v.adjustmentTypeSelected}" class="font" onchange="{! c.handleAdjustmentTypeOptionChange }">
+                                                <aura:iteration items="{!v.adjustmentTypeOptions}" var="option">
+                                                    <option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.adjustmentTypeSelected == 'Price Override'}">
+                                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-5" >
+                                            <lightning:input type="number"
+                                                            step="0.01"
+                                                            name="unitOverridePrice" 
+                                                            value="{!v.unitOverridePrice}" 
+                                                            label="Unit Override Price"
+                                                            class="font"
+                                                            onchange="{! c.setUnitPriceOverrideChange }"
+                                                            />
+                                        </lightning:layoutItem>
+                                        <!-- <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.adjustmentTypeSelected != ''}">
+                                                <lightning:layoutItem padding="around-small" size="3" >
+                                                    <lightning:input type="number" 
+                                                                    name="adjustmentAmount" 
+                                                                    value="{!v.adjustmentAmount}" 
+                                                                    label="Adjustment Amount"
+                                                                    class="font"
+                                                                    onchange=""
+                                                                    />
+                                                </lightning:layoutItem>
+                                                <aura:set attribute="else">
+                                                    <lightning:layoutItem padding="around-small" size="3" ></lightning:layoutItem>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set> -->
+                                    </aura:if>
+                                    <!-- <lightning:layoutItem padding="around-small" size="3" ></lightning:layoutItem> -->
+                                    <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-5">
+                                        <lightning:button variant="brand" label="Create/Modify Group" title="Create/Modify Group" onclick="{! c.Addbundle }" />
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                                <!-- added by jithin - flexible group - end -->
+                                <aura:if isTrue="{!not(empty(v.lineitemdata))}"><!-- added by jithin - flexible group -->
+                                    <div class="slds-box slds-scrollable_y" style="max-height:250px">
+                                        <lightning:datatable columns="{! v.lineitemcolumns }"
+                                                            data="{! v.lineitemdata }"
+                                                            keyField="Id"
+                                                            onrowselection="{! c.selectedrowcount }" 
+                                                            class="slds-line-height_reset"/> 
+                                    </div>
+                                </aura:if>
+                                <div class="slds-theme_shade" style="height:5px">
+                                    
+                                </div>
+                                <aura:if isTrue="{!not(empty(v.bundledata))}"><!-- added by jithin - flexible group -->
+                                    <div class="slds-box">
+                                        <div class="slds-grid slds-grid_vertical-align-end slds-wrap">
+                                            
+                                            <!-- <div class="slds-col slds-size_2-of-12">
+                                                <lightning:input type="string" name="GroupCode" label="Group Code" readonly="true" value="{!v.RollupData.GroupCode}" />
+                                            </div> -->
+                                            <div class="slds-col slds-size_1-of-6">
+                                                <lightning:input type="string" name="GroupName" label="Group Name" readonly="true" value="{!v.RollupData.GroupName}" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-6">
+                                                <lightning:input type="Number" name="Quantity" label="Quantity" readonly="true" value="{!v.RollupData.Quantity}" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-6">
+                                                <!-- <p class="slds-form-element__label slds-p-around_xx-small">Override Price</p>
+                                                <p class="slds-p-around_xx-small"><lightning:formattedNumber value="{!v.RollupData.adjustmentAmount}" style="decimal" minimumFractionDigits="2"/></p> -->
+                                                <p class = "{!(not(empty(v.RollupData.adjustmentAmount))?'slds-form-element__label slds-p-around_xx-small':'slds-form-element__label slds-p-bottom_medium')}">Override Price</p>
+                                                <p class="{!(not(empty(v.RollupData.adjustmentAmount))?'slds-p-around_xx-small':'slds-p-bottom_medium')}"><lightning:formattedNumber value="{!v.RollupData.adjustmentAmount}" style="decimal" minimumFractionDigits="2"/></p>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-6">
+                                                <p class = "{!(not(empty(v.RollupData.CLP))?'slds-form-element__label slds-p-around_xx-small':'slds-form-element__label slds-p-bottom_medium')}">Unitary Price</p>
+                                                <p class="{!(not(empty(v.RollupData.CLP))?'slds-p-around_xx-small':'slds-p-bottom_medium')}"><lightning:formattedNumber value="{!v.RollupData.CLP}" style="currency"  currencyCode="{!v.RollupData.Currency}"/></p>
+                                                <!--    <lightning:input type="Number" formatter="currency" name="UnitaryPrice" label="Unitary Price" readonly="true" value="{!v.RollupData.CLP}" currencyCode="USD"/>-->
+                                            </div>
+                                            
+                                            <div class="slds-col slds-size_1-of-6">
+                                                <p class = "{!(not(empty(v.RollupData.CNP))?'slds-form-element__label slds-p-around_xx-small':'slds-form-element__label slds-p-bottom_medium')}">ExtendedPrice</p>
+                                                <p class="{!(not(empty(v.RollupData.CNP))?'slds-p-around_xx-small':'slds-p-bottom_medium')}"><lightning:formattedNumber value="{!v.RollupData.CNP}" style="currency" currencyCode="{!v.RollupData.Currency}"/></p>
+                                                <!--    <lightning:input type="Number" formatter="currency" name="ExtendedPrice" label="Extended Price" readonly="true" value="{!v.RollupData.CNP}" />-->
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-6">
+                                                <lightning:button variant="brand" label="Remove" title="Remove items from Group" onclick="{! c.DeleteLineItems }" />
+                                            </div>
+                                        </div>
+                                        <br/>
+                                        <div class="slds-col slds-size_12-of-12 slds-scrollable_y" style="max-height:250px">
+                                            <lightning:datatable columns="{! v.bundlecolumns }"
+                                                                data="{! v.bundledata }"
+                                                                keyField="Id"
+                                                                onrowselection="{! c.selectedbundlerow }" /> 
+                                        </div>       
+                                        
+                                    </div>
+                                </aura:if>
+                            </lightning:tab>
+                            
+                            <lightning:tab onactive="{! c.getbundletreedata }" id="hierarchyview" label="View Groups">
+                                <aura:if isTrue="{!v.Spinner2}">
+                                        <div class="spinner">
+                                            
+                                            <lightning:spinner aura:id="mySpinner2" variant="brand" size="medium"  alternativeText="Fetching Data"/>
+                                        </div>   
+                                    </aura:if>
+                                <div class= 'slds-is-relative' style="min-height: 200px">
+                                    
+                                    <lightning:treegrid columns="{! v.treecolumns }"
+                                                        data="{! v.treedata }"
+                                                        keyField="LineId"
+                                                        expandedRows="{! v.gridExpandedRows }"/>
+                                </div>
+                            </lightning:tab>
+                        </lightning:tabset> 
+                            </lightning:card>
+                    </div>
+                    <!-- <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick="{! c.RedirectToCart }">Back to Cart</button>
+                        
+                    </footer>-->
+                    
+                    
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+    
+    
+</aura:component>
