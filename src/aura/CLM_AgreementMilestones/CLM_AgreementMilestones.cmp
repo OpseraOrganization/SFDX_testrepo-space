@@ -1,0 +1,108 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" controller="CLM_AIMController">
+	<aura:attribute name="sectionNames" type="List" default="['invoicing_milestones', 'other_milestones']" />
+	<aura:attribute name="agreementInvoicingMilestones" type="Object[]" />
+	<aura:attribute name="isSpinnerVisible" type="Boolean" default="false" />
+	<aura:attribute name="edit" type="Boolean" default="false" />
+	<aura:attribute name="hasEditAccessAgreement" type="Boolean" default="false" />
+	<aura:attribute name="hasEditAccessAIM" type="Boolean" default="false" />
+
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler event="force:showToast" action="{!c.doInit}" />
+
+	<lightning:notificationsLibrary aura:id="notifLib"/>
+
+	<!-- spinner -->
+	<aura:if isTrue="{!v.isSpinnerVisible}">
+		<div class="slds-spinner_container">
+			<div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+				<span class="slds-assistive-text">Loading</span>
+				<div class="slds-spinner__dot-a"></div>
+				<div class="slds-spinner__dot-b"></div>
+			</div>
+		</div>
+	</aura:if>
+
+	<aura:if isTrue="{!v.agreementInvoicingMilestones.length > 0}">
+		<lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.sectionNames}">
+			<lightning:accordionSection name="invoicing_milestones" label="Invoicing Milestones">
+				<div style="border:1px solid #f2f2f2">
+					<table border="1">
+						<tr>
+							<th>&nbsp;</th>
+							<th>DP</th>
+							<th>Delivery</th>
+							<th>PAC</th>
+							<th>FAC</th>
+							<aura:if isTrue="{!v.hasEditAccessAgreement}"><th>&nbsp;</th></aura:if>
+						</tr>
+						<aura:iteration items="{!v.agreementInvoicingMilestones}" var="item">
+							<tr>
+								<td class="first">{!item.Category__c}</td>
+								<td>
+									<aura:if isTrue="{!item.DP__c > 0}">
+										<lightning:formattedNumber value="{!item.DP__c}" style="percent-fixed" />
+									</aura:if>
+								</td>
+								<td>
+									<aura:if isTrue="{!item.Delivery__c > 0}">
+										<lightning:formattedNumber value="{!item.Delivery__c}" style="percent-fixed" />
+									</aura:if>
+								</td>
+								<td>
+									<aura:if isTrue="{!item.PAC__c > 0}">
+										<lightning:formattedNumber value="{!item.PAC__c}" style="percent-fixed" />
+									</aura:if>
+								</td>
+								<td>
+									<aura:if isTrue="{!item.FAC__c > 0}">
+										<lightning:formattedNumber value="{!item.FAC__c}" style="percent-fixed" />
+									</aura:if>
+								</td>
+								<aura:if isTrue="{!v.hasEditAccessAgreement}">
+									<td>
+										<lightning:buttonIcon variant="bare" iconName="utility:edit" onclick="{!c.editAIMRecord}" value="{!item.Id}" alternativeText="Edit" title="Edit" />
+									</td>
+								</aura:if>
+							</tr>
+						</aura:iteration>
+					</table>
+				</div>
+			</lightning:accordionSection>
+			<lightning:accordionSection name="other_milestones" label="Other Milestones">
+				<aura:set attribute="actions">
+					<aura:if isTrue="{!v.hasEditAccessAIM}">
+						<lightning:buttonIcon variant="bare" iconName="utility:edit" onclick="{!c.editAgreementRecord}" alternativeText="Edit" title="Edit" />
+					</aura:if>
+				</aura:set>
+				<aura:if isTrue="{!v.edit}">
+					<lightning:recordEditForm aura:id="recordEditForm" recordId="{!v.recordId}" objectApiName="Apttus__APTS_Agreement__c" onsuccess="{!c.handleSuccess}">
+						<lightning:messages />
+						<lightning:inputField fieldName="Completion_date_PAC__c" />
+						<lightning:inputField fieldName="Completion_date_FAC__c" />
+						<div class="slds-align_absolute-center">
+							<lightning:button type="reset" label="Cancel" class="slds-m-top_medium" variant="neutral" onclick="{!c.handleCancel}"/>
+							<lightning:button aura:id="submit" type="submit" label="Save" class="slds-m-top_medium" variant="brand" />
+						</div>
+					</lightning:recordEditForm>
+					<aura:set attribute="else">
+						<lightning:recordViewForm aura:id="recordViewForm" recordId="{!v.recordId}" objectApiName="Apttus__APTS_Agreement__c">
+							<div class="slds-form__item" role="listitem">
+								<div class="slds-form-element slds-form-element_readonly slds-col slds-form-element_stacked">
+									<lightning:outputField fieldName="Completion_date_PAC__c" />
+								</div>
+							</div>
+							<div class="slds-form__item" role="listitem">
+								<div class="slds-form-element slds-form-element_readonly slds-col slds-form-element_stacked">
+									<lightning:outputField fieldName="Completion_date_FAC__c" />
+								</div>
+							</div>
+						</lightning:recordViewForm>
+					</aura:set>
+				</aura:if>
+			</lightning:accordionSection>
+		</lightning:accordion>
+		<aura:set attribute="else">
+			<div class="slds-align_absolute-center">No records found!</div>
+		</aura:set>
+	</aura:if>
+</aura:component>

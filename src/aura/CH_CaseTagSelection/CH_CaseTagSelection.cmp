@@ -1,0 +1,93 @@
+<aura:component  controller="CH_LightningController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" >
+    <!-- Initial Function -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <!-- Input Attributes -->
+    <aura:attribute name="id" type="String" />
+    <aura:attribute name="object" type="String" default ="Case"/>
+    <aura:attribute name="type" type="String" default ="Minimal"/>
+    <!-- Case Tag Attributes -->
+    <aura:attribute name="authorized" type="Boolean" default="false" description="" />
+    <aura:attribute name="newCaseTag" type="Object" description="" />
+    <aura:attribute name="oldCaseTag" type="Object" description="" />
+    <aura:attribute name="issueTypesList" type="list" description="" />
+    <aura:attribute name="issueDetailsList" type="list" description="" />
+    <aura:attribute name="additionalDetailsList" type="list" description="" />
+    <!-- Other Variables -->
+    <aura:attribute name="visible" type="boolean" default="false"/>
+    <aura:attribute name="actionCounter" type="Integer" default="0" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <!-- Button -->
+    <lightning:button class="slds-m-top_small" variant="brand" type="button" name="tag" label="Tag" onclick="{! c.openPopUp }" disabled="{! !v.authorized }" />
+    <!-- Main Component -->
+    <aura:if isTrue="{! v.visible }">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <div class="slds-align_absolute-center">
+                    <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+                </div>
+            </aura:if>
+            <div class="slds-modal__container">
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closePopUp }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Tag Selection</h2>
+                </header>
+                <!-- Content -->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <h3 class="slds-section__title slds-theme--shade primaryPaletteBorder">
+                        <span class="test-id__section-header-title section-header-title slds-p-horizontal--small slds-truncate">Information</span>
+                    </h3>
+            		<div class="slds-p-around_medium">
+                        <Lightning:recordViewForm aura:id="recordViewForm"
+                                                  recordId="{!v.id}"
+                                                  objectApiName="Case">
+                            <Lightning:outputField fieldName="ProductId"/>
+                        </Lightning:recordViewForm>
+                        <c:searchSelect aura:id="iType"
+                                        class="slds-m-bottom_large"
+                                        options="{!v.issueTypesList}"
+                                        onchange="{!c.onChangeIssueType}"
+                                        placeholder="Select One"
+                                        label="Issue Type"
+                                        required="true"/>
+                        <c:searchSelect aura:id="iDetails"
+                                        class="slds-m-bottom_large"
+                                        options="{!v.issueDetailsList}"
+                                        onchange="{!c.onChangeIssueDetails}"
+                                        placeholder="Select One"
+                                        label="Issue Details"
+                                        required="true"/>
+                        <c:searchSelect aura:id="aDetails"
+                                        class="slds-m-bottom_large"
+                                        options="{!v.additionalDetailsList}"
+                                        onchange="{!c.onChangeAdditionalDetails}"
+                                        placeholder="Select One"
+                                        label="Additional Details"
+                                        required="true"/>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <footer class="slds-modal__footer">
+                    <lightning:button class="slds-float_left" variant="brand" label="Request New Tag" onclick="{!c.newTagRedirect}" />   
+                    <lightning:button name="Cancel" label="Cancel" onclick="{! c.closePopUp }" />  
+                    <lightning:button name="Save" variant="brand" label="Save" onclick="{!c.save}" 
+                                      disabled="{!
+                        v.newCaseTag.CH_IssueType__c == null ||
+                        v.newCaseTag.CH_IssueDetails__c == null || 
+                    	v.newCaseTag.CH_AdditionalDetails__c == null ||
+                        and(v.newCaseTag.CH_IssueType__c == v.oldCaseTag.CH_IssueType__c,
+                        and(v.newCaseTag.CH_IssueDetails__c == v.oldCaseTag.CH_IssueDetails__c,
+                    	    v.newCaseTag.CH_AdditionalDetails__c == v.oldCaseTag.CH_AdditionalDetails__c))
+                    }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

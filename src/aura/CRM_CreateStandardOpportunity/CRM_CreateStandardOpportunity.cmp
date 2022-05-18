@@ -1,0 +1,278 @@
+<aura:component controller="CRM_CreateOpportunityApexCtlr" implements="force:lightningQuickActionWithoutHeader" >
+   <aura:attribute name="directOpp" type="Boolean" default="true"/>
+   <aura:attribute name="recordId" type="Id"/>
+   <aura:attribute name="con" type="Contact" />
+   <aura:attribute name="currencyValues" type="List" />
+   <aura:attribute name="oppTypes" type="List" />
+   <aura:attribute name="oppEndCustomerInfoValues" type="List" />
+   <aura:attribute name="oppECMktSegValues" type="List" />
+   <aura:attribute name="oppECCountriesValues" type="List" />
+   <aura:attribute name="contractSigningValues" type="List" />
+   <aura:attribute name="accountRoleValues" type="List" />
+   <aura:attribute name="cmpg" type="Campaign" />
+   <aura:attribute name="newOpportunity" type="Opportunity" default="{ 'sobjectType': 'Opportunity','CurrencyIsoCode':'' }" />
+   <aura:attribute name="enableInitialEC" type="Boolean" default="true"/>
+   <aura:attribute name="mktSegInitialValue" type="String"/>
+   <aura:attribute name="winDecDateHelpText" type="String"/>
+   <aura:attribute name="contractSigningHelpText" type="String"/>
+
+
+   <aura:attribute name="listControllingValues" type="list" default="[]" description="to store controller field values"/>
+   <aura:attribute name="listDependingValues" type="list" default="['--None--']" description="to store dependent field values"/>
+   <aura:attribute name="depnedentFieldMap" type="map" description="map to store dependent values with controlling value"/>
+   <aura:attribute name="bDisabledDependentFld" type="boolean" default="true"/>
+
+   <!-- default to empty record -->
+   <aura:attribute name="account" type="Account"/>
+   <aura:attribute name="accountId" type="String"/>
+   <aura:attribute name="errors" type="List"/>
+   <aura:attribute name="has_error" type="boolean" default="false"/>
+   <aura:attribute name="has_camp" type="boolean" default="false"/>
+   <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+   <aura:attribute name="selectedLookUpRecordAccount" type="sObject" default="{}"/>
+   <aura:attribute name="loading" type="Boolean" default="false" />
+
+
+   <aura:html tag="style">
+        .cuf-content {
+        padding: 0 0rem !important;
+        }
+        .slds-p-around--medium {
+        padding: 0rem !important;
+        }
+        .slds-modal__content{
+        height:unset !important;
+        max-height:unset !important;
+        }
+        .slds-form_compound {
+        width: 100%;
+        padding: 30px;
+        }
+    </aura:html>
+
+   <div class="main-container">
+      <!-- Display a header with details about the account -->
+      <div class="modal-header slds-modal__header" role="banner">
+          <aura:if isTrue="{!v.directOpp == TRUE}">
+              <h2 class="title slds-text-heading--medium">Direct Opportunity</h2>
+          </aura:if>
+          <aura:if isTrue="{!v.directOpp == FALSE}">
+              <h2 class="title slds-text-heading--medium">Indirect Opportunity</h2>
+          </aura:if>
+      </div>
+      <div class="modal-body scrollable slds-modal__content slds-p-around--medium inner-div" id="scrollable_div">
+         <div class="slds-form slds-form_compound">
+            <fieldset class="slds-form-element">
+               <div id="error-section">
+                  <aura:if isTrue="{!v.has_error}">
+                     <aura:iteration items="{!v.errors}" var="error">
+                        <div class="slds-notify_error" id="slds-notify_error">
+                           <div class="slds-notify slds-notify--alert slds-theme--error slds-theme--alert-texture" role="alert">
+                              <span class="slds-size_1-of-1">{!error}</span>
+                           </div>
+                        </div>
+                     </aura:iteration>
+                     <br></br>
+                  </aura:if>
+               </div>
+               <div class="slds-form-element__group">
+                  <div class="slds-form-element__row">
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputText aura:id="oppName" label="Opportunity Name"
+                           value="{!v.newOpportunity.Name}" required="true"/>
+                     </div>
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputSelect required="true" aura:id="opportunity_type" label="Opportunity Type" value="{!v.newOpportunity.Business_Type__c}" class="heightSelect">
+                           <aura:iteration items="{!v.oppTypes}" var="opptype" indexVar="key">
+                              <ui:inputSelectOption text="{!opptype.value}" label="{!opptype.key}"/>
+                           </aura:iteration>
+                        </ui:inputSelect>
+                     </div>
+                  </div>
+               </div>
+                <div class="slds-form-element__group">
+                    <div class="slds-form-element__row">
+                        <div class="slds-form-element slds-size_2-of-2 pad">
+                            <ui:inputTextArea aura:id="description" label="Description"
+                                          value="{!v.newOpportunity.Description}" required="false"/>
+                        </div>
+                    </div>
+                </div>
+                <aura:if isTrue="{!and(v.con != null, v.directOpp == FALSE)}">
+                    <div class="slds-form-element__group">
+                        <div class="slds-form-element__row">
+                            <div class="slds-form-element slds-size_1-of-2 pad">
+                                <ui:inputText aura:id="acc_name" label="Account Name" disabled="true"
+                                              value="{!v.con.Account.Name}" required="true" />
+                            </div>
+                            <div class="slds-form-element slds-size_1-of-2 pad">
+                                <ui:inputText aura:id="campaign" label="Campaign" disabled="true"
+                                              value="{!v.cmpg.Name}" required="true"/>
+                            </div>
+                        </div>
+                    </div>
+                </aura:if>
+                <div class="slds-form-element__group">
+                    <div class="slds-form-element__row">
+                        <div class="slds-form-element slds-size_1-of-2 pad">
+                            <ui:inputCurrency aura:id="opp_amount" label="Unweighted Value"
+                                              value="{!v.newOpportunity.Amount}" required="true" format=".00"/>
+                        </div>
+                        <div class="slds-form-element slds-size_1-of-2 pad">
+                            <ui:inputSelect required="true" aura:id="opportunity_currency" label="Currency" class="heightSelect" value="{!v.newOpportunity.CurrencyIsoCode}">
+                                <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                                <aura:iteration items="{!v.currencyValues}" var="currency" indexVar="key">
+                                    <ui:inputSelectOption text="{!currency.key}" label="{!currency.value}"/>
+                                </aura:iteration>
+                            </ui:inputSelect>
+                        </div>
+                    </div>
+                </div>
+                <aura:if isTrue="{!(v.directOpp == FALSE)}">
+                    <div class="slds-form-element__group">
+                        <div class="slds-form-element__row">
+                            <div class="slds-form-element slds-size_1-of-2 pad">
+                                <ui:inputSelect required="true" aura:id="end_customer_information" label="End Customer Information" value="{!v.newOpportunity.End_Customer_Information__c}" change="{!c.onControllerECInformationChange}" class="heightSelect">
+                                    <aura:iteration items="{!v.oppEndCustomerInfoValues}" var="oppEndCustomerInfoValue" indexVar="key">
+                                        <ui:inputSelectOption text="{!oppEndCustomerInfoValue.value}" label="{!oppEndCustomerInfoValue.key}"/>
+                                    </aura:iteration>
+                                </ui:inputSelect>
+                            </div>
+                            <div class="slds-form-element slds-size_1-of-2 pad">
+                                <ui:inputSelect required="false" disabled="{!v.enableInitialEC}" aura:id="multiple_or_unknown_ec_market_segment" label="Multiple or Unknown EC Market Segment" value="{!v.newOpportunity.Multiple_or_Unknown_EC_Market_Segment__c}" change="{!c.onControllerECMktSegChange}" class="heightSelect">
+                                    <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                                    <aura:iteration items="{!v.oppECMktSegValues}" var="oppECMktSegValue" indexVar="key">
+                                        <ui:inputSelectOption text="{!oppECMktSegValue.value}" label="{!oppECMktSegValue.key}"/>
+                                    </aura:iteration>
+                                </ui:inputSelect>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-form-element__group">
+                        <div class="slds-form-element__row">
+                            <div class="slds-form-element slds-size_1-of-2 pad" >
+                                <c:reusableCustomLookup aura:id="account" objectAPIName="account" IconName="standard:account" selectedRecord="{!v.selectedLookUpRecordAccount}" label="End Customer Legal Entity"/>
+                            </div>
+                            <div class="slds-form-element slds-size_1-of-2 pad">
+                                <ui:inputSelect required="false" disabled="{!v.bDisabledDependentFld}" aura:id="multiple_or_unknown_ec_activity_sector" label="Multiple or Unknown EC Activity Sector" value="{!v.newOpportunity.Multiple_or_Unknown_EC_Activity_Sector__c}" class="heightSelect">
+                                    <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                                    <aura:iteration items="{!v.listDependingValues}" var="listDependingValue" indexVar="key">
+                                        <ui:inputSelectOption text="{!listDependingValue}" label="{!listDependingValue}"/>
+                                    </aura:iteration>
+                                </ui:inputSelect>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-form-element__group">
+                        <div class="slds-form-element__row">
+                            <div class="slds-form-element slds-size_1-of-2 pad">
+                                <ui:inputSelect required="true" aura:id="account_role" label="Account Role" value="{!v.newOpportunity.Account_Role__c}" class="heightSelect">
+                                    <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                                    <aura:iteration items="{!v.accountRoleValues}" var="accountRole" indexVar="key">
+                                        <ui:inputSelectOption text="{!accountRole.value}" label="{!accountRole.key}"/>
+                                    </aura:iteration>
+                                </ui:inputSelect>
+                            </div>
+                            <div class="slds-form-element slds-size_1-of-2 pad">
+                                <ui:inputSelect required="false" disabled="{!v.enableInitialEC}" aura:id="multiple_or_unknown_ec_country" label="Multiple or Unknown EC Country" value="{!v.newOpportunity.Multiple_or_Unknown_EC_Country__c}" class="heightSelect">
+                                    <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                                    <aura:iteration items="{!v.oppECCountriesValues}" var="oppECCountriesValue" indexVar="key">
+                                        <ui:inputSelectOption text="{!oppECCountriesValue.value}" label="{!oppECCountriesValue.key}"/>
+                                    </aura:iteration>
+                                </ui:inputSelect>
+                            </div>
+                        </div>
+                    </div>
+                </aura:if>
+               <div class="slds-form-element__group">
+                   <div class="slds-form-element__row">
+                   		<div class="slds-form-element slds-size_1-of-2 pad">
+                        	<label><span title="required" class="required ">*</span>Contract Signing Entity</label>&nbsp;<lightning:helptext content="{!v.contractSigningHelpText}"/>
+                            <ui:inputSelect required="true" aura:id="contract_signing_entity"  value="{!v.newOpportunity.Contract_Signing_Entity__c}" class="heightSelect" >
+                                <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                                <aura:iteration items="{!v.contractSigningValues}" var="contractSigning" indexVar="key">
+                                    <ui:inputSelectOption text="{!contractSigning.value}" label="{!contractSigning.key}"/>
+                                </aura:iteration>
+                            </ui:inputSelect>
+                     	</div>
+                        <div class="slds-form-element slds-size_1-of-2 pad">
+                            <ui:inputDate aura:id="G3PlannedDate" label="G3 Planned Date"
+                               value="{!v.newOpportunity.G3_Planned_Date__c}" class="field"
+                               displayDatePicker="true" required="true" />
+                        </div>
+                   </div>
+               </div>
+               <div class="slds-form-element__group">
+                   <div class="slds-form-element__row">
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputDate aura:id="G4PlannedDate" label="G4 Planned Date"
+                           value="{!v.newOpportunity.G4_Planned_Date__c}" class="field"
+                           displayDatePicker="true" />
+                     </div>
+                       <div class="slds-form-element slds-size_1-of-2 pad">
+                           <label><span title="required" class="required ">*</span>Win Declaration Planned Date</label>&nbsp;<lightning:helptext content="{!v.winDecDateHelpText}"/>
+                           <ui:inputDate aura:id="G5PlannedDate"
+                                         value="{!v.newOpportunity.G5_Planned_Date__c}" class="field"
+                                         displayDatePicker="true" required="true" />
+                       </div>
+                   </div>
+               </div>
+               <aura:if isTrue="{!v.directOpp}">
+                    <div class="slds-form-element__group">
+                        <div class="slds-form-element__row">
+                            <aura:if isTrue="{!v.has_camp}">
+                                <div class="slds-form-element slds-size_1-of-2 pad">
+                                    <ui:inputText aura:id="account_name" label="Account Name"
+                                                    value="{!v.con.Account.Name}" required="true" disabled="true"/>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.con != null}">
+                                <div class="slds-form-element slds-size_1-of-2 pad">
+                                    <ui:inputText aura:id="campaign_name" label="Marketing Campaign"
+                                                    value="{!v.cmpg.Name}"  disabled="true" required="true"/>
+                                </div>
+                            </aura:if>
+                        </div>
+                    </div>
+                </aura:if>
+                <div class="slds-form-element__group">
+                    <div class="slds-form-element__row">
+                        <div class="slds-form-element slds-size_1-of-1 pad">
+                            <lightning:recordEditForm objectApiName="Opportunity" density="comfy">
+                                <div class="slds-grid">
+                                    <div class="slds-form-element slds-size_1-of-2 pad">
+                                        <lightning:inputField aura:id="Lead_BG__c" fieldName="Lead_BG__c" />
+                                    </div>
+                                    <div class="slds-form-element slds-size_1-of-2 pad">
+                                        <lightning:inputField aura:id="Enterprise_Main_Solution__c" fieldName="Enterprise_Main_Solution__c" />
+                                    </div>
+                                </div>
+                                <div class="slds-grid">
+                                    <div class="slds-form-element slds-size_1-of-2 pad">
+                                        <lightning:inputField aura:id="Lead_BU__c" fieldName="Lead_BU__c" />
+                                    </div>
+
+                                    <aura:if isTrue="{!!v.directOpp}">
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:inputField aura:id="Partner_Originated__c" fieldName="Partner_Originated__c" />
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </lightning:recordEditForm>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+         </div>
+      </div>
+      <div class="modal-footer slds-modal__footer">
+          <div class="spinner-div">
+              <aura:if isTrue="{! v.loading }">
+                  <lightning:spinner alternativeText="Loading" />
+              </aura:if>
+          </div>
+         <ui:button class="slds-button slds-button--neutral" disabled="{! v.loading }" press="{!c.handleCancel}" label="Cancel" />
+         <ui:button class="slds-button slds-button--brand" disabled="{! v.loading }" press="{!c.saveOpportunity}" label="Save" />
+      </div>
+   </div>
+</aura:component>

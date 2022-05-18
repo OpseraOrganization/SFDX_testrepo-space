@@ -1,0 +1,92 @@
+<aura:component controller="NCP_ProductDetail_COM" Description="NCP_ProductDetailCmp"
+                implements="flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes,force:hasRecordId" access="global">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <!-- Internal attributes -->
+    <aura:attribute name="product" type="Object"/>
+    <aura:attribute name="productAccessWrapper" type="NCP_ProductAccess_Wrapper[]" />
+    <aura:attribute name="isEntitledProduct" type="Boolean"/>
+    <aura:attribute name="isFavourite" type="Boolean"/>
+    <aura:attribute name="isAuth" type="Boolean"/>
+    <aura:attribute name="myBreadcrumbs" type="Array"/>
+    <aura:attribute name="currentCommunityURL" type="string" default=""/>
+
+    <div class="slds-border_bottom slds-p-bottom_x-small slds-m-bottom_large ncp-border-color-grey-2">
+        <lightning:breadcrumbs class="ncp-text-body_regular">
+            <aura:iteration items="{!v.myBreadcrumbs}" var="crumb">
+                <lightning:breadcrumb label="{!crumb.label}" onclick="{!c.navigateTo}" name="{!crumb.name}" title="{!crumb.title}" href="{!crumb.href}"/>
+            </aura:iteration>
+        </lightning:breadcrumbs>
+    </div>
+
+    <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_1-of-1 slds-large-size_2-of-3">
+            <div class="slds-grid slds-grid_pull-padded-small">
+                <div class="slds-col_padded slds-size_1-of-1 slds-large-size_2-of-3">
+                    <ul class="">
+                        <li class="ncp-text-headline_one ncp-text-color-main">{!v.product.Name}</li>
+                        <!-- <li class="slds-m-top_x-small ncp-text-caption">Category: {!v.product.NCP_Origin__c}</li> -->
+                        <aura:if isTrue="{!v.isEntitledProduct}">
+                            <li class="slds-m-top_medium">
+                                <aura:if isTrue="{!v.isFavourite}">
+                                    <lightning:button label="{#$Label.c.NCP_remove_from_favourites}" iconName="utility:close" iconPosition="left" variant="brand" onclick="{!c.removeFromFavourites}" class="ncp-button_small"/>
+                                    <aura:set attribute="else">
+                                        <lightning:button label="{#$Label.c.NCP_add_to_favourites}" iconName="utility:check" iconPosition="left" onclick="{!c.addToFavourites}" class="ncp-button_small"/>
+                                    </aura:set>
+                                </aura:if>
+                            </li>
+                        </aura:if>
+                        <li class="slds-m-top_large ncp-text-body_regular ncp-text-color-main">
+                            <aura:unescapedHtml value="{!v.product.NCP_Marketing_Text__c}"/>
+                        </li>
+                    </ul>
+                </div>
+                <aura:if isTrue="{!v.product.Apttus_Config2__IconId__c}">
+                    <div class="slds-col slds-p-horizontal_medium slds-size_2-of-6">
+                        <img width="250" height="350" src="{!'/customers/servlet/servlet.FileDownload?file=' + v.product.Apttus_Config2__IconId__c}"/>
+                    </div>
+                </aura:if>
+            </div>
+        </div>
+        <div class="slds-col_padded slds-size_1-of-1 slds-large-size_1-of-3 slds-border_left">
+            <div class="ncp-text-headline_one ncp-text-color-primary-brand">{#$Label.c.NCP_product_detail_sidebar_title}</div>
+            <div class="slds-m-top_small">
+                <aura:iteration items="{!v.productAccessWrapper}" var="item">
+                        <div class="slds-m-top_large ncp-text-headline_four">{#item.label}</div>
+                        <aura:iteration items="{!item.productAccessList}" var="lst">
+                            <div class="slds-m-top_small ncp-text-body_regular ncp-text-color-main">
+                                <aura:if isTrue="{!v.isAuth}">
+                                    <aura:if isTrue="{!!lst.hasAccess}">
+                                        {#lst.productAccess.NCP_Title__c}
+                                        <lightning:helptext iconName="utility:lock" content="{#$Label.c.NCP_product_detail_locked_resource_info}" class="slds-p-left_xx-small ncp-lock-icon"/>
+                                        <aura:set attribute="else">
+                                            <!-- below logic moved to helper -->
+                                            <!-- {!if(lst.productAccess.NCP_Standard_Service_URL__c == true,lst.productAccess.NCP_Link__c,lst.productAccess.NCP_Link__c+if(lst.productAccess.NCP_Origin__c == 'fNOKIA',v.product.NCP_Nokia_Product_Id__c,v.product.NCP_ALTERNATE_CODE2__c)+lst.productAccess.NCP_docType__c)} -->
+                                            <a class="ncp-link" href="{#lst.targetUrl}" target="_self">{#lst.productAccess.NCP_Title__c}</a>
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!lst.productAccess.NCP_Always_Unlocked__c}">
+                                            <a class="ncp-link" href="{#lst.targetUrl}" target="_self">{#lst.productAccess.NCP_Title__c}</a> 
+                                            <aura:set attribute="else">
+                                                {#lst.productAccess.NCP_Title__c}
+                                                <lightning:helptext iconName="utility:lock" content="{#$Label.c.NCP_product_detail_unauthenticated_resource_info}" class="slds-p-left_xx-small ncp-lock-icon"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                
+                            </div>
+                        </aura:iteration>
+                </aura:iteration>
+            </div>
+        </div>
+    </div>
+    <aura:if isTrue="{!v.isAuth}">
+        <div class="slds-m-top_medium">
+            <c:NCP_LoginPrompt myType="upgradeServices" isNotifier="true" hasLink="true"/>
+        </div>
+    </aura:if>
+
+</aura:component>
