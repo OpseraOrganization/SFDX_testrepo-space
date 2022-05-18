@@ -1,0 +1,1183 @@
+<aura:component controller ="HWS_CreateSupportTicketportal" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >	
+    <!-- to get contact record id -->
+    <!--NOKIASC-37118:get contact Id for console |Start-->
+    <aura:attribute name="consoleContactId" type="Id" default=""/>
+    <!--NOKIASC-37118:get contact Id for console |End-->
+    <lightning:navigation aura:id="navService"/>	
+    <aura:attribute name="serviceContractCountry" type="String" />	
+    <aura:attribute name="NEAID" type="String" />	
+    <aura:attribute name="Address" type="String" />		
+    <aura:attribute name="shipToParty" type="String" default="shipToParty"/>	
+    <aura:attribute name="pageReference" type="Object"/>	
+    <aura:attribute name="ProcessResponse" type="Object"/>	
+    <aura:attribute name="selectedAccount" type="Object[]" />
+    <aura:attribute name="oldAccount" type="Object[]" />
+    <aura:attribute name="contactId" type="Id"/>	
+    <aura:attribute name="accountId" type="Id"/>	
+    <aura:attribute name="contractId" type="Id"/>	
+    <aura:attribute name="showRetroAccount" type="Boolean" default="false"/>
+    <aura:attribute name="isChangedContractLine" type="Boolean" default="false"/>
+    <aura:attribute name="showassets" type="Object[]"/>	
+    <aura:attribute name="showRelatedSection" type="Integer" default="0"/>	
+    <aura:attribute name="assetRec" type="Object[]" default=''/>	
+    <aura:attribute name="selectedContractLineItem" type="Object[]" />	
+    <aura:attribute name="versionRec" type="Object[]" default=''/>	
+    <aura:attribute name="serviceType" type="String" default=''/>	
+    <aura:attribute name="addPartServiceType" type="String" default=''/>	
+    <aura:attribute name="contractNumber" type="String"/>	
+    <aura:attribute name="buttonName" type="String"/> 	
+    <aura:attribute name="searchKeyword" type="String"/> 	
+    <aura:attribute name="searchCriteria" type="String" default="Part Code"/>    	
+    <aura:attribute name="contactName" type="String"/>	
+    <aura:attribute name="accountName" type="String"/>	
+    <aura:attribute name="productCode" type="String"/>	
+    <aura:attribute name="partRevision" type="String"/>	
+    <aura:attribute name="defaultAccount" type="string"/>	
+    <aura:attribute name="addPartCheck" type="Boolean" default="false"/>	
+    <aura:attribute name="addPartcontractNumber" type="String"/>	
+    <aura:attribute name="country" type="String"/>	
+    <aura:attribute name="addPartCountry" type="String"/>	
+    <aura:attribute name="getContact" type="Boolean" default="true"/>	
+    <aura:attribute name="contactTimeZone" type="String"/>	
+    <aura:attribute name="listChildCase" type="Object[]"/>	
+    <aura:attribute name="parentCase" type="Case" default="{'sobjectType':'Case'}"/>	
+    <aura:attribute name="recordTypeId" type="Id" description="" default=""/>	
+    <aura:attribute name="parentRecordTypeId" type="Id" description="" default=""/>	
+    <aura:attribute name="newChildCase" type="Case" default="{'sobjectType':'Case'}"/>	
+    <aura:handler name="init" value="{!this}" action="{!c.passContactId}"/>	
+    <aura:attribute name="stageNumber" type="Integer" default="0" access="private" description="" />	
+    <aura:attribute name="newChildCaseCheck" type="Boolean" default="false"/>	
+    <aura:attribute name="NextButtonVal" type="boolean" default="false"/>	
+    <aura:attribute name="redoutlineremover" type="boolean" default="false"/>	
+    <aura:attribute name="toProceedSPSLOD" type="boolean" default="false"/>	
+    <aura:attribute name="communicationContact" type="string"/>	
+    <aura:attribute name="ShiptopartyAddress" type="string"/>	
+    <aura:attribute name="duplicateSerialnumCheck" type="Boolean" />	
+    <aura:attribute name="oldSelectedAccount" type="String" />	
+    <aura:attribute name="saveDisable" type="Boolean" default="false"/>	
+    <aura:attribute name="saveSubmitDisable" type="Boolean" default="false"/>	
+    <aura:attribute name="dateValidationError" type="Boolean" default="false"/>	
+    <aura:attribute name="downloadURL" type="String" />  	
+    <aura:attribute name="parentBulkUploadCase" type="Case" default="{'sobjectType':'Case'}"/>	
+    <aura:attribute name="bulkUpload" type="Boolean" default="false"/>    	
+    <aura:attribute name="oneclick" type="String" default=""/>	
+    <aura:attribute name="serviceTypes" type="String[]"/>		
+    <aura:attribute name="deliveryTimeZone" type="String"/>	
+    <aura:attribute name="pickUpOption" type="List" default="[{'label': 'Delivery Address', 'value': 'shipToParty'},	
+                                                             {'label': 'Pickup Address', 'value': 'wareHouseAddress'}	
+                                                             ]"/>	
+    <aura:attribute name="customerPartRev" type="String" default=""/>	
+    <aura:attribute name="hideProgressBar" type="boolean" default="true"/>	
+    <!-- attributes for NOKIASC-35931 -->
+    <aura:attribute name="serviceAcountNumber" type="String"/> 
+    <aura:attribute name="isServicedAccount" type="Boolean" default="false"/> 
+    
+    <!-- Spinner -->	
+    <aura:attribute name="spinner" type="boolean" default="false"/>	
+    <aura:handler name="HWS_CaseFlowEventPortal" event="c:HWS_CaseFlowEventPortal" action="{!c.handleComponentEvent}"/>	
+    <!-- Event firing from Lookup component-->	
+    <aura:handler name="HWS_LookupReturnValueEvent" event="c:HWS_LookupReturnValueEvent" action="{!c.handleLookupEvent}"/>	
+    <!--Created for 26952 -->	
+    <aura:attribute name="getPayPerUse" type="Boolean" default="false"/>	
+    <aura:attribute name="saveCase" type="Boolean" default="true"/>	
+    <aura:attribute name="getAllAssets" type="Asset[]" />	
+    <!--Created for 29132 -->	
+    <aura:attribute name="getPPU" type="boolean" default="false" />	
+    <!--Created for 26951 -->	
+    <aura:attribute name="isPayPerPriceFound" type="Boolean" default="false"/>	
+    <aura:attribute name="caseCreationTitle" type="String" description="" default="Support Ticket Creation"/>	
+    <!-- 26101 -->	
+    <aura:attribute name="draftValues" type="Object" default="[]"/>	
+    <aura:attribute name="childCaseColumns" type="List"/>    		
+    <aura:attribute name="shipToTimeZone" type="String" />	
+    <aura:attribute name="shipToTimeZoneMap" type="Map" />	
+    <aura:attribute name="currentUserTimeZone" type="String" default="{!$Locale.timezone}"	/>	
+    <!-- NEA Attributes -->	
+    <aura:attribute name="showNEAStage" type="String"/>	
+    <aura:attribute name="neaRec" type="Object[]" default=''/>	
+    <aura:attribute name="selectedAssetCheckUpfrontNEA" type="boolean" default="false" />		
+    <aura:attribute name="assetsUpfrontNEASelection" type="Object[]" default=''/>		
+    <aura:attribute name="allCLIS" type="Object[]" default=''/>		
+    <aura:attribute name="contractsUpfrontNEASelection" type="Object[]" default=''/>		
+    <aura:attribute name="selectedContractCheckUpfrontNEA" type="boolean" default="false" />	
+    <aura:attribute name="clearNEACheck" type="boolean" default="false" />	
+    <aura:attribute name="oldAssetRec" type="Object[]" default=''/>	
+    <!-- US-NOKIASC-27009 Progress Bar attributes -->	
+    <aura:attribute name="legalEntityNotFound" type="boolean" default="false" />	
+    <aura:attribute name="selectedAssetstep2" type="boolean" default="false" />	
+    <aura:attribute name="selectedVersionstep3" type="boolean" default="false" />	
+    <aura:attribute name="childcasestep4" type="boolean" default="false" />	
+    <aura:attribute name="newChildAddPart" type="boolean" default="false" />	
+    <aura:attribute name="SelectNEA" type="boolean" default="false" />	
+    <aura:attribute name="SelectNEAProgress" type="boolean" default="false" />	
+    <aura:attribute name="SelectConNum" type="boolean" default="false" />	
+    <aura:attribute name="parentcaseStep5" type="boolean" default="false" />	
+    <aura:attribute name="onSubmitprogress" type="boolean" default="false" />	
+    <aura:attribute name="ContractNum" type="boolean" default="false" />	
+    <aura:attribute name="ContractNumProgress" type="boolean" default="false" />	
+    <aura:attribute name="ContractNumNEAProgress" type="boolean" default="false" />	
+    <aura:attribute name="ProgressBarCounter" type="string" default="0" />	
+    <aura:attribute name="ProgressBarNEACounter" type="string" default="0" />	
+    <aura:attribute name="ContNumProgressBarCounter" type="string" default="0" />	
+    <aura:attribute name="ContProgressBarCounter" type="string" default="0" />	
+    <aura:attribute name="ContNEAProgressBarCounter" type="string" default="0" />	
+    <aura:attribute name="addPartClearSelection" type="boolean" default="false" />	
+    <aura:attribute name="addPartCLI" type="boolean" default="false" />	
+    <aura:attribute name="addPartCON" type="boolean" default="false" />	
+    <aura:attribute name="SelectProgressBar" type="boolean" default="false" />	
+    <aura:attribute name="SelectNEAProgressBar" type="boolean" default="false" />	
+    <!-- US-NOKIASC-27009 Progress Bar attributes End here -->	
+    <aura:attribute name="AstIdToAstMap" type="Map" />
+    <aura:attribute name="selectedAccountNumber" type="String" />	
+    <aura:attribute name="returnMessage" type="String" />	
+    <aura:attribute name="requriedFieldStyleforTicketNumber" type= "String"/>	
+    <aura:attribute name="requriedFieldStyleforSponsor" type= "String"/>	
+    <aura:attribute name="requriedFieldStyleforRecipientName" type= "String"/>	
+    <aura:attribute name="isContactDetailsSelected" type="boolean" default="false" />	
+    <aura:attribute name="isContactDetailsSelected_bulk" type="boolean" default="false" /> <!--NOKIASC-34787-->	
+    <aura:attribute name="warrantyStatus" type="String"/>	
+    <aura:attribute name="shipToPartyAccount" type="object" />	
+    <!-- US-NOKIASC-32560 Warranty check attributes -->	
+    <aura:attribute name="warrantyCheckFailed" type="boolean" default="false" />	
+    <!-- US-NOKIASC-32884 Invoicing Type Event Based attributes -->	
+    <aura:attribute name="InvoicingTypeEventBased" type="boolean" default="false" />	
+    <aura:attribute name="warrantyCheckIsNotNull" type="boolean" default="false" />	
+    <aura:attribute name="warrantyStatusNull" type="boolean" default="false" />	
+    <!-- NOKIASC-34214 -->	
+    <aura:attribute name="warrantyCheckRequired" type="boolean" default="false" />	
+    <aura:attribute name="isponumber" type="boolean" default="false" />	
+    <aura:attribute name="isserialNumberUnknown" type="boolean" default="false" />	
+    <aura:attribute name="selectedRetroAccount" type="sObject" default="{}"/>
+    <aura:attribute name="selectedCountryName" type="String"/>
+    <aura:attribute name="selectedContractLineItemRetro" type="String" default=""/>
+    <aura:attribute name="updatedRetroAccountId" type="String" />
+    <!--NOKIASC-36821 start-->
+    <aura:attribute name="retroAccountName" type="String" />
+    <aura:attribute name="retroAccountId" type="String" /> 
+    <aura:attribute name="isGlobal" type="Boolean" default="false" />
+    <!--NOKIASC-36821 End-->
+    <aura:attribute name="showLookUp" type="Boolean" default="false" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="sampleComponentEvent" event="c:compEvent" action="{!c.handleRetroComponentEvent}"/>
+    <!-- NOKIASC-36818 | Start-->
+    <aura:attribute name="optionsRetrofitRequired" type="List" default="[
+                                                                        {'label': 'Yes', 'value': 'true'},
+                                                                        {'label': 'No', 'value': 'false'}
+                                                                        ]"/>
+    <aura:attribute name="isRetrofitRequired" type="string" default="false" /> 
+    <!-- NOKIASC-36818 | End-->
+    <!--NOKIASC-37090:Bulk Case Creation : Allow user to select Service Contract |Start -->    
+    <aura:attribute name="isModalVisible" type="boolean" default="false"/>
+    <aura:attribute name="ModalSpinner" type="boolean" default="false"/>
+    <aura:attribute name="sortedByUser" type="String"/>
+    <aura:attribute name="sortedDirectionUser" type="String"/>
+    <aura:attribute name="defaultSortDirection" type="String"/>
+    <aura:attribute name="height" type="String" default="20rem"/>
+    <aura:attribute name="enableInfiniteLoading" type="Boolean" default="true"/>
+    <aura:attribute name="initialRows" type="Integer" default="50"/>
+    <aura:attribute name="rowsToLoad" type="Integer" default="50"/>
+    <aura:attribute name="totalNumberOfRows" type="Integer" default="50"/>
+    <aura:attribute name="loadMoreStatus" type="String" default="Please scroll down to load more data"/>
+    <aura:attribute name="rowNumberOffset" type="Integer" default="0"/>    
+    <aura:attribute name="currentCount" type="Integer" default="50"/>
+    <aura:attribute name="loadMoreOffset" type="Integer" default="20"/>   
+    <aura:attribute name="allServiceContractList" type="List" default="[]"/>  
+    <aura:attribute name="popUpDataList" type="List" default="[]"/>  
+    <aura:attribute name="columnsConfig" type="List" default="[]"/>  
+    <aura:attribute name="serviceContractId" type="String" default=""/> 
+    <aura:attribute name="selectedServiceContract" type="List" default="[]"/> 
+    <aura:attribute name="serviceContractName" type="String" default=""/> 
+    <aura:attribute name="FilterText" type="String" description="Used to filter the records " />
+	<aura:attribute name="BulkUploadLimit" type="String" default=""/><!-- NOKIASC-37921 -->
+	<!--NOKIASC-37617 - Start -->
+	<aura:attribute name="isGlobalSingle" type="Boolean" default="false" />
+    <aura:attribute name="retroAccId" type="String" default="" />
+    <aura:attribute name="retroAccName" type="String" default="" />
+	<!--NOKIASC-37617 - End -->
+	<!-- NOKIASC-38079 Start-->
+    <aura:attribute name="disableAddPart" type="Boolean" default="false"/>
+    <!-- NOKIASC-38079 End-->
+    <!--NOKIASC-37090:Bulk Case Creation : Allow user to select Service Contract |End -->  
+    <!--Spinnner start-->	
+    <!-- <aura:attribute name="IsSpinner" type="Boolean"/>	
+    <aura:if isTrue="{!v.IsSpinner}">	
+        <lightning:spinner variant="brand"  size="medium" />	
+    </aura:if>	
+    <aura:handler event="aura:waiting" action="{!c.showWaiting}"/>	
+    <aura:handler event="aura:doneWaiting" action="{!c.hideWaiting}"/>-->	
+    <!--Spinner End-->    	
+    <!-- Display Account Details-->  	
+    <article class="slds-card slds-is-relative">	
+        <div class="slds-card__header slds-grid">	
+            <header class="slds-media slds-media_center slds-has-flexi-truncate">	
+                <div class="slds-media__body">	
+                    <h2 class="slds-m-vertical_small slds-text-heading_medium">{! v.caseCreationTitle }</h2>	
+                </div>	
+            </header>	
+        </div>	
+        
+        <div class="slds-card__body slds-card__body_inner slds-m-bottom_medium">	
+            <aura:if isTrue="{!v.stageNumber != 0}"> 	
+                <div class="slds-box slds-theme--shade slds-m-vertical_large">	
+                    <div class="slds-grid slds-wrap slds-p-left_medium">	
+                        <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small slds-p-right_medium"> 	
+                            <!--   <div class="slds-size_1-of-2">	
+                        Contact Name :  <b> {!v.contactName} </b>	
+                    </div> -->	
+                            <aura:if isTrue="{!v.stageNumber == 2 || v.stageNumber == 3 ||
+                                             v.stageNumber == 4 || v.stageNumber == 5 ||
+                                             v.stageNumber == 7 || v.stageNumber == 8 ||
+                                             v.stageNumber == 9 || v.stageNumber == 21 || v.stageNumber == 12 || v.stageNumber == 14}">	
+                                Legal Entity Name :  <b> {!v.accountName} </b>	                    
+                            </aura:if>
+                             <!--NOKIASC-36821 start showing retrofit and legal entity name based on global or not and excluded below  stage numbers from above code for showing legal entity name-->
+                            <aura:if isTrue="{!and(or(v.stageNumber == 11,v.stageNumber == 10),v.isGlobal == false)}">	
+                                Legal Entity Name :  <b> {!v.accountName} </b>	                    
+                            </aura:if>
+                            <aura:if isTrue="{!and(or(v.stageNumber == 11,v.stageNumber == 10),v.isGlobal == true,v.isRetrofitRequired == 'true')}">	
+                                Legal Entity Name :  <b> {!v.retroAccountName} </b>	                    
+                            </aura:if>	
+                             <!--NOKIASC-36821 End-->
+							 <!--NOKIASC-37617 Start-->
+							 <aura:if isTrue="{!and(v.stageNumber == 13,v.isGlobalSingle == true)}">	
+                                Legal Entity Name :  <b> {!v.retroAccName} </b>	                    
+                            </aura:if>	
+                             <aura:if isTrue="{!and(v.stageNumber == 13,v.isGlobalSingle == false)}">	
+                                Legal Entity Name :  <b> {!v.accountName} </b>	                    
+                            </aura:if>	
+							 <!--NOKIASC-37617 End-->
+                            <aura:if isTrue="{!and(v.neaRec.length > 0,v.stageNumber > 1)}">		
+                                <br/>		
+                                Network Element Asset Name :  <b> {!v.neaRec[0].Name}  </b>	
+                            </aura:if>	
+                            <aura:if isTrue="{!v.stageNumber == 3 ||  v.stageNumber == 4 || v.stageNumber == 5 ||  v.stageNumber == 21 || v.addPartCheck == true || v.stageNumber == 13 || v.stageNumber == 14}">	
+                                <br/>	
+                                Selected Contract Number :  <b> {!v.contractNumber}</b>	
+                                <aura:if isTrue="{!v.stageNumber == 3 ||  v.stageNumber == 4 || v.stageNumber == 5 || v.addPartCheck == true || v.stageNumber == 9 ||  v.stageNumber == 10 || v.stageNumber == 11 ||  v.stageNumber == 21 || v.stageNumber == 13}">	
+                                    <br/>	
+                                    Service Type : <b> {!v.serviceType} </b> 	
+                                </aura:if>	
+                            </aura:if>	
+                        </div>	
+                        
+                        <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small">	
+                            <aura:if isTrue="{!v.stageNumber == 3 ||  v.stageNumber == 4 || v.stageNumber == 5 ||  v.stageNumber == 21 || v.addPartCheck == true}">	
+                                <aura:if isTrue="{!v.stageNumber == 3 ||  v.stageNumber == 4 || v.stageNumber == 5}">	
+                                    Part Code : <b> {!v.productCode} </b>                                                                               	
+                                </aura:if>	
+                                <aura:if isTrue="{!v.stageNumber == 4 || v.stageNumber == 5}">	
+                                    <br/>	
+                                    Part Revision :  	
+                                    <aura:if isTrue="{!and(v.customerPartRev != '', v.customerPartRev != undefined)}">	
+                                        <b> {!v.customerPartRev}</b>  	
+                                    </aura:if> 	
+                                    <aura:if isTrue="{!v.customerPartRev == '' || v.customerPartRev == undefined}">	
+                                        <b> {!v.partRevision}</b>  	
+                                    </aura:if>	
+                                </aura:if>	
+                                <!--      <aura:if isTrue="{!v.stageNumber == 5}">	
+                                    <div class="slds-form-element">	
+                                         
+                                        <label class="slds-checkbox_toggle slds-grid">	
+                                            <span class="slds-form-element__label slds-m-bottom_none">Contact Details</span>	
+                                             <ui:inputCheckbox aura:id="chkbox" class="slds-input" change="{!c.autoPopulateContactInfo}"/>	
+                                              <span id="checkbox-toggle-15" class="slds-checkbox_faux_container" aria-live="assertive">	
+                                                <span class="slds-checkbox_faux"></span>	
+                                                <span class="slds-checkbox_on">Enabled</span>	
+                                                <span class="slds-checkbox_off">Disabled</span>	
+                                            </span>	
+                                            <lightning:helptext content="Additional Information related to Fault" class="customIcon"/>	
+                                        </label>	
+                                    </div>	
+                                </aura:if>  -->	
+                            </aura:if>	
+                            <aura:if isTrue="{!and(v.stageNumber == 4, v.neaRec.length > 0 ) }">	
+                                <div class="slds-size_1-of-2">	
+                                    NEA Id :  <b> {!v.NEAID}  </b>                           	
+                                </div>	
+                                <div class="slds-size_1-of-2">	
+                                    Address :  <b> {!v.Address} </b> 	
+                                </div>	
+                            </aura:if>	
+                        </div>	
+                    </div>	
+                    
+                    <div class="{!(v.stageNumber == 1)?'':'slds-hide'}">   	
+                        <c:HWS_CaseFlowAccountSectionPortal recordId="{!v.contactId}" aura:id="accountSecId"/>   	
+                    </div>	
+                    
+                    <div class="{!(v.stageNumber == 7)?'':'slds-hide'}">	
+                        <div class="slds-text-heading_small">Would you like to add multiple parts via file upload? </div>	
+                        <div class="slds-align_absolute-center" style="height:5rem">	
+                            <lightning:button label="Yes" title="Yes" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.serviceTypeCall}"/>	
+                            <lightning:button label="No" title="No" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.portalProcess}"/>	
+                        </div>	
+                    </div>	
+                    <div class="{!(v.stageNumber == 8)?'':'slds-hide'}">
+                        
+                        <!-- NOKIASC-36818 | Start-->
+                        <aura:if isTrue="{!and(v.oldAccount[0].Type!='' , v.oldAccount[0].Type=='Internal Customer')}">
+                            <lightning:radioGroup name="radioRetrofitRequired"
+                                                  label="Is this Retrofit Request?"
+                                                  required="true"
+                                                  options="{! v.optionsRetrofitRequired }"
+                                                  value="{! v.isRetrofitRequired }"
+                                                  type="radio"
+                                                  variant="label-inline"
+                                                  class="horizontalViewRetrofit" onchange="{!c.clearValuesOnRetro}"/>
+                        </aura:if>
+                        <!-- NOKIASC-36818 | End-->
+                        <lightning:select name="select1" label="Select Service Type" required="true" value="{!v.serviceType}">	
+                            <option value="">-- None --</option>	
+                            <aura:iteration items="{!v.serviceTypes}" var="serviceType">	
+                                <option value="{!serviceType}" text="{!serviceType}" ></option>	
+                            </aura:iteration>	
+                        </lightning:select>	
+                        <br></br>	
+                        <div class="slds-grid slds-gutters">
+                            
+                            <div class="slds-col slds-size_6-of-8">	
+                                <span></span>	
+                            </div>
+                            <!--NOKIASC-36823:Add back button in bulk case creation -->
+                            <div class="slds-col slds-size_2-of-8">	
+                                <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.gotoAccountPage}"/>	                            
+                                <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.serviceTypeBulkUploadCall}"/>	
+                            </div>	
+                        </div>	
+                    </div>
+                    
+                    <div class="{!(v.stageNumber == 9)?'':'slds-hide'}">	
+                        <!--NOKIASC-34787 | 19-May-2021| Start-->	
+                        <div class="slds-grid slds-wrap slds-p-left_medium">	
+                            <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small slds-p-right_medium"> 	
+                                <label class="slds-checkbox_toggle slds-grid">	
+                                    <span class="slds-form-element__label slds-m-bottom_none">Contact Details</span>	
+                                    <ui:inputCheckbox aura:id="chkbox_bulk" class="slds-input" value="{!v.isContactDetailsSelected_bulk}" change="{!c.autoPopulateContactInfo_forBulk}"/>	
+                                    <span id="checkbox-toggle-15" class="slds-checkbox_faux_container" aria-live="assertive">	
+                                        <span class="slds-checkbox_faux"></span>	
+                                        <span class="slds-checkbox_on">Enabled</span>	
+                                        <span class="slds-checkbox_off">Disabled</span>	
+                                    </span>	
+                                    <lightning:helptext content="When On the Ship To Recipient information will be auto-filled using Case	
+                                                                 Contact details. Otherwise, the fields must be manually filled." class="customIcon"/>	
+                                </label>	
+                            </div>	
+                        </div>	
+                        <!--NOKIASC-34787 | 19-May-2021|  End-->	
+                        <div class="slds-grid slds-wrap slds-p-left_small">	
+                            <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small slds-p-right_medium">	
+                                <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                                    <lightning:messages />	
+                                    <lightning:inputField fieldName="HWS_Shipment_Recipient_Name__c" value="{!v.parentBulkUploadCase.HWS_Shipment_Recipient_Name__c}" aura:Id="shipmentBulkRecNameAuraId" onkeyup="{!c.checkLength}" class="requiredOverRide"/>	
+                                    <span id="validateBulkRecipientName" style="color: rgb(194, 57, 52);"></span>	
+                                </lightning:recordEditForm>	
+                                <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                                    <lightning:messages />	
+                                    <lightning:inputField fieldName="HWS_Shipment_Recipient_Phone__c" value="{!v.parentBulkUploadCase.HWS_Shipment_Recipient_Phone__c}" aura:Id="shipmentBulkRecPhoneAuraId" onkeyup="{!c.checkLength}" class="requiredOverRide"/>	
+                                    <span id="validateBulkRecipientPhone" style="color: rgb(194, 57, 52);"></span>	
+                                </lightning:recordEditForm>	
+                                <span id="validateBulkParentPhone" style="color: rgb(194, 57, 52);"></span>	
+                                <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                                    <lightning:messages />	
+                                    <lightning:inputField fieldName="HWS_ShipmentRecipientEmailId__c" value="{!v.parentBulkUploadCase.HWS_ShipmentRecipientEmailId__c}" class="requiredOverRide"/>	
+                                    <span id="validateBulkEmailId" style="color: rgb(194, 57, 52);"></span>	
+                                </lightning:recordEditForm>	
+                            </div>	
+                            <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small slds-p-right_medium">	
+                                
+                                <!--<lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                                    <label class="slds-form-element__label" style="margin-right: 0.5rem;">Shipment Recipient Email</label>	
+                                    <lightning:helptext content="Email Id of the person who will receive parcel at delivery location" class="customIcon"/>	
+                                    <lightning:input aura:id="ShipRecipntEmail"	
+                                                     name="ShipRecipntEmail" 	
+                                                     label="Shipment Recipient Email"	
+                                                     value="{!v.parentBulkUploadCase.HWS_ShipmentRecipientEmailId__c}" 	
+                                                     maxlength="60"	
+                                                     variant="label-hidden" onkeyup="{!c.bulkEmailValidation}"	
+                                                     class="requiredOverRide"	
+                                                     /> 	
+                                     
+                                    <span id="validateBulkParentEmail" style="color: rgb(194, 57, 52);"></span>	
+                                </lightning:recordEditForm>  -->	
+                                <span id="validateBulkParentEmail" style="color: rgb(194, 57, 52);"></span>	
+                                
+                                <aura:if isTrue="{!v.isRetrofitRequired}">
+                                    <!--NOKIASC-37090:Bulk Case Creation : Allow user to select Service Contract |Start -->  
+                                    <div class="slds-grid slds-grid_vertical-reverse">
+                                        <div class="slds-col">
+                                            <lightning:button variant="base" label="Select Service Contract" class="slds-float_right slds-text-decoration-underline" title="Click here to serach Service Contract" onclick="{! c.handleServiceContractSearch }"/>
+                                        </div>
+                                        <div class="slds-col">
+                                            <label class="slds-form-element__label" style="margin-right: 0.5rem;"><abbr class="slds-required" title="required">*</abbr>Service Contract</label>	
+                                            <lightning:helptext content="Select the Service Contract associated with the retrofit activity" class="customIcon"/>	
+                                            <lightning:input type="text" aura:id="serviceContract" variant="label-hidden" label="Service Contract" disabled="true" value="{!v.serviceContractName}" />
+                                            <span id="validateServiceContract" style="color: rgb(194, 57, 52);"></span>
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    <!--NOKIASC-37090:Bulk Case Creation : Allow user to select Service Contract |End -->  
+                                    <aura:if isTrue="{!and(v.serviceContractId != ' ', v.isChangedContractLine == true) }">
+                                        
+                                        
+                                        <c:HWS_RetrofitAccount objectAPIName="HWS_RetrofitAccount__c" 
+                                                               IconName="standard:account" 
+                                                               selectedRecord="{!v.selectedRetroAccount}" 
+                                                               selectedContractLineItem ="{!v.serviceContractId}" 
+                                                               label="Sold To Account" 
+                                                               retroFieldDisabled ="false"
+                                                               aura:id = "retroAccountComponent"/>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!or(v.serviceContractId == '', v.isChangedContractLine == false)}">
+                                        <c:HWS_RetrofitAccount objectAPIName="HWS_RetrofitAccount__c" 
+                                                               IconName="standard:account" 
+                                                               selectedRecord="{!v.selectedRetroAccount}" 
+                                                               selectedContractLineItem ="{!v.serviceContractId}" 
+                                                               label="Sold To Account" retroFieldDisabled ="true"/>
+                                    </aura:if>
+                                    
+                                    
+                                    <span id="retroAccountPortal" style="color: rgb(194, 57, 52);"></span>	
+                                </aura:if>  
+                            </div>
+                            
+                            
+                        </div>	
+                        <div class="slds-grid slds-gutters">	
+                            <div class="slds-col slds-size_6-of-8">	
+                                <span></span>	
+                            </div>	
+                            <!--NOKIASC-36823:Add back button in bulk case creation -->
+                            <div class="slds-col slds-size_2-of-8">	
+                                <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.gotoServiceTypePage}"/>	                                                       
+                                <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.parentCaseBulkUploadCall}"/>	
+                            </div>	
+                        </div>	
+                    </div>	
+                    <div class="{!(v.stageNumber == 10)?'':'slds-hide'}">	
+                        <div class="slds-text-heading_small">Would you like to continue via file upload? </div>	
+                        <div class="slds-align_absolute-center" style="height:5rem">	
+                            <lightning:button label="Yes" title="Yes" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.bulkuploadCall}"/>	
+                            <lightning:button label="No" title="No" variant="brand" class="slds-m-horizontal_xx-small"/>	
+                        </div> <br/>	
+                        Click <a href="{!v.downloadURL}" > here </a> to Download Bulk RMA Template	
+                        <br/>
+                        <!--NOKIASC-37920:Error message for restrict bulk upload limit | Start-->
+                        <div class="slds-text-color_destructive">*{!format($Label.c.HWS_MSG_BulkUploadLimit, $Label.c.HWS_LBL_BulkUploadLimit)}</div>
+                        <!--NOKIASC-37920:Error message for restrict bulk upload limit | End-->
+                        <aura:if isTrue="{!$Label.c.HWS_Allowed_Users == 'new'}">
+						<div style="color: rgb(194, 57, 52);">*{!format($Label.c.HWS_BU_Notification, v.BulkUploadLimit)}</div> <!-- NOKIASC-37921 -->
+						</aura:if>
+                    </div>	
+                    <div class="{!(v.stageNumber == 11)?'':'slds-hide'}">	
+                        <!--NOKIASC-37118:pass consoleComntactId in child case bulk upload component-->
+                        <c:HWS_ChildCaseBulkUpload consoleContactId="{!v.consoleContactId}"  countryName="{!v.selectedCountryName}" selectedAccount="{!v.accountId}" selectedServiceType="{!v.serviceType}" contactId="{!v.contactId}" 	
+                                                   parentCase="{!v.parentBulkUploadCase}" contactTimeZone="{!v.contactTimeZone}" retrofitAccountName="{!v.retroAccountName}" retrofitAccountId="{!v.retroAccountId}"
+                                                   retrofitRequired ="{!v.isRetrofitRequired}" isGlobal="{!v.isGlobal}"
+                                                   aura:id="bulkRMAId" selectedServiceContract="{!v.selectedServiceContract}"
+                                                   selectedLegalAccNum="{!v.selectedAccountNumber}"/>	
+                    </div>	
+                    <!-- Display Asset Details-->	
+                    <div class="{!v.stageNumber == 2 || v.stageNumber == 21?'':'slds-hide'}"> 	
+                        <div class="slds-grid slds-grid_vertical-align-start" >	
+                            <div class="slds-col">	
+                                <span>	
+                                    <lightning:layout multipleRows="true">	
+                                        <lightning:layoutItem padding="around-small" size="12">	
+                                            <div class="slds-grid  slds-gutters"> 	
+                                                <div class="slds-col">	
+                                                    <span>	
+                                                        <!--p class="title">Search Criteria</p-->	
+                                                        <lightning:select class="single" aura:id="InputSelectSingle" label="Search Criteria" onchange="{!c.onSingleSelectChange}" >	
+                                                            <option text="Part Code"/>	
+                                                            <option text="Contract Number"/>	
+                                                        </lightning:select>	
+                                                    </span>	
+                                                </div>	
+                                                <div class="slds-col" onkeyup="{!c.searchPartorContract}">	
+                                                    <span>	
+                                                        <lightning:input value="{!v.searchKeyword}"	
+                                                                         placeholder="Search with Part Code or Item Description"	
+                                                                         aura:id="searchField" label="Enter Contract Number/Part Code/Item Description"/></span>	
+                                                </div>	
+                                                <div class="slds-col">	
+                                                    <span>	
+                                                        <p class="title">Click on Search </p>	
+                                                        <lightning:button onclick="{!c.search}"	
+                                                                          variant="brand"	
+                                                                          label="Search"	
+                                                                          iconName="utility:search"/> </span>	
+                                                </div>	
+                                            </div>	
+                                        </lightning:layoutItem>	
+                                    </lightning:layout>	
+                                </span>	
+                            </div>	
+                        </div>                	
+                        <div class="{!and(v.searchCriteria == 'Part Code', v.searchCriteria != undefined)?'':'slds-hide'}"> 	
+                            <!-- NOKIASC 26091 Added new params assetsUpfrontNEASelection and selectedAssetCheckUpfrontNEA -->	
+                            <c:HWS_CaseFlowAssetSectionPortal selectedAccount="{!v.accountId}" serviceType="{!v.addPartServiceType}" contractNumber="{!v.addPartcontractNumber}" country="{!v.addPartCountry}" recordId="{!v.contactId}" aura:id="assetSecId" searchKeyword="{!v.searchKeyword}" searchCriteria="{!v.searchCriteria}" assetsUpfrontNEASelection="{!v.assetsUpfrontNEASelection}" selectedAssetCheckUpfrontNEA="{!v.selectedAssetCheckUpfrontNEA}"/>                     	
+                        </div>	
+                        <div class="{!and(v.searchCriteria == 'Contract Number', v.searchCriteria != undefined)?'':'slds-hide'}">   	
+                            <c:HWS_CaseFlowContractSectionPortal selectedAccount="{!v.accountId}" serviceType="{!v.addPartServiceType}" contractNumber="{!v.addPartcontractNumber}" recordId="{!v.contactId}" aura:id="contractNumberSecId" searchKeyword="{!v.searchKeyword}" searchCriteria="{!v.searchCriteria}" contractsUpfrontNEASelection="{!v.contractsUpfrontNEASelection}" selectedContractCheckUpfrontNEA="{!v.selectedContractCheckUpfrontNEA}"/>                     	
+                        </div>	
+                    </div>	
+                    <!-- NOKIASC 26098 Display Network Element Asset Details -->	
+                    <div class="{!v.stageNumber == 12?'':'slds-hide'}">  	
+                        <c:HWS_NetworkElementAssetPortal selectedAccount="{!v.accountId}" assetRec="{!v.assetRec}" allAssets="{!v.showassets}" aura:id="neaSecId" selectedContractLineItem="{!v.selectedContractLineItem}" allCLIS="{!v.allCLIS}" searchCriteria="{!v.searchCriteria}" clearNEACheck="{!v.clearNEACheck}"/>                    	
+                    </div>	
+                    <div class="{!v.stageNumber == 14?'':'slds-hide'}">  	
+                        <c:HWS_CaseFlowContractAssetSectionPortal aura:id="contractAssetSecId" selectedContractLineItems="{!v.selectedContractLineItem}"/>                     	
+                    </div>	
+                    <!-- Display Version Item Details-->	
+                    <div class="{!v.stageNumber == 3?'':'slds-hide'}" >               	
+                        <!-- 4182 passng param searchKeyword-->	
+                        <c:HWS_VersionItemPortal assetRec="{!v.assetRec}" searchKeyword="{!v.searchKeyword}" searchCriteria="{!v.searchCriteria}" aura:id="versionSecId"/>                                	
+                    </div> 	
+                    
+                    <!-- Display Child Case Details-->	
+                    <div class="{!v.stageNumber == 4?'':'slds-hide'}">	
+                        <aura:if isTrue="{!(v.serviceType == 'Advanced Exchange in Days' || v.serviceType == 'Advanced Exchange in Hours')}">	
+                            <div class="slds-grid slds-wrap slds-p-left_small">	
+                                <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small slds-p-right_medium">	
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case" aura:Id="siteAuraId">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Site_ID__c" value="{!v.newChildCase.HWS_Site_ID__c}" onkeyup="{!c.checkLength}" class="{!v.isServicedAccount == true ? 'requiredOverRide' : ''}"/>	
+                                    </lightning:recordEditForm>	
+                                    <aura:if isTrue="{!(v.serviceType == 'Advanced Exchange in Days' || v.serviceType == 'Advanced Exchange in Hours')}">   	
+                                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                            <lightning:inputField fieldName="HWS_Replacement_Unit_Serial_Number__c" value="{!v.newChildCase.HWS_Replacement_Unit_Serial_Number__c}" aura:Id="replacementAuraId" onkeyup="{!c.checkLength}"/>	
+                                        </lightning:recordEditForm>	
+                                    </aura:if>	
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:inputField fieldName="HWS_Fault_Reported_By_Name__c" value="{!v.newChildCase.HWS_Fault_Reported_By_Name__c}" aura:Id="FRNAuraId" onkeyup="{!c.checkLength}"/>	
+                                    </lightning:recordEditForm>                            	
+                                    <lightning:recordEditForm  recordTypeId="{!v.recordTypeId}" objectApiName="Case">                                	
+                                        <lightning:inputField aura:id="faultySerial" fieldName="HWS_Faulty_Serial_Number__c" value="{!v.newChildCase.HWS_Faulty_Serial_Number__c}" disabled="{!v.isserialNumberUnknown}" onkeyup="{!c.checkLength}"/>	
+                                    </lightning:recordEditForm>	
+                                    <span id="faultySerialNumber" style="color: rgb(194, 57, 52);"></span>	
+                                    <lightning:recordEditForm>                                   	
+                                        <label class="slds-form-element__label" style="margin-right: 0.5rem;">Serial Number Unknown</label>	
+                                        <lightning:helptext content="Checking this box will cause item to be treated as Out of Warranty" class="customIcon"/>	
+                                        <lightning:input aura:id="serialNumberUnknown" label="Serial Number Unknown" 	
+                                                         name="serialNumberUnknown"	
+                                                         type="checkbox"	
+                                                         checked="{!v.isserialNumberUnknown}"                                                                	
+                                                         onchange="{!c.handleserialNumberUnknown}"	
+                                                         variant="label-hidden"	
+                                                         style="padding-bottom:10px"/>                                               	
+                                    </lightning:recordEditForm>	
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Customer_Reference_Number__c" value="{!v.newChildCase.HWS_Customer_Reference_Number__c}" aura:Id="CustRefAuraId1" onkeyup="{!c.checkLength}"/> 	
+                                    </lightning:recordEditForm>	
+                                    <lightning:recordEditForm aura:id="failureOccurance" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Occurance__c" value="{!v.newChildCase.HWS_Failure_Occurance__c}" class="{!v.serviceType != 'Advanced Exchange in Hours'? 'requiredOverRide' : ''}"/>	
+                                    </lightning:recordEditForm>	
+                                    <lightning:recordEditForm aura:id="failureDetection" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Detection__c" value="{!v.newChildCase.HWS_Failure_Detection__c}" class="{!v.serviceType != 'Advanced Exchange in Hours'? 'requiredOverRide' : ''}"/>	
+                                    </lightning:recordEditForm> 	
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Description_Server_ID__c" value="{!v.newChildCase.HWS_Failure_Description_Server_ID__c}" aura:Id="FDSAuraId" onkeyup="{!c.checkLength}"/>	
+                                    </lightning:recordEditForm> 	
+                                    <!--<lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                            <lightning:outputField fieldName="HWS_Planned_Delivery_Date__c" value="{!v.newChildCase.HWS_Planned_Delivery_Date__c}"/>	
+                        </lightning:recordEditForm>-->	
+                                    <!-- 26106 Removing Planned Delivery Date from this screen and adding to Delicery Info screen -->	
+                                    <!--  <label class="slds-form-element__label" style="margin-right: 0.5rem;">Planned Delivery Date</label>	
+                            <ui:outputDateTime aura:id="AEPlanDt" value="{!v.newChildCase.HWS_Planned_Delivery_Date__c}"  /><br></br> -->	
+                                </div>	
+                                <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small">                            	
+                                    <lightning:recordEditForm aura:id="validatePhoneNumber" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Fault_Reported_By_Phone__c" value="{!v.newChildCase.HWS_Fault_Reported_By_Phone__c}"/>            	
+                                    </lightning:recordEditForm>  	
+                                    <span id="validatePhone" style="color: rgb(194, 57, 52);"></span>	
+                                    <lightning:recordEditForm aura:id="validateEmail" recordTypeId="{!v.recordTypeId}" objectApiName="Case">                            	
+                                        <lightning:inputField fieldName="HWS_Fault_Reported_By_Email__c" value="{!v.newChildCase.HWS_Fault_Reported_By_Email__c}"/>            	
+                                    </lightning:recordEditForm>                                                                   	
+                                    <span id="validateEmailId" style="color: rgb(194, 57, 52);"></span>                            	
+                                    <lightning:recordEditForm aura:id="failureDescription" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Description__c" value="{!v.newChildCase.HWS_Failure_Description__c}" class="{!v.serviceType != 'Advanced Exchange in Hours'? 'requiredOverRide' : 'emptyRedOutline'}"/>	
+                                    </lightning:recordEditForm>                            	
+                                    <lightning:recordEditForm aura:id="failureDetectionDate" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Detection_Date__c" value="{!v.newChildCase.HWS_Failure_Detection_Date__c}" class="{!v.serviceType != 'Advanced Exchange in Hours'? 'requiredOverRide' : ''}" />	
+                                    </lightning:recordEditForm> 	
+                                    <span id="validateDetectionDate" style="color: rgb(194, 57, 52);"></span>	
+                                    <!--31170 changes-->	
+                                    <lightning:recordEditForm  recordTypeId="{!v.recordTypeId}" objectApiName="Case" aura:id="addConfigDet">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Site_Information__c" value="{!v.newChildCase.HWS_Site_Information__c}" class="{!v.isServicedAccount == true ? 'requiredOverRide' : ''}" />	
+                                    </lightning:recordEditForm>		
+                                    <lightning:recordEditForm aura:id="requestHWRCF" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <br></br>	
+                                        <lightning:input type="checkbox" label="Request HW RCA – FMA" aura:id="requestHWRCFSelected" value="{!v.newChildCase.HWS_RequestHWRCAFMA__c}"                                       	
+                                                         onchange="{!c.showRealtedInfo}"/>	
+                                        <br></br>	
+                                    </lightning:recordEditForm>	
+                                    <aura:if isTrue="{!v.newChildCaseCheck}">	
+                                        
+                                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                            <lightning:messages />	
+                                            
+                                            <lightning:inputField fieldName="HWS_RelatedSoftwareTicketNumber__c"	
+                                                                  aura:id ="softwareTicketNumberId"	
+                                                                  value="{!v.newChildCase.HWS_RelatedSoftwareTicketNumber__c}" 	
+                                                                  class="{!v.requriedFieldStyleforTicketNumber}"/>	
+                                            
+                                        </lightning:recordEditForm> 	
+                                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                            <lightning:messages />	
+                                            <lightning:inputField fieldName="HWS_Sponsor__c" 	
+                                                                  value="{!v.newChildCase.HWS_Sponsor__c}"	
+                                                                  aura:id ="sponsorId"	
+                                                                  class="{!v.requriedFieldStyleforSponsor}"/>	
+                                        </lightning:recordEditForm> 	
+                                        
+                                        
+                                    </aura:if>	
+                                    <!--NOKIASC-36339-->
+                                    <!--  <lightning:recordEditForm aura:id="faultyUnitAWBNumber" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_FaultyUnitAWBNumber__c" value="{!v.newChildCase.HWS_FaultyUnitAWBNumber__c}"/>	
+                                    </lightning:recordEditForm>    
+                                    <lightning:recordEditForm aura:id="faultyUnitShippedDate" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_FaultyUnitShipmentDispatchDate__c" value="{!v.newChildCase.HWS_FaultyUnitShipmentDispatchDate__c}" />	
+                                    </lightning:recordEditForm>  --> 
+                                    <!--NOKIASC-36339-->
+                                    <!-- 26106 Removing Customer Requested Delivery Date from this screen and adding to Delicery Info screen -->	
+                                    <!-- <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                <label class="slds-form-element__label" style="margin-right: 0.5rem;">Customer Requested Delivery Date</label>	
+                                <lightning:input type="datetime"	
+                                                 name="requestedDateTime"	
+                                                 aura:id="requestedDateTime" 	
+                                                 value="{!v.newChildCase.HWS_Requested_Delivery_Date_Time__c}" onchange="{!c.requestDateChange}"/>	
+                                <aura:if isTrue="{!v.dateValidationError == true}">	
+                                                <div class="slds-text-color_error slds-p-left_x-small">	
+                                                    Date and time cannot be less than Planned Delivery date	
+                                                </div>	
+                                            </aura:if>	
+                            </lightning:recordEditForm><br/><br/><br/><br/><br/> -->	
+                                </div>	
+                            </div>	
+                        </aura:if>	
+                        <aura:if isTrue="{!(v.serviceType == 'Identical Repair' || v.serviceType == 'Return for Repair or Replacement')}">	
+                            <div class="slds-grid slds-wrap">	
+                                <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small slds-p-right_medium">	
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case" aura:Id="siteAuraId1">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Site_ID__c" value="{!v.newChildCase.HWS_Site_ID__c}" onkeyup="{!c.checkLength}" class="{!v.isServicedAccount == true ? 'requiredOverRide' : ''}"/>	
+                                    </lightning:recordEditForm>
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:inputField fieldName="HWS_Fault_Reported_By_Name__c" value="{!v.newChildCase.HWS_Fault_Reported_By_Name__c}" aura:Id="FRNAuraId1" onkeyup="{!c.checkLength}"/>	
+                                    </lightning:recordEditForm>	
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField aura:id="faultySerial1" fieldName="HWS_Faulty_Serial_Number__c" value="{!v.newChildCase.HWS_Faulty_Serial_Number__c}" disabled="{!v.isserialNumberUnknown}" onkeyup="{!c.checkLength}"/>	
+                                    </lightning:recordEditForm>	
+                                    <span id="faultySerialNumber" style="color: rgb(194, 57, 52);"></span>	
+                                    <lightning:recordEditForm>                                   	
+                                        <label class="slds-form-element__label" style="margin-right: 0.5rem;">Serial Number Unknown</label>	
+                                        <lightning:helptext content="Checking this box will cause item to be treated as Out of Warranty" class="customIcon"/>	
+                                        <lightning:input aura:id="serialNumberUnknown" label="Serial Number Unknown" 	
+                                                         name="serialNumberUnknown"	
+                                                         type="checkbox"	
+                                                         checked="{!v.isserialNumberUnknown}"                                                                	
+                                                         onchange="{!c.handleserialNumberUnknown}"	
+                                                         variant="label-hidden"	
+                                                         style="padding-bottom:10px"/>                                               	
+                                    </lightning:recordEditForm>	
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Customer_Reference_Number__c" value="{!v.newChildCase.HWS_Customer_Reference_Number__c}" aura:Id="CustRefAuraId" onkeyup="{!c.checkLength}"/>	
+                                    </lightning:recordEditForm>	
+                                    <lightning:recordEditForm aura:id="failureOccurance1" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Occurance__c" value="{!v.newChildCase.HWS_Failure_Occurance__c}" class="{!v.serviceType != 'Advanced Exchange in Hours'? 'requiredOverRide' : ''}"/>	
+                                    </lightning:recordEditForm>	
+                                    <lightning:recordEditForm aura:id="failureDetection1" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Detection__c" value="{!v.newChildCase.HWS_Failure_Detection__c}" class="{!v.serviceType != 'Advanced Exchange in Hours'? 'requiredOverRide' : ''}"/>	
+                                    </lightning:recordEditForm>  	
+                                    <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Description_Server_ID__c" value="{!v.newChildCase.HWS_Failure_Description_Server_ID__c}" aura:Id="FDS1AuraId" onkeyup="{!c.checkLength}"/>	
+                                    </lightning:recordEditForm>   	
+                                    
+                                    <!--<lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                            <lightning:outputField fieldName="HWS_Planned_Delivery_Date__c" value="{!v.newChildCase.HWS_Planned_Delivery_Date__c}"/>	
+                        </lightning:recordEditForm>-->	
+                                    <!-- 26106 Removing Planned Delivery Date from this screen and adding to Delicery Info screen -->	
+                                    <!--    <label class="slds-form-element__label" style="margin-right: 0.5rem;">Planned Delivery Date</label>	
+                            <ui:outputDateTime aura:id="IRPlanDt" value="{!v.newChildCase.HWS_Planned_Delivery_Date__c}"  /> -->	
+                                </div>	
+                                <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small"> 
+                                    <lightning:recordEditForm aura:id="validatePhoneNumber" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Fault_Reported_By_Phone__c" value="{!v.newChildCase.HWS_Fault_Reported_By_Phone__c}"/>            	
+                                    </lightning:recordEditForm>  	
+                                    <span id="validatePhone" style="color: rgb(194, 57, 52);"></span>	
+                                    <lightning:recordEditForm aura:id="validateEmail" recordTypeId="{!v.recordTypeId}" objectApiName="Case">                            	
+                                        <lightning:inputField fieldName="HWS_Fault_Reported_By_Email__c" value="{!v.newChildCase.HWS_Fault_Reported_By_Email__c}"/>            	
+                                    </lightning:recordEditForm>                                                                   	
+                                    <span id="validateEmailId" style="color: rgb(194, 57, 52);"></span>                            	
+                                    <lightning:recordEditForm aura:id="failureDescription1" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Description__c" value="{!v.newChildCase.HWS_Failure_Description__c}" class="{!v.serviceType != 'Advanced Exchange in Hours'? 'requiredOverRide' : 'emptyRedOutline'}"/>	
+                                    </lightning:recordEditForm>
+                                    <lightning:recordEditForm aura:id="failureDetectionDate1" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Failure_Detection_Date__c" value="{!v.newChildCase.HWS_Failure_Detection_Date__c}" class="{!v.serviceType != 'Advanced Exchange in Hours'? 'requiredOverRide' : ''}" />	
+                                    </lightning:recordEditForm>	
+                                    <span id="validateDetectionDate" style="color: rgb(194, 57, 52);"></span>	
+                                    <!--31170 changes-->	
+                                    <lightning:recordEditForm  recordTypeId="{!v.recordTypeId}" objectApiName="Case" aura:id="addConfigDet1">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Site_Information__c" value="{!v.newChildCase.HWS_Site_Information__c}" class="{!v.isServicedAccount == true ? 'requiredOverRide' : ''}"/>	
+                                    </lightning:recordEditForm>		
+                                    <lightning:recordEditForm aura:id="requestHWRCF" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <br></br>	
+                                        <lightning:input type="checkbox" label="Request HW RCA – FMA" aura:id="requestHWRCFSelected" value="{!v.newChildCase.HWS_RequestHWRCAFMA__c}"                                       	
+                                                         onchange="{!c.showRealtedInfo}"/>	
+                                        <br></br>	
+                                    </lightning:recordEditForm>	
+                                    <aura:if isTrue="{!v.newChildCaseCheck}">	
+                                        
+                                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                            <lightning:messages />	
+                                            
+                                            <lightning:inputField fieldName="HWS_RelatedSoftwareTicketNumber__c"	
+                                                                  aura:id ="softwareTicketNumberId"	
+                                                                  value="{!v.newChildCase.HWS_RelatedSoftwareTicketNumber__c}" 	
+                                                                  class="{!v.requriedFieldStyleforTicketNumber}"/>	
+                                            
+                                        </lightning:recordEditForm> 	
+                                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                            <lightning:messages />	
+                                            <lightning:inputField fieldName="HWS_Sponsor__c" 	
+                                                                  value="{!v.newChildCase.HWS_Sponsor__c}"	
+                                                                  aura:id ="sponsorId"	
+                                                                  class="{!v.requriedFieldStyleforSponsor}"/>	
+                                        </lightning:recordEditForm> 	
+                                        
+                                    </aura:if>
+                                    <!--NOKIASC-36339-->
+                                    <!--   <lightning:recordEditForm aura:id="faultyUnitAWBNumber" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_FaultyUnitAWBNumber__c" value="{!v.newChildCase.HWS_FaultyUnitAWBNumber__c}"/>	
+                                    </lightning:recordEditForm>  
+                                    <lightning:recordEditForm aura:id="faultyUnitShippedDate" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_FaultyUnitShipmentDispatchDate__c" value="{!v.newChildCase.HWS_FaultyUnitShipmentDispatchDate__c}"/>	
+                                    </lightning:recordEditForm>  -->
+                                    <!--NOKIASC-36339-->
+                                    <!-- 26106 Removing Customer Requested Delivery Date from this screen and adding to Delicery Info screen -->	
+                                    <!-- <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                <label class="slds-form-element__label" style="margin-right: 0.5rem;">Customer Requested Delivery Date</label>	
+                                <lightning:input type="datetime"	
+                                                 name="requestedDateTime"	
+                                                 aura:id="requestedDateTime" 	
+                                                 value="{!v.newChildCase.HWS_Requested_Delivery_Date_Time__c}" onchange="{!c.requestDateChange}"/>	
+                            </lightning:recordEditForm> 	
+                            <aura:if isTrue="{!v.dateValidationError == true}">	
+                                <div class="slds-text-color_error slds-p-left_x-small">	
+                                    Date and time cannot be less than Planned Delivery date	
+                                </div>	
+                            </aura:if><br/><br/><br/><br/><br/> -->	
+                                </div>	
+                            </div>	
+                        </aura:if>	
+                        <aura:if isTrue="{!(v.serviceType == 'Spare Part Sales')}">	
+                            <div class="slds-grid slds-wrap">	
+                                <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-large slds-p-right_medium">	
+                                    <lightning:recordEditForm aura:id="quantity" recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Quantity__c" value="{!v.newChildCase.HWS_Quantity__c}" class="requiredOverRide"/>	
+                                    </lightning:recordEditForm>                 	
+                                    <!--<lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                            <lightning:outputField fieldName="HWS_Planned_Delivery_Date__c" value="{!v.newChildCase.HWS_Planned_Delivery_Date__c}"/>	
+                        </lightning:recordEditForm>-->	
+                                    <!-- 26106 Removing Planned Delivery Date from this screen and adding to Delicery Info screen -->	
+                                    <!--  <label class="slds-form-element__label" style="margin-right: 0.5rem;">Planned Delivery Date</label>	
+                            <ui:outputDateTime aura:id="SPSPlanDt" value="{!v.newChildCase.HWS_Planned_Delivery_Date__c}"  /> -->	
+                                </div>	
+                                <!--<div class="slds-col slds-size_6-of-12 slds-m-vertical_x-large">	
+                            <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" objectApiName="Case">	
+                                <lightning:messages />	
+                                <lightning:inputField fieldName="HWS_Requested_Delivery_Date_Time__c" value="{!v.newChildCase.HWS_Requested_Delivery_Date_Time__c}" style="size='6'" onchange="{!c.requestDateChange}"/>	
+                            </lightning:recordEditForm>    	
+                            <aura:if isTrue="{!v.dateValidationError == true}">	
+                                <div class="slds-text-color_error slds-p-left_x-small">	
+                                    Date and time cannot be less than Planned Delivery date	
+                                </div>	
+                            </aura:if>	
+                        </div>  -->      	
+                            </div>	
+                        </aura:if>            	
+                        <span id="errorOnCreate" style="color: rgb(194, 57, 52);"></span> <br></br>  	
+                    </div>	
+                    
+                    <!-- Display Parent Case Details-->	
+                    <br></br>  <aura:if isTrue="{!v.stageNumber == 5}">	
+                    <div class="slds-grid slds-wrap slds-p-left_medium">	
+                        <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small slds-p-right_medium"> 	
+                            <label class="slds-checkbox_toggle slds-grid">	
+                                <span class="slds-form-element__label slds-m-bottom_none">Contact Details</span>	
+                                <ui:inputCheckbox aura:id="chkbox" class="slds-input" value="{!v.isContactDetailsSelected}" change="{!c.autoPopulateContactInfo}"/>	
+                                <span id="checkbox-toggle-15" class="slds-checkbox_faux_container" aria-live="assertive">	
+                                    <span class="slds-checkbox_faux"></span>	
+                                    <span class="slds-checkbox_on">Enabled</span>	
+                                    <span class="slds-checkbox_off">Disabled</span>	
+                                </span>	
+                                <lightning:helptext content="When On the Ship To Recipient information will be auto-filled using Case	
+                                                             Contact details. Otherwise, the fields must be manually filled." class="customIcon"/>	
+                            </label>	
+                        </div>	
+                    </div>	
+                    </aura:if>	
+                    <div class="{!v.stageNumber == 5?'':'slds-hide'}">	
+                        <div class="slds-grid slds-wrap slds-p-left_small">	
+                            <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small slds-p-right_medium">	
+                                <!--	
+                                <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                            <lightning:messages />	
+                            <lightning:inputField fieldName="HWS_Customer_Reference_Number__c" value="{!v.parentCase.HWS_Customer_Reference_Number__c}"/>	
+                        </lightning:recordEditForm>-->	
+                                <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                                    <lightning:messages />	
+                                    <lightning:inputField fieldName="HWS_Shipment_Recipient_Name__c" value="{!v.parentCase.HWS_Shipment_Recipient_Name__c}" aura:Id="shipmentRecNameAuraId" onkeyup="{!c.checkLength}" class="requiredOverRide" />	
+                                </lightning:recordEditForm>	
+                                <span id="validateRecipientName" style="color: rgb(194, 57, 52);"></span>	
+                                <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                                    <lightning:messages />	
+                                    <lightning:inputField fieldName="HWS_Shipment_Recipient_Phone__c" value="{!v.parentCase.HWS_Shipment_Recipient_Phone__c}" aura:Id="shipmentRecPhoneAuraId" onkeyup="{!c.checkLength}" class="requiredOverRide"/>	
+                                </lightning:recordEditForm>	
+                                <span id="validateParentPhone" style="color: rgb(194, 57, 52);"></span>	
+                                <!--  <c:HWS_Lookup aura:id="recordValue5" objectName="Contact" returnValue="Name" createNew="true" otherValues="{!v.defaultAccount}" shippingCountry="{!v.serviceContractCountry}" />	
+      --> 	
+                                <!-- HWST-3843 ***** dont allow portal users to create Communication contact **createNew="false"-->							
+                                <!--   <c:HWS_Lookup aura:id="contactAuraId" objectName="Contact" returnValue="Name" createNew="false" otherValues="{!v.defaultAccount}" shippingCountry="{!v.serviceContractCountry}" /> -->	
+                                <!--<lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                        <lightning:messages />	
+                        <lightning:inputField fieldName="HWS_Communication_Contact__c" value="{!v.parentCase.HWS_Communication_Contact__c}"/>	
+                    </lightning:recordEditForm>-->	
+                            </div>	
+                            <div class="slds-col slds-size_6-of-12 slds-m-vertical_x-small">	
+                                <!-- <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                            <lightning:messages />	
+                            <lightning:inputField fieldName="HWS_Delivery_Additional_Information__c" value="{!v.parentCase.HWS_Delivery_Additional_Information__c}"/>	
+                        </lightning:recordEditForm>                   -->                             	
+                                <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                                    <lightning:messages />	
+                                    <lightning:inputField fieldName="HWS_ShipmentRecipientEmailId__c" value="{!v.parentCase.HWS_ShipmentRecipientEmailId__c}" class="requiredOverRide"/>	
+                                    <span id="validateParentEmailId" style="color: rgb(194, 57, 52);"></span>	
+                                </lightning:recordEditForm>	
+                                
+                                <aura:if isTrue="{!and(v.selectedContractLineItemRetro != '', v.showRetroAccount)}"> 
+                                    
+                                    <c:HWS_RetrofitAccount objectAPIName="HWS_RetrofitAccount__c" IconName="standard:account" selectedRecord="{!v.selectedRetroAccount}" selectedContractLineItem ="{!v.selectedContractLineItemRetro}" label="Sold To Account"/>  
+                                </aura:if> 
+                                <span id="retroAccountInfo" style="color: rgb(194, 57, 52);"></span>
+                                
+                                
+                                <aura:if isTrue="{!v.serviceType == 'Spare Part Sales' ||  v.getPPU == true || v.warrantyCheckIsNotNull == true}">	
+                                    <lightning:recordEditForm recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                                        <lightning:messages />	
+                                        <lightning:inputField fieldName="HWS_Customer_PO__c" disabled="{!v.isponumber}"	
+                                                              value="{!v.parentCase.HWS_Customer_PO__c}" aura:Id="custOrderPOAuraId" onkeyup="{!c.checkLength}"/>	
+                                    </lightning:recordEditForm>	
+                                </aura:if>	
+                                <aura:if isTrue="{!v.serviceType == 'Advanced Exchange in Hours'}">	
+                                    <lightning:radioGroup name="radioGroup" label="Select type of Address" options="{!v.pickUpOption}" value="{!v.shipToParty}" type="radio" onchange="{!c.shipTopartyEmptyOnPickSelection }"/>	
+                                </aura:if>	
+                                
+                                <aura:if isTrue="{!and(v.selectedCountryVal != '', v.showRetroAccount)}">
+                                    <c:HWS_Lookup  initialShipToPartyAccount="{!v.shipToPartyAccount}" 
+                                                  CountryName="{!v.selectedCountryName}"
+                                                  updatedRetroAccountId="{!v.updatedRetroAccountId}"
+                                                  IsCountryDisabled="{!v.showLookUp}"
+                                                  aura:id="recordValue2" 
+                                                  objectName="Account" returnValue="Name" 
+                                                  createNew="true" 
+                                                  otherValues="{!v.defaultAccount}" 
+                                                  passingAccount="{!v.selectedAccount}" 
+                                                  pickupAddr="{!v.shipToParty}" 
+                                                  SelectedAsset ="{!v.assetRec}" 
+                                                  showRetroAccount="{!v.showRetroAccount}" 
+                                                  shippingCountry="{!v.serviceContractCountry}"  
+                                                  triggeredFrom="portal"/><br></br>	
+                                </aura:if>
+                                
+                                <aura:if isTrue="{!(v.showRetroAccount == false)}">
+                                    <c:HWS_Lookup  initialShipToPartyAccount="{!v.shipToPartyAccount}" 
+                                                  CountryName="{!v.selectedCountryName}"
+                                                  updatedRetroAccountId="{!v.updatedRetroAccountId}"
+                                                  IsCountryDisabled="false"
+                                                  aura:id="recordValue3" 
+                                                  objectName="Account" returnValue="Name" 
+                                                  createNew="true" 
+                                                  otherValues="{!v.defaultAccount}" 
+                                                  passingAccount="{!v.selectedAccount}" 
+                                                  showRetroAccount="{!v.showRetroAccount}" 
+                                                  pickupAddr="{!v.shipToParty}" 
+                                                  SelectedAsset ="{!v.assetRec}" 
+                                                  shippingCountry="{!v.serviceContractCountry}"  
+                                                  triggeredFrom="portal"/><br></br>	
+                                </aura:if>                             
+                                <!-- 27280 Added new param "triggeredFrom" -->
+                                <!--NOKIASC-35991 added initialShipToPartyAccount-->
+                                
+                                <!--<ui:inputText aura:id="recordValue3" class="slds-hide"/> -->
+                                <span id="recordValue3" style="color: rgb(194, 57, 52);"></span>	
+                                <!--<lightning:recordEditForm aura:id="shipToPartyAddress" recordTypeId="{!v.parentRecordTypeId}" objectApiName="Case">	
+                        <lightning:messages />	
+                        <lightning:inputField fieldName="Hws_Ship_to_Party_Address__c" value="{!v.parentCase.Hws_Ship_to_Party_Address__c}" class="requiredOverRide"/>	
+                    </lightning:recordEditForm>-->	
+                            </div>
+                            
+                        </div>	
+                        <span id="errorOnSave" style="color: rgb(194, 57, 52);"></span>  	
+                        
+                    </div>	
+                    <!-- 26101 Display Delivery Iformation-->	
+                    <div class="{!v.stageNumber == 13?'':'slds-hide'}">	
+                        <lightning:layout multipleRows="true">                            	
+                            <lightning:layoutItem padding="around-small" size="12">	
+                                <div style="height: 200px">	
+                                    <lightning:datatable aura:id="childTable" data="{!v.listChildCase}" columns="{!v.childCaseColumns}" keyField="Id" hideCheckboxColumn="true" onrowselection="{!c.childProceed}" onsave="{!c.handleSave}" oncancel ="{!c.handleCancel}"/>	
+                                </div>	
+                                <div class="slds-grid slds-gutters">	
+                                    <div class="slds-align_absolute-center">  	
+                                        <span id="validateRequiredFields" style="color: rgb(194, 57, 52);"></span>	
+                                    </div>	
+                                </div>	
+                            </lightning:layoutItem>	
+                        </lightning:layout>                    	
+                        
+                    </div>       	
+                </div>	
+                <footer class="slds-card__footer">
+                    <div class="slds-grid slds-wrap">	
+                        <div class="slds-col slds-size_1-of-12">  	
+                            <div class="{!v.stageNumber == 4?'':'slds-hide'}">	
+                                <lightning:button variant="brand" label="Add Part" onclick="{!c.addPart}" disabled="{!v.disableAddPart}"/> 	
+                            </div>	
+                        </div>	
+                        <div class="slds-col slds-size_2-of-12">  	
+                            <div> </div>	
+                        </div>	
+                        
+                        <div class="slds-col slds-size_6-of-12">	
+                            <aura:if isTrue="{!v.hideProgressBar}">	
+                                <div class="slds-progress">	
+                                    <ol class="slds-progress__list">	
+                                        <li class="{! 'slds-progress__item' + (v.legalEntityNotFound == true? ' slds-is-completed' :'') }">	
+                                            <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"	
+                                                                  iconName="{! v.legalEntityNotFound == true ? 'utility:success' :'utility:record' }"	
+                                                                  variant="bare" alternativeText="Select a Legal Entity" name="stage1"/> <!--onclick="{!c.goToStage}"/> -->	
+                                        </li>	
+                                        <li class="{! 'slds-progress__item' + (v.selectedAssetstep2 == true?' slds-is-completed':'')}">	
+                                            <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"	
+                                                                  iconName="{! (v.selectedAssetstep2 == true ? 'utility:success' :'utility:record') }"	
+                                                                  variant="bare" alternativeText="Select Part Code and Service" name="stage2" />	
+                                            <!-- onclick="{!c.goToStage}" disabled="{! and(v.selectedLegalEntity == null, !v.notLinkedToCustomer) }"/>-->	
+                                        </li>	
+                                        <aura:if isTrue="{!v.SelectNEAProgress == true}">	
+                                            <li class="{! 'slds-progress__item' + (v.SelectNEA == true? ' slds-is-completed' : '')}">	
+                                                <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"	
+                                                                      iconName="{! v.SelectNEA == true ? 'utility:success' :'utility:record' }"	
+                                                                      variant="bare" alternativeText="Select NEA" name="stage3" />	
+                                                <!--onclick="{!c.goToStage}" disabled="{! v.selectedAsset == null }"/> -->	
+                                            </li>	
+                                        </aura:if>	
+                                        <aura:if isTrue="{!v.ContractNum == true}">	
+                                            <li class="{! 'slds-progress__item' + (v.SelectConNum == true? ' slds-is-completed' : '')}">	
+                                                <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"	
+                                                                      iconName="{! v.SelectConNum == true ? 'utility:success' :'utility:record' }"	
+                                                                      variant="bare" alternativeText="Select Asset" name="stage3" />	
+                                                <!--onclick="{!c.goToStage}" disabled="{! v.selectedAsset == null }"/> -->	
+                                            </li>	
+                                        </aura:if>	
+                                        <li class="{! 'slds-progress__item' + (v.selectedVersionstep3 == true? ' slds-is-completed' :'')}">	
+                                            <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"	
+                                                                  iconName="{! v.selectedVersionstep3 == true ? 'utility:success' :'utility:record' }"	
+                                                                  variant="bare" alternativeText="Select Part Revision" name="stage4" />	
+                                            <!--onclick="{!c.goToStage}" disabled="{! v.selectedAsset == null }"/> -->	
+                                        </li>	
+                                        <li class="{! 'slds-progress__item' +(v.childcasestep4 == true? ' slds-is-completed' :'')}">	
+                                            <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"	
+                                                                  iconName="{! v.childcasestep4 == true ? 'utility:success' :'utility:record' }"	
+                                                                  variant="bare" alternativeText="Line Item Details" name="stage5" />	
+                                            <!-- onclick="{!c.goToStage}" disabled="{! v.selectedEntitlement == null }"/> -->	
+                                        </li>	
+                                        <li class="{! 'slds-progress__item'+(v.parentcaseStep5 == true? ' slds-is-completed' :'')}">	
+                                            <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"	
+                                                                  iconName="{! v.parentcaseStep5 == true ? 'utility:success' :'utility:record' }"	
+                                                                  variant="bare" alternativeText="Service Request Details" name="stage6"/>	
+                                            <!-- onclick="{!c.goToStage}"/> -->	
+                                        </li>	
+                                        <li class="{! 'slds-progress__item'+(v.onSubmitprogress == true? ' slds-is-completed' :'')}">	
+                                            <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"	
+                                                                  iconName="{! v.onSubmitprogress == true ? 'utility:success' :'utility:record' }"	
+                                                                  variant="bare" alternativeText="Delivery Information" name="stage7"/>	
+                                            <!-- onclick="{!c.goToStage}"/> -->	
+                                        </li>	
+                                    </ol>	
+                                    <aura:if isTrue="{!v.SelectProgressBar == true}">	
+                                        <lightning:progressBar value="{!v.ProgressBarCounter*20}" size="x-small"/>	
+                                    </aura:if>	
+                                    <aura:if isTrue="{!v.SelectNEAProgressBar == true}">	
+                                        <lightning:progressBar value="{! v.ProgressBarNEACounter*16.66}" size="x-small"/>	
+                                    </aura:if>	
+                                    <aura:if isTrue="{!v.ContractNumProgress == true}">	
+                                        <lightning:progressBar value="{! v.ContNumProgressBarCounter*16.66}" size="x-small"/>	
+                                    </aura:if>	
+                                    <aura:if isTrue="{!v.ContractNumNEAProgress == true}">	
+                                        <lightning:progressBar value="{! v.ContNEAProgressBarCounter*14.28}" size="x-small"/>	
+                                    </aura:if>	
+                                </div>	
+                            </aura:if>	
+                        </div>	
+                        <div class="slds-col slds-size_3-of-12">	
+                            <div class="{!(v.stageNumber == 1)?'':'slds-hide'}">             	
+                                <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" disabled="{!v.accountId == null}" onclick="{!c.nextHandler}"/>                 	
+                            </div>	
+                            
+                            <div class="{!v.stageNumber == 2 || v.stageNumber == 21?'':'slds-hide'}">	
+                                <div class="{!and(v.searchCriteria == 'Part Code', v.searchCriteria != undefined)?'':'slds-hide'}">   	
+                                    <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.previousHandler}" disabled="{!v.addPartCheck == true}"/>	
+                                    <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" disabled="{!v.assetRec == undefined}" onclick="{!c.nextHandler}"/>	
+                                </div>	
+                                <div class="{!and(v.searchCriteria == 'Contract Number', v.searchCriteria != undefined)?'':'slds-hide'}">   	
+                                    <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.previousHandler}" disabled="{!v.addPartCheck == true}"/>	
+                                    <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" disabled="{!v.selectedContractLineItem == undefined}" onclick="{!c.nextHandler}"/>                    	
+                                </div>	
+                            </div>	
+                            <div class="{!v.stageNumber == 12?'':'slds-hide'}">	
+                                <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.previousHandler}"/>	
+                                <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" disabled="{!v.neaRec == undefined}" onclick="{!c.nextHandler}"/>	
+                            </div>	
+                            <div class="{!v.stageNumber == 14?'':'slds-hide'}">	
+                                <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.previousHandler}"/>	
+                                <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" disabled="{!v.assetRec == undefined}" onclick="{!c.nextHandler}"/>	
+                            </div>	
+                            <div class="{!v.stageNumber == 3?'':'slds-hide'}" >               	
+                                <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.previousHandler}"/>	
+                                <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" disabled="{!v.versionRec == undefined}" onclick="{!c.nextHandler}"/>	
+                            </div>	
+                            
+                            <div class="{!v.stageNumber == 4?'':'slds-hide'}">	
+                                <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.previousHandler}"/>	
+                                <lightning:button label="Next" title="Next" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.nextHandler}"/>	
+                            </div>                	
+                            <!-- 26101 -->	
+                            <div class="{!v.stageNumber == 5?'':'slds-hide'}">                   	
+                                <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.previousHandler}" disabled="{!v.saveDisable}"/>	
+                                <lightning:button aura:id="deli" class = "testWidth" onclick="{!c.validateParentCase}" variant="brand" label="Next"/>	
+                            </div>	
+                            
+                            <!--26101 -->	
+                            <div class="{!(v.stageNumber == 13)?'':'slds-hide'}">	
+                                <lightning:button label="Previous" title="Previous" variant="brand" class="slds-m-horizontal_xx-small" onclick="{!c.backToParentDetailPage}" />	
+                                <!-- NOKIASC-34214 -->	
+                                <aura:if isTrue="{!v.warrantyCheckRequired}">	
+                                    <lightning:button aura:id="saveNReview" onclick="{!c.saveCase}" variant="brand" label="Save &amp; Review" disabled="{!v.saveSubmitDisable}"/>	
+                                    <aura:set attribute="else">	
+                                        <lightning:button aura:id="saveAsDraft" class = "testWidth" onclick="{!c.saveCase}" variant="brand" label="Save As Draft" disabled="{!v.saveDisable}"/>	
+                                        <lightning:button aura:id="Submit" onclick="{!c.saveCase}" variant="brand" label="Submit" disabled="{!v.saveSubmitDisable}"/>	
+                                    </aura:set>	
+                                </aura:if>                           	
+                            </div>	
+                        </div>	
+                        <!-- NOKIASC-38079 Start-->
+                        <aura:if isTrue="{!and(v.disableAddPart,v.stageNumber==4)}"> 
+                            <div class="slds-col slds-size_12-of-12">
+                                <div class="slds-text-color_error slds-float_left slds-m-top_x-small slds-text-align_left slds-p-left_medium">
+                                    {!format($Label.c.HWS_MSG_AddPartsLimit_Portal, $Label.c.HWS_CNT_AddPartsLimit_Portal)}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <!-- NOKIASC-38079 End-->
+                    </div>
+                </footer>	
+            </aura:if>
+            <!--NOKIASC-37090:Bulk Case Creation : Allow user to select Service Contract |Start -->  
+            <div class="slds-m-around_xx-large">
+                <aura:if isTrue="{!v.isModalVisible}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.closeModal }"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"/>                                
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Service Contract</h2>                                    
+                            </header>
+                            <div class="slds-modal__content slds-p-horizontal--medium" id="modal-content-id-1">
+                                <div class="slds-grid slds-p-bottom--small">
+                                    <div class="slds-col slds-size--6-of-12"></div>
+                                    <div class="slds-col slds-size--6-of-12">
+                                        <lightning:input aura:id="FilterText" type="search" value="{! v.FilterText }" 
+                                                         onchange="{! c.filterEntities }" placeholder="Search this list..."/>
+                                    </div>
+                                </div>
+                                <aura:if isTrue="{!v.popUpDataList.length>0}">
+                                    <div style="{! 'height: '+v.height+'; width:'+(v.filterVisible?'calc(100% - 320px)':'100%')+';'}">                                          
+                                        <lightning:datatable aura:id="popUpDatatable"
+                                                             columns="{!v.columnsConfig}"
+                                                             data="{!v.popUpDataList}"
+                                                             keyField="Id"
+                                                             rowNumberOffset="0"                                    
+                                                             maxRowSelection="{!v.maxRowSelection}"
+                                                             onrowaction="{!c.processSelectedRecord}"
+                                                             enableInfiniteLoading="{!v.enableInfiniteLoading}"
+                                                             loadMoreOffset="{!v.loadMoreOffset}"
+                                                             hideCheckboxColumn="true"
+                                                             sortedBy="{! v.sortedByUser }"
+                                                             sortedDirection="{! v.sortedDirectionUser }"
+                                                             defaultSortDirection="{! v.defaultSortDirection }" 
+                                                             onsort="{! c.updateColumnSorting }"
+                                                             onloadmore="{!c.handleLoadMoreData}"/>
+                                        <div class="slds-float_right">
+                                            <strong>{!v.loadMoreStatus}</strong>
+                                        </div>
+                                    </div>
+                                    <aura:set attribute="else">
+                                        <h4 class="slds-text-heading_medium slds-hyphenate slds-text-align_center">  No Data Found.</h4>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeModal }"/>                         
+                            </footer>
+                        </div>
+                        <aura:if isTrue="{! v.ModalSpinner }">
+                            <lightning:spinner alternativeText="Loading"/>
+                        </aura:if>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                    
+                </aura:if>
+            </div>
+            <!--NOKIASC-37090:Bulk Case Creation : Allow user to select Service Contract |End -->  
+        </div>	
+    </article>	
+    <!--loading spinner start-->	
+    <aura:if isTrue="{!v.spinner}">	
+        <div class="exampleHolder">            	
+            <lightning:spinner title="Processing..." alternativeText="Loading..." variant="brand"  size="medium" />	
+        </div>	
+    </aura:if>	
+    <!-- Loading spinner end-->	
+</aura:component>
