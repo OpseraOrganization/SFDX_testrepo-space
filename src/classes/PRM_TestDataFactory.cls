@@ -3,6 +3,7 @@
 *Author: Miguel Silva
 *Description: Data creation
 ************************************/
+@isTest
 public without sharing class PRM_TestDataFactory {
 	public static List<Partner> createPartnerRelation(integer nbrRec, Id accountFromId, String partnerRole)
 	{	
@@ -15,6 +16,15 @@ public without sharing class PRM_TestDataFactory {
 			partnerRelList.add(partnerRelRec);
 		}
 		return partnerRelList;
+	}
+	
+	public static User createSystemAdminUser() {	
+		Profile adminProfile = [SELECT Id FROM Profile WHERE Name='System Administrator'];
+		User adminUser = new User(Alias = 'newUser', Email='newuser@testorg.com',
+								EmailEncodingKey='UTF-8', LastName='Admin user', LanguageLocaleKey='en_US',
+								LocaleSidKey='en_US', ProfileId = adminProfile.Id, TimeZoneSidKey='America/Los_Angeles',
+								UserName='newuser1018@testorg1.com'); 
+		return adminUser;
 	}
 	
 	public static List<Account> createPartnerAccount(integer nbrRec, String partnerRole)
@@ -114,7 +124,6 @@ public without sharing class PRM_TestDataFactory {
 		return accredList;
 	}
 	
-		
 	/*public static List<Co_Op_Invoice__c> createCoOpInvoice(integer nbrRec, Id coopClaimId, Id activityId)
 	{   
 		List<Co_Op_Invoice__c> invoiceList = new  List<Co_Op_Invoice__c>();

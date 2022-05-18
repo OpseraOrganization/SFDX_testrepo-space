@@ -12,9 +12,12 @@ public with sharing class QTO_AttachmentTriggerHandler {
 
 		String case_prefix = Schema.SObjectType.Case.getKeyPrefix();
 		
-		for(Attachment attch : listAttchSO)
-			if(((String)attch.ParentId).startsWith(case_prefix))
+		for(Attachment attch : listAttchSO){
+			String parentId = (String)attch.ParentId;
+			
+			if(!String.isEmpty(parentId) && parentId.startsWith(case_prefix))
 				relatedCaseIds.add(attch.ParentId);
+		}			
 
 		System.debug('*****relatedCaseIds: '+relatedCaseIds);
 

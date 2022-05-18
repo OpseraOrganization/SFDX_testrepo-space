@@ -44,53 +44,54 @@ public without sharing  class NF_ApprovalController {
 		List<String> submittedPhases = new List<String>{GlobalConstants.SUBMITTED_FOR_G2_APPROVAL, GlobalConstants.SUBMITTED_FOR_G6_APPROVAL};
 
 		Opportunity currentOpp = [SELECT
-								  Name,
-								  Lead_BG__c, Lead_BU__c,
-								  StageName,
-								  Phase_Status__c,
-								  Sales_Outcome__c,
-								  Opportunity_ID__c,
-								  LOA_Level__c,
-								  Account.RecordType.Name,
-								  NF_Facilitator_Notified__c,
-								  NF_Facilitator_User__c,
-								  Facilitator_Delegate_1__c,
-								  Facilitator_Delegate_2__c,
-								  Facilitator_Delegate_3__c,
-								  Facilitator_Backup__c,
-								  Queue_Id__c,
-								  Queue_Name__c,
-								  OwnerId,
-								  NF_LoA_Bypass__c,
-								  Business_Type__c,
-								  OIF_Lines__c,
-								  Blanket_Approval_Condition__c,
-		  Gate_3_Bypass_no_offer_support__c,
-								  PSR_GateClass__c,
-								  Gate_6_Bypass_No_Execute_needed__c,
-								  PSR_Total_Cost_In_Euro__c,
-								  PSR_Total_Sales_Value_in_Local_Currency__c,
-								  PTA_Signed__c,
-								  Account.AccountNumber,
-								  probability,
-								  Apttus_Approval__Approval_Status__c,
-								  PSR_LoA_Level__c,
-								  RecordTypeId,
-								  CurrencyIsoCode,
-								  PSR_Reference_Opportunity__c,
-								  PSR_Pre_Sales_Risk_Opportunity_Sub_Type__c,
-								  PSR_Pre_Sales_Risk_Opportunity_Type__c,
-								  PSR_Cost_BU_NI_FN__c , PSR_Cost_BU_NI_IPRTG__c , PSR_Cost_BU_NI_OPTICS__c , PSR_Cost_BG_MN__c , PSR_Cost_BG_CNS__c, PSR_Cost_BG_NI__c,
-								  org_l4__c, Org_L3__c, org_l5__c,
-								  SWx_Upsell_Proposal__c, AccountId, Account.Market__c,
-								  Unweighted_Amount_EUR__c,
-								  SolutionScopeAlignedCSO__c,
-								  MultiBGException_AllowG2Bypass__c,
-								  isMultiBG__c,
-								  (SELECT UserId FROM OpportunityTeamMembers WHERE TeamMemberRole=:GlobalConstants.OFFER_CONTROL),
-								  (Select Id,toLabel(LOA_Bypass__c),LoA_Approval_Level__c from Offers__r where ActiveOffer__c = true)
-								  FROM Opportunity
-								  WHERE Id =: currentRecordId Limit : limitRows];
+		  Name,
+		  Lead_BG__c, Lead_BU__c,
+		  StageName,
+		  Phase_Status__c,
+		  Sales_Outcome__c,
+		  Opportunity_ID__c,
+		  LOA_Level__c,
+		  Account.RecordType.Name,
+		  NF_Facilitator_Notified__c,
+		  NF_Facilitator_User__c,
+		  Facilitator_Delegate_1__c,
+		  Facilitator_Delegate_2__c,
+		  Facilitator_Delegate_3__c,
+		  Facilitator_Backup__c,
+		  Queue_Id__c,
+		  Queue_Name__c,
+		  OwnerId,
+		  NF_LoA_Bypass__c,
+		  Business_Type__c,
+		  OIF_Lines__c,
+		  Blanket_Approval_Condition__c,
+	Gate_3_Bypass_no_offer_support__c,
+		  PSR_GateClass__c,
+		  Gate_6_Bypass_No_Execute_needed__c,
+		  PSR_Total_Cost_In_Euro__c,
+		  PSR_Total_Sales_Value_in_Local_Currency__c,
+		  PTA_Signed__c,
+		  Account.AccountNumber,
+		  probability,
+		  Apttus_Approval__Approval_Status__c,
+		  PSR_LoA_Level__c,
+		  RecordTypeId,
+		  CurrencyIsoCode,
+		  PSR_Reference_Opportunity__c,
+		  PSR_Pre_Sales_Risk_Opportunity_Sub_Type__c,
+		  PSR_Pre_Sales_Risk_Opportunity_Type__c,
+		  PSR_Cost_BU_NI_FN__c , PSR_Cost_BU_NI_IPRTG__c , PSR_Cost_BU_NI_OPTICS__c , PSR_Cost_BG_MN__c , PSR_Cost_BG_CNS__c, PSR_Cost_BG_NI__c,
+		  org_l4__c, Org_L3__c, org_l5__c,
+		  SWx_Upsell_Proposal__c, AccountId, Account.Market__c,
+		  Unweighted_Amount_EUR__c,
+
+
+								  Gate_2_Bypass_no_complex_offer__c,
+		  isMultiBG__c,
+		  (SELECT UserId FROM OpportunityTeamMembers WHERE TeamMemberRole=:GlobalConstants.OFFER_CONTROL),
+		  (Select Id,toLabel(LOA_Bypass__c),LoA_Approval_Level__c from Offers__r where ActiveOffer__c = true)
+		  FROM Opportunity
+		  WHERE Id =: currentRecordId Limit : limitRows];
 
 		Offer__c currentOffer = currentOpp.Offers__r.isEmpty() ? null : currentOpp.Offers__r[0];
 
@@ -128,7 +129,8 @@ public without sharing  class NF_ApprovalController {
 			Onlyquery=true;
 		}
 		//Bypass only when not parcial approval
-		if(currentOpp.StageName.equalsignorecase(GlobalConstants.IDENTIFY_OPPORTUNITY) && !(currentOpp.isMultiBG__c && currentOpp.Unweighted_Amount_EUR__c > GlobalConstants.MINUNWEIGHTEDVALUE_G2APPROVAL && !currentOpp.MultiBGException_AllowG2Bypass__c && currentOpp.SolutionScopeAlignedCSO__c)){
+
+		if(currentOpp.Gate_2_Bypass_no_complex_offer__c){
 			setBypassParameters(GlobalConstants.BYPASS_GATE_2_MSG + GlobalConstants.STAKEHOLDERS_PREVIEW_EMPTY_MSG,'', false, true);
 		}
 		if(currentOpp.StageName.equalsignorecase(GlobalConstants.DEVELOP_OPPORTUNITY) && currentOpp.Gate_3_Bypass_no_offer_support__c	){
@@ -136,11 +138,11 @@ public without sharing  class NF_ApprovalController {
 		}
 		if(currentOpp.StageName.equalsignorecase(GlobalConstants.WIN_THE_CASE_NEGOTIATE )){
 			if(currentOpp.Blanket_Approval_Condition__c != null){
-				setBypassParameters(GlobalConstants.BYPASS_GATE_5_MSG + GlobalConstants.BYPASS_STAKEHOLDERS_PREVIEW_EMPTY_MSG,GlobalConstants.G5BYPASS_LOA_MSG + currentOffer.LOA_Bypass__c, false, true);
+	setBypassParameters(GlobalConstants.BYPASS_GATE_5_MSG + GlobalConstants.BYPASS_STAKEHOLDERS_PREVIEW_EMPTY_MSG,GlobalConstants.G5BYPASS_LOA_MSG + currentOffer.LOA_Bypass__c, false, true);
 			} else if( !currentOpp.Phase_Status__c.equalsignorecase(GlobalConstants.PENDING_WIN_LOSS_DECLARATION ) && currentOpp.NF_LoA_Bypass__c>0 && currentOpp.Blanket_Approval_Condition__c == null){
-				Bypass_msgval=GlobalConstants.G5BYPASS_LOA_MSG + currentOffer.LOA_Bypass__c;
+	Bypass_msgval=GlobalConstants.G5BYPASS_LOA_MSG + currentOffer.LOA_Bypass__c;
 			} else if(!currentOpp.Phase_Status__c.equalsignorecase(GlobalConstants.PENDING_WIN_LOSS_DECLARATION ) && currentOpp.NF_LoA_Bypass__c==0 && currentOpp.Blanket_Approval_Condition__c == null) {
-				setBypassParameters(GlobalConstants.GATE_MANAGEMENT_WTD_ERROR,'', true, true);
+	setBypassParameters(GlobalConstants.GATE_MANAGEMENT_WTD_ERROR,'', true, true);
 			}
 		}
 		if(currentOpp.StageName.equalsignorecase(GlobalConstants.HANDOVER_OPPTY ) && (currentOpp.Gate_6_Bypass_No_Execute_needed__c == true || currentOpp.Blanket_Approval_Condition__c != null ))
@@ -154,17 +156,17 @@ public without sharing  class NF_ApprovalController {
 		}
 		if(currentOpp.StageName.equalsIgnoreCase(GlobalConstants.CREATE_OFFER)){
 			if(currentOffer == null){
-				setBypassParameters(GlobalConstants.CREATE_OFFER_MSG,'', true, true);
+	setBypassParameters(GlobalConstants.CREATE_OFFER_MSG,'', true, true);
 			}
 			if(currentOffer != null && currentOpp.NF_LOA_Bypass__c>0){
-				setBypassParameters(GlobalConstants.BYPASS_GATE_4_MSG + GlobalConstants.BYPASS_STAKEHOLDERS_PREVIEW_EMPTY_MSG,GlobalConstants.G4BYPASS_LOA_MSG + currentOffer.LOA_Bypass__c, false, true);
+	setBypassParameters(GlobalConstants.BYPASS_GATE_4_MSG + GlobalConstants.BYPASS_STAKEHOLDERS_PREVIEW_EMPTY_MSG,GlobalConstants.G4BYPASS_LOA_MSG + currentOffer.LOA_Bypass__c, false, true);
 			}
 			if(currentOffer != null && !gate_bypass && GlobalConstants.LOA_BYPASS_LEVEL.equalsignorecase(currentOpp.LOA_Level__c))
 			{
-				setBypassParameters(GlobalConstants.SELECT_VALID_LOA_LEVEL_MSG,'', true, true);
+	setBypassParameters(GlobalConstants.SELECT_VALID_LOA_LEVEL_MSG,'', true, true);
 			}
 			if(currentOffer != null && !gate_bypass){
-				setBypassParameters(GlobalConstants.GATE_MANAGEMENT_WTD_ERROR,'', true, true);
+	setBypassParameters(GlobalConstants.GATE_MANAGEMENT_WTD_ERROR,'', true, true);
 			}
 		}
 		//check or Fill PTA_Signed__c Automatically for Handover (Prepare for Delivery)
@@ -186,52 +188,52 @@ public without sharing  class NF_ApprovalController {
 			hiddenEmailbutton = showEmailButton(currentOpp, currentOffer);
 			for(Apttus_Approval__Approval_Request__c ApprovalReq : approvalRequestList)
 			{
-				if(!ApprovalReq.NF_Assignee_Type__c.Contains(GlobalConstants.STAKEHOLDER_INFORMATION))
-				av_InApprovals.add(ApprovalReq.Apttus_Approval__Assigned_To_Id__c);
+	if(!ApprovalReq.NF_Assignee_Type__c.Contains(GlobalConstants.STAKEHOLDER_INFORMATION))
+	av_InApprovals.add(ApprovalReq.Apttus_Approval__Assigned_To_Id__c);
 
-				userInApprovals.add(ApprovalReq.Apttus_Approval__Assigned_To_Id__c);
-				if (ApprovalReq.Apttus_Approval__DelegateApproverIds__c != null) {
+	userInApprovals.add(ApprovalReq.Apttus_Approval__Assigned_To_Id__c);
+	if (ApprovalReq.Apttus_Approval__DelegateApproverIds__c != null) {
 		for (string delegateapproverId: ApprovalReq.Apttus_Approval__DelegateApproverIds__c.split(',')) {
 			userInApprovals.add(delegateapproverId);
 			if(!ApprovalReq.NF_Assignee_Type__c.Contains(GlobalConstants.STAKEHOLDER_INFORMATION) )
 			av_InApprovals.add(delegateapproverId);
 		}
-				}
+	}
 			}
 
 			for(user userrecord : [Select Id ,Email,FirstName,Name,LastName,IsActive from User Where id IN: USerInApprovals Limit : limitRows])
 			{
-				usernameidMap.put(userrecord.Id, userrecord);
-				USerEmailinApprovals.add(userrecord.Email);
+	usernameidMap.put(userrecord.Id, userrecord);
+	USerEmailinApprovals.add(userrecord.Email);
 
-				if(!sH_Emailids.contains(userrecord.Email)&&!AV_InApprovals.contains(userrecord.id))
-				sH_Emailids+=userrecord.Email+' ; ';
+	if(!sH_Emailids.contains(userrecord.Email)&&!AV_InApprovals.contains(userrecord.id))
+	sH_Emailids+=userrecord.Email+' ; ';
 
-				if(!AV_Emailids.contains(userrecord.Email)&&AV_InApprovals.contains(userrecord.id))
-				AV_Emailids+=userrecord.Email+' ; ';
+	if(!AV_Emailids.contains(userrecord.Email)&&AV_InApprovals.contains(userrecord.id))
+	AV_Emailids+=userrecord.Email+' ; ';
 			}
 
 			for(Apttus_Approval__Approval_Request__c ApprovalReqval: approvalRequestList)
 			{
-				string DelegateUserEmails='';
-				string DelegateuseNames='';
-				if(ApprovalReqval.Apttus_Approval__Assigned_To_Id__c!=null){
+	string DelegateUserEmails='';
+	string DelegateuseNames='';
+	if(ApprovalReqval.Apttus_Approval__Assigned_To_Id__c!=null){
 		GAteParticipantsPage Gppw = new GAteParticipantsPage();
 		Gppw.ApprovalRequest=ApprovalReqval;
 		Gppw.User=usernameidMap.get(ApprovalReqval.Apttus_Approval__Assigned_To_Id__c);
 
 		if (ApprovalReqval.Apttus_Approval__DelegateApproverIds__c != null) {
 			for (string delegateapproverId: ApprovalReqval.Apttus_Approval__DelegateApproverIds__c.split(',')) {
-				USer Userval=usernameidMap.get(delegateapproverId);
-				DelegateuseNames=DelegateuseNames+Userval.Name+' / ';
-				DelegateUserEmails=DelegateUserEmails+Userval.Email+' / ';
+	USer Userval=usernameidMap.get(delegateapproverId);
+	DelegateuseNames=DelegateuseNames+Userval.Name+' / ';
+	DelegateUserEmails=DelegateUserEmails+Userval.Email+' / ';
 			}
 			Gppw.DelegateUsers=DelegateuseNames.removeEnd(' / ');
 			Gppw.DelegateUserEmails=DelegateUserEmails.removeEnd(' / ');
 		}
 
 		GAteParticipantsPagelist.add(Gppw);
-				}
+	}
 			}
 		}
 	}
@@ -334,7 +336,7 @@ public without sharing  class NF_ApprovalController {
 		if(currentOffer != null){
 			for (Offer_Team__c OfferTeamMembers: [select id,Offer__c ,Name__c,Offer__r.Opportunity__c from Offer_Team__c where Team_Member_Role__c=:GlobalConstants.OFFER_CONTROL AND Offer__c=:currentOffer.Id Limit : limitRows  ])
 			{
-				offerControllersG4.add(OfferTeamMembers.Name__c);
+	offerControllersG4.add(OfferTeamMembers.Name__c);
 			}
 		}
 		if(!offerControllersG4.isEmpty())
@@ -396,7 +398,7 @@ public without sharing  class NF_ApprovalController {
 			selectFields.add(fd.getName());
 
 			if(fd.getName().containsIgnoreCase('Approval_Status__c')){
-				approvalFieldSet.add(fd.getName());
+	approvalFieldSet.add(fd.getName());
 			}
 		}
 	}

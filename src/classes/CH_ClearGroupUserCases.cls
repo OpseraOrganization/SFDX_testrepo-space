@@ -11,6 +11,10 @@
 public without sharing class CH_ClearGroupUserCases {
 	
 	public static void execute(Set<Id> oUserIdSet, Set<Id> oGroupIdSet){
+		execute(oUserIdSet, oGroupIdSet, new Set<Id>());
+	}
+	
+	public static void execute(Set<Id> oUserIdSet, Set<Id> oGroupIdSet, Set<Id> oCaseIdSet){
 		//Get Group Names
 		Map<Id, String> oGroupNameMap = new Map<Id, String>();
 		for(Group oGroup : [SELECT Id, Name FROM Group WHERE Id IN :oGroupIdSet]) {
@@ -23,45 +27,59 @@ public without sharing class CH_ClearGroupUserCases {
 			sUserGroupName.add(oGroupMember.UserOrGroupId+ '|' + oGroupMember.Group.Name);
 		}
 		//Get Cases where user is owner and contains group names
-		List<Case> oCaseList = [
+		List<Case> oCaseList = (oCaseIdSet.isEmpty() ? [
 			SELECT Id, OwnerId, Status, CH_SecurityGroup__c, CH_GWC_SecurityGroup__c, CH_3rdPartySecurityGroup__c, RecordTypeId,
-				HWS_RecordTypeCheck__c, CH_Record_Type_Check_Condition__c, CH_RecordTypeCheck__c, CH_Workgroup__c, CH_CurrentQueue__c
+	HWS_RecordTypeCheck__c, CH_Record_Type_Check_Condition__c, CH_RecordTypeCheck__c, CH_Workgroup__c, CH_CurrentQueue__c
 			FROM Case
 			WHERE OwnerId IN :oUserIdSet AND Status != 'Completed' AND ((HWS_RecordTypeCheck__c = true AND Status != 'Closed') OR CH_Record_Type_Check_Condition__c = true) AND
-				  ((CH_SecurityGroup__c IN :GroupNames AND Status != 'Cancelled') OR CH_GWC_SecurityGroup__c IN :GroupNames OR CH_3rdPartySecurityGroup__c IN :GroupNames)
-		];
+	  ((CH_SecurityGroup__c IN :GroupNames AND Status != 'Cancelled') OR CH_GWC_SecurityGroup__c IN :GroupNames OR CH_3rdPartySecurityGroup__c IN :GroupNames)
+		] : [
+			SELECT Id, OwnerId, Status, CH_SecurityGroup__c, CH_GWC_SecurityGroup__c, CH_3rdPartySecurityGroup__c, RecordTypeId,
+	HWS_RecordTypeCheck__c, CH_Record_Type_Check_Condition__c, CH_RecordTypeCheck__c, CH_Workgroup__c, CH_CurrentQueue__c
+			FROM Case
+			WHERE OwnerId IN :oUserIdSet AND Status != 'Completed' AND ((HWS_RecordTypeCheck__c = true AND Status != 'Closed') OR CH_Record_Type_Check_Condition__c = true) AND
+	  ((CH_SecurityGroup__c IN :GroupNames AND Status != 'Cancelled') OR CH_GWC_SecurityGroup__c IN :GroupNames OR CH_3rdPartySecurityGroup__c IN :GroupNames) AND
+				  Id IN :oCaseIdSet
+		]);
 		//Get Cases from CaseTeamMembers where user is present and contains group names
-		List<CaseTeamMember> oCaseTeamMemberList = [
+		List<CaseTeamMember> oCaseTeamMemberList = (oCaseIdSet.isEmpty() ? [
 			SELECT Id, MemberId, Parent.Status, Parent.CH_SecurityGroup__c, Parent.CH_GWC_SecurityGroup__c, Parent.CH_3rdPartySecurityGroup__c,
-				Parent.HWS_RecordTypeCheck__c, Parent.CH_Record_Type_Check_Condition__c
+	Parent.HWS_RecordTypeCheck__c, Parent.CH_Record_Type_Check_Condition__c
 			FROM CaseTeamMember
 			WHERE MemberId IN :oUserIdSet AND Parent.Status != 'Completed' AND ((Parent.HWS_RecordTypeCheck__c = true AND Parent.Status != 'Closed') OR Parent.CH_Record_Type_Check_Condition__c = true) AND
-				  ((Parent.CH_SecurityGroup__c IN :GroupNames AND Parent.Status != 'Cancelled') OR Parent.CH_GWC_SecurityGroup__c IN :GroupNames OR Parent.CH_3rdPartySecurityGroup__c IN :GroupNames)
-		];
+	  ((Parent.CH_SecurityGroup__c IN :GroupNames AND Parent.Status != 'Cancelled') OR Parent.CH_GWC_SecurityGroup__c IN :GroupNames OR Parent.CH_3rdPartySecurityGroup__c IN :GroupNames)
+		] : [
+			SELECT Id, MemberId, Parent.Status, Parent.CH_SecurityGroup__c, Parent.CH_GWC_SecurityGroup__c, Parent.CH_3rdPartySecurityGroup__c,
+	Parent.HWS_RecordTypeCheck__c, Parent.CH_Record_Type_Check_Condition__c
+			FROM CaseTeamMember
+			WHERE MemberId IN :oUserIdSet AND Parent.Status != 'Completed' AND ((Parent.HWS_RecordTypeCheck__c = true AND Parent.Status != 'Closed') OR Parent.CH_Record_Type_Check_Condition__c = true) AND
+	  ((Parent.CH_SecurityGroup__c IN :GroupNames AND Parent.Status != 'Cancelled') OR Parent.CH_GWC_SecurityGroup__c IN :GroupNames OR Parent.CH_3rdPartySecurityGroup__c IN :GroupNames) AND
+				  ParentId IN :oCaseIdSet
+		]);
 		//Change Owner from Cases from the list where user is not part of another group set on the case
 		User userQueue = [SELECT Id FROM User WHERE Name = 'CH Queue' LIMIT 1];
 		Map<Id, Case> oCaseOldMap = new Map<Id, Case>();
 		List<Case> oCaseToUpdateList = new List<Case>();
 		for(Case oCase : oCaseList) {
 			if(
-				!sUserGroupName.contains(oCase.OwnerId + '|' + oCase.CH_SecurityGroup__c) &&
-				!sUserGroupName.contains(oCase.OwnerId + '|' + oCase.CH_GWC_SecurityGroup__c) &&
-				!sUserGroupName.contains(oCase.OwnerId + '|' + oCase.CH_3rdPartySecurityGroup__c)
+	!sUserGroupName.contains(oCase.OwnerId + '|' + oCase.CH_SecurityGroup__c) &&
+	!sUserGroupName.contains(oCase.OwnerId + '|' + oCase.CH_GWC_SecurityGroup__c) &&
+	!sUserGroupName.contains(oCase.OwnerId + '|' + oCase.CH_3rdPartySecurityGroup__c)
 			) {
-				oCaseOldMap.put(oCase.Id, oCase.clone(true));
-				oCase.OwnerId = userQueue.Id;
-				oCaseToUpdateList.add(oCase);
+	oCaseOldMap.put(oCase.Id, oCase.clone(true));
+	oCase.OwnerId = userQueue.Id;
+	oCaseToUpdateList.add(oCase);
 			}
 		}
 		//Remove CaseTeamMembers from the list where user is part of another group set on the case
 		Set<Id> oCaseTeamMemberToDeleteSet = new Set<Id>();
 		for(CaseTeamMember oCaseTeamMember : oCaseTeamMemberList) {
 			if(
-				!sUserGroupName.contains(oCaseTeamMember.MemberId + '|' + oCaseTeamMember.Parent.CH_SecurityGroup__c) &&
-				!sUserGroupName.contains(oCaseTeamMember.MemberId + '|' + oCaseTeamMember.Parent.CH_GWC_SecurityGroup__c) &&
-				!sUserGroupName.contains(oCaseTeamMember.MemberId + '|' + oCaseTeamMember.Parent.CH_3rdPartySecurityGroup__c)
+	!sUserGroupName.contains(oCaseTeamMember.MemberId + '|' + oCaseTeamMember.Parent.CH_SecurityGroup__c) &&
+	!sUserGroupName.contains(oCaseTeamMember.MemberId + '|' + oCaseTeamMember.Parent.CH_GWC_SecurityGroup__c) &&
+	!sUserGroupName.contains(oCaseTeamMember.MemberId + '|' + oCaseTeamMember.Parent.CH_3rdPartySecurityGroup__c)
 			) {
-				oCaseTeamMemberToDeleteSet.add(oCaseTeamMember.Id);
+	oCaseTeamMemberToDeleteSet.add(oCaseTeamMember.Id);
 			}
 		}
 		//Update Cases and delete CaseTeamMembers
@@ -93,10 +111,10 @@ public without sharing class CH_ClearGroupUserCases {
 		if(!oCaseTeamHistoryList.isEmpty()) {
 			List<CH_CaseTeamHistory__c> oCaseTeamHistoryListToUpdate = new List<CH_CaseTeamHistory__c>();
 			for(CH_CaseTeamHistory__c oCaseTeamHistory : oCaseTeamHistoryList) {
-				if(sMemberToParentIdSet.contains(oCaseTeamHistory.OwnerId + ':' + oCaseTeamHistory.Support_Ticket__c)) {
-					oCaseTeamHistory.CH_CaseTeamExit__c = System.now();
-					oCaseTeamHistoryListToUpdate.add(oCaseTeamHistory);
-				}
+	if(sMemberToParentIdSet.contains(oCaseTeamHistory.OwnerId + ':' + oCaseTeamHistory.Support_Ticket__c)) {
+		oCaseTeamHistory.CH_CaseTeamExit__c = System.now();
+		oCaseTeamHistoryListToUpdate.add(oCaseTeamHistory);
+	}
 			}
 			if(!oCaseTeamHistoryListToUpdate.isEmpty()) { database.update(oCaseTeamHistoryListToUpdate, false); }
 		}

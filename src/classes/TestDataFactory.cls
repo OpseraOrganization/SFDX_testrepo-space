@@ -167,12 +167,7 @@ public without sharing class TestDataFactory {
 			acc.Industry = 'Enterprise';
 			acc.Market__c = 'Market India';
 			acc.Country__c = 'India';
-			//acc.Customer_Compliance__c='US_Govern';
-
-			//acc.CBT_CT_Code__c='NAM US Regionals';
-			//acc.Customer_Compliance__c = 'unassigned';
 			acc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
-			//acc.recordType.Name = 'Legal_Entity';
 			acc.AccountNumber = '301030871';
 
 			accList.add(acc);
@@ -217,7 +212,6 @@ public without sharing class TestDataFactory {
 			contentVersion.VersionData = bodyBlob;
 			contentVersion.IsMajorVersion = false;
 			contentVersion.origin = GlobalConstants.CONTENT_ORIGIN;
-			//contentVersion.ContentDocumentId = contentVersionId;
 			contentVersionList.add(contentVersion);
 		}
 		return contentVersionList;
@@ -301,14 +295,10 @@ public without sharing class TestDataFactory {
 			opty.Name = 'Test Opportunity';
 			opty.CloseDate = system.today();
 			opty.StageName = 'Identify Opportunity';
-			//opty.StageName = 'Win the Case (Negotiate)';
 			opty.AccountId = acc.id;
-			//opty.Account = 'Test Customer';
 			opty.End_Customer__c = acc.id;
 			opty.Contract_Signing_Entity__c = 'fALU';
-			//opty.Phase_Status__c = 'Submitted for G5 Approval';
 			opty.Phase_Status__c = 'Planned';
-			//opty.Sales_Outcome__c= 'Won';
 			opty.Apttus_Approval__Approval_Status__c = 'Approved';
 			opty.CurrencyIsoCode = 'USD';
 			opty.Business_Type__c = 'Standard Opportunity';
@@ -317,13 +307,10 @@ public without sharing class TestDataFactory {
 			opty.Unweighted_Amount_EUR__c = 0;
 			opty.Lead_BG__c = 'MN';
 			opty.Lead_BU__c = 'MN';
-			//opty.Start_Contract_Date__c = system.today();
-			//opty.Contract_End_Close_Date__c = system.today();
 			opty.G2_Planned_Date__c = system.today();
 			opty.G3_Planned_Date__c = system.today() + 1;
 			opty.G4_Planned_Date__c = system.today() + 2;
 			opty.G5_Planned_Date__c = system.today() + 3;
-			//opty.G6_Planned_Date__c = system.today()+4;
 			optyList.add(opty);
 		}
 		return optyList;
@@ -375,8 +362,6 @@ public without sharing class TestDataFactory {
 
 	//Cart Creation
 	public static Apttus_Config2__ProductConfiguration__c createProductConfiguration(Apttus_Proposal__Proposal__c proposal) {
-		// List<Apttus_Config2__ProductConfiguration__c> cartList = new List<Apttus_Config2__ProductConfiguration__c>();
-		// for (integer i = 0; i < size; i++){
 		Apttus_Config2__ProductConfiguration__c cart = new Apttus_Config2__ProductConfiguration__c(Apttus_QPConfig__Proposald__c = proposal.Id);
 		cart.Apttus_Config2__BusinessObjectRefId__c = proposal.Id;
 		cart.Apttus_Config2__PriceListId__c = proposal.Apttus_QPConfig__PriceListId__c;
@@ -387,8 +372,6 @@ public without sharing class TestDataFactory {
 		cart.Apttus_Config2__Status__c = CSWXGlobalConstant.cartStatus;
 		cart.name = CSWXGlobalConstant.cartName + proposal.Apttus_Proposal__Proposal_Name__c;
 		cart.createdById = userinfo.getuserid();
-		//cartList.add(cart);
-		// }		 
 		return cart;
 	}
 
@@ -446,10 +429,6 @@ public without sharing class TestDataFactory {
 			DateTime dT = System.now();
 			Date myDate = date.newinstance(dT.year(), dT.month(), dT.day());
 			offer.Customer_Offer_Due_Date__c = myDate;
-			//offer.CreatedById = '0056E000001jDqPQAU';
-			//offer.No_Support_Offer_Condition__c = 'yes';
-			//offer.Customer_Offer_Due_Date__c = Date.valueOf(system.today());
-			offer.Expected_LoA_G4_Approval_Level__c = 'A';
 			offerList.add(offer);
 		}
 		return offerList;
@@ -615,20 +594,9 @@ public without sharing class TestDataFactory {
 			lead.Industry = 'Enterprise';
 			lead.Purchasing_Role__c = 'Contact';
 			lead.rating = 'A';
-			//lead.ownerId = '00558000001aZha';
 			lead.Business_Type__c = 'Consultant';
 			lead.Email = 'john.doe@accenture.com';
-			//lead.Opportunity_Record_Type__c = 'Create Direct Sales Opportunity';
 			leadList.add(lead);
-			//Lead ld = new Lead();
-			//ld.Name = 'Test Account -' + i;
-			//ld.BillingStreet = '1660 International Dr';
-			//ld.BillingCity = 'McLean'; 
-			//ld.BillingState = 'Virginia';
-			//acc.BillingPostalCode = '22102';
-			//acc.BillingCountry = 'United States';
-			//acc.recordType.Name = 'Customer';
-			//accList.add(acc);
 		}
 		return leadList;
 	}
@@ -892,11 +860,7 @@ public without sharing class TestDataFactory {
 		fileSharingCustomSetting54.Value__c = '1';
 		fileSharingCustomSettingList.add(fileSharingCustomSetting54);
 
-		/*File_Sharing_Custom_Setting__c fileSharingCustomSetting44 = new File_Sharing_Custom_Setting__c();
-		fileSharingCustomSetting44.Name = 'OpportunitySalesOutcomeValues';
-		fileSharingCustomSetting44.Value__c = 'Obsolete, Lost to Competitor, Withdrawn by Nokia, Cancelled by Customer, Won';
-		fileSharingCustomSettingList.add(fileSharingCustomSetting44);*/
-
+		
 		//Creating groups related custom settings
 		createCollaborationGroupsAndCustomSettings();
 		return fileSharingCustomSettingList;
@@ -909,42 +873,29 @@ public without sharing class TestDataFactory {
 		cloneObjectCustomSetting.Name = 'Customer Offer Due Date';
 		cloneObjectCustomSetting.Field_API__c = 'Customer_Offer_Due_Date__c';
 		cloneObjectCustomSetting.Object__c = 'Offer';
-		//	cloneObjectCustomSetting.Field_Label__c = 'Customer Offer Due Date';
 		cloneObjectCustomSettingList.add(cloneObjectCustomSetting);
 
 		cloneObject__c cloneObjectCustomSetting1 = new cloneObject__c();
 		cloneObjectCustomSetting1.Name = 'Owner';
 		cloneObjectCustomSetting1.Field_API__c = 'CreatedById';
 		cloneObjectCustomSetting1.Object__c = 'Offer';
-		//   cloneObjectCustomSetting1.Field_Label__c = 'Owner';
 		cloneObjectCustomSettingList.add(cloneObjectCustomSetting1);
 
 		cloneObject__c cloneObjectCustomSetting2 = new cloneObject__c();
 		cloneObjectCustomSetting2.Name = 'Offer Name';
 		cloneObjectCustomSetting2.Field_API__c = 'Name';
 		cloneObjectCustomSetting2.Object__c = 'Offer';
-		//   cloneObjectCustomSetting2.Field_Label__c = 'Offer Name';
 		cloneObjectCustomSettingList.add(cloneObjectCustomSetting2);
 
 		cloneObject__c cloneObjectCustomSetting3 = new cloneObject__c();
 		cloneObjectCustomSetting3.Name = 'Opportunity';
 		cloneObjectCustomSetting3.Field_API__c = 'Opportunity__c';
 		cloneObjectCustomSetting3.Object__c = 'Offer';
-		//   cloneObjectCustomSetting3.Field_Label__c = 'Opportunity';
 		cloneObjectCustomSettingList.add(cloneObjectCustomSetting3);
-
-		cloneObject__c cloneObjectCustomSetting4 = new cloneObject__c();
-		cloneObjectCustomSetting4.Name = 'Expected LoA Level';
-		cloneObjectCustomSetting4.Field_API__c = 'Expected_LoA_G4_Approval_Level__c';
-		cloneObjectCustomSetting4.Object__c = 'Offer';
-		//   cloneObjectCustomSetting4.Field_Label__c = 'Expected LoA Level';
-		cloneObjectCustomSettingList.add(cloneObjectCustomSetting4);
 
 		cloneObject__c cloneObjectCustomSetting5 = new cloneObject__c();
 		cloneObjectCustomSetting5.Name = 'No Offer Support Condition';
-		//cloneObjectCustomSetting5.Field_API__c = 'No_Support_Offer_Condition__c';
 		cloneObjectCustomSetting5.Object__c = 'Offer';
-		//	cloneObjectCustomSetting5.Field_Label__c = 'No Offer Support Condition';
 		cloneObjectCustomSettingList.add(cloneObjectCustomSetting5);
 
 		return cloneObjectCustomSettingList;
@@ -1214,7 +1165,6 @@ public without sharing class TestDataFactory {
 		List<Apttus_Config2__ProductOptionComponent__c> optionComponentList = new list<Apttus_Config2__ProductOptionComponent__c>();
 		for (integer i = 0; i < size; i++) {
 			Apttus_Config2__ProductOptionComponent__c optionComponentObj = new Apttus_Config2__ProductOptionComponent__c();
-			//optionComponentObj.Apttus_Config2__ComponentProductId__c = '151421';
 			optionComponentList.add(optionComponentObj);
 		}
 		return optionComponentList;
@@ -1277,7 +1227,6 @@ public without sharing class TestDataFactory {
 			contentVersion.VersionData = bodyBlob;
 			contentVersion.IsMajorVersion = false;
 			contentVersion.origin = GlobalConstants.CONTENT_ORIGIN;
-			//contentVersion.ContentDocumentId = contentVersionId;
 			contentVersionList.add(contentVersion);
 		}
 		return contentVersionList;
@@ -1524,10 +1473,8 @@ public without sharing class TestDataFactory {
 			proposalObj.Apttus_Proposal__Opportunity__c = opp.id;
 			proposalObj.Apttus_Proposal__Account__c = acc.id;
 			proposalObj.Apttus_Proposal__Proposal_Name__c = 'Test' + i;
-			//proposalObj.CQ_Due_Date__c= System.today();
 			proposalObj.CurrencyIsoCode = 'EUR';
 			proposalObj.RecordTypeId = rcdtype;
-			//proposalObj.iscq__c = true;
 			proposalList.add(proposalObj);
 		}
 		return proposalList;
@@ -1538,12 +1485,9 @@ public without sharing class TestDataFactory {
 		for (integer i = 0; i < size; i++) {
 			Sales_Order_Reporting__c SO = new Sales_Order_Reporting__c();
 			so.ALU_Order_Number__c = '10001' + i;
-			//SO.Order__c  =cq.NokiaCPQ_Proposal_Id__c;
 			SO.PO_Amount__c = 500;
 			SO.Order_Created__c = system.today();
-			//SO.Account__c= acc.id;
 			SO.CurrencyIsoCode = 'EUR';
-			//SO.Contracted_Quote__c = cq.id;
 			SOList.add(SO);
 		}
 		return SOList;
@@ -1635,6 +1579,9 @@ public without sharing class TestDataFactory {
 			if (recordTypeName.equals('CH_NetworkElementAsset')) {
 	oAsset.AccountId = oAccount.id;
 	oAsset.Product2Id = oProduct.id;
+	oAsset.CH_CountryISOName__c = 'Albania';
+	oAsset.CH_NetworkManagementSystemID__c='TestManageSysId'+String.valueOf(System.now());
+	
 			}
 			oAsset.RecordTypeId = recordTypeId;
 			oAssetList.add(oAsset);

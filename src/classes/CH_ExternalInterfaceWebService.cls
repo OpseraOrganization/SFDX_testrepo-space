@@ -21,7 +21,7 @@ global without sharing class CH_ExternalInterfaceWebService {
 	private static CH_NAIP_Integration_Settings__c naipIntegrationSettings {
 		get {
 			if (naipIntegrationSettings == NULL) {
-				naipIntegrationSettings = CH_NAIP_Integration_Settings__c.getOrgDefaults(); 
+	naipIntegrationSettings = CH_NAIP_Integration_Settings__c.getOrgDefaults(); 
 			}
 			return naipIntegrationSettings;
 		}
@@ -37,13 +37,13 @@ global without sharing class CH_ExternalInterfaceWebService {
 		List<CaseObjectResponse> responses = new List<CaseObjectResponse>();
 		if (caseObjectList != NULL) {
 			if (caseObjectList.size() == 1) {
-				responses.add(handleS2SRequest(caseObjectList[0]));
+	responses.add(handleS2SRequest(caseObjectList[0]));
 			} else {
-				for (CaseObject request : caseObjectList) {
-					CaseObjectResponse response = new CaseObjectResponse(request);
-					response.errorMessage = Label.CH_InboundS2SRequest_MultipleRequestValidation;
-					responses.add(response);
-				}
+	for (CaseObject request : caseObjectList) {
+		CaseObjectResponse response = new CaseObjectResponse(request);
+		response.errorMessage = Label.CH_InboundS2SRequest_MultipleRequestValidation;
+		responses.add(response);
+	}
 			}
 		}
 		system.debug('-41--final----'+responses);
@@ -59,30 +59,30 @@ global without sharing class CH_ExternalInterfaceWebService {
 		Case s2sCase = NULL;
 		try {
 			if (String.isEmpty(request.chActionExternalSystem)) {
-				throw new S2sException(Label.CH_InboundUpsertCase_ErrorNoAction);
+	throw new S2sException(Label.CH_InboundUpsertCase_ErrorNoAction);
 			} else if (String.isEmpty(request.chCaseOriginSystem)) {
-				throw new S2sException(Label.CH_InboundUpsertCase_ErrorNoCaseOriginSystem);
+	throw new S2sException(Label.CH_InboundUpsertCase_ErrorNoCaseOriginSystem);
 			}
 			
 			if (request.isCreateCase) {
-				return handleCreateCaseS2SRequest(request);
+	return handleCreateCaseS2SRequest(request);
 			}
 			
 			s2sCase = validateS2SCase(request);
 			if (request.isRetrieveCase) {
-				return handleRetrieveCaseS2SRequest(request, s2sCase);
+	return handleRetrieveCaseS2SRequest(request, s2sCase);
 			}
 			if (request.isCreateInformationResponse ||
-				request.isCancelCase ||
-				request.isAcceptWorkaround ||
-				request.isRejectWorkaround ||
-				request.isAcceptSolution ||
-				request.isRejectSolution ||
-				request.isCreateInformationUpdate ||
-				request.isAcknowledgeSuccess ||
-				request.isAcknowledgeError) {
-					return handleCaseCommentS2SRequest(request, s2sCase);
-				}
+	request.isCancelCase ||
+	request.isAcceptWorkaround ||
+	request.isRejectWorkaround ||
+	request.isAcceptSolution ||
+	request.isRejectSolution ||
+	request.isCreateInformationUpdate ||
+	request.isAcknowledgeSuccess ||
+	request.isAcknowledgeError) {
+		return handleCaseCommentS2SRequest(request, s2sCase);
+	}
 			throw new S2sException(String.format(Label.CH_InboundS2SRequest_UnsupportedActionValidation, new List<Object>{request.chActionExternalSystem}));
 		} catch(Exception e) {
 			response.errorMessage = e.getMessage();
@@ -91,7 +91,7 @@ global without sharing class CH_ExternalInterfaceWebService {
 			Interface_Log__c log = createS2SInterfaceLog(request, response);
 			CH_UserNotificationUTIL.sendInterfaceKeyUserNotification(request.chCaseOriginSystem, log);
 			if (s2sCase != NULL) {
-				CH_UserNotificationUTIL.sendS2SFailureNotification(s2sCase.Id, log);
+	CH_UserNotificationUTIL.sendS2SFailureNotification(s2sCase.Id, log);
 			}
 		}
 		system.debug('---response----'+response);
@@ -142,8 +142,8 @@ global without sharing class CH_ExternalInterfaceWebService {
 		system.debug('----request.chCapsAttachmentMetadataFromNaip---'+request.chCapsAttachmentMetadataFromNaip);
 		try{
 			if(request.chCapsAttachmentMetadataFromNaip != null) {
-				c.CH_CAPS_AttachmentMetadatafromNAIP__c = request.chCapsAttachmentMetadataFromNaip;
-				update c;
+	c.CH_CAPS_AttachmentMetadatafromNAIP__c = request.chCapsAttachmentMetadataFromNaip;
+	update c;
 			}
 		}
 		catch(Exception e){
@@ -166,7 +166,7 @@ global without sharing class CH_ExternalInterfaceWebService {
 	private static void validateCaseStatus(Case c) {
 		Set<String> inactiveCaseStatuses = new Set<String> {'Completed', 'Cancelled'};
 			if (inactiveCaseStatuses.contains(c.Status)) {
-				throw new S2sException(String.format(Label.CH_InboundS2SRequest_CaseStatusValidation, new List<Object>{c.Status}));
+	throw new S2sException(String.format(Label.CH_InboundS2SRequest_CaseStatusValidation, new List<Object>{c.Status}));
 			}
 	}
 	
@@ -185,23 +185,23 @@ global without sharing class CH_ExternalInterfaceWebService {
 			cases = [SELECT Id, CaseNumber, Origin,Status, CH_CaseOriginSystem__c, CH_Action_ExternalSystem__c, Reference_Number__c FROM Case WHERE CaseNumber =: caseNumber];
 			
 			if(cases.isEmpty()){
-				cases = [SELECT Id, CaseNumber, Origin, CH_CaseOriginSystem__c, CH_Action_ExternalSystem__c, Reference_Number__c, Status FROM Case WHERE Reference_Number__c =: caseNumber];
+	cases = [SELECT Id, CaseNumber, Origin, CH_CaseOriginSystem__c, CH_Action_ExternalSystem__c, Reference_Number__c, Status FROM Case WHERE Reference_Number__c =: caseNumber];
 			}
 			if (cases.isEmpty()) {
-				throw new S2sException(String.format(Label.CH_InboundS2SRequest_InvalidCaseNumberValidation, new List<Object>{caseNumber}));
+	throw new S2sException(String.format(Label.CH_InboundS2SRequest_InvalidCaseNumberValidation, new List<Object>{caseNumber}));
 			}
 			//End NOKIASC-26602
 			else {
-				Case c = cases[0];
-				if (c.Origin != 'S2S') {
-					throw new S2sException(String.format(Label.CH_InboundS2SRequest_InvalidCaseOriginValidation, new List<Object>{c.Origin}));
-				} else {
-					if (c.CH_CaseOriginSystem__c != request.chCaseOriginSystem) {
-						throw new S2sException(String.format(Label.CH_InboundS2SRequest_InvalidCaseOriginSystemValidation, new List<Object>{c.CH_CaseOriginSystem__c}));
-					} else {
-						return c;
-					}
-				}
+	Case c = cases[0];
+	if (c.Origin != 'S2S') {
+		throw new S2sException(String.format(Label.CH_InboundS2SRequest_InvalidCaseOriginValidation, new List<Object>{c.Origin}));
+	} else {
+		if (c.CH_CaseOriginSystem__c != request.chCaseOriginSystem) {
+			throw new S2sException(String.format(Label.CH_InboundS2SRequest_InvalidCaseOriginSystemValidation, new List<Object>{c.CH_CaseOriginSystem__c}));
+		} else {
+			return c;
+		}
+	}
 			}
 		}
 		
@@ -210,7 +210,7 @@ global without sharing class CH_ExternalInterfaceWebService {
 	
 	/********************
 * Description: Used to convert record of CaseObject type to Salesforce standard Case object
-* Method Name: convertToCase
+* Method Name: convertToCase 
 * Parameter: Case - terget Case object, CaseObject - source CaseObject record
 * Return: Case
 *******************/
@@ -225,6 +225,7 @@ global without sharing class CH_ExternalInterfaceWebService {
 		if (caseObject.productId			!= null && caseObject.productId != '') {c.ProductId	 = caseObject.productId;}
 		if (caseObject.chProductRelease  != null && caseObject.chProductRelease != '') {c.CH_ProductRelease__c  = caseObject.chProductRelease;}
 		if (caseObject.chProductVariant  != null && caseObject.chProductVariant != '') {c.CH_ProductVariant__c  = caseObject.chProductVariant;}
+		if (caseObject.chSolution  != null && caseObject.chSolution != '') {c.CH_Solution__c  = caseObject.chSolution;}
 		if (caseObject.chSwRelease	  != null && caseObject.chSwRelease != '') {c.CH_SW_Release__c		= caseObject.chSwRelease;}
 		if (caseObject.chSwComponent		!= null && caseObject.chSwComponent != '') {c.CH_SW_Component__c		= caseObject.chSwComponent;}
 		if (caseObject.chSwBuild			!= null && caseObject.chSwBuild != '') {c.CH_SW_Build__c			= caseObject.chSwBuild;}
@@ -296,41 +297,40 @@ global without sharing class CH_ExternalInterfaceWebService {
 		Savepoint sp = Database.setSavepoint();
 		try {
 			if (request == NULL || String.isEmpty(request.rndInteractionType)) {
-				throw new RndException(Label.CH_InboundRndRequest_NoActionValidation);
+	throw new RndException(Label.CH_InboundRndRequest_NoActionValidation);
 			} else {
-				if (String.isEmpty(request.rndInteractionInterface)) {
-					throw new RndException(Label.CH_InboundRndRequest_NoInterfaceNameValidation);
-				} else {
-					if (!request.isProntoInterface && !request.isJiraInterface) {
-						throw new RndException(String.Format(Label.CH_InboundRndRequest_InvalidInterfaceNameValidation, new List<String> {request.rndInteractionInterface}));
-					}
-				}
+	if (String.isEmpty(request.rndInteractionInterface)) {
+		throw new RndException(Label.CH_InboundRndRequest_NoInterfaceNameValidation);
+	} else {
+		if (!request.isProntoInterface && !request.isJiraInterface) {
+			throw new RndException(String.Format(Label.CH_InboundRndRequest_InvalidInterfaceNameValidation, new List<String> {request.rndInteractionInterface}));
+		}
+	}
 			}
 			if (request.isProntoInterface && (request.isCreatePcpGroup || request.isUpdatePcpGroup || request.isDeletePcpGroup)) {
-					return handleProntoGroupRequest(request, response);
-				}
+		return handleProntoGroupRequest(request, response);
+	}
 			
 			String problemNumber = request.isProntoInterface && request.isUpdateAnalysis ? request.rndInteractionReference : request.rndInteractionOriginatingIncident;
 			problem = validateProblem(problemNumber);
 			if (request.isProntoInterface) {
-				if (request.isProvideWorkaround || request.isCreateInformationRequest || request.isCancelInformationRequest || request.isCreateCorrectionPlan || request.isCreateCorrectionReady || request.isCancelCorrection || request.isUpdateAnalysis) {
-					return handleProntoRndRequest(problem, request, response);
-				} 
-				if (request.isCreateInformationUpdate) {
-					return handleProntoCreateInformationUpdateRndRequest(problem, request, response);
-				}
-				throw new RndException(String.Format(Label.CH_InboundRndRequest_UnsupportedActionValidation, new List<String> {request.rndInteractionType, request.rndInteractionInterface}));
+	if (request.isProvideWorkaround || request.isCreateInformationRequest || request.isCancelInformationRequest || request.isCreateCorrectionPlan || request.isCreateCorrectionReady || request.isCancelCorrection || request.isUpdateAnalysis) {
+		return handleProntoRndRequest(problem, request, response);
+	} 
+	if (request.isCreateInformationUpdate) {
+		return handleProntoCreateInformationUpdateRndRequest(problem, request, response);
+	}
+	throw new RndException(String.Format(Label.CH_InboundRndRequest_UnsupportedActionValidation, new List<String> {request.rndInteractionType, request.rndInteractionInterface}));
 			} else {
-				if (request.isAcknowledgeSuccess || request.isUpdateAnalysis || request.isCreateCorrectionPlan || request.isCancelCorrection) {
-					if (request.isUpdateAnalysis) {
-						return handleJiraRndRequest(problem, request, response);
-					}
-					if (request.isAcknowledgeSuccess) {
-						return handleJiraAcknowledge(problem, request, response);
-					}
-				} else {
-					throw new RndException(String.Format(Label.CH_InboundRndRequest_UnsupportedActionValidation, new List<String> {request.rndInteractionType, request.rndInteractionInterface}));
-				}
+	if (request.isUpdateAnalysis || request.isCreateCorrectionPlan || request.isCancelCorrection || request.isProvideWorkaround || request.isCreateInformationRequest || request.isCancelInformationRequest || request.isCreateCorrectionReady) {
+		return handleJiraRndRequest(problem, request, response);
+	} else if (request.isAcknowledgeSuccess) {
+		return handleJiraAcknowledge(problem, request, response);
+	} else if (request.isCreateInformationUpdate) {
+		return handleJIRACreateInformationUpdateRndRequest(problem, request, response);
+	} else {
+		throw new RndException(String.Format(Label.CH_InboundRndRequest_UnsupportedActionValidation, new List<String> {request.rndInteractionType, request.rndInteractionInterface}));
+	}
 			}
 		} catch (Exception e) {
 			response.rndInteractionErrorMessage = e.getMessage();
@@ -338,10 +338,50 @@ global without sharing class CH_ExternalInterfaceWebService {
 			
 			Interface_Log__c failureLog = createRndInterfaceLog(problem, request, response);
 			if (!String.isEmpty(request.intefaceName)) {
-				CH_UserNotificationUTIL.sendInterfaceKeyUserNotification(request.intefaceName, failureLog);
+	CH_UserNotificationUTIL.sendInterfaceKeyUserNotification(request.intefaceName, failureLog);
 			}
 		}
 		
+		return response;
+	}
+
+	private static RndResponse handleJIRACreateInformationUpdateRndRequest(Case problem, RndRequest request, RndResponse response) {
+		CH_Problem_RnD_Reference__c rndInteraction = initializeInboundRndInteraction('JIRA', request);
+		rndInteraction.CH_Related_Record__c = problem.Id;
+		insert rndInteraction;
+		
+		String inboundCreateInformationRequestType = 'Information Request';
+		String outboundCreateInformationResponseType = 'Information Response';
+		Map<String, List<CH_Problem_RnD_Reference__c>> rndInteractionTypes = new Map<String, List<CH_Problem_RnD_Reference__c>> {inboundCreateInformationRequestType => new List<CH_Problem_RnD_Reference__c>(),
+			outboundCreateInformationResponseType => new List<CH_Problem_RnD_Reference__c>()};
+	for (CH_Problem_RnD_Reference__c r : [SELECT Id, CH_RnD_Description__c, CH_RnD_Type__c, CH_RnD_Direction__c FROM CH_Problem_RnD_Reference__c 
+	  WHERE CH_Related_Record__c =: problem.Id AND CH_RnD_Type__c IN :rndInteractionTypes.keySet() AND CH_RnD_Interface__c = 'JIRA' AND CH_RnD_Reference__c =: rndInteraction.CH_RnD_Reference__c]) {
+	if (r.CH_RnD_Type__c == inboundCreateInformationRequestType && r.CH_RnD_Direction__c == 'inbound') {
+	 rndInteractionTypes.get(inboundCreateInformationRequestType).add(r);
+	} else {
+	 if (r.CH_RnD_Type__c == outboundCreateInformationResponseType && r.CH_RnD_Direction__c == 'outbound') {
+	  rndInteractionTypes.get(outboundCreateInformationResponseType).add(r);
+	 }
+	}
+	  }
+		if (!rndInteractionTypes.get(inboundCreateInformationRequestType).isEmpty() && rndInteractionTypes.get(outboundCreateInformationResponseType).isEmpty()) {
+			List<CH_Problem_RnD_Reference__c> inboundCreateInformationRequestsForUpdate = new List<CH_Problem_RnD_Reference__c>();
+			for (CH_Problem_RnD_Reference__c r : rndInteractionTypes.get(inboundCreateInformationRequestType)) {
+	if (rndInteraction.CH_RnD_Description__c != r.CH_RnD_Description__c) {
+		r.CH_RnD_Description__c = rndInteraction.CH_RnD_Description__c;
+		inboundCreateInformationRequestsForUpdate.add(r);
+	}
+			}
+			
+			if (!inboundCreateInformationRequestsForUpdate.isEmpty()) {
+	CH_RndInteractionTriggerHandler.enablePreventInboundRndInteractionModifyValidation = false;
+	CH_RndInteractionTriggerHandler.updateNotOwnRndInteractions(inboundCreateInformationRequestsForUpdate);
+			}
+		}
+		
+		createRndInteractionInterfaceLog(problem, rndInteraction, request);
+		
+		response.rndInteractionStatus = rndInteraction.CH_RnD_Status__c;
 		return response;
 	}
 	
@@ -354,28 +394,28 @@ global without sharing class CH_ExternalInterfaceWebService {
 		String outboundCreateInformationResponseType = 'Information Response';
 		Map<String, List<CH_Problem_RnD_Reference__c>> rndInteractionTypes = new Map<String, List<CH_Problem_RnD_Reference__c>> {inboundCreateInformationRequestType => new List<CH_Problem_RnD_Reference__c>(),
 			outboundCreateInformationResponseType => new List<CH_Problem_RnD_Reference__c>()};
-				for (CH_Problem_RnD_Reference__c r : [SELECT Id, CH_RnD_Description__c, CH_RnD_Type__c, CH_RnD_Direction__c FROM CH_Problem_RnD_Reference__c 
-													  WHERE CH_Related_Record__c =: problem.Id AND CH_RnD_Type__c IN :rndInteractionTypes.keySet() AND CH_RnD_Interface__c = 'PRONTO' AND CH_RnD_Reference__c =: rndInteraction.CH_RnD_Reference__c]) {
-														  if (r.CH_RnD_Type__c == inboundCreateInformationRequestType && r.CH_RnD_Direction__c == 'inbound') {
-															  rndInteractionTypes.get(inboundCreateInformationRequestType).add(r);
-														  } else {
-															  if (r.CH_RnD_Type__c == outboundCreateInformationResponseType && r.CH_RnD_Direction__c == 'outbound') {
-																  rndInteractionTypes.get(outboundCreateInformationResponseType).add(r);
-															  }
-														  }
-													  }
+	for (CH_Problem_RnD_Reference__c r : [SELECT Id, CH_RnD_Description__c, CH_RnD_Type__c, CH_RnD_Direction__c FROM CH_Problem_RnD_Reference__c 
+	  WHERE CH_Related_Record__c =: problem.Id AND CH_RnD_Type__c IN :rndInteractionTypes.keySet() AND CH_RnD_Interface__c = 'PRONTO' AND CH_RnD_Reference__c =: rndInteraction.CH_RnD_Reference__c]) {
+	if (r.CH_RnD_Type__c == inboundCreateInformationRequestType && r.CH_RnD_Direction__c == 'inbound') {
+	 rndInteractionTypes.get(inboundCreateInformationRequestType).add(r);
+	} else {
+	 if (r.CH_RnD_Type__c == outboundCreateInformationResponseType && r.CH_RnD_Direction__c == 'outbound') {
+	  rndInteractionTypes.get(outboundCreateInformationResponseType).add(r);
+	 }
+	}
+	  }
 		if (!rndInteractionTypes.get(inboundCreateInformationRequestType).isEmpty() && rndInteractionTypes.get(outboundCreateInformationResponseType).isEmpty()) {
 			List<CH_Problem_RnD_Reference__c> inboundCreateInformationRequestsForUpdate = new List<CH_Problem_RnD_Reference__c>();
 			for (CH_Problem_RnD_Reference__c r : rndInteractionTypes.get(inboundCreateInformationRequestType)) {
-				if (rndInteraction.CH_RnD_Description__c != r.CH_RnD_Description__c) {
-					r.CH_RnD_Description__c = rndInteraction.CH_RnD_Description__c;
-					inboundCreateInformationRequestsForUpdate.add(r);
-				}
+	if (rndInteraction.CH_RnD_Description__c != r.CH_RnD_Description__c) {
+		r.CH_RnD_Description__c = rndInteraction.CH_RnD_Description__c;
+		inboundCreateInformationRequestsForUpdate.add(r);
+	}
 			}
 			
 			if (!inboundCreateInformationRequestsForUpdate.isEmpty()) {
-				CH_RndInteractionTriggerHandler.enablePreventInboundRndInteractionModifyValidation = false;
-				CH_RndInteractionTriggerHandler.updateNotOwnRndInteractions(inboundCreateInformationRequestsForUpdate);
+	CH_RndInteractionTriggerHandler.enablePreventInboundRndInteractionModifyValidation = false;
+	CH_RndInteractionTriggerHandler.updateNotOwnRndInteractions(inboundCreateInformationRequestsForUpdate);
 			}
 		}
 		
@@ -398,7 +438,7 @@ User Story - NOKIASC-24431
 		//NOKIASC-24431 start
 		if(request.isCreateInformationRequest || request.isProvideWorkaround){
 			if(request.caseAttachmentMetadata !=null && request.caseAttachmentMetadata !=''){
-				problem.CH_CAPS_AttachmentMetadatafromNAIP__c = request.caseAttachmentMetadata;
+	problem.CH_CAPS_AttachmentMetadatafromNAIP__c = request.caseAttachmentMetadata;
 			}
 			update problem;
 		}
@@ -406,39 +446,42 @@ User Story - NOKIASC-24431
 		
 		if (request.isCreateCorrectionPlan || request.isCreateCorrectionReady|| request.isCancelCorrection) {
 			//NOKIASC-24431 start
-			 if((request.isCreateCorrectionPlan || request.isCreateCorrectionReady) && (request.caseAttachmentMetadata !=null &&	request.caseAttachmentMetadata !='')){
-					problem.CH_CAPS_AttachmentMetadatafromNAIP__c = request.caseAttachmentMetadata;
-				}
+	if((request.isCreateCorrectionPlan || request.isCreateCorrectionReady) && (request.caseAttachmentMetadata !=null &&	request.caseAttachmentMetadata !='')){
+		problem.CH_CAPS_AttachmentMetadatafromNAIP__c = request.caseAttachmentMetadata;
+	}
 			//NOKIASC-24431 End
-			problem.CH_Target_Release__c = request.caseTargetRelease;
-			problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+			//problem.CH_Target_Release__c = request.caseTargetRelease;
+			//problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+			CH_CaseField_SideHighlightApex.createorUpdatePrivateFeedRecord(problem.Id,request.caseTargetRelease,request.caseTargetReleaseDate);//NOKIASC-35878
 			problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
 			problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
 			
 			update problem;
 		} else {
 			if (request.isUpdateAnalysis) {
-				if (String.isEmpty(request.caseContactEmail)) {
-					problem.CH_RnD_Contact__c = NULL;
-					problem.CH_RnD_Contact_Email__c = NULL;
-					problem.CH_Target_Release__c = request.caseTargetRelease;
-					problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
-					problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
-					problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
-				} else {
-					List<User> rndUsers = [SELECT Id FROM User WHERE Email =: request.caseContactEmail];
-					if (rndUsers.size() == 1) {
-						problem.CH_RnD_Contact__c = rndUsers[0].Id;
-					} else {
-						problem.CH_RnD_Contact__c = NULL;
-					}
-					problem.CH_RnD_Contact_Email__c = request.caseContactEmail;
-					problem.CH_Target_Release__c = request.caseTargetRelease;
-					problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
-					problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
-					problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
-				}
-				update problem;
+	if (String.isEmpty(request.caseContactEmail)) {
+		problem.CH_RnD_Contact__c = NULL;
+		problem.CH_RnD_Contact_Email__c = NULL;
+		//problem.CH_Target_Release__c = request.caseTargetRelease;
+		//problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+		CH_CaseField_SideHighlightApex.createorUpdatePrivateFeedRecord(problem.Id,request.caseTargetRelease,request.caseTargetReleaseDate);//NOKIASC-35878
+		problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
+		problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
+	} else {
+		List<User> rndUsers = [SELECT Id FROM User WHERE Email =: request.caseContactEmail];
+		if (rndUsers.size() == 1) {
+			problem.CH_RnD_Contact__c = rndUsers[0].Id;
+		} else {
+			problem.CH_RnD_Contact__c = NULL;
+		}
+		problem.CH_RnD_Contact_Email__c = request.caseContactEmail;
+	// problem.CH_Target_Release__c = request.caseTargetRelease;
+	// problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+	CH_CaseField_SideHighlightApex.createorUpdatePrivateFeedRecord(problem.Id,request.caseTargetRelease,request.caseTargetReleaseDate);//NOKIASC-35878
+		problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
+		problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
+	}
+	update problem;
 			}
 		}
 		
@@ -450,53 +493,53 @@ User Story - NOKIASC-24431
 	
 	private static RndResponse handleProntoGroupRequest(RndRequest request, RndResponse response) {
 		List<CH_Pronto_Group__c> existingGroup = [SELECT Name, CH_Pronto_Group_Title__c, CH_Pronto_Group_Description__c, CH_Pronto_Group_Status__c 
-												  FROM CH_Pronto_Group__c WHERE Name = :request.pcpGroupName LIMIT 1];
+	 FROM CH_Pronto_Group__c WHERE Name = :request.pcpGroupName LIMIT 1];
 		
 		if (request.isCreatePcpGroup) {
 			// If there is duplicate values in the table - No action is taken
 			if (existingGroup.size() > 0) {
-				throw new RndException(Label.CH_InboundRndRequest_ProntoGroupDuplicateError);
+	throw new RndException(Label.CH_InboundRndRequest_ProntoGroupDuplicateError);
 			} else {
-				// If there is no duplicate values in the table - A new record is created with the values from create-pcpgroup message
-				CH_Pronto_Group__c pcpgroup = new CH_Pronto_Group__c();
-				pcpgroup.Name = request.pcpGroupName;
-				pcpgroup.CH_Pronto_Group_Title__c = request.pcpGroupTitle;
-				pcpgroup.CH_Pronto_Group_Description__c = request.pcpGroupDescription;
-				pcpgroup.CH_Pronto_Group_Status__c = 'Active';
-				pcpgroup.CH_Pronto_Group_Origin__c = 'Interface';
-				insert pcpgroup;
-				
-				createRndPcpGroupInterfaceLog(pcpgroup, 'Insert', request);
-				
-				response.rndInteractionStatus = 'Active';
+	// If there is no duplicate values in the table - A new record is created with the values from create-pcpgroup message
+	CH_Pronto_Group__c pcpgroup = new CH_Pronto_Group__c();
+	pcpgroup.Name = request.pcpGroupName;
+	pcpgroup.CH_Pronto_Group_Title__c = request.pcpGroupTitle;
+	pcpgroup.CH_Pronto_Group_Description__c = request.pcpGroupDescription;
+	pcpgroup.CH_Pronto_Group_Status__c = 'Active';
+	pcpgroup.CH_Pronto_Group_Origin__c = 'Interface';
+	insert pcpgroup;
+	
+	createRndPcpGroupInterfaceLog(pcpgroup, 'Insert', request);
+	
+	response.rndInteractionStatus = 'Active';
 			}
 		} else if (request.isUpdatePcpGroup) {
 			//  If the groupname entry is NOT found in the table - No action is taken
 			if (existingGroup.size() == 0) {
-				throw new RndException(Label.CH_InboundRndRequest_ProntoGroupNotFoundError);
+	throw new RndException(Label.CH_InboundRndRequest_ProntoGroupNotFoundError);
 			} else {
-				//  If the groupname entry is found in the table - The Existing record is updated with the values from update-pcpgroup message
-				existingGroup.get(0).CH_Pronto_Group_Title__c = request.pcpGroupTitle;
-				existingGroup.get(0).CH_Pronto_Group_Description__c = request.pcpGroupDescription;
-				update existingGroup;
-				
-				createRndPcpGroupInterfaceLog(existingGroup.get(0), 'Update', request);
-				
-				response.rndInteractionStatus = existingGroup.get(0).CH_Pronto_Group_Status__c;
+	//  If the groupname entry is found in the table - The Existing record is updated with the values from update-pcpgroup message
+	existingGroup.get(0).CH_Pronto_Group_Title__c = request.pcpGroupTitle;
+	existingGroup.get(0).CH_Pronto_Group_Description__c = request.pcpGroupDescription;
+	update existingGroup;
+	
+	createRndPcpGroupInterfaceLog(existingGroup.get(0), 'Update', request);
+	
+	response.rndInteractionStatus = existingGroup.get(0).CH_Pronto_Group_Status__c;
 			}
 		} else if (request.isDeletePcpGroup) {
 			// If the groupname entry is NOT found in the table - No action is taken
 			if (existingGroup.size() == 0) {
-				throw new RndException(Label.CH_InboundRndRequest_ProntoGroupNotFoundError);
+	throw new RndException(Label.CH_InboundRndRequest_ProntoGroupNotFoundError);
 			} else {
-				// If the groupname entry is found in the table - The Existing record is marked inactive and then deleted
-				existingGroup.get(0).CH_Pronto_Group_Status__c = 'Inactive';
-				update existingGroup;
-				response.rndInteractionStatus = existingGroup.get(0).CH_Pronto_Group_Status__c;
-				
-				createRndPcpGroupInterfaceLog(existingGroup.get(0), 'Delete', request);
-				
-				delete existingGroup;
+	// If the groupname entry is found in the table - The Existing record is marked inactive and then deleted
+	existingGroup.get(0).CH_Pronto_Group_Status__c = 'Inactive';
+	update existingGroup;
+	response.rndInteractionStatus = existingGroup.get(0).CH_Pronto_Group_Status__c;
+	
+	createRndPcpGroupInterfaceLog(existingGroup.get(0), 'Delete', request);
+	
+	delete existingGroup;
 			}
 		}
 		return response;
@@ -507,12 +550,52 @@ User Story - NOKIASC-24431
 		rndInteraction.CH_Related_Record__c = problem.Id;
 		insert rndInteraction;
 		
-		problem.CH_Target_Release__c = request.caseTargetRelease;
-		problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+		if(request.isCreateInformationRequest || request.isProvideWorkaround){
+			if(request.caseAttachmentMetadata !=null && request.caseAttachmentMetadata !=''){
+	problem.CH_CAPS_AttachmentMetadatafromNAIP__c = request.caseAttachmentMetadata;
+			}
+			update problem;
+		}
+		if (request.isCreateCorrectionPlan || request.isCreateCorrectionReady|| request.isCancelCorrection) {
+			//NOKIASC-24431 start
+			if((request.isCreateCorrectionPlan || request.isCreateCorrectionReady) && (request.caseAttachmentMetadata !=null && request.caseAttachmentMetadata !='')){
+	problem.CH_CAPS_AttachmentMetadatafromNAIP__c = request.caseAttachmentMetadata;
+			}
+			//NOKIASC-24431 End
+			//problem.CH_Target_Release__c = request.caseTargetRelease;
+			//problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+			CH_CaseField_SideHighlightApex.createorUpdatePrivateFeedRecord(problem.Id,request.caseTargetRelease,request.caseTargetReleaseDate);//NOKIASC-35878
+			problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
+			problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
+			
+			update problem;
+		} else {
+			if (request.isUpdateAnalysis) {
+	if (String.isEmpty(request.caseContactEmail)) {
+		problem.CH_RnD_Contact__c = NULL;
+		problem.CH_RnD_Contact_Email__c = NULL;
+		//problem.CH_Target_Release__c = request.caseTargetRelease;
+		//problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+		CH_CaseField_SideHighlightApex.createorUpdatePrivateFeedRecord(problem.Id,request.caseTargetRelease,request.caseTargetReleaseDate);//NOKIASC-35878
 		problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
 		problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
-		
-		update problem;
+	} else {
+		List<User> rndUsers = [SELECT Id FROM User WHERE Email =: request.caseContactEmail];
+		if (rndUsers.size() == 1) {
+			problem.CH_RnD_Contact__c = rndUsers[0].Id;
+		} else {
+			problem.CH_RnD_Contact__c = NULL;
+		}
+		problem.CH_RnD_Contact_Email__c = request.caseContactEmail;
+	// problem.CH_Target_Release__c = request.caseTargetRelease;
+	// problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+	CH_CaseField_SideHighlightApex.createorUpdatePrivateFeedRecord(problem.Id,request.caseTargetRelease,request.caseTargetReleaseDate);//NOKIASC-35878
+		problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
+		problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
+	}
+	update problem;
+			}
+		}
 		
 		createRndInteractionInterfaceLog(problem, rndInteraction, request);
 		
@@ -531,8 +614,9 @@ User Story - NOKIASC-24431
 		insert rndInteraction;
 		
 		problem.CH_JIRA_ExternalStatus__c = request.caseJiraExternalStatus;
-		problem.CH_Target_Release__c = request.caseTargetRelease;
-		problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+		//problem.CH_Target_Release__c = request.caseTargetRelease;
+		//problem.CH_Target_Release_Date__c = request.caseTargetReleaseDate;
+		CH_CaseField_SideHighlightApex.createorUpdatePrivateFeedRecord(problem.Id,request.caseTargetRelease,request.caseTargetReleaseDate);//NOKIASC-35878
 		problem.CH_JIRA_ResolutionCode__c = request.caseJiraResolutionCode;
 		
 		update problem;
@@ -547,9 +631,9 @@ User Story - NOKIASC-24431
 		if (!String.isEmpty(caseNumber)) {
 			List<Case> cases = [SELECT Id FROM Case WHERE CaseNumber =: caseNumber];
 			if (cases.isEmpty()) {
-				throw new RndException(String.Format(Label.CH_InboundRndRequest_InvalidProblemNumberValidation, new List<Object> {caseNumber}));
+	throw new RndException(String.Format(Label.CH_InboundRndRequest_InvalidProblemNumberValidation, new List<Object> {caseNumber}));
 			} else {
-				return cases[0];
+	return cases[0];
 			}
 		}
 		throw new RndException(Label.CH_InboundRndRequest_NoProblemNumberValidation);
@@ -557,11 +641,11 @@ User Story - NOKIASC-24431
 	
 	private static CH_Problem_RnD_Reference__c validateCreateAnalysisRndInteraction(Case problem) {
 		List<CH_Problem_RnD_Reference__c> createAnalysisRndInteractions = [SELECT Id FROM CH_Problem_RnD_Reference__c
-																		   WHERE CH_Related_Record__c =: problem.Id 
-																		   AND CH_RnD_Interface__c = 'JIRA' 
-																		   AND CH_RnD_Status__c = 'In Progress' 
-																		   AND CH_RnD_Type__c = 'Transfer to R&D' 
-																		   AND CH_RnD_Direction__c = 'Outbound'];
+		 WHERE CH_Related_Record__c =: problem.Id 
+		 AND CH_RnD_Interface__c = 'JIRA' 
+		 AND CH_RnD_Status__c = 'In Progress' 
+		 AND CH_RnD_Type__c = 'Transfer to R&D' 
+		 AND CH_RnD_Direction__c = 'Outbound'];
 		if (createAnalysisRndInteractions.isEmpty()) {
 			throw new RndException(Label.CH_InboundRndRequest_NoInitialCreateAnalysisValidation);
 		}
@@ -570,12 +654,12 @@ User Story - NOKIASC-24431
 	
 	private static CH_Problem_RnD_Reference__c initializeInboundRndInteraction(String interfaceName, RndRequest request) {
 		CH_Problem_RnD_Reference__c rnDInteraction = new CH_Problem_RnD_Reference__c(CH_RnD_Status__c = 'Completed',
-																					 CH_RnD_Interface__c = interfaceName,
-																					 CH_RnD_Direction__c = 'inbound',
-																					 CH_RnD_Type__c = request.interactionType,
-																					 CH_RnD_Subject__c = request.interactionSubject,
-																					 CH_RnD_Description__c = request.rndInteractionDescription,
-																					 CH_RnD_Reference__c = request.rndInteractionReference);
+			 CH_RnD_Interface__c = interfaceName,
+			 CH_RnD_Direction__c = 'inbound',
+			 CH_RnD_Type__c = request.interactionType,
+			 CH_RnD_Subject__c = request.interactionSubject,
+			 CH_RnD_Description__c = request.rndInteractionDescription,
+			 CH_RnD_Reference__c = request.rndInteractionReference);
 		return rndInteraction;
 	}
 	
@@ -599,8 +683,8 @@ User Story - NOKIASC-24431
 			log = CH_ExternalInterfaceUTIL.createInboundRndInterfaceLog('R&D Inbound', NULL, String.format('R&D {0}', new List<Object> {request}), response.rndInteractionErrorMessage);
 		} else {
 			String logName = problem == NULL 
-				? String.format('R&D Inbound {0}', new List<Object> {request.rndInteractionType}) 
-				: String.format('R&D Inbound {0} {1}', new List<Object> {request.rndInteractionType, problem.Id});
+	? String.format('R&D Inbound {0}', new List<Object> {request.rndInteractionType}) 
+	: String.format('R&D Inbound {0} {1}', new List<Object> {request.rndInteractionType, problem.Id});
 			
 			String requestLog = String.format('R&D {0} {1}\n{2}', new List<Object> {request.rndInteractionInterface, request.rndInteractionType, request});
 			log = CH_ExternalInterfaceUTIL.createInboundRndInterfaceLog(logName, NULL, requestLog, response.rndInteractionErrorMessage);
@@ -622,7 +706,7 @@ User Story - NOKIASC-24431
 			logName = String.format('Inbound {0} Case', new List<Object> {request.chCaseOriginSystem});
 			requestLog = String.format('Inbound Case {0}', new List<Object> {request});
 			if (request.isCreateCase) {
-				operationType = 'Insert';
+	operationType = 'Insert';
 			}
 		}
 		Interface_Log__c log = CH_ExternalInterfaceUTIL.createInboundCustomerS2SInterfaceLog(logName, requestLog, response.errorMessage, operationType);
@@ -652,195 +736,195 @@ User Story - NOKIASC-24431
 		
 		private Map<String, String> interactionTypes {
 			get {
-				if (interactionTypes == NULL) {
-					interactionTypes = new Map<String, String>{CH_ExternalInterfaceWebService.PROVIDED_WORKAROUND => 'Workaround',
-						CH_ExternalInterfaceWebService.CREATE_INFORMATION_REQUEST => 'Information Request',
-						CH_ExternalInterfaceWebService.CANCEL_INFORMATION_REQUEST => 'Cancel Information Request',
-						CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN => 'Correction Plan',
-						CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN_READY => 'Correction Response',
-						CH_ExternalInterfaceWebService.CANCEL_CORRECTION => 'Correction Not Needed',
-						CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE => 'Update from R&D',
-						CH_ExternalInterfaceWebService.UPDATE_ANALYSIS => CH_ExternalInterfaceWebService.INFORMATION_UPDATE,
-						CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS => 'Acknowledgement'};
-							}
-				return interactionTypes;
+	if (interactionTypes == NULL) {
+		interactionTypes = new Map<String, String>{CH_ExternalInterfaceWebService.PROVIDED_WORKAROUND => 'Workaround',
+			CH_ExternalInterfaceWebService.CREATE_INFORMATION_REQUEST => 'Information Request',
+			CH_ExternalInterfaceWebService.CANCEL_INFORMATION_REQUEST => 'Cancel Information Request',
+			CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN => 'Correction Plan',
+			CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN_READY => 'Correction Response',
+			CH_ExternalInterfaceWebService.CANCEL_CORRECTION => 'Correction Not Needed',
+			CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE => 'Update from R&D',
+			CH_ExternalInterfaceWebService.UPDATE_ANALYSIS => CH_ExternalInterfaceWebService.INFORMATION_UPDATE,
+			CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS => 'Acknowledgement'};
+	}
+	return interactionTypes;
 			}
 			set;
 		}
 		public String interactionType {
 			get {
-				if (interactionType == NULL) {
-					interactionType = interactionTypes.get(rndInteractionType);
-				}
-				return interactionType;
+	if (interactionType == NULL) {
+		interactionType = interactionTypes.get(rndInteractionType);
+	}
+	return interactionType;
 			}
 			set;
 		}
 		private Map<String, String> interactionSubjects {
 			get {
-				if (interactionSubjects == NULL) {
-					interactionSubjects = new Map<String, String>{CH_ExternalInterfaceWebService.PROVIDED_WORKAROUND => 'Workaround',
-						CH_ExternalInterfaceWebService.CREATE_INFORMATION_REQUEST => 'Information Request from Pronto',
-						CH_ExternalInterfaceWebService.CANCEL_INFORMATION_REQUEST => 'Cancel Information Request',
-						CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN => 'Correction Plan',
-						CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN_READY => 'Correction Ready',
-						CH_ExternalInterfaceWebService.CANCEL_CORRECTION => 'Correction Not Needed',
-						CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE => CH_ExternalInterfaceWebService.INFORMATION_UPDATE,
-						CH_ExternalInterfaceWebService.UPDATE_ANALYSIS => 'Information Update from R&D',
-						CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS => 'Transfer Success'};
-							}
-				return interactionSubjects;
+	if (interactionSubjects == NULL) {
+		interactionSubjects = new Map<String, String>{CH_ExternalInterfaceWebService.PROVIDED_WORKAROUND => 'Workaround',
+			CH_ExternalInterfaceWebService.CREATE_INFORMATION_REQUEST => 'Information Request from Pronto',
+			CH_ExternalInterfaceWebService.CANCEL_INFORMATION_REQUEST => 'Cancel Information Request',
+			CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN => 'Correction Plan',
+			CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN_READY => 'Correction Ready',
+			CH_ExternalInterfaceWebService.CANCEL_CORRECTION => 'Correction Not Needed',
+			CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE => CH_ExternalInterfaceWebService.INFORMATION_UPDATE,
+			CH_ExternalInterfaceWebService.UPDATE_ANALYSIS => 'Information Update from R&D',
+			CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS => 'Transfer Success'};
+	}
+	return interactionSubjects;
 			}
 			set;
 		}
 		public String interactionSubject {
 			get {
-				if (interactionSubject == NULL) {
-					interactionSubject = rndInteractionSubject;
-					if (String.isEmpty(interactionSubject)) {
-						interactionSubject = interactionSubjects.get(rndInteractionType);
-					}
-				}
-				return interactionSubject;
+	if (interactionSubject == NULL) {
+		interactionSubject = rndInteractionSubject;
+		if (String.isEmpty(interactionSubject)) {
+			interactionSubject = interactionSubjects.get(rndInteractionType);
+		}
+	}
+	return interactionSubject;
 			}
 			set;
 		}
 		public Boolean isProntoInterface {
 			get {
-				if (isProntoInterface == NULL) {
-					isProntoInterface = rndInteractionInterface == 'pronto';
-				}
-				return isProntoInterface;
+	if (isProntoInterface == NULL) {
+		isProntoInterface = rndInteractionInterface == 'pronto';
+	}
+	return isProntoInterface;
 			}
 			set;
 		}
 		public Boolean isJiraInterface {
 			get {
-				if (isJiraInterface == NULL) {
-					isJiraInterface = rndInteractionInterface == 'jira-bridge';
-				}
-				return isJiraInterface;
+	if (isJiraInterface == NULL) {
+		isJiraInterface = rndInteractionInterface == 'jira-bridge';
+	}
+	return isJiraInterface;
 			}
 			set;
 		}
 		public String intefaceName {
 			get {
-				if (isProntoInterface) {
-					intefaceName = 'PRONTO';
-				} else {
-					if (isJiraInterface) {
-						intefaceName = 'JIRA';
-					}
-				}
-				return intefaceName;
+	if (isProntoInterface) {
+		intefaceName = 'PRONTO';
+	} else {
+		if (isJiraInterface) {
+			intefaceName = 'JIRA';
+		}
+	}
+	return intefaceName;
 			}
 			set;
 		}
 		public Boolean isProvideWorkaround {
 			get {
-				if (isProvideWorkaround == NULL) {
-					isProvideWorkaround = rndInteractionType == CH_ExternalInterfaceWebService.PROVIDED_WORKAROUND;
-				}
-				return isProvideWorkaround;
+	if (isProvideWorkaround == NULL) {
+		isProvideWorkaround = rndInteractionType == CH_ExternalInterfaceWebService.PROVIDED_WORKAROUND;
+	}
+	return isProvideWorkaround;
 			}
 			set;
 		}
 		public Boolean isCreateInformationRequest {
 			get {
-				if (isCreateInformationRequest == NULL) {
-					isCreateInformationRequest = rndInteractionType == CH_ExternalInterfaceWebService.CREATE_INFORMATION_REQUEST;
-				}
-				return isCreateInformationRequest;
+	if (isCreateInformationRequest == NULL) {
+		isCreateInformationRequest = rndInteractionType == CH_ExternalInterfaceWebService.CREATE_INFORMATION_REQUEST;
+	}
+	return isCreateInformationRequest;
 			}
 			set;
 		}
 		public Boolean isCancelInformationRequest {
 			get {
-				if (isCancelInformationRequest == NULL) {
-					isCancelInformationRequest = rndInteractionType == CH_ExternalInterfaceWebService.CANCEL_INFORMATION_REQUEST;
-				}
-				return isCancelInformationRequest;
+	if (isCancelInformationRequest == NULL) {
+		isCancelInformationRequest = rndInteractionType == CH_ExternalInterfaceWebService.CANCEL_INFORMATION_REQUEST;
+	}
+	return isCancelInformationRequest;
 			}
 			set;
 		}
 		public Boolean isCreateCorrectionPlan {
 			get {
-				if (isCreateCorrectionPlan == NULL) {
-					isCreateCorrectionPlan = rndInteractionType == CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN;
-				}
-				return isCreateCorrectionPlan;
+	if (isCreateCorrectionPlan == NULL) {
+		isCreateCorrectionPlan = rndInteractionType == CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN;
+	}
+	return isCreateCorrectionPlan;
 			}
 			set;
 		}
 		public Boolean isCreateCorrectionReady {
 			get {
-				if (isCreateCorrectionReady == NULL) {
-					isCreateCorrectionReady = rndInteractionType == CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN_READY;
-				}
-				return isCreateCorrectionReady;
+	if (isCreateCorrectionReady == NULL) {
+		isCreateCorrectionReady = rndInteractionType == CH_ExternalInterfaceWebService.CREATE_CORRECTIONPLAN_READY;
+	}
+	return isCreateCorrectionReady;
 			}
 			set;
 		}
 		public Boolean isCancelCorrection {
 			get {
-				if (isCancelCorrection == NULL) {
-					isCancelCorrection = rndInteractionType == CH_ExternalInterfaceWebService.CANCEL_CORRECTION;
-				}
-				return isCancelCorrection;
+	if (isCancelCorrection == NULL) {
+		isCancelCorrection = rndInteractionType == CH_ExternalInterfaceWebService.CANCEL_CORRECTION;
+	}
+	return isCancelCorrection;
 			}
 			set;
 		}
 		public Boolean isCreateInformationUpdate {
 			get {
-				if (isCreateInformationUpdate == NULL) {
-					isCreateInformationUpdate = rndInteractionType == CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE;
-				}
-				return isCreateInformationUpdate;
+	if (isCreateInformationUpdate == NULL) {
+		isCreateInformationUpdate = rndInteractionType == CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE;
+	}
+	return isCreateInformationUpdate;
 			}
 			set;
 		}
 		public Boolean isUpdateAnalysis {
 			get {
-				if (isUpdateAnalysis == NULL) {
-					isUpdateAnalysis = rndInteractionType == CH_ExternalInterfaceWebService.UPDATE_ANALYSIS;
-				}
-				return isUpdateAnalysis;
+	if (isUpdateAnalysis == NULL) {
+		isUpdateAnalysis = rndInteractionType == CH_ExternalInterfaceWebService.UPDATE_ANALYSIS;
+	}
+	return isUpdateAnalysis;
 			}
 			set;
 		}
 		public Boolean isCreatePcpGroup {
 			get {
-				if (isCreatePcpGroup == NULL) {
-					isCreatePcpGroup = rndInteractionType == 'create-pcpgroup';
-				}
-				return isCreatePcpGroup;
+	if (isCreatePcpGroup == NULL) {
+		isCreatePcpGroup = rndInteractionType == 'create-pcpgroup';
+	}
+	return isCreatePcpGroup;
 			}
 			set;
 		}
 		public Boolean isUpdatePcpGroup {
 			get {
-				if (isUpdatePcpGroup == NULL) {
-					isUpdatePcpGroup = rndInteractionType == 'update-pcpgroup';
-				}
-				return isUpdatePcpGroup;
+	if (isUpdatePcpGroup == NULL) {
+		isUpdatePcpGroup = rndInteractionType == 'update-pcpgroup';
+	}
+	return isUpdatePcpGroup;
 			}
 			set;
 		}
 		public Boolean isDeletePcpGroup {
 			get {
-				if (isDeletePcpGroup == NULL) {
-					isDeletePcpGroup = rndInteractionType == 'delete-pcpgroup';
-				}
-				return isDeletePcpGroup;
+	if (isDeletePcpGroup == NULL) {
+		isDeletePcpGroup = rndInteractionType == 'delete-pcpgroup';
+	}
+	return isDeletePcpGroup;
 			}
 			set;
 		}
 		public Boolean isAcknowledgeSuccess {
 			get {
-				if (isAcknowledgeSuccess == NULL) {
-					isAcknowledgeSuccess = rndInteractionType == CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS;
-				}
-				return isAcknowledgeSuccess;
+	if (isAcknowledgeSuccess == NULL) {
+		isAcknowledgeSuccess = rndInteractionType == CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS;
+	}
+	return isAcknowledgeSuccess;
 			}
 			set;
 		}
@@ -880,6 +964,7 @@ User Story - NOKIASC-24431
 		webservice String productId;
 		webservice String chProductRelease;
 		webservice String chProductVariant;
+		webservice String chSolution;
 		webservice String referenceNumber;
 		webservice String chServiceType;
 		webservice String severity;
@@ -912,127 +997,127 @@ User Story - NOKIASC-24431
 		
 		private Map<String, String> actionTypes {
 			get {
-				if (actionTypes == NULL) {
-					actionTypes = new Map<String, String>{'create-informationresponse' => 'Information Response',
-						'cancel-case' => 'Cancel Case',
-						'accept-workaround' => 'Accept Workaround',
-						'reject-workaround' => 'Reject Workaround',
-						'accept-solution' => 'Solution Accepted',
-						'reject-solution' => 'Solution Rejected',
-						CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE => CH_ExternalInterfaceWebService.INFORMATION_UPDATE,
-						CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS => 'Acknowledge Success',
-						'acknowledge-error' => 'Acknowledge Error'};
-							}
-				return actionTypes;
+	if (actionTypes == NULL) {
+		actionTypes = new Map<String, String>{'create-informationresponse' => 'Information Response',
+			'cancel-case' => 'Cancel Case',
+			'accept-workaround' => 'Accept Workaround',
+			'reject-workaround' => 'Reject Workaround',
+			'accept-solution' => 'Solution Accepted',
+			'reject-solution' => 'Solution Rejected',
+			CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE => CH_ExternalInterfaceWebService.INFORMATION_UPDATE,
+			CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS => 'Acknowledge Success',
+			'acknowledge-error' => 'Acknowledge Error'};
+	}
+	return actionTypes;
 			}
 			set;
 		}
 		public String actionType {
 			get {
-				if (actionType == NULL) {
-					actionType = actionTypes.get(chActionExternalSystem);
-				}
-				return actionType;
+	if (actionType == NULL) {
+		actionType = actionTypes.get(chActionExternalSystem);
+	}
+	return actionType;
 			}
 			set;
 		}
 		
 		public Boolean isRetrieveCase {
 			get {
-				if (isRetrieveCase == NULL) {
-					isRetrieveCase = chActionExternalSystem == 'retrieve-case';
-				}
-				return isRetrieveCase;
+	if (isRetrieveCase == NULL) {
+		isRetrieveCase = chActionExternalSystem == 'retrieve-case';
+	}
+	return isRetrieveCase;
 			}
 			set;
 		}
 		public Boolean isCreateCase {
 			get {
-				if (isCreateCase == NULL) {
-					isCreateCase = chActionExternalSystem == 'create-case';
-				}
-				return isCreateCase;
+	if (isCreateCase == NULL) {
+		isCreateCase = chActionExternalSystem == 'create-case';
+	}
+	return isCreateCase;
 			}
 			set;
 		}
 		public Boolean isCreateInformationUpdate {
 			get {
-				if (isCreateInformationUpdate == NULL) {
-					isCreateInformationUpdate = chActionExternalSystem == CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE;
-				}
-				return isCreateInformationUpdate;
+	if (isCreateInformationUpdate == NULL) {
+		isCreateInformationUpdate = chActionExternalSystem == CH_ExternalInterfaceWebService.CREATE_INFORMATION_UPDATE;
+	}
+	return isCreateInformationUpdate;
 			}
 			set;
 		}
 		public Boolean isCancelCase {
 			get {
-				if (isCancelCase == NULL) {
-					isCancelCase = chActionExternalSystem == 'cancel-case';
-				}
-				return isCancelCase;
+	if (isCancelCase == NULL) {
+		isCancelCase = chActionExternalSystem == 'cancel-case';
+	}
+	return isCancelCase;
 			}
 			set;
 		}
 		public Boolean isAcceptWorkaround {
 			get {
-				if (isAcceptWorkaround == NULL) {
-					isAcceptWorkaround = chActionExternalSystem == 'accept-workaround';
-				}
-				return isAcceptWorkaround;
+	if (isAcceptWorkaround == NULL) {
+		isAcceptWorkaround = chActionExternalSystem == 'accept-workaround';
+	}
+	return isAcceptWorkaround;
 			}
 			set;
 		}
 		public Boolean isRejectWorkaround {
 			get {
-				if (isRejectWorkaround == NULL) {
-					isRejectWorkaround = chActionExternalSystem == 'reject-workaround';
-				}
-				return isRejectWorkaround;
+	if (isRejectWorkaround == NULL) {
+		isRejectWorkaround = chActionExternalSystem == 'reject-workaround';
+	}
+	return isRejectWorkaround;
 			}
 			set;
 		}
 		public Boolean isAcceptSolution {
 			get {
-				if (isAcceptSolution == NULL) {
-					isAcceptSolution = chActionExternalSystem == 'accept-solution';
-				}
-				return isAcceptSolution;
+	if (isAcceptSolution == NULL) {
+		isAcceptSolution = chActionExternalSystem == 'accept-solution';
+	}
+	return isAcceptSolution;
 			}
 			set;
 		}
 		public Boolean isRejectSolution {
 			get {
-				if (isRejectSolution == NULL) {
-					isRejectSolution = chActionExternalSystem == 'reject-solution';
-				}
-				return isRejectSolution;
+	if (isRejectSolution == NULL) {
+		isRejectSolution = chActionExternalSystem == 'reject-solution';
+	}
+	return isRejectSolution;
 			}
 			set;
 		}
 		public Boolean isCreateInformationResponse {
 			get {
-				if (isCreateInformationResponse == NULL) {
-					isCreateInformationResponse = chActionExternalSystem == 'create-informationresponse';
-				}
-				return isCreateInformationResponse;
+	if (isCreateInformationResponse == NULL) {
+		isCreateInformationResponse = chActionExternalSystem == 'create-informationresponse';
+	}
+	return isCreateInformationResponse;
 			}
 			set;
 		}
 		public Boolean isAcknowledgeSuccess {
 			get {
-				if (isAcknowledgeSuccess == NULL) {
-					isAcknowledgeSuccess = chActionExternalSystem == CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS;
-				}
-				return isAcknowledgeSuccess;
+	if (isAcknowledgeSuccess == NULL) {
+		isAcknowledgeSuccess = chActionExternalSystem == CH_ExternalInterfaceWebService.ACKNOWLEDGE_SUCCESS;
+	}
+	return isAcknowledgeSuccess;
 			}
 			set;
 		}
 		public Boolean isAcknowledgeError {
 			get {
-				if (isAcknowledgeError == NULL) {
-					isAcknowledgeError = chActionExternalSystem == 'acknowledge-error';
-				}
-				return isAcknowledgeError;
+	if (isAcknowledgeError == NULL) {
+		isAcknowledgeError = chActionExternalSystem == 'acknowledge-error';
+	}
+	return isAcknowledgeError;
 			}
 			set;
 		}

@@ -36,7 +36,7 @@ public without sharing class AccreditationLevelChange{
 			marketLeadsEmails.put(reginalLeadsEmails.name, allEmails);
 		}
 		//system.debug('marketLeadsEmails.....' +marketLeadsEmails);			
-		//list<Accreditation__c> eligibleaccred = Database.query('select id, name, Accreditation_Level__c, Accreditation_Type__c, Evaluated_Accreditation__c, Manual_Accreditation_Level_Update__c, Market__c, Meets_Lab_Equipment_Requirements__c, Partner__c, Partner_Program__c, Partner_Type__c, Portfolio__c, Active_Contract_Types__c, Partner_Business_Plan_Status__c, Shift_Model__c, Third_Party_Screening__c, ' + system.label.Accredittaion_Automation_certification_Job_Function + ' from Accreditation__c where Evaluated_Accreditation__c = true');				
+		//list<Accreditation__c> eligibleaccred = Database.query('select id, name, Accreditation_Level__c, Accreditation_Type__c, Evaluated_Accreditation__c, Manual_Accreditation_Level_Update__c, Market__c, Meets_Lab_Equipment_Requirements__c, Partner__c, Partner_Program__c, Partner_Type__c, Portfolio__c, Active_Contract_Types__c, Partner_Business_Plan_Status__c, Shift_Model__c, Third_Party_Screening__c, ' + system.label.Accredittaion_Automation_certification_Job_Function + ' from Accreditation__c where Evaluated_Accreditation__c = true');	
 		system.debug('eligibleaccred ==== '+ eligibleaccred);	  
 		try{
 			for(Accreditation__c accred : eligibleaccred){
@@ -45,7 +45,7 @@ public without sharing class AccreditationLevelChange{
 			}
 			system.debug('cuurrentLevel  ' + cuurrentLevel);
 		 
-			for(Accreditation__c accrerdit : eligibleaccred){				
+			for(Accreditation__c accrerdit : eligibleaccred){	
 	list<Accreditation_Level_Rule__c> matchingRules = new list<Accreditation_Level_Rule__c>();		
 	for(Accreditation_Level_Rule__c rule :allrules){
 		System.Debug('Acctrdit Rule'+rule);
@@ -59,8 +59,8 @@ public without sharing class AccreditationLevelChange{
 			rule.Partner_Type__c.contains(String.valueOf(accrerdit.Partner_Type__c))&&
 		(rule.Shift_Model__c == PRMGlobalConstants.NotApplicable || rule.Shift_Model__c.contains(String.valueOf(accrerdit.Shift_Model__c)))&&
 			rule.Portfolio__c.contains(String.valueOf(accrerdit.Portfolio__c))){
-				matchingRules.add(rule);
-			}		   
+	matchingRules.add(rule);
+			}	 
 	}
 	system.debug('matchingRules == '+ matchingRules);
 	accredToRule.put(accrerdit.id, matchingRules);
@@ -70,54 +70,62 @@ public without sharing class AccreditationLevelChange{
 	list<Accreditation_Level_Rule__c> mapRules = accredToRule.get(accrerd.id);
 	system.debug('mapRules == '+ mapRules);
 	for(Accreditation_Level_Rule__c rule : mapRules){
+		Boolean HasSharedValue = FindSharedValue(accrerd.Active_Contract_Types__c,rule.Contract_Type__c);
 		if(
 			((accrerd.Active_Contract_Types__c != Null && rule.Contract_Type__c != Null && 
-		accrerd.Active_Contract_Types__c.containsIgnoreCase(rule.Contract_Type__c)) ||
-			 ( rule.Contract_Type__c == Null)) &&
+	 HasSharedValue == true) ||
+	( rule.Contract_Type__c == Null)) &&
 			((accrerd.Partner_Business_Plan_Status__c != Null && rule.Business_Plan_Status__c != Null && 
 		rule.Business_Plan_Status__c.containsIgnoreCase(accrerd.Partner_Business_Plan_Status__c)) ||
-			 (rule.Business_Plan_Status__c == Null)) &&
+	(rule.Business_Plan_Status__c == Null)) &&
 			((accrerd.Third_Party_Screening__c != Null && rule.Third_Party_Screening__c != Null && 
 		rule.Third_Party_Screening__c.containsIgnoreCase(accrerd.Third_Party_Screening__c)) ||
-			 (rule.Third_Party_Screening__c == Null))&&
+	(rule.Third_Party_Screening__c == Null))&&
 			((accrerd.Meets_Lab_Equipment_Requirements__c && rule.Lab_Equipment_Requirements__c) ||
-			 (!rule.Lab_Equipment_Requirements__c))
+	(!rule.Lab_Equipment_Requirements__c))
 			){  
 			system.debug('In if rule for rule #  .. '+ rule.name + rule.id);
 			boolean havecertifiedUsers = false;
 			for(PRM_CertificationToAccreditation_Mapping__c cert : PRM_CertificationToAccreditation_Mapping__c.getAll().values()){
-				IF(accrerd.get(cert.Accreditation_Field_API_Name__c) != Null &&
-		  (Integer.valueOf(accrerd.get(cert.Accreditation_Field_API_Name__c)) == Integer.valueOf(rule.get(cert.Accreditation_Field_API_Name__c)) ||
+	IF(accrerd.get(cert.Accreditation_Field_API_Name__c) != Null &&
+	(Integer.valueOf(accrerd.get(cert.Accreditation_Field_API_Name__c)) == Integer.valueOf(rule.get(cert.Accreditation_Field_API_Name__c)) ||
 		Integer.valueOf(accrerd.get(cert.Accreditation_Field_API_Name__c)) > Integer.valueOf(rule.get(cert.Accreditation_Field_API_Name__c)))
 		 ){
-		  havecertifiedUsers = true;
+	havecertifiedUsers = true;
 		 }
-				else{
+	else{
 		havecertifiedUsers = false;
 		break;
-				}
+	}
 			}
 			system.debug('havecertifiedUsers .. '+ havecertifiedUsers);
 			if(havecertifiedUsers){
-				newLevel.put(accrerd.id, rule.Accreditation_Level__c);
-				break;
+	newLevel.put(accrerd.id, rule.Accreditation_Level__c);
+	break;
 			}
 		}   
 	}
 			}
 			system.debug('newLevel .. '+ newLevel);			
-			for(Accreditation__c accr : eligibleaccred){	
-	integer currentLevelRank = Integer.valueOf(PRM_Accreditation_Level_Ranks__c.getinstance(cuurrentLevel.get(accr.id)).Rank__c);
-	if(newLevel.containsKey(accr.id)){
+			for(Accreditation__c accr : eligibleaccred){
+				Boolean skip = false;
+	integer currentLevelRank;
+		if(PRM_Accreditation_Level_Ranks__c.getinstance(cuurrentLevel.get(accr.id)) != null){
+	 	currentLevelRank = Integer.valueOf(PRM_Accreditation_Level_Ranks__c.getinstance(cuurrentLevel.get(accr.id)).Rank__c);
+		}
+				else{
+					skip = true;
+				}
+	if(newLevel.containsKey(accr.id) && !skip){
 		integer newLevelRank =  Integer.valueOf(PRM_Accreditation_Level_Ranks__c.getinstance(newLevel.get(accr.id)).Rank__c);
-					system.debug('newLevelRank --> ' + newLevelRank);
-					system.debug('currentLevelRank --> ' + currentLevelRank);
+		system.debug('newLevelRank --> ' + newLevelRank);
+		system.debug('currentLevelRank --> ' + currentLevelRank);
 		
 		if(accr.Manual_Accreditation_Level_Update__c){
-				accr.Evaluated_Accreditation_Level__c = newLevel.get(accr.id);
-				accr.Last_Accreditation_Evaluation_Date__c = system.today();
-				accr.Evaluated_Accreditation__c = false;
-				manualUpdateAccred.add(accr);
+	accr.Evaluated_Accreditation_Level__c = newLevel.get(accr.id);
+	accr.Last_Accreditation_Evaluation_Date__c = system.today();
+	accr.Evaluated_Accreditation__c = false;
+	manualUpdateAccred.add(accr);
 		}
 		else if((newLevel.get(accr.id) != cuurrentLevel.get(accr.id))&& 
 		((newLevelRank < currentLevelRank) || ((newLevelRank > currentLevelRank) && accr.Downgrade_Grace_Period_End_Date__c == system.today()))){
@@ -214,8 +222,8 @@ public without sharing class AccreditationLevelChange{
 			}
 			
 			list<Apttus_Proposal__Proposal__c> allQuotes = [SELECT Id,NokiaCPQ_Needs_Reprice__c, NokiaCPQ_Portfolio__c, Apttus_Proposal__Account__c 
-						FROM Apttus_Proposal__Proposal__c where Apttus_Proposal__Account__c in: quoteAccID 
-						Limit : (Limits.getLimitQueryRows()-Limits.getQueryRows())];
+			FROM Apttus_Proposal__Proposal__c where Apttus_Proposal__Account__c in: quoteAccID 
+			Limit : (Limits.getLimitQueryRows()-Limits.getQueryRows())];
 			for(Apttus_Proposal__Proposal__c quote : [SELECT Id,NokiaCPQ_Needs_Reprice__c, NokiaCPQ_Portfolio__c, Apttus_Proposal__Account__c FROM Apttus_Proposal__Proposal__c where Apttus_Proposal__Account__c in: quoteAccID Limit : (Limits.getLimitQueryRows()-Limits.getQueryRows())]) {
 	list<Apttus_Proposal__Proposal__c> quotelist = new list<Apttus_Proposal__Proposal__c>();
 	map<string, list<Apttus_Proposal__Proposal__c>> porttoQuote = new map<string, list<Apttus_Proposal__Proposal__c>>();
@@ -347,5 +355,20 @@ public without sharing class AccreditationLevelChange{
 			//System.debug('afterupdate '+ accredRuleToUpdate);
 		}catch(Exception e) {ExceptionHandler.addException(e,PRMGlobalConstants.AccreditationLevelChange,PRMGlobalConstants.setAccrdRuleLevelRank);}
 		
-	}   
+	}
+	
+	public static boolean FindSharedValue(String accrecord, String accrulerecord) {
+  	
+		if(accrecord != Null && accrulerecord != Null){
+		for(String accrecordins : accrecord.split(';')) {
+			if(accrulerecord.contains(accrecordins))
+			   {
+				 return true;  
+			   }
+	  	}
+		}
+	return false;
+}
+	   
+	   
 }

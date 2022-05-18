@@ -14,12 +14,12 @@ public class closedAllQuotesTest{
 	  database.insert(accLegalEntity);
 	 
 	  System.debug('accLegalEntity '+accLegalEntity);
-	   
+	
 	  Account accountCreationDP = TestDataFactory.createAccount(1)[0];
 	  accountCreationDP.L4Name__c = 'TESTTerritory'; 
 	  database.insert(accountCreationDP); 
 	  System.debug('accountCreationDP '+accountCreationDP);
-	   
+	
 	  // DP
 	  SWx_Upsell_Proposal__c upsellProposal_SWX= new SWx_Upsell_Proposal__c(); //TestDataFactory.upsellList(1,accountCreationDP)[0];
 	  upsellProposal_SWX.Analytics_File_Refer_ID__c='GBR-61940-82356';
@@ -34,7 +34,7 @@ public class closedAllQuotesTest{
 	
 	  database.insert(upsellProposal_SWX);
 	  System.debug('upsellProposal_SWX '+upsellProposal_SWX);
-	   
+	
 	  //opty Insertion
 	  Opportunity oppty ;
 	  oppty = TestDataFactory.OpportunityCreation(1,accountCreationDP)[0];
@@ -44,7 +44,7 @@ public class closedAllQuotesTest{
 	  oppty.Lead_BG__c ='MN';
 	  oppty.Phase_Status__c = CSWXGlobalConstant.Opty_phase_Status;
 	  oppty.Account_Role__c='Alliance Partner';
-	   
+	
 	  database.insert(oppty);
 	  System.debug('oppty '+oppty);
 	  setid.add(oppty.id);
@@ -53,7 +53,7 @@ public class closedAllQuotesTest{
 	  Apttus_Config2__PriceList__c priceList= TestdataFactory.priceList(1)[0];
 	  database.insert(priceList);
 	  System.debug('priceList '+priceList);
-	   
+	
 	  //Quote Insertion  
 	  Apttus_Proposal__Proposal__c quoteProposal2 = NOKIA_CPQ_TestDataFactory.createProposal(1)[0];
 	  quoteProposal2.Apttus_Proposal__Opportunity__c = oppty.id; 
@@ -69,26 +69,26 @@ public class closedAllQuotesTest{
 	  quoteProposal2.LOA_Status__c='Approved';
 	  quoteProposal2.Apttus_Proposal__Account__c=accountCreationDP.id;
 	  quoteProposal2.Sold_To_Party__c = accLegalEntity.id;
-	   
+	
 	  quoteProposal2.DSPricingManager__c=null;
 	  quoteProposal2.DSSolutionManager__c=null;
 	 
 	  database.insert(quoteProposal2); 
 	  System.debug('quoteProposal2 '+quoteProposal2);
 		 
-	   quoteProposal2.Apttus_Proposal__Approval_Stage__c = 'Closed(Not Won)';
-	   quoteProposal2.Quote_Status__c = 'Closed';
-	   database.update(quoteProposal2);
-	   
+	quoteProposal2.Apttus_Proposal__Approval_Stage__c = 'Closed(Not Won)';
+	quoteProposal2.Quote_Status__c = 'Closed';
+	database.update(quoteProposal2);
+	
 		quoteProposal2.Apttus_Proposal__Approval_Stage__c = 'Approved';
 		quoteProposal2.Quote_Status__c = 'Closed';
 		quoteProposal2.NokiaCPQ_Update_Quote_Record_Type__c= True;
 		quoteProposal2.Quote_Status__c='Submit';
 		database.update(quoteProposal2);
-	   
+	
 	  Test.startTest();
-		  closedAllQuotes.executeBatchMethod(oppIDs);
-		  updateApprovalAllQuotes.executeBatchMethod(oppIDs);
+	closedAllQuotes.executeBatchMethod(oppIDs);
+	updateApprovalAllQuotes.executeBatchMethod(oppIDs);
 		//closedAllQuotes cQuote = new closedAllQuotes(oppIDs);
 		//Database.executeBatchMethod(cQuote);
 		//updateApprovalAllQuotes updateQuote = new updateApprovalAllQuotes(oppIDs);

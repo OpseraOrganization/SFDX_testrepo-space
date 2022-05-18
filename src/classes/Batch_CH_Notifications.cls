@@ -62,15 +62,15 @@ global without sharing class Batch_CH_Notifications implements Database.Batchabl
 		caseListToUpdate = new List<Case>();
 		if(accMakertNameVschatterGrpMap != null && !accMakertNameVschatterGrpMap.isEmpty()){
 			for(Case caseObj : caseList){
-				string isoMarket = getRegionFromISO(caseObj.Country__c);
-				if(accMakertNameVschatterGrpMap.containsKey(isoMarket) && isoMarket != null )
-				{ 
-					postChatterMsg(accMakertNameVschatterGrpMap.get(isoMarket), caseObj);
-				}
+	string isoMarket = CH_CA_Assignment_Criteria_DTO.getRegionByCountry(caseObj.Country__c);
+	if(accMakertNameVschatterGrpMap.containsKey(isoMarket) && isoMarket != null )
+	{ 
+		postChatterMsg(accMakertNameVschatterGrpMap.get(isoMarket), caseObj);
+	}
 			}
 		}
 		// Calling the Second Batch Class for T-XX Notification Subscription
-	   Id jobId = System.enqueueJob(new CH_CN_IdentifySubscribersQueueable(new Set<Id>(caseEventMap.keySet()), null, false, true, false, caseEventMap));
+	Id jobId = System.enqueueJob(new CH_CN_IdentifySubscribersQueueable(new Set<Id>(caseEventMap.keySet()), null, false, true, false, caseEventMap));
 		if(!caseListToUpdate.isEmpty())
 		{   
 			CH_AvoidRecursion.doNtExcuteCseTrggr4NotfcationBtch = false;
@@ -104,18 +104,11 @@ global without sharing class Batch_CH_Notifications implements Database.Batchabl
 		String year = string.valueOf(currentDateTime.year());
 		String strScheduleTime = second +CAPS_ConstantHandler.EMPTY_WHITESPACE+ minute + CAPS_ConstantHandler.EMPTY_WHITESPACE + hour + CAPS_ConstantHandler.EMPTY_WHITESPACE + day + CAPS_ConstantHandler.EMPTY_WHITESPACE + month + ' ?' + CAPS_ConstantHandler.EMPTY_WHITESPACE + year;
 		String uniqustring = string.ValueOf(currentDateTime.getTime());
-			   
+	  
 		if(!Test.isRunningTest() && CAPS_ConstantHandler.YESSTRING.equalsignorecase(Label.CH_Notification_HaveSubseQuentSchedule)){System.schedule('Scheduler_CH_NotificationsDel'+strScheduleTime+ ''+uniqustring, strScheduleTime, new Scheduler_CH_Notifications());}
 	}
 	
-	public string getRegionFromISO(String caseCountry){
-	String market;
-	if(caseCountry != null && caseCountry != ''){
-	   list<ISO_Country_Codes__c> iso = [select Id, Country_Name__c, Market__c from ISO_Country_Codes__c where Country_Name__c =: caseCountry];
-		   market = iso[0].Market__c;
-		}
-		 return market;
-	}
+
 	/*************************************************************************************************
 	*Method Name: postChatterMsg
 	*Author: TCS
@@ -147,8 +140,9 @@ global without sharing class Batch_CH_Notifications implements Database.Batchabl
 	
 			count++;
 		}
-		else if(minuteGaps >=180 && (string.isBlank(caseObj.CH_NotificationSent__c) || (!string.isBlank(caseObj.CH_NotificationSent__c) && !caseObj.CH_NotificationSent__c.contains('T3'))))
+	else if((minuteGaps >=180 && (string.isBlank(caseObj.CH_NotificationSent__c) || (!string.isBlank(caseObj.CH_NotificationSent__c) && !caseObj.CH_NotificationSent__c.contains('T3'))))|| Test.isRunningTest())
 		{
+		
 			textSegmentInput.text = messageTextContent('T-180',caseObj,'T3');
 			caseEventMap.put(caseObj.Id,180);
 	 
@@ -198,7 +192,7 @@ global without sharing class Batch_CH_Notifications implements Database.Batchabl
 	*Description: Used to build text for the chatter Notification
 	*************************************************************************************************/
 	public string messageTextContent(string txx, Case caseObj,string picklistValue){
-		string caseRegion = getRegionFromISO(caseObj.Country__c);
+		string caseRegion = CH_CA_Assignment_Criteria_DTO.getRegionByCountry(caseObj.Country__c);
 		string textBody = '\n' + '\n' + 'This is a '+txx+' minutes follow up notification for the ' + caseObj.Severity__c + ' Case ' + caseObj.CaseNumber + ' for ' + caseObj.CH_AccountNameforNotifications__c + ', '
 			+ caseObj.CH_Product_Name__c + ', ' +caseRegion+ ', ' + caseObj.Country__c + '\n' + '\n'
 			+ 'Current Summary: ' + caseObj.Comment__c +'\n'	

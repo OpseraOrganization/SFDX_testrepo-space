@@ -1,6 +1,12 @@
 public without sharing class HWS_UpdateReturnDeliveryAddress {
-	@future(callout=true)
+
+	 @future(callout=true)
 	public static void updateReturnDeliveryAddressOnChildCase(Set<Id> caseIds,Id parentCaseId){
+		updateReturnDeliveryAddressOnChildCaseFromBatch(caseIds,parentCaseId);
+	  }
+	
+	//Removed future and moved to common for batch class NOKIASC-37193
+	public static void updateReturnDeliveryAddressOnChildCaseFromBatch(Set<Id> caseIds,Id parentCaseId){
 		List<HWS_BulkUpload__c> bulkrecList = [Select Id, Part_Code_Part_Revision__c, HWS_LSPResponse__c,ParentCaseId__c from HWS_BulkUpload__c where ParentCaseId__c=:parentCaseId];
 		if(!bulkrecList.isEmpty()){
 			HWS_BulkUpload__c bulkrec = bulkrecList[0];
@@ -8,16 +14,17 @@ public without sharing class HWS_UpdateReturnDeliveryAddress {
 				HWS_WrapLSPInstructions requestObj = (HWS_WrapLSPInstructions)JSON.deserialize(bulkrec.HWS_LSPResponse__c, HWS_WrapLSPInstructions.class);
 				try{
 					//NOKIASC-35422-start
-					Case parentCaseDetails = [Select Id, CaseNumber, HWS_Bar_Code__c,HWS_ReturnAddressReceivedFromSOO__c,HWS_Case_Ordered_Date__c,EntitlementId,(Select Id,HWS_Bar_Code_Ref1__c,HWS_Bar_Code__c,HWS_Contract_Line_Item__c,RecordTypeId,CH_ServiceType__c,CH_RecordTypeDevName__c,EntitlementId  from Cases where Id In: caseIds ) from Case Where Id=:parentCaseId];
+					Case parentCaseDetails = [Select Id, CaseNumber, HWS_Bar_Code__c,HWS_ReturnAddressReceivedFromSOO__c,HWS_Case_Ordered_Date__c,EntitlementId,(Select Id,HWS_Bar_Code_Ref1__c,HWS_Bar_Code__c,HWS_Contract_Line_Item__c,RecordTypeId,CH_ServiceType__c,CH_RecordTypeDevName__c,EntitlementId,HWS_RequestHWRCAFMA__c  from Cases where Id In: caseIds ) from Case Where Id=:parentCaseId AND HWS_ReturnAddressReceivedFromSOO__c = true];//modified for NOKIASC-37193
 					Map<Id, Case> caseMap = new Map<Id, Case>();
 					for(Case caseRec : parentCaseDetails.Cases){
-						System.debug('caseRec.Id**'+caseRec.Id);
+					   
 						caseMap.put(caseRec.Id, caseRec);
 					}
 					try{
 						Map<String,HWS_WrapLSPInstructions.DeliveryAddress> mapNodeDeliveryAddress = new Map<String,HWS_WrapLSPInstructions.DeliveryAddress>();
 						Map<String,String> mapSupplierNode = new Map<String,String>();
 						List<Case> childList = new List<Case>();
+						Set<Id> caseIdSet =new Set<Id>();
 						for(HWS_WrapLSPInstructions.SupplierNodes supplierNode : requestObj.SupplierNodes){ 
 							mapSupplierNode.put(supplierNode.LogisticNode,supplierNode.ReferralInstruction);
 						 }
@@ -59,7 +66,15 @@ public without sharing class HWS_UpdateReturnDeliveryAddress {
 							update childList;
 							System.debug('childList**'+childList);
 							//CH_AuthorizedContactSharing.handleSharing(new Map<Id, Case>(childList), new Map<Id, Case>(), true, false);
-							if(Limits.getQueueableJobs() == 1){
+			/*	 for(Case cs:childList){
+		if(caseMap.get(cs.id).HWS_RequestHWRCAFMA__c){ //Added isTrue condition to check flag for NOKIASC-37600
+								 caseIdSet.add(cs.id);	}
+				}
+				if(caseIdSet.size()>0){  //Added for NOKIASC-37600
+								 HWS_EmailNotifications.RequestHWFMARCA(caseIdSet);	
+		 }*/
+		 //commenting and adding this code in HWS_CaseTriggerHandler after update method
+		if(Limits.getQueueableJobs() == 1){
 								String hour = String.valueOf(Datetime.now().hour());
 								String min = String.valueOf(Datetime.now().minute()); 
 								String ss = String.valueOf(Datetime.now().second() + 5);

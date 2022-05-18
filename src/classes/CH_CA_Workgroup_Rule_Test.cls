@@ -1,10 +1,10 @@
-@isTest
+@isTest 
 public class CH_CA_Workgroup_Rule_Test {
 	@testSetup
 	static void setuptestdata(){
 		CH_UTIL_TEST.setupCase(false);
 	}
-	
+
 	@isTest
 	static void testGetWorkgroupRules(){
 		test.startTest();
@@ -22,8 +22,10 @@ public class CH_CA_Workgroup_Rule_Test {
 	static void testGetWorkgroupRules22(){
 		test.startTest();
 		Case newCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Critical', 'Yes', 'CH_NokiaIncidentWithRestoration', false);
+		
 		CH_CA_Assignment_Criteria_DTO ruleDTO = new CH_CA_Assignment_Criteria_DTO().createIncidentSearchCriteria(newCase);
-
+		System.assert(ruleDTO != null,'DTO is created'); 
+		
 		CH_CA_DTO.SearchCriteriaDTO searchCriteriaDTO = new CH_CA_DTO.SearchCriteriaDTO();
 		searchCriteriaDTO.severity = 'Critical';
 		searchCriteriaDTO.outage = 'Yes';
@@ -43,6 +45,8 @@ public class CH_CA_Workgroup_Rule_Test {
 		CH_CA_Assignment_Criteria_DTO rule = new CH_CA_Assignment_Criteria_DTO().createIncidentSearchCriteria(newCase);
 		CH_CA_Assignment_Criteria_DTO foundRules = new CH_CA_Workgroup_Rule().GetWorkgroupRules2(rule,true);
 		CH_CA_Assignment_Criteria_DTO foundRules1 = new CH_CA_Workgroup_Rule().GetWorkgroupRules2(rule,false);
+		System.assert(foundRules != null,'Rules is created'); 
+		System.assert(foundRules1 != null,'Rules1 is created'); 
 		test.stopTest();
 	}
 }

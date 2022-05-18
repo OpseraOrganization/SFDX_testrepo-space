@@ -1,7 +1,7 @@
-@isTest (seealldata =false)
+@isTest (seealldata =false) 
 private class CH_WorkgroupHandler_TL_Test {
 	private static List<CH_Workgroup__c> workgroupList;
-	
+	 
 	static testMethod void createWorkgroups() {
 		CH_ManageCreateQueueAsynchQueue.doChainJob = false;
 		// create WorkGroups
@@ -13,13 +13,9 @@ private class CH_WorkgroupHandler_TL_Test {
 		if(!workgroupList.isEmpty()){
 			System.enqueueJob(new CH_ManageGroupMemberAsynchQueue(workgroupList));	
 		}
-	   
 		System.assertEquals(4, [SELECT Id FROM CH_Workgroup__c WHERE RecordType.DeveloperName='CH_KB_Workgroup'].size(), 'list of workgroup was not correct inserted');
-		System.debug('workgroupList after insert: ' + workgroupList);
 	}
-	
-	
-	
+
 	static testMethod void renameWorkgroups() {
 		
 		// rename the workgroup

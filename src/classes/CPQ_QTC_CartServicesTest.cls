@@ -1,6 +1,5 @@
 @isTest 
 public class CPQ_QTC_CartServicesTest {
-
 	 static testMethod void CPQ_QTC_CartServicesTestmethod() 
 	 {
 		User sysAdminUser = TestDataFactory.createSystemAdminUser();   

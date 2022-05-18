@@ -1,7 +1,7 @@
-public without sharing class QTO_TestDataFactory {
-
+public with sharing class QTO_TestDataFactory {
+	
 	public static Opportunity OpportunityCreation(Account acc) {
-
+		
 			Opportunity opty = new Opportunity();
 			opty.Name = 'Test Opportunity';
 			opty.CloseDate = system.today();
@@ -21,17 +21,16 @@ public without sharing class QTO_TestDataFactory {
 			opty.Sales_Outcome_Reason__c = 'Commercial';
 			opty.Unweighted_Amount_EUR__c = 0;
 			opty.Lead_BG__c = 'MN';
-			opty.Lead_BU__c = 'MN';
 			//opty.Start_Contract_Date__c = system.today();
 			//opty.Contract_End_Close_Date__c = system.today();
 			opty.G2_Planned_Date__c = system.today();
 			opty.G3_Planned_Date__c = system.today() + 1;
 			opty.G4_Planned_Date__c = system.today() + 2;
 			opty.G5_Planned_Date__c = system.today() + 3;
-			opty.RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(CSWXGlobalConstant.DIRECTRECORDTYPEOPPORTUNITY).getRecordTypeId();
+			opty.RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Direct_Record_Type').getRecordTypeId();
 		return opty;
 	}
-
+	
 //Quote/Proposal Creation
 	public static List<Apttus_Proposal__Proposal__c> createProposal(Integer size,Id oppId) {
 		List<Apttus_Proposal__Proposal__c> proposalList = new List<Apttus_Proposal__Proposal__c>();
@@ -50,13 +49,13 @@ public without sharing class QTO_TestDataFactory {
 			proposalObj.Creation_Date__c = system.today();
 			proposalObj.LOA_Status__c='Approved';
 			proposalObj.Apttus_Proposal__Proposal_Name__c = 'Test Quote';
-			proposalObj.RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('CCRE_Proposal').getRecordTypeId();
+			 proposalObj.RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('CCRE_Proposal').getRecordTypeId();
 		//  proposalObj.Analytics_Source__c = CSWXGlobalConstant.AnalyticsSource_CCRE;
 			proposalList.add(proposalObj);
 		}
 		return proposalList;
 	}
-
+	
 	public static Customer_Document__c createCustomerDocument() {
 		Customer_Document__c cd =new Customer_Document__c();
 		Account acc= createAccount(1)[0];
@@ -64,7 +63,7 @@ public without sharing class QTO_TestDataFactory {
 		cd.Customer__c = acc.id;
 		return cd;
 	}
-
+	
 	 public static Customer_Document_Line_Items__c createCustomerDocumentLineItem(Customer_Document__c cd) {
 		Customer_Document_Line_Items__c cdLines =new Customer_Document_Line_Items__c();
 		cdLines.Customer_Document__c = cd.id;
@@ -72,14 +71,30 @@ public without sharing class QTO_TestDataFactory {
 		cdLines.High_level_Product__c ='916876';
 		return cdLines;
 	}
-
+	
 	 public static Apttus__APTS_Agreement__c createAgreement(Account acc) {
 		Apttus__APTS_Agreement__c agr =new Apttus__APTS_Agreement__c();
 		agr.name = 'Test';
 		agr.Apttus__Account__c =acc.id;
 		return agr;
 	}
-
+	
+	public static Apttus__APTS_Agreement__c createAgreement(Account acc, Opportunity opp, Account legalEntity) {
+		Apttus__APTS_Agreement__c agr =new Apttus__APTS_Agreement__c();
+		agr.name = 'Test';
+		agr.Apttus__Account__c =acc.id;
+		agr.Agreement_External_Contract_Number__c = '1234';
+		agr.Nokia_Legal_Entity_lookup__c = legalEntity.Id;
+		agr.End_Customer__c = acc.Id;		
+		agr.Apttus__Related_Opportunity__c = opp.Id;
+		agr.Lead_BG__c = 'MN';
+		agr.Sales_Mode__c = 'Direct Export';
+		agr.CLM_Product_Categories__c = 'Others';
+		agr.Apttus__Contract_End_Date__c = System.today()+10;
+		agr.RecordTypeId = Schema.SObjectType.Apttus__APTS_Agreement__c.getRecordTypeInfosByDeveloperName().get('General').getRecordTypeId();		
+		return agr;
+	}	
+	
 	public static Customer_facing_Attribute__c createCFA(Id quoteId,Id proposalLineItem) {
 		Customer_facing_Attribute__c cfA =new Customer_facing_Attribute__c();
 		cfA.Attribute_Label__c = 'G2R site';
@@ -87,10 +102,10 @@ public without sharing class QTO_TestDataFactory {
 		cfA.Attribute_Visibility__c = 'Yes';
 		cfA.Attribute_Indicator__c = 'Item';
 		cfA.Quote_Line_Item__c =proposalLineItem;
-		cfA.Quote__c =  quoteId;
+		cfA.Quote__c =  quoteId;  
 		return cfA;
 	}
-
+	
 	public static Apttus_Proposal__Proposal_Line_Item__c proposalLineItemCreation(Id QuoteId,Apttus_Config2__PriceListItem__c plline) {
 		Apttus_Proposal__Proposal_Line_Item__c proposalLineItem = new Apttus_Proposal__Proposal_Line_Item__c();
 		proposalLineItem.Apttus_QPConfig__ItemSequence__c = 2;
@@ -100,7 +115,7 @@ public without sharing class QTO_TestDataFactory {
 		proposalLineItem.Apttus_QPConfig__PriceListItemId__c =  plline.id;
 		return proposalLineItem;
 	}
-
+	
 	public static list<Account> createAccount(integer size) {
 		list<Account> accList = new list<Account>();
 		for (integer i = 0; i < size; i++) {
@@ -117,18 +132,19 @@ public without sharing class QTO_TestDataFactory {
 			acc.Country__c = 'India';
 			//acc.Customer_Compliance__c='US_Govern';
 			acc.Acc_No__c = '101994456' + Utils.generateRandomInteger(4) + Utils.generateRandomString(4);
-
 			//acc.CBT_CT_Code__c='NAM US Regionals';
 			//acc.Customer_Compliance__c = 'unassigned';
-			acc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get(GlobalConstants.CUSTOMER).getRecordTypeId();
-			//acc.recordType.Name = 'Legal_Entity';
+			acc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();			
 			acc.AccountNumber = '301030871';
+			
+			if(size > 1 && i == size-1) //Make the last account a Legal Entity
+				acc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();			
 
 			accList.add(acc);
 		}
 		return accList;
 	}
-
+	
 	public static Apttus_Config2__PriceList__c priceList() {
 		 Apttus_Config2__PriceList__c priceListObj = new Apttus_Config2__PriceList__c();
 		 return priceListObj;

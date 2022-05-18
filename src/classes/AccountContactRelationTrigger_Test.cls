@@ -1,5 +1,6 @@
 @isTest
 private class AccountContactRelationTrigger_Test {
+	
 	@isTest
 	static void TestCreateAccountContactRelationTrigger() {
 		System.runAs(NCP_TestFactory.createUser(true, 'AES Admin', null, 'test@nokia.com.dev')) {

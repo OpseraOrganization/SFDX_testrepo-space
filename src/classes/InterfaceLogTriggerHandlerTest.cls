@@ -4,10 +4,10 @@ public class InterfaceLogTriggerHandlerTest {
   test.startTest();
 	Test.setMock(HttpCalloutMock.class, new ProspectCreationMockResponse500Test());
 	List<Account> accountList = new List<Account>{};
-	Id custRecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Customer').getRecordTypeId();
-	Id ProspectRecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Prospect').getRecordTypeId();	 
+	Id custRecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
+	Id ProspectRecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Prospect').getRecordTypeId();   
 	accountList = TestDataFactory.createAccount(1);
-	accountList[0].recordtypeid = ProspectRecordTypeId;	  
+	accountList[0].recordtypeid = ProspectRecordTypeId;   
 	accountList[0].AccountNumber = '30191217';
 	accountList[0].Website = 'testaudfhieuqrqgrrwkgvfrufgwejgfwekfgwufehwdfjkgwekjfgiuwefgweiugfuweigfwjekfgwkeufgwekfgwkejfgekwfjegfwkefgweuifgwefdewewfsdfdfdfgd.com';
 	accountList[0].BillingPostalCode='12345678959';

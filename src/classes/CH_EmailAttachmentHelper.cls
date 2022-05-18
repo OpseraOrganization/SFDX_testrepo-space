@@ -224,17 +224,42 @@ This method replicates the same behavior used at the level of the component CAPS
 		public string attachementId {get; set;}
 	}
 	
-	public static void sendEmailNotification(string toAddress, string subject, string senderName, string plainTextBody, string messageId){
+	public static void sendEmailNotification(string toAddress, string subject, string senderName, string plainTextBody, string messageId, string caseId){
 	
 		CH_EmailAlert__c createEmail=new CH_EmailAlert__c();
 		createEmail.CH_Bind1__c=subject;
 		if(plainTextBody=='Send Truncated Email'){createEmail.CH_EmailAlertName__c=plainTextBody; createEmail.CH_Bind2__c=messageId;}
+		//Changes added for NOKIASC-36144
+		else if (plainTextBody=='Case Owner Notification for PortalCases'){createEmail.CH_EmailAlertName__c=plainTextBody; createEmail.CH_Bind2__c=senderName;
+																		  createEmail.CH_Bind3__c=messageId; createEmail.CH_Bind4__c=caseId;}
 		else{createEmail.CH_EmailAlertName__c='Send Email Notification';}
 		createEmail.CH_Bind18__c=plainTextBody;
 		createEmail.CH_Bind15__c=toAddress;
 		insert createEmail;
 		
 		
+	}
+	
+	Public Static Void calculateAutomaticPlanned(Id CaseId,Integer WorkgroupTime){
+		Long milliseconds = ((Long)WorkgroupTime) * 60 * 60 *1000;
+		if(milliseconds==0){milliseconds=1;}
+		List<CaseMilestone> caseMilestones = [SELECT BusinessHours.Id FROM CaseMilestone WHERE CaseId = :CaseId ORDER BY TargetDate ASC NULLS LAST LIMIT 1];
+		if(caseMilestones.size()>0){ 
+		DateTime calculateTimer=BusinessHours.add(caseMilestones[0].BusinessHours.Id,DateTime.now(),milliseconds);
+		Case caseValues=new Case(Id=CaseId,CH_PlannedAutomaticQualificationDateTime__c=calculateTimer);
+		update caseValues;
+		}
+	}
+	
+	Public Static void caseCommentCalculation(Set<Id> userIds,Set<Id> caseIds){
+		For(CaseComment getCaseComment : [SELECT Id,Parent.Id,Parent.Status,Parent.CH_PlannedAutomaticQualificationDateTime__c,
+										  Parent.CH_RecordTypeCheck__c, Parent.BusinessHours.Id,
+										  Parent.CH_Workgroup__r.CH_AutomaticQualificationTimer__c FROM CaseComment 
+										  WHERE CreatedById IN :userIds AND  Parent.CH_RecordTypeCheck__c= TRUE AND  Parent.CH_PlannedAutomaticQualificationDateTime__c = null
+										  AND  Parent.Status='Pending Customer' AND Parent.Id IN :caseIds]){
+											  Integer getWorkgrpTimer; if(getCaseComment.Parent.CH_Workgroup__r.CH_AutomaticQualificationTimer__c != null){ getWorkgrpTimer =  Integer.valueof(getCaseComment.Parent.CH_Workgroup__r.CH_AutomaticQualificationTimer__c);}
+											  CH_EmailAttachmentHelper.calculateAutomaticPlanned(getCaseComment.Parent.Id,getWorkgrpTimer); 
+										  }
 	}
 	
 }

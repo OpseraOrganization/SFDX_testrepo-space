@@ -19,18 +19,18 @@ public without sharing class CertificationTriggerHandler {
 	public static void afterInsertCertificateOperation(Map<Id,Certification__c> certificationNewMap, Map<Id,Certification__c> certificationOldMap){
 		List<Certification__c> certificationListPSM = new List<Certification__c>();
 			try{
-				for(Certification__c certify :[SELECT Id,Owner.ProfileId,OwnerID,Partner__r.Id,Name FROM Certification__c 
-											   WHERE id IN : certificationNewMap.values() Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())]){
-												   if(CertificationOldMap.get(certify.Id).OwnerID != CertificationNewMap.get(certify.Id).OwnerID){
-													   certificationListPSM.add(certify);  
-												   } 
-											   }
-				if(!certificationListPSM.IsEmpty()){
-					CertificationTriggerHelper.afterUpdateCertificationSharePSM(certificationListPSM);
-				}
+	for(Certification__c certify :[SELECT Id,Owner.ProfileId,OwnerID,Partner__r.Id,Name FROM Certification__c 
+			  WHERE id IN : certificationNewMap.values() Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())]){
+			   if(CertificationOldMap.get(certify.Id).OwnerID != CertificationNewMap.get(certify.Id).OwnerID){
+				certificationListPSM.add(certify);  
+			   } 
+			  }
+	if(!certificationListPSM.IsEmpty()){
+		CertificationTriggerHelper.afterUpdateCertificationSharePSM(certificationListPSM);
+	}
 			}
 			catch(Exception e) {
-				ExceptionHandler.addException(e,PRMGlobalConstants.CertificationTriggerHandler ,PRMGlobalConstants.afterInsertCertificateOperation);}
+	ExceptionHandler.addException(e,PRMGlobalConstants.CertificationTriggerHandler ,PRMGlobalConstants.afterInsertCertificateOperation);}
 		
 	}
 	/*******************************

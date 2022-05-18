@@ -1,19 +1,24 @@
 @isTest
-public class IndirectCPQ_ProposalTriggerHelperTest{
-	
+public class IndirectCPQ_ProposalTriggerHelperTest {
+
+		
+
 	public static testmethod void updateStatusonLITest(){
+	 List<User> userList = new List<User>();
+  userList = TestDataFactory.userCreation(1,'Data Loader Profile');
+
+  System.runAs(userList[0]){ 
 		Id RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_Record_Type).getRecordTypeId(); 
 		
 		Account accCustomer = TestDataFactory.createAccount(1)[0];
 		accCustomer.AccountNumber='100006843';
-		accCustomer.BusinessPartnerRole__c= GlobalConstants.Alliance;
+		accCustomer.BusinessPartnerRole__c= 'Alliance';
 		accCustomer.Market__c = 'Market India';
 		accCustomer.L7Name__c = 'APJ ANO CT Ooredoo Myanmar';
 		accCustomer.Partner_Program__c ='GPP 3.0';
 		accCustomer.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
 		database.insert(accCustomer);
-		
-		Account accLegalEntity = TestDataFactory.createAccount(1)[0];
+				Account accLegalEntity = TestDataFactory.createAccount(1)[0];
 		accLegalEntity.AccountNumber='1000068431';
 		accLegalEntity.ParentId=accCustomer.ID;
 		accLegalEntity.Default_Legal_Entity__c = True ;
@@ -56,7 +61,7 @@ public class IndirectCPQ_ProposalTriggerHelperTest{
   opty.LOA_Level__c = '';
   opty.No_Loa__c = false;
   opty.Apttus_Approval__Approval_Status__c = 'Approved';
-  opty.Account_Role__c = 'Alliance Partner';
+  opty.Account_Role__c = 'GPP Distributor Partner';
 	  insert opty;
 	
    opty.StageName = 'Create Offer (Bid)';
@@ -79,12 +84,14 @@ public class IndirectCPQ_ProposalTriggerHelperTest{
 		quote.Apttus_Proposal__Opportunity__c = opty.Id;
 		quote.Apttus_Proposal__Account__c = accCustomer.ID;
 		quote.NokiaCPQ_Portfolio__c= 'IP Routing';
-		quote.NokiaProductAccreditation__c=accreditations.Id;
-		quote.NokiaCPQ_Maintenance_Accreditation__c=accreditation_main.Id;
+		//Commented out for FN by Christie JJ
+		//quote.NokiaProductAccreditation__c=accreditations.Id;
+		//quote.NokiaCPQ_Maintenance_Accreditation__c=accreditation_main.Id;
 		quote.NokiaCPQ_SAP_Document_Number__c='';
 		quote.Maintenance_Y1__c = 1.0;
 		quote.Maintenance_Y2__c = 1.0;
 		database.insert(quote);
+		//system.assertEquals(quote.Quote_Type__c,'');
 		
 		 Apttus_Config2__ProductConfiguration__c prodconfig = TestDataFactory.createProductConfiguration(quote);
 		prodconfig.Apttus_Config2__Status__c = Nokia_CPQ_Constants.Saved ;
@@ -113,6 +120,6 @@ public class IndirectCPQ_ProposalTriggerHelperTest{
 		IndirectCPQ_ProposalTriggerHelper.updateStatusonLI(quoteIDSet);
 		test.stopTest();
 		
-	}
+	}}
 	
 }

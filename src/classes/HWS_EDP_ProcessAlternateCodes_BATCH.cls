@@ -48,12 +48,12 @@
 		  Map<String,HWS_AlternateProductCode__c> alternatecodesmap = new Map<String,HWS_AlternateProductCode__c>();
 				Set<String> nsnCodesforProducts= new Set<String>();
 		  for(HWS_AlternateProductCode__c prodAltCode : alternatecodes){
-			if(prodAltCode.HWS_PartType__c =='PART'){
+			if(prodAltCode.HWS_PartType__c =='PART' && prodAltCode.HWS_AlternateCodeType__c == 'CARESID'){
 			  nsnCodesforProducts.add(prodAltCode.HWS_NSNCode__c);
 			  nsncaresCodeMap.put(prodAltCode.HWS_NSNCode__c,prodAltCode.Name);
 				alternatecodesmap.put(prodAltCode.HWS_NSNCode__c,prodAltCode);
 			}
-			else{
+			else if(prodAltCode.HWS_PartType__c == 'PART REVISION'){
 			   nsnCodesforVersion.add(prodAltCode.HWS_NSNCode__c); 
 				}
 			}

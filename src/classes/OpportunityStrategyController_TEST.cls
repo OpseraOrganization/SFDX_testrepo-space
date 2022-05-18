@@ -1,83 +1,97 @@
 /***************************************************
 *Class Name: OpportunityStrategyController_TEST
-*Author: Bruno Palma (11/10/19)
-*Description: Test class for OpportunityStrategyController
+*Description: Test class for OpportunityStrategyController 
 ****************************************************/
 @isTest
-public class OpportunityStrategyController_TEST 
+public class OpportunityStrategyController_TEST
 {
-	/**************************************************/
-	/*				  VARIABLES					 */
-	/**************************************************/
 	static List<user>		users		 = TestDataFactory.userCreation(1,'System Administrator');
 	static List<Account>	 accounts	  = TestDataFactory.createAccount(1);
 	static List<Opportunity> opportunities = new List<Opportunity>();
 
-	/**************************************************/
-	/*				  BEHAVIOUR					 */
-	/**************************************************/
 	@isTest static void userAllowedToEdit_OK()
 	{
-		Test.startTest();
-		insert users;			   
+		insert users;
 		System.runAs(users[0])
-		{			
+		{
 			insert accounts;
 			opportunities = TestDataFactory.OpportunityCreation(1,accounts[0]);
-			opportunities[0].Phase_Status__c = 'Planned';
 			insert opportunities;
+			Test.startTest();
 			boolean result = OpportunityStrategyController.allowedUserToEdit(opportunities[0].id);
-			System.assertEquals(true,result,'[OpportunityStrategyController_TEST].userAllowedToEdit_OK --> Unexpected behaviour...');			
+			Test.stopTest();
+			System.assertEquals(true,result);
 		}
-		Test.stopTest();
-	}//end userAllowedToEdit_OK method
+	}
 
-	@isTest static void userAllowedToEdit_NOK_EMPTYOPP()
+	@isTest static void userAllowedToEdit_NOK_PROFILE()
 	{
-		Test.startTest();
-		boolean result = OpportunityStrategyController.allowedUserToEdit('00629000008u2a3AAA');
-		System.assertEquals(false,result,'[OpportunityStrategyController_TEST].userAllowedToEdit_NOK_EMPTYOPP --> Unexpected behaviour...');
-		Test.stopTest();
-	}//end userAllowedToEdit_NOK_EMPTYOPP method
+
+		users = TestDataFactory.userCreation(1,'CH_Agent');
+		insert users;
+		System.runAs(users[0])
+		{
+			insert accounts;
+			opportunities = TestDataFactory.OpportunityCreation(1,accounts[0]);
+			opportunities[0].recordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Indirect_Sales_Opportunity_For_Partner').getRecordTypeId();
+			insert opportunities;
+			Test.startTest();
+			boolean result = OpportunityStrategyController.allowedUserToEdit(opportunities[0].id);
+			Test.stopTest();
+			System.assertEquals(false,result);
+		}
+
+	}
 
 	@isTest static void userAllowedToEdit_NOK_PHASE()
 	{
-		Test.startTest(); 
-		insert users;			   
+		insert users;
 		System.runAs(users[0])
-		{			
+		{
 			insert accounts;
 			opportunities = TestDataFactory.OpportunityCreation(1,accounts[0]);
 			opportunities[0].Phase_Status__c = 'Submitted for G2 Approval';
 			insert opportunities;
+			Test.startTest();
 			boolean result = OpportunityStrategyController.allowedUserToEdit(opportunities[0].id);
-			System.assertEquals(false,result,'[OpportunityStrategyController_TEST].userAllowedToEdit_NOK_PHASE --> Incorrect phase...');			
+			Test.stopTest();
+			System.assertEquals(false,result);
 		}
-		Test.stopTest();		
-	}//end userAllowedToEdit_NOK_PHASE method
-	
-	@isTest static void userAllowedToEdit_NOK_PROFILEEMPTY()
-	{
-		Test.startTest();
-		boolean result = OpportunityStrategyController.allowedUserToEdit('005410000054MFRAA2');
-		System.assertEquals(false,result,'[OpportunityStrategyController_TEST].userAllowedToEdit_NOK_PROFILEEMPTY --> Unexpected behaviour...');
-		Test.stopTest();
-	}//end userAllowedToEdit_NOK_PROFILEEMPTY method
 
-	@isTest static void userAllowedToEdit_NOK_PROFILE()
+	}
+
+	@isTest static void testGetOpportunityInfo()
 	{
-		Test.startTest();
-		users		 = TestDataFactory.userCreation(1,'CH_Agent');
 		insert users;
 		System.runAs(users[0])
-		{		  
+		{
 			insert accounts;
 			opportunities = TestDataFactory.OpportunityCreation(1,accounts[0]);
-			opportunities[0].recordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Indirect Sales Opportunity For Partner').getRecordTypeId();
 			insert opportunities;
-			boolean result = OpportunityStrategyController.allowedUserToEdit(opportunities[0].id);
-			System.assertEquals(false,result,'[OpportunityStrategyController_TEST].userAllowedToEdit_NOK_PROFILEEMPTY --> Incorrect Profile to be tested...');
+			Competitor__c competitor = new Competitor__c();
+			competitor.Competitor_New__c = 'Accenture';
+			competitor.Primary_Competitor__c = true;
+			competitor.Opportunity__c = opportunities[0].Id;
+			insert competitor;
+
+			List<Contact> contactList = TestDataFactory.createContact(1, accounts[0]);
+			contactList[0].LastName = 'last name';
+			insert contactList;
+
+			OpportunityContactRole contactRole = new OpportunityContactRole();
+			contactRole.ContactId = contactList[0].Id;
+			contactRole.OpportunityId = opportunities[0].Id;
+			insert contactRole;
+
+			Task taskObj = new Task(WhoId=contactList[0].Id,Subject=Label.CRM_WinPlanPrefix +'Test', Status='Open', whatId = opportunities[0].Id);
+			insert taskObj;
+
+			ApexPages.currentPage().getParameters().put('recordId', opportunities[0].Id);
+			OpportunityStrategyController ctrl = new OpportunityStrategyController();
+			Test.startTest();
+			ctrl.getOpportunityInfo();
+			Test.stopTest();
+			System.assertEquals(true,ctrl.opportunity!=null);
 		}
-		Test.stopTest();
-	}//end userAllowedToEdit_NOK_PROFILE method		
-}//end TEST class
+	}
+}

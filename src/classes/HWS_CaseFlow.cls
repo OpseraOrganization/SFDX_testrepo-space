@@ -52,7 +52,7 @@ public without sharing class HWS_CaseFlow {
 		return HWS_Utilty.duplicateSerialNumberInfo(serialNumber, materialCode);
 	}   
 	
-	/****************************************	   
+	/****************************************	
 * Name : getContactDetails	  
 * Description : method to return Contact Details		
 * Parameters: string contactId	  
@@ -61,10 +61,10 @@ public without sharing class HWS_CaseFlow {
 1. getParentAccountId() 2. getContactName() 3. getContactType()	 
 *****************************************/	  
 	@auraEnabled		
-	public static Contact getContactDetails(string contactId)	   
-	{	   
+	public static Contact getContactDetails(string contactId)	
+	{	
 		//added  for PMD Error - NOKIASC-32425
-		Contact con= [SELECT Id,Name,AccountId,CH_ContactType__c,Contact_Status__c,CH_ContactTimeZone__c,Email1__c,CH_Email3__c FROM contact where Id = :contactId ];	   
+		Contact con= [SELECT Id,Name,AccountId,CH_ContactType__c,Contact_Status__c,CH_ContactTimeZone__c,Email1__c,CH_Email3__c FROM contact where Id = :contactId ];	
 		return con;	 
 	}
 	
@@ -114,7 +114,7 @@ public without sharing class HWS_CaseFlow {
 * Returns : List<hws_versionitem__c> 
 *****************************************/
 	@auraEnabled
-	public static List<hws_versionitem__c> getVersions(list<Asset> listServiceServiceCon,String searchValue){	   
+	public static List<hws_versionitem__c> getVersions(list<Asset> listServiceServiceCon,String searchValue){	
 		String searchCode=searchValue +'%';	 
 		List<String> versionCodeList = new List<String>();	  
 		Id salesProduct = HWS_Utilty.getRecordTypeByName('Product2',HWS_Constants.SALES_PRODUCT);
@@ -126,13 +126,13 @@ public without sharing class HWS_CaseFlow {
 			sourceSystem = cl.HWS_SourceSystem__c;
 		}   
 		//added  for PMD Error - NOKIASC-32425
-	   List<HWS_AlternateProductCode__c> altVersionItemsLst = [SELECT Id, HWS_VersionItem__r.HWS_Hardware_Sellable_Item__r.Id,HWS_VersionItem__r.HWS_Version_Code__c, Name, HWS_AlternateCodeType__c FROM HWS_AlternateProductCode__c 
-				WHERE HWS_VersionItem__r.HWS_Source__c =:sourceSystem AND HWS_VersionItem__r.HWS_Hardware_Sellable_Item__r.RecordTypeId =: salesProduct AND Name LIKE:searchCode AND HWS_VersionItem__r.HWS_Hardware_Sellable_Item__c IN:sCLItmIds];
+	List<HWS_AlternateProductCode__c> altVersionItemsLst = [SELECT Id, HWS_VersionItem__r.HWS_Hardware_Sellable_Item__r.Id,HWS_VersionItem__r.HWS_Version_Code__c, Name, HWS_AlternateCodeType__c FROM HWS_AlternateProductCode__c 
+	WHERE HWS_VersionItem__r.HWS_Source__c =:sourceSystem AND HWS_VersionItem__r.HWS_Hardware_Sellable_Item__r.RecordTypeId =: salesProduct AND Name LIKE:searchCode AND HWS_VersionItem__r.HWS_Hardware_Sellable_Item__c IN:sCLItmIds];
 		if(altVersionItemsLst.size()>0) {   
 			for(HWS_AlternateProductCode__c pd : altVersionItemsLst){   
 	versionCodeList.add(pd.HWS_VersionItem__r.HWS_Version_Code__c);
 			}   
-		}	   
+		}	
 		stockableItems=HWS_Utilty.getVersionItems(sCLItmIds,sourceSystem,versionCodeList);
 		return stockableItems;
 	}
@@ -224,7 +224,7 @@ public without sharing class HWS_CaseFlow {
 		
 	{
 		List<Case> childCase = new List<Case>();	
-		Id sps = sPSCaseRType;		  
+		Id sps = sPSCaseRType;	
 		try {   
 			case parentCase1 = parentCase;
 			Case parentCaseId;
@@ -240,9 +240,9 @@ public without sharing class HWS_CaseFlow {
 			if(parentCase1.CH_ReportedDate__c == null){
 	parentCase1.CH_ReportedDate__c = System.now();
 			}
-			parentCase1.Country__c = contractLines[0].HWS_ContractLineItem__r.CH_CountryISOName__c;//NOKIASC-31884		  
+			parentCase1.Country__c = contractLines[0].HWS_ContractLineItem__r.CH_CountryISOName__c;//NOKIASC-31884	
 			//32414		 
-			Database.insert(new SObject[] {parentCase1});		   
+			Database.insert(new SObject[] {parentCase1});	 
 			//Added for single email
 			//added  for PMD Error - NOKIASC-32425
 			parentCaseId = [select id, CH_GWC_SecurityGroup__c,CH_SecurityGroup__c,caseNumber,Hws_Ship_to_Party_Address__c,Hws_Ship_to_Party_Address__r.BillingStreet,Hws_Ship_to_Party_Address__r.BillingCity,Hws_Ship_to_Party_Address__r.BillingState,Hws_Ship_to_Party_Address__r.BillingPostalCode,Hws_Ship_to_Party_Address__r.BillingCountry from case where Id = :parentCase1.Id ];
@@ -287,24 +287,24 @@ public without sharing class HWS_CaseFlow {
 	childCase1.Street_Address_2__c = null;
 	childCase1.Street_Address_3__c = null;
 	//NOKIASC-34637
-				if(childCase1.CH_EntitlementException__c == 'Warranty Status Check Failed'){
-					childCase1.HWS_WarrantyStatus__c = 'Warranty Unknown';
-					}
+	if(childCase1.CH_EntitlementException__c == 'Warranty Status Check Failed'){
+		childCase1.HWS_WarrantyStatus__c = 'Warranty Unknown';
+		}
 	if(childCase1.HWS_Failure_Occurance__c == HWS_Constants.None){
-					childCase1.HWS_Failure_Occurance__c='';
-				}
-				if(childCase1.HWS_Failure_Description__c == HWS_Constants.None){
-					childCase1.HWS_Failure_Description__c='';
-				}
-				if(childCase1.HWS_Failure_Detection__c == HWS_Constants.None){
-					childCase1.HWS_Failure_Detection__c='';
-				}
+		childCase1.HWS_Failure_Occurance__c='';
+	}
+	if(childCase1.HWS_Failure_Description__c == HWS_Constants.None){
+		childCase1.HWS_Failure_Description__c='';
+	}
+	if(childCase1.HWS_Failure_Detection__c == HWS_Constants.None){
+		childCase1.HWS_Failure_Detection__c='';
+	}
 	childCase.add(childCase1);
 	
-			}		   
+			}	 
 			Database.insert(childCase);
 			return parentCase1.id;
-		}	   
+		}	
 		catch(DmlException e) {
 			throw new AuraHandledException(String.valueOf(e.getMessage()));  
 		}
@@ -365,8 +365,8 @@ Modified By :
 Modified Date:
 ******************************/  
 	@AuraEnabled
-	public static HWS_NetworkElementAssetWrapper.AssetPagerWrapper getNEA(Id accId, Id cliId,List<Id> cliIdList,Integer recordLimit, Integer recordOffset,String searchText){	   
-		return HWS_Utilty.getNetworkElementAssets(accId,cliId,cliIdList,recordLimit,recordOffset,searchText);	   
+	public static HWS_NetworkElementAssetWrapper.AssetPagerWrapper getNEA(Id accId, Id cliId,List<Id> cliIdList,Integer recordLimit, Integer recordOffset,String searchText){	
+		return HWS_Utilty.getNetworkElementAssets(accId,cliId,cliIdList,recordLimit,recordOffset,searchText);	
 	}
 	
 	@auraEnabled
@@ -385,13 +385,13 @@ Modified Date:
 		for(Case getChildCaseValues:childCases){	
 			string serviceItemDescription=getChildCaseValues.Asset.HWS_ServiceOffering__c;  
 			string servicetype =getChildCaseValues.HWS_ServiceType__c;  
-						 String invoiceType = getChildCaseValues.HWS_Contract_Line_Item__r.HWS_InvoicingType__c;
-						if(invoiceType == 'event based'){
-								invoicingType = true;
-							}
+			 String invoiceType = getChildCaseValues.HWS_Contract_Line_Item__r.HWS_InvoicingType__c;
+			if(invoiceType == 'event based'){
+		invoicingType = true;
+				}
 			if((servicetype =='Spare Part Sales') || (serviceItemDescription!='' && serviceItemDescription!=NULL) && (serviceItemDescription.contains('RES RFR PU')||serviceItemDescription.contains('RES AED PU'))){   
-				isValue='PO Error'; 
-				break;  
+	isValue='PO Error'; 
+	break;  
 			}   
 		}   
 	
@@ -403,21 +403,21 @@ Modified Date:
 		string servicetype =getChildCaseValues.HWS_ServiceType__c;  
 		if(((servicetype =='Spare Part Sales') || (serviceItemDescription!='' && serviceItemDescription!=NULL) && (serviceItemDescription.contains('RES RFR PU')||serviceItemDescription.contains('RES AED PU'))) && ((parentCase[0].HWS_Customer_PO__c=='' || parentCase[0].HWS_Customer_PO__c== NULL) &&  
 		 (getPrice == '' || getPrice == null ))) {  
-				
-		  isValue='Quotation Error';
-		  break;
+	
+	isValue='Quotation Error';
+	break;
 		 
 		}
 	}
 			}
 			if(invoicingType && (parentCase[0].HWS_Customer_PO__c=='' || parentCase[0].HWS_Customer_PO__c== NULL) &&
-			   parentCase[0].CH_InternalStatus__c == 'Warranty Verification Required'){
-				   isValue='WarrantyError';
-			   }
+	  parentCase[0].CH_InternalStatus__c == 'Warranty Verification Required'){
+	   isValue='WarrantyError';
+	  }
 			else if(invoicingType && (parentCase[0].HWS_Customer_PO__c=='' || parentCase[0].HWS_Customer_PO__c== NULL) &&
-					(parentCase[0].CH_InternalStatus__c == '' || parentCase[0].CH_InternalStatus__c == NULL)){
-						isValue='WarrantyNullError';
-					}
+		(parentCase[0].CH_InternalStatus__c == '' || parentCase[0].CH_InternalStatus__c == NULL)){
+			isValue='WarrantyNullError';
+		}
 		}
 		return isValue;
 	}
@@ -429,10 +429,11 @@ Created Date: 25/02/2020 (MM/DD/YYYY)
 Modified By :
 Modified Date:
 ******************************/
+//NOKIASC-37920 | Added isBulkUploadCall
 	@auraEnabled
-	public static HWS_Utilty.plannedDeliveryDateWrapper accountTimeZoneplannedDeliveryDateTime(List<Case> listChildCases, Id selectedAccount ){
+	public static HWS_Utilty.plannedDeliveryDateWrapper accountTimeZoneplannedDeliveryDateTime(List<Case> listChildCases, Id selectedAccount, Boolean isBulkUploadCall ){
 		Map<Id,String> HWS_UpdateTimeZone = HWS_Utilty.updateTimeZone(selectedAccount);
-		HWS_Utilty.plannedDeliveryDateWrapper listCase = HWS_Utilty.accountTimeZoneplannedDeliveryDateTime(listChildCases, HWS_UpdateTimeZone.get(selectedAccount));
+		HWS_Utilty.plannedDeliveryDateWrapper listCase = HWS_Utilty.accountTimeZoneplannedDeliveryDateTime(listChildCases, HWS_UpdateTimeZone.get(selectedAccount),isBulkUploadCall);
 		return listCase;
 	}
 	
@@ -462,7 +463,7 @@ Modified Date:
 		else{
 			List<BusinessHours> bhList = new List<BusinessHours>();
 			//added  for PMD Error - NOKIASC-32425
-			bhList = [SELECT ID, Name, TimeZoneSidKey   FROM BusinessHours where Id IN :businessHourIdList ];		   
+			bhList = [SELECT ID, Name, TimeZoneSidKey   FROM BusinessHours where Id IN :businessHourIdList ];	 
 			if(bhList.size()>0){
 	for(BusinessHours bh : bhList){
 		if(bh.TimeZoneSidKey != null){
@@ -470,8 +471,8 @@ Modified Date:
 		}
 	}
 	stringTimeZonemap.put('BusinessHour', timeZonemap);
-			}		   
-		}	   
+			}	 
+		}	
 		return stringTimeZonemap;
 	}	
 	/****************************************
@@ -484,7 +485,7 @@ Modified Date:
 * User Story : NOKIASC-31177
 *****************************************/
 	@auraEnabled
-	public static List<Case> validateSWSCase(List<String> caseNumberLst){		   
+	public static List<Case> validateSWSCase(List<String> caseNumberLst){	 
 		return HWS_Utilty.getCasesByCaseNumber(caseNumberLst);	  
 	}
 	/* Wrapper class to store contact info*/
@@ -507,9 +508,9 @@ Modified Date:
 			wrapper.name = String.valueOf(con.Name);
 			wrapper.email = String.valueOf(con.Email);
 			if(con.MobilePhone != '' && con.MobilePhone != null){
-				wrapper.phoneNumber = con.MobilePhone;
+	wrapper.phoneNumber = con.MobilePhone;
 			} else {
-				wrapper.phoneNumber = con.Phone != null ? String.valueOf(con.Phone) : '';
+	wrapper.phoneNumber = con.Phone != null ? String.valueOf(con.Phone) : '';
 			}
 		}  
 		return wrapper;
@@ -532,9 +533,65 @@ Modified Date:
 		Boolean verificationRequired = false;
 		for(Case c: [Select Id, CH_InternalStatus__c from Case where Id =:parentCaseId ]){
 			if(c.CH_InternalStatus__c !=null && c.CH_InternalStatus__c =='Warranty Verification Required'){
-				verificationRequired = true;
-			}	   
+	verificationRequired = true;
+			}	
 		}
 		return verificationRequired;		
 	}
+	
+		 /****************************************32414
+* Name : getAccounts
+* Description : method to findout List of Accounts based on account ids
+* Parameters: string accountId
+* Returns : List<Account>
+*****************************************/  
+	@auraEnabled
+	public static list<Account> getAccounts(string accountId) {  
+		Set<id> acc = new set<id>();
+		acc.add(accountId);
+	List<Account> lAccounts = HWS_Utilty.getAccounts(acc);
+		return lAccounts;
+	}
+	@auraEnabled
+	public static List<ContractLineItem> showRetroAccount(string contractLineItemId) {
+		//NOKIASC-37617 - Updated return type and query
+		List<ContractLineItem> ContractLineItemList = new List<ContractLineItem>();
+		ContractLineItemList = [SELECT ServiceContract.CH_CDB_ContractType__c,
+				ServiceContract.HWS_SalesOrganisation__c,  
+				CH_ServiceItemDescription__c,ServiceContract.HWS_Retrofit_Type__c
+				From ContractLineItem WHERE Id=:contractLineItemId 
+				  AND ServiceContract.CH_CDB_ContractType__c ='Internal - RFT - Retrofit' ];
+	 
+	return ContractLineItemList;
+	} 
+	/****************************************   
+	* Name : getServicedAccountNumbers
+	* Description : method to get ServicedAccountNumbers
+	* Parameters: 
+	* Returns : String
+	*****************************************/   
+	@AuraEnabled
+	public static String getServicedAccountNumbers()
+	{	
+		String servicedAccNum = '';
+		HWS_GenericSettings__c record = HWS_GenericSettings__c.getValues('HWS_ServicedAccountNumber');
+		servicedAccNum  = (String) record.get('HWS_Field1__c');
+		return servicedAccNum;	 
+	}
+	/****************************************   
+* Name : getSuspensionStatus
+* Description : method to get getSuspensionStatus
+* Parameters: Contact Id,Service Contract Id
+* Returns : String
+*  written on 07-Dec-21
+* By :TCS
+* User Story : HWSDDP-144
+*****************************************/   
+	@AuraEnabled
+	public static List<HWS_Suspension__c> getSuspensionStatus(String contactList,List<String>  serviceContractList)
+	{	
+		return [select HWS_Service_Contract_Name__c from HWS_Suspension__c  where HWS_Contact_Name__c=:contactList
+				and HWS_Service_Contract_Name__c IN :serviceContractList and HWS_Suspension_Status__c='Suspended'];			  
+	}
+	
 }

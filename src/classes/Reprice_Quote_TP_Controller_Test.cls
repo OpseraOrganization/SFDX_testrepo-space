@@ -44,7 +44,7 @@ public class Reprice_Quote_TP_Controller_Test
 	
 	//proposals[0].RecordTypeId ='012290000008kdZAAQ'; //direct quote
 	proposals[0].RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('NokiaCPQ_Draft_Quote').getRecordTypeId();  //indirect draft quote
-	insert proposals;	 
+	insert proposals;	
 	system.debug('>>>Quote Record Type::>>'+proposals[0].recordtypeID);
 	
 	//get a Price List
@@ -64,7 +64,7 @@ public class Reprice_Quote_TP_Controller_Test
 	prodConfigs[0].Apttus_Config2__AccountId__c = accounts[0].Id;
 	prodConfigs[0].Apttus_QPConfig__Proposald__c = proposals[0].Id;
 	insert prodConfigs;
-	
+	test.startTest();
 	//get a IP Routing Product
 	Product2 productInst = new Product2();
 	productInst.Name = 'Test1'; 
@@ -88,7 +88,7 @@ public class Reprice_Quote_TP_Controller_Test
 	lineItems[0].Apttus_Config2__ChargeType__c ='Standard Price';
 	insert lineItems;
 	
-	test.startTest();
+	
 	ApexPages.currentPage().getParameters().put('quoteId',proposals[0].id);
 	ApexPages.currentPage().getParameters().put('oppId',opportunities[0].id);
 
@@ -171,6 +171,7 @@ public class Reprice_Quote_TP_Controller_Test
 	productInst[1].NokiaCPQ_State__c = 'Implement';
 	productInst[1].Business_Group__c = 'MN';
 	insert productInst;
+	test.startTest();
 	
 	// create a Line Item
 	List<Apttus_Config2__LineItem__c> lineItems = NOKIA_CPQ_TestDataFactory.createLineItem(3);
@@ -197,11 +198,12 @@ public class Reprice_Quote_TP_Controller_Test
 	//lineItems[0].NokiaCPQ_Configuration_Type__c = Nokia_CPQ_Constants.BUNDLE;
 	insert lineItems;
 	
-	test.startTest();
+	
 	ApexPages.currentPage().getParameters().put('quoteId',proposals[0].id);
 	ApexPages.currentPage().getParameters().put('oppId',opportunities[0].id);
 	Reprice_Quote_TP_Controller objControllerClass = new Reprice_Quote_TP_Controller();
 	objControllerClass.init();
+	objControllerClass.cancel();
 	
 	test.stopTest();  
   }

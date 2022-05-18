@@ -5,7 +5,7 @@
  * @desc	This class helps create customized test data, used in test classes
  * @history 
  */
-public  class NF_TestDataFactory {
+public without sharing class NF_TestDataFactory {
 	
 	  /*
 	 * @desc	this method creates accounts
@@ -62,7 +62,7 @@ public  class NF_TestDataFactory {
 		Lead_BG__c='MN',
 		Lead_BU__c='MN',
 		Unweighted_Amount_EUR__c =200+i,
-		Account_Role__c = 'Alliance Partner'
+		Account_Role__c = 'GPP Distributor Partner'
 	)
 			);
 		}

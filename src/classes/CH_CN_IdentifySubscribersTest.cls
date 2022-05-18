@@ -233,7 +233,7 @@ public class CH_CN_IdentifySubscribersTest {
 		List<CH_NotificationSubscriptionDetail__c> nsDetilsLst = new List<CH_NotificationSubscriptionDetail__c>();
 		CH_NotificationSubscriptionDetail__c nsDetils0 = new CH_NotificationSubscriptionDetail__c(CH_AttributeCode__c='', CH_AttributeName__c='', CH_AttributeRecordID__c=nsLst[0].Id, CH_AttributeType__c='Default',CH_NotificationSubscription__c=nsLst[0].Id );
 		nsDetilsLst.add(nsDetils0);
-		CH_NotificationSubscriptionDetail__c nsDetils = new CH_NotificationSubscriptionDetail__c(CH_AttributeCode__c='IN', CH_AttributeName__c='India', CH_AttributeRecordID__c=isoLst[0].Id, CH_AttributeType__c='Country',CH_NotificationSubscription__c=nsLst[1].Id );
+		CH_NotificationSubscriptionDetail__c nsDetils = new CH_NotificationSubscriptionDetail__c(CH_AttributeCode__c='IN', CH_AttributeName__c='India', CH_AttributeRecordID__c='IN', CH_AttributeType__c='Country',CH_NotificationSubscription__c=nsLst[1].Id );
 		nsDetilsLst.add(nsDetils);
 		
 		CH_NotificationSubscriptionDetail__c nsDetils1 = new CH_NotificationSubscriptionDetail__c(CH_AttributeCode__c='', CH_AttributeName__c=acc.Name, CH_AttributeRecordID__c=caseLstToInsert[0].AccountId, CH_AttributeType__c='Legal Entity Account',CH_NotificationSubscription__c=nsLst[1].Id );

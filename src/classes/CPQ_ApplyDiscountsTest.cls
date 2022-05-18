@@ -25,15 +25,15 @@ public with sharing class CPQ_ApplyDiscountsTest {
 			//create contract agreement/price list
 			List<Apttus_Config2__PriceList__c> plList = new List<Apttus_Config2__PriceList__c>();
 			Apttus_Config2__PriceList__c globalPriceList = new Apttus_Config2__PriceList__c(
-				Name = 'Global Price List', 
-				Apttus_Config2__Active__c = True,
-				CurrencyIsoCode = 'USD'
+	Name = 'Global Price List', 
+	Apttus_Config2__Active__c = True,
+	CurrencyIsoCode = 'USD'
 			);
 			plList.add(globalPriceList);
 			Apttus_Config2__PriceList__c contractPriceList = new Apttus_Config2__PriceList__c(
-				Name = 'Contract Price List', 
-				Apttus_Config2__Active__c = True,
-				CurrencyIsoCode = 'USD'
+	Name = 'Contract Price List', 
+	Apttus_Config2__Active__c = True,
+	CurrencyIsoCode = 'USD'
 			);
 			plList.add(contractPriceList);
 			insert plList;
@@ -297,11 +297,11 @@ public with sharing class CPQ_ApplyDiscountsTest {
 
 			
 			CPQ_FRUCustItemCdMap__c cicEntry = new CPQ_FRUCustItemCdMap__c(
-				CPQ_Account__c = account.Id,
-				CPQ_Customer_Item_Code__c = 'TTT',
-				CPQ_Product__c = stndfxd1.Id,
-				CPQ_Active__c = true,
-				RecordTypeId = Schema.SObjectType.CPQ_FRUCustItemCdMap__c.getRecordTypeInfosByDeveloperName().get('CIC').getRecordTypeId()
+	CPQ_Account__c = account.Id,
+	CPQ_Customer_Item_Code__c = 'TTT',
+	CPQ_Product__c = stndfxd1.Id,
+	CPQ_Active__c = true,
+	RecordTypeId = Schema.SObjectType.CPQ_FRUCustItemCdMap__c.getRecordTypeInfosByDeveloperName().get('CIC').getRecordTypeId()
 			);
 
 			insert cicEntry;
@@ -309,111 +309,111 @@ public with sharing class CPQ_ApplyDiscountsTest {
 			List<Apttus_Config2__PriceListItem__c> pliList = new List<Apttus_Config2__PriceListItem__c>();
 			//create PLIs under global price list for all products
 			Apttus_Config2__PriceListItem__c pli1 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 100, 
-				Apttus_Config2__ProductId__c = siteModelParent.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 100, 
+	Apttus_Config2__ProductId__c = siteModelParent.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli1);
 			Apttus_Config2__PriceListItem__c pli2 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 0, 
-				Apttus_Config2__ProductId__c = solutionParent.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 0, 
+	Apttus_Config2__ProductId__c = solutionParent.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli2);
 			Apttus_Config2__PriceListItem__c pli3 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 100, 
-				Apttus_Config2__ProductId__c = option1.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 100, 
+	Apttus_Config2__ProductId__c = option1.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli3);
 			Apttus_Config2__PriceListItem__c pli4 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 100, 
-				Apttus_Config2__ProductId__c = option2.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 100, 
+	Apttus_Config2__ProductId__c = option2.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli4);
 			Apttus_Config2__PriceListItem__c pli5 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 100, 
-				Apttus_Config2__ProductId__c = stnd1.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 100, 
+	Apttus_Config2__ProductId__c = stnd1.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli5);
 			Apttus_Config2__PriceListItem__c pli6 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 100, 
-				Apttus_Config2__ProductId__c = stndcnd1.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 100, 
+	Apttus_Config2__ProductId__c = stndcnd1.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli6);
 			Apttus_Config2__PriceListItem__c pli7 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 100, 
-				Apttus_Config2__ProductId__c = stndfxd1.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 100, 
+	Apttus_Config2__ProductId__c = stndfxd1.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli7);
 			Apttus_Config2__PriceListItem__c pli8 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 0, 
-				Apttus_Config2__ProductId__c = serv1.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 0, 
+	Apttus_Config2__ProductId__c = serv1.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli8);
 			Apttus_Config2__PriceListItem__c pli9 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 0, 
-				Apttus_Config2__ProductId__c = icd1.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 0, 
+	Apttus_Config2__ProductId__c = icd1.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli9);
 			Apttus_Config2__PriceListItem__c pli10 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = globalPriceList.Id,
-				Apttus_Config2__ListPrice__c = 0, 
-				Apttus_Config2__ProductId__c = icd2.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = globalPriceList.Id,
+	Apttus_Config2__ListPrice__c = 0, 
+	Apttus_Config2__ProductId__c = icd2.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(pli10);
 			//create PLIs under contract price list for, site parent, one conditional product, one fixed price
 			Apttus_Config2__PriceListItem__c plic1 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = contractPriceList.Id,
-				Apttus_Config2__ListPrice__c = 1000, 
-				Apttus_Config2__ProductId__c = siteModelParent.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD'
+	Apttus_Config2__PriceListId__c = contractPriceList.Id,
+	Apttus_Config2__ListPrice__c = 1000, 
+	Apttus_Config2__ProductId__c = siteModelParent.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD'
 			);
 			pliList.add(plic1);
 			Apttus_Config2__PriceListItem__c plic2 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = contractPriceList.Id,
-				Apttus_Config2__ListPrice__c = 1000, 
-				Apttus_Config2__ProductId__c = stndcnd1.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD',
-				Apttus_Config2__ContractPrice__c = 1000,
-				CPQ_Conditional_Price_Code__c = 'CND1'
+	Apttus_Config2__PriceListId__c = contractPriceList.Id,
+	Apttus_Config2__ListPrice__c = 1000, 
+	Apttus_Config2__ProductId__c = stndcnd1.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD',
+	Apttus_Config2__ContractPrice__c = 1000,
+	CPQ_Conditional_Price_Code__c = 'CND1'
 			);
 			pliList.add(plic2);
 			Apttus_Config2__PriceListItem__c plic3 = new Apttus_Config2__PriceListItem__c(
-				Apttus_Config2__PriceListId__c = contractPriceList.Id,
-				Apttus_Config2__ListPrice__c = 1000,
-				Apttus_Config2__ProductId__c = stndfxd1.Id, 
-				Apttus_Config2__ChargeType__c = 'Standard Price',
-				CurrencyISOCode = 'USD',
-				Apttus_Config2__ContractPrice__c = 1000
+	Apttus_Config2__PriceListId__c = contractPriceList.Id,
+	Apttus_Config2__ListPrice__c = 1000,
+	Apttus_Config2__ProductId__c = stndfxd1.Id, 
+	Apttus_Config2__ChargeType__c = 'Standard Price',
+	CurrencyISOCode = 'USD',
+	Apttus_Config2__ContractPrice__c = 1000
 			);
 			pliList.add(plic3);
 			// siteModelParent,solutionParent,option1,option2,stnd1,stndcnd1,stndfxd1,serv1,icd1,icd2
@@ -422,7 +422,7 @@ public with sharing class CPQ_ApplyDiscountsTest {
 			//make pli wrapper
 			List<CPQ_PriceListItemWrapper> pliWrapperList = new List<CPQ_PriceListItemWrapper>();
 			for(Apttus_Config2__PriceListItem__c pli : pliList) {
-				pliWrapperList.add(new CPQ_PriceListItemWrapper(pli));
+	pliWrapperList.add(new CPQ_PriceListItemWrapper(pli));
 			}
 			Nokia_CPQ_Constants.AGREEMENT_NUMBERS = new List<String>{agreementNumber};
 			pliWrapperList.sort();
@@ -435,21 +435,21 @@ public with sharing class CPQ_ApplyDiscountsTest {
 			
 			//create proposal
 			Apttus_Proposal__Proposal__c testProposal = new Apttus_Proposal__Proposal__c(
-				Apttus_Proposal__Opportunity__c = opportunities.get(0).Id,
-				Apttus_QPConfig__PriceListId__c = globalPriceList.Id,
-				Apttus_QPConfig__ConfigurationFinalizedDate__c = date.today(),
-				CurrencyIsoCode = 'USD',
-				// NokiaCPQ_Portfolio__c = 'Nokia Software',
-				// CPQ_NCQ_Check__c = true,
-				Apttus_Proposal__Approval_Stage__c = 'Draft',
-				// NokiaCPQ_No_of_Years__c = '1',
-				RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('CPQ_QTC_CQ_Quote').getRecordTypeId(),//direct Prices_Aligned__c=true,
-				Apttus_Proposal__Account__c=accounts[0].id,
-				Sold_To_Party__c = accounts[0].id,
-				Is_List_Price_Only__c =false,
-				CPQ_Pricing_Pool__c = 'Test Pool',
-				CPQ_Contractual_Price_Condition__c = 'CND1',
-				CPQ_Contractual_Price_Condition_Code__c = 'CND1'
+	Apttus_Proposal__Opportunity__c = opportunities.get(0).Id,
+	Apttus_QPConfig__PriceListId__c = globalPriceList.Id,
+	Apttus_QPConfig__ConfigurationFinalizedDate__c = date.today(),
+	CurrencyIsoCode = 'USD',
+	// NokiaCPQ_Portfolio__c = 'Nokia Software',
+	// CPQ_NCQ_Check__c = true,
+	Apttus_Proposal__Approval_Stage__c = 'Draft',
+	// NokiaCPQ_No_of_Years__c = '1',
+	RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('CPQ_QTC_CQ_Quote').getRecordTypeId(),//direct Prices_Aligned__c=true,
+	Apttus_Proposal__Account__c=accounts[0].id,
+	Sold_To_Party__c = accounts[0].id,
+	Is_List_Price_Only__c =false,
+	CPQ_Pricing_Pool__c = 'Test Pool',
+	CPQ_Contractual_Price_Condition__c = 'CND1',
+	CPQ_Contractual_Price_Condition_Code__c = 'CND1'
 			);
 			insert testProposal;
 			system.debug('testProposal:'+testProposal);
@@ -460,42 +460,42 @@ public with sharing class CPQ_ApplyDiscountsTest {
 			//create quote contractual discounts entries under quote
 			List<CPQ_QuoteContractualDiscount__c> quoteDiscounts = new List<CPQ_QuoteContractualDiscount__c>();
 			CPQ_QuoteContractualDiscount__c qd1 = new CPQ_QuoteContractualDiscount__c(
-				CPQ_Proposal__c = testProposal.Id,
-				CPQ_QLD_ICD_ID__c = qld1.Id,
-				CPQ_Sequence__c = 1
+	CPQ_Proposal__c = testProposal.Id,
+	CPQ_QLD_ICD_ID__c = qld1.Id,
+	CPQ_Sequence__c = 1
 			);
 			quoteDiscounts.add(qd1);
 			CPQ_QuoteContractualDiscount__c qd2 = new CPQ_QuoteContractualDiscount__c(
-				CPQ_Proposal__c = testProposal.Id,
-				CPQ_QLD_ICD_ID__c = icd1Disc.Id,
-				CPQ_Sequence__c = 2
+	CPQ_Proposal__c = testProposal.Id,
+	CPQ_QLD_ICD_ID__c = icd1Disc.Id,
+	CPQ_Sequence__c = 2
 			);
 			quoteDiscounts.add(qd2);
 			CPQ_QuoteContractualDiscount__c qd3 = new CPQ_QuoteContractualDiscount__c(
-				CPQ_Proposal__c = testProposal.Id,
-				CPQ_QLD_ICD_ID__c = qld2.Id,
-				CPQ_Sequence__c = 3
+	CPQ_Proposal__c = testProposal.Id,
+	CPQ_QLD_ICD_ID__c = qld2.Id,
+	CPQ_Sequence__c = 3
 			);
 			quoteDiscounts.add(qd3);
 			CPQ_QuoteContractualDiscount__c qd4 = new CPQ_QuoteContractualDiscount__c(
-				CPQ_Proposal__c = testProposal.Id,
-				CPQ_QLD_ICD_ID__c = icd2Disc.Id,
-				CPQ_Sequence__c = 4
+	CPQ_Proposal__c = testProposal.Id,
+	CPQ_QLD_ICD_ID__c = icd2Disc.Id,
+	CPQ_Sequence__c = 4
 			);
 			quoteDiscounts.add(qd4);
 			insert quoteDiscounts;
 
 			//create product configuration
 			Apttus_Config2__ProductConfiguration__c ProdConfig = new Apttus_Config2__ProductConfiguration__c(
-				Name = 'APTTUS Test Config', 
-				Apttus_Config2__AccountId__c = account.Id, 
-				Apttus_Config2__PriceListId__c = globalPriceList.Id, 
-				Apttus_QPConfig__Proposald__c = testProposal.Id, 
-				Apttus_Config2__Status__c = 'New', 
-				Apttus_Config2__VersionNumber__c = 1, 
-				Apttus_Config2__EffectivePriceListId__c = globalPriceList.Id,
-				Apttus_Config2__BusinessObjectId__c = String.valueOf(testProposal.Id),
-				Apttus_Config2__BusinessObjectType__c = 'Proposal'
+	Name = 'APTTUS Test Config', 
+	Apttus_Config2__AccountId__c = account.Id, 
+	Apttus_Config2__PriceListId__c = globalPriceList.Id, 
+	Apttus_QPConfig__Proposald__c = testProposal.Id, 
+	Apttus_Config2__Status__c = 'New', 
+	Apttus_Config2__VersionNumber__c = 1, 
+	Apttus_Config2__EffectivePriceListId__c = globalPriceList.Id,
+	Apttus_Config2__BusinessObjectId__c = String.valueOf(testProposal.Id),
+	Apttus_Config2__BusinessObjectType__c = 'Proposal'
 			);
 			insert ProdConfig;
 			
@@ -503,302 +503,302 @@ public with sharing class CPQ_ApplyDiscountsTest {
 			list<Apttus_Config2__LineItem__c> allLineItems = new List<Apttus_Config2__LineItem__c>();
 			//solution parent
 			Apttus_Config2__LineItem__c li1 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 1,
-				Apttus_Config2__LineNumber__c = 1,
-				Apttus_Config2__PrimaryLineNumber__c = 1,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = solutionParent.Id,
-				Apttus_Config2__LineType__c = 'Product/Service',
-				// Apttus_Config2__LineType__c = 'Option'
-				Apttus_Config2__HasOptions__c = true,
-				Apttus_Config2__Quantity__c = 1,
-				
-				//option fields
-				// Apttus_Config2__OptionId__c
-				// Apttus_Config2__ParentBundleNumber__c
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 1,
+	Apttus_Config2__LineNumber__c = 1,
+	Apttus_Config2__PrimaryLineNumber__c = 1,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = solutionParent.Id,
+	Apttus_Config2__LineType__c = 'Product/Service',
+	// Apttus_Config2__LineType__c = 'Option'
+	Apttus_Config2__HasOptions__c = true,
+	Apttus_Config2__Quantity__c = 1,
+	
+	//option fields
+	// Apttus_Config2__OptionId__c
+	// Apttus_Config2__ParentBundleNumber__c
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending'
-				// Apttus_Config2__BasePriceOverride__c
-				// CPQ_Product_Description__c
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending'
+	// Apttus_Config2__BasePriceOverride__c
+	// CPQ_Product_Description__c
 			);
 			allLineItems.add(li1);
 			//solution child1
 			Apttus_Config2__LineItem__c li2 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 2,
-				Apttus_Config2__LineNumber__c = 1,
-				Apttus_Config2__PrimaryLineNumber__c = 2,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				Apttus_Config2__ParentBundleNumber__c = 1,
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 2,
+	Apttus_Config2__LineNumber__c = 1,
+	Apttus_Config2__PrimaryLineNumber__c = 2,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	Apttus_Config2__ParentBundleNumber__c = 1,
 
-				//product fields
-				Apttus_Config2__ProductId__c = solutionParent.Id,
-				// Apttus_Config2__LineType__c = 'Product/Service';
-				Apttus_Config2__LineType__c = 'Option',
-				Apttus_Config2__OptionId__c = option1.Id,
-				// Apttus_Config2__HasOptions__c = true;
-				Apttus_Config2__Quantity__c = 1,
+	//product fields
+	Apttus_Config2__ProductId__c = solutionParent.Id,
+	// Apttus_Config2__LineType__c = 'Product/Service';
+	Apttus_Config2__LineType__c = 'Option',
+	Apttus_Config2__OptionId__c = option1.Id,
+	// Apttus_Config2__HasOptions__c = true;
+	Apttus_Config2__Quantity__c = 1,
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending'
-				// Apttus_Config2__BasePriceOverride__c
-				// CPQ_Product_Description__c
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending'
+	// Apttus_Config2__BasePriceOverride__c
+	// CPQ_Product_Description__c
 			);
 			allLineItems.add(li2);
 			//site parent
 			Apttus_Config2__LineItem__c li3 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 3,
-				Apttus_Config2__LineNumber__c = 2,
-				Apttus_Config2__PrimaryLineNumber__c = 3,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = siteModelParent.Id,
-				Apttus_Config2__LineType__c = 'Product/Service',
-				// Apttus_Config2__LineType__c = 'Option'
-				Apttus_Config2__HasOptions__c = true,
-				Apttus_Config2__Quantity__c = 1,
-				
-				//option fields
-				// Apttus_Config2__OptionId__c
-				// Apttus_Config2__ParentBundleNumber__c
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 3,
+	Apttus_Config2__LineNumber__c = 2,
+	Apttus_Config2__PrimaryLineNumber__c = 3,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = siteModelParent.Id,
+	Apttus_Config2__LineType__c = 'Product/Service',
+	// Apttus_Config2__LineType__c = 'Option'
+	Apttus_Config2__HasOptions__c = true,
+	Apttus_Config2__Quantity__c = 1,
+	
+	//option fields
+	// Apttus_Config2__OptionId__c
+	// Apttus_Config2__ParentBundleNumber__c
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending'
-				// Apttus_Config2__BasePriceOverride__c
-				// CPQ_Product_Description__c
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending'
+	// Apttus_Config2__BasePriceOverride__c
+	// CPQ_Product_Description__c
 			);
 			allLineItems.add(li3);
 			//site child 1
 			Apttus_Config2__LineItem__c li4 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 4,
-				Apttus_Config2__LineNumber__c = 2,
-				Apttus_Config2__PrimaryLineNumber__c = 4,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				Apttus_Config2__ParentBundleNumber__c = 3,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = siteModelParent.Id,
-				// Apttus_Config2__LineType__c = 'Product/Service';
-				Apttus_Config2__LineType__c = 'Option',
-				Apttus_Config2__OptionId__c = option1.Id,
-				// Apttus_Config2__HasOptions__c = true;
-				Apttus_Config2__Quantity__c = 1,
-				
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 4,
+	Apttus_Config2__LineNumber__c = 2,
+	Apttus_Config2__PrimaryLineNumber__c = 4,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	Apttus_Config2__ParentBundleNumber__c = 3,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = siteModelParent.Id,
+	// Apttus_Config2__LineType__c = 'Product/Service';
+	Apttus_Config2__LineType__c = 'Option',
+	Apttus_Config2__OptionId__c = option1.Id,
+	// Apttus_Config2__HasOptions__c = true;
+	Apttus_Config2__Quantity__c = 1,
+	
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending'
-				// Apttus_Config2__BasePriceOverride__c
-				// CPQ_Product_Description__c
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending'
+	// Apttus_Config2__BasePriceOverride__c
+	// CPQ_Product_Description__c
 			);
 			allLineItems.add(li4);
 			//site child 2
 			Apttus_Config2__LineItem__c li5 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 5,
-				Apttus_Config2__LineNumber__c = 2,
-				Apttus_Config2__PrimaryLineNumber__c = 5,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				Apttus_Config2__ParentBundleNumber__c = 3,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = siteModelParent.Id,
-				// Apttus_Config2__LineType__c = 'Product/Service';
-				Apttus_Config2__LineType__c = 'Option',
-				Apttus_Config2__OptionId__c = option2.Id,
-				// Apttus_Config2__HasOptions__c = true;
-				Apttus_Config2__Quantity__c = 1,
-				
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 5,
+	Apttus_Config2__LineNumber__c = 2,
+	Apttus_Config2__PrimaryLineNumber__c = 5,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	Apttus_Config2__ParentBundleNumber__c = 3,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = siteModelParent.Id,
+	// Apttus_Config2__LineType__c = 'Product/Service';
+	Apttus_Config2__LineType__c = 'Option',
+	Apttus_Config2__OptionId__c = option2.Id,
+	// Apttus_Config2__HasOptions__c = true;
+	Apttus_Config2__Quantity__c = 1,
+	
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending'
-				// Apttus_Config2__BasePriceOverride__c
-				// CPQ_Product_Description__c
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending'
+	// Apttus_Config2__BasePriceOverride__c
+	// CPQ_Product_Description__c
 			);
 			allLineItems.add(li5);
 
 			// ild standalone line
 			Apttus_Config2__LineItem__c li6 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 6,
-				Apttus_Config2__LineNumber__c = 3,
-				Apttus_Config2__PrimaryLineNumber__c = 6,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				// Apttus_Config2__ParentBundleNumber__c = 3,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = stnd1.Id,
-				Apttus_Config2__LineType__c = 'Product/Service',
-				// Apttus_Config2__LineType__c = 'Option'
-				// Apttus_Config2__OptionId__c = option2.Id
-				// Apttus_Config2__HasOptions__c = true;
-				Apttus_Config2__Quantity__c = 1,
-				
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 6,
+	Apttus_Config2__LineNumber__c = 3,
+	Apttus_Config2__PrimaryLineNumber__c = 6,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	// Apttus_Config2__ParentBundleNumber__c = 3,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = stnd1.Id,
+	Apttus_Config2__LineType__c = 'Product/Service',
+	// Apttus_Config2__LineType__c = 'Option'
+	// Apttus_Config2__OptionId__c = option2.Id
+	// Apttus_Config2__HasOptions__c = true;
+	Apttus_Config2__Quantity__c = 1,
+	
 	CPQ_Contracted_Price__c = 100,
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending'
-				// Apttus_Config2__BasePriceOverride__c
-				// CPQ_Product_Description__c
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending'
+	// Apttus_Config2__BasePriceOverride__c
+	// CPQ_Product_Description__c
 			);
 			allLineItems.add(li6);
 
 			// condition standalone line with qld & icd
 			Apttus_Config2__LineItem__c li7 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 7,
-				Apttus_Config2__LineNumber__c = 4,
-				Apttus_Config2__PrimaryLineNumber__c = 7,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				// Apttus_Config2__ParentBundleNumber__c = 3,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = stndcnd1.Id,
-				Apttus_Config2__LineType__c = 'Product/Service',
-				// Apttus_Config2__LineType__c = 'Option'
-				// Apttus_Config2__OptionId__c = option2.Id
-				// Apttus_Config2__HasOptions__c = true;
-				Apttus_Config2__Quantity__c = 1,
-				
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 7,
+	Apttus_Config2__LineNumber__c = 4,
+	Apttus_Config2__PrimaryLineNumber__c = 7,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	// Apttus_Config2__ParentBundleNumber__c = 3,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = stndcnd1.Id,
+	Apttus_Config2__LineType__c = 'Product/Service',
+	// Apttus_Config2__LineType__c = 'Option'
+	// Apttus_Config2__OptionId__c = option2.Id
+	// Apttus_Config2__HasOptions__c = true;
+	Apttus_Config2__Quantity__c = 1,
+	
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending',
-				// Apttus_Config2__BasePriceOverride__c
-				// CPQ_Product_Description__c
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending',
+	// Apttus_Config2__BasePriceOverride__c
+	// CPQ_Product_Description__c
 	CPQ_Contracted_Price__c = 100,
-				CPQ_Conditional_Price_Code__c = 'CND1',
-				CPQ_Contractual_Discounts__c = 'QLD1;ICD1;QLD2;ICD2'
+	CPQ_Conditional_Price_Code__c = 'CND1',
+	CPQ_Contractual_Discounts__c = 'QLD1;ICD1;QLD2;ICD2'
 			);
 			allLineItems.add(li7);
 
 			// fixed standalone line with qld & icd
 			Apttus_Config2__LineItem__c li8 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 8,
-				Apttus_Config2__LineNumber__c = 5,
-				Apttus_Config2__PrimaryLineNumber__c = 8,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				// Apttus_Config2__ParentBundleNumber__c = 3,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = stndfxd1.Id,
-				Apttus_Config2__LineType__c = 'Product/Service',
-				// Apttus_Config2__LineType__c = 'Option'
-				// Apttus_Config2__OptionId__c = option2.Id
-				// Apttus_Config2__HasOptions__c = true;
-				Apttus_Config2__Quantity__c = 1,
-				
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 8,
+	Apttus_Config2__LineNumber__c = 5,
+	Apttus_Config2__PrimaryLineNumber__c = 8,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	// Apttus_Config2__ParentBundleNumber__c = 3,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = stndfxd1.Id,
+	Apttus_Config2__LineType__c = 'Product/Service',
+	// Apttus_Config2__LineType__c = 'Option'
+	// Apttus_Config2__OptionId__c = option2.Id
+	// Apttus_Config2__HasOptions__c = true;
+	Apttus_Config2__Quantity__c = 1,
+	
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending',
-				// Apttus_Config2__BasePriceOverride__c
-				// CPQ_Product_Description__c
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending',
+	// Apttus_Config2__BasePriceOverride__c
+	// CPQ_Product_Description__c
 	CPQ_Contracted_Price__c = 100,
-				CPQ_Contractual_Discounts__c = 'QLD1;ICD1;QLD2;ICD2'
+	CPQ_Contractual_Discounts__c = 'QLD1;ICD1;QLD2;ICD2'
 			);
 			allLineItems.add(li8);
 
 			// service product
 			Apttus_Config2__LineItem__c li9 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 9,
-				Apttus_Config2__LineNumber__c = 6,
-				Apttus_Config2__PrimaryLineNumber__c = 9,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				// Apttus_Config2__ParentBundleNumber__c = 3,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = serv1.Id,
-				Apttus_Config2__LineType__c = 'Product/Service',
-				// Apttus_Config2__LineType__c = 'Option'
-				// Apttus_Config2__OptionId__c = option2.Id
-				// Apttus_Config2__HasOptions__c = true;
-				Apttus_Config2__Quantity__c = 1,
-				
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 9,
+	Apttus_Config2__LineNumber__c = 6,
+	Apttus_Config2__PrimaryLineNumber__c = 9,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	// Apttus_Config2__ParentBundleNumber__c = 3,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = serv1.Id,
+	Apttus_Config2__LineType__c = 'Product/Service',
+	// Apttus_Config2__LineType__c = 'Option'
+	// Apttus_Config2__OptionId__c = option2.Id
+	// Apttus_Config2__HasOptions__c = true;
+	Apttus_Config2__Quantity__c = 1,
+	
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending',
-				Apttus_Config2__BasePriceOverride__c = 100,
-				CPQ_Product_Description__c = 'prod description'
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending',
+	Apttus_Config2__BasePriceOverride__c = 100,
+	CPQ_Product_Description__c = 'prod description'
 			);
 			allLineItems.add(li9);
 
 			// icd product
 			Apttus_Config2__LineItem__c li10 = new Apttus_Config2__LineItem__c(
-				Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
-				Apttus_Config2__ItemSequence__c = 10,
-				Apttus_Config2__LineNumber__c = 7,
-				Apttus_Config2__PrimaryLineNumber__c = 10,
-				Apttus_Config2__IsPrimaryLine__c = true,
-				// Apttus_Config2__ParentBundleNumber__c = 3,
-				
-				//product fields
-				Apttus_Config2__ProductId__c = icd1.Id,
-				Apttus_Config2__LineType__c = 'Product/Service',
-				// Apttus_Config2__LineType__c = 'Option'
-				// Apttus_Config2__OptionId__c = option2.Id
-				// Apttus_Config2__HasOptions__c = true;
-				Apttus_Config2__Quantity__c = 1,
-				
+	Apttus_Config2__ConfigurationId__c=ProdConfig.Id,
+	Apttus_Config2__ItemSequence__c = 10,
+	Apttus_Config2__LineNumber__c = 7,
+	Apttus_Config2__PrimaryLineNumber__c = 10,
+	Apttus_Config2__IsPrimaryLine__c = true,
+	// Apttus_Config2__ParentBundleNumber__c = 3,
+	
+	//product fields
+	Apttus_Config2__ProductId__c = icd1.Id,
+	Apttus_Config2__LineType__c = 'Product/Service',
+	// Apttus_Config2__LineType__c = 'Option'
+	// Apttus_Config2__OptionId__c = option2.Id
+	// Apttus_Config2__HasOptions__c = true;
+	Apttus_Config2__Quantity__c = 1,
+	
 
-				//other fields
-				Apttus_Config2__PriceListId__c = globalPriceList.id,
-				Apttus_Config2__SellingTerm__c = 1,
-				Apttus_Config2__LineStatus__c='New',
-				Apttus_Config2__PriceMethod__c = 'Per Unit',
-				Apttus_Config2__Frequency__c = 'One Time',
-				Apttus_Config2__PricingStatus__c = 'Pending'
-				
+	//other fields
+	Apttus_Config2__PriceListId__c = globalPriceList.id,
+	Apttus_Config2__SellingTerm__c = 1,
+	Apttus_Config2__LineStatus__c='New',
+	Apttus_Config2__PriceMethod__c = 'Per Unit',
+	Apttus_Config2__Frequency__c = 'One Time',
+	Apttus_Config2__PricingStatus__c = 'Pending'
+	
 			);
 			allLineItems.add(li10);
 			// siteModelParent,solutionParent,option1,option2,stnd1,stndcnd1,stndfxd1,serv1,icd1,icd2

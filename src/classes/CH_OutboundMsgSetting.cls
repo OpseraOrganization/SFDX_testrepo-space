@@ -52,17 +52,21 @@ public without sharing class CH_OutboundMsgSetting {
 		}
 	}
 	@AuraEnabled
-	public static boolean accessToOBM(String  userId) {	 
+	public static String accessToOBM(String  userId) {	 
 		List<Object> obs=[select Id from PermissionSetAssignment where Assignee.Id =:userId AND PermissionSet.Label in ('CH_S2S Key User')  limit 1];
 		List<Object> obs2=[select Id, Name from User where Profile.Name IN ('System Administrator') AND Id =:userId];
-		boolean flag;
-		if(obs.size()>0 || obs2.size()>0)
+		String flag;
+		if(obs.size()>0)
 		{
-			flag=true;
+			flag='S2S';
+		}
+		else if(obs2.size()>0)
+		{
+			flag='SYSADMIN';
 		}
 		else
 		{
-			flag=false;
+			flag='false';
 		}
 		return flag;
 	}

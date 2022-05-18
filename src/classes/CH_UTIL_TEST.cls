@@ -36,7 +36,7 @@ public class CH_UTIL_TEST {
 		createNokiaUsers();
 		System.debug('CH_CA: createNokiaUsers limit: ' + Limits.getQueries());
 		// Create accounts
-		createAccounts();	   
+		createAccounts();	
 		System.debug('CH_CA: createAccounts limit: ' + Limits.getQueries());
 		// Create contacts
 		createContacts();
@@ -74,7 +74,7 @@ public class CH_UTIL_TEST {
 		Contact contact = [SELECT Id, AssistantName FROM Contact WHERE AssistantName = :assistantName LIMIT 1];
 		Account legalAccount = [SELECT Id FROM Account WHERE Name = 'LEGAL-ACCOUNT' LIMIT 1];
 		Product2 product = [SELECT Id FROM Product2 WHERE Name = 'TestProduct' LIMIT 1];
-		Entitlement entitlement = [SELECT Id FROM Entitlement WHERE Name = 'Entitled Asset' LIMIT 1];
+		Entitlement entitlement = [SELECT Id FROM Entitlement WHERE CH_EntitlementType__c = 'Entitled Asset' LIMIT 1];
 		Asset asset = [SELECT Id FROM Asset WHERE CH_CDB_ExternalAssetId__c = '12334' LIMIT 1];
 		
 		id recordTypeId = Schema.SObjectType.case.getRecordTypeInfosByDeveloperName().get(recordType).getRecordTypeId();
@@ -154,7 +154,7 @@ public class CH_UTIL_TEST {
 		//if ([SELECT Id FROM CH_Settings__c WHERE Name = 'Switch Between ROTA and Schedule'].size() == 0){
 		//  insert settingForROTASchedule;
 		//}
-	
+		
 		
 	}
 	
@@ -188,13 +188,16 @@ public class CH_UTIL_TEST {
 	
 	// Create a contract
 	static public void createContracts(boolean hasEntitlementScript){
+		
 		Date now = Date.today();
 		// Create the assset
 		Asset asset = createAssets(tempLegalAccount, tempProduct);
 		System.debug('CH_CA: Asset limit: ' + Limits.getQueries());
 		// Create contract. trigger will create the authorized account
-		Id chContractRecordTypeId = Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_ServiceContract').getRecordTypeId();
+		//Id chContractRecordTypeId = Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_ServiceContract').getRecordTypeId();
+		Id chContractRecordTypeId = Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_VendorContract').getRecordTypeId();
 		ServiceContract serviceContract = new ServiceContract(
+			RecordTypeId = chContractRecordTypeId,
 			AccountId = tempLegalAccount.Id, 
 			Name = 'TestServiceContract',
 			CurrencyIsoCode = 'EUR',
@@ -272,10 +275,10 @@ public class CH_UTIL_TEST {
 			CH_Entitlement__c = entitlement.id,
 			CH_IR_Duration__c = 5
 		);
-		insert customSla;	   
+		insert customSla;	
 		System.debug('CH_CA: CH_CustomerSpecificTargetSLA__c limit: ' + Limits.getQueries());
 		List<Contact> contacts = [SELECT Id FROM Contact 
-	WHERE AssistantName = 'Normal Contact' OR AssistantName =: assistantname1];	 
+								  WHERE AssistantName = 'Normal Contact' OR AssistantName =: assistantname1];	 
 		list<EntitlementContact> entitlementContactlist = new list<EntitlementContact>();
 		list<AccountContactRelation> accountContactRelationList = new list<AccountContactRelation>();
 		
@@ -302,21 +305,20 @@ public class CH_UTIL_TEST {
 		CH_AuthorizedAccount__c authorizedAccount = new CH_AuthorizedAccount__c();
 		authorizedAccount.CH_Account__c = tempLegalAccount.id;
 		authorizedAccount.CH_ServiceContract__c = serviceContract.Id;
-		insert authorizedAccount;
+		insert authorizedAccount;		
 	}
 	
 	// Create workgroups, workgroup members, product groups, account groups, rules
 	static public void createWorkgroups(){
 		User chUser;
 		User chUser2;
-		List<User> users = [SELECT Id, Alias FROM User WHERE Alias in ('TSTNP1','TSTNP2')];
-		for (User tempUser : users){
+		for (User tempUser : [SELECT Id, Alias FROM User WHERE Alias in ('TSTNP1','TSTNP2')]){
 			if (tempUser.Alias == 'TSTNP1'){
-	chUser = tempUser;
+				chUser = tempUser;
 			}
 			if (tempUser.Alias == 'TSTNP2'){
-	chUser2 = tempUser;
-			}		   
+				chUser2 = tempUser;
+			}	 
 		}
 		
 		// Create the queues needed for workgroups
@@ -414,7 +416,7 @@ public class CH_UTIL_TEST {
 		member6.CH_Workgroup_Member_Type__c = 'User';
 		member6.RecordTypeId = CH_CA_Workgroup;
 		newWorkgroupMembers.add(member6);
-
+		
 		insert newWorkgroupMembers;
 		
 		id rtId = Schema.SObjectType.CH_Workgroup_Rule__c.getRecordTypeInfosByDeveloperName().get('CH_CA_WorkgroupRule').getRecordTypeId();
@@ -465,15 +467,15 @@ public class CH_UTIL_TEST {
 	static public void createQueues(){
 		System.runAs(runAsUser) {
 			try {
-	Group gwcQueue = new Group(Type='Queue', Name = GWC_QUEUE, Email = TEST_EMAIL, DeveloperName = GWC_QUEUE);
-	insert gwcQueue;
-	QueueSObject queue = new QueueSObject(SobjectType='Case', QueueId=gwcQueue.Id);
-	insert queue;
+				Group gwcQueue = new Group(Type='Queue', Name = GWC_QUEUE, Email = TEST_EMAIL, DeveloperName = GWC_QUEUE);
+				insert gwcQueue;
+				QueueSObject queue = new QueueSObject(SobjectType='Case', QueueId=gwcQueue.Id);
+				insert queue;
 			}
 			catch (Exception e){
-	// An error occured because the queue already exists
+				// An error occured because the queue already exists
 			}
-		}	   
+		}	
 	}
 	
 	// Create products and the pricebook entries related to the product
@@ -487,15 +489,15 @@ public class CH_UTIL_TEST {
 			PMD_Portfolio_Classification__c = 'Product'
 		);
 		
-		System.runAs(runAsUser) {		   
+		System.runAs(runAsUser) {	 
 			Insert tempProduct;
 			
 			tempPriceBookEntry = new PriceBookEntry(
-	Pricebook2Id = Test.getStandardPricebookId(),
-	Product2Id = tempProduct.id,
-	UnitPrice = 0,
-	CurrencyIsoCode = 'EUR',
-	IsActive = true
+				Pricebook2Id = Test.getStandardPricebookId(),
+				Product2Id = tempProduct.id,
+				UnitPrice = 0,
+				CurrencyIsoCode = 'EUR',
+				IsActive = true
 			);
 			Insert tempPriceBookEntry;
 		}
@@ -561,7 +563,7 @@ public class CH_UTIL_TEST {
 	
 	// Create new users
 	public static void createNokiaUsers(){
-	User chUser;
+		User chUser;
 		System.runAs(runAsUser) {
 			List<User> newUsers = new List<User>();
 			Profile profile = [Select Id from Profile where name = 'System Administrator' LIMIT 1];
@@ -569,122 +571,130 @@ public class CH_UTIL_TEST {
 			// Create account owner
 			UserRole portalRole = [Select Id From UserRole Where PortalType = 'None' Limit 1];
 			User portalAccountOwner = new User(
-	Lastname='ACCOUNTOWNER',
-	Firstname='ACCOUNTOWNER',
-	Alias = 'AC-OWNER',
-	UserRoleId = portalRole.Id,
-	ProfileId = profile.Id,
-	Username = System.now().millisecond() + 'AC-OWNER@test.com',
-	Email= System.now().millisecond() + testemail,
-	EmailEncodingKey='UTF-8',
-	LanguageLocaleKey='en_US',
-	LocaleSidKey='en_US',
-	TimeZoneSidKey='America/Chicago',
-	Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
+				Lastname='ACCOUNTOWNER',
+				Firstname='ACCOUNTOWNER',
+				Alias = 'AC-OWNER',
+				UserRoleId = portalRole.Id,
+				ProfileId = profile.Id,
+				Username = System.now().millisecond() + 'AC-OWNER@test.com',
+				Email= System.now().millisecond() + testemail,
+				EmailEncodingKey='UTF-8',
+				LanguageLocaleKey='en_US',
+				LocaleSidKey='en_US',
+				TimeZoneSidKey='America/Chicago',
+				Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
 			);
 			newUsers.add(portalAccountOwner);
 			
 			chUser = new User(
-	Lastname='NONPORTAL1',
-	Firstname='NONPORTAL1',
-	Alias = 'TSTNP1',
-	ProfileId = profile.Id,
-	Username = System.now().millisecond() + 'TSTNP1@test.com',
-	Email= System.now().millisecond() + testemail,
-	EmailEncodingKey='UTF-8',
-	LanguageLocaleKey='en_US',
-	LocaleSidKey='en_US',
-	TimeZoneSidKey='America/Chicago',
-	Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
+				Lastname='NONPORTAL1',
+				Firstname='NONPORTAL1',
+				Alias = 'TSTNP1',
+				ProfileId = profile.Id,
+				Username = System.now().millisecond() + 'TSTNP1@test.com',
+				Email= System.now().millisecond() + testemail,
+				EmailEncodingKey='UTF-8',
+				LanguageLocaleKey='en_US',
+				LocaleSidKey='en_US',
+				TimeZoneSidKey='America/Chicago',
+				Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
 			);
 			newUsers.add(chUser);
 			
 			profile = [SELECT Id FROM Profile WHERE Name = :CH_PROFILE LIMIT 1];
 			User newUser = new User(
-	LastName = 'NONPORTAL2',
-	FirstName='NONPORTAL2',
-	Alias = 'TSTNP2',
-	Email = System.now().millisecond() + testemail,
-	Username = System.now().millisecond() + 'TSTNP2@test.com',
-	ProfileId = profile.id,
-	TimeZoneSidKey = 'GMT',
-	LanguageLocaleKey = 'en_US',
-	EmailEncodingKey = 'UTF-8',
-	LocaleSidKey = 'en_US',
-	IsActive = true,
-	Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
+				LastName = 'NONPORTAL2',
+				FirstName='NONPORTAL2',
+				Alias = 'TSTNP2',
+				Email = System.now().millisecond() + testemail,
+				Username = System.now().millisecond() + 'TSTNP2@test.com',
+				ProfileId = profile.id,
+				TimeZoneSidKey = 'GMT',
+				LanguageLocaleKey = 'en_US',
+				EmailEncodingKey = 'UTF-8',
+				LocaleSidKey = 'en_US',
+				IsActive = true,
+				Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
 			);
 			newUsers.add(newUser);
 			
 			newUser = new User(
-	LastName = 'NONPORTAL3',
-	FirstName='NONPORTAL3',
-	Alias = 'TSTNP3',
-	Email = System.now().millisecond() + testemail,
-	Username = System.now().millisecond() + 'TSTNP3@test.com',
-	ProfileId = profile.id,
-	TimeZoneSidKey = 'GMT',
-	LanguageLocaleKey = 'en_US',
-	EmailEncodingKey = 'UTF-8',
-	LocaleSidKey = 'en_US',
-	IsActive = true,
-	Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
+				LastName = 'NONPORTAL3',
+				FirstName='NONPORTAL3',
+				Alias = 'TSTNP3',
+				Email = System.now().millisecond() + testemail,
+				Username = System.now().millisecond() + 'TSTNP3@test.com',
+				ProfileId = profile.id,
+				TimeZoneSidKey = 'GMT',
+				LanguageLocaleKey = 'en_US',
+				EmailEncodingKey = 'UTF-8',
+				LocaleSidKey = 'en_US',
+				IsActive = true,
+				Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
 			);
 			newUsers.add(newUser);
 			
 			newUser = new User(
-	LastName = 'NONPORTAL4',
-	FirstName='NONPORTAL4',
-	Alias = 'TSTNP4',
-	Email = System.now().millisecond() + testemail,
-	Username = System.now().millisecond() + 'TSTNP4@test.com',
-	ProfileId = profile.id,
-	TimeZoneSidKey = 'GMT',
-	LanguageLocaleKey = 'en_US',
-	EmailEncodingKey = 'UTF-8',
-	LocaleSidKey = 'en_US',
-	IsActive = true,
-	Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
+				LastName = 'NONPORTAL4',
+				FirstName='NONPORTAL4',
+				Alias = 'TSTNP4',
+				Email = System.now().millisecond() + testemail,
+				Username = System.now().millisecond() + 'TSTNP4@test.com',
+				ProfileId = profile.id,
+				TimeZoneSidKey = 'GMT',
+				LanguageLocaleKey = 'en_US',
+				EmailEncodingKey = 'UTF-8',
+				LocaleSidKey = 'en_US',
+				IsActive = true,
+				Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
 			);  
 			newUsers.add(newUser);   
 			
 			// Create the iPaaS user if it does not exist
 			List<User> iPaaSUsers = [SELECT Id FROM User WHERE Alias = 'iPAAS'];
 			if (iPaaSUsers.size() == 0){
-	newUser = new User(
-		LastName = 'iPAAS',
-		FirstName='iPAAS',
-		Alias = 'iPAAS',
-		Email = System.now().millisecond() + testemail,
-		Username = System.now().millisecond() + 'iPAAS@test.com',
-		ProfileId = profile.id,
-		TimeZoneSidKey = 'GMT',
-		LanguageLocaleKey = 'en_US',
-		EmailEncodingKey = 'UTF-8',
-		LocaleSidKey = 'en_US',
-		IsActive = true,
-		Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
-	);
-	newUsers.add(newUser);
+				newUser = new User(
+					LastName = 'iPAAS',
+					FirstName='iPAAS',
+					Alias = 'iPAAS',
+					Email = System.now().millisecond() + testemail,
+					Username = System.now().millisecond() + 'iPAAS@test.com',
+					ProfileId = profile.id,
+					TimeZoneSidKey = 'GMT',
+					LanguageLocaleKey = 'en_US',
+					EmailEncodingKey = 'UTF-8',
+					LocaleSidKey = 'en_US',
+					IsActive = true,
+					Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
+				);
+				newUsers.add(newUser);
 			}
 			
 			insert newUsers;
+			
+			PermissionSet ps = [SELECT Id FROM PermissionSet WHERE Name = 'CARE_DVT_Admin'];
+			Id assigneeId = [SELECT Id FROM User WHERE Alias = 'TSTNP3' LIMIT 1].Id;
+			List<PermissionSetAssignment> pst=[Select id from PermissionSetAssignment where AssigneeId=:assigneeId and PermissionSetId= :ps.Id];
+			if(pst.size()<1)
+			{
+		insert new PermissionSetAssignment(AssigneeId = assigneeId, PermissionSetId = ps.Id);
+			}
 			
 			// Sec group
 			Group secgroup = [SELECT Id FROM Group WHERE Name = 'SEC_GWC|ALL' LIMIT 1];
 			List<GroupMember> groupMembersList = new List<GroupMember>();
 			for (User tempUser : newUsers){
-	GroupMember secGroupMember = new GroupMember();
-	secGroupMember.GroupId = secgroup.id;
-	secGroupMember.UserOrGroupId = tempUser.Id;
-	groupMembersList.add(secGroupMember); 
+				GroupMember secGroupMember = new GroupMember();
+				secGroupMember.GroupId = secgroup.id;
+				secGroupMember.UserOrGroupId = tempUser.Id;
+				groupMembersList.add(secGroupMember); 
 			}
 			if(!groupMembersList.isEmpty())
 			{
-		insert groupMembersList;	///////////Bulkified as part of US# 27621
+				insert groupMembersList;	///////////Bulkified as part of US# 27621
 			}
 		}
-	
+		
 	}
 	
 	static public void createAccounts(){
@@ -703,6 +713,7 @@ public class CH_UTIL_TEST {
 		// Create legal entity
 		Id accountLegalEntityRecordType = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 		tempLegalAccount = new Account(
+			Type = 'Vendor',
 			Name = ACCOUNT_NAME,
 			OwnerId = portalAccountOwner.Id,
 			Country__c = 'Sweden',
@@ -710,15 +721,15 @@ public class CH_UTIL_TEST {
 		);
 		newAccounts.add(tempLegalAccount);	
 		
-		System.runAs(runAsUser) {		   
+		System.runAs(runAsUser) {	 
 			Insert newAccounts;
 			
 			if (newAccounts[1].Name == ACCOUNT_NAME){
-	newAccounts[1].ParentId = newAccounts[0].id;
-	Update newAccounts[1];	  
+				newAccounts[1].ParentId = newAccounts[0].id;
+				Update newAccounts[1];	  
 			}
 		}
-	
+		
 	}
 	
 	static public Account createS2SAccounts(String customerName, String legalName, String accNo){
@@ -768,7 +779,7 @@ public class CH_UTIL_TEST {
 		);
 		newContacts.add(portalContact);
 		
-		System.runAs(runAsUser) {		   
+		System.runAs(runAsUser) {	 
 			Insert newContacts;
 		}
 	}  
@@ -788,8 +799,8 @@ public class CH_UTIL_TEST {
 	//setting association records
 	static public void createWorkgroupSchedules(){
 		CH_workgroup__c workgroup = [SELECT Id, CH_Type__c, Name  
-	FROM CH_workgroup__c WHERE Name =:CH_UTIL_TEST.WORKGROUPNAME LIMIT 1];
-	
+									 FROM CH_workgroup__c WHERE Name =:CH_UTIL_TEST.WORKGROUPNAME LIMIT 1];
+		
 		//Creating Workgroup Schedule
 		DateTime now = DateTime.now();
 		CH_Workgroup_Schedule__c wgSchedule = new CH_Workgroup_Schedule__c();
@@ -799,7 +810,7 @@ public class CH_UTIL_TEST {
 		wgSchedule.CH_Workgroup__c  = workgroup.Id;
 		wgSchedule.CH_Time_Zone__c = 'UTC';
 		insert wgSchedule; 
- 
+		
 		// Create a schedule filter
 		CH_Workgroup_Filter__c schedulefilter = new CH_Workgroup_Filter__c();
 		schedulefilter.CH_Country__c = 'Sweden';
@@ -809,7 +820,7 @@ public class CH_UTIL_TEST {
 		schedulefilter.CH_Workgroup_Schedule__c = wgSchedule.Id;
 		schedulefilter.CH_Workgroup_Type__c = workgroup.CH_Type__c;
 		insert schedulefilter;
-
+		
 		//Creating schedule timeslot
 		CH_Workgroup_Schedule_Timeslot__c timeSlot = new CH_Workgroup_Schedule_Timeslot__c();
 		timeSlot.CH_Day__c='Monday;Tuesday;Wednesday;Thursday;Friday;Saturday;Sunday';
@@ -831,7 +842,7 @@ public class CH_UTIL_TEST {
 		wgSchedule.CH_Active__c = true;
 		update wgSchedule;
 	}
-
+	
 	static public void createWGSTimeslotAlone(Id workgroupId, Id workgroupScheduleId){
 		//Create workgroup Schedule timeslot
 		CH_Workgroup_Schedule_Timeslot__c workGroupScheduleTimeslot1 = new CH_Workgroup_Schedule_Timeslot__c();
@@ -865,76 +876,76 @@ public class CH_UTIL_TEST {
 	
 	public static User getUser(String userEmail, String userName, String userAlias, Profile userProfile) {
 		User testUser = new User(Alias = userAlias, 
-		 Email = userEmail, 
-		 ProfileId = userProfile.Id, 
-		 UserName = userName, 
-		 EmailEncodingKey = 'UTF-8', 
-		 LastName = 'Test User', 
-		 LanguageLocaleKey = 'en_US', 
-		 LocaleSidKey = 'en_US', 
-		 TimeZoneSidKey = 'America/Los_Angeles');
+								 Email = userEmail, 
+								 ProfileId = userProfile.Id, 
+								 UserName = userName, 
+								 EmailEncodingKey = 'UTF-8', 
+								 LastName = 'Test User', 
+								 LanguageLocaleKey = 'en_US', 
+								 LocaleSidKey = 'en_US', 
+								 TimeZoneSidKey = 'America/Los_Angeles');
 		return testUser;
 	}
-
+	
 	public static CollaborationGroup createInterfaceKeyGroup(String groupName, String externalSystem) {
 		CollaborationGroup interfaceKeyUserGroup = new CollaborationGroup(Name = groupName, CollaborationType = 'Public');
 		insert interfaceKeyUserGroup;
 		CH_InterfaceKeyGroup__c interfaceKeyUserGroupSettings = new CH_InterfaceKeyGroup__c(Name = externalSystem, ExternalSystem__c = externalSystem, CollaborationGroupName__c = interfaceKeyUserGroup.Name);
 		insert interfaceKeyUserGroupSettings;
-
+		
 		return interfaceKeyUserGroup;
 	}
-
+	
 	public static CH_Problem_RnD_Reference__c getRndInteraction(String status, String errorMessage, String rndType, String subject, String direction, String rndInterface, String referenceId, Id relatedRecordId) {
 		CH_Problem_RnD_Reference__c rndInteraction = new CH_Problem_RnD_Reference__c(CH_RnD_Status__c = status,
-	CH_RnD_Error_Message__c = errorMessage,
-	CH_RnD_Type__c = rndType,
-	CH_RnD_Direction__c = direction,
-	CH_RnD_Subject__c = subject,
-	CH_RnD_Interface__c = rndInterface,
-	CH_RnD_Reference__c = referenceId,
-	CH_Related_Record__c = relatedRecordId);
+																					 CH_RnD_Error_Message__c = errorMessage,
+																					 CH_RnD_Type__c = rndType,
+																					 CH_RnD_Direction__c = direction,
+																					 CH_RnD_Subject__c = subject,
+																					 CH_RnD_Interface__c = rndInterface,
+																					 CH_RnD_Reference__c = referenceId,
+																					 CH_Related_Record__c = relatedRecordId);
 		return rndInteraction;
 	}
-
+	
 	public static void setupCase() {
 		createCustomSettings();
-
+		
 		CH_Case_PA_InterfaceMapping__c testInterfaceMapping = createInterfaceMapping('orange-irma', '12345', '12346', '12348', '12350', '12352', '12354');
 		insert testInterfaceMapping;
-
+		
 		CH_ManageCreateQueueAsynchQueue.doChainJob = false;
 		CH_Workgroup__c testWorkGroup = new CH_Workgroup__c(CH_End_of_Business_Hours_Threshold__c = 60,
-			CH_Level_Of_Support__c = 'Initial Support',
-			CH_Start_of_Business_Hours_Threshold__c = 60,
-			CH_Type__c = 'Engineer',
-			Name = 'TestWorkgroup');
+															CH_Level_Of_Support__c = 'Initial Support',
+															CH_Start_of_Business_Hours_Threshold__c = 60,
+															CH_Type__c = 'Engineer',
+															Name = 'TestWorkgroup');
 		insert testWorkGroup;
-
+		
 		CH_Workgroup_Rule__c testWorkGroupRule = new CH_Workgroup_Rule__c(Name = 'TestRule',
-		CH_Workgroup__c = testWorkGroup.Id,
-		CH_Severity__c = 'Minor',
-		CH_Outage__c = 'No',
-		CH_OrderNumber__c = 1);
+																		  CH_Workgroup__c = testWorkGroup.Id,
+																		  CH_Severity__c = 'Minor',
+																		  CH_Outage__c = 'No',
+																		  CH_OrderNumber__c = 1);
 		insert testWorkGroupRule;
-
+		
 		Account testAccount = createS2SAccounts('testCustomer', 'testAcc', '12346');
 		insert testAccount;
-
+		
 		List<Product2> testProducts = createS2SProducts('testSolution', '12348', 'testProduct', '12350', 'testVariant', '12352');
 		testProducts[1].NokiaCPQ_Alias__c = 'testProduct CPQ Alias';
 		testProducts[2].NokiaCPQ_Alias__c = 'testVariant CPQ Alias';
 		insert testProducts;
-
+		
 		CH_ProductRelease__c testProductRelease = createS2SRelease('testRelease', '12354', testProducts[1].Id);
 		insert testProductRelease;
-
+		
 		Asset testAsset = createS2SAsset('12346|234|12348|12350|12352|12354', testAccount.Id);
 		testAsset.CH_NetworkElementID__c = 'test';
 		insert testAsset;
-
+		
 		CH_EntitlementTestData.createS2SEntitlement('testEnt', testAsset.Id, testAccount.Id, testProducts[1].Id, '56478', 'Legacy Customer Support Service - Critical Major Minor 24x7', false);
-
+		
 		Contact testContact = new Contact(
 			LastName = 'test',
 			FirstName = 'test',
@@ -944,7 +955,7 @@ public class CH_UTIL_TEST {
 		);
 		insert testContact;   
 	}
-
+	
 	public static Case getProblem() {
 		Contact testContact = [SELECT Id FROM Contact WHERE Email = 'test@email.com'];
 		Account testAccount = [SELECT Id FROM Account WHERE Name = 'testAcc' LIMIT 1];
@@ -953,7 +964,7 @@ public class CH_UTIL_TEST {
 		Asset testAsset = [SELECT Id FROM Asset LIMIT 1];
 		Id problemRecordTypeId = Schema.SObjectType.case.getRecordTypeInfosByDeveloperName().get('CH_Problem').getRecordTypeId();
 		DateTime testDateTime = DateTime.Now();
-
+		
 		Case testCase = new Case(
 			AccountId = testAccount.Id,
 			AssetId = testAsset.Id,
@@ -976,10 +987,10 @@ public class CH_UTIL_TEST {
 			CH_SecurityGroup__c = '',
 			CH_GWC_SecurityGroup__c = 'SEC_GWC|ALL',
 			RecordTypeId = problemRecordTypeId);
-
+		
 		return testCase;
 	}
-
+	
 	public static Case getS2SCase() {
 		Case testCase = CH_UTIL_TEST.createS2SCase('orange-irma', '12345');
 		CH_ExternalInterfaceUTIL.populateCaseHandlingCases(new List<Case> {testCase}, new Map<Id, Account>(), new Map<Id, Product2>(), new Map<Id, CH_ProductRelease__c>(), new Map<Id, Asset>(), new Map<Id, Entitlement>());
@@ -987,7 +998,7 @@ public class CH_UTIL_TEST {
 		testCase.ContactId = testContact.Id;
 		testCase.CH_CustomerDescription__c = '<p>test customer description</p>';
 		testCase.Reference_Number__c = 'test ref1';
-
+		
 		return testCase;		
 	}
 	static public void createLegalAccount(){
@@ -1003,20 +1014,20 @@ public class CH_UTIL_TEST {
 		// Create legal entity
 		Id accountLegalEntityRecordType = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 		tempLegalAccount = new Account(
+			Type = 'Vendor', 
 			Name = ACCOUNT_NAME,
 			Country__c = 'Sweden',
 			RecordTypeId = accountLegalEntityRecordType
 		);
 		newAccounts.add(tempLegalAccount);	
 		
-		System.runAs(runAsUser) {		   
+		System.runAs(runAsUser) {	 
 			Insert newAccounts;
 			
 			if (newAccounts[1].Name == ACCOUNT_NAME){
-	newAccounts[1].ParentId = newAccounts[0].id;
-	Update newAccounts[1];	  
+				newAccounts[1].ParentId = newAccounts[0].id;
+				Update newAccounts[1];	  
 			}
 		}
-	}
-	
+	} 
 }

@@ -1,7 +1,6 @@
 @isTest
 public class Batch_DesignElementTest {
 	@isTest static void DesignElementMock2(){
-		
 	EDP_CH_Settings__c pcEntry =	 new EDP_CH_Settings__c ();
 		pcEntry.Name='ProductDesignElements';
 		pcEntry.Full_Load__c=true;  
@@ -208,7 +207,6 @@ public class Batch_DesignElementTest {
 		 Test.startTest();
 		
 		Test.setMock(HttpCalloutMock.class, multimock);
-		SchedulableContext SC = null;
 		Batch_DesignElement tsc=new Batch_DesignElement();
 		Database.BatchableContext BC;
 		tsc.execute(BC,Queries);

@@ -3,27 +3,27 @@
 Description : This is related to  "HWS_CreateSupportTicketportal" class 
 Created By  : Vinod T
 Created Date: 08-07-2019
-Modified By : 
-Modified Date: 
 ******************************/
 
-private class HWS_CreateSupportTicketportal_Test {  
-
+private class HWS_CreateSupportTicketportal_Test{
 	public static final string filedata='Part Code/Part Revision,Faulty Serial number,Failure Detection,Failure Description,Failure Occurrence ,Failure Detection Date ,Failure Description/ Server ID,Customer Reference Number,Fault Reported by Name,Fault Reported by Phone,Fault Reported by Email,Site Id'+'\r\n'+'1ABA196350026V1,,Fails on diagnostics�,LED indicates alarm�,During preventive maintenance�,06/24/2019,,,,,,'+'\r\n';
 	public static final string FaultyEmail='testemai@gmail.com';
-	public static final string ContactEmail='testemai@gmail.com';
-	
+	public static final string ContactEmail='testemai@gmail.com' ;
 	@testSetup static void testDataSetup(){
+	
+		HWS_GenericSettings__c record = new HWS_GenericSettings__c() ;
+		record.Name='HWS_ServicedAccountNumber';
+		record.HWS_Field1__c = '1234';
+		insert record; 
 		Id customerAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.Customer);
-		Id legalEntityAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY);
-		Id assetRecordType = HWS_Utilty.getRecordTypeByName('Asset','HWS_Covered_Part');
+		Id legalEntityAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY) ;
+		Id assetRecordType = HWS_Utilty.getRecordTypeByName('Asset','HWS_Covered_Part') ;
 		
-		Account acc = HWS_DataFactory_TEST.insertAccount(); 
+		Account acc = HWS_DataFactory_TEST.insertAccount() ; 
 		acc.RecordTypeId =  customerAccountType;
 		acc.Customer_Compliance__c = HWS_Constants.USATT;
 		insert acc; 
-		
-		Account acc1 = HWS_DataFactory_TEST.insertAccount(); 
+		Account acc1 = HWS_DataFactory_TEST.insertAccount()  ; 
 		acc1.RecordTypeId =  legalEntityAccountType;
 		acc1.ParentId = acc.Id;
 		acc1.Name = 'TestLE';
@@ -36,10 +36,10 @@ private class HWS_CreateSupportTicketportal_Test {
 		con.email=ContactEmail;
 		insert con;
 		
-		Product2 prod = HWS_DataFactory_TEST.insertproduct2();		
+		Product2 prod = HWS_DataFactory_TEST.insertproduct2();	  
 		insert prod;
 		
-		PriceBook2 pb = HWS_DataFactory_TEST.createPriceBook();	
+		PriceBook2 pb = HWS_DataFactory_TEST.createPriceBook(); 
 		insert pb;   
 		
 		PriceBookEntry pbety = new PriceBookEntry(
@@ -51,22 +51,23 @@ private class HWS_CreateSupportTicketportal_Test {
 		);
 		Insert pbety;
 		
-		ServiceContract sc = HWS_DataFactory_TEST.insertServiceContract(acc1);		
+		ServiceContract sc = HWS_DataFactory_TEST.insertServiceContract(acc1);	  
 		sc.Pricebook2Id = Test.getStandardPricebookId();
 		sc.CurrencyIsoCode = pbety.CurrencyIsoCode;
+		sc.CH_ERPSystem__c = 'P20';
 		insert sc;
 		
-		ContractLineItem cli = HWS_DataFactory_TEST.insertContractLineItem(sc,pbety);		
+		ContractLineItem cli = HWS_DataFactory_TEST.insertContractLineItem(sc,pbety);	
 		cli.PricebookEntryId = pbety.id;		
 		insert cli;
 		
 		Asset ast = HWS_DataFactory_TEST.insertAsset(acc1,prod);		
-		ast.RecordTypeId = assetRecordType;	
+		ast.RecordTypeId = assetRecordType; 
 		insert ast; 
 		
 		hws_versionitem__c hwsv = HWS_DataFactory_TEST.insertHwsversionitem();
 		hwsv.HWS_Hardware_Sellable_Item__c = prod.Id;
-		hwsv.HWS_Serial_Number_Traceable__c='';		
+		hwsv.HWS_Serial_Number_Traceable__c='';	 
 		insert hwsv;
 		
 		Entitlement entitlement = new Entitlement(
@@ -107,44 +108,47 @@ Modified Date:
 		
 		string objectName ='HWS_BulkUpload__c';
 		List<String> fields=new List<String>{'Part_Code_Part_Revision__c','Faulty_Serial_number__c','Fault_Detection__c','Fault_Description__c','Fault_Occurrence__c','Fault_Detection_Date__c','Failure_Description_Server_ID__c','Customer_Reference_Number__c','Fault_Reported_by_Name__c','Fault_Reported_by_Phone__c','Fault_Reported_by_Email__c','Site_Id__c'};
-			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];		
+			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];	  
 		HWS_CreateSupportTicketportal.processData(filedata,objectName,fields,acc.Id,HWS_Constants.IR);
 	}
 	static testMethod void ProcessdataMethodException(){
 		string filedata  = 'Part Code/Part Revision,Faulty Serial number,Failure Detection,Failure Description,Failure Occurrence ,Failure Detection Date ,Failure Description/ Server ID,Customer Reference Number,Fault Reported by Name,Fault Reported by Phone,Fault Reported by Email,Site Id\n1ABA196350026V1,,Fails on diagnostics�,LED indicates alarm�,During preventive maintenance�,06/24/2019,,,,,,\n1ABA196350026V1,,Other�,Unit alarm�,During installation / commissioning / Dead On Arrival�,06/22/2019,,,,,,\n1ABA196350026V1,,Reboot module�,SW download failure�,Permanent�,06/23/2019,,,,,,\n1ABA196350026V1,,Non-reproducible�,Feature Activation effect�,During or after lightning / severe weather conditions�,06/21/2019,,,,,,\n1ABA196350026V1,,Reboot module�,Advise for exchange from others�,During high traffic load,06/20/2019,,,,,,\n,,,,,,,,,,,\n,,,,,,,,,,,';
 		string objectName ='HWS_BulkUpload__c';
 		List<String> fields=new List<String>{'Part_Code_Part_Revision__c','Faulty_Serial_number__c','Fault_Detection__c','Fault_Description__c','Fault_Occurrence__c','Fault_Detection_Date__c','Failure_Description_Server_ID__c','Customer_Reference_Number__c','Fault_Reported_by_Name__c','Fault_Reported_by_Phone__c','Fault_Reported_by_Email__c','Site_Id__c'};
-			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];		
-		HWS_CreateSupportTicketportal.processData(filedata,objectName,fields,acc.Id,HWS_Constants.IR);	
+			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];	  
+		HWS_CreateSupportTicketportal.processData(filedata,objectName,fields,acc.Id,HWS_Constants.IR);  
 	}
 	static testMethod void ProcessdataMethodSemicolon(){
 		string filedata  = 'Part Code/Part Revision;Faulty Serial number;Failure Detection;Failure Description;Failure Occurrence;Failure Detection Date;Failure Description/ Server ID;Customer Reference Number;Fault Reported by Name;Fault Reported by Phone;Fault Reported by Email;Site Id\n1ABA196350026V1;;Fails on diagnostics�;LED indicates alarm�;During preventive maintenance�;06/24/2019;;;;;;\n1ABA196350026V1;;Other�;Unit alarm�;During installation / commissioning / Dead On Arrival�;06/22/2019;;;;;;\n1ABA196350026V1,,Reboot module�,SW download failure�,Permanent�,06/23/2019,,,,,,\n1ABA196350026V1,,Non-reproducible�,Feature Activation effect�,During or after lightning / severe weather conditions�,06/21/2019;;;;;;\n1ABA196350026V1;;Reboot module�;Advise for exchange from others�;During high traffic load;06/20/2019,,,,,,\n,,,,,,,,,,,\n,,,,,,,,,,,';
 		string objectName ='HWS_BulkUpload__c';
 		List<String> fields=new List<String>{'Part_Code_Part_Revision__c','Faulty_Serial_number__c','Fault_Detection__c','Fault_Description__c','Fault_Occurrence__c','Fault_Detection_Date__c','Failure_Description_Server_ID__c','Customer_Reference_Number__c','Fault_Reported_by_Name__c','Fault_Reported_by_Phone__c','Fault_Reported_by_Email__c','Site_Id__c'};
-			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];		
+			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];	  
 		HWS_CreateSupportTicketportal.processData(filedata,objectName,fields,acc.Id,HWS_Constants.IR);
 	}
 	static testMethod void ProcessdataMethodSemicolonNoRows(){
 		string filedata  = 'Part Code/Part Revision;Faulty Serial number;Failure Detection;Failure Description;Failure Occurrence;Failure Detection Date;Failure Description/ Server ID;Customer Reference Number;Fault Reported by Name;Fault Reported by Phone;Fault Reported by Email;Site Id';
 		string objectName ='HWS_BulkUpload__c';
 		List<String> fields=new List<String>{'Part_Code_Part_Revision__c','Faulty_Serial_number__c','Fault_Detection__c','Fault_Description__c','Fault_Occurrence__c','Fault_Detection_Date__c','Failure_Description_Server_ID__c','Customer_Reference_Number__c','Fault_Reported_by_Name__c','Fault_Reported_by_Phone__c','Fault_Reported_by_Email__c','Site_Id__c'};
-			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];		
+			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];	  
 		HWS_CreateSupportTicketportal.processData(filedata,objectName,fields,acc.Id,HWS_Constants.IR);
 	}
 	static testMethod void ProcessdataMethodCama(){
 		string filedata='Part Code/Part Revision,Faulty Serial number,Failure Detection,Failure Description,Failure Occurrence ,Failure Detection Date ,Failure Description/ Server ID,Customer Reference Number,Fault Reported by Name,Fault Reported by Phone,Fault Reported by Email,Site Id'+'\r\n'+',,Fails on diagnostics�,LED indicates alarm�,During preventive maintenance�,06/24/2019,,,,,,'+'\r\n';
 		string objectName ='HWS_BulkUpload__c';
 		List<String> fields=new List<String>{'Part_Code_Part_Revision__c','Faulty_Serial_number__c','Fault_Detection__c','Fault_Description__c','Fault_Occurrence__c','Fault_Detection_Date__c','Failure_Description_Server_ID__c','Customer_Reference_Number__c','Fault_Reported_by_Name__c','Fault_Reported_by_Phone__c','Fault_Reported_by_Email__c','Site_Id__c'};
-			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];		
+			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];	  
 		HWS_CreateSupportTicketportal.processData(filedata,objectName,fields,acc.Id,HWS_Constants.IR);
 	}
 	static testMethod void deleteBulkUploadMethod(){
 		
 		string objectName ='HWS_BulkUpload__c';
-		List<String> fields=new List<String>{'Part_Code_Part_Revision__c','Faulty_Serial_number__c','Fault_Detection__c','Fault_Description__c','Fault_Occurrence__c','Fault_Detection_Date__c','Failure_Description_Server_ID__c','Customer_Reference_Number__c','Fault_Reported_by_Name__c','Fault_Reported_by_Phone__c','Fault_Reported_by_Email__c','Site_Id__c'};
-			Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];
+		String filedata ='Part Code/Part Revision,Faulty Serial number,Failure Detection,Failure Description,Failure Occurrence ,Failure Detection Date ,Failure Description/ Server ID,Customer Reference Number,Fault Reported by Name,Fault Reported by Phone,Fault Reported by Email,Site Id,Additional Configuration Details'+'\r\n'+'1ABA196350026V1,,Fails on diagnostics�,LED indicates alarm�,During preventive maintenance�,06/24/2019,,,,,,,'+'\r\n';
+		List<String> fields = new List<String>{'Part_Code_Part_Revision__c','Faulty_Serial_number__c','Fault_Detection__c','Fault_Description__c','Fault_Occurrence__c','Fault_Detection_Date__c','Failure_Description_Server_ID__c','Customer_Reference_Number__c','Fault_Reported_by_Name__c','Fault_Reported_by_Phone__c','Fault_Reported_by_Email__c','Site_Id__c','HWS_Site_Information__c','NCP_Service_Contract__c'};
+		Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];
 		Map<Boolean, List<Id>> mp = HWS_CreateSupportTicketportal.processData(filedata,objectName,fields,acc.Id,HWS_Constants.IR);
-		HWS_CreateSupportTicketportal.deleteBulkUpload(mp.get(true));
+		if(mp.get(true) != null){
+		   HWS_CreateSupportTicketportal.deleteBulkUpload(mp.get(true));
+		}
 	}
 	public static testmethod void getSerialNumberInfoTest(){
 		List<hws_versionitem__c> hwsvList = new List<hws_versionitem__c>();
@@ -158,7 +162,7 @@ Modified Date:
 	public static testmethod void getParentAccountIdTest(){
 		Contact cont = [Select id from Contact limit 1];
 		test.startTest();
-		HWS_CreateSupportTicketportal.getParentAccountId(cont.Id);		
+		HWS_CreateSupportTicketportal.getParentAccountId(cont.Id);	  
 		test.stopTest();
 	}
 	public static testmethod void getAllAccountsTest(){
@@ -172,7 +176,7 @@ Modified Date:
 	public static testmethod void getVersionsTest(){
 		List<Asset> astList = new List<Asset>();
 		Product2 prod = [Select id from Product2 limit 1];
-		Asset ast = [Select id from Asset limit 1];		
+		Asset ast = [Select id from Asset limit 1];	 
 		ast.Product2Id = prod.Id;
 		ast.HWS_SourceSystem__c = 'PUMA1';
 		update ast;
@@ -239,7 +243,7 @@ Modified Date:
 		BusinessHours bhs=[select Id from BusinessHours where IsDefault=true];
 		test.startTest();
 		Date arrivalDate = Date.newInstance(1,1,1);
-	   
+	
 		HWS_CreateSupportTicketportal.plannedDeliveryDateTime(bhs.Id,'Days','2',arrivalDate,'10');
 		HWS_CreateSupportTicketportal.getPickListValues1('Account','Type');
 		test.stopTest();
@@ -248,7 +252,7 @@ Modified Date:
 	public static testmethod void createHWSCaseTest(){
 		List<Account> accList = new List<Account>();
 		List<Asset> astList = new List<Asset>();
-		List<hws_versionitem__c> hvList = new List<hws_versionitem__c>();		
+		List<hws_versionitem__c> hvList = new List<hws_versionitem__c>();	
 		
 		
 		Id logisticRecord = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LOGISTIC_ACCOUNT_EXISTING);
@@ -312,8 +316,8 @@ Modified Date:
 			
 			HWS_CreateSupportTicketportal.createHWSCasePortal(acc.id,acc1.Id,astList,hvList,allServTypecase,parentCase,cont.id,true,'(GMT+05:30) India Standard Time (Asia/Kolkata)');
 		}catch(Exception e){
-		   //This is empty 
-		}		
+	 //This is empty 
+		}	
 		test.stopTest();
 	}
 	public static testmethod void ecsalateCaseTest(){ 
@@ -324,11 +328,11 @@ Modified Date:
 		accList.add(acc);
 		Contact cont = [Select id from Contact limit 1];
 		String escalatestring = 'On Hold:No Contract:Case Escalated to CAPM:'+cont.id; 
-		test.startTest();		
+		test.startTest();	
 		HWS_CreateSupportTicketportal.ecsalateCase(escalatestring,accList);   
 		HWS_CreateSupportTicketportal.accountTimeZoneplannedDeliveryDateTime(childCaseList,acc.Id); 
 		test.stopTest();		
-	}	 
+	}	
 	
 	public static testmethod void getContractlineItemsTest(){
 		Id LegalAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY);
@@ -348,34 +352,34 @@ Modified Date:
 	
 	public static testmethod void getChildCaseDetailsTest(){		
 		Case testCase = [Select id from Case limit 1];
-		test.startTest();		
-		HWS_CreateSupportTicketportal.getChildCaseDetails(testCase.id);		
+		test.startTest();	
+		HWS_CreateSupportTicketportal.getChildCaseDetails(testCase.id);	 
 		test.stopTest();		
 	}
 	
-	public static testmethod void getContactDetailsTest(){		
-		test.startTest();		
-		HWS_CreateSupportTicketportal.getContactDetails();		
+	public static testmethod void getContactDetailsTest(){	  
+		test.startTest();	
+		HWS_CreateSupportTicketportal.getContactDetails();	  
 		test.stopTest();		
 	} 
-	public static testmethod void getRecordTypeTest(){		
-		test.startTest();		
-		HWS_CreateSupportTicketportal.getRecordType('Advanced Exchange in Hours');		
+	public static testmethod void getRecordTypeTest(){	  
+		test.startTest();	
+		HWS_CreateSupportTicketportal.getRecordType('Advanced Exchange in Hours');	  
 		test.stopTest();		
 	} 
-	public static testmethod void getUIThemeDescriptionTest(){		
-		test.startTest();		
-		HWS_CreateSupportTicketportal.getUIThemeDescription();		
+	public static testmethod void getUIThemeDescriptionTest(){	  
+		test.startTest();	
+		HWS_CreateSupportTicketportal.getUIThemeDescription();	  
 		test.stopTest();		
 	} 
 	public static testmethod void getCaseStatusTest() {
 		Case parentCase = [Select id from Case limit 1];
 		test.startTest();
-		HWS_CreateSupportTicketportal.getCasStatus(parentCase.Id);		
+		HWS_CreateSupportTicketportal.getCasStatus(parentCase.Id);	  
 		test.stopTest();
 	}
-	public static testmethod void makeSOOCalloutTest(){		
-		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);		
+	public static testmethod void makeSOOCalloutTest(){	 
+		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);	 
 		Product2 prod = [Select id from Product2 limit 1];
 		Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];
 		ContractLineItem cli = [Select Id from ContractLineItem limit 1];
@@ -386,8 +390,8 @@ Modified Date:
 		childCase.AccountId=acc.id;
 		childCase.AssetId = ast.Id;
 		childCase.HWS_Sellable_Product__c = prod.Id;
-		childCase.Subject =cli.id;		
-		insert childCase;		
+		childCase.Subject =cli.id;	  
+		insert childCase;	
 		test.startTest();
 		Test.setMock(HttpCalloutMock.class, new HWS_CreateSRHttpCalloutMock(true));
 		HWS_CreateSupportTicketportal.makeSOOCalloutBulkRMA(parentCase.Id);
@@ -395,7 +399,7 @@ Modified Date:
 	}
 	
 	public static testmethod void makeSOOCalloutTestNegative(){
-		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_SPS_PART_SALES);		
+		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_SPS_PART_SALES);	
 		Product2 prod = [Select id from Product2 limit 1];
 		Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];
 		ContractLineItem cli = [Select Id from ContractLineItem limit 1];
@@ -407,7 +411,7 @@ Modified Date:
 		childCasecreate.AssetId = ast.Id;
 		childCasecreate.HWS_Sellable_Product__c = prod.Id;
 		childCasecreate.Subject =cli.id;		
-		insert childCasecreate;		
+		insert childCasecreate;	 
 		test.startTest();
 		Test.setMock(HttpCalloutMock.class, new HWS_CreateSRHttpCalloutMock(true));
 		HWS_CreateSupportTicketportal.makeSOOCalloutBulkRMA(parentCase.Id);
@@ -415,7 +419,7 @@ Modified Date:
 	}
 	
 	public static testmethod void makeSOOCalloutTest1(){
-		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);		
+		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);	 
 		Product2 prod = [Select id from Product2 limit 1];
 		Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];
 		Contact con = [Select Id from contact limit 1 ];
@@ -440,11 +444,12 @@ Modified Date:
 		custSetting.Name = 'OrderedProcessingSize';
 		custSetting.HWS_Field1__c = '25';
 		insert custSetting;
-		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);		
+		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);	 
 		Product2 prod = [Select id from Product2 limit 1];
 		ContractLineItem cli = [select id from ContractLineItem limit 1]; 
 		cli.CH_ServiceOffering__c = 'RES RFR PU';
 		upsert cli;
+		ServiceContract sc = [select id from ServiceContract limit 1]; 
 		Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];
 		Asset ast = [Select id from Asset limit 1];
 		Case parentCase = [Select id,CaseNumber from Case limit 1];
@@ -454,6 +459,7 @@ Modified Date:
 		childCse.AssetId = ast.Id;
 		childCse.HWS_Contract_Line_Item__c = cli.Id;
 		childCse.HWS_Sellable_Product__c = prod.Id;
+		childCse.NCP_Service_Contract__c=sc.Id;
 		insert childCse;	 
 		List<String> casNumberList = new List<String>();
 		casNumberList.add(parentCase.CaseNumber);
@@ -470,7 +476,7 @@ Modified Date:
 		test.stopTest();
 	}
 	static testMethod void validateFaultyMethod(){
-		List<Product2> prodsToInsertLst = new List<Product2>();		
+		List<Product2> prodsToInsertLst = new List<Product2>();	 
 		Product2 prod = HWS_DataFactory_TEST.insertproduct2();
 		prod.ProductCode='3HQ14903AAAA';
 		prodsToInsertLst.add(prod);
@@ -547,7 +553,7 @@ Modified Date:
 		Account acnt = [Select id from Account limit 1];
 		Contact cont = [Select id from Contact limit 1];
 		test.startTest();
-		HWS_CreateSupportTicketportal.validateFaulty(bulkToInsertLst,acnt.id,HWS_Constants.IR,cont.id,acc2.Id);
+		HWS_CreateSupportTicketportal.validateFaulty(bulkToInsertLst,acnt.id,HWS_Constants.IR,cont.id,acc2.Id,'1234');
 		HWS_CreateSupportTicketportal.setTableData(buLitId);
 		HWS_CreateSupportTicketportal.getInPendingData(buLitId);
 		HWS_CreateSupportTicketportal.updateRMAValues(bulkToInsertLst);
@@ -576,6 +582,7 @@ Modified Date:
 		insert bukUpload;
 		buList.add(bukUpload);
 		test.startTest();
+		HWS_CreateSupportTicketportal.getServicedAccountNumbers();
 		HWS_CreateSupportTicketportal.updateStatusforMandatoryFields(buList);
 		HWS_CreateSupportTicketportal.fetchAssetNetworkElementWithSearch(200,200,bukUpload.id,false,'Test');
 		test.stopTest();		
@@ -590,7 +597,7 @@ Modified Date:
 		HWS_BulkUpload__c upd = HWS_DataFactory_TEST.createBulkUpload();
 		insert upd;
 		test.startTest();
-		HWS_CreateSupportTicketportal.selectShipToAddress(acc.Id,'eSpares','Test');
+		HWS_CreateSupportTicketportal.selectShipToAddress(acc.Id,'eSpares','Test','');
 		HWS_CreateSupportTicketportal.updateShipToAddress(upd.Id, logisticAcc.Id);
 		test.stopTest();	
 	}
@@ -604,7 +611,7 @@ Modified Date:
 		
 			
 			Account acc = HWS_DataFactory_TEST.insertAccount(); 
-		acc.RecordTypeId =  CusAccountType;	
+		acc.RecordTypeId =  CusAccountType; 
 		insert acc;
 		
 		Account acc1 = HWS_DataFactory_TEST.insertAccount(); 
@@ -623,7 +630,7 @@ Modified Date:
 		
 		ServiceContract sc = [select id, name from ServiceContract limit 1];		
 		
-		ContractLineItem cli = [select id from ContractLineItem limit 1];		
+		ContractLineItem cli = [select id from ContractLineItem limit 1];	
 		
 		Entitlement entiObject = new Entitlement();
 	entiObject.RecordTypeId = hwsEntitlementRecordType;
@@ -655,7 +662,7 @@ Modified Date:
 		
 		Asset ast = HWS_DataFactory_TEST.insertAsset(acc1,prod);  
 		ast.HWS_SourceSystem__c = 'Puma1';
-		ast.RecordTypeId = AssetRecordType;	
+		ast.RecordTypeId = AssetRecordType; 
 		insert ast; 
 		
 		List<HWS_BulkUpload__c> bulkupdToInsertLst = new List<HWS_BulkUpload__c>();
@@ -698,7 +705,7 @@ Modified Date:
 		
 		insert bulkupdToInsertLst;
 		
-		HWS_CreateSupportTicketportal.validateFaulty(bulkupdToInsertLst,acc.id,HWS_Constants.IR,con1.id,acc2.Id);
+		HWS_CreateSupportTicketportal.validateFaulty(bulkupdToInsertLst,acc.id,HWS_Constants.IR,con1.id,acc2.Id,'1234');
 		test.stopTest();	
 		
 	}
@@ -729,9 +736,9 @@ Modified Date:
 		
 		BusinessHours stdBusinessHours = [select id, name from BusinessHours where IsDefault=true];
 		
-		ServiceContract sc = [select id,ContractNumber, name from ServiceContract limit 1];		
+		ServiceContract sc = [select id,ContractNumber, name from ServiceContract limit 1];	 
 		
-		ContractLineItem cli = [select id from ContractLineItem limit 1];		
+		ContractLineItem cli = [select id from ContractLineItem limit 1];	
 		
 		Entitlement entiltObj = new Entitlement();
 	entiltObj.RecordTypeId = hwsEntitlementRecordType;
@@ -794,7 +801,7 @@ Modified Date:
 		
 		insert bulkToInsrtLst;
 		
-		HWS_CreateSupportTicketportal.validateFaulty(bulkToInsrtLst,acc.id, HWS_Constants.IR,con1.id,acc2.Id);
+		HWS_CreateSupportTicketportal.validateFaulty(bulkToInsrtLst,acc.id, HWS_Constants.IR,con1.id,acc2.Id,'1234');
 		test.stopTest();	
 		
 	}
@@ -808,7 +815,7 @@ Modified Date:
 		
 			
 			Account acc = HWS_DataFactory_TEST.insertAccount(); 
-		acc.RecordTypeId =  CustomrAccountType;	
+		acc.RecordTypeId =  CustomrAccountType; 
 		insert acc;
 		
 		Account acc1 = HWS_DataFactory_TEST.insertAccount(); 
@@ -827,7 +834,7 @@ Modified Date:
 		
 		ServiceContract sc = [select id, name from ServiceContract limit 1];		
 		
-		ContractLineItem cli = [select id from ContractLineItem limit 1];		
+		ContractLineItem cli = [select id from ContractLineItem limit 1];	
 		
 		Entitlement entiObj = new Entitlement();
 	entiObj.RecordTypeId = hwsEntitlementRecordType;
@@ -891,6 +898,7 @@ Modified Date:
 		
 		insert InsertLst;
 		HWS_CreateSupportTicketportal.getAllAssets(InsertLst[0].id,acc.id, HWS_Constants.IR,con1.id);
+		HWS_CreateSupportTicketportal.getAllAssets(InsertLst[0].id,acc.id, HWS_Constants.IR,con1.id,null);
 		HWS_CreateSupportTicketportal.getNetworkElementAsset(InsertLst[0].id,false);
 		HWS_CreateSupportTicketportal.getNetworkElementAsset(InsertLst[0].id,true);
 		HWS_CreateSupportTicketportal.updateNEAValues(ast1.Id,'Test NEA',InsertLst[0].id);
@@ -907,7 +915,7 @@ Modified Date:
 		
 			
 			Account acc = HWS_DataFactory_TEST.insertAccount(); 
-		acc.RecordTypeId =  CustoAccountType;	
+		acc.RecordTypeId =  CustoAccountType;   
 		insert acc;
 		
 		Account acc1 = HWS_DataFactory_TEST.insertAccount(); 
@@ -926,7 +934,7 @@ Modified Date:
 		
 		ServiceContract sc = [select id, name from ServiceContract limit 1];		
 		
-		ContractLineItem cli = [select id from ContractLineItem limit 1];		
+		ContractLineItem cli = [select id from ContractLineItem limit 1];	
 		
 		Entitlement entiObj = new Entitlement();
 	entiObj.RecordTypeId = hwsEntitlementRecordType;
@@ -992,7 +1000,7 @@ Modified Date:
 	}
 	public static testmethod void createBulkRMACaseTest(){
 		Id LegalEntyAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY);
-		Id parentCaseRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_PARENT_CASE_READ_ONLY);		
+		Id parentCaseRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_PARENT_CASE_READ_ONLY);	
 		Account legalAcc = [Select id from Account where RecordTypeId =:LegalEntyAccountType limit 1];
 		Account logAcc=HWS_DataFactory_TEST.createLogisticAccount();
 		insert logAcc;
@@ -1011,7 +1019,29 @@ Modified Date:
 		test.startTest();
 		HWS_CreateSupportTicketportal.createBulkRMACase(bulkList,legalAcc.Id,cont.Id,parentCase, HWS_Constants.IR,'(GMT+05:30) India Standard Time (Asia/Kolkata)',true);
 		test.stopTest();
-	}	
+	}   
+	 public static testmethod void insertBulkRMACaseDataTest(){
+		Id LegalEntyAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY);
+		Id parentCaseRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_PARENT_CASE_READ_ONLY);	
+		Account legalAcc = [Select id from Account where RecordTypeId =:LegalEntyAccountType limit 1];
+		Account logAcc=HWS_DataFactory_TEST.createLogisticAccount();
+		insert logAcc;
+		Contact cont = [Select id from Contact limit 1];
+		List<HWS_BulkUpload__c> bulkList = new List<HWS_BulkUpload__c>();
+		HWS_BulkUpload__c bu = HWS_DataFactory_TEST.createBulkUpload();
+		bu.HWS_Ship_to_Address__c = logAcc.Id;
+		bu.Site_Id__c ='test';
+		bu.Failure_Description_Server_ID__c ='FSDes';
+		bu.HWS_Part_Revision__c = 'ANY';
+		bulkList.add(bu);
+		insert bulkList;  
+		Case parentCase = HWS_DataFactory_TEST.createCase(parentCaseRecordType);
+		parentCase.AccountId = legalAcc.Id;
+		insert parentCase;
+		test.startTest();
+		HWS_CreateSupportTicketportal.insertBulkRMACaseData(bulkList,legalAcc.Id,cont.Id,parentCase, HWS_Constants.IR,'(GMT+05:30) India Standard Time (Asia/Kolkata)',true,'Submit');
+		test.stopTest();
+	}   
 	public static testmethod void getShipToTimeZoneTest(){
 		List<Id> businessHourIdList =  new  List<Id>();
 		Id customerAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.Customer);
@@ -1025,7 +1055,7 @@ Modified Date:
 		system.assertNotEquals(acc, null);
 	} 
 	public static testmethod void payper(){
-		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);		
+		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);	 
 		Product2 prod = [Select id from Product2 limit 1];
 		ContractLineItem cli = [select id from ContractLineItem limit 1]; 
 		Account acc = [Select Id,AccountNumber from Account where Name = 'TestLE' limit 1 ];
@@ -1043,7 +1073,7 @@ Modified Date:
 		childCase.AssetId = ast.Id;
 		childCase.HWS_Contract_Line_Item__c = cli.Id;
 		childCase.HWS_Sellable_Product__c = prod.Id;
-		insert childCase;	 
+		insert childCase;	
 		test.startTest();
 		HWS_CreateSupportTicketportal.validateUserInputs(parentCase.CaseNumber,acc.AccountNumber);
 		 HWS_CreateSupportTicketportal.validateUserInputs('01229425',acc.AccountNumber);
@@ -1135,7 +1165,7 @@ Modified Date:
 		Account acnt = [Select id from Account limit 1];
 		Contact cont = [Select id from Contact limit 1];
 		test.startTest();
-		HWS_CreateSupportTicketportal.validateFaulty(bulkToInsertLst,acnt.id,HWS_Constants.IR,cont.id,acc2.Id);
+		HWS_CreateSupportTicketportal.validateFaulty(bulkToInsertLst,acnt.id,HWS_Constants.IR,cont.id,acc2.Id,'1234');
 		HWS_CreateSupportTicketportal.setTableData(buLitId);
 		HWS_CreateSupportTicketportal.getInPendingData(buLitId);
 		HWS_CreateSupportTicketportal.updateRMAValues(bulkToInsertLst);
@@ -1151,7 +1181,7 @@ Modified Date:
 		Contact cont = [Select Id from Contact limit 1];
 		Asset ast = [Select id from Asset limit 1];
 		Entitlement Entlmnt = [select id from Entitlement];
-	   
+	
 		Case parentCase = [Select id,CaseNumber from Case limit 1];
 		parentCase.HWS_Customer_PO__c = null;
 		parentCase.CH_InternalStatus__c = 'Under Review';
@@ -1171,8 +1201,17 @@ Modified Date:
 		insert childCase; system.debug('mytesttdeeeb11'+childCase);
 		
 		
-	   
+	
 		HWS_CreateSupportTicketportal.validateUserInputs(childCase.CaseNumber,acc.AccountNumber);
 		test.stopTest();
+	}
+	public static testmethod void getShowRetroAccount() {
+	
+		List<ContractLineItem> cliList = new List<ContractLineItem>();
+		ContractLineItem cli = [Select id from ContractLineItem limit 1];
+		Test.startTest();
+		cliList = HWS_CreateSupportTicketportal.showRetroAccount(cli.Id);
+		Test.stopTest();
+		System.assertEquals(cliList.isEmpty(), true);   
 	}
 }

@@ -10,7 +10,7 @@
  * 1.0   11-25-2020   Raj Kamdar   Initial Version
 **/
 
-public class QTO_QuoteLineItemAssociationHelper {
+public without sharing class  QTO_QuoteLineItemAssociationHelper {
 	
 	public Static final String ATTRIBUTE_VISIBILITY = 'Yes';
 	public Static final String ATTRIBUTE_LABEL = 'G2R site';
@@ -149,28 +149,33 @@ public class QTO_QuoteLineItemAssociationHelper {
 						if(qLIList != null && qLIList.size()==1){
 							qLIForAssociationCDLI.add(qLIList[0].Apttus_Proposal__Proposal__r.id);
 						}else if(qLIList != null && qLIList.size()> 1){
-						  QTO_Exception_Configuration__mdt logMetadata = new QTO_Exception_Configuration__mdt();
-						  logMetadata = QTO_Utility.fetchLogMetadata(421);
-						  QTO_Utility.createLogs(logMetadata.QTO_Return_Description__c,custDocId,null,String.valueOf(logMetadata.QTO_Return_Code__c),logMetadata.QTO_Return_Type__c);
+							
+						  //QTO_Utility.createLogs('Multiple Quote LineItems found ',custDocId, custDocLineItem.id);
+						  //QTO_Exception_Configuration__mdt logMetadata = new QTO_Exception_Configuration__mdt();
+						  //logMetadata = QTO_Utility.fetchLogMetadata(421);
+						  //QTO_Utility.createLogs(logMetadata.QTO_Return_Description__c,custDocId,null,String.valueOf(logMetadata.QTO_Return_Code__c),logMetadata.QTO_Return_Type__c);
 						  }
 						//create CDLI and QLI junction object record
 						QTO_AutomateAssociationHelper.finalQLIForAssociationCDLIMap.put(custDocLineItem.id,qLIList);
 					} 
 					else{
-						QTO_Exception_Configuration__mdt logMetadata = new QTO_Exception_Configuration__mdt();
-						  logMetadata = QTO_Utility.fetchLogMetadata(421);
-						  QTO_Utility.createLogs(logMetadata.QTO_Return_Description__c,custDocId,null,String.valueOf(logMetadata.QTO_Return_Code__c),logMetadata.QTO_Return_Type__c);
+						//QTO_Utility.createLogs('No Corresponding QuoteLineITem found ',custDocId, custDocLineItem.id);  
+						 // QTO_Exception_Configuration__mdt logMetadata = new QTO_Exception_Configuration__mdt();
+						  //logMetadata = QTO_Utility.fetchLogMetadata(421);
+						  //QTO_Utility.createLogs(logMetadata.QTO_Return_Description__c,custDocId,null,String.valueOf(logMetadata.QTO_Return_Code__c),logMetadata.QTO_Return_Type__c);
 					}
 				}else{
-					QTO_Exception_Configuration__mdt logMetadata = new QTO_Exception_Configuration__mdt();
-						  logMetadata = QTO_Utility.fetchLogMetadata(421);
-						  QTO_Utility.createLogs(logMetadata.QTO_Return_Description__c,custDocId,null,String.valueOf(logMetadata.QTO_Return_Code__c),logMetadata.QTO_Return_Type__c);
+					//QTO_Exception_Configuration__mdt logMetadata = new QTO_Exception_Configuration__mdt();
+						  //logMetadata = QTO_Utility.fetchLogMetadata(421);
+						  //QTO_Utility.createLogs(logMetadata.QTO_Return_Description__c,custDocId,null,String.valueOf(logMetadata.QTO_Return_Code__c),logMetadata.QTO_Return_Type__c);
+						  
+					//QTO_Utility.createLogs('Site or Product Code doesnt exist ',custDocId, custDocLineItem.id);  
 				}
 			}  //CDLI for loop End
 			if(qLIForAssociationCDLI.size()<custDocLineItemList.size()){
-				QTO_Exception_Configuration__mdt logMetadata = new QTO_Exception_Configuration__mdt();
-				logMetadata = QTO_Utility.fetchLogMetadata(421);
-				QTO_Utility.createTask(custDocId,logMetadata.QTO_Return_Description__c,logMetadata.QTO_Return_Code__c,logMetadata.QTO_Task_Subject__c,logMetadata.QTO_Tasks_Priority__c,logMetadata.QTO_Tasks_Due_Date__c,logMetadata.QTO_Tasks_Status__c,logMetadata.QTO_Investigating_Group__c);
+				//QTO_Exception_Configuration__mdt logMetadata = new QTO_Exception_Configuration__mdt();
+				//logMetadata = QTO_Utility.fetchLogMetadata(421);
+				//QTO_Utility.createTask(custDocId,logMetadata.QTO_Return_Description__c,logMetadata.QTO_Return_Code__c,logMetadata.QTO_Task_Subject__c,logMetadata.QTO_Tasks_Priority__c,logMetadata.QTO_Tasks_Due_Date__c,logMetadata.QTO_Tasks_Status__c,logMetadata.QTO_Investigating_Group__c);
 			}
 			qLIForAssociationCDMap.put(custDocId, qLIForAssociationCDLI);
 		} //CD for loop End

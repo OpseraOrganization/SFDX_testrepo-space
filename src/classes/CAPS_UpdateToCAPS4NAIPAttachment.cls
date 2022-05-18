@@ -33,12 +33,10 @@ global without sharing class CAPS_UpdateToCAPS4NAIPAttachment{
 	List<Case> caseHavingAttachmentList = new List<Case>();
 	List<case> prontoCaseAttachmentList =new List<Case>();
 	for(Case cas: caseList){
-	if(trigger.isInsert){
-	  if(!string.isBlank(cas.CH_CAPS_AttachmentMetadatafromNAIP__c) && !string.isBlank(cas.Origin) && cas.Origin == 'S2S'){
+
+	  if(trigger.isInsert && !string.isBlank(cas.CH_CAPS_AttachmentMetadatafromNAIP__c) && !string.isBlank(cas.Origin) && cas.Origin == 'S2S'){
 	  caseHavingAttachmentList.add(cas);
 	  }
-
-	}
 	if(Trigger.isUpdate){
 	  if(!string.isBlank(cas.CH_CAPS_AttachmentMetadatafromNAIP__c) && !string.isBlank(cas.Origin) && 
 	  cas.Origin == 'S2S' && cas.CH_CAPS_AttachmentMetadatafromNAIP__c != oldCaseMap.get(cas.Id).CH_CAPS_AttachmentMetadatafromNAIP__c && !caseStatusSet.contains(cas.Status))
@@ -84,7 +82,7 @@ global without sharing class CAPS_UpdateToCAPS4NAIPAttachment{
 	Map<String,String> caseIdVsAccountIdMap = new Map<String,String>();
 	Map<String,String> caseIdVsCaseOwnerQueueMap = new Map<String,String>();
 	Map<String,Set<String>> caseIdVsUserIdListMap = new Map<String,Set<String>>();
-		Map<String,String> attachmentPriorityMap = new Map<String,String>();//NOKIASC-31214
+	Map<String,String> attachmentPriorityMap = new Map<String,String>();//NOKIASC-31214
 		
 	if(!newCaseList.isEmpty())
 	{
@@ -93,16 +91,21 @@ global without sharing class CAPS_UpdateToCAPS4NAIPAttachment{
 	  Map<String,String> caseIdVsProductReleaseCodeMap = new Map<String,String>();
 	  Map<String,String> caseIdVsContractCDBIdMap = new Map<String,String>();
 	  Map<String,String> caseIdVsAccountNumberMap = new Map<String,String>();
+	  Map<String,Boolean> caseIdVsCaleaMap = new Map<String,Boolean>(); // NOKIASC-36529 
 	  List<CH_Attachment__c> listattach =new List<CH_Attachment__c>();
 	  List<CH_Outbound_Log__c> listobLogs =new List<CH_Outbound_Log__c>();
 			String Priority;//NOKIASC-31214
+			Boolean caleaFlag;
 			attachmentPriorityMap = CAPS_MultiFileUploadController.getAttachmentPriority();//NOKIASC-31214
 	  for(Case csObj: newCaseList){
 				/**NOKIASC-31214**/
 				String priorityString = (csObj.Severity__c+csObj.CH_Outage__c+csObj.Status).toLowerCase();
 				Priority = (!attachmentPriorityMap.isEmpty() && attachmentPriorityMap.containsKey(priorityString))?attachmentPriorityMap.get(priorityString):System.Label.CAPS_Default_Priority;
 				/**NOKIASC-31214**/
+	caleaFlag = csObj.CH_LawfullIntercept_CALEA__c;// NOKIASC-36529
+		 caseIdVsCaleaMap.put(csObj.id,caleaFlag);  // NOKIASC-36529
 		caseMap.put(csObj.id,csObj);
+		
 		caseIdVsAttachmentDataMap.put(csObj.Id, csObj.CH_CAPS_AttachmentMetadatafromNAIP__c);
 		caseIdVsProductIdMap.put(csObj.Id, csObj.ProductId);
 		caseIdVsProductReleaseIdMap.put(csObj.Id, csObj.CH_Product_Release__c);
@@ -234,7 +237,8 @@ global without sharing class CAPS_UpdateToCAPS4NAIPAttachment{
 			gen.writeStringField(CAPS_ConstantHandler.SF_SECURITY_GROUPS, caseIdVsSecurityMap.get(caseId));
 		  }
 		  gen.writeStringField(CAPS_ConstantHandler.SF_CASE_STATUS, CAPS_ConstantHandler.OPEN_STATUS);
-					gen.writeStringField(CAPS_ConstantHandler.PRIORITY, Priority);  //Added for NOKIASC-31214
+		  gen.writeStringField(CAPS_ConstantHandler.PRIORITY, Priority);  //Added for NOKIASC-31214
+	gen.writeBooleanField(CAPS_ConstantHandler.LAWFULINTERCEPT_CALEA, caseIdVsCaleaMap.get(caseId));//NOKIASC-36529 
 		  gen.writeEndObject();
 		  String jsonString = gen.getAsString();
 					req.setBody(jsonString);

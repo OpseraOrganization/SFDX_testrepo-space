@@ -173,7 +173,7 @@ public class NF_ApprovalControllerTest {
 		system.runAs(testUser){
 			setup(GlobalConstants.IDENTIFY_OPPORTUNITY, GlobalConstants.PLANNED);
 			currentOpportunity.Unweighted_Amount_EUR__c = 21000000;
-			currentOpportunity.SolutionScopeAlignedCSO__c = true;
+			currentOpportunity.Gate_2_Bypass_no_complex_offer__c = true;
 			currentOpportunity.Supporting_BGs_BUs__c = 'CNS';
 			update currentOpportunity;
 			Test.startTest();

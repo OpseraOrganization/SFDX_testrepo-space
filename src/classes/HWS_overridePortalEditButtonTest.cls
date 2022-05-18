@@ -16,7 +16,7 @@ public class HWS_overridePortalEditButtonTest {
 		List<Contact> contactList = HWS_TestFactoryDefaults.createContact(true, 1, null, fieldsMap);
 		fieldsMap.put('contactId', contactList[0].Id);
 		
-	   
+	
 		Id rtId = Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_VendorContract').getRecordTypeId();
 		ServiceContract sc = HWS_DataFactory_TEST.insertServiceContract(legalAcc);
 		sc.Pricebook2Id = Test.getStandardPricebookId();

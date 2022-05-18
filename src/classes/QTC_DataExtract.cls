@@ -66,16 +66,17 @@ public with sharing class QTC_DataExtract {
 		Id,CPQ_Agreement_Number__c,Apttus_Config2__ListPrice__c,Apttus_Config2__ContractPrice__c,Apttus_Config2__ProductId__c,CPQ_Conditional_Price_Code__c,Apttus_Config2__EffectiveDate__c,Apttus_Config2__ExpirationDate__c
 	FROM Apttus_Config2__PriceListItem__c 
 	WHERE CPQ_Agreement_Number__c IN :agreementList AND Apttus_Config2__ProductId__c IN :productSet AND Apttus_Config2__Active__c = true AND CurrencyIsoCode = :currencyCode
-	ORDER BY CPQ_Conditional_Price_Code__c ASC NULLS LAST
+	//ORDER BY CPQ_Conditional_Price_Code__c ASC NULLS LAST
+	ORDER BY CPQ_Conditional_Price_Code__c ASC NULLS LAST, LastModifiedDate  DESC
 			];
 			for(Apttus_Config2__PriceListItem__c pli : activePlIs) {
-				Boolean validPLI = true;
-				if(pli.Apttus_Config2__EffectiveDate__c != null && pli.Apttus_Config2__EffectiveDate__c > currentTime) {
-					validPLI = false;
-				}
-				if(pli.Apttus_Config2__ExpirationDate__c != null && pli.Apttus_Config2__ExpirationDate__c < currentTime) {
-					validPLI = false;
-				}
+	Boolean validPLI = true;
+	if(pli.Apttus_Config2__EffectiveDate__c != null && pli.Apttus_Config2__EffectiveDate__c > currentTime) {
+		validPLI = false;
+	}
+	if(pli.Apttus_Config2__ExpirationDate__c != null && pli.Apttus_Config2__ExpirationDate__c < currentTime) {
+		validPLI = false;
+	}
 	if(validPLI) {
 		contractedPriceListItems.add(pli);
 	}
@@ -103,19 +104,19 @@ public with sharing class QTC_DataExtract {
 		if(ppCodes != null && !ppCodes.isEmpty() && agreementList != null && !agreementList.isEmpty()) {
 			DateTime currentTime = System.now();
 			List<CPQ_ContractConditionDisc__c> ildList = [
-				SELECT
+	SELECT
 		Id,CPQ_Code__c,CPQ_Description__c,CPQ_Discount_Type__c,CPQ_Discount_Value__c,CPQ_Start_Date__c,CPQ_End_Date__c
 	FROM CPQ_ContractConditionDisc__c 
 	WHERE CPQ_Agreement_Number__c IN :agreementList AND CPQ_Code__c IN :ppCodes AND CPQ_Active__c = true
 			];
 			for(CPQ_ContractConditionDisc__c ildEntry : ildList) {
-				Boolean validILD = true;
-				if(ildEntry.CPQ_Start_Date__c != null && ildEntry.CPQ_Start_Date__c > currentTime) {
-					validILD = false;
-				}
-				if(ildEntry.CPQ_End_Date__c != null && ildEntry.CPQ_End_Date__c < currentTime) {
-					validILD = false;
-				}
+	Boolean validILD = true;
+	if(ildEntry.CPQ_Start_Date__c != null && ildEntry.CPQ_Start_Date__c > currentTime) {
+		validILD = false;
+	}
+	if(ildEntry.CPQ_End_Date__c != null && ildEntry.CPQ_End_Date__c < currentTime) {
+		validILD = false;
+	}
 	if(validILD) {
 		ildEntryByPPCode.put(ildEntry.CPQ_Code__c, ildEntry);
 	}

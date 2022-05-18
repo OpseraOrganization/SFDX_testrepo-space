@@ -1,8 +1,8 @@
 @isTest
 
 public class HWS_EntitlementCheck_Controller_Test {
-	public static final string OutofWarranty = 'Out of Warranty';
 	
+	public static final string OutofWarranty = 'Out of Warranty';
 	@testSetup static void testDataSetup()  
 	{ 
 		Id customerAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.Customer);
@@ -36,7 +36,7 @@ public class HWS_EntitlementCheck_Controller_Test {
 		Product2 prod1 = HWS_DataFactory_TEST.insertproduct2();	 
 		insert prod1;
 		
-		PriceBook2 pb = HWS_DataFactory_TEST.createPriceBook();		  
+		PriceBook2 pb = HWS_DataFactory_TEST.createPriceBook();	
 		insert pb;   
 		
 		PricebookEntry pbety = HWS_DataFactory_TEST.createPriceBookEntry(prod1.id, pb.Id);	  
@@ -48,6 +48,7 @@ public class HWS_EntitlementCheck_Controller_Test {
 		ServiceContract sc = HWS_DataFactory_TEST.insertServiceContract(legalAcc);
 		sc.Pricebook2Id = Test.getStandardPricebookId();
 		sc.NCP_External_Status__c = 'Active';
+		sc.CH_ERPSystem__c = 'P20';
 		sc.CurrencyIsoCode = 'EUR';
 		insert sc;
 		
@@ -57,14 +58,14 @@ public class HWS_EntitlementCheck_Controller_Test {
 		covProdAsset.Product2Id = prod1.Id;
 		insert covProdAsset;
 		
-		ContractLineItem cli = HWS_DataFactory_TEST.insertContractLineItem(sc,pbety);	   
+		ContractLineItem cli = HWS_DataFactory_TEST.insertContractLineItem(sc,pbety);	
 		cli.PricebookEntryId = pbety.id; 
 		cli.CH_ServiceClassification__c = 'HWS Service';
 		insert cli;
 		
 		
-		Asset ast = HWS_DataFactory_TEST.insertAsset(legalAcc,prod1);	   
-		ast.RecordTypeId = assetRecordType;			 
+		Asset ast = HWS_DataFactory_TEST.insertAsset(legalAcc,prod1);	
+		ast.RecordTypeId = assetRecordType;	
 		insert ast; 
 		
 		hws_versionitem__c hwsv = HWS_DataFactory_TEST.insertHwsversionitem();
@@ -78,6 +79,8 @@ public class HWS_EntitlementCheck_Controller_Test {
 		Case parentCase = HWS_DataFactory_TEST.insertParentCase();
 		parentCase.AccountId = legalAcc.id;
 		parentCase.HWS_Customer_PO__c='1234';
+		parentCase.CH_InternalStatus__c = 'Quotation Required';
+		parentCase.CH_EntitlementException__c = 'Not Applicable - Quotation Required';
 		insert parentCase;
 		List<Case> lstCase = new List<case>();
 		Case childCase = HWS_DataFactory_TEST.insertChildCase();
@@ -97,6 +100,7 @@ public class HWS_EntitlementCheck_Controller_Test {
 		childCase.HWS_Sellable_Product__c = prod.Id;
 		childCase.HWS_WarrantyStatus__c  ='Failed to determine Warranty';
 		childCase.HWS_Contract_Line_Item__c = cli.Id;
+		childCase.NCP_Service_Contract__c = sc.Id;
 		lstCase.add(childCase);
 		Case childCase2 = HWS_DataFactory_TEST.insertChildCase();
 		parentCase.AccountId = legalAcc.id;
@@ -106,7 +110,7 @@ public class HWS_EntitlementCheck_Controller_Test {
 		childCase2.Description='test' +2;
 		childCase2.HWS_Faulty_Serial_Number__c= 'test12dd34';
 		childCase2.HWS_ShipTopartyId__c='1234566';
-		
+		childCase2.NCP_Service_Contract__c = sc.Id;
 		childCase2.ContactId = con.Id;
 		
 		childCase2.HWS_ServiceType__c = 'Advance Exchange in Days';  
@@ -123,7 +127,7 @@ public class HWS_EntitlementCheck_Controller_Test {
 		childCase3.Description='test' +3;
 		childCase3.HWS_Faulty_Serial_Number__c= 'testwdqwe1234';
 		childCase3.HWS_ShipTopartyId__c='1234566';
-		
+		childCase3.NCP_Service_Contract__c = sc.Id;
 		childCase3.ContactId = con.Id;
 		
 		childCase3.HWS_ServiceType__c = 'Advance Exchange in Days';  
@@ -144,6 +148,17 @@ public class HWS_EntitlementCheck_Controller_Test {
 			lstCase[0].HWS_Faulty_Serial_Number__c = 'SN1';
 			lstCase[0].HWS_Part_Code__c='SN1';
 			HWS_EntitlementCheck_Controller.getWarrantyStatus(lstCase[0]);
+		}
+		catch(exception e ){ 
+			//Added empty line 
+		}
+	}
+	
+	//test method to check modifyInternalStatusToQuoteReq functionality
+	public static testmethod void modifyInternalStatusToQuoteReqTest(){
+		List<Case> lstCase = [select Id, CH_InternalStatus__c, CH_EntitlementException__c, HWS_isQuoteRequired__c from Case where CH_InternalStatus__c =:'Quotation Required' and HWS_isQuoteRequired__c =true LIMIT 1 ];
+		try{
+			HWS_EntitlementCheck_Controller.modifyInternalStatusToQuoteReq(lstCase.get(0).Id);
 		}
 		catch(exception e ){ 
 			//Added empty line 
@@ -230,7 +245,7 @@ public class HWS_EntitlementCheck_Controller_Test {
 		HWS_EntitlementCheck_Controller.getChildCaseDetails(null);
 		List<Case> lstCase = [select id ,AssetId,ParentId,ownerID,Contactid,CH_ServiceType__c,EntitlementId,CH_RecordTypeDevName__c from Case  LIMIT 1 ];
 		try{
-			HWS_EntitlementCheck_Controller.updateCaseValues(lstCase,lstCase[0].ParentId);						
+			HWS_EntitlementCheck_Controller.updateCaseValues(lstCase,lstCase[0].ParentId);			
 		}
 		catch(exception e){
 			//Added empty line to fix sonar cube issue
@@ -372,6 +387,20 @@ public class HWS_EntitlementCheck_Controller_Test {
 			//Added empty line to fix sonar cube issue
 		}
 	}
+	
+	//Testing the rejectQuoteDate functionality when an empty list is passed as parameter.
+	public static testmethod void rejectQuoteDate2(){
+		try{
+			Test.startTest();
+			HWS_EntitlementCheck_Controller.acceptRejectQuoteDate(Null,'rejectQuote');
+			Test.stopTest();
+			
+		}
+		catch(exception e){
+			//Added empty line to fix sonar cube issue
+		}
+	}
+	
 	public static testmethod void rejectQuoteDatePOMissing(){
 		try{
 			Case caseData=[Select Id,HWS_Customer_PO__c from case where ParentId=null limit 1];
@@ -548,7 +577,7 @@ insert lstGroupMember; */
 			Test.stopTest();
 		}
 	}
-	 public testmethod static void getDependentMapTest(){
+	public testmethod static void getDependentMapTest(){
 		Case objCase = new Case();
 		HWS_EntitlementCheck_Controller.getDependentMap(objCase,'CH_EntitlementException__c','CH_EntitlementStatus__c');
 	}

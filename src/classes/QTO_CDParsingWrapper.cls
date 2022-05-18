@@ -15,4 +15,7 @@ public class QTO_CDParsingWrapper {
 	public Set<String> setLineItemQuotes = new Set<String>();
 	public Set<Id> setCDOLineItems = new Set<Id>();
 	public Id customerDocumentId;
+	// DSI-2322
+	public Set<String> pdfSiteCodeRefs = new Set<String>();
+	public Set<String> pdfOpportunityRefs = new Set<String>();
 }

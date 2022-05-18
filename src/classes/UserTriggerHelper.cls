@@ -7,7 +7,7 @@
  * History:
  * -------
  *
- * API VERSION   DATE		DETAIL
+ * API VERSION   DATE	   DETAIL
  * 39.0   06/03/2017   Sprint 5 Account,Contact and Lead requirements.
  * 49.0   10/02/2021   Access modifier change from public to private of method solveUsers
  * ============================================================================
@@ -21,7 +21,7 @@ public with sharing class UserTriggerHelper
 	* Return: void
 	* Description: Helper method for before update and insert operation.
 	* Add the NSA Compliant flag change timestamp
-	* Method to populate NSA_Modified__c field
+	* Method to populate NSA_Modified__c, NSA_Class_A_Modified__c and NSA_GEN_IT_SDHLR_Modified__c fields
 	* Requirement No. 774
 	* High Level Process :
 	**********************************************************************************************************************/
@@ -33,6 +33,10 @@ public with sharing class UserTriggerHelper
 					//Checking if values in oldMap is not null or null and the NSA compliant is checked,if yes then update value
 					newUser.NSA_Modified__c = System.now();
 					//assigning NSA Modified field with the current Date/Time
+				}if ((oldUserMap.size() == 0 && newUser.NSA_Class_A__c) || (oldUserMap.size() > 0 && newUser.NSA_Class_A__c != oldUserMap.get(newUser.Id).NSA_Class_A__c)){ //change related to DEM0060769					
+					newUser.NSA_Class_A_Modified__c = System.now();					
+				}if ((oldUserMap.size() == 0 && newUser.NSA_GEN_IT_SDHLR__c) || (oldUserMap.size() > 0 && newUser.NSA_GEN_IT_SDHLR__c != oldUserMap.get(newUser.Id).NSA_GEN_IT_SDHLR__c)){ //change related to DEM0060769				   
+					newUser.NSA_GEN_IT_SDHLR_Modified__c = System.now();					
 				}
 			}
 		}
@@ -313,20 +317,17 @@ public with sharing class UserTriggerHelper
 		for(Sales_Role__c currentSalesRole:[SELECT ID,User__c,User__r.isActive,User__r.Restriction_Level__c,Role_code__c,Role_Name__c,BG__c
 			 FROM Sales_Role__c
 			WHERE User__c in:psaCandidatesToBeRemoved.keySet()]){
-			for(PSRO_Costs_Visibilities_Manager__mdt allowRole: allowedRoles){
-				if(String.isBlank(allowRole.BG__c) || (String.isNotBlank(allowRole.BG__c) && String.isNotBlank(currentSalesRole.BG__c) && (currentSalesRole.BG__c).contains(allowRole.BG__c))){
-					if(String.isNotBlank(currentSalesRole.Role_Name__c) && (currentSalesRole.Role_Name__c).contains(allowRole.Role_Name__c) && String.isNotBlank(currentSalesRole.User__c)){
-						if(mappingSalesRolesIntoUserIds.get(currentSalesRole.User__c) == null)
+			for(PSRO_Costs_Visibilities_Manager__mdt allowRole: allowedRoles){			  
+				if((String.isBlank(allowRole.BG__c) || (String.isNotBlank(allowRole.BG__c) && String.isNotBlank(currentSalesRole.BG__c) && (currentSalesRole.BG__c).contains(allowRole.BG__c))) && (String.isNotBlank(currentSalesRole.Role_Name__c) && (currentSalesRole.Role_Name__c).contains(allowRole.Role_Name__c) && String.isNotBlank(currentSalesRole.User__c))){ // Jan'22 Release
+					if(mappingSalesRolesIntoUserIds.get(currentSalesRole.User__c) == null)
 							mappingSalesRolesIntoUserIds.put(currentSalesRole.User__c,new List<Sales_Role__c>{currentSalesRole});
-						else{
-							List<Sales_Role__c> srListToBeAdded = mappingSalesRolesIntoUserIds.get(currentSalesRole.User__c);
-							srListToBeAdded.add(currentSalesRole);
-							mappingSalesRolesIntoUserIds.put(currentSalesRole.User__c,srListToBeAdded);
-						}
-						
+					else{
+						List<Sales_Role__c> srListToBeAdded = mappingSalesRolesIntoUserIds.get(currentSalesRole.User__c);
+						srListToBeAdded.add(currentSalesRole);
+						mappingSalesRolesIntoUserIds.put(currentSalesRole.User__c,srListToBeAdded);
 					}
 				}
-			}
+			}//Jan'22 Release
 		}
 		for(ID currentUserId : mappingSalesRolesIntoUserIds.keySet()){
 			if(mappingSalesRolesIntoUserIds.containsKey(currentUserId)){

@@ -1,5 +1,5 @@
 @isTest
-public class CH_CA_OwnerAssignment_Controller_Test { 
+public class CH_CA_OwnerAssignment_Controller_Test {
 	public static final string NSC='CH_NokiaStandardCase';
 	@testSetup  
 	static void setuptestdata(){   
@@ -68,20 +68,19 @@ public class CH_CA_OwnerAssignment_Controller_Test {
 		insert workGroupInstructions;
 		newCase = [SELECT Id, CH_Workgroup__c FROM Case WHERE Id =:newCase.Id];
 		// Get the workgroup instructions of the workgroup from the first found rule
-		CH_WorkgroupInstructions__c foundWorkgroup = CH_CA_OwnerAssignment_Controller.getWorkgroupInstructions(newCase.Id,newCase.CH_Workgroup__c,'');
-		
+		CH_CA_OwnerAssignment_Controller.getWorkgroupInstructions(newCase.Id,newCase.CH_Workgroup__c,'');
 		test.stoptest();
 	}
+	
 	@isTest
 	static void testgetWorkgroupName(){ 
 		test.starttest();
 		Case newCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', CH_CA_OwnerAssignment_Controller_Test.NSC, false);
 		Insert newCase; 
-		
-		CH_Workgroup__c workgroup = CH_CA_OwnerAssignment_Controller.getWorkgroupName(newCase.Id);
-	
+		CH_CA_OwnerAssignment_Controller.getWorkgroupName(newCase.Id); 
 		test.stoptest();
 	}
+	
 	@isTest
 	static void TestUpdateActiveSupportTicketOwnerCoverCatchBlock(){
 		test.starttest();

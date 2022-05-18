@@ -178,7 +178,8 @@ database.insert(priceList);
 			
 			Account accCustomer = TestDataFactory.createAccount(1)[0];
 			accCustomer.AccountNumber='100006843';
-			accCustomer.BusinessPartnerRole__c= GlobalConstants.Alliance;
+		   // accCustomer.BusinessPartnerRole__c= GlobalConstants.Alliance; // changed for SH2022: Alliance Deactivated
+			accCustomer.BusinessPartnerRole__c = 'Direct Customer'; // changed for SH2022: Alliance Deactivated
 			accCustomer.Market__c = 'Market India';
 			accCustomer.L7Name__c = 'APJ ANO CT Ooredoo Myanmar'; 
 			accCustomer.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();

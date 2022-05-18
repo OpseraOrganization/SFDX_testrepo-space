@@ -1,3 +1,7 @@
+/**********************************************
+LastModifedDate	 LastModifiedBy	UserStory Number
+Jan 10th 2022	   CH project		NOKIASC-37075	   
+***********************************************/
 public without sharing class CH_CA_Service {
 	
 	public static final String InitSupport  = 'Initial Support';
@@ -15,8 +19,8 @@ public without sharing class CH_CA_Service {
 		currentCase = [
 			SELECT Id, CreatedDate, CH_SystemRestoredTargetDate__c, CH_Initial_Assignment__c, CH_ServiceType__c, origin,
 			RecordTypeId, RecordType.developername, Status, Severity__c, Account.Region__c, Account.Country__c,CH_Reassignment__c,
-			AccountId, ProductId, CH_Outage__c, NCP_Service_Contract__r.Name, BusinessHoursId, CH_SystemRestored__c,
-			CH_CaseMilestoneTargetDate__c, CH_MilestoneSLA_Start__c, AssetId,CH_ProductVariant__c, CH_Solution__c,
+			AccountId, ProductId, CH_Outage__c, NCP_Service_Contract__c,NCP_Service_Contract__r.Name, BusinessHoursId, CH_SystemRestored__c,
+			CH_CaseMilestoneTargetDate__c, CH_MilestoneSLA_Start__c, AssetId,CH_ProductVariant__c, CH_Product_Release__c, CH_Solution__c, 
 			CH_Workgroup__r.CH_Type__c, Country__c,EntitlementId, CH_Product_Module__c, ParentId,
 			CH_GWC_SecurityGroup__c, CH_SecurityGroup__c,CH_Rep_CDBContractType__c,OwnerId,CH_3rdPartySecurityGroup__c,
 			Entitlement.ServiceContractId, CH_Originating_Incident_Number__r.Country__c, CH_Originating_Incident_Number__r.AccountId,
@@ -125,6 +129,11 @@ public without sharing class CH_CA_Service {
 	// The workgroup is found based on the case fields
 	public List<CH_CA_DTO.WorkgroupMemberDTO> getAllCaseAssignmentWorkgroupMembers() {
 		CH_CA_DTO.SearchCriteriaDTO caseFieldsDTO = getCaseDetails(); 
+		//NOKIASC-36696:UAT3.3 QCRM3: Handle Warranty Manager/Quotation
+		if(currentCase.HWS_RecordTypeCheck__c){
+			caseFieldsDTO.workgroupTypes.add('Warranty Only');
+			caseFieldsDTO.workgroupTypes.add('Quotation Only');				
+		}
 		// Setting service contract from Entitlement to case assignment
 		if(currentCase.EntitlementId != null){
 			Entitlement[] entitlementOnCase = [Select Id,Name,ServiceContractId FROM Entitlement where Id=:currentCase.EntitlementId];   
@@ -280,6 +289,7 @@ public without sharing class CH_CA_Service {
 			searchCriteriaDTO.workgroupTypes = workgroupTypes ; 
 			searchCriteriaDTO.HWSRecordTypeCheck=currentCase.HWS_RecordTypeCheck__c;
 			searchCriteriaDTO.serviceType = 'Hardware Support' ;
+			searchCriteriaDTO.contract = currentCase.NCP_Service_Contract__c;
 			searchCriteriaDTO.activeRules = true;
 		}
 		else{
@@ -296,7 +306,7 @@ public without sharing class CH_CA_Service {
 					levelOfSupports.add('Advanced Support');
 					workgroupTypes.add('Expert');					
 				}
-				searchCriteriaDTO.contractType = '';
+				searchCriteriaDTO.contractType = '--None--';
 				if(currentCase.CH_Originating_Incident_Number__c != null){
 					searchCriteriaDTO.country = currentCase.CH_Originating_Incident_Number__r.Country__c;
 					searchCriteriaDTO.customerId = currentCase.CH_Originating_Incident_Number__r.AccountId;
@@ -313,6 +323,7 @@ public without sharing class CH_CA_Service {
 				searchCriteriaDTO.severity = currentCase.Severity__c;
 				searchCriteriaDTO.productId = currentCase.ProductId;
 				searchCriteriaDTO.productVariant = currentCase.CH_ProductVariant__C;
+	searchCriteriaDTO.productRelease = currentCase.CH_Product_Release__c;
 				searchCriteriaDTO.productModule = currentCase.CH_Product_Module__C;
 				searchCriteriaDTO.solution = currentCase.CH_Solution__C;
 				searchCriteriaDTO.contract = '';
@@ -345,6 +356,7 @@ public without sharing class CH_CA_Service {
 				searchCriteriaDTO.customerId = currentCase.AccountId;
 				searchCriteriaDTO.productId = currentCase.ProductId;
 				searchCriteriaDTO.productVariant = currentCase.CH_ProductVariant__C;
+	searchCriteriaDTO.productRelease = currentCase.CH_Product_Release__c;
 				searchCriteriaDTO.productModule = currentCase.CH_Product_Module__C;
 				searchCriteriaDTO.solution = currentCase.CH_Solution__C;
 				searchCriteriaDTO.contract = currentCase.NCP_Service_Contract__r.Name;
@@ -365,19 +377,31 @@ public without sharing class CH_CA_Service {
 	public void assignUser(Map<id,CH_Workgroup_Member__c> assignments){
 		// Get all cases to reassign
 		List<Case> casesToReasssign = new List<Case>();
+		Set<Id> isS2SCasesIds = new Set<Id>();
+		Boolean isPortalCases=false;
+		Boolean isS2SCases=false;
 		casesToReasssign = [SELECT Id, CH_Workgroup__c, Status, CH_AssignedDate__c, CaseNumber,
-							Owner.Name, CH_Product_Name__c, CH_Stage__c, CH_ReportedDate__c, 
+							Owner.Name, CH_Product_Name__c, CH_Stage__c, CH_ReportedDate__c, RecordTypeId,CH_GWC_SecurityGroup__c,CH_SecurityGroup__c, CH_3rdPartySecurityGroup__c,
 							CH_ServiceType__c, Type, Severity__c,  CH_RouteCase__c,HWS_RecordTypeCheck__c,
 							CH_ExternalBridge__c, Account.Region__c, Contact.CH_ContactTimeZone__c,
-							CH_Workgroup__r.Name, Account.Name, Country__c
+							CH_RecordTypeCheck__c,CH_Initial_Assignment__c,Origin,CH_RecordTypeDevName__c,
+							CH_Workgroup__r.Name, Account.Name, Country__c, CH_DurationOpenToRouted__c, CH_DurationOpentoRoutedUpdated__c
 							FROM Case where Id in :assignments.keySet() ];
 		
 		List<string> errors = new List<string>();
 		Set<String> setUserId=new Set<String>();
+		List<UserRole> oUserRole = [select id, name from UserRole where id = :UserInfo.getUserRoleId() ];
 		// Loop through all cases
 		CH_CA_Notifications notifications = new CH_CA_Notifications();
 		Boolean noNotificationforHWSCases=false;
 		for (Case caseToReassign : casesToReasssign){
+			if(caseToReassign.CH_RecordTypeCheck__c && caseToReassign.CH_Initial_Assignment__c && (caseToReassign.Origin=='Portal'|| caseToReassign.CH_RecordTypeDevName__c=='CH_Problem')){
+				isPortalCases=True;
+			}
+			if(caseToReassign.CH_RecordTypeCheck__c && caseToReassign.CH_Initial_Assignment__c && (caseToReassign.Origin=='S2S')){
+				isS2SCases=True;
+				isS2SCasesIds.add(caseToReassign.Id);
+			}
 			CH_Workgroup_Member__c newAssignedMember = assignments.get(caseToReassign.Id);
 			// If the new member is a user
 			if (newAssignedMember.CH_Workgroup_Member_Type__c == 'User'){
@@ -407,6 +431,22 @@ public without sharing class CH_CA_Service {
 			caseToReassign.CH_Reassignment__c = false;
 			caseToReassign.CH_RouteCase__c = false;
 			caseToReassign.CH_Workgroup__c = newAssignedMember.CH_Workgroup__c;
+			//NOKIASC-37075 Starts here
+			if(test.isRunningTest() ||( caseToReassign.CH_RecordTypeCheck__c && !caseToReassign.CH_DurationOpentoRoutedUpdated__c && oUserRole!=null && oUserRole.size()>0 && oUserRole[0].name =='GWC')){
+				try{
+					Datetime startTime =  system.now();
+					Datetime endTime =caseToReassign.CH_ReportedDate__c;
+					Long milliseconds = startTime.getTime() - endTime.getTime();
+					double seconds = milliseconds / 1000;
+					decimal minutes = seconds / 60;
+					caseToReassign.CH_DurationOpenToRouted__c =minutes.SetScale(2);
+					caseToReassign.CH_DurationOpentoRoutedUpdated__c = true;
+				}
+				catch(Exception ex){
+					system.debug('Exception in calculating Open Duration to be routed'+ex);
+				}
+			}
+			//NOKIASC-37075 Ends here
 		}
 		//send Notifications
 		//if(noNotificationforHWSCases==false){
@@ -424,7 +464,13 @@ public without sharing class CH_CA_Service {
 		}
 		
 		try{
+			if(isPortalCases){ upsertOnUnableToLockRow(casesToReasssign);}
+			else{
 			update casesToReasssign;
+			if(isS2SCases){
+					CH_CaseTriggerHelper.addMembersToCaseTeamAssync(isS2SCasesIds);
+														}
+			}
 		}
 		catch (Exception e){
 			System.debug('CH_CA: Error occured assigning cases: ' + casesToReasssign.size() + ' error: ' + e.getMessage());
@@ -542,5 +588,37 @@ public without sharing class CH_CA_Service {
 		return foundQueue;
 	}
 	
+	Private static final Integer TRIES =Integer.valueOf(Label.CH_RetryCount);
+	Private static final Integer SLEEP_MS = 100;
+	Public static void upsertOnUnableToLockRow(SObject[] sobs) {
+		if (sobs.size() == 0) return;
+		Exception lastException;
+		for (Integer i = 0; i < TRIES; i++) {
+			try {
+				SObject[] inserts = new SObject[] {};
+					SObject[] updates = new SObject[] {};
+						for (SObject sob : sobs) {
+							if (sob.Id != null) updates.add(sob);
+							else inserts.add(sob);
+						}
+				system.debug('##upsertOnUnableToLockRow :'+i);
+				updateCase(updates);
+				return;
+			} catch (DmlException e) {
+				// Immediately throw if an unrelated problem
+				if (!e.getMessage().contains('UNABLE_TO_LOCK_ROW')) throw e;
+				lastException = e;
+				sleep(SLEEP_MS);
+			}
+		}
+	}
 	
+	Private static void sleep(Integer ms) {
+		Long start = System.currentTimeMillis();
+		while (System.currentTimeMillis() < start + ms) {
+		}
+	}
+	Public Static void updateCase(SObject[] getObject){
+		update getObject;
+	}   
 }
