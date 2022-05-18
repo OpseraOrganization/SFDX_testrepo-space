@@ -1,19 +1,19 @@
-public class CH_CA_TestWorkgroupRules_Controller {
+public with sharing class CH_CA_TestWorkgroupRules_Controller {
 	// This method is used to get reuired workgrouprule.
 	@AuraEnabled
 	public static List <sObject> fetchFilterValues(String Contract, String Severity, String Region, String Country, 
-												   String levelOfSupport, String Customer, String CustomerGroup, 
-												   String Product, String ProductGroup, string Outage,String Active,
-												   String WorkgroupType,String ServiceType,String productModule,
-												   String productVariant,String solution,string contractType)
+	  String levelOfSupport, String Customer, String CustomerGroup, 
+	  String Product, String ProductGroup, string Outage,String Active,
+	  String WorkgroupType,String ServiceType,String productModule,
+	  String productVariant,String productRelease,String solution,string contractType)
 	{
 		List<string> levelOfSupports = new List<string>();
 		List<string> workgorupTypes = new List<string>();  
 		if (!String.isBlank(levelOfSupport)){
-			 levelOfSupports.add(levelOfSupport);
+	levelOfSupports.add(levelOfSupport);
 		}
 		if (!String.isBlank(workgroupType)){
-		   workgorupTypes.add(WorkgroupType);
+	 workgorupTypes.add(WorkgroupType);
 		}
 		CH_CA_Assignment_Criteria_DTO caseAssignmentDetails = new CH_CA_Assignment_Criteria_DTO();
 		caseAssignmentDetails.contractType = contractType;
@@ -34,6 +34,7 @@ public class CH_CA_TestWorkgroupRules_Controller {
 		caseAssignmentDetails.serviceType = serviceType; 
 		caseAssignmentDetails.productModule = String.isBlank(productModule) ? null : productModule;//Changes US NOKIASC-22205
 		caseAssignmentDetails.productVariant = String.isBlank(productVariant) ? null : productVariant;//Changes US NOKIASC-22205
+		caseAssignmentDetails.productRelease = String.isBlank(productRelease) ? null : productRelease;
 		caseAssignmentDetails.solution = String.isBlank(solution) ? null : solution;//Changes US NOKIASC-22205
 		List<CH_Workgroup_Rule__c> foundWorkgroupRules = CH_CA_Workgroup_Rule.GetWorkgroupRules(caseAssignmentDetails);
 		return foundWorkgroupRules;
@@ -78,10 +79,10 @@ public class CH_CA_TestWorkgroupRules_Controller {
 			String label = plew.label;
 			String validForBits = base64ToBits(plew.validFor);
 			for (Integer i = 0; i < validForBits.length(); i++) {
-				String bit = validForBits.mid(i, 1);
-				if (bit == '1') {
-					objResults.get(controllingValues.get(i)).add(label);
-				}
+	String bit = validForBits.mid(i, 1);
+	if (bit == '1') {
+		objResults.get(controllingValues.get(i)).add(label);
+	}
 			}
 		}
 		return objResults;
@@ -136,5 +137,34 @@ public class CH_CA_TestWorkgroupRules_Controller {
 	public static List<String> getRecords() {  
 		List<String> pickListValues= CH_CA_WorkGroup_Rule_Controller.getCdbRecords();
 		return pickListValues;
+	}
+	
+	//Below method added under NOKIASC-32652
+	//Return Product Relesase as per Product selected and Value searched
+	@AuraEnabled
+	public static List<CH_ProductRelease__c> fetchProductRelRecords(String value,String productId) {
+		try {
+			List<CH_ProductRelease__c> recordsDataList = new List<CH_ProductRelease__c>();
+			String query = '';
+			if(String.isNotBlank(productId) && String.isNotBlank(value)) {
+				query = 'SELECT Id, Name FROM CH_ProductRelease__c WHERE CH_ProductId__c=' + '\''+productId+ '\'';
+				query += ' And Name LIKE ' + '\'' + String.escapeSingleQuotes(value.trim()) + '%\'';
+				
+			}else if(String.isNotBlank(productId)){
+				query = 'SELECT Id, Name FROM CH_ProductRelease__c WHERE CH_ProductId__c=' + '\''+productId+ '\''+'';
+			}else if(String.isNotBlank(value)){
+				query = 'SELECT Id, Name FROM CH_ProductRelease__c WHERE Name LIKE ' + '\'' + String.escapeSingleQuotes(value.trim()) + '%\'';
+			}
+			if(String.isNotBlank(query)){
+		 	recordsDataList=Database.query(query);
+			}
+			return recordsDataList;
+	 } catch (Exception err) {
+	 	if ( String.isNotBlank( err.getMessage() ) && err.getMessage().contains( 'error:' ) ) {
+				throw new AuraHandledException(err.getMessage().split('error:')[1].split(':')[0] + '.');
+			} else {
+				throw new AuraHandledException(err.getMessage());
+			}
+	 }
 	}
 }

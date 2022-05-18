@@ -18,7 +18,7 @@ public class OfferActivationHelperTest {
 
 
 	@isTest
-	public static void PopulateHigestOfferNumberOnOffer(){
+	public static void populateHigestOfferNumberOnOffer(){
 		List<File_Sharing_Custom_Setting__c> fileSharingCustomSettingList = new List<File_Sharing_Custom_Setting__c>();
 		fileSharingCustomSettingList = TestDataFactory.create_File_Sharing_Custom_Setting();
 		database.insert(fileSharingCustomSettingList);
@@ -53,7 +53,7 @@ public class OfferActivationHelperTest {
 		test.stopTest();
 	}
 	@isTest
-	public static void PopulateHigestOfferNumberOnOfferLow(){
+	public static void populateHigestOfferNumberOnOfferLow(){
 		List<File_Sharing_Custom_Setting__c> fileSharingCustomSettingList = new List<File_Sharing_Custom_Setting__c>();
 		fileSharingCustomSettingList = TestDataFactory.create_File_Sharing_Custom_Setting();
 		database.insert(fileSharingCustomSettingList);
@@ -77,7 +77,7 @@ public class OfferActivationHelperTest {
 
 	}
 	@isTest
-	public static void PopulateHigestOfferNumberOnOfferNULL(){
+	public static void populateHigestOfferNumberOnOfferNULL(){
 		List<File_Sharing_Custom_Setting__c> fileSharingCustomSettingList = new List<File_Sharing_Custom_Setting__c>();
 		fileSharingCustomSettingList = TestDataFactory.create_File_Sharing_Custom_Setting();
 		database.insert(fileSharingCustomSettingList);
@@ -100,7 +100,7 @@ public class OfferActivationHelperTest {
 
 	}
 	@isTest
-	public static void PopulateHigestOfferNumberOnOfferNegative(){
+	public static void populateHigestOfferNumberOnOfferNegative(){
 		OfferActivationHelper.PopulateHigestOfferNumberOnOffer(NULL);
 		OfferActivationHelper.UpdateHigestOfferNumberOnOppty(NULL);
 
@@ -204,7 +204,7 @@ public class OfferActivationHelperTest {
 
 
 	@isTest
-	public static void OfferLoACurrenyConversion(){
+	public static void offerLoACurrenyConversion(){
 		User sysAdminUser = TestDataFactory.userCreation(1,GlobalConstants.SYSTEM_AdMINISTRATOR)[0];
 		System.runAs(sysAdminUser){
 			List<File_Sharing_Custom_Setting__c> fileSharingCustomSettingList = new List<File_Sharing_Custom_Setting__c>();
@@ -266,8 +266,6 @@ public class OfferActivationHelperTest {
 			insert SR;
 			test.startTest();
 			Offer__c offer = TestDataFactory.OfferCreation(1, oppty)[0];
-			offer.LoA_Bypass_Sign_Off_BG_NEN__c= 'Yes';
-			offer.LoA_Bypass_Sign_Off_BG_NEN__c= 'No';
 			insert offer;
 
 
@@ -282,7 +280,6 @@ public class OfferActivationHelperTest {
 			List<offer__c> offerList = new List<Offer__c>();
 			offerList.add(offer);
 			offeractivationhelper.updateLoAByPassDetails(offerList,offerOldMap);
-			//update offer;
 			test.stopTest();
 		}
 	}

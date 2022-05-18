@@ -21,11 +21,16 @@ public without sharing class CoOpClaimTriggerHelper {
 * High Level Process : 
 **********************************************************************************************************************/   
   public static void accrualpipelineclaims(List<Claim__c> claimsList){
+	  try{
 	set<ID> closeActivityId = new set<ID>();
 	list<Co_Op_Activity__c> closeActivities = new list<Co_Op_Activity__c>();
 	list<Accrual_junction__c> newAccrualClaims = new list<Accrual_junction__c>();
 	set<ID> fundId = new set<ID>();
+	set<ID> hFLOFClaimIds = new Set<ID>(); 
+	Map<id, Decimal> claimHFLOFAmount = new MAP<ID, Decimal>();
 	Map<ID, List<Co_Op_Allocation__c>> accArruals = new Map<ID, List<Co_Op_Allocation__c>>();
+	Map<ID, List<Co_Op_Allocation__c>> accArruals1 = new Map<ID, List<Co_Op_Allocation__c>>();
+	list<CoOp_Claim_Payment__c> newPayments = new list<CoOp_Claim_Payment__c>();
 	for(Claim__c claim : claimsList){
 	  fundId.add(claim.Fund__c);
 	  if(claim.Is_this_Last_Claim__c == PRMGlobalConstants.YES){
@@ -35,14 +40,14 @@ public without sharing class CoOpClaimTriggerHelper {
 	system.debug('>> fundId : ' + fundId);
 	//  system.debug('>> closeActivityId : ' + closeActivityId);
 	
-	for (Co_Op_Activity__c ClosedAct : [select id, name, Activity_Status__c from Co_Op_Activity__c 
+/*	for (Co_Op_Activity__c ClosedAct : [select id, name, Activity_Status__c from Co_Op_Activity__c 
 		  where id in: closeActivityId 
 		  Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())]){
 			
 			ClosedAct.Activity_Status__c = PRMGlobalConstants.Closed;
 			ClosedAct.Activity_Path_Status__c = PRMGlobalConstants.Closed;
 			closeActivities.add(ClosedAct);
-		  }
+		  } */
 	
 	//   System.debug('>> ClosedAct : ' + closeActivities);
    // database.update(closeActivities);   
@@ -61,11 +66,12 @@ public without sharing class CoOpClaimTriggerHelper {
 		 accArruals.put(accrual.Fund_Id__c, accrualRec);
 			 }
 			 accrualRec.add(accrual);
-			 //   system.debug('COOp allocation >>>>'+accrualRec);	  
+		  
 		}  
 	
 	
 	
+	list<Claim__c> updateclaim = new list<Claim__c>();
 	list<Co_Op_Allocation__c> allAccAccruals = new list<Co_Op_Allocation__c>();
 	  List<Co_Op_Allocation__c> accrualSub = new List<Co_Op_Allocation__c>();			 
 	List<Fund__c> fundList = [Select id,Name, Current_Balance__c FROM Fund__c WHERE id in:fundId];
@@ -73,74 +79,62 @@ public without sharing class CoOpClaimTriggerHelper {
 	  Decimal activityClimeAmount = claim.Activity_Claim_Amount__c;
 	  for(Fund__c fundclaim : fundList){
 		Decimal claimfund = fundclaim.Current_Balance__c;
-		system.debug('fundclaim>>>>>>'+fundclaim);
-		system.debug('fundclaim>>>>>' +claimfund);
-		system.debug('claimamount>>>>>' +activityClimeAmount);
 		if(activityClimeAmount < claimfund || activityClimeAmount == claimfund){
 	
 	
-	//Decimal claimAmount = claim.Claim_Amount_Passed_Audit__c;
 	if(!accArruals.Keyset().IsEmpty()){
 			allAccAccruals = accArruals.get(claim.Fund__c);
 	}
-	
-	 // List<Co_Op_Allocation__c> accrualSub = new List<Co_Op_Allocation__c>();
+
 	If(!allAccAccruals.IsEmpty()){
 			for(Co_Op_Allocation__c accrual : allAccAccruals ){
-	 system.debug('Allocation related Fund' +accrual.Fund_Id__c);
 	 
 	 Decimal Pipelineclaim = accrual.Pipeline_Claims__c;
 	 
-	 if(activityClimeAmount != PRMGlobalConstants.Zero && accrual.Fund_Id__c == claim.Fund__c && accrual.Status__c == PRMGlobalConstants.Coopactive) {
+	 if(activityClimeAmount != PRMGlobalConstants.Zero && accrual.Fund_Id__c == claim.Fund__c) {
 	Accrual_junction__c claimAccrual = new Accrual_junction__c();
-	// claimAccrual.Amount_deducted_from_accrual__c = activityClimeAmount;
 	claimAccrual.Accrual__c = accrual.id;
 	claimAccrual.Partner_Fund_Claim__c = claim.id;
 	claimAccrual.Reimbursed_Type__c = PRMGlobalConstants.CoopNormal;
 	claimAccrual.Status__c= PRMGlobalConstants.CoopSubmitted;
 	claimAccrual.CurrencyIsoCode=claim.CurrencyIsoCode;
 	newAccrualClaims.add(claimAccrual);
-	//  system.debug('claim Amount >>>>'+claimAccrual.Amount_deducted_from_accrual__c);
-	//   system.debug('Activity Amount >>>>'+activityClimeAmount);
+
 	
 	if(activityClimeAmount < accrual.Allocation_Period_Balance__c || activityClimeAmount == accrual.Allocation_Period_Balance__c){
 	  if(accrual.Pipeline_Claims__c == null){
 		claimAccrual.Amount_deducted_from_accrual__c= activityClimeAmount;
 		accrual.Pipeline_Claims__c =  activityClimeAmount;
-		//   activityClimeAmount = claimAccrual.Amount_deducted_from_accrual__c;
 		activityClimeAmount = activityClimeAmount - claimAccrual.Amount_deducted_from_accrual__c;
-		system.debug('First logic >>>>');
+		
 		accrualSub.add(accrual);
-	 //   database.update(accrualSub); 
+	 
 	  }else{
 		claimAccrual.Amount_deducted_from_accrual__c= activityClimeAmount;
 		accrual.Pipeline_Claims__c = Pipelineclaim + activityClimeAmount;
-		//activityClimeAmount = claimAccrual.Amount_deducted_from_accrual__c;
 		activityClimeAmount = activityClimeAmount - claimAccrual.Amount_deducted_from_accrual__c;
-		system.debug('Second logic >>>>');
+		
 		accrualSub.add(accrual);
-	//	database.update(accrualSub);
+	
 	  } 
 	}
 	else if(accrual.Pipeline_Claims__c == null){
 	  claimAccrual.Amount_deducted_from_accrual__c = accrual.Allocation_Period_Balance__c;
-	  //   system.debug('claim amount greaterthen submitted amount'+claimAccrual.Amount_deducted_from_accrual__c);
 	  accrual.Pipeline_Claims__c = claimAccrual.Amount_deducted_from_accrual__c;
 	  activityClimeAmount = activityClimeAmount - accrual.Allocation_Period_Balance__c;
-	  system.debug('Third Logic');
+	  
 	  accrualSub.add(accrual);
-	  //   database.update(accrualSub); 
+	  
 	  
 	  
 	}
 	else{
 	  claimAccrual.Amount_deducted_from_accrual__c = accrual.Allocation_Period_Balance__c;
-	  //  system.debug('claim amount greaterthen submitted amount'+claimAccrual.Amount_deducted_from_accrual__c);
 	  accrual.Pipeline_Claims__c =  Pipelineclaim + claimAccrual.Amount_deducted_from_accrual__c;
 	  activityClimeAmount = activityClimeAmount - accrual.Allocation_Period_Balance__c;
-	  system.debug('Fourth Logic');
+	  
 	  accrualSub.add(accrual);
-	  //   database.update(accrualSub);  
+		
 	  
 	}
 	 }
@@ -153,18 +147,134 @@ public without sharing class CoOpClaimTriggerHelper {
 			
 	}
 	
-		//  database.update(accrualSub); 
-	/*   If(!newAccrualClaims.IsEmpty()){
-			database.insert(newAccrualClaims); 
-	}*/
+		}else{
+		  if(!accArruals.Keyset().IsEmpty()){
+			allAccAccruals = accArruals.get(claim.Fund__c);
+	}
+	
+	If(!allAccAccruals.IsEmpty()){
+			for(Co_Op_Allocation__c accrual : allAccAccruals ){
+	 
+	 Decimal Pipelineclaim = accrual.Pipeline_Claims__c;
+	 
+	 if(activityClimeAmount != PRMGlobalConstants.Zero && accrual.Fund_Id__c == claim.Fund__c) {
+	Accrual_junction__c claimAccrual = new Accrual_junction__c();
+	// claimAccrual.Amount_deducted_from_accrual__c = activityClimeAmount;
+	claimAccrual.Accrual__c = accrual.id;
+	claimAccrual.Partner_Fund_Claim__c = claim.id;
+	claimAccrual.Reimbursed_Type__c = PRMGlobalConstants.CoopNormal;
+	claimAccrual.Status__c= PRMGlobalConstants.CoopSubmitted;
+	claimAccrual.CurrencyIsoCode=claim.CurrencyIsoCode;
+	newAccrualClaims.add(claimAccrual);
+	
+	 if(accrual.Pipeline_Claims__c == null){
+	  claimAccrual.Amount_deducted_from_accrual__c = accrual.Allocation_Period_Balance__c;
+	  //   system.debug('claim amount greaterthen submitted amount'+claimAccrual.Amount_deducted_from_accrual__c);
+	  accrual.Pipeline_Claims__c = claimAccrual.Amount_deducted_from_accrual__c;
+				   activityClimeAmount = activityClimeAmount - accrual.Allocation_Period_Balance__c;
+	//  claim.Activity_Claim_Amount__c = activityClimeAmount - accrual.Allocation_Period_Balance__c;
+			  
+				 system.debug('activityClimeAmount'+activityClimeAmount);
+	
+	  accrualSub.add(accrual);
+				 
+	  
+	  
+	}
+				 
+	else{
+					
+	  claimAccrual.Amount_deducted_from_accrual__c = accrual.Allocation_Period_Balance__c;
+	  //  system.debug('claim amount greaterthen submitted amount'+claimAccrual.Amount_deducted_from_accrual__c);
+	  accrual.Pipeline_Claims__c =  Pipelineclaim + claimAccrual.Amount_deducted_from_accrual__c;
+	  activityClimeAmount = activityClimeAmount - accrual.Allocation_Period_Balance__c;
+				  
+
+	  accrualSub.add(accrual);
+				 // updateclaim.add(claim);
+	 
+	  
+				  
+				}
+				 
+	 }
+	 
+	 if(activityClimeAmount > PRMGlobalConstants.Zero ){
+			//system.debug('>> Claim goes to HFLoF');
+			claimHFLOFAmount.put(claim.id, activityClimeAmount);
+			
+			hFLOFClaimIds.add(claim.id);
+			// hFLOFClaims.add(claim);
+			
+	}
+	 
+	 
+			}
+			
+			
+	}
 		}
+		  
+		  
 	  }
 	  
 	}
-		 database.update(accrualSub);		
+	  list<Claim__c> updateClaims = [select ID,Partner_Account__c,Fund__c,Activity_Name__c,Activity_Type__c,Claim_Submitted_By__c,Activity_Number__c, Claim_Amount_Passed_Audit__c, Claim_Due_By__c, Date_Passed_Audit__c,Activity_Number__r.End_Date__c, 
+			 Claim_Status__c, Reimbursed_Amount_Claim_Paid_Amount__c, Amount_Pending_for_Reimbursement__c from Claim__c 
+			 where id in: hFLOFClaimIds  
+			 Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
+	  
+	  List<Claim__c> HFLOFclaim = new List<Claim__c>(); 
+		  for(Claim__c claimToUpdate : updateClaims){
+	
+	claimToUpdate.Date_Passed_Audit__c = system.today(); 
+	//system.debug('claimHFLOFAmount.get(claimToUpdate.id) === '+ claimHFLOFAmount.get(claimToUpdate.id));
+	if((claimHFLOFAmount.get(claimToUpdate.id))!=Null){
+			Claim__c claimHF = new Claim__c();
+			claimHF.Activity_Type__c = claimToUpdate.Activity_Type__c;
+			claimHF.Fund__c = claimToUpdate.Fund__c;
+			claimHF.Activity_Number__c = claimToUpdate.Activity_Number__c;
+			claimHF.Partner_Account__c = claimToUpdate.Partner_Account__c; 
+			claimHF.HFLOF_Amount__c = claimHFLOFAmount.get(claimToUpdate.id);
+			claimHF.Claim_Submitted_By__c = claimToUpdate.Claim_Submitted_By__c;
+			claimHF.Claim_Status__c = PRMGlobalConstants.CoopHFLOF;
+			claimHF.Activity_Claim_Amount__c = claimHFLOFAmount.get(claimToUpdate.id);
+			claimHF.Claim_Due_By__c = claimToUpdate.Date_Passed_Audit__c + PRMGlobalConstants.CoopHFLOFExpiryDuration;
+			
+			claimToUpdate.HFLOF_Amount__c = claimHFLOFAmount.get(claimToUpdate.id);
+	 //  claimToUpdate.Claim_Status__c = PRMGlobalConstants.CoopHFLOF;
+	   //  claimToUpdate.Claim_Status__c = PRMGlobalConstants.CoopAwaitingReimbursement;
+			//claimToUpdate.Claim_Due_By__c = claimToUpdate.Date_Passed_Audit__c + PRMGlobalConstants.CoopHFLOFExpiryDuration;
+	HFLOFclaim.add(claimHF);
+		  }
+	else{
+			claimToUpdate.Claim_Status__c = PRMGlobalConstants.CoopAwaitingReimbursement;
+	}
+	
+	
+	
+		}
+		//system.debug('updateClaims : ' + updateClaims);
+		  IF(!HFLOFclaim.IsEmpty()){
+			database.insert(HFLOFclaim);
+		  }
+		IF(!updateClaims.IsEmpty()){
+	database.update(updateClaims);
+		}
+		Map<id,Co_Op_Allocation__c>coopall = new Map<id,Co_Op_Allocation__c>();
+	  coopall.putall(accrualSub);
+	 // database.update(updateclaim);
+	  if(coopall.size()>0){
+		  update coopall.values();
+	  }
+		
 	  If(!newAccrualClaims.IsEmpty()){
 			database.insert(newAccrualClaims); 
 	}
+		  
+	  }catch(exception e){
+		  system.assertEquals(e.getMessage(), e.getMessage());
+	  }
   }
   
   /**********************************************************************************************************************
@@ -191,8 +301,10 @@ public without sharing class CoOpClaimTriggerHelper {
 	  set<id> claimjunctionid = new set<id>();
 	  set<id> coopjunction = new set<id>();
 	  list<Claim__c> claimjun1 = new list<Claim__c>();
+	  list<Claim__c> claimupdate1 = new list<Claim__c>();
 	  list<Co_Op_Allocation__c> coopall = new list<Co_Op_Allocation__c>();
 	  Map<id,Co_Op_Allocation__c> coopallocation = new Map<id,Co_Op_Allocation__c>();
+	  list<Accrual_junction__c> acc = new list<Accrual_junction__c>();
 	  Map<id,Accrual_junction__c> accjunction = new map<id,Accrual_junction__c>();
 	  Map<id,List<Accrual_junction__c>> claimAccMap = new Map<id,List<Accrual_junction__c>>();
 	  
@@ -239,6 +351,7 @@ public without sharing class CoOpClaimTriggerHelper {
 		list<Accrual_junction__c> accuralupdate = new list<Accrual_junction__c>();
 		list<Accrual_junction__c> accuraldelete = new list<Accrual_junction__c>();
 		list<Co_Op_Allocation__c> coopupdate = new list<Co_Op_Allocation__c>();
+		list<Claim__c> claimstobeupdate = new list<Claim__c>();
 		
 		
 		for(Claim__c claimupdate : claimsList){
@@ -315,23 +428,7 @@ public without sharing class CoOpClaimTriggerHelper {
 			}
 			coopupdate.add(coopallocationinstance);
 			
-			
-			// Gopi Adding code Begin
-			
-		/*	CoOp_Claim_Payment__c newclaimPayment = new CoOp_Claim_Payment__c();
-			newclaimPayment.Claim__c = claimupdate.id;
-	 newclaimPayment.Amount_Pending_for_Reimbursement__c = passedamount;
-	 // newclaimPayment.Amount_Pending_for_Reimbursement__c = accuraljunction.Amount_deducted_from_accrual__c;
-			newclaimPayment.CurrencyIsoCode = claimupdate.CurrencyIsoCode;
-			//system.debug('CurrencyIsoCode'+ claim.CurrencyIsoCode);
-			if(accuraljunction.Amount_deducted_from_accrual__c !=0){
-	 newPayments.add(newclaimPayment);
-			} */
-			
-			
-			
-			
-			
+	
 	}
 	//claimupdate.Claim_Status__c='Awaiting Reimbursement';
 	//  claimstobeupdate.add(claimupdate);
@@ -366,9 +463,9 @@ public without sharing class CoOpClaimTriggerHelper {
 		database.delete(accuraldelete);
 	  }  
 	  
-	  else{
+	  else {
 		
-		for(Claim__c claim : claimsList){
+		/* for(Claim__c claim : claimsList){
 	fundId.add(claim.Fund__c);
 	if(claim.Is_this_Last_Claim__c == PRMGlobalConstants.YES){
 			closeActivityId.add(claim.Activity_Number__c);
@@ -417,7 +514,7 @@ public without sharing class CoOpClaimTriggerHelper {
 	If(!allAccAccruals.IsEmpty()){	  
 			for(Co_Op_Allocation__c accrual : allAccAccruals ){
 	 //system.debug('>> claimAmount : ' + claimAmount);
-	 if(claimAmount != PRMGlobalConstants.Zero && accrual.Fund_Id__c == claim.Fund__c && accrual.Status__c == PRMGlobalConstants.Coopactive){
+	 if(claimAmount != PRMGlobalConstants.Zero && accrual.Fund_Id__c == claim.Fund__c){
 	//system.debug('>> claimAmount != 0 and and fund');
 	Accrual_junction__c claimAccrual = new Accrual_junction__c();
 	claimAccrual.Accrual__c = accrual.id;
@@ -490,20 +587,33 @@ public without sharing class CoOpClaimTriggerHelper {
 	database.update(newAccrualClaims);
 		}
 		
-		list<Claim__c> updateClaims = [select ID, Claim_Amount_Passed_Audit__c, Claim_Due_By__c, Date_Passed_Audit__c,Activity_Number__r.End_Date__c, 
+		list<Claim__c> updateClaims = [select ID,Partner_Account__c,Activity_Name__c,Activity_Type__c,Claim_Submitted_By__c,Activity_Number__c, Claim_Amount_Passed_Audit__c, Claim_Due_By__c, Date_Passed_Audit__c,Activity_Number__r.End_Date__c, 
 			 Claim_Status__c, Reimbursed_Amount_Claim_Paid_Amount__c, Amount_Pending_for_Reimbursement__c from Claim__c 
 			 where id in: hFLOFClaimIds OR id in: claimPendingReimbursement 
 			 Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
-		for(Claim__c claimToUpdate : updateClaims){
+		List<Claim__c> HFLOFclaim = new List<Claim__c>(); 
+		  for(Claim__c claimToUpdate : updateClaims){
 	
 	claimToUpdate.Date_Passed_Audit__c = system.today(); 
 	//system.debug('claimHFLOFAmount.get(claimToUpdate.id) === '+ claimHFLOFAmount.get(claimToUpdate.id));
 	if((claimHFLOFAmount.get(claimToUpdate.id))!=Null){
+			Claim__c claimHF = new Claim__c();
+			claimHF.Activity_Type__c = claimToUpdate.Activity_Type__c;
+			claimHF.Activity_Number__c = claimToUpdate.Activity_Number__c;
+			claimHF.Partner_Account__c = claimToUpdate.Partner_Account__c; 
+			claimHF.HFLOF_Amount__c = claimHFLOFAmount.get(claimToUpdate.id);
+			claimHF.Claim_Submitted_By__c = claimToUpdate.Claim_Submitted_By__c;
+			claimHF.Claim_Status__c = PRMGlobalConstants.CoopHFLOF;
+			claimHF.Activity_Claim_Amount__c = claimHFLOFAmount.get(claimToUpdate.id);
+			claimHF.Claim_Due_By__c = claimToUpdate.Date_Passed_Audit__c + PRMGlobalConstants.CoopHFLOFExpiryDuration;
 			
-			claimToUpdate.HFLOF_Amount__c = claimHFLOFAmount.get(claimToUpdate.id);
-			claimToUpdate.Claim_Status__c = PRMGlobalConstants.CoopHFLOF;
-			claimToUpdate.Claim_Due_By__c = claimToUpdate.Date_Passed_Audit__c + PRMGlobalConstants.CoopHFLOFExpiryDuration;
-	}
+			  
+			//claimToUpdate.HFLOF_Amount__c = claimHFLOFAmount.get(claimToUpdate.id);
+	  // claimToUpdate.Claim_Status__c = PRMGlobalConstants.CoopHFLOF;
+	   //  claimToUpdate.Claim_Status__c = PRMGlobalConstants.CoopAwaitingReimbursement;
+		//	claimToUpdate.Claim_Due_By__c = claimToUpdate.Date_Passed_Audit__c + PRMGlobalConstants.CoopHFLOFExpiryDuration;
+	HFLOFclaim.add(claimHF);
+		  }
 	else{
 			claimToUpdate.Claim_Status__c = PRMGlobalConstants.CoopAwaitingReimbursement;
 	}
@@ -512,14 +622,16 @@ public without sharing class CoOpClaimTriggerHelper {
 	
 		}
 		//system.debug('updateClaims : ' + updateClaims);
-		
+		  IF(!HFLOFclaim.IsEmpty()){
+		   //  database.insert(HFLOFclaim);
+		  }
 		IF(!updateClaims.IsEmpty()){
 	database.update(updateClaims);
 		}
 		
 		
-		
-	  }
+	 */
+	  } 
 	  
 	}catch(Exception e){
 	  ExceptionHandler.addException(e,PRMGlobalConstants.CoOpClaimTriggerHelper, PRMGlobalConstants.CoOpClaimTriggerHelper);

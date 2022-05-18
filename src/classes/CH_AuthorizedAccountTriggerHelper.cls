@@ -35,7 +35,8 @@ public without sharing class CH_AuthorizedAccountTriggerHelper {
 			// Check for existing records with new records
 			for(CH_AuthorizedAccount__c authAccountObj: newAuthorizedAccountList) {
 	if(authAccountMap.containsKey(getUniqueKey(authAccountObj))) {
-		authAccountObj.addError('Seleted Authorized Account is already present: Duplicate Entry');
+		//Ref: NOKIASC-36332 Replaced Error Message With Custom Label
+					authAccountObj.addError(System.Label.CH_Selected_Authorized_Account_Duplicate_Entry);
 	}
 			}
 		}
@@ -49,7 +50,8 @@ public without sharing class CH_AuthorizedAccountTriggerHelper {
 	*******************/
 	private static String getUniqueKey(CH_AuthorizedAccount__c authAccountObj) {
 		if(String.isBlank(authAccountObj.CH_Account__c) || String.isBlank(authAccountObj.CH_ServiceContract__c)) {
-			authAccountObj.addError('No Account/Service Contract Found.');
+			//Ref: NOKIASC-36332 Replaced Error Message With Custom Label
+			authAccountObj.addError(System.Label.CH_Account_Service_Contract_Not_Found);
 		}
 		return (authAccountObj.CH_Account__c + '-' + authAccountObj.CH_ServiceContract__c);
 	}

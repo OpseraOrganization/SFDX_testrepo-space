@@ -1,6 +1,6 @@
 public without sharing class OrderExportProvider{
 		// map to get Category of PCI items (associated Options of Arcadia Products From Mapping object)
-		public static Map<String, String> mapArcadiaProductOptionsAndPCICategory = new Map<String, String>();	
+		public static Map<String, String> mapArcadiaProductOptionsAndPCICategory = new Map<String, String>();   
 		public static String globalQuoteId;
 		public static String strExternalSystemName;
 		
@@ -39,7 +39,7 @@ public without sharing class OrderExportProvider{
 		public static String intiateExportForAllianceSystem(String strExternalSystemName, Id quoteId){
 			String finalresult;
 			globalQuoteId = quoteId;
-			strExternalSystemName = strExternalSystemName;
+			// strExternalSystemName = strExternalSystemName;
 			Boolean isEnovia = false;
 			
 			system.debug('External system-before'+strExternalSystemName);
@@ -146,7 +146,7 @@ public without sharing class OrderExportProvider{
 					
 				}
 				if(!listNonEnoviaPLIs.isEmpty()){
-					gernateAllianceOrder(listNonEnoviaPLIs, strExternalSystemName,globalQuoteId);		   
+					gernateAllianceOrder(listNonEnoviaPLIs, strExternalSystemName,globalQuoteId);		  
 					finalresult = Nokia_CPQ_Constants.ALLIANCE_EXPORT_SUCCESS_STRING;
 				}
 			}
@@ -162,7 +162,7 @@ public without sharing class OrderExportProvider{
 		/*****************************
 		*Method Name: generateAllianceRecordWithPCIMapping
 		*Description: 
-		*			 
+		*			
 		*Parameters: 
 		*******************************/
 		public static void generateAllianceRecordWithPCIMapping(Map<string, Map<NokiaCPQ_output_CSP_mapping__c, List<NokiaCPQ_output_CSP_mapping__c>>> mapAllianceExportRecords,Map<string,string> mapSiteCode, Map<String, Additional_Mapping_For_Alliance__c> mapAdditionalMappingAlliance, Map<String, String> mapProductCodeProdName,Map<String,String> mapProductCodeANDItemType){
@@ -194,7 +194,7 @@ public without sharing class OrderExportProvider{
 					
 					// Iterate on CSP Output rec level 2.
 					for(NokiaCPQ_output_CSP_mapping__c objSIs : mapPCIAndSIList.get(objPCIRecs)){
-						// collecting sum of all CSP Output rec level2 price for Total Price at CO level record in Alliance file.					 
+						// collecting sum of all CSP Output rec level2 price for Total Price at CO level record in Alliance file.					
 						// Added condition FOC condition : D-12880
 						 
 						if(objSIs.NokiaCPQ_Proposal_Line_Item__r.Product_Classification__c == 'Deploy Services' &&  objAddMapping == null  ){
@@ -338,8 +338,8 @@ public without sharing class OrderExportProvider{
 				}
 				else {
 					objExport.Item_code__c = Nokia_CPQ_Constants.ALLIANCE_EXPORT_ITEM_CODE_FOR_HW;
-					//objExport.What_Configuration_ID__c = objSIsPCIs.QuoteId__r.Name.right(objSIsPCIs.QuoteId__r.Name.length()-2)+'.'+objSIsPCIs.NokiaCPQ_Parent_Proposal_Line_Item__r.Sequence_Site_Id__c+'.'+4;			 
-					objExport.What_Configuration_ID__c = finalconfigId+'.'+4;			 
+					//objExport.What_Configuration_ID__c = objSIsPCIs.QuoteId__r.Name.right(objSIsPCIs.QuoteId__r.Name.length()-2)+'.'+objSIsPCIs.NokiaCPQ_Parent_Proposal_Line_Item__r.Sequence_Site_Id__c+'.'+4;		   
+					objExport.What_Configuration_ID__c = finalconfigId+'.'+4;			
 				}
 				//objExport.PO_Item_text__c = 'PCI;'+objSIsPCIs.NokiaCPQ_Parent_PCI__r.NokiaCPQ_code__c+';'+ objSIsPCIs.Parent_Position__c +';'+objSIsPCIs.Quantity__c;
 				objExport.Quote_Id__c = globalQuoteId;
@@ -468,13 +468,13 @@ public without sharing class OrderExportProvider{
 		/*****************************
 		*Method Name: getCPSOutputForAllianceProcess
 		*Description: Method is used to collect all CSP output in Map for further process
-		*			 
+		*			
 		*Parameters: Quote Id, Map<Id, NokiaCPQ_output_CSP_mapping__c>
 		*******************************/
-		public static Map<string, Map<NokiaCPQ_output_CSP_mapping__c, List<NokiaCPQ_output_CSP_mapping__c>>> getCPSOutputForAllianceProcess(Id quoteId, Map<Id, NokiaCPQ_output_CSP_mapping__c> mapOutpoutCSPMappingobj){	   
+		public static Map<string, Map<NokiaCPQ_output_CSP_mapping__c, List<NokiaCPQ_output_CSP_mapping__c>>> getCPSOutputForAllianceProcess(Id quoteId, Map<Id, NokiaCPQ_output_CSP_mapping__c> mapOutpoutCSPMappingobj){	  
 			
-			system.debug('mapOutpoutCSPMappingobj.size()>>>>'+mapOutpoutCSPMappingobj.size());			  
-			Map<Id, List<NokiaCPQ_output_CSP_mapping__c>> mapGroupPCIslist = new Map<Id, List<NokiaCPQ_output_CSP_mapping__c>>();			   
+			system.debug('mapOutpoutCSPMappingobj.size()>>>>'+mapOutpoutCSPMappingobj.size());			
+			Map<Id, List<NokiaCPQ_output_CSP_mapping__c>> mapGroupPCIslist = new Map<Id, List<NokiaCPQ_output_CSP_mapping__c>>();			  
 			Map<string, Map<NokiaCPQ_output_CSP_mapping__c, List<NokiaCPQ_output_CSP_mapping__c>>> mapAllianceExportRecords = new Map<string, Map<NokiaCPQ_output_CSP_mapping__c, List<NokiaCPQ_output_CSP_mapping__c>>>();
 			
 			for(NokiaCPQ_output_CSP_mapping__c mapCSPOutputObject: mapOutpoutCSPMappingobj.values())
@@ -490,7 +490,7 @@ public without sharing class OrderExportProvider{
 					
 				}
 				
-			}	   
+			}	  
 			
 			
 			system.debug('mapGroupPCIslist>>>>'+mapGroupPCIslist);
@@ -498,7 +498,7 @@ public without sharing class OrderExportProvider{
 			{   
 				// filter level 0 record from output object
 				if(mapCSPOutputObject.NokiaCPQ_Parent_PCI__c == NULL && mapCSPOutputObject.Item_Level__c !=0){
-					if(mapAllianceExportRecords.containsKey(mapCSPOutputObject.NokiaCPQ_Customer_Material_Number__c)){						  
+					if(mapAllianceExportRecords.containsKey(mapCSPOutputObject.NokiaCPQ_Customer_Material_Number__c)){						
 						Map<NokiaCPQ_output_CSP_mapping__c, List<NokiaCPQ_output_CSP_mapping__c>> innerMap = new Map<NokiaCPQ_output_CSP_mapping__c, List<NokiaCPQ_output_CSP_mapping__c>>();
 						
 						innerMap = mapAllianceExportRecords.get(mapCSPOutputObject.NokiaCPQ_Customer_Material_Number__c);
@@ -528,8 +528,8 @@ public without sharing class OrderExportProvider{
 		/*****************************
 		*Method Name: gernateAllianceOrder
 		*Description: Method Accept different parameters and perform the operations/logic, to identify the nested Map of Parent Bundles and its related Option.
-		*			 Collect existing mapping and created nested Map based on main bundle, Arcadia bundle & its options.
-		*			 Perform data creation of Order_Export_Result_For_External_System__c object and perform DML as final output for file body.
+		*			Collect existing mapping and created nested Map based on main bundle, Arcadia bundle & its options.
+		*			Perform data creation of Order_Export_Result_For_External_System__c object and perform DML as final output for file body.
 		*Parameters: List<Apttus_Proposal__Proposal_Line_Item__c>: list of perposal line items AND String: External System Name
 		*******************************/
 		public static void gernateAllianceOrder(List<Apttus_Proposal__Proposal_Line_Item__c> listFinalizedLineItems, String strExternalSystemName, Id quoteId ){
@@ -643,8 +643,8 @@ public without sharing class OrderExportProvider{
 										listFinalOrderExportToInsert.addAll(gernerateRecForSLILevel(finalMapMainBundleAndItsSuboridinateTillMappingOptions, objOrderExportWrapper, additionalMapping,ProdDescription));
 								   
 										system.debug('Inside Direct Option Final rec SLI >>>>>>'+listFinalOrderExportToInsert);
-									}							   
-							}						   
+									}							  
+							}						  
 							}
 						}
 					}
@@ -669,7 +669,7 @@ public without sharing class OrderExportProvider{
 		public static List<Order_Export_Result_For_External_System__c> gernerateRecForSLILevel(Map<String, Map<String, Map<String, List<String>>>> finalMapMainBundleAndItsSuboridinateTillMappingOptions,OrderExportWrapper objOrderExportWrapper, Map<String, Additional_Mapping_For_Alliance__c> additionalMapping, String ProdDescription){
 			List<Order_Export_Result_For_External_System__c> finalExportResult = new List<Order_Export_Result_For_External_System__c>();
 			
-			Map<String, Map<String, List<String>>> arcadiaMapping = new Map<String, Map<String, List<String>>>();						   
+			Map<String, Map<String, List<String>>> arcadiaMapping = new Map<String, Map<String, List<String>>>();						  
 			Map<String, List<String>> arcadiaOptionsMapping = new Map<String, List<String>>();
 			List<String> listConvertedOptions = new List<String>();
 			String itemCode;
@@ -679,7 +679,7 @@ public without sharing class OrderExportProvider{
 				arcadiaMapping = finalMapMainBundleAndItsSuboridinateTillMappingOptions.get(objOrderExportWrapper.strMainBundleCode);   
 				
 				System.debug('arcadiaMapping--->'+arcadiaMapping);
-				if(arcadiaMapping.containsKey(objOrderExportWrapper.strArcadiaBundleCode)){				  
+				if(arcadiaMapping.containsKey(objOrderExportWrapper.strArcadiaBundleCode)){			   
 					arcadiaOptionsMapping = arcadiaMapping.get(objOrderExportWrapper.strArcadiaBundleCode); 
   
 					if(arcadiaOptionsMapping.containsKey(objOrderExportWrapper.objProposalLineItemRecord.Product_Code__c)){
@@ -704,8 +704,8 @@ public without sharing class OrderExportProvider{
 			if(!listConvertedOptions.IsEmpty()){
 				// itterate over the mapped value and generate records.
 				Integer sizeOfMappedProducts = listConvertedOptions.size();
-				for(String strConvertedOptions : listConvertedOptions){			 
-					itemCode = strConvertedOptions;				
+				for(String strConvertedOptions : listConvertedOptions){		  
+					itemCode = strConvertedOptions;			 
 					finalExportResult.add(recordPreprationForSLI(itemCode, objOrderExportWrapper, additionalMapping, sizeOfMappedProducts,ProdDescription));
 					sizeOfMappedProducts = sizeOfMappedProducts -1 ;
 				}
@@ -765,7 +765,7 @@ public without sharing class OrderExportProvider{
 			}
 		   
 	   
-			if((!String.isBlank(objOrderExportWrapper.objProposalLineItemRecord.Apttus_QPConfig__OptionId__r.NokiaCPQ_Item_Type__c) &&( objOrderExportWrapper.objProposalLineItemRecord.Apttus_QPConfig__OptionId__r.NokiaCPQ_Item_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.SOFTWARE_STRING)) )||( prodIdAndItemType.containsKey(objOrderExportWrapper.objProposalLineItemRecord.Apttus_QPConfig__OptionId__c) &&	prodIdAndItemType.get(objOrderExportWrapper.objProposalLineItemRecord.Apttus_QPConfig__OptionId__c).NokiaCPQ_Item_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.SOFTWARE_STRING)) ){
+			if((!String.isBlank(objOrderExportWrapper.objProposalLineItemRecord.Apttus_QPConfig__OptionId__r.NokiaCPQ_Item_Type__c) &&( objOrderExportWrapper.objProposalLineItemRecord.Apttus_QPConfig__OptionId__r.NokiaCPQ_Item_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.SOFTWARE_STRING)) )||( prodIdAndItemType.containsKey(objOrderExportWrapper.objProposalLineItemRecord.Apttus_QPConfig__OptionId__c) &&   prodIdAndItemType.get(objOrderExportWrapper.objProposalLineItemRecord.Apttus_QPConfig__OptionId__c).NokiaCPQ_Item_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.SOFTWARE_STRING)) ){
 				
 			 tempWhatConfigId = tempWhatConfigId+'.'+objOrderExportWrapper.objProposalLineItemRecord.Sequence_Site_Id__c+'.'+Nokia_CPQ_Constants.THREE_YEAR_STRING;
 			}
@@ -784,11 +784,11 @@ public without sharing class OrderExportProvider{
 			   }
 			
 			// Add secondray mapping for SLIs
-			if(additionalMapping.containsKey(objOrderExportWrapper.strMainBundleCode)){	  
+			if(additionalMapping.containsKey(objOrderExportWrapper.strMainBundleCode)){   
 				profitCenter= additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Product_Line_Profit_Center__c; 
 				businessUnit = additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Business_Unit__c; 
 				sourcingUnit= additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Sourcing_Unit__c;
-				whatId= additionalMapping.get(objOrderExportWrapper.strMainBundleCode).What_Group_1__c;		 
+				whatId= additionalMapping.get(objOrderExportWrapper.strMainBundleCode).What_Group_1__c;	  
 				productAcronym = additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Product_acronym__c;
 				prodReleaseAcronym = additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Product_release_acronym__c;
 			}
@@ -811,7 +811,7 @@ public without sharing class OrderExportProvider{
 				 siteDescription= 'Site'+' '+siteCode;
 			 }
 			
-			if(objOrderExportWrapper.objProposalLineItemRecord.id !=null)   {	   
+			if(objOrderExportWrapper.objProposalLineItemRecord.id !=null)   {	  
 				upfrontLineKey=gernerateUpFrontLineKey(objOrderExportWrapper.objProposalLineItemRecord.id, Nokia_CPQ_Constants.ALLIANCE_EXPORT_PRODUCT_TYPE_SLI,sizeOfMappedProducts);
 			 }
 			 else{
@@ -927,9 +927,9 @@ public without sharing class OrderExportProvider{
 				profitCenter= additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Product_Line_Profit_Center__c; 
 				businessUnit = additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Business_Unit__c; 
 				sourcingUnit= additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Sourcing_Unit__c;
-				whatId= additionalMapping.get(objOrderExportWrapper.strMainBundleCode).What_Group_1__c;		 
+				whatId= additionalMapping.get(objOrderExportWrapper.strMainBundleCode).What_Group_1__c;	  
 				productAcronym = additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Product_acronym__c;
-				prodReleaseAcronym = additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Product_release_acronym__c;			
+				prodReleaseAcronym = additionalMapping.get(objOrderExportWrapper.strMainBundleCode).Product_release_acronym__c;		 
 			}
 			
 			// Set these columns for all SLIs
@@ -967,7 +967,7 @@ public without sharing class OrderExportProvider{
 		/*****************************
 		*Method Name: generateAllianceOrderExportRecord
 		*Description: Used to get the Order_Export_Result_For_External_System__c object record instance. It is used for Non-SPS & SPS both type products.
-		*		   for SPS product, we pass parameters to this method after performing operation on data .
+		*		  for SPS product, we pass parameters to this method after performing operation on data .
 		*Parameters: 
 		*******************************/
 		public static Order_Export_Result_For_External_System__c generateAllianceOrderExportRecord(String itemType, String level, String itemDescrption, String custItemCode, Decimal quantity, Decimal perUnitPrice, String itemCode, String poItemText, String businessUnit, String productAcronym, String profitCenter, String prodReleaseAcronym, String siteCode, String siteDescription, String sourcingUnit, String upfrontLineKey, String upfrontName, String whatConfigId, String whatId, String UpfrontReferenceID, String UpfrontReferenceEdition){
@@ -1011,8 +1011,8 @@ public without sharing class OrderExportProvider{
 		/*****************************
 		*Method Name: identifyAllianceExportProductLineItems
 		*Description: function to collect the Proposal Line items which will get included for Alliance export file. Inside this method we creating a Map
-		*		   with Arcadia Prod Code and list of wrapper class instance (which we will use at CO and SLI level in our export file).
-		*		   the return value we using to populate the final record for 'Order_Export_Result_For_External_System__c' with the serial order of Arcadia & its subordinate SIs.
+		*		  with Arcadia Prod Code and list of wrapper class instance (which we will use at CO and SLI level in our export file).
+		*		  the return value we using to populate the final record for 'Order_Export_Result_For_External_System__c' with the serial order of Arcadia & its subordinate SIs.
 		*Parameters: 
 		*******************************/
 		public static Map<Decimal, Map<String, List<OrderExportWrapper>>> identifyAllianceExportProductLineItems(Map<Decimal, Apttus_Proposal__Proposal_Line_Item__c> mapParentBundleAndProdLineItem, Map<String, Map<String, Map<String, List<String>>>> finalMapMainBundleAndItsSuboridinateMappingOptions, List<Apttus_Proposal__Proposal_Line_Item__c> listFinalizedLineItems,Id quoteId,Map<id,Quote_Delivery_Sales_Item__c> mapQuoteIdAndQDSIRec,Map<String,Product2> mapProdcodeANDId){
@@ -1053,7 +1053,7 @@ public without sharing class OrderExportProvider{
 			
 				// Filter the Proposal Line Item which need to include in Alliance export file
 				for(Apttus_Proposal__Proposal_Line_Item__c objLineItem : listFinalizedLineItems){
-					// filter Arcadia bundle, Direct Option & Arcadia Options for process								
+					// filter Arcadia bundle, Direct Option & Arcadia Options for process							   
 					// filter main bundle of the proposal line item. Do not include in processing
 					// filter dummy products from configuration
 					if(objLineItem.Apttus_QPConfig__ParentBundleNumber__c != NULL && objLineItem.Is_Dummy_Product__c ==false){
@@ -1116,13 +1116,13 @@ public without sharing class OrderExportProvider{
 									innerMapOfExport.put(arcadiaBundleCode, new List<OrderExportWrapper>{newInstanceWrapper});
 									mapFinalOrderExportRecords.put(lineNumber, innerMapOfExport); 
 								}
-							}							
+							}						   
 						}
 					}
 				}
 			Map<Decimal, Apttus_Proposal__Proposal_Line_Item__c> mapLineNumberANDProposalLineItems = new Map<Decimal, Apttus_Proposal__Proposal_Line_Item__c>();				
 				// Add Arcadia Options in order to bring them after the Arcadia
-				for(Apttus_Proposal__Proposal_Line_Item__c objLineItem : listFinalizedLineItems){					  
+				for(Apttus_Proposal__Proposal_Line_Item__c objLineItem : listFinalizedLineItems){					 
 					// filter main bundle of the proposal line item. Do not include in processing 
 					// filter dummy products from configuration
 					
@@ -1295,10 +1295,10 @@ public without sharing class OrderExportProvider{
 		/*****************************
 		*Method Name: getMappingStructureForAlliance
 		*Description: // method to get the mapping from mapping object of Alliance system
-		*		   Map is build for : Main bundle then Map for Arcadia code then Map for Arcadia Options & its related maping code.
+		*		  Map is build for : Main bundle then Map for Arcadia code then Map for Arcadia Options & its related maping code.
 		*Parameters: 
 		*******************************/	
-		public static Map<String, Map<String, Map<String, List<String>>>> getMappingStructureForAlliance(){		
+		public static Map<String, Map<String, Map<String, List<String>>>> getMappingStructureForAlliance(){	 
 			Map<String, Map<String, Map<String, List<String>>>> mapMainBundleAndItsSuboridinateTillMappingOptions = new Map<String, Map<String, Map<String, List<String>>>>();
 			
 			for(Alliance_Order_Export_Mapping__c objMapping : [SELECT Id, PCI_Category__c, Main_Bundle_Product_Code__c, Arcadia_Product_Code__c, Arcadia_Options_Product_Code__c, Product_Code_For_Alliance_Export_File__c FROM Alliance_Order_Export_Mapping__c Limit 1000]){
@@ -1383,9 +1383,9 @@ public without sharing class OrderExportProvider{
 		/*****************************
 		*Method Name: intiateExportForQTCSystem
 		*Description: this method is called from Lightning apex controller class. this method intiate the QTC file generation.
-		*		   this method filtter the Proposal Line item with conditions: 
-		*		   Line Type IN (Option, Product/Service)
-		*		   Config. Type = Standalone.
+		*		  this method filtter the Proposal Line item with conditions: 
+		*		  Line Type IN (Option, Product/Service)
+		*		  Config. Type = Standalone.
 		*Parameters: 
 		*******************************/
 		public static String intiateExportForQTCSystem(Id quoteId, String nokiaQuoteId){
@@ -1400,7 +1400,7 @@ public without sharing class OrderExportProvider{
 			system.debug('listFinalizedLineItems >>>>>'+listFinalizedLineItems);
 			
 			
-			for(Apttus_Proposal__Proposal_Line_Item__c objLineItem : listFinalizedLineItems){		   
+			for(Apttus_Proposal__Proposal_Line_Item__c objLineItem : listFinalizedLineItems){		  
 				// collect only main bundle and its record in map Useing line no. of main bundle as key
 				for(Apttus_Proposal__Proposal_Line_Item__c objP : listFinalizedLineItems){
 					if(objP.NokiaCPQ_Configuration_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.BUNDLE) && objP.Apttus_QPConfig__ChargeType__c.equalsIgnoreCase(Nokia_CPQ_Constants.STANDARD) && objP.Apttus_QPConfig__LineType__c.equalsIgnoreCase(Nokia_CPQ_Constants.NOKIA_PRODUCT_SERVICES) && objP.Apttus_QPConfig__ParentBundleNumber__c == NULL){
@@ -1448,12 +1448,12 @@ public without sharing class OrderExportProvider{
 					if(mapParentBundleLineNoAndPLIRecord.ContainsKey(objProposalLineItem.Apttus_QPConfig__LineNumber__c)){
 						finalPriceValue = objProposalLineItem.NokiaCPQ_ExtendedPrice_CNP__c * mapParentBundleLineNoAndPLIRecord.get(objProposalLineItem.Apttus_QPConfig__LineNumber__c).Apttus_QPConfig__Quantity2__c ;
 						finalPriceValue = finalPriceValue.setScale(2, RoundingMode.HALF_UP);
-					}				   
+					}				  
 					
 					system.debug('finalPriceValue >>>>>'+finalPriceValue );
 									
 					outPutStringForQTCFile = outPutStringForQTCFile + Nokia_CPQ_Constants.QTC_FILE_WORD_SERVICE + Nokia_CPQ_Constants.QTC_FILE_COLUMN_SEPERATOR+ objProposalLineItem.Product_Code__c+ Nokia_CPQ_Constants.QTC_FILE_COLUMN_SEPERATOR + finalQuantity + Nokia_CPQ_Constants.QTC_FILE_COLUMN_SEPERATOR + Nokia_CPQ_Constants.ENGLISH_ALPHABET_V +Nokia_CPQ_Constants.QTC_FILE_COLUMN_SEPERATOR + Nokia_CPQ_Constants.QTC_FILE_COLUMN_SEPERATOR + finalPriceValue + Nokia_CPQ_Constants.QTC_FILE_NEW_LINE;
-				}			
+				}		   
 				system.debug('>>>>Final String'+outPutStringForQTCFile);
 				
 				ContentVersion newQTCFileInstance = generateQTCFileContentVersion(outPutStringForQTCFile, nokiaQuoteId, false);
@@ -1476,7 +1476,7 @@ public without sharing class OrderExportProvider{
 		*Method Name: generateQTCFileContentVersion
 		*Description: this method generate ContentVersion record in Salesforce.
 		*******************************/
-		public static ContentVersion generateQTCFileContentVersion(String outPutStringForQTCFile, String nokiaQuoteId, Boolean isQTCSITE){		
+		public static ContentVersion generateQTCFileContentVersion(String outPutStringForQTCFile, String nokiaQuoteId, Boolean isQTCSITE){	  
 			String fileName;
 			if(isQTCSITE)
 				fileName = Nokia_CPQ_Constants.QTC_SITE_FILE_NAME_PREFIX +nokiaQuoteId+ Nokia_CPQ_Constants.LESS_THAN_SYMBOL;
@@ -1495,9 +1495,9 @@ public without sharing class OrderExportProvider{
 				database.insert(objContVersion);
 			}
 			catch(Exception e){
-				ExceptionHandler.addException(e,OrderExportProvider.class.getName(),Nokia_CPQ_Constants.ERROR_MSD);			
+				ExceptionHandler.addException(e,OrderExportProvider.class.getName(),Nokia_CPQ_Constants.ERROR_MSD);		 
 			}
-			return objContVersion;		
+			return objContVersion;	  
 		}
 		
 		/*****************************

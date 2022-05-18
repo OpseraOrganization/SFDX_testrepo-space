@@ -1,8 +1,8 @@
-@isTest
-private class CH_ExternalInterfaceUTILTest {
+@isTest   
+private class CH_ExternalInterfaceUTILTest {  
 	public static final String emalsubstr='test subject';
 	public static final String s2sCaseStr='S2S Case {0} {1}';
-	public static final String custDescrptn='new test customer description';	
+	public static final String custDescrptn='new test customer description';  
 	public static final String custdescrp2='Customer Description';
 	public static final String caseStatusstr='In Progress';
 	public static final String testBadRqst='test: Bad Request';
@@ -15,7 +15,7 @@ private class CH_ExternalInterfaceUTILTest {
 	public static final String testJiraIdStr='test jira id';
 	public static final String testJiraBridge='jira-bridge';
 	public static final String testProntoId='test pronto id';
-	 
+	
 	@testSetup static void setup() {
 		insert new CH_Integration__c(EnableIntegration__c = true);  
 		Product2 tempProduct = new Product2(
@@ -50,21 +50,21 @@ private class CH_ExternalInterfaceUTILTest {
 	
 	private static CH_OutboundMessageSettings__c createOutboundMessageSettings(String settings) {
 		return new CH_OutboundMessageSettings__c(Name = settings,
-			 CaseFeedEmailCauseAnalysisReport__c = true,
-			 CaseFeedEmailCustomerInformationRequest__c = true,
-			 CaseFeedEmailInitialResponse__c = true,
-			 CaseFeedEmailRestoration__c = true,
-			 CaseFeedEmailServiceDisruptionReport__c = true,
-			 CaseFeedEmailSolution__c = true,
-			 CaseFeedEmailTemporary__c = true,
-			 CaseFeedEmailUpdate__c = true,
-			 CaseStageInvestigateRestore__c = true,
-			 CaseStageDiagnosisTechnicalAnalysis__c = true,
-			 CaseStageRegister__c = true,
-			 CaseStageAssetRespond__c = true,
-			 CaseStageResolve__c = true,
-			 CaseStageRoute__c = true,
-			 CaseStageClose__c = true);
+												 CaseFeedEmailCauseAnalysisReport__c = true,
+												 CaseFeedEmailCustomerInformationRequest__c = true,
+												 CaseFeedEmailInitialResponse__c = true,
+												 CaseFeedEmailRestoration__c = true,
+												 CaseFeedEmailServiceDisruptionReport__c = true,
+												 CaseFeedEmailSolution__c = true,
+												 CaseFeedEmailTemporary__c = true,
+												 CaseFeedEmailUpdate__c = true,
+												 CaseStageInvestigateRestore__c = true,
+												 CaseStageDiagnosisTechnicalAnalysis__c = true,
+												 CaseStageRegister__c = true,
+												 CaseStageAssetRespond__c = true,
+												 CaseStageResolve__c = true,
+												 CaseStageRoute__c = true,
+												 CaseStageClose__c = true);
 	}
 	
 	private static void validateRndUpdateAnalysisLog(Interface_Log__c log, Case c, List<CH_Attachment__c> attachments, String externalSystemAction, String interfaceName,String comment, String name, String interfaceType) {
@@ -73,15 +73,15 @@ private class CH_ExternalInterfaceUTILTest {
 		System.assert(log.Interface_Request_Sent__c.contains('CaseNumber=' + c.CaseNumber));
 		if (attachments != NULL) {
 			if (interfaceName == 'pronto') {
-	for (CH_Attachment__c a : attachments) {
-		System.assert(log.Interface_Request_Sent__c.contains('AttachmentID_xc=' + a.AttachmentID__c));
-		System.assert(log.Interface_Request_Sent__c.contains('File_Name_xc=' + a.File_Name__c));
-	}
+				for (CH_Attachment__c a : attachments) {
+					System.assert(log.Interface_Request_Sent__c.contains('AttachmentID_xc=' + a.AttachmentID__c));
+					System.assert(log.Interface_Request_Sent__c.contains('File_Name_xc=' + a.File_Name__c));
+				}
 			} else {
-	for (CH_Attachment__c a : attachments) {
-		System.assert(!log.Interface_Request_Sent__c.contains('AttachmentID_xc=' + a.AttachmentID__c));
-		System.assert(!log.Interface_Request_Sent__c.contains('File_Name_xc=' + a.File_Name__c));
-	}
+				for (CH_Attachment__c a : attachments) {
+					System.assert(!log.Interface_Request_Sent__c.contains('AttachmentID_xc=' + a.AttachmentID__c));
+					System.assert(!log.Interface_Request_Sent__c.contains('File_Name_xc=' + a.File_Name__c));
+				}
 			}
 		}
 	}
@@ -122,20 +122,18 @@ private class CH_ExternalInterfaceUTILTest {
 	}
 	
 	private static void validateCaseCommentNotificationLog(Interface_Log__c log, Case c, CaseComment comment, String title) {
-		validateLog(log, c, SWS_Constants.CREATEINFOUPDATE, title, comment.CommentBody, 'Success', NULL, String.format(s2sCaseStr, new List<Object> {c.CH_CaseOriginSystem__c, c.Id}), SWS_Constants.CUSTOMERS2S);
+		validateLog(log, c, SWS_Constants.CREATEINFOUPDATE, title, 'Success', NULL, SWS_Constants.CUSTOMERS2S);
 		System.assert(log.Interface_Request_Sent__c.contains('Case Comment Id: ' + comment.Id));
 	}
 	
-	private static void validateLog(Interface_Log__c log, Case c, String externalSystemAction, String activityTitle, String activityBody, String status, String comment, String name, String interfaceType) {
+	private static void validateLog(Interface_Log__c log, Case c, String externalSystemAction, String activityTitle, String status, String comment, String interfaceType) {
 		System.assert(log.Interface_Request_Sent__c.contains('Title=' + activityTitle));
-		System.assert(log.Interface_Request_Sent__c.contains('Body=' + activityBody));
-		validateLog(log, c, externalSystemAction, status, comment, name, interfaceType);
+		validateLog(log, c, externalSystemAction, status, comment, interfaceType);
 	}
 	
-	private static void validateLog(Interface_Log__c log, Case c, String externalSystemAction, String status, String comment, String name, String interfaceType) {
+	private static void validateLog(Interface_Log__c log, Case c, String externalSystemAction, String status, String comment, String interfaceType) {
 		System.assertEquals(log.Status__c, status);
 		System.assertEquals(log.Comment__c, comment);
-		System.assertEquals(log.Name, name);
 		System.assert(String.isNotEmpty(log.Interface_Request_Sent__c));
 		System.assertEquals(log.Interface_Type__c, interfaceType);
 		System.assert(log.Interface_Request_Sent__c.contains('CH_Action_ExternalSystem_xc=' + externalSystemAction));
@@ -202,7 +200,7 @@ private class CH_ExternalInterfaceUTILTest {
 		List<Interface_Log__c> logs = [SELECT Id, Name, Comment__c, Interface_Request_Sent__c, Status__c, Interface_Type__c FROM Interface_Log__c];
 		System.assertEquals(logs.size(), 1);
 		testCase = [SELECT Id, CaseNumber, CH_CaseOriginSystem__c, Reference_Number__c, Origin FROM Case];
-		validateLog(logs[0], testCase, SWS_Constants.CREATEINFOUPDATE, custdescrp2, custDescrptn, 'Success', NULL, String.format(s2sCaseStr, new List<Object> {testCase.CH_CaseOriginSystem__c, testCase.Id}), SWS_Constants.CUSTOMERS2S);
+		validateLog(logs[0], testCase, SWS_Constants.CREATEINFOUPDATE, custdescrp2, 'Success', NULL, SWS_Constants.CUSTOMERS2S);
 	}
 	
 	@IsTest
@@ -216,6 +214,30 @@ private class CH_ExternalInterfaceUTILTest {
 		CH_ExternalInterfaceUTIL.isolateUniqueRefNumCases(newCaseList);
 		
 		Test.stopTest();
+	}
+	
+	@isTest
+	private static void sendCreationToExternalSystemTest() {
+		CH_UserNotificationUTIL.runSendOutboundFailureNotification = true;
+		Case testCase = createTestCase();
+		insert testCase;
+		List<Interface_Log__c> logs = [SELECT Id FROM Interface_Log__c];
+		System.assert(logs.isEmpty());
+		
+		Test.startTest();
+		NaipS2SSuccessWebServiceMock naipWebServiceMock = new NaipS2SSuccessWebServiceMock();
+		Test.setMock(WebServiceMock.class, naipWebServiceMock);
+		
+		Case newTestCase = [SELECT Id, Origin, CH_CaseOriginSystem__c, CH_CustomerDescription__c, Subject, Status, CaseNumber, CreatedDate, Reference_Number__c FROM Case];
+		System.assertEquals(newTestCase.Origin, 'S2S');
+		System.assertEquals(newTestCase.CH_CaseOriginSystem__c, SWS_Constants.ORANGEIRMA);
+		CH_ExternalInterfaceUTIL.sendCreationToExternalSystem(new List<Case>{newTestCase});
+		Test.stopTest();
+		
+		logs = [SELECT Id, Name, Comment__c, Interface_Request_Sent__c, Status__c, Interface_Type__c FROM Interface_Log__c];
+		System.assertEquals(logs.size(), 1);
+		testCase = [SELECT Id, CaseNumber, CH_CaseOriginSystem__c, Reference_Number__c, Origin FROM Case];
+		validateLog(logs[0], testCase, 'create-case', 'Success', NULL, SWS_Constants.CUSTOMERS2S);
 	}
 	
 	@isTest
@@ -287,11 +309,11 @@ private class CH_ExternalInterfaceUTILTest {
 		insert testEmail;
 		Test.stopTest();
 		
-		logs = [SELECT Id, Name, Comment__c, Interface_Request_Sent__c, Status__c, Interface_Type__c FROM Interface_Log__c];
+		logs = [SELECT Id, Name, Comment__c, Interface_Request_Sent__c, Status__c, Interface_Type__c, Operation_Type__c FROM Interface_Log__c];
 		System.assertEquals(logs.size(), 1);
 		testCase = [SELECT Id, CaseNumber, CH_CaseOriginSystem__c, Reference_Number__c, Origin FROM Case];
 		Interface_Log__c log = logs[0];
-		validateLog(log, testCase, SWS_Constants.CREATEINFOUPDATE, testEmail.Subject, testEmail.TextBody, 'Success', NULL, String.format(s2sCaseStr, new List<Object> {testCase.CH_CaseOriginSystem__c, testCase.Id}), SWS_Constants.CUSTOMERS2S);
+		validateLog(log, testCase, SWS_Constants.CREATEINFOUPDATE, testEmail.Subject, 'Success', NULL, SWS_Constants.CUSTOMERS2S);
 		testEmail = [SELECT Id, CreatedDate FROM EmailMessage WHERE Id =: testEmail.Id];
 		System.assert(log.Interface_Request_Sent__c.contains('createdDate=' + testEmail.CreatedDate));
 		CH_UserNotificationUTIL.runSendOutboundFailureNotification = false;
@@ -399,7 +421,7 @@ private class CH_ExternalInterfaceUTILTest {
 		logs = [SELECT Id, Name, Comment__c, Interface_Request_Sent__c, Status__c, Interface_Type__c FROM Interface_Log__c];
 		System.assertEquals(logs.size(), 1);
 		testCase = [SELECT Id, CaseNumber, CH_CaseOriginSystem__c, Reference_Number__c, Origin FROM Case];
-		validateLog(logs[0], testCase, SWS_Constants.CREATEINFOUPDATE, 'Status update', String.format('Status has been updated to {0}', new List<Object>{newTestCase.Status}), 'Success', NULL, String.format(s2sCaseStr, new List<Object> {testCase.CH_CaseOriginSystem__c, testCase.Id}), SWS_Constants.CUSTOMERS2S);
+		validateLog(logs[0], testCase, SWS_Constants.CREATEINFOUPDATE, 'Status update', 'Success', NULL, SWS_Constants.CUSTOMERS2S);
 	}
 	
 	@isTest
@@ -424,7 +446,7 @@ private class CH_ExternalInterfaceUTILTest {
 		logs = [SELECT Id, Name, Comment__c, Interface_Request_Sent__c, Status__c, Interface_Type__c FROM Interface_Log__c];
 		System.assertEquals(logs.size(), 1);
 		testCase = [SELECT Id, CaseNumber, CH_CaseOriginSystem__c, Reference_Number__c, Origin FROM Case];
-		validateLog(logs[0], testCase, 'cancel-case', 'Success', NULL, String.format(s2sCaseStr, new List<Object> {testCase.CH_CaseOriginSystem__c, testCase.Id}), SWS_Constants.CUSTOMERS2S);
+		validateLog(logs[0], testCase, 'cancel-case', 'Success', NULL, SWS_Constants.CUSTOMERS2S);
 	}
 	
 	@isTest
@@ -505,7 +527,7 @@ private class CH_ExternalInterfaceUTILTest {
 		Interface_Log__c log = logs[0];
 		System.assert(String.isNotEmpty(log.Comment__c));
 		testCase = [SELECT Id, CaseNumber, CH_CaseOriginSystem__c, Reference_Number__c, Origin FROM Case];
-		validateLog(log, testCase, 'cancel-case', 'Failure', log.Comment__c, String.format(s2sCaseStr, new List<Object> {testCase.CH_CaseOriginSystem__c, testCase.Id}), SWS_Constants.CUSTOMERS2S);
+		validateLog(log, testCase, 'cancel-case', 'Failure', log.Comment__c, SWS_Constants.CUSTOMERS2S);
 		return log;
 	}
 	
@@ -530,7 +552,7 @@ private class CH_ExternalInterfaceUTILTest {
 		Case testCase = [SELECT Id, Origin, Severity__c, CH_CaseOriginSystem__c, CH_CustomerDescription__c, Subject, Status, CaseNumber, CreatedDate, Reference_Number__c FROM Case];
 		testCase.CH_Summary__c = 'test summary to customer';
 		testCase.CH_CustomerDescription__c = 'test customer description';
-		testCase.Description = casedescrptnstr1;	
+		testCase.Description = casedescrptnstr1;  
 		System.assertEquals(newTestCase.Origin, 'S2S');
 		System.assertEquals(newTestCase.CH_CaseOriginSystem__c, SWS_Constants.ORANGEIRMA);
 		CH_ExternalInterfaceUTIL.sendFieldUpdatesToExternalSystem(new Map<Id, Case>{testCase.Id => testCase}, new List<Case>{newTestCase});
@@ -542,15 +564,15 @@ private class CH_ExternalInterfaceUTILTest {
 		Interface_Log__c customerDescriptionlog = NULL;
 		for (Interface_Log__c log : logs) {
 			if (log.Interface_Request_Sent__c.contains(newTestCase.CH_Summary__c)) {
-	summaryToCustomerlog = log;
+				summaryToCustomerlog = log;
 			} else {
-	customerDescriptionlog = log;
+				customerDescriptionlog = log;
 			}
 		}
 		
 		testCase = [SELECT Id, CaseNumber, CH_CaseOriginSystem__c, Reference_Number__c, Origin FROM Case];
-		validateLog(summaryToCustomerlog, testCase, SWS_Constants.CREATEINFOUPDATE, 'Summary to Customer', 'new test summary to customer', 'Success', NULL, String.format(s2sCaseStr, new List<Object> {testCase.CH_CaseOriginSystem__c, testCase.Id}), SWS_Constants.CUSTOMERS2S);
-		validateLog(customerDescriptionlog, testCase, SWS_Constants.CREATEINFOUPDATE, custdescrp2, custDescrptn, 'Success', NULL, String.format(s2sCaseStr, new List<Object> {testCase.CH_CaseOriginSystem__c, testCase.Id}), SWS_Constants.CUSTOMERS2S);
+		validateLog(summaryToCustomerlog, testCase, SWS_Constants.CREATEINFOUPDATE, 'Summary to Customer', 'Success', NULL, SWS_Constants.CUSTOMERS2S);
+		validateLog(customerDescriptionlog, testCase, SWS_Constants.CREATEINFOUPDATE, custdescrp2, 'Success', NULL, SWS_Constants.CUSTOMERS2S);
 	}
 	
 	@isTest
@@ -642,7 +664,7 @@ private class CH_ExternalInterfaceUTILTest {
 		Interface_Log__c log = logs[0];
 		System.assert(String.isNotEmpty(log.Comment__c));
 		testCase = [SELECT Id, CaseNumber, CH_CaseOriginSystem__c, CH_Summary__c, CH_CustomerDescription__c, Reference_Number__c, Origin FROM Case];
-		validateLog(log, testCase, SWS_Constants.CREATEINFOUPDATE, custdescrp2, custDescrptn, 'Failure', log.Comment__c, String.format(s2sCaseStr, new List<Object> {testCase.CH_CaseOriginSystem__c, testCase.Id}), SWS_Constants.CUSTOMERS2S);
+		validateLog(log, testCase, SWS_Constants.CREATEINFOUPDATE, custdescrp2, 'Failure', log.Comment__c, SWS_Constants.CUSTOMERS2S);
 		return log;
 	}
 	
@@ -658,14 +680,14 @@ private class CH_ExternalInterfaceUTILTest {
 		testCase.Description = 'new test description';
 		insert testCase;
 		CH_Problem_RnD_Reference__c rndInteraction = new CH_Problem_RnD_Reference__c(CH_RnD_Direction__c = 'outbound',
-						 CH_RnD_Subject__c = 'Test',
-						 CH_RnD_Interface__c = 'PRONTO',
-						 CH_RnD_Reference__c = 'pronto task id',
-						 CH_RnD_Status__c = 'Completed',
-						 CH_RnD_Type__c = 'Transfer to R&D',
-						 CH_Related_Record__c = testCase.Id,
-						 CH_RnD_Description__c = 'Test Severity Update');
-		insert rndInteraction;	
+																					 CH_RnD_Subject__c = 'Test',
+																					 CH_RnD_Interface__c = 'PRONTO',
+																					 CH_RnD_Reference__c = 'pronto task id',
+																					 CH_RnD_Status__c = 'Completed',
+																					 CH_RnD_Type__c = 'Transfer to R&D',
+																					 CH_Related_Record__c = testCase.Id,
+																					 CH_RnD_Description__c = 'Test Severity Update');
+		insert rndInteraction;  
 		
 		Test.startTest();
 		
@@ -674,7 +696,7 @@ private class CH_ExternalInterfaceUTILTest {
 		Case newTestCase = [SELECT Id, CaseNumber, Severity__c FROM Case];
 		newTestCase.Severity__c = 'Major';
 		update newTestCase;   
-		CH_ExternalInterfaceUTIL.sendSeverityUpdatesToExternalSystem(new Map<Id, Case>{testCase.Id => testCase}, new List<Case>{newTestCase});	 
+		CH_ExternalInterfaceUTIL.sendSeverityUpdatesToExternalSystem(new Map<Id, Case>{testCase.Id => testCase}, new List<Case>{newTestCase});   
 		Test.stopTest();
 		
 		List<CH_Problem_RnD_Reference__c> rndInteractionResult = [SELECT Id, CH_RnD_Subject__c, CH_RnD_Error_Message__c, CH_RnD_Type__c from CH_Problem_RnD_Reference__c WHERE CH_RnD_Type__c = 'Severity Change']; 
@@ -685,6 +707,44 @@ private class CH_ExternalInterfaceUTILTest {
 		testCase = [SELECT Id, CaseNumber, Severity__c, Origin FROM Case];
 		List<Interface_Log__c> logs = [SELECT Id, Name, Comment__c, Message_Type__c, Number_of_Records_Errored__c, Number_of_Records_Success__c, Number_of_Record_Processed__c, Interface_Request_Sent__c, Status__c, Interface_Type__c FROM Interface_Log__c];
 		validateRndCreateInformationUpdateLog(logs[0], testCase, SWS_Constants.UPDATEANALYSIS, 'pronto',outboundRndInteraction.CH_RnD_Error_Message__c, String.format(rnDOtbndStr, new List<Object> {outboundRndInteraction.CH_RnD_Type__c, testCase.Id}), rndinrfcStrn1);
+	}
+	
+	//Changes added as a part of NOKIASC-35311
+	@isTest
+	private static void sendSolutionTargetDateToProntoOrJiraTest() {
+		Id ProblemRecordTypeId = Schema.SObjectType.Case.getRecordTypeInfosByDeveloperName().get('CH_Problem').getRecordTypeId();
+		Case testCase = createTestCase();
+		testCase.Subject = 'new test subject';
+		testCase.Severity__c = 'Critical';
+		testcase.CH_Stage__c = 'Report';
+		testCase.Status = 'Created';
+		testCase.RecordTypeId = ProblemRecordTypeId;
+		testCase.Description = 'new test description';
+		insert testCase;
+		CH_Problem_RnD_Reference__c rndInteraction = new CH_Problem_RnD_Reference__c(CH_RnD_Direction__c = 'outbound',
+																					 CH_RnD_Subject__c = String.format('Problem {0}: SolutionTargetDate Change to {1} and PausedSinceDate Change to {2}', new List<Object>{testCase.caseNumber, testCase.CH_SolutionTargetDate__c,testCase.CH_PausedSinceDate__c}),
+																					 CH_RnD_Interface__c = 'PRONTO',
+																					 CH_RnD_Reference__c = 'pronto task id',
+																					 CH_RnD_Status__c = 'Completed',
+																					 CH_RnD_Type__c = 'Update to R&D',
+																					 CH_Related_Record__c = testCase.Id,
+																					 CH_RnD_Description__c = 'Update SolutionTargetDate and PausedSinceDate');
+		insert rndInteraction;  
+		
+		Test.startTest();
+		
+		NaipS2SSuccessWebServiceMock naipWebServiceMock = new NaipS2SSuccessWebServiceMock();
+		Test.setMock(WebServiceMock.class, naipWebServiceMock);   
+		Case newTestCase = [SELECT Id, CaseNumber, Severity__c FROM Case];
+		newTestCase.Severity__c = 'Major';
+		update newTestCase;   
+		CH_ExternalInterfaceUTIL.sendSolutionTargetDateToProntoOrJira(testCase.Id,null,null,null,testCase.caseNumber, testCase.CH_Originating_Incident_Number__r.CaseNumber, testCase.CH_CRNumber__c,testCase.CH_RDInterface__c,testCase.Severity__c,'testSubject');   
+		Test.stopTest();
+		
+		List<CH_Problem_RnD_Reference__c> rndInteractionResult = [SELECT Id, CH_RnD_Subject__c, CH_RnD_Error_Message__c, CH_RnD_Type__c from CH_Problem_RnD_Reference__c WHERE CH_RnD_Type__c = 'Update to R&D']; 
+		System.assertEquals(rndInteractionResult.size(), 2);
+		CH_Problem_RnD_Reference__c outboundRndInteraction = rndInteractionResult[0];
+		System.assertEquals(outboundRndInteraction.CH_RnD_Subject__c, String.format('Problem {0}: SolutionTargetDate Change to {1} and PausedSinceDate Change to {2}', new List<Object>{testCase.caseNumber, testCase.CH_SolutionTargetDate__c,testCase.CH_PausedSinceDate__c}));
 	}
 	
 	private static void sendCAPSAttachmentsTest(String rndReference, String rndInterface, String externalInterface) {
@@ -704,7 +764,7 @@ private class CH_ExternalInterfaceUTILTest {
 		NaipUpdateAnalysisWebServiceMock naipWebServiceMock = new NaipUpdateAnalysisWebServiceMock();
 		Test.setMock(WebServiceMock.class, naipWebServiceMock);
 		
-		Id outboundRndInteractionId = CAPS_AttachmentController.shareAttachmentsWithRnd(testCase.Id, rndInterface, emalsubstr, casedescrptnstr1, 'test comment', new List<Id>{attachments[0].Id, attachments[1].Id});
+		Id outboundRndInteractionId = CH_AttachmentUtils.shareWithRND(testCase.Id, rndInterface, emalsubstr, casedescrptnstr1, 'test comment', new List<CH_Attachment__c>{attachments[0], attachments[1]});
 		System.assertNotEquals(outboundRndInteractionId, NULL);
 		CH_Problem_RnD_Reference__c outboundRndInteraction = validateRndInteraction(outboundRndInteractionId, emalsubstr, casedescrptnstr1, 'test comment', rndInterface, testCase.Id, rndReference, 'outbound', updateToRnDStr);
 		
@@ -720,7 +780,7 @@ private class CH_ExternalInterfaceUTILTest {
 		sendOutboundCreateAnalysisRndInteractionTest(testJiraIdStr, 'JIRA');   
 	}
 	@isTest
-	private static void sendOutboundCreateAnalysisRndInteractionProntoTest() {	
+	private static void sendOutboundCreateAnalysisRndInteractionProntoTest() {  
 		sendOutboundCreateAnalysisRndInteractionTest(testProntoId, 'PRONTO');
 	}
 	private static void sendOutboundCreateAnalysisRndInteractionTest(String rndReference, String rndInterface) {
@@ -740,7 +800,7 @@ private class CH_ExternalInterfaceUTILTest {
 		NaipUpdateAnalysisWebServiceMock naipWebServiceMock = new NaipUpdateAnalysisWebServiceMock();
 		Test.setMock(WebServiceMock.class, naipWebServiceMock);
 		
-		Id outboundRndInteractionId = CAPS_AttachmentController.shareAttachmentsWithRnd(testCase.Id, rndInterface, emalsubstr, casedescrptnstr1, 'test comment', new List<Id>{attachments[0].Id, attachments[1].Id});
+		Id outboundRndInteractionId = CH_AttachmentUtils.shareWithRND(testCase.Id, rndInterface, emalsubstr, casedescrptnstr1, 'test comment', new List<CH_Attachment__c>{attachments[0], attachments[1]});
 		System.assertNotEquals(outboundRndInteractionId, NULL);
 		
 		CH_ExternalInterfaceUTIL.sendOutboundCreateAnalysisRndInteraction(outboundRndInteractionId);
@@ -756,7 +816,7 @@ private class CH_ExternalInterfaceUTILTest {
 		
 		Test.startTest();
 		
-		Id outboundRndInteractionId = CAPS_AttachmentController.shareAttachmentsWithRnd(testCase.Id, 'PRONTO', emalsubstr, casedescrptnstr1, 'test comment', new List<Id>());
+		Id outboundRndInteractionId = CH_AttachmentUtils.shareWithRND(testCase.Id, 'PRONTO', emalsubstr, casedescrptnstr1, 'test comment', new List<CH_Attachment__c>());
 		System.assertNotEquals(outboundRndInteractionId, NULL);
 		CH_Problem_RnD_Reference__c outboundRndInteraction = validateRndInteraction(outboundRndInteractionId, emalsubstr, casedescrptnstr1, 'test comment', 'PRONTO', testCase.Id, testProntoId, 'outbound', updateToRnDStr);
 		
@@ -773,13 +833,13 @@ private class CH_ExternalInterfaceUTILTest {
 		
 		Test.startTest();
 		
-		Id outboundRndInteractionId = CAPS_AttachmentController.shareAttachmentsWithRnd(testCase.Id, 'PRONTO', emalsubstr, casedescrptnstr1, 'test comment', new List<Id>());
+	Id outboundRndInteractionId = CH_AttachmentUtils.shareWithRND(testCase.Id, 'PRONTO', emalsubstr, casedescrptnstr1, 'test comment', new List<CH_Attachment__c>());
 		System.assertNotEquals(outboundRndInteractionId, NULL);
 		CH_Problem_RnD_Reference__c outboundRndInteraction = validateRndInteraction(outboundRndInteractionId, emalsubstr, casedescrptnstr1, 'test comment', 'PRONTO', testCase.Id, testProntoId, 'outbound', updateToRnDStr);
 		
 		CH_ExternalInterfaceUTIL.resendOutboundRndInteraction(outboundRndInteraction);
 		
-		Test.stopTest();	
+		Test.stopTest();  
 	}
 	
 	@IsTest
@@ -840,7 +900,7 @@ private class CH_ExternalInterfaceUTILTest {
 		
 		for(Case c : newCaseList){
 			accountId.add(c.AccountId); 
-		}	
+		}  
 		
 		List<Account> newAccountList = [SELECT Id FROM Account WHERE Id =: accountId];
 		
@@ -884,7 +944,7 @@ private class CH_ExternalInterfaceUTILTest {
 		
 		for(Case c : oldCaseList){
 			oldCases.put(c.Id, c);
-		}	
+		}  
 		
 		Case testCaseNew = createTestCase();
 		insert testCaseNew;   
@@ -915,7 +975,7 @@ private class CH_ExternalInterfaceUTILTest {
 		NaipUpdateAnalysisWebServiceMock naipWebServiceMock = new NaipUpdateAnalysisWebServiceMock();
 		Test.setMock(WebServiceMock.class, naipWebServiceMock);
 		
-		Id outboundRndInteractionId = CAPS_AttachmentController.shareAttachmentsWithRnd(testCase.Id, rndInterface, subject, casedescrptnstr1, 'test comment', new List<Id>());
+		Id outboundRndInteractionId = CH_AttachmentUtils.shareWithRND(testCase.Id, rndInterface, subject, casedescrptnstr1, 'test comment', new List<CH_Attachment__c>());
 		System.assertNotEquals(outboundRndInteractionId, NULL);
 		CH_Problem_RnD_Reference__c outboundRndInteraction = validateRndInteraction(outboundRndInteractionId, subject, casedescrptnstr1, 'test comment', rndInterface, testCase.Id, rndReference, 'outbound', updateToRnDStr);
 		System.assert(String.IsNotEmpty(outboundRndInteraction.CH_RnD_Error_Message__c));
@@ -924,7 +984,7 @@ private class CH_ExternalInterfaceUTILTest {
 		testCase = [SELECT Id, CaseNumber, Severity__c, Origin FROM Case];
 		List<Interface_Log__c> logs = [SELECT Id, Name, Comment__c, Message_Type__c, Number_of_Records_Errored__c, Number_of_Records_Success__c, Number_of_Record_Processed__c, Interface_Request_Sent__c, Status__c, Interface_Type__c FROM Interface_Log__c];
 		System.assertEquals(logs.size(), 1);
-		validateRndUpdateAnalysisLog(logs[0], testCase, NULL, SWS_Constants.UPDATEANALYSIS, externalInterface,outboundRndInteraction.CH_RnD_Error_Message__c, String.format(rnDOtbndStr, new List<Object> {outboundRndInteraction.CH_RnD_Type__c, testCase.Id}), rndinrfcStrn1);	
+		validateRndUpdateAnalysisLog(logs[0], testCase, NULL, SWS_Constants.UPDATEANALYSIS, externalInterface,outboundRndInteraction.CH_RnD_Error_Message__c, String.format(rnDOtbndStr, new List<Object> {outboundRndInteraction.CH_RnD_Type__c, testCase.Id}), rndinrfcStrn1);  
 		Test.stopTest();
 	}
 	
@@ -946,10 +1006,10 @@ private class CH_ExternalInterfaceUTILTest {
 		
 		Test.startTest();
 		
-		Id outboundRndInteractionId = CAPS_AttachmentController.shareAttachmentsWithRnd(testCase.Id, 'PRONTO', emalsubstr, casedescrptnstr1, 'test comment', new List<Id>());
+		Id outboundRndInteractionId = CH_AttachmentUtils.shareWithRND(testCase.Id, 'PRONTO', emalsubstr, casedescrptnstr1, 'test comment', new List<CH_Attachment__c>());
 		System.assertNotEquals(outboundRndInteractionId, NULL);
 		CH_Problem_RnD_Reference__c outboundRndInteraction = validateRndInteraction(outboundRndInteractionId, emalsubstr, casedescrptnstr1, 'test comment', 'PRONTO', testCase.Id, testProntoId, 'outbound', updateToRnDStr);
-		System.assert(String.IsNotEmpty(outboundRndInteraction.CH_RnD_Error_Message__c));	 
+		System.assert(String.IsNotEmpty(outboundRndInteraction.CH_RnD_Error_Message__c));   
 		System.assertNotEquals(outboundRndInteraction.CH_RnD_Error_Message__c, testBadRqst);
 		
 		testCase = [SELECT Id, CaseNumber, Severity__c, Origin FROM Case];
@@ -995,10 +1055,10 @@ private class CH_ExternalInterfaceUTILTest {
 		String uniqueUserName = 'admin' + DateTime.now().getTime() + '@testorg.com';
 		Profile p = [SELECT Id FROM Profile WHERE Name='System Administrator'];
 		User u = new User(Alias = 'standt', Email='standarduser@testorg.com',
-		EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US',
-		LocaleSidKey='en_US', ProfileId = p.Id,
-		TimeZoneSidKey='America/Los_Angeles',
-		UserName=uniqueUserName);
+						  EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US',
+						  LocaleSidKey='en_US', ProfileId = p.Id,
+						  TimeZoneSidKey='America/Los_Angeles',
+						  UserName=uniqueUserName);
 		
 		CH_Integration_Profiles__c integrationProfileSetting = new CH_Integration_Profiles__c(name = 'System Administrator');
 		insert integrationProfileSetting;
@@ -1052,10 +1112,10 @@ private class CH_ExternalInterfaceUTILTest {
 		Interface_Log__c comment2Log = NULL;
 		for (Interface_Log__c log : logs) {
 			if (log.Interface_Request_Sent__c.contains(comment1.CommentBody)) {
-	comment1Log = log;
+				comment1Log = log;
 			}
 			if (log.Interface_Request_Sent__c.contains(comment2.CommentBody)) {
-	comment2Log = log;
+				comment2Log = log;
 			} 
 		}
 		
@@ -1097,10 +1157,10 @@ private class CH_ExternalInterfaceUTILTest {
 		Interface_Log__c comment2Log = NULL;
 		for (Interface_Log__c log : logs) {
 			if (log.Interface_Request_Sent__c.contains(comment1.CommentBody)) {
-	comment1Log = log;
+				comment1Log = log;
 			}
 			if (log.Interface_Request_Sent__c.contains(comment2.CommentBody)) {
-	comment2Log = log;
+				comment2Log = log;
 			} 
 		}
 		
@@ -1168,10 +1228,10 @@ private class CH_ExternalInterfaceUTILTest {
 			String responseNS,
 			String responseName,
 			String responseType) {
-	CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse receivFromSfResponse = new CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse();
-	CH_partnerNAIPWSDLForSF.responseToSalesForce responseToSf = new CH_partnerNAIPWSDLForSF.responseToSalesForce();
-	receivFromSfResponse.responseToSalesForce = responseToSf;
-	response.put('response_x', receivFromSfResponse);
+				CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse receivFromSfResponse = new CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse();
+				CH_partnerNAIPWSDLForSF.responseToSalesForce responseToSf = new CH_partnerNAIPWSDLForSF.responseToSalesForce();
+				receivFromSfResponse.responseToSalesForce = responseToSf;
+				response.put('response_x', receivFromSfResponse);
 			}
 	}
 	
@@ -1186,11 +1246,11 @@ private class CH_ExternalInterfaceUTILTest {
 			String responseNS,
 			String responseName,
 			String responseType) {
-	CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse receivFromSfResponse = new CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse();
-	CH_partnerNAIPWSDLForSF.responseToSalesForce responseToSf = new CH_partnerNAIPWSDLForSF.responseToSalesForce();
-	responseToSf.message = testBadRqst;
-	receivFromSfResponse.responseToSalesForce = responseToSf;
-	response.put('response_x', receivFromSfResponse);
+				CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse receivFromSfResponse = new CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse();
+				CH_partnerNAIPWSDLForSF.responseToSalesForce responseToSf = new CH_partnerNAIPWSDLForSF.responseToSalesForce();
+				responseToSf.message = testBadRqst;
+				receivFromSfResponse.responseToSalesForce = responseToSf;
+				response.put('response_x', receivFromSfResponse);
 			}
 	}
 	
@@ -1205,21 +1265,21 @@ private class CH_ExternalInterfaceUTILTest {
 			String responseNS,
 			String responseName,
 			String responseType) {
-	CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse receivFromSfResponse = new CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse();
-	CH_partnerNAIPWSDLForSF.responseToSalesForce responseToSf = new CH_partnerNAIPWSDLForSF.responseToSalesForce();
-	
-	CH_partnerNAIPWSDLForSF.receiveFromSalesForce naipRequest = (CH_partnerNAIPWSDLForSF.receiveFromSalesForce) request;
-	if (naipRequest.Case_x != NULL && naipRequest.RndInteraction != NULL && 
-		naipRequest.Case_x.sObjects.Severity_xc == 'Minor' && 
-		naipRequest.RndInteraction.Type_x == SWS_Constants.UPDATEANALYSIS && 
-		((naipRequest.RndInteraction.Interface_x == 'pronto' && naipRequest.Attachment != NULL && naipRequest.Attachment.sObjects.size() == 2) ||
-		 (naipRequest.RndInteraction.Interface_x == testJiraBridge && naipRequest.Attachment == NULL && !String.isEmpty(naipRequest.RndInteraction.Subject)))) {
-			 responseToSf.message = NULL;
-		 } else {
-			 responseToSf.message = testBadRqst;
-		 }
-	receivFromSfResponse.responseToSalesForce = responseToSf;
-	response.put('response_x', receivFromSfResponse);
+				CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse receivFromSfResponse = new CH_partnerNAIPWSDLForSF.receiveFromSalesForceResponse();
+				CH_partnerNAIPWSDLForSF.responseToSalesForce responseToSf = new CH_partnerNAIPWSDLForSF.responseToSalesForce();
+				
+				CH_partnerNAIPWSDLForSF.receiveFromSalesForce naipRequest = (CH_partnerNAIPWSDLForSF.receiveFromSalesForce) request;
+				if (naipRequest.Case_x != NULL && naipRequest.RndInteraction != NULL && 
+					naipRequest.Case_x.sObjects.Severity_xc == 'Minor' && 
+					naipRequest.RndInteraction.Type_x == SWS_Constants.UPDATEANALYSIS && 
+					((naipRequest.RndInteraction.Interface_x == 'pronto' && naipRequest.Attachment != NULL && naipRequest.Attachment.sObjects.size() == 2) ||
+					 (naipRequest.RndInteraction.Interface_x == testJiraBridge && naipRequest.Attachment == NULL && !String.isEmpty(naipRequest.RndInteraction.Subject)))) {
+						 responseToSf.message = NULL;
+					 } else {
+						 responseToSf.message = testBadRqst;
+					 }
+				receivFromSfResponse.responseToSalesForce = responseToSf;
+				response.put('response_x', receivFromSfResponse);
 			}
 	}
 }

@@ -30,6 +30,7 @@ public without sharing class SWS_Constants {
 	public static final String ORANGEIRMA = 'orange-irma';
 	public static final String INPROGRESS = 'In Progress';
 	public static final String UPDATEANALYSIS = 'update-analysis';	
+	public static final String CHRUNTEAM = 'CH_RunTeam';	
 	//testmethod for code coverage
 	public static void SWS_Constants(){
 		

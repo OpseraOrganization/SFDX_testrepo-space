@@ -24,7 +24,7 @@ private class CAPS_AttachmentControllerTest {
 			Case casList = new Case();
 			casList = CH_UTIL_TEST.createCaseNotSaved('Test', 'Minor', 'No', 'CH_Problem', false);
 			insert casList;
-		   
+	 
 			CH_Problem_RnD_Reference__c rd=new CH_Problem_RnD_Reference__c ();
 			rd.CH_RnD_Interface__c ='JIRA';
 			rd.CH_Related_Record__c=casList.Id;
@@ -35,7 +35,7 @@ private class CAPS_AttachmentControllerTest {
 			rd.CH_RnD_Type__c='Transfer to R&D';
 			rd.CH_RnD_Description__c='Test description';
 			rd.CH_RnD_Comment__c='Test comments';
-			insert rd;							 
+			insert rd;		
 			List<CH_Attachment__c> chAttchList = new List<CH_Attachment__c>();
 			chAttchList.add(CAPS_TestDataUtil.createCHAttachmentRecord(1,OTHER_CLASSIFICATION,casList.Id)[0]);
 			chAttchList.add(CAPS_TestDataUtil.createCHAttachmentRecord(1,OTHER_CLASSIFICATION,casList.Id)[0]);
@@ -43,10 +43,10 @@ private class CAPS_AttachmentControllerTest {
 			chAttchList.add(CAPS_TestDataUtil.createCHAttachmentRecord(1,ENDUSER_CLASSIFICATION,casList.Id)[0]);
 			insert chAttchList;
 			List<CH_Attachment__c> listAttachment = new List<CH_Attachment__c>();
-			listAttachment = CAPS_AttachmentController.getAttachment(casList.Id);		   
+			listAttachment = CAPS_AttachmentController.getAttachment(casList.Id);	 
 			List<Id> attachmentIdList =new List<Id>();
 			attachmentIdList.add(chAttchList[0].id);
-		   
+	 
 			listAttachment = new List<CH_Attachment__c>();
 			listAttachment = CAPS_AttachmentController.getPortalAttachment(casList.Id);
 			CAPS_AttachmentController.getUserProfileDetails();
@@ -76,7 +76,7 @@ private class CAPS_AttachmentControllerTest {
 			insert chAttchList;
 			List<String> chAttchIdList = new List<String>();
 			for(CH_Attachment__c chattach : chAttchList){
-				chAttchIdList.add(chattach.Id);
+	chAttchIdList.add(chattach.Id);
 			}
 			
 			Test.setMock(HttpCalloutMock.class, new CAPS_DeleteMockHttpResponse());
@@ -102,14 +102,14 @@ private class CAPS_AttachmentControllerTest {
 			insert chAttchmentList;
 			List<String> chAttchIdListNew = new List<String>();
 			for(CH_Attachment__c chattach : chAttchmentList){
-				chAttchIdListNew.add(chattach.Id);
+	chAttchIdListNew.add(chattach.Id);
 			}
 			
 			Test.setMock(HttpCalloutMock.class, new CAPS_DownloadMockHttpResponse());			
 			List<CAPS_Attachments_Download.CAPS_DownloadResponseWrapper> capdownAttch = new List<CAPS_Attachments_Download.CAPS_DownloadResponseWrapper>();
-		   
+	 
 			capdownAttch =CAPS_AttachmentController.downloadAttachments(chAttchIdListNew, chAttchmentList);
-		   
+	 
 
 			test.stopTest();
 		}

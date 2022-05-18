@@ -59,23 +59,23 @@ public with sharing class  NOKIACPQ_LineItemInsertWithAPI {
 			productsite.put(prods.product_code,productsite.get(prods.product_code) +','+StationName );
 			productsitequantity.put(prods.product_code,productsitequantity.get(prods.product_code)+','+prods.quantity);
 		}
-					 else
-					{
-					string allsite = productsite.get(prods.product_code);
-					String allsiteqty = productsitequantity.get(prods.product_code);
-					String updateQty = '';
-					List<String> listSite = allsite.split(',');
-					List<String> listSiteqty = allsiteqty.split(',');
-					Integer siteIndex = listSite.Indexof(StationName);
-					Integer siteIndexqty = Integer.ValueOf(listSiteqty.get(siteIndex)) + Integer.ValueOf(prods.quantity);
-					listSiteqty[siteIndex] = String.Valueof(siteIndexqty);
-					for(String siteqty: listSiteqty)
-					{
-					updateQty += siteqty + ',';
-					}
-					updateQty = updateQty.subString(0,updateQty.length()-1);
-					productsitequantity.put(prods.product_code,updateQty);
-					}
+		 else
+		{
+		string allsite = productsite.get(prods.product_code);
+		String allsiteqty = productsitequantity.get(prods.product_code);
+		String updateQty = '';
+		List<String> listSite = allsite.split(',');
+		List<String> listSiteqty = allsiteqty.split(',');
+		Integer siteIndex = listSite.Indexof(StationName);
+		Integer siteIndexqty = Integer.ValueOf(listSiteqty.get(siteIndex)) + Integer.ValueOf(prods.quantity);
+		listSiteqty[siteIndex] = String.Valueof(siteIndexqty);
+		for(String siteqty: listSiteqty)
+		{
+		updateQty += siteqty + ',';
+		}
+		updateQty = updateQty.subString(0,updateQty.length()-1);
+		productsitequantity.put(prods.product_code,updateQty);
+		}
 	}else{
 		productsite.put(prods.product_code,StationName);
 		string str = string.valueOf(prods.quantity);
@@ -104,7 +104,8 @@ public with sharing class  NOKIACPQ_LineItemInsertWithAPI {
 		if(!productqtymap.isempty()){
 			
 			// From JSON, extract all the product codes and query them with conditions productcode in () and Portfolio = microwave and Isactive =true
-			map<Id, Product2> Productmap = new map<Id, Product2>([select Id,ProductCode,NokiaCPQ_Product_Discount_Category__c,NokiaCPQ_Category__c from Product2 where productcode in :productqtymap.keyset() and IsActive=true and Portfolio__c='Microwave']);
+			map<Id, Product2> Productmap = new map<Id, Product2>([select Id,ProductCode,NokiaCPQ_Product_Discount_Category__c,NokiaCPQ_Category__c from Product2 where productcode in :productqtymap.keyset() and IsActive=true and Portfolio__c like '%Microwave%']);  //ITCCPQ-2594
+
 			
 			system.debug('Productmap'+Productmap);
 			
@@ -160,7 +161,7 @@ public with sharing class  NOKIACPQ_LineItemInsertWithAPI {
 	li.Apttus_Config2__ClassificationHierarchyInfo__c='';
 	li.NokiaCPQ_Is_CAT_Configured__c=true;
 	li.Apttus_Config2__PricingStatus__c = Nokia_CPQ_Constants.PENDING_STRING;
-				li.Apttus_Config2__IsQuantityModifiable__c = false;
+	li.Apttus_Config2__IsQuantityModifiable__c = false;
 	//  li.NokiaCPQ_Product_Discount_Category__c = prdcodetoidmap.get(prodcode).NokiaCPQ_Product_Discount_Category__c;
 	//  li.NokiaCPQ_Category__c = prdcodetoidmap.get(prodcode).NokiaCPQ_Category__c;
 	
@@ -169,17 +170,17 @@ public with sharing class  NOKIACPQ_LineItemInsertWithAPI {
 		'Apttus_Config2__ClassificationHierarchy__c','Apttus_Config2__ClassificationId__c','Apttus_Config2__IsQuantityModifiable__c','Source__c','Apttus_Config2__ClassificationHierarchyInfo__c','NokiaCPQ_Is_CAT_Configured__c'
 		};
 			if(!prdcodetoidmap.isEmpty() && prdcodetoidmap.get(prodcode)!=null){
-				selectedProduct.ProductId = (prdcodetoidmap.get(prodcode)).Id;
-				
-				if(!productqtymap.isEmpty() && productqtymap.get(prodcode)!=null){
+	selectedProduct.ProductId = (prdcodetoidmap.get(prodcode)).Id;
+	
+	if(!productqtymap.isEmpty() && productqtymap.get(prodcode)!=null){
 		selectedProduct.Quantity = productqtymap.get(prodcode);  //Get Quantity from the map created using JSON file
 		request.SelectedProducts.add(selectedProduct);
-				}
+	}
 			}
 			}
 			if(prdsnotavailable.isEmpty()){ 
 	Apttus_Config2__LineItem__c lineitemfieldupdatetrue = [select Id,NokiaCPQ_Is_CAT_Configured__c from Apttus_Config2__LineItem__c 
-					where id=:lineitemid];
+		where id=:lineitemid];
 	lineitemfieldupdatetrue.NokiaCPQ_Is_CAT_Configured__c=true;
 	update lineitemfieldupdatetrue;
 	system.debug('prdsnotavailable'+prdsnotavailable);
@@ -210,7 +211,7 @@ system.debug('IsPricePending :'+ IsPricePending);
 			}else{
 	
 	Apttus_Config2__LineItem__c lineitemfieldupdate = [select Id,NokiaCPQ_Is_CAT_Configured__c from Apttus_Config2__LineItem__c 
-				   where id=:lineitemid];
+	   where id=:lineitemid];
 	lineitemfieldupdate.NokiaCPQ_Is_CAT_Configured__c=false;
 	Update lineitemfieldupdate;
 	string joinstring = String.join(new List<String>(prdsnotavailable), ',');
@@ -248,7 +249,7 @@ system.debug('IsPricePending :'+ IsPricePending);
 			//Blob payloadBlob = EncodingUtil.base64Decode(configbody);
 			
 			Attachment attach = new Attachment(contentType = 'text/plain',name = 'cfg_data.txt',
-			  parentId = parentId, body = blob.valueOf(configbody));
+	 parentId = parentId, body = blob.valueOf(configbody));
 			configbody = null;
 			if(!existingAttch.isEmpty()){
 	//First delete existing attachment/configuration

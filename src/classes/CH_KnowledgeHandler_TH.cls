@@ -44,6 +44,8 @@ public with sharing class CH_KnowledgeHandler_TH extends TriggerHandler {
 	* @description beforeUpdate handle the CH_Workgroup afterUpdate event on Knowledge__kav.
 	*/
 	public override void beforeUpdate(){
+		/* Commenting below code, 35225 US no longer reqyuired
+		CH_KnowledgeHandler_TL.updateKnowledgeArticleId(isolateCHArticlesByRecordType(newList));//NOKIASC-35225 */
 		CH_KnowledgeHandler_TL.updateKBProducts(newList);
 	}
 

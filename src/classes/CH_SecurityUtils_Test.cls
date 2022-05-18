@@ -2,13 +2,13 @@
  * About 
  * ----- 
  * @Description	  : Case Handling Security Utility Test Class.
- * @Project		  : Case Handling.
+ * @Project	: Case Handling.
  * @Modification Log : 
- *  Created  : 2020 02 18 – tiago.almeida@nokia.com
- * ----- 
+ *  Created  : 2020 02 18 – tiago.almeida@nokia.com 
+ * -----
 **/
 @isTest
-public class CH_SecurityUtils_Test {
+public class CH_SecurityUtils_Test { 
 	private static Case oCase;
 
 	@testSetup	
@@ -61,7 +61,7 @@ public class CH_SecurityUtils_Test {
    
 	public static testMethod void test() {
 		//
-		test.startTest();
+		Test.startTest();
 		try{
 			CH_SecurityUtils.checkUserPermissions(UserInfo.getUserId(), new List<String>{'Test Profile'}, new List<String>{'Test Permission'}, true);
 			CH_SecurityUtils.checkUserAccess(UserInfo.getUserId(), UserInfo.getUserId(), true, true, true, true);
@@ -72,28 +72,28 @@ public class CH_SecurityUtils_Test {
 		}
 		try{
 			ServiceContract oServiceContract = new ServiceContract(
-				RecordTypeId = Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_ServiceContract').getRecordTypeId(),
-				CH_CDB_PreviousContractId__c = 'Test'
+	RecordTypeId = Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_ServiceContract').getRecordTypeId(),
+	CH_CDB_PreviousContractId__c = 'Test'
 			);
 			ServiceContract oldServiceContract = [SELECT Id, ContractNumber FROM ServiceContract LIMIT 1];
 			CH_SecurityRule__c oSecurityRule = new CH_SecurityRule__c(
-				CH_OrderofExecution__c = 1,
-				CH_SecurityGroup__c = null,
-				CH_GWCSecurityGroup__c = null,
-				CH_AccountNumber__c = null,
-				CH_AccountCustomerCompliance__c = null,
-				CH_ContractNumber__c = oldServiceContract.ContractNumber,
-				CH_NokiaProductId__c = null,
-				CH_Country__c = 'Portugal',
-				CH_CARESServiceAgreement__c = null,
-				CH_3rdPartySecurityGroup__c = null,
-				CH_Active__c = true
+	CH_OrderofExecution__c = 1,
+	CH_SecurityGroup__c = null,
+	CH_GWCSecurityGroup__c = null,
+	CH_AccountNumber__c = null,
+	CH_AccountCustomerCompliance__c = null,
+	CH_ContractNumber__c = oldServiceContract.ContractNumber,
+	CH_NokiaProductId__c = null,
+	CH_Country__c = 'Portugal',
+	CH_CARESServiceAgreement__c = null,
+	CH_3rdPartySecurityGroup__c = null,
+	CH_Active__c = true
 			);
 			insert oSecurityRule;
 			CH_SecurityUtils.createNewSecurityRules(new List<ServiceContract>{ oServiceContract });
 		} catch(Exception e) {
 			System.debug('The following exception has occurred: ' + e.getMessage());
-		}
-		test.stopTest();
+		}  
+		Test.stopTest();
 	}
 }

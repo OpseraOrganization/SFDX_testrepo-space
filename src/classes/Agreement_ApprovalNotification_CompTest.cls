@@ -23,7 +23,7 @@ private class Agreement_ApprovalNotification_CompTest {
 	private Static List<Offer__c> offerListEmp = new List<Offer__c>();
 	private Static  List<Opportunity> OpplistEmp=new List<Opportunity>();
 	
-	static testMethod void Notification(){
+	static testMethod void notification(){
 		Userlist.add(testUser);
 		Userlist.add(sysAdminUser);
 		Database.insert(Userlist);
@@ -67,7 +67,6 @@ private class Agreement_ApprovalNotification_CompTest {
 			//Creating Offer
 			Offer__c offerCreation = TestDataFactory.OfferCreation(1,currentOpportunity)[0];
 			offerCreation.ActiveOffer__c = True;
-			offerCreation.Expected_LoA_G4_Approval_Level__c='c';
 			offerCreation.Customer_Offer_Due_Date__c =myDate ;		
 			offerList.add(offerCreation);
 			insert offerList;	 

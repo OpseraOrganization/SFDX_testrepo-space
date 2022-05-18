@@ -43,14 +43,11 @@ public without sharing class CH_Knowledge_ProductManager_Helper {
 		//for(CH_ProductRelation__c oProductRelation : [SELECT CH_Parent_Product__r.Name FROM CH_ProductRelation__c WHERE CH_Knowledge__c =: articleId AND CH_Parent_Product__c != NULL AND CH_Parent_Release__c = NULL]){
 		for(CH_ProductRelation__c oProductRelation : [SELECT CH_Knowledge__r.Id, CH_Parent_Product__r.Name, CH_Parent_Product__c FROM CH_ProductRelation__c WHERE CH_Knowledge__r.Id =: articleId AND CH_Parent_Release__c = NULL]){
 			if((oProductRelation.CH_Parent_Product__c != NULL) && ((result + oProductRelation.CH_Parent_Product__r.Name+'; ').length() < 1500)){
-				
-					result += oProductRelation.CH_Parent_Product__r.Name+'; ';
-							 
+	result += oProductRelation.CH_Parent_Product__r.Name+'; ';		 
 			}
 		}
-		Knowledge__kav oKnowledge = [SELECT Id, CH_KB_Products__c, CH_Products_Short__c FROM Knowledge__kav  WHERE Id =: articleId LIMIT 1];
+		Knowledge__kav oKnowledge = [SELECT Id, CH_KB_Products__c FROM Knowledge__kav  WHERE Id =: articleId LIMIT 1];
 		oKnowledge.CH_KB_Products__c = result;
-		oKnowledge.CH_Products_Short__c = result;
 		update oKnowledge;
 	}
 }

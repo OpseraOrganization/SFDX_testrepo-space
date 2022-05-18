@@ -43,7 +43,7 @@ public class QTC_QuoteProposalToStagingTest
 		qtstg.QTEID__c ='1912345';
 		qtstg.Quote_Number__c = '19.US.876785 Q 1';
 		qtstg.PARTNRID__c = '1234567';
-		quote_staging_Rec.add(qtstg);		
+		quote_staging_Rec.add(qtstg);	   
 		Database.INSERT(quote_staging_Rec);
 		
 		Quote_Staging__c quote_staging = quote_staging_Rec[0];
@@ -77,7 +77,7 @@ public class QTC_QuoteProposalToStagingTest
 		String field1 = '';
 		sObject childObj;
 		qtPrplStgng.getDataFromParent(field1, childObj);		
-	
+	   
 		DateTime dateValue = DateTime.now();
 		String targetField = '';
 		String currencyStringValue = '';
@@ -204,7 +204,7 @@ public class QTC_QuoteProposalToStagingTest
 		quoteParameterList.add(param11);
 		
 		Quote_Parameter__c param12 = new Quote_Parameter__c();
-		param12.Target_Field__c = '	Year 1 Maintenance,SSP,Maintenance for Y2 and Beyond';
+		param12.Target_Field__c = ' Year 1 Maintenance,SSP,Maintenance for Y2 and Beyond';
 		param12.Target_Object__c = 'Quote_Staging__c';
 		param12.Source_Field__c = 'Apttus_QPConfig__ChargeType__c';
 		param12.Source_Object__c = 'Apttus_Proposal__Proposal_Line_Item__c';
@@ -370,7 +370,7 @@ public class QTC_QuoteProposalToStagingTest
 		prodConfigs[0].Apttus_QPConfig__Proposald__c = proposals[0].Id;
 		prodConfigs[0].Apttus_Config2__Status__c = 'Finalized';
 		INSERT prodConfigs;
-		
+		  test.startTest();
 		//create a quote Line Item
 		List<Apttus_Proposal__Proposal_Line_Item__c > proposalsLineItem1 = NOKIA_CPQ_TestDataFactory.createProposalLineItem(3);
 		proposalsLineItem1[0].Apttus_Proposal__Proposal__c = proposals[0].id;
@@ -418,7 +418,7 @@ public class QTC_QuoteProposalToStagingTest
 		
 		INSERT pli;
 		
-		// INSERT Configuration Line Items		
+		// INSERT Configuration Line Items	  
 		Apttus_Config2__LineItem__c LineItem1 =new Apttus_Config2__LineItem__c(
 			Apttus_Config2__ConfigurationId__c=prodConfigs[0].Id,
 			Apttus_Config2__ItemSequence__c = 1,
@@ -478,7 +478,7 @@ public class QTC_QuoteProposalToStagingTest
 			Apttus_Config2__NetPrice__c=120,
 			NokiaCPQ_SSP_Rate__c=120
 		);
-		test.startTest();
+		
 		//create proposal line items		
 		List<Apttus_Proposal__Proposal_Line_Item__c> proposalLineItemList= NOKIA_CPQ_TestDataFactory.createProposalLineItem(5);
 		proposalLineItemList[0].NokiaCPQ_Spare__c = false;
@@ -588,7 +588,7 @@ public class QTC_QuoteProposalToStagingTest
 		listQDSIs.Proposal__c=  proposals[0].id;
 		listQDSIs.Sequence_Site_Id__c= 'SPS-ALU-PR-SW-PCI';
 		listQDSIs.Alias_for_Exports__c= 'SPS-ALU-PR-SW-PCI';
-		listQDSIs.CMN__c= 'SPS-ALU-PR-SW-PCI';		
+		listQDSIs.CMN__c= 'SPS-ALU-PR-SW-PCI';	  
 		INSERT listQDSIs;
 		
 		//Create Quote staging Record:
@@ -610,7 +610,7 @@ public class QTC_QuoteProposalToStagingTest
 		taskValuesMap.put('a3k56000000QecvAAC','UPD');
 		
 		
-		
+	  
 		NokiaCPQquoteActionsController.sendAddQuoteMessageToEAI(proposals[0].id, '');
 		Database.BatchableContext BC;
 		QTC_QuoteProposalToStaging qtc = new QTC_QuoteProposalToStaging(quoteIds,taskValuesMap);

@@ -53,42 +53,42 @@ public static void customValidationOnDirectQickActions(Map<Id, Apttus_Proposal__
 public static void updateDirectExchangeRate(Map<Id, Apttus_Proposal__Proposal__c> proposalNewTriggerMap, Map<Id, Apttus_Proposal__Proposal__c> proposalOldTriggerMap){
 	/* try{
 
-		set<string> currencySet = new set<String>();
-		List<CurrencyType> objCurrencyType = new List<CurrencyType>();
-		for(id proposalObjRecId: proposalNewTriggerMap.keySet())
-		{
-		if(proposalNewTriggerMap.get(proposalObjRecId).Quote_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.QUOTE_TYPE_DIRECTCPQ) && proposalNewTriggerMap.get(proposalObjRecId).CurrencyISOCode!='USD')
-		{
-		currencyset.add(proposalNewTriggerMap.get(proposalObjRecId).CurrencyISOCode);
-		}
-		}
-		If(!currencyset.isEmpty())
-		{
-		objCurrencyType = [select IsoCode, ConversionRate from CurrencyType where IsoCode in :currencyset LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())];
-		}
-		for(id proposalObjRecId: proposalNewTriggerMap.keySet()){
-			  if(proposalNewTriggerMap.get(proposalObjRecId).Quote_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.QUOTE_TYPE_DIRECTCPQ) && proposalNewTriggerMap.get(proposalObjRecId).CurrencyISOCode!='USD'){
-			   Decimal price= 0.00;
-			  for(CurrencyType ctype : objCurrencyType)
-			  {
-			  if(ctype.IsoCode == proposalNewTriggerMap.get(proposalObjRecId).CurrencyISOCode)
-			  {
-			  price=ctype.ConversionRate;
-			  }
-			  }
-	  if(proposalNewTriggerMap.get(proposalObjRecId).exchange_rate__c != null && proposalOldTriggerMap.get(proposalObjRecId).exchange_rate__c != null &&
-	  proposalOldTriggerMap.get(proposalObjRecId).exchange_rate__c!= proposalNewTriggerMap.get(proposalObjRecId).exchange_rate__c){
-			   //   proposalNewTriggerMap.get(proposalObjRecId).Exchange_Rate_for_Direct__c=proposalOldTriggerMap.get(proposalObjRecId).Exchange_Rate_for_Direct__c*proposalNewTriggerMap.get(proposalObjRecId).exchange_rate__c/price;
-					  }
+								 set<string> currencySet = new set<String>();
+								 List<CurrencyType> objCurrencyType = new List<CurrencyType>();
+								 for(id proposalObjRecId: proposalNewTriggerMap.keySet())
+								 {
+								 if(proposalNewTriggerMap.get(proposalObjRecId).Quote_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.QUOTE_TYPE_DIRECTCPQ) && proposalNewTriggerMap.get(proposalObjRecId).CurrencyISOCode!='USD')
+								 {
+								 currencyset.add(proposalNewTriggerMap.get(proposalObjRecId).CurrencyISOCode);
+								 }
+								 }
+								 If(!currencyset.isEmpty())
+								 {
+								 objCurrencyType = [select IsoCode, ConversionRate from CurrencyType where IsoCode in :currencyset LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())];
+								 }
+								 for(id proposalObjRecId: proposalNewTriggerMap.keySet()){
+																 if(proposalNewTriggerMap.get(proposalObjRecId).Quote_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.QUOTE_TYPE_DIRECTCPQ) && proposalNewTriggerMap.get(proposalObjRecId).CurrencyISOCode!='USD'){
+																 Decimal price= 0.00;
+																 for(CurrencyType ctype : objCurrencyType)
+																 {
+																 if(ctype.IsoCode == proposalNewTriggerMap.get(proposalObjRecId).CurrencyISOCode)
+																 {
+																 price=ctype.ConversionRate;
+																 }
+																 }
+	if(proposalNewTriggerMap.get(proposalObjRecId).exchange_rate__c != null && proposalOldTriggerMap.get(proposalObjRecId).exchange_rate__c != null &&
+	proposalOldTriggerMap.get(proposalObjRecId).exchange_rate__c!= proposalNewTriggerMap.get(proposalObjRecId).exchange_rate__c){
+																 //   proposalNewTriggerMap.get(proposalObjRecId).Exchange_Rate_for_Direct__c=proposalOldTriggerMap.get(proposalObjRecId).Exchange_Rate_for_Direct__c*proposalNewTriggerMap.get(proposalObjRecId).exchange_rate__c/price;
+																																 }
 
-			  }
+																 }
 
 
-		}
-	  }
-	  catch(Exception ex) {
-		ExceptionHandler.addException(ex,ProposalTriggerHelper.class.getName(),Nokia_CPQ_Constants.QUOTE_NOT_FOUND);
-	  } */
+								 }
+	}
+	catch(Exception ex) {
+								 ExceptionHandler.addException(ex,ProposalTriggerHelper.class.getName(),Nokia_CPQ_Constants.QUOTE_NOT_FOUND);
+	} */
 }
 
 /*********************************
@@ -186,6 +186,8 @@ public static void restrictExchangeRateUpdate (Map<Id, Apttus_Proposal__Proposal
  * Return: None
  * Description: method used to associate accreditation to proposal records
  **********************************/
+
+// Modified for ITCCPQ-2555 by Christie JJ
 public static void associateAccreditation(List<Apttus_Proposal__Proposal__c> newProposalList){
 
 	Set<Id> oppIdSet = new Set<Id>();
@@ -196,18 +198,27 @@ public static void associateAccreditation(List<Apttus_Proposal__Proposal__c> new
 	Map<String, List<Accreditation__c> > accIdAndAccredMap = new Map<String, List<Accreditation__c> >();
 	Map<String,String> shippingLocMap = new Map<String,String>();
 	Map<Id,List<OpportunityTeamMember> >  opptyTeammemberMap = new Map<Id,List<OpportunityTeamMember> >();
-	List<Shipping_Location__c>  shippinglocList = New List<Shipping_Location__c>(); //Added by RG for Indirect code fix for Performance issue
+	List<Shipping_Location__c>  shippinglocList = New List<Shipping_Location__c>();		 //Added by RG for Indirect code fix for Performance issue
 	//By pass Associate Accreditation for Direct Quote Record type...
 	for(Apttus_Proposal__Proposal__c newProp : newProposalList) {
+
 		// Check Direct Quote record type will not process furter
+
+		//if(newProp.Apttus_Proposal__Opportunity__c != null && String.isNotBlank(newProp.NokiaCPQ_Portfolio__c) && newProp.NokiaCPQ_Opportunity_Type__c <> Nokia_CPQ_Constants.DIRECT_REC_TYPE && newProp.Quote_Type__c.equalsignorecase(Nokia_CPQ_Constants.QUOTE_TYPE_INDIRECTCPQ)) {
 		if(newProp.Apttus_Proposal__Opportunity__c != null && String.isNotBlank(newProp.NokiaCPQ_Portfolio__c) && newProp.NokiaCPQ_Opportunity_Type__c <> Nokia_CPQ_Constants.DIRECT_REC_TYPE && newProp.Quote_Type__c.equalsignorecase(Nokia_CPQ_Constants.QUOTE_TYPE_INDIRECTCPQ)) {
+
 			oppIdSet.add(newProp.Apttus_Proposal__Opportunity__c);
 			validPropList.add(newProp);
-			portfolioSet.add(newProp.NokiaCPQ_Portfolio__c);
+			portfolioSet.addAll(new Set<String>(Nokia_CPQ_Utility.getPortfolio(newProp)));
+			system.debug('[+] portfolioSet = '+ portfolioSet);
+			//portfolioSet.add(newProp.NokiaCPQ_Portfolio__c);
+
 		}
 
 	}
-
+	system.debug(oppIdSet.size());
+	system.debug(validPropList.size());
+	system.debug(portfolioSet.size());
 	if(oppIdSet.size() >0 && validPropList.size()>0 &&  portfolioSet.size() >0) {
 		//Fetch AccountId from Opportunity
 		for(Opportunity opp : [SELECT Id, AccountId FROM Opportunity WHERE Id IN: oppIdSet AND AccountId != null LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
@@ -232,6 +243,7 @@ public static void associateAccreditation(List<Apttus_Proposal__Proposal__c> new
 	}
 			}
 		}
+		system.debug('[+] accIdAndAccredMap.size = '+accIdAndAccredMap.size());
 		//ADDED BY RG FOR APPROVAL CHECK START
 		List<OpportunityTeamMember> opptyTeammember = [select TeamMemberRole,Id,OpportunityId,UserId from OpportunityTeamMember where OpportunityId=:oppIdSet and TeamMemberRole = 'Pricing Manager' LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())];
 		List<id> pmUsers = new List<id>();
@@ -251,7 +263,7 @@ public static void associateAccreditation(List<Apttus_Proposal__Proposal__c> new
 		}
 		//ADDED BY RG FOR APPROVAL CHECK END
 		for(Shipping_Location__c loc : [SELECT Id, Portfolio__c, Pricing_Cluster__c, Shipping_Location__c FROM Shipping_Location__c WHERE Portfolio__c IN: portfolioSet AND Pricing_Cluster__c !=: Nokia_CPQ_Constants.BLANK_STRING_WITHOUT_SPACE LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
-			shippinglocList.add(loc); //Added by RG for Indirect code fix for Performance issue
+			shippinglocList.add(loc);		 //Added by RG for Indirect code fix for Performance issue
 			shippingLocMap.put(loc.Portfolio__c + loc.Pricing_Cluster__c, loc.Shipping_Location__c);
 		}
 
@@ -263,7 +275,15 @@ public static void associateAccreditation(List<Apttus_Proposal__Proposal__c> new
 			List<Accreditation__c> accredList = new List<Accreditation__c>();
 			accredList = accIdAndAccredMap.get(accntId);
 			//ADDED BY RG FOR APPROVAL CHECK START
-			if(opptyTeammemberMap != null && (newProp.NokiaCPQ_Portfolio__c == 'Fixed Access - POL' || newProp.NokiaCPQ_Portfolio__c == 'Fixed Access - FBA')) {
+			//if(opptyTeammemberMap != null && (newProp.NokiaCPQ_Portfolio__c == 'Fixed Access - POL' || newProp.NokiaCPQ_Portfolio__c == 'Fixed Access - FBA')) {
+			Boolean portfolioFixedAccessCondition=false;
+			List<String> subPortfolios = Nokia_CPQ_Utility.getPortfolio(newProp);
+			portfolioFixedAccessCondition = (subPortfolios.contains('Fixed Access - POL') || subPortfolios.contains('Fixed Access - FBA'));
+			
+	
+
+
+			if(opptyTeammemberMap != null && portfolioFixedAccessCondition) {
 	for(id idValue : opptyTeammemberMap.keyset()) {
 		for(OpportunityTeamMember otm : opptyTeammemberMap.get(idValue)) {
 			if(PcngMngBGUser != null && PcngMngBGUser.Contains(otm.UserId)) {
@@ -275,50 +295,82 @@ public static void associateAccreditation(List<Apttus_Proposal__Proposal__c> new
 	//newProp.PricingmanagerUser__c = opptyTeammemberMap.get(newProp.Apttus_Proposal__Opportunity__c).UserId;
 			}
 			//ADDED BY RG FOR APPROVAL CHECK END
+			Boolean accredsExists =false;
 			if(accredList != null && accredList.size()>0)
 
 
 			{
+
+	//Modified by Christie JJ for ITCCPQ-2555, moved helper logic to Nokia_CPQ_Utility class.
+	//Start
+
+	//Call utility method to check existing Maintenance & Product accreditations for the given Quote subportfolio, or Portfolio.
+
+
+	
+	system.debug(subPortfolios);
+	accredsExists = Nokia_CPQ_Utility.checkProdAndMaintAccreditation(accredList,subPortfolios);
+
+
+
+
+	system.debug('[+] accredsExists : '+accredsExists);
+
 	for(Accreditation__c accred2 : accredList)
 	{
-		if(String.isNotBlank(accred2.Portfolio__c) && accred2.Portfolio__c.equalsIgnoreCase(newProp.NokiaCPQ_Portfolio__c))
+		/*if(String.isNotBlank(accred2.Portfolio__c) && accred2.Portfolio__c.equalsIgnoreCase(newProp.NokiaCPQ_Portfolio__c))
 		{
-			if(String.isNotBlank(accred2.Accreditation_Type__c) && accred2.Accreditation_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT) && noAccredFound == true) {
-				//noAccredFound = false;
-				prodFound = true;
-				newProp.NokiaProductAccreditation__c = accred2.Id;
-				if(String.isNotBlank(accred2.Pricing_Cluster__c))
-				{
-		newProp.NokiaCPQPricing_Cluster__c = accred2.Pricing_Cluster__c;
-				}
-			}
+			 if(String.isNotBlank(accred2.Accreditation_Type__c) && accred2.Accreditation_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT) && noAccredFound == true) {
+					 //noAccredFound = false;
+					 prodFound = true;
+					 newProp.NokiaProductAccreditation__c = accred2.Id;
+					 if(String.isNotBlank(accred2.Pricing_Cluster__c))
+					 {
+							 newProp.NokiaCPQPricing_Cluster__c = accred2.Pricing_Cluster__c;
+					 }
+			 }
 
-			if(String.isNotBlank(accred2.Accreditation_Type__c) && accred2.Accreditation_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE))
-			{
-				maintFound = true;
-				newProp.NokiaCPQ_Maintenance_Accreditation__c = accred2.Id;
-			}
+			 if(String.isNotBlank(accred2.Accreditation_Type__c) && accred2.Accreditation_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE))
+			 {
+					 maintFound = true;
+					 newProp.NokiaCPQ_Maintenance_Accreditation__c = accred2.Id;
+			 }
+		}*/
+
+		if(subPortfolios.contains(accred2.Portfolio__c) && String.isNotBlank(accred2.Portfolio__c) &&
+		String.isNotBlank(accred2.Accreditation_Type__c) && String.isNotBlank(accred2.Pricing_Cluster__c) &&
+		accred2.Accreditation_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT)) {
+
+			newProp.NokiaCPQPricing_Cluster__c = accred2.Pricing_Cluster__c;
+			break;
 		}
-		for(Shipping_Location__c loc : shippinglocList)
-		{
-
-			if(String.isNotBlank(loc.Portfolio__c) && loc.Portfolio__c.equalsIgnoreCase(newProp.NokiaCPQ_Portfolio__c) && String.isNotBlank(loc.Pricing_Cluster__c) && loc.Pricing_Cluster__c.equalsIgnoreCase(newProp.NokiaCPQPricing_Cluster__c))
-			{
-				newProp.NokiaCPQ_ShippingLocation__c = loc.Id;
-			}
-		}
-
-	}
-
-	if(prodFound && maintFound) {
-		noAccredFound = false;
 
 
 	}
+	for(Shipping_Location__c loc : shippinglocList)
+	{
+
+		if(String.isNotBlank(loc.Portfolio__c) && subPortfolios.contains(loc.Portfolio__c) && String.isNotBlank(loc.Pricing_Cluster__c) && loc.Pricing_Cluster__c.equalsIgnoreCase(newProp.NokiaCPQPricing_Cluster__c))
+		{
+			newProp.NokiaCPQ_ShippingLocation__c = loc.Id;
+			break;
+		}
+	}
+
+
+
+	/*if(prodFound && maintFound) {
+			noAccredFound = false;
+
+
+	   }*/
+
+	//End
 
 			}
 
-			if(noAccredFound)
+			if(!accredsExists)
+			//if(noAccredFound)
 			{
 	newProp.addError(Nokia_CPQ_Constants.ERROR_ONE+newProp.NokiaCPQ_Portfolio__c);
 			}
@@ -414,26 +466,35 @@ public static void InsertMaintenanceSSPandSRS(List<Apttus_Proposal__Proposal__c>
 		//String successmsg = Nokia_CPQ_Constants.FAIL_STRING; //Commenting Unused Variables
 		//List<Apttus_Proposal__Proposal__c> newproposalList = new List<Apttus_Proposal__Proposal__c>();
 		List<Nokia_CPQ_Maintenance_type__mdt> metadataList = new List<Nokia_CPQ_Maintenance_type__mdt>();
-		metadataList = [SELECT NokiaCPQ_Portfolio__c, NokiaCPQ_Maintenance_Pricing_Levels__c, Default_Value__c, Maintenance_Type__c FROM Nokia_CPQ_Maintenance_type__mdt Limit: (Limits.getLimitQueryRows() - Limits.getQueryRows())];
+		metadataList = [SELECT NokiaCPQ_Portfolio__c,Is_LEO_Quote__c, NokiaCPQ_Maintenance_Pricing_Levels__c, Default_Value__c, Maintenance_Type__c FROM Nokia_CPQ_Maintenance_type__mdt Limit: (Limits.getLimitQueryRows() - Limits.getQueryRows())];
 
 		for(Nokia_CPQ_SSP_SRS_Default_Values__mdt sspSrsMetadata : [SELECT Portfolio__c, SSP_Default_Value__c, SRS_Default_Value__c, SRS_Visible__c, SSP_Visible__c FROM Nokia_CPQ_SSP_SRS_Default_Values__mdt Limit: (Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 			newMapSRS_SSP.put(sspSrsMetadata.Portfolio__c, sspSrsMetadata);
 		}
 
+		//Added for ITCCPQ-2555 by Christie JJ
+		Set<String> accountsIds = new Set<String>();
+		List<String> subPortfolioTemp = new List<String>();
+		List<String> subPortfoliosAll = new List<String>();
+		for(Apttus_Proposal__Proposal__c newProp : quoteproposalList) {
+			accountsIds.add(newProp.Apttus_Proposal__Account__c);
+			subPortfolioTemp.addAll(Nokia_CPQ_Utility.getPortfolio(newProp));
+		}
+		Set<String> uniqueSubPortfolios = new Set<String>(subPortfolioTemp);
+
+		// List<Accreditation__c> accreditationsList = [SELECT Id,Pricing_Accreditation__c,Portfolio__c,Accreditation_Type__c,Partner__c FROM Accreditation__c WHERE Accreditation_Type__c=:Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE AND Partner__c IN :accountsIds AND Portfolio__c IN :uniqueSubPortfolios];
+		Map<String,List<Accreditation__c> > accountPortfolioAccreditationsMap = new Map<String,List<Accreditation__c> >();
+		for(Accreditation__c accred : [SELECT Id,Pricing_Accreditation__c,Portfolio__c,Accreditation_Type__c,Partner__c FROM Accreditation__c WHERE Accreditation_Type__c=:Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE AND Partner__c IN :accountsIds AND Portfolio__c IN :uniqueSubPortfolios])
+		{
+			if(accountPortfolioAccreditationsMap.containsKey(accred.Partner__c)) {
+	accountPortfolioAccreditationsMap.get(accred.Partner__c).add(accred);
+			}
+			else{
+	accountPortfolioAccreditationsMap.put(accred.Partner__c, new List<Accreditation__c> {accred} );
+			}
+
+		}
+		system.debug('[+] accountPortfolioAccreditationsMap size  = '+accountPortfolioAccreditationsMap);
 		for(Apttus_Proposal__Proposal__c newProp : quoteproposalList) {
 
 			//string recordIDvar=newProp.ID; //Commenting Unused Variables
@@ -442,37 +503,103 @@ public static void InsertMaintenanceSSPandSRS(List<Apttus_Proposal__Proposal__c>
 			string numyears=newProp.NokiaCPQ_No_of_Years__c;
 			string planLevel=newProp.NokiaCPQ_SSP_Level__c;
 			string releaseLevel=newProp.NokiaCPQ_SRS_Level__c;
-			List<String> pricingLevelList = new List<String>();
+			//List<String> pricingLevelList = new List<String>();
+			List<String> subPortfolios = Nokia_CPQ_Utility.getPortfolio(newProp);
 
 			if(String.isBlank(maintstring)) {
-	String maintPricinglevel = Nokia_CPQ_Constants.BLANK_STRING_WITHOUT_SPACE;
+	//String maintPricinglevel = Nokia_CPQ_Constants.BLANK_STRING_WITHOUT_SPACE;
 	String defaultValue = Nokia_CPQ_Constants.BLANK_STRING_WITHOUT_SPACE;
-	String portfolioVal = newProp.NokiaCPQ_Portfolio__c;
-
-	maintPricinglevel = newProp.NokiaCPQ_Maintenance_Accreditation__r.Pricing_Accreditation__c;
-	//system.debug('Maintenance level **' + maintPricinglevel);
-
-	//if maintenance Pricing level does not contains brand or AED then set it as All Others
-	if(!String.isBlank(maintPricinglevel) && !maintPricinglevel.contains(Nokia_CPQ_Constants.BRAND_STRING)
-	   && !maintPricinglevel.equalsIgnoreCase(Nokia_CPQ_Constants.AED_STRING)) {
-		maintPricinglevel = Nokia_CPQ_Constants.PRICING_LEVEL_ALL_OTHERS;
-	}
-
-	//retriving data from custom metadata to get picklist values
+	String accountId = newProp.Apttus_Proposal__Account__c;
+	// List<Accreditation__c> accreditations = new List<Accreditation__c>();
+	// for(String subPort : subPortfolios) {
+	// 	if(accountPortfolioAccreditationsMap.keySet().contains(accountId+'_'+subPort))
+	// 		accreditations.addAll(accountPortfolioAccreditationsMap.get(accountId+'_'+subPort));
+	// }
+	Map<String,String> portfolioPricingLevelMap = Nokia_CPQ_Utility.fecthRelatedPricingAccreditations(accountPortfolioAccreditationsMap.get(accountId));
+	system.debug('portfolioPricingLevelMap-->'+portfolioPricingLevelMap);
+	//Modified for ITCCPQ 2555 by Christie JJ
 	for(Nokia_CPQ_Maintenance_type__mdt metadataRec : metadataList) {
-
-		pricingLevelList = metadataRec.NokiaCPQ_Maintenance_Pricing_Levels__c.split(Nokia_CPQ_Constants.SEMICOLON_STRING);
-
-		if(!String.isBlank(maintPricinglevel) && metadataRec.NokiaCPQ_Portfolio__c.equals(portfolioVal) && pricingLevelList.contains(maintPricinglevel)) {
-			defaultValue = metadataRec.Default_Value__c;
-			break;
+		if(!subPortfolios.contains(metadataRec.NokiaCPQ_Portfolio__c)) {
+			continue;
 		}
-
-
-
-
+		List<String> pricingLevelList = metadataRec.NokiaCPQ_Maintenance_Pricing_Levels__c.split(Nokia_CPQ_Constants.SEMICOLON_STRING);
+		system.debug('pricingLevelList-->'+pricingLevelList);
+		string maintPricinglevel = portfolioPricingLevelMap.get(metadataRec.NokiaCPQ_Portfolio__c);
+		system.debug('maintPricinglevel-->'+maintPricinglevel);
+		if(String.isNotBlank(maintPricinglevel)) {
+			//if maintenance Pricing level does not contains brand or AED then set it as All Others
+			if(!maintPricinglevel.contains(Nokia_CPQ_Constants.BRAND_STRING) && !maintPricinglevel.equalsIgnoreCase(Nokia_CPQ_Constants.AED_STRING)) {
+				maintPricinglevel = Nokia_CPQ_Constants.PRICING_LEVEL_ALL_OTHERS;
+			}
+			if(pricingLevelList.contains(maintPricinglevel) && metadataRec.Is_LEO_Quote__c==newProp.NokiaCPQ_LEO_Discount__c) {
+				defaultValue = metadataRec.Default_Value__c;
+				break;
+			}
+		}
 	}
+	//retriving data from custom metadata to get picklist values
+	// Boolean breakInstance=false;
+	// for(String subportfolio : subportfolios) {
+	// 	If(breakInstance)
+	// 	break;
+
+	// 	if(portfolioPricingLevelMap.keySet().contains(subportfolio)) {
+	// 		maintPricinglevel = portfolioPricingLevelMap.get(subportfolio);
+	// 	}
+
+	// 	if(!String.isBlank(maintPricinglevel) && !maintPricinglevel.contains(Nokia_CPQ_Constants.BRAND_STRING)
+	//	 && !maintPricinglevel.equalsIgnoreCase(Nokia_CPQ_Constants.AED_STRING)) {
+	// 		maintPricinglevel = Nokia_CPQ_Constants.PRICING_LEVEL_ALL_OTHERS;
+	// 	}
+	// 	system.debug('[+] maintPricinglevel = '+maintPricinglevel);
+
+	// 	for(Nokia_CPQ_Maintenance_type__mdt metadataRec : metadataList) {
+
+	// 		pricingLevelList = metadataRec.NokiaCPQ_Maintenance_Pricing_Levels__c.split(Nokia_CPQ_Constants.SEMICOLON_STRING);
+
+
+	// 		//if(!String.isBlank(maintPricinglevel) && metadataRec.NokiaCPQ_Portfolio__c.equals(portfolioVal) && pricingLevelList.contains(maintPricinglevel)) {
+	// 		if(!String.isBlank(maintPricinglevel) && subportfolio.equals(metadataRec.NokiaCPQ_Portfolio__c) && pricingLevelList.contains(maintPricinglevel) && metadataRec.Is_LEO_Quote__c==newProp.NokiaCPQ_LEO_Discount__c) {
+	//	defaultValue = metadataRec.Default_Value__c;
+
+	//	//Added for ITCCPQ-2556
+	//	breakInstance=true;
+
+	//	break;
+	// 		}
+	// 	}
+	// }
 	maintstring = defaultValue;
+	system.debug('[+] maintstring = '+maintstring);
+	/*
+	   for(String subportfolio : subportfolios){
+
+			if(portfolioPricingLevelMap.keyset().contains(subportfolio))
+			maintPricinglevel = portfolioPricingLevelMap.get(subportfolio);
+
+			//if maintenance Pricing level does not contains brand or AED then set it as All Others
+			if(!String.isBlank(maintPricinglevel) && !maintPricinglevel.contains(Nokia_CPQ_Constants.BRAND_STRING)
+			&& !maintPricinglevel.equalsIgnoreCase(Nokia_CPQ_Constants.AED_STRING))
+			{
+			 maintPricinglevel = Nokia_CPQ_Constants.PRICING_LEVEL_ALL_OTHERS;
+			 }
+
+	   //retriving data from custom metadata to get picklist values
+	   for(Nokia_CPQ_Maintenance_type__mdt metadataRec : metadataList) {
+
+			pricingLevelList = metadataRec.NokiaCPQ_Maintenance_Pricing_Levels__c.split(Nokia_CPQ_Constants.SEMICOLON_STRING);
+
+
+					if(!String.isBlank(maintPricinglevel) && subportfolio.equals(metadataRec.NokiaCPQ_Portfolio__c) && pricingLevelList.contains(maintPricinglevel)) {
+							defaultValues.add(metadataRec.Default_Value__c);
+					break;
+			}
+
+	   }}
+	 */
+	//Get common values in
+
+
 			}
 
 			if(!String.isBlank(existcontract)) {
@@ -501,9 +628,10 @@ public static void InsertMaintenanceSSPandSRS(List<Apttus_Proposal__Proposal__c>
 
 			if(String.isBlank(planLevel)) {
 	/*if(newProp.NokiaCPQ_Portfolio__c.equals(Nokia_CPQ_Constants.IP_ROUTING_STRING)){
-					planLevel = Nokia_CPQ_Constants.SSP_DEFAULT_VALUE;
-	   }*/
-	planLevel = sspsrsValueReturn(newProp.NokiaCPQ_Portfolio__c, Nokia_CPQ_Constants.NOKIA_SSP);
+																																	planLevel = Nokia_CPQ_Constants.SSP_DEFAULT_VALUE;
+					}*/
+	//planLevel = sspsrsValueReturn(newProp.NokiaCPQ_Portfolio__c, Nokia_CPQ_Constants.NOKIA_SSP);
+	planLevel = sspsrsValueReturn(subPortfolios, Nokia_CPQ_Constants.NOKIA_SSP);
 			}else if(!String.isBlank(planLevel)) {
 	if(planLevel.equalsIgnoreCase(Nokia_CPQ_Constants.NONE_STRING)) {
 		planLevel=null;
@@ -513,9 +641,10 @@ public static void InsertMaintenanceSSPandSRS(List<Apttus_Proposal__Proposal__c>
 
 			if(String.isBlank(releaseLevel)) {
 	/* if(newProp.NokiaCPQ_Portfolio__c.equals(Nokia_CPQ_Constants.IP_ROUTING_STRING)){
-				   releaseLevel = Nokia_CPQ_Constants.SRS_DEFAULT_VALUE;
-	   }*/
-	releaseLevel = sspsrsValueReturn(newProp.NokiaCPQ_Portfolio__c, Nokia_CPQ_Constants.NOKIA_SRS);
+																													releaseLevel = Nokia_CPQ_Constants.SRS_DEFAULT_VALUE;
+					}*/
+	//releaseLevel = sspsrsValueReturn(newProp.NokiaCPQ_Portfolio__c, Nokia_CPQ_Constants.NOKIA_SRS);
+	releaseLevel = sspsrsValueReturn(subPortfolios, Nokia_CPQ_Constants.NOKIA_SRS);
 			}else if(!String.isBlank(releaseLevel)) {
 	if(releaseLevel.equalsIgnoreCase(Nokia_CPQ_Constants.NONE_STRING)) {
 		releaseLevel=null;
@@ -549,33 +678,39 @@ public static void InsertMaintenanceSSPandSRS(List<Apttus_Proposal__Proposal__c>
  * Return: String
  * Description: return default value for ssp and srs
  * History: Changing public access modifier to private
+ * Modified: Chrisitie JJ (ITCCPQ-2555) on 1/14/2022
  **********************************/
 @testVisible
-private static String sspsrsValueReturn(String portfolio, String field){
+//private static String sspsrsValueReturn(String portfolio, String field){
+private static String sspsrsValueReturn(List<String> portfolios, String field){
 	String defaultValue = Nokia_CPQ_Constants.BLANK_STRING_WITHOUT_SPACE;
 	try{
-		if(newMapSRS_SSP != null && newMapSRS_SSP.get(portfolio) != null) {
-			Nokia_CPQ_SSP_SRS_Default_Values__mdt metadataRec = newMapSRS_SSP.get(portfolio);
+		for(String portfolio : portfolios) {
+			if(newMapSRS_SSP != null && newMapSRS_SSP.get(portfolio) != null) {
+	Nokia_CPQ_SSP_SRS_Default_Values__mdt metadataRec = newMapSRS_SSP.get(portfolio);
 
-			if(field.equals(Nokia_CPQ_Constants.NOKIA_SSP)) {
-	if(metadataRec.SSP_Visible__c) {
-		defaultValue = metadataRec.SSP_Default_Value__c;
-	}
-	else{
-		defaultValue= null;
-	}
-			}
-			else{
-	if(metadataRec.SRS_Visible__c) {
-		defaultValue = metadataRec.SRS_Default_Value__c;
-	}
-	else{
-		defaultValue= null;
-	}
-			}
+	if(field.equals(Nokia_CPQ_Constants.NOKIA_SSP)) {
+		if(metadataRec.SSP_Visible__c) {
+			defaultValue = metadataRec.SSP_Default_Value__c;
 		}
+		else{
+			defaultValue= null;
+		}
+	}
+	else{
+		if(metadataRec.SRS_Visible__c) {
+			defaultValue = metadataRec.SRS_Default_Value__c;
+		}
+		else{
+			defaultValue= null;
+		}
+	}
+	if(defaultValue!=null)
+		break;
+			}
 
 
+		}
 
 	}
 	catch(Exception e) {
@@ -590,6 +725,7 @@ private static String sspsrsValueReturn(String portfolio, String field){
  * Param: List<Apttus_Proposal__Proposal__c> proposalTriggerList
  * Return: None
  * Description: methods create the professional service record for the related quote
+ * Modified: Christie JJ (ITCCPQ-2555) on 1/14/2022
  **********************************/
 public static void insertServiceRecord(List<Apttus_Proposal__Proposal__c> proposalNewTriggerList){
 
@@ -603,26 +739,41 @@ public static void insertServiceRecord(List<Apttus_Proposal__Proposal__c> propos
 	set<Id> productRecordID = new set<Id>();
 	//set<Id> proposalId = new set<Id>(); //Commenting Unused Variables
 	Optional_Professional_Service__c opsDetail;
-	List<String> portfolioList = new List<String>();
+	//List<String> portfolioList = new List<String>();
+	Set<String> portfolioList = new Set<String>();
 	List<String> accreLevel = new List<String>();
 	Map<Id,Boolean> nmsPropId = new Map<Id,Boolean>();
 	Map<Id,Accreditation__c> accreMap =  new Map<Id,Accreditation__c>();
 	Map<Id,Optional_Services_Detail__c> OptionServiceMap = new Map<Id,Optional_Services_Detail__c>();
 
+	//Added for ITCCPQ-2555 by Christie JJ
+	Set<Id> accountIds = new Set<Id>();
+	Map<String,Accreditation__c> accountIdPortfolioAccreditationMap = new Map<String,Accreditation__c>();
+	List<String> subPortfolios = new List<String>();
 	try{
 		for(Apttus_Proposal__Proposal__c prop1 : proposalNewTriggerList) {
 			isSRS = false;
-			portfolioList.add(prop1.NokiaCPQ_Portfolio__c);
-			accreRecordID.add(prop1.NokiaProductAccreditation__c);
+			//portfolioList.add(prop1.NokiaCPQ_Portfolio__c);
+			//accreRecordID.add(prop1.NokiaProductAccreditation__c);
+			accountIds.add(prop1.Apttus_Proposal__Account__c);
+			subPortfolios.addAll(Nokia_CPQ_Utility.getPortfolio(prop1));
+			portfolioList.addAll(new Set<String>(Nokia_CPQ_Utility.getPortfolio(prop1)));
 			if((!isSRS && prop1.Is_SRS__c>0)) {
 	isSRS =  true;
 			}
 			nmsPropId.put(prop1.Id,isSRS);
 		}
 
+		List<Accreditation__c> accreds = [SELECT Id,Partner__c,Pricing_Accreditation__c,Portfolio__c from Accreditation__c where Accreditation_Type__c=:Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT AND Partner__c =:accountIds AND Portfolio__c IN :subPortfolios LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())];
+		for(Accreditation__c accred : accreds) {
+			accountIdPortfolioAccreditationMap.put(accred.Partner__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+accred.Portfolio__c,accred);
+		}
+
+
 		existsQuoteProfService = [SELECT Id from Optional_Professional_Service__c where Quote_Proposal__c in :nmsPropId.keySet() LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())];
 
-		for(Accreditation__c acc : [SELECT Id,Pricing_Accreditation__c from Accreditation__c where Id in :accreRecordID LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
+		//for(Accreditation__c acc : [SELECT Id,Pricing_Accreditation__c from Accreditation__c where Id in :accreRecordID LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
+		for(Accreditation__c acc : [SELECT Id,Pricing_Accreditation__c from Accreditation__c where Accreditation_Type__c=:Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT AND Partner__c =:accountIds AND Portfolio__c IN :subPortfolios LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
 			accreMap.put(acc.Id, acc);
 			if(String.isNotBlank(acc.Pricing_Accreditation__c)) {
 	accreLevel.add(acc.Pricing_Accreditation__c);
@@ -632,24 +783,31 @@ public static void insertServiceRecord(List<Apttus_Proposal__Proposal__c> propos
 		//Map<Id,Accreditation__c> accreMap =  new Map<Id,Accreditation__c>([SELECT Id,Pricing_Accreditation__c from Accreditation__c where Id in :accreRecordID LIMIT:(Limits.getLimitQueryRows() - Limits.getQueryRows())]);
 
 		for(Apttus_Proposal__Proposal__c prop2 : proposalNewTriggerList) {
-			if(prop2.NokiaProductAccreditation__c!=null) {
-	if(propMap.containsKey(accreMap.get(prop2.NokiaProductAccreditation__c).Pricing_Accreditation__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+prop2.NokiaCPQ_Portfolio__c)) {
-		propMap.get(accreMap.get(prop2.NokiaProductAccreditation__c).Pricing_Accreditation__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+prop2.NokiaCPQ_Portfolio__c).add(prop2);
+			for(String subportfolio : Nokia_CPQ_Utility.getPortfolio(prop2)) {
 
+	//if(prop2.NokiaProductAccreditation__c!=null) {
+	if(accountIdPortfolioAccreditationMap.get(prop2.Apttus_Proposal__Account__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+subportfolio)!=null) {
+		//if(propMap.containsKey(accreMap.get(prop2.NokiaProductAccreditation__c).Pricing_Accreditation__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+prop2.NokiaCPQ_Portfolio__c)) {
+		if(propMap.containsKey(accountIdPortfolioAccreditationMap.get(prop2.Apttus_Proposal__Account__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+subportfolio).Pricing_Accreditation__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+prop2.NokiaCPQ_Portfolio__c)) {
+			//propMap.get(accreMap.get(prop2.NokiaProductAccreditation__c).Pricing_Accreditation__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+prop2.NokiaCPQ_Portfolio__c).add(prop2);
+			propMap.get(accountIdPortfolioAccreditationMap.get(prop2.Apttus_Proposal__Account__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+subportfolio).Pricing_Accreditation__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+subportfolio).add(prop2);
 
-	}
-	else{
-		propMap.put(accreMap.get(prop2.NokiaProductAccreditation__c).Pricing_Accreditation__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+prop2.NokiaCPQ_Portfolio__c,new List<Apttus_Proposal__Proposal__c> {prop2});
+		}
+		else{
+			propMap.put(accreMap.get(prop2.Apttus_Proposal__Account__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+subportfolio).Pricing_Accreditation__c+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+subportfolio,new List<Apttus_Proposal__Proposal__c> {prop2});
+
+		}
 
 	}
 
 			}
+
 		}
 		//system.debug('propMap'+propMap);
 		/*for(Accreditation__c acc : accreMap.values()){
-		if(!String.IsEmpty(acc.Pricing_Accreditation__c)){
-		accreLevel.add(acc.Pricing_Accreditation__c);
-		}
+	 if(!String.IsEmpty(acc.Pricing_Accreditation__c)){
+	 accreLevel.add(acc.Pricing_Accreditation__c);
+	 }
 
 	 }*/
 		//system.debug('portfolio'+portfolio);
@@ -663,7 +821,7 @@ public static void insertServiceRecord(List<Apttus_Proposal__Proposal__c> propos
 		//system.debug('Query executed');
 		//system.debug('optionalServiceDetails'+optionalServiceDetails);
 		/*for(Optional_Services_Detail__c osd : optionalServiceDetails){
-		productRecordID.add(osd.Product__r.Id);
+	 productRecordID.add(osd.Product__r.Id);
 	 }*/
 		//system.debug('productRecordID'+productRecordID);
 
@@ -915,9 +1073,10 @@ public static void updateListPriceIONDirect( List<Apttus_Proposal__Proposal__c> 
 			string srslevel  = proposal.NokiaCPQ_SRS_Level__c;
 			if(String.isBlank(ssplevel) && proposal.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c ==true) {
 	/*if(newProp.NokiaCPQ_Portfolio__c.equals(Nokia_CPQ_Constants.IP_ROUTING_STRING)){
-	   planLevel = Nokia_CPQ_Constants.SSP_DEFAULT_VALUE;
-	   }*/
-	ssplevel = sspsrsValueReturn(proposal.NokiaCPQ_Portfolio__c, Nokia_CPQ_Constants.SSP_DEFAULT_VALUE);
+					planLevel = Nokia_CPQ_Constants.SSP_DEFAULT_VALUE;
+					}*/
+	//ssplevel = sspsrsValueReturn(proposal.NokiaCPQ_Portfolio__c, Nokia_CPQ_Constants.SSP_DEFAULT_VALUE);
+	ssplevel = sspsrsValueReturn(Nokia_CPQ_Utility.getPortfolio(proposal), Nokia_CPQ_Constants.SSP_DEFAULT_VALUE);
 			}else if(!String.isBlank(ssplevel)) {
 	if(ssplevel.equalsIgnoreCase(Nokia_CPQ_Constants.NONE_STRING) || proposal.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c ==false) {
 		ssplevel=null;
@@ -926,9 +1085,10 @@ public static void updateListPriceIONDirect( List<Apttus_Proposal__Proposal__c> 
 
 			if(String.isBlank(srslevel) && proposal.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c ==true) {
 	/* if(newProp.NokiaCPQ_Portfolio__c.equals(Nokia_CPQ_Constants.IP_ROUTING_STRING)){
-	   releaseLevel = Nokia_CPQ_Constants.SRS_DEFAULT_VALUE;
-					}*/
-	srslevel = sspsrsValueReturn(proposal.NokiaCPQ_Portfolio__c, Nokia_CPQ_Constants.SRS_DEFAULT_VALUE);
+					releaseLevel = Nokia_CPQ_Constants.SRS_DEFAULT_VALUE;
+																																	}*/
+	//srslevel = sspsrsValueReturn(proposal.NokiaCPQ_Portfolio__c, Nokia_CPQ_Constants.SRS_DEFAULT_VALUE);
+	srslevel = sspsrsValueReturn(Nokia_CPQ_Utility.getPortfolio(proposal), Nokia_CPQ_Constants.SRS_DEFAULT_VALUE);
 			}else if(!String.isBlank(srslevel)) {
 	if(srslevel.equalsIgnoreCase(Nokia_CPQ_Constants.NONE_STRING) || proposal.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c ==false) {
 		srslevel=null;
@@ -1276,6 +1436,7 @@ public static void quoteStatusToValidate(List<Apttus_Proposal__Proposal__c> newq
  * Return: None
  * Description: updateListPriceIONDirect
  * High Level Process :
+ * Modified: ITCCPQ-2555 by Christie JJ
  **********************************/
 public static void updateIndirectOnOppChange( List<Apttus_Proposal__Proposal__c> newQuote){
 	try{
@@ -1305,7 +1466,7 @@ public static void updateIndirectOnOppChange( List<Apttus_Proposal__Proposal__c>
 											  NokiaCPQ_DPD_Per__c,Apttus_Proposal__Opportunity__r.CurrencyIsoCode,Apttus_Proposal__Opportunity__r.NokiaCPQ_Quote_Count__c
 											  ,NokiaCPQ_Partner_Sales_Manager__c,Apttus_Proposal__Opportunity__r.End_Customer__c,Apttus_Proposal__Opportunity__r.Account.Partner_Type__c,
 											  Apttus_Proposal__Opportunity__r.PRMDeal_Origination_Discount_Status__c,
-											  Apttus_Proposal__Opportunity__r.OwnerId from Apttus_Proposal__Proposal__c where id in : newQuote]) {
+											  Apttus_Proposal__Opportunity__r.OwnerId,CPQ_SubPortfolio__c from Apttus_Proposal__Proposal__c where id in : newQuote]) {
 
 			//	objQuote.NokiaCPQ_Proposal_Id__c = objQuote.Apttus_Proposal__Opportunity__r.Opportunity_ID__c + ' ' + 'Q' +' '+ objQuote.Apttus_Proposal__Opportunity__r.NokiaCPQ_Quote_Count__c ;
 			system.debug('opportunity id -name '+objQuote.Apttus_Proposal__Opportunity__r.Opportunity_ID__c);
@@ -1313,6 +1474,8 @@ public static void updateIndirectOnOppChange( List<Apttus_Proposal__Proposal__c>
 			objQuote.CurrencyIsoCode = objQuote.Apttus_Proposal__Opportunity__r.CurrencyIsoCode;
 			if(objQuote.Apttus_Proposal__Opportunity__r.PRMDeal_Origination_Discount_Status__c == 'Approved with DOD'
 	  && objQuote.NokiaCPQ_Portfolio__c != 'FastMile') {
+	//Modified for ITCCPQ-2555 by Christie JJ
+	//&& !Nokia_CPQ_Utility.getPortfolio(objQuote).contains('FastMile')) {
 	objQuote.NokiaCPQ_DOD_Per__c = double.valueof(customConstantField[0].DOD__c);
 			}
 			else {
@@ -1376,7 +1539,7 @@ public static void approvalRequiredChangeStatus(Map<Id, Apttus_Proposal__Proposa
 
 	try{
 		List<Apttus_Proposal__Proposal_Line_Item__c> proposalLineItem = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-		proposalLineItem =  [Select id from Apttus_Proposal__Proposal_Line_Item__c where Apttus_Proposal__Proposal__c in :proposalNewTriggerMap.keySet() and is_Custom_Product__c = true and Apttus_QPConfig__DerivedFromId__r.Pre_Approved_Custom_Product__c = null limit 1];//Yashdeep ITCCPQ-1864
+		proposalLineItem =  [Select id from Apttus_Proposal__Proposal_Line_Item__c where Apttus_Proposal__Proposal__c in :proposalNewTriggerMap.keySet() and is_Custom_Product__c = true and Apttus_QPConfig__DerivedFromId__r.Pre_Approved_Custom_Product__c = null limit 1];		//Yashdeep ITCCPQ-1864
 		for(id proposalObjRecId: proposalNewTriggerMap.keySet()) {
 			if(proposalNewTriggerMap.get(proposalObjRecId).Quote_Type__c.equalsIgnoreCase(Nokia_CPQ_Constants.QUOTE_TYPE_INDIRECTCPQ)) {
 	//List<Apttus_Proposal__Proposal_Line_Item__c> proposalLineItem = new List<Apttus_Proposal__Proposal_Line_Item__c>();
@@ -1507,7 +1670,7 @@ public static void updateNCQQuotes(List < Apttus_Proposal__Proposal__c > ncqQuot
 	  if(ncq.RecordTypeId ==  New_CQ_RecId) {
 	  ncq.isCQ__c = true;
 	  } else {
-		 ncq.isCQ__c = false;
+	  ncq.isCQ__c = false;
 	  }
 	*/
 			ncq.isCQ__c = false;
@@ -1557,11 +1720,11 @@ public static void updateNCQfieldsOnUpdate(Map < Id, Apttus_Proposal__Proposal__
 		for (Apttus_Proposal__Proposal__c ncq: proposalNewTrigger.values()) {
 			if (ncq.RecordTypeId == NCQ_RecId || ncq.RecordTypeId ==  New_CQ_RecId) {
 	/*
-	   if(ncq.RecordTypeId ==  New_CQ_RecId) {
-	   ncq.isCQ__c = true;
-	   } else {
-	   ncq.isCQ__c = false;
-	   }
+					if(ncq.RecordTypeId ==  New_CQ_RecId) {
+					ncq.isCQ__c = true;
+					} else {
+					ncq.isCQ__c = false;
+					}
 	 */
 	ncq.isCQ__c = false;
 	if (ncq.Apttus_QPConfig__ConfigurationFinalizedDate__c != null &&
@@ -1597,8 +1760,82 @@ public static void quoteVersioningMethod(List<Apttus_Proposal__Proposal__c> dire
 	NokiaCPQ_ProposalTriggerHelper_NoSharing.quoteVersioningMethod(directAndDirectQuotes);
 }
 //end
-public static void cloneQuote(Map<Id,Apttus_Proposal__Proposal__c> mProposal){
-	ID jobID = System.enqueueJob(new NokiaCPQ_CloneSitePhase(mProposal));
+// public static void cloneQuote(Map<Id,Apttus_Proposal__Proposal__c> mProposal){
+// 	ID jobID = System.enqueueJob(new NokiaCPQ_CloneSitePhase(mProposal));
+// }
+
+//added by surinder for ITCCPQ-2543
+public static void checkForTurboLogic(List<Apttus_Proposal__Proposal__c>  newProposals){
+	Set<String> groupNames = new Set<String>();
+	if(Nokia_CPQ_Utility.isUserhasTurboPermission() || Test.isRunningTest()) {
+		Apttus_Proposal_Proposal__c userOrgSpficSetting=Apttus_Proposal_Proposal__c.getInstance(UserInfo.getUserId());
+		if(userOrgSpficSetting!=null) {
+			for(Apttus_Proposal__Proposal__c prop:newProposals) {
+	//for partner quotes
+	if(userOrgSpficSetting.Enable_Turbo_Pricing_Button_for_Partner__c ) {
+		userOrgSpficSetting.Enable_Classic_Pricing_Button_forPartner__c =true;
+		userOrgSpficSetting.Enable_Turbo_Pricing_Button_for_Partner__c =false;
+	}
+			}
+			try{
+	database.upsert(userOrgSpficSetting);
+			}catch(Exception e) {
+	ExceptionHandler.addException(e,ProposalTriggerHelper.class.getName(),'checkForTurboLogic');
+			}
+		}
+
+	}
+
 }
+
+/*********************************
+ * author: Christie JJ
+ * Param: List<Apttus_Proposal__Proposal__c> newProposals
+ * Return: None
+ * JIRA: ITCCPQ-2557
+ * Process: Populates the four cluster search field on the quote header, to be later used for product filtering in the Search Filter (CPQ)
+ **********************************/
+public static void populateSearchClusterFields(List<Apttus_Proposal__Proposal__c>  newProposals){
+
+	List<CPQ_Abbrevation__mdt> abbrevationMetadataList = CPQ_Abbrevation__mdt.getAll().values();
+	Map<String,String> labelToAbbrevationMap = new Map<String,String>();
+
+	for(CPQ_Abbrevation__mdt metadataRecord : abbrevationMetadataList) {
+		labelToAbbrevationMap.put(metadataRecord.MasterLabel,metadataRecord.CPQ_Abbrevation__c);
+	}
+
+	for(Apttus_Proposal__Proposal__c proposal : newProposals) {
+
+		Map<integer,String> subPortfolioAbbrevation = new Map<integer,String>();
+		String clusterAbbrevation = (labelToAbbrevationMap.containsKey(proposal.NokiaCPQPricing_Cluster__c) ? (labelToAbbrevationMap.get(proposal.NokiaCPQPricing_Cluster__c)) : Nokia_CPQ_Constants.BLANK_STRING_WITHOUT_SPACE);
+		system.debug('[+] clusterAbbrevation = '+clusterAbbrevation);
+		List<String> subPortfolios = Nokia_CPQ_Utility.getPortfolio(proposal);
+
+		for (Integer i = 1; i <= subPortfolios.size(); i++) {
+			subPortfolioAbbrevation.put(i,labelToAbbrevationMap.containsKey(subPortfolios[i-1]) ? (labelToAbbrevationMap.get(subPortfolios[i-1])) : Nokia_CPQ_Constants.BLANK_STRING_WITHOUT_SPACE);
+		}
+		// for(String subPortfolio : subPortfolios) {
+		// 	subPortfolioAbbrevationput.add(labelToAbbrevationMap.containsKey(subPortfolio) ? (labelToAbbrevationMap.get(subPortfolio)) : Nokia_CPQ_Constants.BLANK_STRING_WITHOUT_SPACE);
+		// }
+		// system.debug('[+] subPortfolioAbbrevation = '+subPortfolioAbbrevation.size());
+		// Integer size = (subPortfolioAbbrevation.size() > 4) ? 4 : subPortfolioAbbrevation.size();
+		// for (Integer i = 0; i < size; i++) {
+		// 	proposal.put('CPQ_PortfolioClusterSF' + (i+1) + '__c', subPortfolioAbbrevation[i]+Nokia_CPQ_Constants.NOKIA_UNDERSCORE+clusterAbbrevation);
+
+		// }
+		// for (Integer i = 0; i < 4-size; i++) {
+		// 	proposal.put('CPQ_PortfolioClusterSF' + (size+i+1) + '__c', Nokia_CPQ_Constants.NIL_VALUE);
+
+		// }
+		proposal.CPQ_PortfolioClusterSF1__c = string.isNotBlank(subPortfolioAbbrevation.get(1)) ? subPortfolioAbbrevation.get(1) + Nokia_CPQ_Constants.NOKIA_UNDERSCORE+clusterAbbrevation + Nokia_CPQ_Constants.SEMICOLON_STRING  : Nokia_CPQ_Constants.NIL_VALUE;
+		proposal.CPQ_PortfolioClusterSF2__c = string.isNotBlank(subPortfolioAbbrevation.get(2)) ? subPortfolioAbbrevation.get(2) + Nokia_CPQ_Constants.NOKIA_UNDERSCORE+clusterAbbrevation + Nokia_CPQ_Constants.SEMICOLON_STRING  : Nokia_CPQ_Constants.NIL_VALUE;
+		proposal.CPQ_PortfolioClusterSF3__c = string.isNotBlank(subPortfolioAbbrevation.get(3)) ? subPortfolioAbbrevation.get(3) + Nokia_CPQ_Constants.NOKIA_UNDERSCORE+clusterAbbrevation + Nokia_CPQ_Constants.SEMICOLON_STRING  : Nokia_CPQ_Constants.NIL_VALUE;
+		proposal.CPQ_PortfolioClusterSF4__c = string.isNotBlank(subPortfolioAbbrevation.get(4)) ? subPortfolioAbbrevation.get(4) + Nokia_CPQ_Constants.NOKIA_UNDERSCORE+clusterAbbrevation + Nokia_CPQ_Constants.SEMICOLON_STRING  : Nokia_CPQ_Constants.NIL_VALUE;
+	}
+
+}
+
+
+
 
 }

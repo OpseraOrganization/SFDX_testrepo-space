@@ -10,7 +10,7 @@ public class CH_CA_Time_Recording_Controller_Test {
 	public Static final String recodtypedevname='CH_NokiaStandardCase';
 	public static final String assertMessage='Expect message . Actual ';
 	public static final String ownerstrn='Owner';
-
+ 
 	
 	@testSetup
 	public static void setup(){
@@ -174,6 +174,29 @@ public class CH_CA_Time_Recording_Controller_Test {
 			
 			if (listTimeRecording.size()>0){
 	CH_CA_Time_Recording_Controller.editTimeRecording(listTimeRecording[0].Id,'',2,15,string.valueOf(datetime.now()));	
+			}
+			listTimeRecording=CH_CA_Time_Recording_Controller.getTimeRecordingListbyCaseId(newCase.Id);
+			
+			System.assert(listTimeRecording.size() == 0,assertMessage + listTimeRecording.size());		
+		} catch (AuraHandledException e) {
+			System.assert(e.getMessage()!=null);
+		}
+	}
+	//Ref:NOKIASC-36264 Validate Hours & Minutes test method
+	@isTest
+	public static void editTimeRecordingHourMinValidation_test()
+	{
+		
+		try{
+			Test.startTest();
+			Case newCase = CH_UTIL_TEST.createCaseNotSaved(testStr6, severitymajorStr, OutageStr, recodtypedevname, false); 
+			insert newCase;			
+			CH_CA_Time_Recording_Controller.saveTimeRecording(newCase.Id,ownerstrn,2,10,string.valueOf(datetime.now()));
+			Test.stopTest();
+			List<CH_TimeRecording__c> listTimeRecording=CH_CA_Time_Recording_Controller.getTimeRecordingListbyCaseId(newCase.Id);
+			
+			if (listTimeRecording.size()>0){
+			  CH_CA_Time_Recording_Controller.editTimeRecording(listTimeRecording[0].Id,ownerstrn,0,0,string.valueOf(datetime.now()));	
 			}
 			listTimeRecording=CH_CA_Time_Recording_Controller.getTimeRecordingListbyCaseId(newCase.Id);
 			

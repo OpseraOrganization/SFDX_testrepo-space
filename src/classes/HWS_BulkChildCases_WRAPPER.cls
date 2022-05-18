@@ -5,7 +5,7 @@ Public without sharing Class HWS_BulkChildCases_WRAPPER{
 	Public String SerialNumber;
 	Public String MaterialCode;
 	Public String SourceSystem;
-	
+	 
 	Public HWS_BulkChildCases_WRAPPER(Case childcase) {
 		this.CustomerNumber = childcase.HWS_Customer_ID__c;
 		this.ParentRefid = childcase.parentId;
@@ -17,7 +17,7 @@ Public without sharing Class HWS_BulkChildCases_WRAPPER{
 		
 		this.MaterialCode = childcase.HWS_Stockable_Product__r.Name;
 		
-		if(childcase.NCP_Service_Contract__r.CH_ERPSystem__c=='P20'){
+		if(childcase.NCP_Service_Contract__r.CH_ERPSystem__c.contains('P20')){
 			this.MaterialCode = childcase.HWS_Stockable_Product__r.Name;
 		} else {
 			this.MaterialCode = childcase.HWS_Stockable_Product__r.RES_ID__c;

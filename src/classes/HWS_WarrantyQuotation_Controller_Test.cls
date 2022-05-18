@@ -1,13 +1,12 @@
 /****************************************
 * Class Name : HWS_WarrantyQuotation_Controller_Test
-* User Story : NOKIASC-34453 
-* Created Date: 01 Feb 2021
-* Created By : TCS 
-* Last Modified by: 
+* User Story : NOKIASC-34453  
+* Created Date: 01 Feb 2021 
+* Created By : TCS  
+* Last Modified by:  
 * Last Modified Date:
 * Description : Test class for Warranty and Quotation Review(HWS_WarrantyQuotation_Controller)
 *****************************************/
-
 @isTest
 public class HWS_WarrantyQuotation_Controller_Test  {
 	public static final string InWarranty = 'In Warranty';
@@ -584,7 +583,7 @@ public class HWS_WarrantyQuotation_Controller_Test  {
 		Contact cont = [Select Id from Contact limit 1];
 		Product2 prod = [Select id from Product2 limit 1];
 		Asset ast = [Select id,HWS_ContractLineItem__r.CH_CountryISOName__c from Asset where RecordType.DeveloperName='HWS_Covered_Part' limit 1];
-					 
+		hws_versionitem__c hv = [Select id from hws_versionitem__c limit 1];				
 		Case childCase = HWS_DataFactory_TEST.insertChildCase();
 		childCase.AccountId = acc.Id;
 		childCase.ContactId = cont.Id;
@@ -607,7 +606,7 @@ public class HWS_WarrantyQuotation_Controller_Test  {
 		Contact cont = [Select Id from Contact limit 1];
 		Product2 prod = [Select id from Product2 limit 1];
 		Asset ast = [Select id,HWS_ContractLineItem__r.CH_CountryISOName__c from Asset where RecordType.DeveloperName='HWS_Covered_Part' limit 1];
-				   
+		hws_versionitem__c hv = [Select id from hws_versionitem__c limit 1];				
 		Case childCase = HWS_DataFactory_TEST.insertChildCase();
 		childCase.AccountId = acc.Id;
 		childCase.ContactId = cont.Id;
@@ -639,7 +638,7 @@ public class HWS_WarrantyQuotation_Controller_Test  {
 		Contact cont = [Select Id from Contact limit 1];
 		Product2 prod = [Select id from Product2 limit 1];
 		Asset ast = [Select id,HWS_ContractLineItem__r.CH_CountryISOName__c from Asset where RecordType.DeveloperName='HWS_Covered_Part' limit 1];
-					   
+		hws_versionitem__c hv = [Select id from hws_versionitem__c limit 1];				
 		Case childCase = HWS_DataFactory_TEST.insertChildCase();
 		childCase.AccountId = acc.Id;
 		childCase.ContactId = cont.Id;
@@ -671,7 +670,7 @@ public class HWS_WarrantyQuotation_Controller_Test  {
 		Contact cont = [Select Id from Contact limit 1];
 		Product2 prod = [Select id from Product2 limit 1];
 		Asset ast = [Select id,HWS_ContractLineItem__r.CH_CountryISOName__c from Asset where RecordType.DeveloperName='HWS_Covered_Part' limit 1];
-						
+		hws_versionitem__c hv = [Select id from hws_versionitem__c limit 1];				
 		Case childCase = HWS_DataFactory_TEST.insertChildCase();
 		childCase.AccountId = acc.Id;
 		childCase.ContactId = cont.Id;
@@ -738,7 +737,7 @@ public class HWS_WarrantyQuotation_Controller_Test  {
 		childCase.HWS_Sellable_Product__c = prod.Id;
 		insert childCase;
 		HWS_WarrantyQuotation_Controller.getCaseInfo(parentCase.Id); 
-		HWS_WarrantyQuotation_Controller.escalateCases(parentCase.Id,new List<Case>{childCase},false);
+		HWS_WarrantyQuotation_Controller.escalateCases(parentCase.Id,new List<Case>{childCase},false,'');
 		test.stopTest();	  
 	}
 	

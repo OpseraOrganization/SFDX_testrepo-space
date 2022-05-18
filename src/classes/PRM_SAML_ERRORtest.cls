@@ -14,6 +14,7 @@ public class PRM_SAML_ERRORtest{
 			pageRef.getParameters().put('ErrorCode','aa');
 			pageRef.getParameters().put('Headline','aa');
 			pageRef.getParameters().put('Explanation','aa');
+			pageRef.getParameters().put('TrainingOnlyUser','true');
 			pageRef.getParameters().put('ErrorDescription',' Execution error,');
 			pageRef.getParameters().put('ErrorDetails','ApexPRMCommunityJITHandler:PRMCommunityJITHandler.JitException: Single Sign On Error: You do not have access to the Nokia Partner Portal For assistance, contact: portal.support @nokia.com {"CustomerName":"Independent Contractor","nsnPrimaryAccountFlag":"true","Relationship":"Customer","FederationID":"B11037164","State":"Maharashtra","SSOPID":"1500809361","ALCR":"0","Street":"Hinjewadi","PostalCode":"2541888","Phone":"+1245648","Lname":"tim","P20":"100000","emailID":"pruitt.tim@radiodale.com","HorizontalFlag":"0","CountryCode":"IN","ApprovalStatus":"Pending","City":"Aurangabad","PersonalID":"B11037164","Fname":"pruitt","Country":"India","MappingId":"B11037164"}');
 			pageRef.getParameters().put('ErrorMessage','aa');
@@ -24,7 +25,7 @@ public class PRM_SAML_ERRORtest{
 			System.assertEquals(null, result);
 			test.stopTest();
 			
-				}
+	}
 	
 	}
 }

@@ -4,7 +4,7 @@
 *Description: Data creation
 *************************************************************************************/
 
-public class NOKIA_CPQ_TestDataFactory {
+public without sharing class NOKIA_CPQ_TestDataFactory {
 	
 	/************************************************************************************
 	* Method Name: userCreation
@@ -116,7 +116,7 @@ public class NOKIA_CPQ_TestDataFactory {
 		Lead_BG__c='MN',
 Lead_BU__c = 'MN',
 		Business_Type__c = 'Standard Opportunity',
-		 Account_Role__c  = 'Alliance Partner',
+		 Account_Role__c  = 'GPP Distributor Partner',
 		Unweighted_Amount_EUR__c =200+i
 	)
 			);
@@ -150,7 +150,7 @@ Lead_BU__c = 'MN',
 Lead_BU__c = 'MN',
 		Business_Type__c = 'Standard Opportunity',
 		Unweighted_Amount_EUR__c =200+i,
-		Account_Role__c = 'Alliance Partner'
+		Account_Role__c = 'GPP Distributor Partner'
 	)
 			);
 		}
@@ -202,7 +202,7 @@ Lead_BU__c = 'MN',
 			proposalObj.Apttus_Proposal__Proposal_Name__c = 'Test Quote';
 			proposalObj.NokiaCPQ_Portfolio__c = 'IP Routing';
 			proposalList.add(proposalObj);
-		}		 
+		}		
 		return proposalList ;
 	}
 	 /************************************************************************************
@@ -242,9 +242,12 @@ Lead_BU__c = 'MN',
 			proposalObj.Apttus_Proposal__Approval_Stage__c = 'Draft';
 			proposalObj.Creation_Date__c = system.today();
 			proposalObj.Apttus_Proposal__Proposal_Name__c = 'Test Quote';
-			proposalObj.NokiaCPQ_Portfolio__c = 'Fixed Access - POL';
+			//Modified for FN restructuring changes by Christie JJ
+			//proposalObj.NokiaCPQ_Portfolio__c = 'Fixed Access - POL';
+			proposalObj.NokiaCPQ_Portfolio__c = Nokia_CPQ_Constants.NOKIA_INDIRECT_FN;
+			proposalObj.CPQ_SubPortfolio__c = Nokia_CPQ_Constants.NOKIA_FIXED_ACCESS_POL;
 			proposalList.add(proposalObj);
-		}		 
+		}		
 		return proposalList ;
 	}
 	

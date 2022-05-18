@@ -22,6 +22,8 @@ global class CAP_SendCAPSAttachmentToNAIP{
 		objsObject3.AttachmentID_xc = attachmentId;
 		listObject3.add(objsObject3);
 		objAttachment.sObjects = listObject3;
-		con.receiveFromSalesForce(objCaseX, null, objAttachment, null, null, null);
+		if(!Test.isRunningTest()){
+			con.receiveFromSalesForce(objCaseX, null, objAttachment, null, null, null, null, null);
+		}
 	}
 }

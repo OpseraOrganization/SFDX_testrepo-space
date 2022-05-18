@@ -7,7 +7,7 @@
 * Description : Handle the sequence of the CH_AssetTriggerHelper
 * Test Class: CH_AssetTriggerHelperTest 
 ************/
-public class CH_AssetTriggerHelper {
+public without sharing class CH_AssetTriggerHelper {
 	/********************
 * Method Name: populateSLAProcessId
 * Parameter: List < Asset >
@@ -35,7 +35,7 @@ public class CH_AssetTriggerHelper {
 	If ( rtMap.get(assetObj.RecordTypeId).getName() == 'Network Element Asset')
 	{
 		//assetObjRecType.Name = assetObjRecType.CH_NetworkElementID__c;
-		// ** Will not perform any action as of now *****				
+		// ** Will not perform any action as of now *****	
 	}
 	else{
 		String assetName = ''; 
@@ -86,7 +86,7 @@ public class CH_AssetTriggerHelper {
 * Description: Used to check duplicate before insert in Asset and display error
 * Reference: NOKIASC-24960 & 24961
 *******************/
-
+/* Commenting below code for breaking uniqueness of existing functinality as per NOKIASC-36188
  public static void CheckDuplicateBeforeInsert(List < Asset > newAssetList,String action) {
 		Id neaRecordTypeId = Schema.SObjectType.Asset.getRecordTypeInfosByName().get('Network Element Asset').getRecordTypeId();
 		if(newAssetList != null && !newAssetList.isEmpty() && newAssetList.size() > 1){
@@ -142,11 +142,11 @@ public class CH_AssetTriggerHelper {
 		and (CH_AssetNameUniqueKey__c IN :assetName_UniqueKey  OR CH_NetworkElementIDUniqueKey__c in:  networkID_UniqueKey) ]){
 			
 			if(assetID ==null || !assetID.contains(oASset.Id) ){
-				existingAssetName.add((oASset.Product2Id+'-'+oASset.AccountId+'-'+oASset.Name+'-'+oASset.Status).toLowerCase());
-				
-				existingNEId.add((oASset.CH_NetworkElementID__c+'-'+oASset.Product2Id+'-'+oASset.CH_ProductVariant__c+'-'+oASset.Status).toLowerCase()); 
-				
-				existingNEId2.add((oASset.Name+'-'+oASset.Product2Id+'-'+oASset.CH_ProductVariant__c+'-'+oASset.Status).toLowerCase()); 
+	existingAssetName.add((oASset.Product2Id+'-'+oASset.AccountId+'-'+oASset.Name+'-'+oASset.Status).toLowerCase());
+	
+	existingNEId.add((oASset.CH_NetworkElementID__c+'-'+oASset.Product2Id+'-'+oASset.CH_ProductVariant__c+'-'+oASset.Status).toLowerCase()); 
+	
+	existingNEId2.add((oASset.Name+'-'+oASset.Product2Id+'-'+oASset.CH_ProductVariant__c+'-'+oASset.Status).toLowerCase()); 
 			}
 		}
 			
@@ -167,11 +167,14 @@ public class CH_AssetTriggerHelper {
 			assetUniqueName = null;//assetUniqueName+'-'+objNEA.Id;
 			neaUniqueName = null;//neaUniqueName+'-'+objNEA.Id;
 			objNEA.CH_AssetNameUniqueKey__c= null;
-			 objNEA.CH_NetworkElementIDUniqueKey__c=null;
+	objNEA.CH_NetworkElementIDUniqueKey__c=null;
 		}
 		if( assetUniqueName !=null && (existingAssetName ==null || !existingAssetName.contains(assetUniqueName.toLowerCase())) ){
 			system.debug(existingAssetName +'---'+assetUniqueName+'@@@@'+existingAssetName);
-			
+			String getTheLength=objNEA.CH_NetworkElementID__c+objNEA.CH_NetworkManagementSystemID__c;
+						if(getTheLength.length()>=233 || neaUniqueName.length()>=254){
+							objNEA.addError(System.Label.CH_Validate_NEID_NEMID_FieldLengths);
+			}
 			objNEA.CH_AssetNameUniqueKey__c= assetUniqueName;
 		}else if(assetUniqueName !=null ){
 			isError = true;
@@ -183,10 +186,10 @@ public class CH_AssetTriggerHelper {
 			objNEA.CH_NetworkElementIDUniqueKey__c=neaUniqueName;
 		}else if(neaUniqueName !=null){
 			if(isError){
-				ErrorMessgae = ErrorMessgae+' & The Network Element ID for a Network Element Asset must be unique for a given Product ';
+	ErrorMessgae = ErrorMessgae+' & The Network Element ID for a Network Element Asset must be unique for a given Product ';
 			}else{
-				isError = true;
-				ErrorMessgae =  'The Network Element ID for a Network Element Asset must be unique for a given Product';
+	isError = true;
+	ErrorMessgae =  'The Network Element ID for a Network Element Asset must be unique for a given Product';
 			}
 		}
 		if(isError){
@@ -198,7 +201,7 @@ public class CH_AssetTriggerHelper {
 			}
 		}
 	}
-	
+	*/
 	
 	
 	
@@ -206,6 +209,7 @@ public class CH_AssetTriggerHelper {
 * Description: Used to check duplicate before update in Asset and display error
 * Reference: NOKIASC-24960 & 24961
 *******************/
+/* Commenting below code for breaking uniqueness of existing functinality as per NOKIASC-36188
 	public static void CheckDuplicateBeforeUpdate(Map < Id, Asset > oldAssetMap, List < Asset > newAssetList) {
 		List<ASset> newAssetListToUpdate = new List<Asset>();
 		Id neaRecordTypeId = Schema.SObjectType.Asset.getRecordTypeInfosByName().get('Network Element Asset').getRecordTypeId();
@@ -220,11 +224,11 @@ public class CH_AssetTriggerHelper {
 			system.debug('error5');
 			CheckDuplicateBeforeInsert(newAssetList,'update'); 
 		}
-	}
+	} */
 	/********************/  
 	/*Part of NOKIASC-24960 and NOKIASC-24961:Suniti/ To check for unique key fields with inactive-null value
 and replace the last null value with Asset record Id  */
-	
+	/* Commenting below code for breaking uniqueness of existing functinality as per NOKIASC-36188
 	public static void UpdateNEA(List<Asset> newAssetList)
 	{	  
 		Id neaRecordType = Schema.SObjectType.Asset.getRecordTypeInfosByName().get('Network Element Asset').getRecordTypeId();
@@ -254,7 +258,7 @@ and replace the last null value with Asset record Id  */
 		System.debug('record2 '+oAsset.CH_NetworkElementIDUniqueKey__c);
 	}}
 			update NEAList;
-		}}
+		}} */
 	
 	
 	
@@ -273,7 +277,7 @@ and replace the last null value with Asset record Id  */
 	String type = rtMap.get(assetObj.RecordTypeId).getName();	 
 	If ( type == 'Network Element Asset')
 	{ 
-		// ** Will not perform any action as of now *****			  
+		// ** Will not perform any action as of now *****	 
 		
 	}
 	else {
@@ -284,9 +288,9 @@ and replace the last null value with Asset record Id  */
 		oldAssetObj.CH_ProductVariant__c != assetObj.CH_ProductVariant__c || 
 		oldAssetObj.CH_ProductRelease__c != assetObj.CH_ProductRelease__c || 
 		oldAssetObj.CH_CountryISOName__c != assetObj.CH_CountryISOName__c
-		  ) {
+	) {
 		assetList.add(assetObj);
-		  }
+	}
 		
 	}
 			}			
@@ -333,8 +337,8 @@ and replace the last null value with Asset record Id  */
 	public static void validationRules(Map < Id, Asset > oldAssetMap, List < Asset > newAssetList){
 		Map<Id,CH_CoveredNetworkElementAsset__c> cNEMap= new  Map<Id,CH_CoveredNetworkElementAsset__c>();
 		List<CH_CoveredNetworkElementAsset__c> cNE = [SELECT Id,Name,CH_NetworkElementAsset__c,CH_ContractLineItem__c,CH_ContractLineItem__r.Status,CH_Status__c 
-				  FROM CH_CoveredNetworkElementAsset__c 
-				  WHERE CH_NetworkElementAsset__c=:oldAssetMap.Keyset()];
+	  FROM CH_CoveredNetworkElementAsset__c 
+	  WHERE CH_NetworkElementAsset__c=:oldAssetMap.Keyset()];
 		List<PermissionSetAssignment> permissionSetList = [SELECT Id  FROM PermissionSetAssignment WHERE AssigneeId = :Userinfo.getUserId() AND PermissionSet.Name = 'CH_NEAssetAdmin'];
 		for(CH_CoveredNetworkElementAsset__c cNErec:cNE){
 			cNEMap.put(cNErec.CH_NetworkElementAsset__c,cNErec);
@@ -348,15 +352,12 @@ and replace the last null value with Asset record Id  */
 		
 	}
 	if(oldAssetMap.get(assetObj.Id).Address__r.Country != assetObj.Address__r.Country) {
-		  assetObj.CH_CountryISO2__c.addError('Country cannot be modified if Address is already linked to a Network Element Asset');
+	assetObj.CH_CountryISO2__c.addError('Country cannot be modified if Address is already linked to a Network Element Asset');
 	}
 	if(oldAssetMap.get(assetObj.Id).Status == 'Active' && assetObj.Status=='InActive' && cNEMap.get(assetObj.Id).CH_Status__c!='InActive') {
 		assetObj.Status.addError('Status cannot be changed'); 
 	
 	}			
-	/*if(oldAssetMap.get(assetObj.Id).Status == 'InActive' && assetObj.Status=='Active' && cNEMap.get(assetObj.Id).CH_Status__c =='InActive') {
-		assetObj.Status.addError('Status cannot be changed');		
-	}*/
 	if(oldAssetMap.get(assetObj.Id).CH_ProductRelease__c != assetObj.CH_ProductRelease__c) {
 		assetObj.CH_ProductRelease__c.addError('ProductRelease cannot be changed');
 		
@@ -373,13 +374,9 @@ and replace the last null value with Asset record Id  */
 		assetObj.RecordTypeId.addError('Asset Record type cannot be changed');	  
 	}
 			}
-			if(cNEMap.get(assetObj.Id) != NULL && cNEMap.get(assetObj.Id).CH_ContractLineItem__c == NULL){
-	/*if(oldAssetMap.get(assetObj.Id).AccountId != assetObj.AccountId) {
-			assetObj.AccountId.addError('Account cannot be changed');	  
-		}*/
-	if(oldAssetMap.get(assetObj.Id).RecordTypeId != assetObj.RecordTypeId) {
+			if((cNEMap.get(assetObj.Id) != NULL && cNEMap.get(assetObj.Id).CH_ContractLineItem__c == NULL) && (oldAssetMap.get(assetObj.Id).RecordTypeId != assetObj.RecordTypeId)){
 		assetObj.RecordTypeId.addError('Asset Record type cannot be changed');	  
-	}
+	
 			}
 			if(permissionSetList.size() == 0){
 	if(oldAssetMap.get(assetObj.Id).CH_CountryISO2__c != assetObj.CH_CountryISO2__c && (oldAssetMap.get(assetObj.Id).Status == 'Active' && assetObj.Status=='InActive')) {
@@ -395,11 +392,6 @@ and replace the last null value with Asset record Id  */
 		
 	}
 			}
-			
-			/*if(oldAssetMap.get(assetObj.Id).Product2Id != assetObj.Product2Id) {
-	assetObj.Product2Id.addError('Product cannot be changed');
-	
-			}*/
 		}
 	}
 	/********************
@@ -410,7 +402,7 @@ and replace the last null value with Asset record Id  */
 *******************/
 	public static void createCoveredNEA(List<Asset> newAssetList){
 		List<CH_CoveredNetworkElementAsset__c> coveredNEAList = new List<CH_CoveredNetworkElementAsset__c>();	
-		Id neaRecordType = Schema.SObjectType.Asset.getRecordTypeInfosByName().get('Network Element Asset').getRecordTypeId();
+		Id neaRecordType = Schema.SObjectType.Asset.getRecordTypeInfosByDeveloperName().get('CH_NetworkElementAsset').getRecordTypeId();
 		try{
 			for (Asset newAsset: newAssetList){
 	if(newAsset.RecordTypeId == neaRecordType && newAsset.CH_ContractLineItem__c!= null){
@@ -444,21 +436,6 @@ and replace the last null value with Asset record Id  */
 	}
 	
 	
-	//Prateek - 24956
-	public static void assetName_NIDValidation(Map < Id, Asset > oldAssetMap, List<Asset> newAssetList){
-		Id NEARecordType = Schema.SObjectType.Asset.getRecordTypeInfosByName().get('Network Element Asset').getRecordTypeId();
-		if(newAssetList != null && !newAssetList.isEmpty()) {
-			for(Asset ast : newAssetList){
-	if(ast.Name == null && ast.CH_NetworkElementID__c == null && ast.RecordTypeId == NEARecordType){
-		ast.addError('Asset Name & Network Element Id both cannot be blank!');
-	}
-	if(ast.Name == null && ast.CH_NetworkElementID__c != null && ast.RecordTypeId == NEARecordType){
-		ast.Name = ast.CH_NetworkElementID__c ;
-	}
-	
-			}
-		}
-	}
 	
 	//US 25132 Sónia Reis
 public static void populateCountryCode(List <Asset> newAssetList){
@@ -494,7 +471,7 @@ public static void populateCountryCode(List <Asset> newAssetList){
 			}
 			//NOKIASC-25553 Added to populate Account Customer Compliance on Asset
 			if(a.AccountId != null && custComplianceAccounts.containsKey(a.AccountId)){
-				a.CH_AccountCustomerCompliance__c = custComplianceAccounts.get(a.AccountId).Customer_Compliance__c;
+	a.CH_AccountCustomerCompliance__c = custComplianceAccounts.get(a.AccountId).Customer_Compliance__c;
 			}
 		}
 	}
@@ -516,12 +493,12 @@ public static void populateCountryCodeOnUpdate(Map < Id, Asset > oldAssetMap, Li
 		Map < ID, Schema.RecordTypeInfo > rtMap = Schema.SObjectType.Asset.getRecordTypeInfosById();
 		for(Asset a: newAssetList){
 			String type = rtMap.get(a.RecordTypeId).getName();
-			if( type == 'Network Element Asset'){
-				if(a.CH_ContractLineItem__c==null && oldAssetMap.containsKey(a.ID) && a.Address__c!=oldAssetMap.get(a.ID).Address__c){
-					a.CH_CountryISO2__c=addresses.get(a.Address__c).CountryCode;
-					system.debug('Address a.CH_CountryISO2__c= '+ a.Address__c + a.CH_CountryISO2__c);
-				}
-			}			
+		
+	//NOKIASC-36208 Added Address not null condition inorder to update record without address
+	if( type == 'Network Element Asset' && a.Address__c!=null && a.CH_ContractLineItem__c==null && oldAssetMap.containsKey(a.ID) && a.Address__c!=oldAssetMap.get(a.ID).Address__c){
+		a.CH_CountryISO2__c=addresses.get(a.Address__c).CountryCode;
+		system.debug('Address a.CH_CountryISO2__c= '+ a.Address__c + a.CH_CountryISO2__c);
+	}			
 		}
 	}
 	system.debug('populateCountryCodeOnUpdate ENDS');
@@ -535,7 +512,7 @@ public static void populateCountryCodeOnUpdate(Map < Id, Asset > oldAssetMap, Li
 *******************/
 	public static void assetStatusCheck(Map < Id, Asset > oldAssetMap, List < Asset > newAssetList){
 		
-		Id neaRecordTypeId = Schema.SObjectType.Asset.getRecordTypeInfosByName().get('Network Element Asset').getRecordTypeId();
+		Id neaRecordTypeId = Schema.SObjectType.Asset.getRecordTypeInfosByDeveloperName().get('CH_NetworkElementAsset').getRecordTypeId();
 		list<Asset> neAssets = new list<Asset>();
 		for(Asset anAsset : newAssetList){
 			// Get only deactivated network element assets that are linked to a contract line item

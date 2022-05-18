@@ -71,7 +71,7 @@ public class CH_AssetTriggerHelperTest {
 		insert new Global_Control__c(ObjectTriggerByPass__c='Case,ACCT,CNTCT,ACC_CNTCT_REL');	
 	}
 	public static testMethod void test() {
-	   
+	
 	
 		integer j = 5;
 		
@@ -205,8 +205,9 @@ public class CH_AssetTriggerHelperTest {
 	
 	//Suniti: Added code for 24960 and 24961
 	
+	/*Commented below code as per 36188 US 
 	public static testMethod void test1() {	
-	   
+	
  
 		Account acc = [Select id from Account limit 1];
 		Product2 product = [Select id from Product2 limit 1];
@@ -256,10 +257,10 @@ public class CH_AssetTriggerHelperTest {
 		}
 		Test.stopTest();
 		
-	} 
+	} */
 	
 	public static testMethod void test2(){
-	   
+	
 		Asset neAsset1 =  [Select id from Asset where CH_NetworkElementID__c='Test91'];		
 		Test.startTest();
 		neAsset1.CH_NetworkElementID__c='Test93';
@@ -270,7 +271,7 @@ public class CH_AssetTriggerHelperTest {
 	}
 	
 	public static testMethod void test3(){
-	   
+	
 		List<Asset> oAssetsList = new List<Asset> ();
 		Asset neAsset =  [Select id from Asset where CH_NetworkElementID__c='Test91'];		
 		oAssetsList.add(neAsset);		
@@ -288,8 +289,8 @@ public class CH_AssetTriggerHelperTest {
 		insert addr2;
 		Asset neAsset4=new Asset();
 		neAsset4.RecordTypeId= assetRecordTypeId;
-		neAsset4.CH_NetworkElementID__c='Test91';
-		neAsset4.Name='Test91';
+		neAsset4.CH_NetworkElementID__c='TestNEA91';
+		neAsset4.Name='TestNEA91';
 		neAsset4.Status='Inactive';
 		neAsset4.Product2Id=product.id;
 		neAsset4.CH_ProductVariant__c=product.id;
@@ -329,8 +330,8 @@ public class CH_AssetTriggerHelperTest {
 	} 
 	
 	public static testMethod void test4(){	
-	   
-	   Asset neAsset1 =  [Select id from Asset where CH_NetworkElementID__c='Test91'];		
+	
+	Asset neAsset1 =  [Select id from Asset where CH_NetworkElementID__c='Test91'];		
 		Test.startTest();
 		neAsset1.CH_NetworkElementID__c='Test94';
 		neAsset1.Name='Test94';
@@ -338,8 +339,8 @@ public class CH_AssetTriggerHelperTest {
 		Test.stopTest();}
 	
 	public static testMethod void validationRuleTest(){	
-	   
-	   List<Asset> oAssetsList = new List<Asset> ();
+	
+	List<Asset> oAssetsList = new List<Asset> ();
 		Asset neAsset1 =  [Select id from Asset where CH_NetworkElementID__c='Test91'];		
 		oAssetsList.add(neAsset1);
 		test.startTest();
@@ -508,6 +509,7 @@ public class CH_AssetTriggerHelperTest {
 		test.stopTest();  
 		system.debug('***assetStatusCheck getCpuTime()***'+Limits.getCpuTime());
 	}
+	/*commented below codee as per 36188
 	public static testMethod void updateNEATest(){	
 	 
 	 test.startTest();try{
@@ -518,5 +520,5 @@ public class CH_AssetTriggerHelperTest {
 			System.debug('Exception while updating NEA: ' + ex.getMessage());
 		}system.debug('***updateNEATest getCpuTime()***'+Limits.getCpuTime());
 		test.stopTest();  system.debug('***updateNEATest getCpuTime()***'+Limits.getCpuTime());
-	}
+	}*/	
 }

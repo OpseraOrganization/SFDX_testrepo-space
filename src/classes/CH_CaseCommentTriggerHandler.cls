@@ -41,7 +41,8 @@ public class CH_CaseCommentTriggerHandler {
 	public static void afterInsertOperation(List<CaseComment> newCaseCommentList) {
 		if(CH_CaseCommentTriggerHandler.doNotNotifyForNAIPAttachment){//Added to fix NOKIASC-26225
 			CH_CaseCommentTriggerHelper.sendNotificationToExternalSystem(newCaseCommentList, 'NOKIA comment added', 'Insert'); 
-		}	   
+			CH_CaseCommentTriggerHelper.calculatePlannedAutomaticDateTimer(newCaseCommentList); //Added to NOKIASC-36637
+		}	
 	}
 
 	/********************

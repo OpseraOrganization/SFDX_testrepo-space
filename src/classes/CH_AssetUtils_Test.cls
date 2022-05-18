@@ -1,13 +1,13 @@
 /** 
 * About 
 * ----- 
-* @Description	  : Case Handling Asset Object Utility Test Class.
-* @Project	: Case Handling.
-* @Modification Log : 
-*  Created : 2020 02 17 – tiago.almeida@nokia.com
+* @Description: Case Handling Asset Object Utility Test Class.
+* @Project: Case Handling.
+* @Modification Log: 
+*  Created: 2020 02 17 – tiago.almeida@nokia.com
 * ----- 
 **/
-@isTest
+@isTest 
 public class CH_AssetUtils_Test {
 	private static List<Account> oProspectList;
 	private static Account oLegalEntity;
@@ -16,8 +16,9 @@ public class CH_AssetUtils_Test {
 	private static PriceBookEntry oPriceBookEntry;
 	private static ServiceContract oServiceContract;
 	private static List<Entitlement> oEntitlementList;
+	private static List<Product2> oProduct2List;
 	
-	@testSetup	
+	@testSetup
 	static void setupTestData() {
 		oProspectList = TestDataFactory.createAccount('Prospect', 1, null);
 		insert oProspectList;
@@ -30,7 +31,7 @@ public class CH_AssetUtils_Test {
 		oContact.CH_ContactType__c = 'customer';
 		insert oContact;
 		//
-		List<Product2> oProduct2List = TestDataFactory.createProduct(1);
+		oProduct2List = TestDataFactory.createProduct(1);
 		insert oProduct2List;
 		//
 		oAsset = TestDataFactory.createAsset('CH_CoveredProduct', 1, oLegalEntity, oProduct2List.get(0)).get(0);
@@ -81,10 +82,10 @@ public class CH_AssetUtils_Test {
 			CH_AssetUtils.getContactAuthorizedAssets(false, oLegalEntity.Id, oContact.Id, oAsset, 'Customer Support', false);
 		} catch(Exception e) { /* Do Nothing */ }
 		try {
-			CH_AssetUtils.getAccountRelatedNetworkElementAssets(false, oLegalEntity.Id, oAsset, oEntitlementList.get(0));
+			CH_AssetUtils.getAccountRelatedNetworkElementAssets(false, oLegalEntity.Id, oAsset, oEntitlementList.get(0), null);
 		} catch(Exception e) { /* Do Nothing */ }
 		try {
-			CH_AssetUtils.getAccountRelatedNetworkElementAssets(false, oLegalEntity.Id, oAsset, null);
+			CH_AssetUtils.getAccountRelatedNetworkElementAssets(false, oLegalEntity.Id, oAsset, null, oProduct2List.get(0));
 		} catch(Exception e) { /* Do Nothing */ }
 		CH_AssetUtils.getNetworkElementAssetIdsFromCLIList(false, new Set<String>{oContractLineItem.Id});
 		test.stopTest();

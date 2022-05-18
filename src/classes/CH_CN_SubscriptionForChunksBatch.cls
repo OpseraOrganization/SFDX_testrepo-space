@@ -17,9 +17,10 @@ global class CH_CN_SubscriptionForChunksBatch implements Database.Batchable<sObj
 	Boolean isFromDistributeUpdate = false; 
 	Map<Id,Set<String>> caseIdEvtTypStrMap = new Map<Id,Set<String>>();
 	Set<Id> childAttributeIdset = new Set<Id> ();
+	Set<String> childAttributeIdset2=new Set<String> ();
 	Set<String> securityGrpSet = new Set<String>();
 	String jobId ='';
-	global CH_CN_SubscriptionForChunksBatch(String query,List<Case> newCaseList, Map<Id,Case> oldCaseMap, Boolean isCreation, Boolean isFromBatch, Boolean isFromDistributeUpdate,Map<Id,Set<String>> caseIdEvtTypStrMap, String loopQuery,Set<Id> childAttributeIdset, Set<String> securityGrpSet, String jobId){ 
+	global CH_CN_SubscriptionForChunksBatch(String query,List<Case> newCaseList, Map<Id,Case> oldCaseMap, Boolean isCreation, Boolean isFromBatch, Boolean isFromDistributeUpdate,Map<Id,Set<String>> caseIdEvtTypStrMap, String loopQuery,Set<Id> childAttributeIdset,Set<String> childAttributeIdset2, Set<String> securityGrpSet, String jobId){ 
 		this.query = query;
 		this.loopQuery = loopQuery;
 		this.newCaseList = newCaseList;
@@ -29,6 +30,7 @@ global class CH_CN_SubscriptionForChunksBatch implements Database.Batchable<sObj
 		this.isFromDistributeUpdate = isFromDistributeUpdate;
 		this.caseIdEvtTypStrMap = caseIdEvtTypStrMap;
 		this.childAttributeIdset = childAttributeIdset;
+		this.childAttributeIdset2 =childAttributeIdset2;
 		this.securityGrpSet = securityGrpSet;
 		this.jobId = jobId;
 	}
@@ -43,7 +45,7 @@ global class CH_CN_SubscriptionForChunksBatch implements Database.Batchable<sObj
 	global void execute(Database.BatchableContext bc, List<sObject> scope){ 
 		
 		Map<Case, Map<String, List<CH_NotificationSubscription__c>>> casEvtNSMap = new Map<Case, Map<String, List<CH_NotificationSubscription__c>>>();
-		casEvtNSMap  = CH_CN_IdentifySubscribers.identifySubscribers(scope, loopQuery+' AND Id IN :scope order by OwnerId', newCaseList, oldCaseMap, isCreation, isFromBatch, isFromDistributeUpdate, casEvtNSMap, caseIdEvtTypStrMap, childAttributeIdset, securityGrpSet);
+		casEvtNSMap  = CH_CN_IdentifySubscribers.identifySubscribers(scope, loopQuery+' AND Id IN :scope order by OwnerId', newCaseList, oldCaseMap, isCreation, isFromBatch, isFromDistributeUpdate, casEvtNSMap, caseIdEvtTypStrMap, childAttributeIdset,childAttributeIdset2, securityGrpSet);
 		CH_NotificationEventLog__c notEvtLog = new CH_NotificationEventLog__c(CH_ClassName__c='CH_CN_SubscriptionForChunksBatch',CH_MethodName__c='execute');
 		if(casEvtNSMap.size()>0){
 			notEvtLog.CH_NumberOfCases__c=casEvtNSMap.keySet().size();
@@ -51,26 +53,26 @@ global class CH_CN_SubscriptionForChunksBatch implements Database.Batchable<sObj
 			Set<Id> caseIdSet = new Set<Id>();
 			Set<String> evtTypeSet = new Set<String>();
 			for(case c: casEvtNSMap.keySet()){
-				caseIdSet.add(c.Id);
-				notEvtLog.CH_CaseNumber__c = c.CaseNumber;
-				notEvtLog.CH_Country__c=c.Country__c;
-				notEvtLog.CH_Workgroup__c=c.CH_Workgroup__c;
-				
-				Map<String, List<CH_NotificationSubscription__c>> evtMap= casEvtNSMap.get(c);   
-				for(String eventtype: evtMap.KeySet()){
-					evtTypeSet.add(eventtype);
-					totalSubs +=evtMap.get(eventtype).size();
-					
-				}}
+	caseIdSet.add(c.Id);
+	notEvtLog.CH_CaseNumber__c = c.CaseNumber;
+	notEvtLog.CH_Country__c=c.Country__c;
+	notEvtLog.CH_Workgroup__c=c.CH_Workgroup__c;
+	
+	Map<String, List<CH_NotificationSubscription__c>> evtMap= casEvtNSMap.get(c);   
+	for(String eventtype: evtMap.KeySet()){
+		evtTypeSet.add(eventtype);
+		totalSubs +=evtMap.get(eventtype).size();
+		
+	}}
 			notEvtLog.CH_EventType__c=string.join(new List<String>(evtTypeSet),';');
 			notEvtLog.CH_NumberOfSubscribers__c=totalSubs;
 			CH_CNNotificationLimits__c notificationLimit = CH_CNNotificationLimits__c.getValues('Subscription Record Count');
 			if(totalSubs>Integer.valueOf(notificationLimit.CH_NotificationLimitValue__c)){
-				System.enqueueJob(new CH_CN_NotificationSubContentQueueable(casEvtNSMap,caseIdSet, jobId));	 
+	System.enqueueJob(new CH_CN_NotificationSubContentQueueable(casEvtNSMap,caseIdSet, jobId));	 
 			}
 			else{
-				CH_CN_NotificationSubscriptionContent.Contentselection(casEvtNSMap,jobId);
-				
+	CH_CN_NotificationSubscriptionContent.Contentselection(casEvtNSMap,jobId);
+	
 			}
 		}
 		notEvtLog.CH_CPUTime__c=Limits.getCpuTime();

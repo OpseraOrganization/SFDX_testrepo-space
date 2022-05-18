@@ -1,7 +1,7 @@
 /*****************************************************************
 Description: Wrapper class to store Child Case attributes that are being sent to SOO
-History																														
-DATE			AUTHOR		  CHANGE
+History									
+DATE			AUTHOR	CHANGE
 11/11/2018	  Shiv Maila	  Created
 20/12/2018	  Vinod Ch		Updated
 *****************************************************************/
@@ -48,6 +48,7 @@ Public without sharing Class HWS_ChildCases_WRAPPER{
 	Public String HighLevelProduct;
 	Public String CurrencyType;
 	Public String UnitOfMeasure;
+	Public String DesignResponsibility;
 	Public Boolean isRCAFMARequested;
 	public static final String RFREPAIR = 'Return for Repair or Replacement';
 	public static final String SPS = 'Spare Part Sales';
@@ -66,9 +67,18 @@ Public without sharing Class HWS_ChildCases_WRAPPER{
 		this.CustomerRequestedDeliveryDate=HWS_ParentCase_WRAPPER.convetDateTimetoSOOFormatGMT(childcase.HWS_Requested_Delivery_Date_Time__c);
 		this.PlannedDeliveryDate=HWS_ParentCase_WRAPPER.convetDateTimetoSOOFormatGMT(childcase.HWS_Planned_Delivery_Date__c);
 		this.SalesOrg=childcase.NCP_Service_Contract__r.HWS_SalesOrganisation__c;
+		//NOKIASC-36797
+		if(childcase.NCP_Service_Contract__r.HWS_Combined_Ordering__c)
+		{
+			this.SalesOrg = childcase.HWS_Contract_Line_Item__r.HWS_SalesOrg__c;
+		}
 		this.BillToID=childcase.NCP_Service_Contract__r.HWS_CaresRepairServiceBillToCode__c;
 		this.CurrencyType=childcase.NCP_Service_Contract__r.HWS_Currency__c;
 		this.LegacyErpInfo=childcase.NCP_Service_Contract__r.CH_ERPSystem__c;
+		//NOKIASC-36797
+		if(childcase.NCP_Service_Contract__r.HWS_Combined_Ordering__c){
+			this.LegacyErpInfo=childcase.HWS_Contract_Line_Item__r.HWS_ERPSystem__c;
+		}
 		//US 27245 begin	  
 		//pass this to custom setting --analyze option
 		this.ServiceType = childcase.HWS_Contract_Line_Item__r.CH_ServiceItemCode__c;
@@ -87,9 +97,11 @@ Public without sharing Class HWS_ChildCases_WRAPPER{
 		this.SLAValue=childcase.Asset.HWS_ContractLeadTimeDuration__c;
 		this.SLAType=childcase.Asset.HWS_ContractLeadTimeUnit__c;
 		this.PartMaterialCode=childcase.HWS_Sellable_Product__r.ProductCode;
+		this.DesignResponsibility=childcase.Asset.HWS_DesignResponsibility__c;
 		this.PartRevisionMaterialCode=childcase.HWS_Stockable_Product__r.HWS_Version_Code__c;
 		this.FailureDetectionDate=HWS_ParentCase_WRAPPER.convetDate(childcase.HWS_Failure_Detection_Date__c);
-		if(childcase.NCP_Service_Contract__r.CH_ERPSystem__c=='P20'){
+		//NOKIASC-36797
+		if(childcase.NCP_Service_Contract__r.CH_ERPSystem__c=='P20' || (childcase.NCP_Service_Contract__r.HWS_Combined_Ordering__c && childcase.HWS_Contract_Line_Item__r.HWS_ERPSystem__c =='SAP P20')){
 			this.PartMaterialCode=childcase.HWS_Sellable_Product__r.ProductCode;
 			this.PartRevisionMaterialCode=childcase.HWS_Stockable_Product__r.HWS_Version_Code__c;  
 			system.debug('-P20--'+this.PartRevisionMaterialCode);
@@ -97,61 +109,62 @@ Public without sharing Class HWS_ChildCases_WRAPPER{
 		else{
 			this.PartMaterialCode=childcase.HWS_Stockable_Product__r.RES_ID__c;
 			if(childcase.HWS_Stockable_Product__r.HWS_Version_Code__c=='ANY'){
-				//HWST_4188
-				if(childcase.HWS_Customer_Part_Revision__c != null && childcase.HWS_Customer_Part_Revision__c !=''){
-					this.PartRevisionMaterialCode=childcase.HWS_Stockable_Product__r.RES_ID__c+childcase.HWS_Customer_Part_Revision__c;		  
-				}
-				else{								this.PartRevisionMaterialCode=childcase.HWS_Stockable_Product__r.RES_ID__c;		
-					}
+	//HWST_4188
+	if(childcase.HWS_Customer_Part_Revision__c != null && childcase.HWS_Customer_Part_Revision__c !=''){
+		this.PartRevisionMaterialCode=childcase.HWS_Stockable_Product__r.RES_ID__c+childcase.HWS_Customer_Part_Revision__c;	
+	}
+	else{		this.PartRevisionMaterialCode=childcase.HWS_Stockable_Product__r.RES_ID__c;		
+		}
 			}
 			else{
-				this.PartRevisionMaterialCode=childcase.HWS_Stockable_Product__r.RES_ID__c+childcase.HWS_Stockable_Product__r.HWS_Version_Code__c;  
+	this.PartRevisionMaterialCode=childcase.HWS_Stockable_Product__r.RES_ID__c+childcase.HWS_Stockable_Product__r.HWS_Version_Code__c;  
 			}
 		}
-		if(childcase.NCP_Service_Contract__r.CH_ERPSystem__c=='P20'){
+		//NOKIASC-36797
+		if(childcase.NCP_Service_Contract__r.CH_ERPSystem__c=='P20' || (childcase.NCP_Service_Contract__r.HWS_Combined_Ordering__c && childcase.HWS_Contract_Line_Item__r.HWS_ERPSystem__c =='SAP P20')){
 			this.ServiceAgreementId=childcase.NCP_Service_Contract__r.CH_SAP_ContractNumber__c;
 			if(childcase.HWS_Failure_Occurance__c=='In normal use'){
-				this.FailureOccurence='1';	
+	this.FailureOccurence='1';	
 			}else if(childcase.HWS_Failure_Occurance__c=='Permanent'){
-				this.FailureOccurence='2';	
+	this.FailureOccurence='2';	
 			}else if(childcase.HWS_Failure_Occurance__c=='During installation / commissioning / Dead On Arrival'){
-				this.FailureOccurence='3';	
+	this.FailureOccurence='3';	
 			}else if(childcase.HWS_Failure_Occurance__c=='During or after lightning / severe weather conditions'){
-				this.FailureOccurence='4';	
+	this.FailureOccurence='4';	
 			}else if(childcase.HWS_Failure_Occurance__c=='During or after SW or HW upgrade / modifications'){
-				this.FailureOccurence='5';	
+	this.FailureOccurence='5';	
 			}else if(childcase.HWS_Failure_Occurance__c=='During preventive maintenance'){
-				this.FailureOccurence='6';	
+	this.FailureOccurence='6';	
 			}else if(childcase.HWS_Failure_Occurance__c=='During high traffic load'){
-				this.FailureOccurence='7';	
+	this.FailureOccurence='7';	
 			}
 			if(childcase.HWS_Failure_Detection__c=='Start reset loop'){
-				this.FailureDetection='1';	
+	this.FailureDetection='1';	
 			}else if(childcase.HWS_Failure_Detection__c=='Reboot module'){
-				this.FailureDetection='2';	
+	this.FailureDetection='2';	
 			}else if(childcase.HWS_Failure_Detection__c=='Fails on diagnostics'){
-				this.FailureDetection='3';	
+	this.FailureDetection='3';	
 			}else if(childcase.HWS_Failure_Detection__c=='Other'){
-				this.FailureDetection='4';	
+	this.FailureDetection='4';	
 			}else if(childcase.HWS_Failure_Detection__c=='Non-reproducible'){
-				this.FailureDetection='5';	
+	this.FailureDetection='5';	
 			}
 			if(childcase.HWS_Failure_Description__c=='Unit/module not recognized'){
-				this.FailureDescription='1';	
+	this.FailureDescription='1';	
 			}if(childcase.HWS_Failure_Description__c=='No TX power'){
-				this.FailureDescription='2';	
+	this.FailureDescription='2';	
 			}if(childcase.HWS_Failure_Description__c=='Fan defect'){
-				this.FailureDescription='3';	
+	this.FailureDescription='3';	
 			}if(childcase.HWS_Failure_Description__c=='LED indicates alarm'){
-				this.FailureDescription='4';	
+	this.FailureDescription='4';	
 			}if(childcase.HWS_Failure_Description__c=='Unit alarm'){
-				this.FailureDescription='5';	
+	this.FailureDescription='5';	
 			}if(childcase.HWS_Failure_Description__c=='SW download failure'){
-				this.FailureDescription='6';	
+	this.FailureDescription='6';	
 			}if(childcase.HWS_Failure_Description__c=='Feature Activation effect'){
-				this.FailureDescription='7';	
+	this.FailureDescription='7';	
 			}if(childcase.HWS_Failure_Description__c=='Advise for exchange from others'){
-				this.FailureDescription='8';	
+	this.FailureDescription='8';	
 			}
 		}else{
 			this.ServiceAgreementId=childcase.NCP_Service_Contract__r.CH_CARES_ServiceAgreement__c;

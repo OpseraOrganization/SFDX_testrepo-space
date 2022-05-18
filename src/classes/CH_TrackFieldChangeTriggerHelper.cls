@@ -27,23 +27,23 @@ public class CH_TrackFieldChangeTriggerHelper{
 		for (CH_Track_Field_Change__c tfc :newTFCList){
 			myStringId = tfc.Text_new__c;
 			if (myStringId instanceOf Id){
-				myId = myStringId;
-				sobjectType = myId.getSObjectType();
+	myId = myStringId;
+	sobjectType = myId.getSObjectType();
 	sobjectName = sobjectType.getDescribe().getName();
-				if (!sObjectIDsNames.containsKey(sobjectName)){
-					sObjectIDsNames.put(sobjectName, new Map<id, String>());
-				}
-				sObjectIDsNames.get(sobjectName).put(myId,null);
+	if (!sObjectIDsNames.containsKey(sobjectName)){
+		sObjectIDsNames.put(sobjectName, new Map<id, String>());
+	}
+	sObjectIDsNames.get(sobjectName).put(myId,null);
 			}
 			myStringId = tfc.Text_old__c;
 			if (myStringId instanceOf Id){
-				myId = myStringId;
-				sobjectType = myId.getSObjectType();
+	myId = myStringId;
+	sobjectType = myId.getSObjectType();
 	sobjectName = sobjectType.getDescribe().getName();
-				if (!sObjectIDsNames.containsKey(sobjectName)){
-					sObjectIDsNames.put(sobjectName, new Map<id, String>());
-				}
-				sObjectIDsNames.get(sobjectName).put(myId,null);
+	if (!sObjectIDsNames.containsKey(sobjectName)){
+		sObjectIDsNames.put(sobjectName, new Map<id, String>());
+	}
+	sObjectIDsNames.get(sobjectName).put(myId,null);
 			}
 		}
 		List<SObject> records;
@@ -53,33 +53,41 @@ public class CH_TrackFieldChangeTriggerHelper{
 		for (String mySobject : sObjectIDsNames.keySet()){
 			idsList=  new List<id>() ;
 			idsList.addAll(sObjectIDsNames.get(mySobject).keySet());
-			records = Database.query('Select Id, Name From ' + mySobject + ' Where Id IN :idsList');
-			for(SObject myObject :  records ){
-				sObjectIDsNames.get(mySobject).put(myObject.id,(String)myObject.get('Name')) ;
+			if(mySobject == 'Case'){
+				records = Database.query('Select Id, CaseNumber From ' + mySobject + ' Where Id IN :idsList');
+	for(SObject myObject :  records ){
+		sObjectIDsNames.get(mySobject).put(myObject.id,(String)myObject.get('CaseNumber')) ;
+	}
+			}
+			else{
+				records = Database.query('Select Id, Name From ' + mySobject + ' Where Id IN :idsList');
+				for(SObject myObject :  records ){
+					sObjectIDsNames.get(mySobject).put(myObject.id,(String)myObject.get('Name')) ;
+				}
 			}
 		}
 		//replacing the ids by names in the Sobject
 		for (CH_Track_Field_Change__c tfc :newTFCList){
 			myStringId = tfc.Text_new__c;
 			if (myStringId instanceOf Id){
-				myId = myStringId;
-				sobjectType = myId.getSObjectType();
+	myId = myStringId;
+	sobjectType = myId.getSObjectType();
 	sobjectName = sobjectType.getDescribe().getName();
-				if (!sObjectIDsNames.containsKey(sobjectName)){
-					sObjectIDsNames.put(sobjectName, new Map<id, String>());
-				}
-				tfc.Text_new__c = sObjectIDsNames.get(sobjectName).get(myId);
+	if (!sObjectIDsNames.containsKey(sobjectName)){
+		sObjectIDsNames.put(sobjectName, new Map<id, String>());
+	}
+	tfc.Text_new__c = sObjectIDsNames.get(sobjectName).get(myId);
 	tfc.Id_new__c = myId;
 			}
 			myStringId = tfc.Text_old__c;
 			if (myStringId instanceOf Id){
-				myId = myStringId;
-				sobjectType = myId.getSObjectType();
+	myId = myStringId;
+	sobjectType = myId.getSObjectType();
 	sobjectName = sobjectType.getDescribe().getName();
-				if (!sObjectIDsNames.containsKey(sobjectName)){
-					sObjectIDsNames.put(sobjectName, new Map<id, String>());
-				}
-				tfc.Text_old__c = sObjectIDsNames.get(sobjectName).get(myId);
+	if (!sObjectIDsNames.containsKey(sobjectName)){
+		sObjectIDsNames.put(sobjectName, new Map<id, String>());
+	}
+	tfc.Text_old__c = sObjectIDsNames.get(sobjectName).get(myId);
 	tfc.Id_old__c = myId;
 			}
 		}

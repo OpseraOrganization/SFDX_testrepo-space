@@ -161,7 +161,7 @@ public without sharing class HWS_UploadKITPartcodetoAlternateCode{
 		public Boolean PMDSOR_DeletedAtSource{get;set;}
 		public String Kit_BundleDescription{get;set;}
 		public String PartNumberDescription{get;set;}
-	  
+	   
 		
 	}
 }

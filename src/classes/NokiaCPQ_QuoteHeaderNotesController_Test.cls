@@ -44,18 +44,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 	
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -96,7 +96,7 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		
 		
 		
-		Offer__c offer1 = new Offer__c(Name = 'Offer1',Expected_LoA_G4_Approval_Level__c=Nokia_CPQ_Constants.LOABYPASS,Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = Nokia_CPQ_Constants.LOABYPASS,LOA_Bypass__c = '',ActiveOffer__c=true);
+		Offer__c offer1 = new Offer__c(Name = 'Offer1',Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = Nokia_CPQ_Constants.LOABYPASS,LOA_Bypass__c = '',ActiveOffer__c=true);
 		insert offer1;
 		Test.StartTest();
 		testProposal1 = new Apttus_Proposal__Proposal__c(
@@ -204,18 +204,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -257,7 +257,7 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		
 		
 		
-		Offer__c offer1 = new Offer__c(Name = 'Offer1',Expected_LoA_G4_Approval_Level__c=Nokia_CPQ_Constants.LOABYPASS,Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = Nokia_CPQ_Constants.LOABYPASS,LOA_Bypass__c = GlobalConstants.LOA_BYPASS,ActiveOffer__c=true);
+		Offer__c offer1 = new Offer__c(Name = 'Offer1',Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = Nokia_CPQ_Constants.LOABYPASS,LOA_Bypass__c = GlobalConstants.LOA_BYPASS,ActiveOffer__c=true);
 		insert offer1;
 		Test.StartTest();
 		testProposal1 = new Apttus_Proposal__Proposal__c(
@@ -350,18 +350,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -506,18 +506,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -558,7 +558,7 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		
 		
 		
-		Offer__c offer1 = new Offer__c(Name = 'Offer1',Expected_LoA_G4_Approval_Level__c=Nokia_CPQ_Constants.LOABYPASS,Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = GlobalConstants.LOA_Level_A_Plus,LOA_Bypass__c = GlobalConstants.NO_LOA,ActiveOffer__c=true);
+		Offer__c offer1 = new Offer__c(Name = 'Offer1',Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = GlobalConstants.LOA_Level_A_Plus,LOA_Bypass__c = GlobalConstants.NO_LOA,ActiveOffer__c=true);
 		insert offer1;
 		Test.StartTest();
 		testProposal1 = new Apttus_Proposal__Proposal__c(
@@ -654,18 +654,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -812,18 +812,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -962,18 +962,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -1118,18 +1118,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -1271,18 +1271,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -1421,18 +1421,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -1475,7 +1475,7 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		
 		
 		Test.StartTest();
-		Offer__c offer1 = new Offer__c(Name = 'Offer1',Expected_LoA_G4_Approval_Level__c=Nokia_CPQ_Constants.LOABYPASS,Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = GlobalConstants.LOA_Level_A_Plus,LOA_Bypass__c = '',ActiveOffer__c=true);
+		Offer__c offer1 = new Offer__c(Name = 'Offer1',Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = GlobalConstants.LOA_Level_A_Plus,LOA_Bypass__c = '',ActiveOffer__c=true);
 		insert offer1;
 		//Test.StartTest();
 		testProposal1 = new Apttus_Proposal__Proposal__c(
@@ -1577,18 +1577,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -1632,7 +1632,7 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		
 		
 		Test.StartTest();
-		Offer__c offer1 = new Offer__c(Name = 'Offer1',Expected_LoA_G4_Approval_Level__c=Nokia_CPQ_Constants.LOABYPASS,Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = '',LOA_Bypass__c = GlobalConstants.LOA_BYPASS,ActiveOffer__c=true);
+		Offer__c offer1 = new Offer__c(Name = 'Offer1',Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = '',LOA_Bypass__c = GlobalConstants.LOA_BYPASS,ActiveOffer__c=true);
 		insert offer1;
 		//Test.StartTest();
 		testProposal1 = new Apttus_Proposal__Proposal__c(
@@ -1728,18 +1728,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -1887,18 +1887,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -1941,7 +1941,7 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		
 		
 		Test.StartTest();
-		Offer__c offer1 = new Offer__c(Name = 'Offer1',Expected_LoA_G4_Approval_Level__c=Nokia_CPQ_Constants.LOABYPASS,Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = '',LOA_Bypass__c = GlobalConstants.NO_LOA,ActiveOffer__c=true);
+		Offer__c offer1 = new Offer__c(Name = 'Offer1',Opportunity__c = opportunities[0].Id,LoA_Approval_Level__c = '',LOA_Bypass__c = GlobalConstants.NO_LOA,ActiveOffer__c=true);
 		insert offer1;
 		//Test.StartTest();
 		testProposal1 = new Apttus_Proposal__Proposal__c(
@@ -2038,18 +2038,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;
@@ -2186,18 +2186,18 @@ public class NokiaCPQ_QuoteHeaderNotesController_Test {
 		insert accounts;
 
 		Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_PRODUCT,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 		Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c=Nokia_CPQ_Constants.NOKIA_ACCRED_TYPE_MAINTENANCE,
-				Accreditation_Date__c = date.today(),
-				Accreditation_Level__c='Authorized',
-				Partner__c=accounts[0].Id,
-				Portfolio__c='Optics',
-				Pricing_Cluster__c='NAM'	
+	Accreditation_Date__c = date.today(),
+	Accreditation_Level__c='Authorized',
+	Partner__c=accounts[0].Id,
+	Portfolio__c='Optics',
+	Pricing_Cluster__c='NAM'	
 	);
 	
 		insert accreditation1;

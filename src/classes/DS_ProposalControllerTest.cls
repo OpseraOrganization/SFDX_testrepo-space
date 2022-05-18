@@ -18,7 +18,7 @@ private with sharing class DS_ProposalControllerTest {
 
 			Account legalEntity = TestDataFactory.createAccount(1)[0];
 			legalEntity.AccountNumber = '100006843';
-			legalEntity.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Legal Entity').getRecordTypeId();
+			legalEntity.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 			legalEntity.ParentId = account.id;
 			Database.insert(legalEntity);
 
@@ -41,7 +41,7 @@ private with sharing class DS_ProposalControllerTest {
 			//Opportunity
 			Opportunity opportunity = TestDataFactory.OpportunityCreation(1, account)[0];
 			opportunity.StageName = CSWXGlobalConstant.DEVELOP_OPPTY;
-			opportunity.RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get(CSWXGlobalConstant.directOppty).getRecordTypeId();
+			opportunity.RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Direct_Record_Type').getRecordTypeId();
 			opportunity.Lead_BG__c = 'MN';
 			opportunity.Phase_Status__c = CSWXGlobalConstant.Opty_phase_Status;
 			Database.insert(opportunity);
@@ -63,7 +63,7 @@ private with sharing class DS_ProposalControllerTest {
 			//Quote/Proposal
 			Apttus_Proposal__Proposal__c quoteProposal = NOKIA_CPQ_TestDataFactory.createProposal(1)[0];
 			quoteProposal.Analytics_Source__c  = CSWXGlobalConstant.AnalyticsSource;
-			quoteProposal.RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('SWx/CCRE Proposal').getRecordTypeId();
+			quoteProposal.RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('CCRE_Proposal').getRecordTypeId();
 			quoteProposal.Contract_Type_Name__c = 'Project';
 			quoteProposal.Apttus_Proposal__Proposal_Name__c = 'Test Data';
 			quoteProposal.Apttus_Proposal__Opportunity__c = opportunity.id;

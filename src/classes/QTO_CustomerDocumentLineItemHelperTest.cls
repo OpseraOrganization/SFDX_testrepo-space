@@ -6,14 +6,13 @@ Last modified by: Shaik Johny Basha
 Description: Test class for QTO_CustomerDocumentLineItem_Helper 
 UserStory : DSI-2148/DSI-2153
 ***************************************************************************/
-
 @isTest
 public class  QTO_CustomerDocumentLineItemHelperTest {
 	
 	@testsetup
 	static void enrichmentTest() {
 		
-		List<Account> accList = QTO_TestDataFactory.createAccount(1);
+		List<Account> accList = QTO_TestDataFactory.createAccount(2);
 		insert accList; 
 		List<Product2> prdList = new List<Product2>();
 		
@@ -92,10 +91,9 @@ public class  QTO_CustomerDocumentLineItemHelperTest {
 		Opportunity opp = QTO_TestDataFactory.OpportunityCreation(accList[0]);
 		insert opp;
 		
-		Apttus__APTS_Agreement__c agr = QTO_TestDataFactory.createAgreement(accList[0]);
+		Apttus__APTS_Agreement__c agr = QTO_TestDataFactory.createAgreement(accList[0], opp, accList[1]);
 		agr.Apttus__Status_Category__c = 'In Effect';
 		agr.Apttus__Status__c = 'Activated';
-		agr.Apttus__Contract_End_Date__c = System.today()+10;
 		insert agr; 
 		
 		List<Apttus__AgreementLineItem__c> agList = new List<Apttus__AgreementLineItem__c>();
@@ -103,6 +101,7 @@ public class  QTO_CustomerDocumentLineItemHelperTest {
 		agLine1.Apttus__AgreementId__c = agr.Id;
 		agLine1.Apttus__Description__c = 'My SFR Cutlery desc';
 		agLine1.Contract_Item_Number__c = 'My SFR Cutlery';
+		agLine1.CLM_CFE_Reference__c = 'My SFR Cutlery';
 		agLine1.Apttus__ProductId__c = prdList[0].Id;
 		agLine1.Apttus__Quantity__c = 10;
 		
@@ -110,6 +109,7 @@ public class  QTO_CustomerDocumentLineItemHelperTest {
 		agLine2.Apttus__AgreementId__c = agr.Id;
 		agLine2.Apttus__Description__c = 'My SFR Cutlery desc';
 		agLine2.Contract_Item_Number__c = 'My SFR Cutlery';
+		agLine1.CLM_CFE_Reference__c = 'My SFR Cutlery';
 		agLine2.Apttus__ProductId__c = prdList[1].Id;
 		agLine2.Apttus__Quantity__c = 15;
 		
@@ -321,15 +321,7 @@ public class  QTO_CustomerDocumentLineItemHelperTest {
 		linecfa5.Quote__c = null;
 		linecfa5.Quote_Line_Item__c = null;
 		lineItemCfas.add(linecfa5);
-		insert lineItemCfas;
-		
-		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
-																		Detailed_Product__c,Detailed_Product_Description__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
-																		from Customer_Document_Line_Items__c];
-		
-		//QTO_CustomerDocumentLineItem_Helper.lineItemEnrichment(customerDocumentLines);
+		insert lineItemCfas;			
 		
 		Map<Id,List<Apttus__AgreementLineItem__c>> agreementAndLinesMap = new Map<Id,List<Apttus__AgreementLineItem__c>>();
 		agreementAndLinesMap.put(agr.Id, agList);
@@ -345,10 +337,10 @@ public class  QTO_CustomerDocumentLineItemHelperTest {
 		
 		test.startTest();		
 		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
-																		Detailed_Product__c,Detailed_Product_Description__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
-																		from Customer_Document_Line_Items__c];
+						Detailed_Product__c,Detailed_Product_Description__c,
+						QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
+						Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
+						from Customer_Document_Line_Items__c];
 		QTO_CustomerDocumentLineItem_Helper.lineItemEnrichment(customerDocumentLines);		
 		test.stopTest();
 	}	
@@ -361,10 +353,10 @@ public class  QTO_CustomerDocumentLineItemHelperTest {
 		delete prop;
 		
 		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
-																		Detailed_Product__c,Detailed_Product_Description__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
-																		from Customer_Document_Line_Items__c];
+						Detailed_Product__c,Detailed_Product_Description__c,
+						QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
+						Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
+						from Customer_Document_Line_Items__c];
 		QTO_CustomerDocumentLineItem_Helper.lineItemEnrichment(customerDocumentLines);		
 		test.stopTest();
 	}
@@ -379,10 +371,10 @@ public class  QTO_CustomerDocumentLineItemHelperTest {
 		delete agmt;
 		
 		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
-																		Detailed_Product__c,Detailed_Product_Description__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
-																		from Customer_Document_Line_Items__c];
+						Detailed_Product__c,Detailed_Product_Description__c,
+						QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
+						Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
+						from Customer_Document_Line_Items__c];
 		QTO_CustomerDocumentLineItem_Helper.lineItemEnrichment(customerDocumentLines);		
 		test.stopTest();
 	}
@@ -399,11 +391,33 @@ public class  QTO_CustomerDocumentLineItemHelperTest {
 		delete pl;		
 		
 		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
-																		Detailed_Product__c,Detailed_Product_Description__c,
-																		QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
-																		Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
-																		from Customer_Document_Line_Items__c];
+						Detailed_Product__c,Detailed_Product_Description__c,
+						QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
+						Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
+						from Customer_Document_Line_Items__c];
 		QTO_CustomerDocumentLineItem_Helper.lineItemEnrichment(customerDocumentLines);		
 		test.stopTest();
-	}	   
+	} 
+	
+	@isTest
+	static void test5(){
+		
+		test.startTest();		
+		List<Customer_Document_Line_Items__c>  customerDocumentLines = [Select Id,High_level_Product__c,High_level_Product_Description__c,
+						Detailed_Product__c,Detailed_Product_Description__c,
+						QTO_Customer_Grouping__c,QTO_Product_Code__c,QTO_Product_Name__c,Contract_Item_Number__c,
+						Price_List_Item__c,Customer_Document__c,Customer_Document__r.Customer__c
+						from Customer_Document_Line_Items__c];
+		QTOCustomerDocumentUtil.findAllCDLinesByCusDocId(customerDocumentLines[0].Customer_Document__c, QTO_Constants.ENRICHMENT);  
+		QTOCustomerDocumentUtil.findAllCDLinesByCusDocId(customerDocumentLines[0].Customer_Document__c, QTO_Constants.ASSOCIATION); 
+		QTOCustomerDocumentUtil.findCfasByAttributeType(customerDocumentLines[0].Customer_Document__c, 'PDF QUOTE REF');
+		QTOCustomerDocumentUtil.findCfasByAttributeType(customerDocumentLines[0].Customer_Document__c, 'PDF CONTRACT REF');
+		QTOCustomerDocumentUtil.findAllQuoteLinesBySoldToParty(customerDocumentLines[0].Customer_Document__r.Customer__c);
+		Apttus_Proposal__Proposal__c prop = [Select Id,Name from Apttus_Proposal__Proposal__c limit 1];
+		List<String> pId = new List<String> {prop.Name};
+		QTOCustomerDocumentUtil.findAllAssociatedQuotes(customerDocumentLines[0].Customer_Document__c, pId , customerDocumentLines[0].Customer_Document__r.Customer__c);
+		test.stopTest();
+	}	
+	
+	
 }

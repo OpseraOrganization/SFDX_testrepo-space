@@ -20,8 +20,8 @@ public without sharing class CH_CA_Time_Recording_Controller {
 		Integer caseTeamMembercount= [SELECT count()
 			  FROM CaseTeamMember 
 			  WHERE ParentId =: caseId AND MemberId= : UserInfo.getUserId() limit 1 ];
-		if (caseTeamMemberCount != 0 ){	 
-			return false;		
+		if (caseTeamMemberCount != 0 ){  
+			return false;	   
 		}
 		return returnMsg;
 	}
@@ -62,10 +62,16 @@ public without sharing class CH_CA_Time_Recording_Controller {
 		try{ 
 			//Validate data
 			errorMsg= validateInputData(role,hours,minutes);
+	 //NOKIASC-38835
+		   if (hours==0&&minutes==0){
+	AuraHandledException auraExp = new AuraHandledException('');
+	auraExp.setMessage('Please enter a duration.'); 
+	throw auraExp;
+			}
 			if (!String.isBlank(errorMsg))
 			{
 	AuraHandledException auraExp = new AuraHandledException('');
-	auraExp.setMessage(errorMsg);	
+	auraExp.setMessage(errorMsg);   
 	throw auraExp; 
 			}
 			//Converting string to date
@@ -83,7 +89,7 @@ public without sharing class CH_CA_Time_Recording_Controller {
 			timeRecording.CH_SupportTicketNumber__c=caseId;
 			timeRecording.CH_TimeSpent__c=timeSpent;		
 			timeRecording.CH_CostCenterDescription__c=users.get(UserInfo.getUserId()).User_Cost_Center_Description__c;
-			timeRecording.CH_UserName__c=UserInfo.getUserId();			
+			timeRecording.CH_UserName__c=UserInfo.getUserId();		  
 			timeRecording.CH_Organization__c=users.get(UserInfo.getUserId()).Department;
 			if(String.isNotBlank(startDate)){
 	timeRecording.CH_StartDate__c=dateStart;
@@ -91,7 +97,7 @@ public without sharing class CH_CA_Time_Recording_Controller {
 			insert timeRecording;  
 		}
 		catch(DmlException e){
-			//Any type of Validation Rule error message, Required field missing error message, Trigger error message etc..		   
+			//Any type of Validation Rule error message, Required field missing error message, Trigger error message etc..		 
 			for (Integer i = 0; i < e.getNumDml(); i++) {
 	//Get Validation Rule & Trigger Error Messages
 	errorMsg =+ e.getDmlMessage(i) +  '\n' ;
@@ -116,7 +122,7 @@ public without sharing class CH_CA_Time_Recording_Controller {
 			if (!String.isBlank(errorMsg))
 			{
 	AuraHandledException auraExp = new AuraHandledException('');
-	auraExp.setMessage(errorMsg);	
+	auraExp.setMessage(errorMsg);   
 	throw auraExp; 
 			}
 			//Converting string to date
@@ -132,7 +138,13 @@ public without sharing class CH_CA_Time_Recording_Controller {
 			//validate the user is owner or not
 			if (updateTimeRecording.CH_UserName__c!=UserInfo.getUserId()){
 	AuraHandledException auraExp = new AuraHandledException('');
-	auraExp.setMessage('You are not allowed to modify this record. Only the Record Owner can modify the record.');	
+	auraExp.setMessage('You are not allowed to modify this record. Only the Record Owner can modify the record.');  
+	throw auraExp;
+			}
+			//Ref:NOKIASC-36264 Validate Hours & Minutes
+			if (hours==0&&minutes==0){
+	AuraHandledException auraExp = new AuraHandledException('');
+	auraExp.setMessage('Please enter a duration.'); 
 	throw auraExp;
 			}
 			//update data in CH_TimeRecording__c
@@ -143,7 +155,7 @@ public without sharing class CH_CA_Time_Recording_Controller {
 			update  updateTimeRecording;  
 		}
 		catch(DmlException e){
-			//Any type of Validation Rule error message, Required field missing error message, Trigger error message etc..		   
+			//Any type of Validation Rule error message, Required field missing error message, Trigger error message etc..		 
 			for (Integer i = 0; i < e.getNumDml(); i++) {
 	//Get Validation Rule & Trigger Error Messages
 	errorMsg =+ e.getDmlMessage(i) +  '\n' ;
@@ -159,10 +171,10 @@ public without sharing class CH_CA_Time_Recording_Controller {
 	//Validate input data
 	public static String validateInputData(String role,Integer hours,Integer minutes){
 		Integer timeSpent =0;
-		String errorMsg='';		
-		if (String.isBlank(role)){		
+		String errorMsg='';	 
+		if (String.isBlank(role)){	  
 			errorMsg += 'Role can not be blank.';
-		}	
+		}   
 		timeSpent=hours*60+minutes;
 		if(timeSpent>120000 || timeSpent<0){	  
 			errorMsg += 'Time Spent can not be greater than 120000 and less than 0';	

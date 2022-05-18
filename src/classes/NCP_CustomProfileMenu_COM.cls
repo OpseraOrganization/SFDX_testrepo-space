@@ -142,4 +142,11 @@ public with sharing class NCP_CustomProfileMenu_COM {
 	public static Boolean checkForGuestUser() {
 		return System.UserInfo.getUserType() == 'Guest' ? true : false;
 	}
+	
+	//This will return true if the User is a Competitor.
+	@AuraEnabled
+	public static Boolean checkCompetitorUser() {
+		User userRecord = [SELECT NCP_IsHorizontal__c FROM User WHERE Id = :UserInfo.getUserId()];
+		return userRecord != NULL ? userRecord.NCP_IsHorizontal__c : false;
+	}
 }

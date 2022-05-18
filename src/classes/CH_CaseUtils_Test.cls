@@ -6,7 +6,7 @@
 * @Modification Log : 
 *  Created  : 2020 02 17 – tiago.almeida@nokia.com
 * ----- 
-**/
+**/ 
 @isTest
 public class CH_CaseUtils_Test {
 	private static Case oCase;
@@ -38,19 +38,25 @@ public class CH_CaseUtils_Test {
 		//
 		oCase = TestDataFactory.createCase('CH_NokiaIncidentWithRestoration', 1, oLegalEntity, oContact, oProduct2List.get(0)).get(0);
 	}
-	
 	public static testMethod void test() {
 		setupTestData();
-		//
+		// 
 		test.startTest();
 		CH_CaseUtils.getStandardCaseRecordTypeId();
-		Id caseId = CH_CaseUtils.database('insert', oCase, true);
+		try { Id caseId = CH_CaseUtils.database('insert', oCase, true);
 		oCase = CH_CaseUtils.getCase(caseId);
+		CH_CaseUtils.getMilestoneDetails((String) caseId);
 		CH_CaseUtils.database('update', oCase, true);
 		CH_CaseUtils.database('delete', oCase, true);
+		CH_CaseUtils.database('update', oCase, true);
+		CH_CaseUtils.database('delete', oCase, true);
+		} catch(Exception e) { /* Do Nothing */ }
+		
 		try { CH_CaseUtils.database('insert', null, true); } catch(Exception e) { /* Do Nothing */ }
 		try { CH_CaseUtils.getCase(null); } catch(Exception e) { /* Do Nothing */ }
+		try { CH_CaseUtils.getCaseData(oCase.Id); } catch(Exception e) { /* Do Nothing */ }
 		try { CH_CaseUtils.getVirtualPortalAttendantId(); } catch(Exception e) { /* Do Nothing */ }
+		
 		test.stopTest();
 	}
 }

@@ -1,7 +1,7 @@
-/***
-* This class contains unit tests for validating the behavior of Apex classes
-* and triggers. 
-* 
+/*******
+* This class contains unit tests for validating the behavior of Apex classes 
+* and triggers.
+*
 * Unit tests are class methods that verify whether a particular piece
 * of code is working properly. Unit test methods take no arguments,
 * commit no data to the database, and are flagged with the testMethod
@@ -19,11 +19,13 @@
 * the organization size limit for all Apex scripts.
 *
 * See the Apex Language Reference for more information about Testing and Code Coverage.
-*/
+*/ 
+
 @isTest
 private class CH_CaseTriggerHelperTest { 
-	 
-	private static Case oCase;
+	
+	private static Case oCase ;
+	private static Case oCase2;
 	public static final String LCSSNS2='Legacy Customer Support Service - No Severity 24x7';
 	@testSetup  
 	static void setupTestData() {
@@ -32,6 +34,10 @@ private class CH_CaseTriggerHelperTest {
 		//
 		Account oLegalEntity = TestDataFactory.createAccount('Legal_Entity', 1, oProspectList.get(0).Id).get(0);
 		insert oLegalEntity;
+		
+		Account oLegalEntity2 = TestDataFactory.createAccount('Legal_Entity', 1, oProspectList.get(0).Id).get(0);
+		oLegalEntity2.Customer_Compliance__c ='US_Govern';
+		insert oLegalEntity2;
 		//
 		Contact oContact = TestDataFactory.createContact(1, oProspectList.get(0)).get(0);
 		oContact.LastName = 'Test LastName';
@@ -51,6 +57,7 @@ private class CH_CaseTriggerHelperTest {
 		insert oEntitlementContactList;
 		//
 		oCase = TestDataFactory.createCase('CH_NokiaStandardCase', 1, oLegalEntity, oContact, oProduct2List.get(0)).get(0);
+		oCase2 = TestDataFactory.createCase('CH_NokiaStandardCase', 1, oLegalEntity2, oContact, oProduct2List.get(0)).get(0);
 	}
 	
 	//Test
@@ -100,13 +107,13 @@ private class CH_CaseTriggerHelperTest {
 			assetObj.Name = 'Test Asset';
 			assetObj.Product2Id = productlist[i].id;
 			assetObj.AccountId = AccountListLE[i].id;
-		   
+	 
 			assetObjList.add(assetObj);
 		}
 		insert assetObjList;
 		
 		ContractLineItem contLine = new ContractLineItem();
-		   
+	 
 			contLine.PricebookEntryId = Custompricebook[0].id;
 			contLine.Quantity = 55;
 			contLine.UnitPrice = 55;
@@ -231,9 +238,9 @@ private class CH_CaseTriggerHelperTest {
 		caseObj.CH_ServiceType__c = 'Customer Support';	 
 		caseObj.CH_ExternalSystemAccount__c='MVV40016|A3/E-W/03/3|Firma NSN';
 		caseObj.CH_CaseOriginSystem__c ='tmobile-tim';
-				   
+	 
 		insert caseObj; 
-		  
+	
 			List < MilestoneType > mTypes = [SELECT Id, Name FROM MilestoneType] ;
 			System.assertNotEquals(mTypes, null);
 			System.assertEquals(mTypes.isEmpty(), false);
@@ -281,6 +288,8 @@ private class CH_CaseTriggerHelperTest {
 	//test start 15275
 	 public static testMethod void testCompleteIRonInsert(){
 		CH_EntitlementTestData.createCustomSettingData();
+		
+		insert new Global_Control__c(ObjectTriggerByPass__c='ACCT,CNTCT,ACC_CNTCT_REL,USER,SVCNTRT,ASSET,PRODUCT,CLI,ENT');
 		integer j = 1;
 		List <Account> AccountListNL = new List<Account>();
 		AccountListNL = CH_EntitlementTestData.createAccountRecord(j, 'Prospect', null);
@@ -314,7 +323,7 @@ private class CH_CaseTriggerHelperTest {
 		ServiceContractlist = CH_EntitlementTestData.createServiceContractRecord(j, AccountListNL, null, customPB1.id );
 		insert ServiceContractlist;  
 		Test.startTest();
-	   
+	
 		List<Asset> assetObjList = new List<Asset>();
 		for(Integer i=0;i<j;i++){	
 			Asset assetObj = new Asset();
@@ -350,7 +359,7 @@ private class CH_CaseTriggerHelperTest {
 			entiObj.EndDate = System.today() + 10;
 			entiObj.ContractLineItemId = contLine.id;
 			entiObj.AssetId = assetObjList[i].id;
-		   
+	 
 			entiObj.CH_EntitlementType__c = 'Entitled Asset';
 			entiObj.CH_ServiceMappingId__c = LCSSNS2;
 			entiobj.ServiceContractId = ServiceContractlist[i].id;
@@ -420,11 +429,11 @@ private class CH_CaseTriggerHelperTest {
 			caseObj.AssetId = assetObjList[0].id;
 			caseObj.EntitlementId = entitlementlist[0].id;
 			caseObj.CH_Defect__c = false;
-		   
+	 
 			caseObj.Status = 'Assigned';
 			caseObj.CH_AssignedDate__c=system.now();
 			caseObj.CH_InitialDiagnosis__c= 'Test123';
-			caseObj.CH_IsCompleteInitialResponseSetByFlow__c=true;		  
+			caseObj.CH_IsCompleteInitialResponseSetByFlow__c=true;	
 			insert caseObj; 
 			
 			Case caseObj1 = [SELECT Id, CH_AssignedDate__c,CH_InitialResponse__c,CH_IsCompleteInitialResponse__c FROM Case where Id = :caseObj.Id];
@@ -447,19 +456,19 @@ private class CH_CaseTriggerHelperTest {
 			
 		} else if(mtObj.Name == System.Label.CH_SystemRestored) {
 			slaTime = timeCalculator.calculateMilestoneTriggerTime(caseObj1.Id, mtObj.Id);
-		   
+	 
 		} else if(mtObj.Name == System.Label.CH_TemporarySolutionProvided) {
 			slaTime = timeCalculator.calculateMilestoneTriggerTime(caseObj1.Id, mtObj.Id);
-		   
+	 
 		} else if(mtObj.Name == System.Label.CH_ServiceDisruptionReportProvided) {
 			slaTime = timeCalculator.calculateMilestoneTriggerTime(caseObj1.Id, mtObj.Id);
 			
 		} else if(mtObj.Name == System.Label.CH_SolutionProvidedNonDefect) {
 			slaTime = timeCalculator.calculateMilestoneTriggerTime(caseObj1.Id, mtObj.Id);
-		   
+	 
 		} else if(mtObj.Name == System.Label.CH_SolutionProvidedDefect) {
 			slaTime = timeCalculator.calculateMilestoneTriggerTime(caseObj1.Id, mtObj.Id);
-		  
+	
 		}
 	}
 			}
@@ -472,9 +481,9 @@ private class CH_CaseTriggerHelperTest {
 			for (Case caseObje : aCases2){
 	  caseIds.add(caseObje.Id);
 			}
-			Test.stopTest();
-			CH_CompleteIROnInsert.completeIROnInsert(caseIds);
 			
+			CH_CompleteIROnInsert.completeIROnInsert(caseIds);
+			Test.stopTest();
 		}Catch(Exception ex) {
 			System.debug('### Exception has raised : ' + ex.getMessage());
 		}
@@ -483,18 +492,47 @@ private class CH_CaseTriggerHelperTest {
 	
 	public static testMethod void testCloseCasesUpdate(){
 		setupTestData();
-		//
+		// 
 		Test.startTest();
-		oCase.CH_ServiceType__c = 'Customer Support';	   
+		oCase.CH_ServiceType__c = 'Customer Support';	
 		oCase.CH_ExternalSystemAccount__c='MVV40016|A3/E-W/03/3|Firma NSN';
-	  
 		insert oCase;
 		oCase.Status = 'Closed';
 		Map<Id,Case> oldCaseMap = new Map<Id,Case>();
 		oldCaseMap.put(oCase.Id, oCase);
-		oCase.Status = 'Complete';	  
+		oCase.Status = 'Complete';
 		CH_CaseTriggerHelper.checkCompletedCases(new List<Case>{oCase}, oldCaseMap);
 		Test.stopTest();
-	} 
+	}
 	
+	@isTest
+	public static void testPopulateCaleaFlag(){
+		setupTestData();		
+		Test.startTest();	 
+		oCase2.Subject = 'Calea';
+		oCase2.CH_CustomerDescription__c = 'Calea';
+		oCase2.Country__c = 'Guam';	
+		insert oCase2;		
+		Map<Id,Case> oldCaseMap = new Map<Id,Case>();
+		oldCaseMap.put(oCase2.Id, oCase2);	
+		CH_CaseTriggerHelper.populateCaleaFlag(new List<Case>{oCase2});
+		Test.stopTest();
+	}
+	@isTest
+	public static void testCancelledCases(){
+		setupTestData();
+		//
+		Test.startTest();
+		oCase.CH_ServiceType__c = 'Customer Support';	
+		oCase.CH_ExternalSystemAccount__c='MVV40016|A3/E-W/03/3|Firma NSN';
+		
+		insert oCase;
+		Map<Id,Case> oldCaseMap = new Map<Id,Case>();
+		oldCaseMap.put(oCase.Id, oCase);
+		oCase.Status = 'Cancelled';
+		// 
+		CH_CaseTriggerHelper.checkCancelledCases(new List<Case>{oCase}, oldCaseMap);
+		CH_CaseTriggerHelper.removeCaseTeamMembersOnComplete(new Set<Id>{oCase.Id});
+		Test.stopTest();
+	}
 }

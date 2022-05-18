@@ -26,6 +26,16 @@ public with sharing class CH_CreateCaseController {
 	}
 	
 	/********************
+	* Method Name: checkBulkUploadPermission
+	* Parameter: 
+	* Description: Check if user has bulk upload permission from console
+	* Reference: NOKIASC-37118:Check if user has bulk upload permission
+	*******************/
+	@AuraEnabled
+	public static Boolean checkBulkUploadPermission( ) {
+		return FeatureManagement.checkPermission('HWS_Enable_Bulk_Case_Creation');
+	}
+	/********************
 	* Method Name: redirectToCreateCaseFlow
 	* Parameter: Id contactId
 	* Description: Used to Checks condition for case creation
@@ -33,9 +43,16 @@ public with sharing class CH_CreateCaseController {
 	*******************/
 	@AuraEnabled
 	public static String redirectToCreateCaseFlow(Id contactId, String serviceType ) {
-		String message = '';  
+		String message = '';
+		Contact contactObj = [SELECT Id, Contact_Status__c, MobilePhone,CH_Legal_Entity_Name__c, Phone, Email FROM Contact WHERE Id=: contactId];
 		
-		Contact contactObj = [SELECT Id, Contact_Status__c, MobilePhone,CH_Legal_Entity_Name__c, Phone FROM Contact WHERE Id=: contactId];
+		//NOKIASC-37154
+		List<PermissionSetAssignment> retrofitCoordinatorEmails = [SELECT Assignee.Email FROM PermissionSetAssignment WHERE AssigneeId = :Userinfo.getUserId() AND PermissionSet.Name = 'HWS_RetrofitCoordinator' LIMIT 1];
+		if(retrofitCoordinatorEmails.size() > 0 && retrofitCoordinatorEmails.get(0).Assignee.Email != contactObj.Email){		 
+			message = 'You are not authorized to create a case for another Contact.  Please select your own Contact record to begin case creation';
+			return message;  
+		}
+		//NOKIASC-37154
 		
 		if(contactObj != null) {
 			if ((contactObj.MobilePhone != null || contactObj.Phone != null) && contactObj.CH_Legal_Entity_Name__c != null && contactObj.Contact_Status__c == 'Active') {
