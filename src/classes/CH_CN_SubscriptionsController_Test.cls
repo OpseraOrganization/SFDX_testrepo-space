@@ -1,6 +1,6 @@
 @isTest
-public class CH_CN_SubscriptionsController_Test {
-	@testSetup	
+public class CH_CN_SubscriptionsController_Test { 
+	@testSetup	 
 	static void setupTestData() {
 		List<Account> oProspectList = TestDataFactory.createAccount('Prospect', 1, null);
 		insert oProspectList;
@@ -52,7 +52,7 @@ public class CH_CN_SubscriptionsController_Test {
 			setting.Name = 'Subscription Limit';
 			insert setting;
 			string isLimitExceeded = CH_CN_SubscriptionsController.getCustomSettingsForNotificationPerUser(); 
-			System.assertEquals(isLimitExceeded ,isLimitExceeded );				
+			System.assertEquals(isLimitExceeded ,isLimitExceeded );	
 			Map<String, CH_CNNotificationLimits__c>  NotificationLimits=new Map<String, CH_CNNotificationLimits__c>();
 			Map<String, CH_CNNotificationLimits__c> listNotificationLimits = CH_CNNotificationLimits__c.getAll();
 			NotificationLimits=CH_CN_SubscriptionsController.getCustomSettingsForNotification();
@@ -97,10 +97,10 @@ public class CH_CN_SubscriptionsController_Test {
 	static void saveNotificationSubscriptionexception(){		
 		System.runAs(new User(Id = UserInfo.getUserId())) {
 			try{
-				String result=CH_CN_SubscriptionsController.saveNotificationSubscription('','','','','');
+	String result=CH_CN_SubscriptionsController.saveNotificationSubscription('','','','','');
 	System.assertEquals(result,result);
 			} catch (AuraHandledException e) {
-				System.assert(e.getMessage()!=null);
+	System.assert(e.getMessage()!=null);
 			}
 		}
 	}
@@ -108,8 +108,13 @@ public class CH_CN_SubscriptionsController_Test {
 	static void getcountries(){		
 		try{
 			List<String> getRegion=CH_CN_SubscriptionsController.getRegion();
-			List<ISO_Country_Codes__c> getcountries=CH_CN_SubscriptionsController.getcountries(getRegion,'a');
-			System.assert(getcountries.size()==0);
+		
+			List<CH_CN_SubscriptionsController.regionCountryWrapper> getcountries=CH_CN_SubscriptionsController.getcountries(getRegion,'Sweden');
+			System.assert(getcountries.size()==1);
+			CH_CN_SubscriptionsController.getcountries(getRegion,null);
+			CH_CN_SubscriptionsController.getRegionFromWKRule();
+			CH_CN_SubscriptionsController.getcountriesFromWGRule();
+			//getcountriesFromWG()
 		} catch (AuraHandledException e) {
 			System.assert(e.getMessage()!=null);
 		}
@@ -137,7 +142,7 @@ public class CH_CN_SubscriptionsController_Test {
 			insert workgroup;
 			List<CH_Workgroup__c> workGrp=CH_CN_SubscriptionsController.getWorkgroups('Test');
 			list<Id> wgID = new List<Id>();
-			wgID.add(workgroup.id);		  
+			wgID.add(workgroup.id);	
 			List<CH_Workgroup__c> setWorkGrp=CH_CN_SubscriptionsController.setWorkgroupList(wgID);  
 			System.assertEquals(workGrp,workGrp);
 			System.assertEquals(setWorkGrp,setWorkGrp);		

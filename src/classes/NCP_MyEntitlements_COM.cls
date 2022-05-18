@@ -80,7 +80,7 @@ public with sharing class NCP_MyEntitlements_COM {
 	List<String> srEntitlements = new List<String>();
 	if(mapSCServiceAccess.get(contractId) != null){
 			for(String service:mapSCServiceAccess.get(contractId)){
-				srEntitlements.add(mapServiceTitle.get(service));
+	srEntitlements.add(mapServiceTitle.get(service));
 			}
 	}
 	if(prEntitlements != null || !srEntitlements.isEmpty()){ 

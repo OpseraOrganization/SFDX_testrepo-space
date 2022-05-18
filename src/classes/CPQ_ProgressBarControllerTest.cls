@@ -1,7 +1,7 @@
 @isTest
 public class CPQ_ProgressBarControllerTest {
 	@isTest static void testProgressBar(){
-			//create a Account
+		//create a Account
 		List<Account> accounts = NOKIA_CPQ_TestDataFactory.getAccounts(2);
 		accounts[1].RecordTypeId=Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
 		//accounts[1].AccountNumber='301030872';
@@ -87,7 +87,7 @@ public class CPQ_ProgressBarControllerTest {
 		Apttus_Config2.CPQWebService.finalizeConfiguration(config.Id);
 		//Apttus_Config2.CPQWebService.finalizeConfigurationAndSync(config.Id,  null, 'PostSyncCartQJob');
 		CPQ_ProgressBarController.checkIfValidTransaction(prop.Id);
-		CPQ_ProgressBarController.checkJobStatus();
+		CPQ_ProgressBarController.checkJobStatus(prop.Id);
 	}
 
 }

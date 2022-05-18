@@ -41,6 +41,7 @@ public without sharing class CH_CN_IdentifySubscribers {
 	Set<String> bgSet = new Set<String>();
 	Set<String> buSet = new Set<String>();
 	Set<Id> childAttributeIdset = new Set<Id>();
+	Set<String> childAttributeIdset2 = new Set<String>(); //NOKIASC-37902
 	String bgStr = null;
 	String buStr = null;
 	String evtTypeStr = null;
@@ -48,80 +49,80 @@ public without sharing class CH_CN_IdentifySubscribers {
 	Boolean isWGChanged = false;
 	Set<String> securityGrpSet = new Set<String>();
 	//for batch event notifications
-			   for(Case c: newCaseList){
-						Set<String> evnTypeSet = new Set<String>();	
+	  for(Case c: newCaseList){
+			Set<String> evnTypeSet = new Set<String>();	
 			childAttributeIdset.add(c.AccountId);
 			childAttributeIdset.add(c.ProductId);
 			if(c.CH_GWC_SecurityGroup__c !=null){
-				securityGrpSet.add(c.CH_GWC_SecurityGroup__c);
+	securityGrpSet.add(c.CH_GWC_SecurityGroup__c);
 			}
 			if(c.CH_SecurityGroup__c !=null){
-				securityGrpSet.add(c.CH_SecurityGroup__c);
+	securityGrpSet.add(c.CH_SecurityGroup__c);
 			}
 			if(c.CH_3rdPartySecurityGroup__c !=null){
-				securityGrpSet.add(c.CH_3rdPartySecurityGroup__c);
+	securityGrpSet.add(c.CH_3rdPartySecurityGroup__c);
 			}
 			if(c.Country__c != null){
-				countryNameSet.add(c.Country__c);
+	countryNameSet.add(c.Country__c);
 			}	 
 			if(c.Account.ParentId !=null){
-				childAttributeIdset.add(c.Account.ParentId);
+	childAttributeIdset.add(c.Account.ParentId);
 			}
 			if(c.CH_Rep_Product_Business_group__c !=null){			
-				bgSet.add(c.CH_Rep_Product_Business_group__c);
+	bgSet.add(c.CH_Rep_Product_Business_group__c);
 			}
 			if(c.CH_BusinessUnit__c !=null){	
-				buSet.add(c.CH_BusinessUnit__c);
+	buSet.add(c.CH_BusinessUnit__c);
 			}
 			//get Event Types from Batch
-			if(isFromBatch && caseTXMap.containsKey(c.Id)){			 
-				evnTypeSet.add('T'+caseTXMap.get(c.Id));
+			if(isFromBatch && caseTXMap.containsKey(c.Id)){	
+	evnTypeSet.add('T'+caseTXMap.get(c.Id));
 			}
 			//get Event Types from 'Distribute Comment Update' button
 			else if(isFromDistributeUpdate){
-				evnTypeSet.add('Distribute Comment Update');
+	evnTypeSet.add('Distribute Comment Update');
 			}
 			else{
-				//get Event Types from Case Creation
-				if(isCreation){
+	//get Event Types from Case Creation
+	if(isCreation){
 		if(c.Severity__c !=null && c.CH_Outage__c != null){
 			evnTypeSet.add(c.Severity__c+'-'+c.CH_Outage__c);  
 		}
-				}
-				//get Event Types from Case Updation
-				else if(!isCreation && oldCaseMap !=null && oldCaseMap.containskey(c.Id)){
+	}
+	//get Event Types from Case Updation
+	else if(!isCreation && oldCaseMap !=null && oldCaseMap.containskey(c.Id)){
 		if(c.CH_Outage__c != oldCaseMap.get(c.Id).CH_Outage__c && c.CH_Outage__c !=null){
 			evnTypeSet.add('Outage Update');			
 		}
 		if(c.Severity__c != oldCaseMap.get(c.Id).Severity__c && (c.Severity__c =='Critical' || c.Severity__c =='Major')){
-			evnTypeSet.add(c.Severity__c);		  
+			evnTypeSet.add(c.Severity__c);	
 		}
 		if(c.Status != oldCaseMap.get(c.Id).Status && c.Status=='Restoration Provided'){
 			evnTypeSet.add('Restored');		 
 		}
 		if(c.CH_Workgroup__c !=null && c.CH_Workgroup__c != oldCaseMap.get(c.Id).CH_Workgroup__c && (c.Severity__c =='Critical' || c.Severity__c =='Major' || c.Severity__c =='Minor' || c.Severity__c == SWS_Constants.IR)){
 			if(c.Severity__c ==SWS_Constants.IR){
-				evnTypeSet.add('CA-IR');
+	evnTypeSet.add('CA-IR');
 			}
 			else{
-				evnTypeSet.add('CA-'+c.Severity__c);
+	evnTypeSet.add('CA-'+c.Severity__c);
 			}
 			isWGChanged = true;
 			childAttributeIdset.add(c.CH_Workgroup__c);
 		} 
-				}
+	}
 			}
-						evnTypeSetAll.addAll(evnTypeSet);
+			evnTypeSetAll.addAll(evnTypeSet);
 			caseIdEvtTypStrMap.put(c.id,evnTypeSet);
 		}
 	//prepare a string for BG from set
 	if(bgSet.size()>0){
 		for(String bg: bgSet){
 			if(bgStr !=null){
-				bgStr =  bgStr + ',\''+bg+'\'';
+	bgStr =  bgStr + ',\''+bg+'\'';
 			}
 			else{
-				bgStr =  '\''+bg+'\'';
+	bgStr =  '\''+bg+'\'';
 			}
 		}
 	}
@@ -129,10 +130,10 @@ public without sharing class CH_CN_IdentifySubscribers {
 	if(buSet.size()>0){
 		for(String bu: buSet){
 			if(buStr !=null){
-				buStr =  buStr + ',\''+bu+'\'';
+	buStr =  buStr + ',\''+bu+'\'';
 			}
 			else{
-				buStr =  '\''+bu+'\'';
+	buStr =  '\''+bu+'\'';
 			}
 		}
 	}
@@ -140,25 +141,26 @@ public without sharing class CH_CN_IdentifySubscribers {
 	if(evnTypeSetAll.size()>0){
 		for(String evt: evnTypeSetAll){
 			if(evtTypeStr !=null){
-				evtTypeStr =  evtTypeStr + ',\''+evt+'\'';
+	evtTypeStr =  evtTypeStr + ',\''+evt+'\'';
 			}
 			else{
-				evtTypeStr =  '\''+evt+'\'';
+	evtTypeStr =  '\''+evt+'\'';
 			}
 		}
 	}
 	String regionStr = null;
-	
+	//Added for NOKIASC-37902 removing ISO Countrycode with WorkgroupRule
+	Map<String,CH_CN_SubscriptionsController.regionCountryWrapper> gw=CH_CN_SubscriptionsController.getcountriesFromWGRule();
 	if(countryNameSet.size()>0){
-		for(ISO_Country_Codes__c iso:getISOCountryCodes().values()){
-			if(countryNameSet.contains(iso.Country_Name__c)){
-				childAttributeIdset.add(iso.Id);				
-				if(regionStr !=null){
-		regionStr =  regionStr + ',\''+iso.Market__c+'\'';
-				}
-				else{
-		regionStr =  '\''+iso.Market__c+'\'';
-				}
+		for(String cou:gw.keySet()){
+				if(countryNameSet.contains(cou)){
+	childAttributeIdset2.add(gw.get(cou).Name);	
+	if(regionStr !=null){
+		regionStr =  regionStr + ',\''+gw.get(cou).Market_c+'\'';
+	}
+	else{
+		regionStr =  '\''+gw.get(cou).Market_c+'\'';
+	}
 			}
 		}   
 	}
@@ -172,21 +174,21 @@ public without sharing class CH_CN_IdentifySubscribers {
 		ErrLst.add(Err3);		
 		
 		String whereStr = ' AND (OwnerId IN (SELECT UserOrGroupId FROM GroupMember where Group.Name IN :securityGrpSet)) and (CH_Region__c =:all or CH_Region__c includes ('+regionStr+')) AND (CH_Product__c =null OR (CH_Product__c=:all and (CH_BusinessGroup__c=:all or CH_BusinessGroup__c includes ('+bgStr+')) and (CH_BusinessUnit__c=:all or CH_BusinessUnit__c includes ('+buStr+')))) AND (CH_EventType__c =:all OR CH_EventType__c includes ('+evtTypeStr+'))';
-		String childCheck1 = ' AND (Id IN (select CH_NotificationSubscription__c from CH_NotificationSubscriptionDetail__c where CH_AttributeRecordID__c IN :childAttributeIdset OR CH_AttributeType__c=\'Default\'))';
+		String childCheck1 = ' AND (Id IN (select CH_NotificationSubscription__c from CH_NotificationSubscriptionDetail__c where CH_AttributeRecordID__c IN :childAttributeIdset OR CH_AttributeRecordID__c IN :childAttributeIdset2  OR CH_AttributeType__c=\'Default\'))';
 		
 		//query only for creation with executive recordtype Id
-		if(!isWGChanged && !isFromBatch){	   
+		if(!isWGChanged && !isFromBatch){	
 			whereStr = whereStr + ' AND RecordTypeId =:excDomainRecordTypeId';
 		}
-		if(isWGChanged && newCaseList.size()==1){	   
+		if(isWGChanged && newCaseList.size()==1){	
 			whereStr = whereStr + ' AND RecordTypeId =:wgRecordTypeId';
 		}
 		if(!test.IsRunningTest()){whereStr = whereStr + ' AND Owner.IsActive = true';}
-	   
-		String nsQueryStr = 'Select Id, name, RecordTypeId,  RecordType.Name, CH_Workgroup__c, CH_Region__c, CH_Country__c, CH_LegalEntityAccount__c, CH_ParentAccount__c, CH_DomainType__c, CH_EventType__c, CH_NotificationMode__c, CH_BusinessGroup__c, CH_BusinessUnit__c, CH_Product__c, OwnerId, Owner.Name, (select Id, CH_NotificationSubscription__c, CH_NotificationSubscription__r.Name, CH_AttributeCode__c, CH_AttributeName__c, CH_AttributeRecordID__c, CH_AttributeType__c from Notification_Subscription_Details__r where CH_AttributeRecordID__c IN :childAttributeIdset OR CH_AttributeType__c=\'Default\') from CH_NotificationSubscription__c where Id !=null'+whereStr;
+	
+		String nsQueryStr = 'Select Id, name, RecordTypeId,  RecordType.Name, CH_Workgroup__c, CH_Region__c, CH_Country__c, CH_LegalEntityAccount__c, CH_ParentAccount__c, CH_DomainType__c, CH_EventType__c, CH_NotificationMode__c, CH_BusinessGroup__c, CH_BusinessUnit__c, CH_Product__c, OwnerId, Owner.Name, (select Id, CH_NotificationSubscription__c, CH_NotificationSubscription__r.Name, CH_AttributeCode__c, CH_AttributeName__c, CH_AttributeRecordID__c, CH_AttributeType__c from Notification_Subscription_Details__r where CH_AttributeRecordID__c IN :childAttributeIdset OR CH_AttributeRecordID__c IN :childAttributeIdset2 OR CH_AttributeType__c=\'Default\') from CH_NotificationSubscription__c where Id !=null'+whereStr;
 		//Logic --> how to execute
 			String batchQuery = 'Select Id from CH_NotificationSubscription__c where Id !=null'+whereStr+childCheck1+' order by OwnerId';			
-			Database.executeBatch(new CH_CN_SubscriptionForChunksBatch(batchQuery, newCaseList, oldCaseMap, isCreation, isFromBatch, isFromDistributeUpdate, caseIdEvtTypStrMap, nsQueryStr, childAttributeIdset, securityGrpSet, jobId),2000);
+			Database.executeBatch(new CH_CN_SubscriptionForChunksBatch(batchQuery, newCaseList, oldCaseMap, isCreation, isFromBatch, isFromDistributeUpdate, caseIdEvtTypStrMap, nsQueryStr, childAttributeIdset,childAttributeIdset2 ,securityGrpSet, jobId),2000);
 
 	}
 			}			
@@ -268,16 +270,16 @@ public without sharing class CH_CN_IdentifySubscribers {
 			List<CH_NotificationSubscription__c> subscrptnlist = evtMap.get(eventtype);
 			Map<Id, CH_NotificationSubscription__c> subModMap = new Map<Id, CH_NotificationSubscription__c>();
 			for(CH_NotificationSubscription__c subscrptnobj : subscrptnlist){	  
-				if(subModMap.containskey(subscrptnobj.OwnerId)){
+	if(subModMap.containskey(subscrptnobj.OwnerId)){
 		if(subscrptnobj.CH_NotificationMode__c=='Push Notification + Email'){
 			subModMap.put(subscrptnobj.OwnerId, subscrptnobj);
 		}
-				}
-				else{
+	}
+	else{
 		subModMap.put(subscrptnobj.OwnerId, subscrptnobj);
-				}
+	}
 			}
-			uniqEvtNSMap.put(eventtype, subModMap.values());				
+			uniqEvtNSMap.put(eventtype, subModMap.values());	
 		}
 	}
 	uniqMapCaseEvtMap.put(c,uniqEvtNSMap);			
@@ -321,7 +323,7 @@ public without sharing class CH_CN_IdentifySubscribers {
 		for(CH_NotificationSubscription__c objSubscrptn : subscrptnList){ 
 			//checking if user id is belong same security group as case
 			if((userPublicgroups.containsKey(objSubscrptn.OwnerId)) && (userPublicgroups.get(objSubscrptn.OwnerId).contains(objCase.CH_GWC_SecurityGroup__c) || userPublicgroups.get(objSubscrptn.OwnerId).contains(objCase.CH_SecurityGroup__c) || userPublicgroups.get(objSubscrptn.OwnerId).contains(objCase.CH_3rdPartySecurityGroup__c))){		
-				newSubscrptnlist.add(objSubscrptn);	
+	newSubscrptnlist.add(objSubscrptn);	
 			}	
 		}
 		//construct value of final map
@@ -351,61 +353,63 @@ public without sharing class CH_CN_IdentifySubscribers {
 	* By Satya Pagadala
 	* NOKIASC-29170
 	*****************************************/  
-	public static Map<Case, Map<String, List<CH_NotificationSubscription__c>>> identifySubscribers(List<CH_NotificationSubscription__c> scope, String query, List<Case> newCaseList, Map<Id,Case> oldCaseMap, Boolean isCreation, Boolean isFromBatch, Boolean isFromDistributeUpdate, Map<Case, Map<String, List<CH_NotificationSubscription__c>>> casEvtNSMap, Map<Id,Set<String>> caseIdEvtTypStrMap, Set<Id> childAttributeIdset, Set<String> securityGrpSet){
+	public static Map<Case, Map<String, List<CH_NotificationSubscription__c>>> identifySubscribers(List<CH_NotificationSubscription__c> scope, String query, List<Case> newCaseList, Map<Id,Case> oldCaseMap, Boolean isCreation, Boolean isFromBatch, Boolean isFromDistributeUpdate, Map<Case, Map<String, List<CH_NotificationSubscription__c>>> casEvtNSMap, Map<Id,Set<String>> caseIdEvtTypStrMap, Set<Id> childAttributeIdset, Set<String> childAttributeIdset2, Set<String> securityGrpSet){
 		
 		Id excDomainRecordTypeId = Schema.SObjectType.CH_NotificationSubscription__c.getRecordTypeInfosByDeveloperName().get('CH_Executive_Domain').getRecordTypeId();
 		Id wgRecordTypeId = Schema.SObjectType.CH_NotificationSubscription__c.getRecordTypeInfosByDeveloperName().get('CH_Workgroup_Domain').getRecordTypeId();
+		Map<String,CH_CN_SubscriptionsController.regionCountryWrapper> gw=CH_CN_SubscriptionsController.getcountriesFromWGRule();
+	
 		
-		Map<String, ISO_Country_Codes__c> isoCountryCodesMap = getISOCountryCodes();
 		for(CH_NotificationSubscription__c ns :Database.query(query)){
 			CH_NotificationSubscription__c nsWithLessData = new CH_NotificationSubscription__c(Id=ns.Id, CH_EventType__c=ns.CH_EventType__c,OwnerId=ns.OwnerId, CH_NotificationMode__c=ns.CH_NotificationMode__c);
 			for(Case c: newCaseList){
-	Boolean isUpdateWG = false;			 
+	Boolean isUpdateWG = false;	
 	if(oldCaseMap !=null && oldCaseMap.containskey(c.Id) && c.CH_Workgroup__c !=null && c.CH_Workgroup__c != oldCaseMap.get(c.Id).CH_Workgroup__c && (c.Severity__c =='Critical' || c.Severity__c =='Major' || c.Severity__c =='Minor' || c.Severity__c ==SWS_Constants.IR)){
 		isUpdateWG = true;
 	}
 	if((isUpdateWG && ns.RecordTypeId == wgRecordTypeId) || (!isUpdateWG && ns.RecordTypeId == excDomainRecordTypeId)){
 		Map<String, List<CH_NotificationSubscription__c>> evtTypeNSMap = new Map<String, List<CH_NotificationSubscription__c>>();
-		if(casEvtNSMap.containsKey(c)){		   
-			evtTypeNSMap = casEvtNSMap.get(c);		  
+		if(casEvtNSMap.containsKey(c)){	 
+			evtTypeNSMap = casEvtNSMap.get(c);	
 		}
-		ISO_Country_Codes__c isoCountry = isoCountryCodesMap.containskey(c.Country__c)?isoCountryCodesMap.get(c.Country__c):null;
-		if((ns.CH_Region__c =='ALL' || (isoCountry !=null && ns.CH_Region__c.contains(isoCountry.Market__c))) && (ns.CH_Product__c==null || (ns.CH_Product__c=='ALL' && (ns.CH_BusinessGroup__c=='ALL' || ns.CH_BusinessGroup__c.Contains(c.CH_Rep_Product_Business_group__c)) && (ns.CH_BusinessUnit__c=='ALL' || ns.CH_BusinessUnit__c.contains(c.CH_BusinessUnit__c))))){
+		
+		CH_CN_SubscriptionsController.regionCountryWrapper rc=gw.keySet().contains(c.Country__c)?gw.get(c.Country__c):null;
+		if((ns.CH_Region__c =='ALL' || (rc !=null && ns.CH_Region__c.contains(rc.Market_c))) && (ns.CH_Product__c==null || (ns.CH_Product__c=='ALL' && (ns.CH_BusinessGroup__c=='ALL' || ns.CH_BusinessGroup__c.Contains(c.CH_Rep_Product_Business_group__c)) && (ns.CH_BusinessUnit__c=='ALL' || ns.CH_BusinessUnit__c.contains(c.CH_BusinessUnit__c))))){
 			if(ns.Notification_Subscription_Details__r.size()>0){
-				Boolean countryExists = false;
-				Boolean accountExists = false;
-				Boolean productExists = false;
-				Boolean wrkgrpExists = false;
-				for(CH_NotificationSubscriptionDetail__c nsd :ns.Notification_Subscription_Details__r){	 
+	Boolean countryExists = false;
+	Boolean accountExists = false;
+	Boolean productExists = false;
+	Boolean wrkgrpExists = false;
+	for(CH_NotificationSubscriptionDetail__c nsd :ns.Notification_Subscription_Details__r){	 
 		if(nsd.CH_AttributeType__c == 'Default'){
-			for(string evtStr : caseIdEvtTypStrMap.get(c.id)){				  
-				evtTypeNSMap = evtTypeNSMapCheck(evtStr, nsWithLessData, evtTypeNSMap);
-			}				
+			for(string evtStr : caseIdEvtTypStrMap.get(c.id)){	  
+	evtTypeNSMap = evtTypeNSMapCheck(evtStr, nsWithLessData, evtTypeNSMap);
+			}	
 		}
 		else{
 			if(nsd.CH_AttributeType__c == 'Country' && (c.Country__c != null && nsd.CH_AttributeName__c == c.Country__c)){
-				countryExists = true;
+	countryExists = true;
 			}
 			if((nsd.CH_AttributeType__c == 'Legal Entity Account' && nsd.CH_AttributeRecordID__c == c.AccountId) || (nsd.CH_AttributeType__c == 'Parent Account' && nsd.CH_AttributeRecordID__c == c.Account.ParentId)){
-				accountExists = true;
-			}		   
+	accountExists = true;
+			}	 
 			if(nsd.CH_AttributeType__c == 'Product' && nsd.CH_AttributeRecordID__c == c.ProductId){
-				productExists = true;
+	productExists = true;
 			}
 			if(!isCreation && ns.RecordTypeId == wgRecordTypeId && (nsd.CH_AttributeType__c == 'Workgroup' && nsd.CH_AttributeRecordID__c == c.CH_Workgroup__c)){
-				wrkgrpExists = true;
+	wrkgrpExists = true;
 			}
 			
-			if((ns.CH_Country__c=='ALL' || countryExists) && (ns.CH_LegalEntityAccount__c =='ALL' || accountExists) && (ns.CH_Product__c=='ALL' || productExists) && (ns.RecordTypeId == excDomainRecordTypeId || (!isCreation && ns.RecordTypeId == wgRecordTypeId && (ns.CH_Workgroup__c =='ALL' || (wrkgrpExists))))){				
-				for(string evtStr : caseIdEvtTypStrMap.get(c.id)){				  
-					evtTypeNSMap = evtTypeNSMapCheck(evtStr, nsWithLessData, evtTypeNSMap);			  
-				}				
+			if((ns.CH_Country__c=='ALL' || countryExists) && (ns.CH_LegalEntityAccount__c =='ALL' || accountExists) && (ns.CH_Product__c=='ALL' || productExists) && (ns.RecordTypeId == excDomainRecordTypeId || (!isCreation && ns.RecordTypeId == wgRecordTypeId && (ns.CH_Workgroup__c =='ALL' || (wrkgrpExists))))){	
+	for(string evtStr : caseIdEvtTypStrMap.get(c.id)){	  
+		evtTypeNSMap = evtTypeNSMapCheck(evtStr, nsWithLessData, evtTypeNSMap);	 
+	}	
 			}
 		}
-				}
+	}
 			}		 
 			if(!evtTypeNSMap.isEmpty()){
-				casEvtNSMap.put(c, evtTypeNSMap);
+	casEvtNSMap.put(c, evtTypeNSMap);
 			}
 		}
 	}
@@ -429,7 +433,7 @@ public without sharing class CH_CN_IdentifySubscribers {
 	* written on 20th Nov 2020
 	* By Satya Pagadala
 	* NOKIASC-32546
-	*****************************************/
+	
 	public static Map<String, ISO_Country_Codes__c> getISOCountryCodes(){	
 		//preapre a region string from ISO_Country_Codes__c
 		Map<String, ISO_Country_Codes__c> isoCountryCodesMap = new Map<String, ISO_Country_Codes__c>();
@@ -437,7 +441,7 @@ public without sharing class CH_CN_IdentifySubscribers {
 			isoCountryCodesMap.put(iso.Country_Name__c, iso);
 		}
 		return isoCountryCodesMap;
-	}
+	}*****************************************/
 	/****************************************
 	* Name : createNotificationLogs
 	* Description : Insert CH_NotificationEventLog__c records

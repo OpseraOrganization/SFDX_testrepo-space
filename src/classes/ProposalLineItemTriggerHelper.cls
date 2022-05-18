@@ -15,7 +15,7 @@ public static boolean isFutureCalled=false;
 	if(quoteValueMap.containsKey(line.Apttus_Proposal__Proposal__c)){
 		if(line.Apttus_Proposal__Proposal__r.CPQ_CQ_Check__c) {
 			if(line.Apttus_QPConfig__LineType__c != 'Option') {
-				quoteValueMap.put(line.Apttus_Proposal__Proposal__c, quoteValueMap.get(line.Apttus_Proposal__Proposal__c)+line.Apttus_QPConfig__NetPrice__c);
+	quoteValueMap.put(line.Apttus_Proposal__Proposal__c, quoteValueMap.get(line.Apttus_Proposal__Proposal__c)+line.Apttus_QPConfig__NetPrice__c);
 			}
 		} else {
 			quoteValueMap.put(line.Apttus_Proposal__Proposal__c, quoteValueMap.get(line.Apttus_Proposal__Proposal__c)+line.Apttus_QPConfig__NetPrice__c);
@@ -24,9 +24,9 @@ public static boolean isFutureCalled=false;
 		
 		if(String.isNotEmpty(line.Item_Type__c) && line.Item_Type__c.contains('Service')){
 			if(quoteServicePriceMap.containsKey(line.Apttus_Proposal__Proposal__c)){
-				quoteServicePriceMap.put(line.Apttus_Proposal__Proposal__c, quoteServicePriceMap.get(line.Apttus_Proposal__Proposal__c)+line.Apttus_QPConfig__NetPrice__c) ;
+	quoteServicePriceMap.put(line.Apttus_Proposal__Proposal__c, quoteServicePriceMap.get(line.Apttus_Proposal__Proposal__c)+line.Apttus_QPConfig__NetPrice__c) ;
 			} else {
-				quoteServicePriceMap.put(line.Apttus_Proposal__Proposal__c, line.Apttus_QPConfig__NetPrice__c) ;
+	quoteServicePriceMap.put(line.Apttus_Proposal__Proposal__c, line.Apttus_QPConfig__NetPrice__c) ;
 			}
 		}
 		if(String.isEmpty(line.Item_Type__c) ||
@@ -36,15 +36,15 @@ public static boolean isFutureCalled=false;
 			line.Item_Type__c.contains('Option') ||
 			(String.isNotBlank(line.CPQ_Price_Class__c) && line.CPQ_Price_Class__c.contains('Transportation')))
 			){
-				if(quoteOtherPriceMap.containsKey(line.Apttus_Proposal__Proposal__c)){
+	if(quoteOtherPriceMap.containsKey(line.Apttus_Proposal__Proposal__c)){
 		quoteOtherPriceMap.put(line.Apttus_Proposal__Proposal__c, quoteOtherPriceMap.get(line.Apttus_Proposal__Proposal__c)+line.Apttus_QPConfig__NetPrice__c) ;
-				} else{
+	} else{
 		quoteOtherPriceMap.put(line.Apttus_Proposal__Proposal__c, line.Apttus_QPConfig__NetPrice__c) ;
-				}
+	}
 			}
 			}
 			for(String qId : quoteValueMap.keySet()){
-	Apttus_Proposal__Proposal__c ncq = new Apttus_Proposal__Proposal__c(id = qId, CQ_Value__c = quoteValueMap.get(qId));
+	Apttus_Proposal__Proposal__c ncq = new Apttus_Proposal__Proposal__c(id = qId, CQ_Value__c = quoteValueMap.get(qId),CPQ_Templates_Auto_Generated__c = false);
 	if(quoteServicePriceMap.containsKey(qId)){
 		ncq.Services_Total__c = quoteServicePriceMap.get(qId);
 	} else {
@@ -67,56 +67,50 @@ public static boolean isFutureCalled=false;
 		}
 	}
 	
-   
-	//modified by jithin - added logic for new cq quote as well
-	public static void checkForNCQuotes(List<Apttus_Proposal__Proposal_Line_Item__c> plItems){
+	
+	/*********************************
+	* author: Standav
+	* Date: 20 SEP 2021
+	* Developers: Jithin
+	* Description: Method to autogenerate default reports for CQ quotes   
+	**********************************/
+	public static void autoGenerateQuoteReports(List<Apttus_Proposal__Proposal_Line_Item__c> plItems){
 		
-		
-		
-		System.debug('******insidecheckForNCQuotes******');
 		Set<Id> quoteIds = new Set<Id>();
-		Set<Id> ncqQuotes= new Set<Id>();
 		Set<Id> cqQuotes= new Set<Id>();
+		Map<Id, Set<String>> defaultTemplateNamesByQuoteId = new Map<Id, Set<String>>();
 		for(Apttus_Proposal__Proposal_Line_Item__c pli:plItems){
 			quoteIds.add(pli.Apttus_Proposal__Proposal__c);   
 		}
-		List<Apttus_Proposal__Proposal__c> allProposals = new  List<Apttus_Proposal__Proposal__c>([Select id, CPQ_NCQ_Check__c,CPQ_CQ_Check__c,RecordType.Name from Apttus_Proposal__Proposal__c where Id in:quoteIds]);
+		List<Apttus_Proposal__Proposal__c> allProposals = new  List<Apttus_Proposal__Proposal__c>([Select id,CPQ_CQ_Check__c,RecordType.Name,Apttus_Proposal__Account__r.CPQ_CQ_Default_Template__r.Name from Apttus_Proposal__Proposal__c where Id in:quoteIds]);
 		
 		for(Apttus_Proposal__Proposal__c proposal:allProposals){
-			if(proposal.CPQ_NCQ_Check__c){
-	ncqQuotes.add(proposal.Id);
-			} else if(proposal.CPQ_CQ_Check__c) {//added by jithin for cq quotes
-	cqQuotes.add(proposal.Id);
+			if(proposal.CPQ_CQ_Check__c) {
+				cqQuotes.add(proposal.Id);
+				if(proposal.Apttus_Proposal__Account__r.CPQ_CQ_Default_Template__r.Name != null) {
+					defaultTemplateNamesByQuoteId.put(proposal.Id, new Set<String>{proposal.Apttus_Proposal__Account__r.CPQ_CQ_Default_Template__r.Name, Nokia_CPQ_Constants.QTC_CQ_Quote_PDS_Report_Name});
+				} else {
+					defaultTemplateNamesByQuoteId.put(proposal.Id, new Set<String>{Nokia_CPQ_Constants.QTC_CQ_Quote_Generic_Report_Name, Nokia_CPQ_Constants.QTC_CQ_Quote_PDS_Report_Name});
+				}
 			}
 		}
-		System.debug('******ncqQuotes******'+ncqQuotes);
+		System.debug('******cqQuotes******'+cqQuotes);
 		
-		if(ncqQuotes.size()>0 || cqQuotes.size()>0){ //modified by jithin
+		if(cqQuotes.size()>0){
 			if(isFutureCalled==false && !System.isFuture()){  
-	
-	List<Apttus__APTS_Template__c> ncqTemplates= new List<Apttus__APTS_Template__c>([select id from Apttus__APTS_Template__c where Apttus__Agreement_Types__c =:Nokia_CPQ_Constants.QTC_NCQ_Quote AND Apttus__IsActive__c =true]);
-	if(ncqTemplates.size()>0){
-		
-		for(Id proposalId:ncqQuotes){
-			for( Apttus__APTS_Template__c tempNCQ: ncqTemplates) {
-				String proposalId1=proposalId;
-				String templateId=tempNCQ.id;
-				ProposalLineItemTriggerHelper.autoGenerateDocument(templateId,proposalId1);
-			}
-		}			
-	}
-	/*commented by jithin - there is data discrepancy on the quote generated. move this method to after update of quote with cpecific conditions
-	List<Apttus__APTS_Template__c> cqTemplates= new List<Apttus__APTS_Template__c>([select id from Apttus__APTS_Template__c where Apttus__Agreement_Types__c =:Nokia_CPQ_Constants.QTC_CQ_Quote AND Apttus__IsActive__c =true]);
-	if(cqTemplates.size()>0){
-		
-		for(Id proposalId:cqQuotes){
-			for( Apttus__APTS_Template__c tempNCQ: cqTemplates) {
-				String proposalId1=proposalId;
-				String templateId=tempNCQ.id;
-				ProposalLineItemTriggerHelper.autoGenerateDocument(templateId,proposalId1);
-			}
-		}			
-	}*/
+				List<Apttus__APTS_Template__c> cqTemplates= new List<Apttus__APTS_Template__c>([select id,name from Apttus__APTS_Template__c where Apttus__Agreement_Types__c =:Nokia_CPQ_Constants.QTC_CQ_Quote AND Apttus__IsActive__c =true]);
+				if(cqTemplates.size()>0){
+					for(Id proposalId:cqQuotes){
+						Set<String> validTemplateNames = defaultTemplateNamesByQuoteId.get(proposalId);
+						for( Apttus__APTS_Template__c tempCQ: cqTemplates) {
+							if(validTemplateNames != null && validTemplateNames.contains(tempCQ.Name)) {
+								String proposalId1=proposalId;
+								String templateId=tempCQ.Id;
+								ProposalLineItemTriggerHelper.autoGenerateDocument(templateId,proposalId1);
+							}
+						}
+					}			
+				}
 			}
 		}
 	}
@@ -167,7 +161,7 @@ public static boolean isFutureCalled=false;
 			string recTtypeId = 'FRU';
 			
 			fruList = [SELECT Id,CPQ_FRU_Description__c,CPQ_Asset_Quantity__c,CPQ_Product__c,CPQ_Product_Code__c,
-				RecordType.name 
+	RecordType.name 
 		FROM CPQ_FRUCustItemCdMap__c 
 		WHERE CPQ_Product__c IN :proIdSet 
 		AND RecordType.name = :recTtypeId];
@@ -185,20 +179,20 @@ public static boolean isFutureCalled=false;
 			CPQ_FRULineItem__c fli = new CPQ_FRULineItem__c();
 			
 			if(pli.Apttus_QPConfig__OptionId__c != null && pli.Apttus_QPConfig__OptionId__c == fru.CPQ_Product__c){
-				fli.CPQ_Proposal_Line_item__c = pli.Id;
-				fli.CPQ_Proposal__c = pli.Apttus_Proposal__Proposal__c;
-				fli.CPQ_Product__c = fru.CPQ_Product__c;
-				fli.CPQ_FRU_Description__c = fru.CPQ_FRU_Description__c;
-				fli.CPQ_Asset_Quantity__c = fru.CPQ_Asset_Quantity__c;
-				fliList.add(fli);
+	fli.CPQ_Proposal_Line_item__c = pli.Id;
+	fli.CPQ_Proposal__c = pli.Apttus_Proposal__Proposal__c;
+	fli.CPQ_Product__c = fru.CPQ_Product__c;
+	fli.CPQ_FRU_Description__c = fru.CPQ_FRU_Description__c;
+	fli.CPQ_Asset_Quantity__c = fru.CPQ_Asset_Quantity__c;
+	fliList.add(fli);
 			
 			}else if(pli.Apttus_Proposal__Product__c == fru.CPQ_Product__c){
-				fli.CPQ_Proposal_Line_item__c = pli.Id;
-				fli.CPQ_Proposal__c = pli.Apttus_Proposal__Proposal__c;
-				fli.CPQ_Product__c = fru.CPQ_Product__c;
-				fli.CPQ_FRU_Description__c = fru.CPQ_FRU_Description__c;
-				fli.CPQ_Asset_Quantity__c = fru.CPQ_Asset_Quantity__c;
-				fliList.add(fli);
+	fli.CPQ_Proposal_Line_item__c = pli.Id;
+	fli.CPQ_Proposal__c = pli.Apttus_Proposal__Proposal__c;
+	fli.CPQ_Product__c = fru.CPQ_Product__c;
+	fli.CPQ_FRU_Description__c = fru.CPQ_FRU_Description__c;
+	fli.CPQ_Asset_Quantity__c = fru.CPQ_Asset_Quantity__c;
+	fliList.add(fli);
 			}   
 		}   
 	}
@@ -239,7 +233,7 @@ public static boolean isFutureCalled=false;
 
 			if (rollupPriceMap.containsKey(pr.Apttus_Proposal__Proposal__c)) {
 
-				if (rollupPriceMap.get(pr.Apttus_Proposal__Proposal__c).containsKey(pr.CPQ_Rollup_Group_Num__c)) {
+	if (rollupPriceMap.get(pr.Apttus_Proposal__Proposal__c).containsKey(pr.CPQ_Rollup_Group_Num__c)) {
 
 		Decimal netPriceSum = rollupPriceMap.get(pr.Apttus_Proposal__Proposal__c).get(pr.CPQ_Rollup_Group_Num__c) + pr.Apttus_QPConfig__NetPrice__c;
 
@@ -249,7 +243,7 @@ public static boolean isFutureCalled=false;
 
 		rollupPriceMap.put(pr.Apttus_Proposal__Proposal__c, m1);
 
-				} else {
+	} else {
 
 		Map < Decimal, Decimal > m1 = new Map < Decimal, Decimal > ();
 		m1 = rollupPriceMap.get(pr.Apttus_Proposal__Proposal__c);
@@ -258,12 +252,12 @@ public static boolean isFutureCalled=false;
 
 		rollupPriceMap.put(pr.Apttus_Proposal__Proposal__c, m1);
 
-				}
+	}
 
 			} else {
-				Map < Decimal, Decimal > m2 = new Map < Decimal, Decimal > ();
-				m2.put(pr.CPQ_Rollup_Group_Num__c, pr.Apttus_QPConfig__NetPrice__c);
-				rollupPriceMap.put(pr.Apttus_Proposal__Proposal__c, m2);
+	Map < Decimal, Decimal > m2 = new Map < Decimal, Decimal > ();
+	m2.put(pr.CPQ_Rollup_Group_Num__c, pr.Apttus_QPConfig__NetPrice__c);
+	rollupPriceMap.put(pr.Apttus_Proposal__Proposal__c, m2);
 
 			}
 		}
@@ -272,64 +266,64 @@ public static boolean isFutureCalled=false;
 		if (pr.CPQ_Price_Class__c == 'Engineering' && pr.CPQ_Rollup_Group_Num__c == Null) {
 
 			if (propSummaryMap.containsKey(pr.Apttus_Proposal__Proposal__c)) {
-				if (propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Engineering != null) {
+	if (propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Engineering != null) {
 		Decimal tempE = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Engineering + pr.Apttus_QPConfig__NetPrice__c;
 		wrapPriceClass wp = new wrapPriceClass();
 		wp = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c);
 		wp.Engineering = tempE;
 		propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
-				} else {
+	} else {
 		wrapPriceClass wp = new wrapPriceClass();
 		wp = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c);
 		wp.Engineering = pr.Apttus_QPConfig__NetPrice__c;
 		propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
-				}
+	}
 			} else {
-				wrapPriceClass wp = new wrapPriceClass();
-				wp.Engineering = pr.Apttus_QPConfig__NetPrice__c;
-				propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
+	wrapPriceClass wp = new wrapPriceClass();
+	wp.Engineering = pr.Apttus_QPConfig__NetPrice__c;
+	propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
 			}
 
 		} else if (pr.CPQ_Price_Class__c == 'Installation' && pr.CPQ_Rollup_Group_Num__c == Null) {
 
 			if (propSummaryMap.containsKey(pr.Apttus_Proposal__Proposal__c)) {
-				if (propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Installation != null) {
+	if (propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Installation != null) {
 		Decimal tempE = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Installation + pr.Apttus_QPConfig__NetPrice__c;
 		wrapPriceClass wp = new wrapPriceClass();
 		wp = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c);
 		wp.Installation = tempE;
 		propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
-				} else {
+	} else {
 		wrapPriceClass wp = new wrapPriceClass();
 		wp = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c);
 		wp.Installation = pr.Apttus_QPConfig__NetPrice__c;
 		propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
-				}
+	}
 			} else {
-				wrapPriceClass wp = new wrapPriceClass();
-				wp.Installation = pr.Apttus_QPConfig__NetPrice__c;
-				propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
+	wrapPriceClass wp = new wrapPriceClass();
+	wp.Installation = pr.Apttus_QPConfig__NetPrice__c;
+	propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
 			}
 
 		} else if ((pr.CPQ_Price_Class__c == 'Other' && pr.CPQ_Rollup_Group_Num__c == Null) || (pr.CPQ_Rollup_Group_Num__c != Null)) {
 
 			if (propSummaryMap.containsKey(pr.Apttus_Proposal__Proposal__c)) {
-				if (propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Other != null) {
+	if (propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Other != null) {
 		Decimal tempE = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c).Other + pr.Apttus_QPConfig__NetPrice__c;
 		wrapPriceClass wp = new wrapPriceClass();
 		wp = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c);
 		wp.Other = tempE;
 		propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
-				} else {
+	} else {
 		wrapPriceClass wp = new wrapPriceClass();
 		wp = propSummaryMap.get(pr.Apttus_Proposal__Proposal__c);
 		wp.Other = pr.Apttus_QPConfig__NetPrice__c;
 		propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
-				}
+	}
 			} else {
-				wrapPriceClass wp = new wrapPriceClass();
-				wp.Other = pr.Apttus_QPConfig__NetPrice__c;
-				propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
+	wrapPriceClass wp = new wrapPriceClass();
+	wp.Other = pr.Apttus_QPConfig__NetPrice__c;
+	propSummaryMap.put(pr.Apttus_Proposal__Proposal__c, wp);
 			}
 
 		}
@@ -405,134 +399,134 @@ public static boolean isFutureCalled=false;
 		for(Apttus_Proposal__Proposal_Line_Item__c pli:propList){
 			
 			if(pli.CPQ_CQ_Check__c && (pli.CPQ_Parent_Secondary_Category__c != null && pli.CPQ_Parent_Secondary_Category__c == 'Site Model')){
-				
-				system.debug('testing4 - '+ Limits.getQueries());
-			   /* if(siteLinesmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c)) {
-						List<Apttus_Proposal__Proposal_Line_Item__c> opliList = siteLinesmap.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c);
-						opliList.add(pli);
-						siteLinesmap.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c, opliList);
-					} else {
-						List<Apttus_Proposal__Proposal_Line_Item__c> opliList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-						opliList1.add(pli);
-						siteLinesmap.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c,opliList1);
-					}*/
-					
-					if(pli.CPQ_Sub_Heading__c != null){
+	
+	system.debug('testing4 - '+ Limits.getQueries());
+	  /* if(siteLinesmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c)) {
+			List<Apttus_Proposal__Proposal_Line_Item__c> opliList = siteLinesmap.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c);
+			opliList.add(pli);
+			siteLinesmap.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c, opliList);
+		} else {
+			List<Apttus_Proposal__Proposal_Line_Item__c> opliList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
+			opliList1.add(pli);
+			siteLinesmap.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c,opliList1);
+		}*/
+		
+		if(pli.CPQ_Sub_Heading__c != null){
    
-					if(transmapChild.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+pli.CPQ_Sub_Heading__c)) {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liListC = transmapChild.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+pli.CPQ_Sub_Heading__c);
-						liListC.add(pli);
-						transmapChild.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+pli.CPQ_Sub_Heading__c, liListC);
-						ChildheadingSet.add(pli.CPQ_Sub_Heading__c);
-					} else {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liListC1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-						liListC1.add(pli);
-						transmapChild.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+pli.CPQ_Sub_Heading__c,liListC1);
-						ChildheadingSet.add(pli.CPQ_Sub_Heading__c);
-					}
-					
-					
-				}else{
-					
-					if(transmapChild.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+'Other')) {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liListC = transmapChild.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+'Other');
-						liListC.add(pli);
-						transmapChild.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+'Other', liListC);
-					} else {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liListC1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-						liListC1.add(pli);
-						transmapChild.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+'Other',liListC1);
-					}
-					
-					
-				}
-				
-				
+		if(transmapChild.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+pli.CPQ_Sub_Heading__c)) {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liListC = transmapChild.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+pli.CPQ_Sub_Heading__c);
+			liListC.add(pli);
+			transmapChild.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+pli.CPQ_Sub_Heading__c, liListC);
+			ChildheadingSet.add(pli.CPQ_Sub_Heading__c);
+		} else {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liListC1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
+			liListC1.add(pli);
+			transmapChild.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+pli.CPQ_Sub_Heading__c,liListC1);
+			ChildheadingSet.add(pli.CPQ_Sub_Heading__c);
+		}
+		
+		
+	}else{
+		
+		if(transmapChild.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+'Other')) {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liListC = transmapChild.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+'Other');
+			liListC.add(pli);
+			transmapChild.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+'Other', liListC);
+		} else {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liListC1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
+			liListC1.add(pli);
+			transmapChild.put(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+'Other',liListC1);
+		}
+		
+		
+	}
+	
+	
 			}
 			//Parent lines
 			//
 			if(pli.CPQ_CQ_Check__c && ((pli.CPQ_Parent_Secondary_Category__c != null && (pli.CPQ_Parent_Secondary_Category__c != 'Solution Model' && pli.CPQ_Parent_Secondary_Category__c != 'Site Model'))|| pli.Apttus_QPConfig__LineType__c == 'Product/Service')){		
-				propId.add(pli.Apttus_Proposal__Proposal__c);
-				
-				if(pli.Apttus_QPConfig__OptionId__c != null){
-					proIdSet.add(pli.Apttus_QPConfig__OptionId__c);
-				}else{
-					proIdSet.add(pli.Apttus_Proposal__Product__c);
-				}
-				
-				
-				if(pli.CPQ_Sub_Heading__c != null){
-					
-					if(pli.CPQ_Price_Class__c == null || (pli.CPQ_Price_Class__c != null && pli.CPQ_Display_in_quote_report_as_line_item__c)){
-					
-					if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'SH'+'_'+pli.CPQ_Sub_Heading__c)) {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'SH'+'_'+pli.CPQ_Sub_Heading__c);
-						liList.add(pli);
-						transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SH'+'_'+pli.CPQ_Sub_Heading__c, liList);
-					} else {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-						liList1.add(pli);
-						transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SH'+'_'+pli.CPQ_Sub_Heading__c,liList1);
-					}
-					
-					subheadingSet.add(pli.CPQ_Sub_Heading__c);
-					
-					}
-					
-				}else if(pli.CPQ_Price_Class__c != null){
-					
-					if(pli.CPQ_Price_Class__c != 'Transportation' && pli.CPQ_Price_Class__c != 'Other' && pli.CPQ_Display_in_quote_report_as_line_item__c){
-					if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+pli.CPQ_Price_Class__c)) {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+pli.CPQ_Price_Class__c);
-						liList.add(pli);
-						transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+pli.CPQ_Price_Class__c, liList);
-					} else {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-						liList1.add(pli);
-						transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+pli.CPQ_Price_Class__c,liList1);
-					}
-					}else if(pli.CPQ_Price_Class__c == 'Transportation' || pli.CPQ_Price_Class__c == 'Other'){
-					 if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+'Other Services')) {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+'Other Services');
-						liList.add(pli);
-						transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+'Other Services', liList);
-					} else {
-						List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-						liList1.add(pli);
-						transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+'Other Services',liList1);
-					}   
-						
-					}
-					
-				}else if(pli.CPQ_Price_Class__c == null){
-					
-					if(pli.CPQ_Secondary_Category__c != null && (pli.CPQ_Secondary_Category__c == 'Site Model' || pli.CPQ_Secondary_Category__c == 'Incentive')){
-						if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+pli.CPQ_Secondary_Category__c)) {
-							List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+pli.CPQ_Secondary_Category__c);
-							liList.add(pli);
-							transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+pli.CPQ_Secondary_Category__c, liList);
-						} else {
-							List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-							liList1.add(pli);
-							transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+pli.CPQ_Secondary_Category__c,liList1);
-						}
-						
-					}else{
-						if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+'Other')) {
-							List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+'Other');
-							liList.add(pli);
-							transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+'Other', liList);
-						} else {
-							List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
-							liList1.add(pli);
-							transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+'Other',liList1);
-						}
-						
-						
-					}
-					
-					
-				}
+	propId.add(pli.Apttus_Proposal__Proposal__c);
+	
+	if(pli.Apttus_QPConfig__OptionId__c != null){
+		proIdSet.add(pli.Apttus_QPConfig__OptionId__c);
+	}else{
+		proIdSet.add(pli.Apttus_Proposal__Product__c);
+	}
+	
+	
+	if(pli.CPQ_Sub_Heading__c != null){
+		
+		if(pli.CPQ_Price_Class__c == null || (pli.CPQ_Price_Class__c != null && pli.CPQ_Display_in_quote_report_as_line_item__c)){
+		
+		if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'SH'+'_'+pli.CPQ_Sub_Heading__c)) {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'SH'+'_'+pli.CPQ_Sub_Heading__c);
+			liList.add(pli);
+			transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SH'+'_'+pli.CPQ_Sub_Heading__c, liList);
+		} else {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
+			liList1.add(pli);
+			transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SH'+'_'+pli.CPQ_Sub_Heading__c,liList1);
+		}
+		
+		subheadingSet.add(pli.CPQ_Sub_Heading__c);
+		
+		}
+		
+	}else if(pli.CPQ_Price_Class__c != null){
+		
+		if(pli.CPQ_Price_Class__c != 'Transportation' && pli.CPQ_Price_Class__c != 'Other' && pli.CPQ_Display_in_quote_report_as_line_item__c){
+		if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+pli.CPQ_Price_Class__c)) {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+pli.CPQ_Price_Class__c);
+			liList.add(pli);
+			transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+pli.CPQ_Price_Class__c, liList);
+		} else {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
+			liList1.add(pli);
+			transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+pli.CPQ_Price_Class__c,liList1);
+		}
+		}else if(pli.CPQ_Price_Class__c == 'Transportation' || pli.CPQ_Price_Class__c == 'Other'){
+		 if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+'Other Services')) {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+'Other Services');
+			liList.add(pli);
+			transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+'Other Services', liList);
+		} else {
+			List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
+			liList1.add(pli);
+			transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'PC'+'_'+'Other Services',liList1);
+		}   
+			
+		}
+		
+	}else if(pli.CPQ_Price_Class__c == null){
+		
+		if(pli.CPQ_Secondary_Category__c != null && (pli.CPQ_Secondary_Category__c == 'Site Model' || pli.CPQ_Secondary_Category__c == 'Incentive')){
+			if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+pli.CPQ_Secondary_Category__c)) {
+	List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+pli.CPQ_Secondary_Category__c);
+	liList.add(pli);
+	transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+pli.CPQ_Secondary_Category__c, liList);
+			} else {
+	List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
+	liList1.add(pli);
+	transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+pli.CPQ_Secondary_Category__c,liList1);
+			}
+			
+		}else{
+			if(transmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+'Other')) {
+	List<Apttus_Proposal__Proposal_Line_Item__c> liList = transmap.get(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+'Other');
+	liList.add(pli);
+	transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+'Other', liList);
+			} else {
+	List<Apttus_Proposal__Proposal_Line_Item__c> liList1 = new List<Apttus_Proposal__Proposal_Line_Item__c>();
+	liList1.add(pli);
+	transmap.put(pli.Apttus_Proposal__Proposal__c+'_'+'SC'+'_'+'Other',liList1);
+			}
+			
+			
+		}
+		
+		
+	}
 			}
 		}
 		ChildheadingSet.add('Other');
@@ -548,18 +542,18 @@ public static boolean isFutureCalled=false;
 		//
 		if(!propId.isEmpty()){
 			for(String st:propId){
-				SortedOrderSet.add(st+'_'+'SC'+'_'+'Site Model');
-				
-			   if(!subheadingSet.isEmpty()){
-					for(String sb:subheadingSet){
-						SortedOrderSet.add(st+'_'+'SH'+'_'+sb);
-					}   
-				}
-				SortedOrderSet.add(st+'_'+'SC'+'_'+'Other');
-				SortedOrderSet.add(st+'_'+'PC'+'_'+'Engineering');
-				SortedOrderSet.add(st+'_'+'PC'+'_'+'Installation');
-				SortedOrderSet.add(st+'_'+'PC'+'_'+'Other Services');
-				SortedOrderSet.add(st+'_'+'SC'+'_'+'Incentive');
+	SortedOrderSet.add(st+'_'+'SC'+'_'+'Site Model');
+	
+	  if(!subheadingSet.isEmpty()){
+		for(String sb:subheadingSet){
+			SortedOrderSet.add(st+'_'+'SH'+'_'+sb);
+		}   
+	}
+	SortedOrderSet.add(st+'_'+'SC'+'_'+'Other');
+	SortedOrderSet.add(st+'_'+'PC'+'_'+'Engineering');
+	SortedOrderSet.add(st+'_'+'PC'+'_'+'Installation');
+	SortedOrderSet.add(st+'_'+'PC'+'_'+'Other Services');
+	SortedOrderSet.add(st+'_'+'SC'+'_'+'Incentive');
 	
 			}
 			
@@ -571,23 +565,23 @@ public static boolean isFutureCalled=false;
 			string recTtypeId = 'FRU';
 			
 			fruList = [SELECT Id,CPQ_FRU_Description__c,CPQ_Asset_Quantity__c,CPQ_Product__c,CPQ_Product_Code__c,
-					   RecordType.name 
-					   FROM CPQ_FRUCustItemCdMap__c 
-					   WHERE CPQ_Product__c IN :proIdSet 
-					   AND RecordType.name = :recTtypeId];
+		RecordType.name 
+		FROM CPQ_FRUCustItemCdMap__c 
+		WHERE CPQ_Product__c IN :proIdSet 
+		AND RecordType.name = :recTtypeId];
 			
-			for(CPQ_FRUCustItemCdMap__c fr:fruList){					   
-				
-				if(frumap.containsKey(fr.CPQ_Product__c)) {
-					List<CPQ_FRUCustItemCdMap__c> fruList1 = frumap.get(fr.CPQ_Product__c);
-					fruList1.add(fr);
-					frumap.put(fr.CPQ_Product__c, fruList1);
-				} else {
-					List<CPQ_FRUCustItemCdMap__c> fruList2 = new List<CPQ_FRUCustItemCdMap__c>();
-					fruList2.add(fr);
-					frumap.put(fr.CPQ_Product__c, fruList2);
-				}
-			}	   
+			for(CPQ_FRUCustItemCdMap__c fr:fruList){		
+	
+	if(frumap.containsKey(fr.CPQ_Product__c)) {
+		List<CPQ_FRUCustItemCdMap__c> fruList1 = frumap.get(fr.CPQ_Product__c);
+		fruList1.add(fr);
+		frumap.put(fr.CPQ_Product__c, fruList1);
+	} else {
+		List<CPQ_FRUCustItemCdMap__c> fruList2 = new List<CPQ_FRUCustItemCdMap__c>();
+		fruList2.add(fr);
+		frumap.put(fr.CPQ_Product__c, fruList2);
+	}
+			}	
 			
 		}
 		
@@ -596,183 +590,184 @@ public static boolean isFutureCalled=false;
 		if(!transmap.Keyset().isEmpty() && !SortedOrderSet.isEmpty()){
 			Integer sno = 0;
 			for(String ts:SortedOrderSet){
-				if(transmap.containsKey(ts)){
-				CPQ_Output_Line_Item__c oli1 = new CPQ_Output_Line_Item__c();
-				List<String> tr = new List<String>();
-				tr = ts.split('_');
-				oli1.CPQ_Type__c = 'Heading';
-				
-				if(tr[1] == 'SC' && tr[2] == 'Incentive' && tr[2] != 'Site Model'){
-					oli1.CPQ_Product_Code__c = 'Incentive Credit';
-				}else if(tr[2] != 'Site Model'){
-					oli1.CPQ_Product_Code__c = tr[2];
-				}   
-				oli1.CPQ_Output_Quote_Proposal__c = tr[0];
-				
-				if(oli1.CPQ_Product_Code__c != null){
-				oliListtobeInserted.add(oli1);
-				}
-				Boolean spaceCheck = false;
-				for(Apttus_Proposal__Proposal_Line_Item__c pli:transmap.get(ts)){
-					
-					if(tr[1] == 'SC' && tr[2] == 'Site Model'){
-						 CPQ_Output_Line_Item__c oli8 = new CPQ_Output_Line_Item__c();
-						 oli8.CPQ_Type__c = 'Heading';
-						 oli8.CPQ_Product_Code__c = tr[2];
-						 oli8.CPQ_Output_Quote_Proposal__c = tr[0];
-						 oliListtobeInserted.add(oli8);
+	if(transmap.containsKey(ts)){
+	CPQ_Output_Line_Item__c oli1 = new CPQ_Output_Line_Item__c();
+	List<String> tr = new List<String>();
+	tr = ts.split('_');
+	oli1.CPQ_Type__c = 'Heading';
 	
-					}
-					
-					Boolean Transport = false;
-					if(pli.CPQ_Price_Class__c != null && pli.CPQ_Price_Class__c == 'Transportation'){
-					Transport = true;
-					}
-					
-					CPQ_Output_Line_Item__c oli2 = new CPQ_Output_Line_Item__c();
-					oli2.CPQ_Type__c = 'Line Item';
-					oli2.CPQ_Output_Quote_Proposal__c = tr[0];
-					oli2.CPQ_Product_Code__c = pli.Product_Code__c;
-					oli2.CPQ_Description__c = pli.Apttus_Proposal__Description__c;
-					
-					if(pli.CPQ_Price_Class__c != null && pli.CPQ_Rollup_Group_Parent__c 
-					&& pli.CPQ_Service_Rollup_Price__c != null && pli.CPQ_Service_Rollup_Quantity__c != null){
-					oli2.CPQ_Quantity_2__c = pli.CPQ_Service_Rollup_Quantity__c;
-					oli2.CPQ_Net_Price__c = pli.CPQ_Service_Rollup_Price__c;						
-					}else{
-					oli2.CPQ_Quantity_2__c = pli.Apttus_QPConfig__Quantity2__c;
-					oli2.CPQ_Net_Price__c = pli.Apttus_QPConfig__NetPrice__c;
-					}
-					
+	if(tr[1] == 'SC' && tr[2] == 'Incentive' && tr[2] != 'Site Model'){
+		oli1.CPQ_Product_Code__c = 'Incentive Credit';
+	}else if(tr[2] != 'Site Model'){
+		oli1.CPQ_Product_Code__c = tr[2];
+	}   
+	oli1.CPQ_Output_Quote_Proposal__c = tr[0];
+	
+	if(oli1.CPQ_Product_Code__c != null){
+	oliListtobeInserted.add(oli1);
+	}
+	Boolean spaceCheck = false;
+	for(Apttus_Proposal__Proposal_Line_Item__c pli:transmap.get(ts)){
+		
+		if(tr[1] == 'SC' && tr[2] == 'Site Model'){
+	CPQ_Output_Line_Item__c oli8 = new CPQ_Output_Line_Item__c();
+	oli8.CPQ_Type__c = 'Heading';
+	oli8.CPQ_Product_Code__c = tr[2];
+	oli8.CPQ_Output_Quote_Proposal__c = tr[0];
+	oliListtobeInserted.add(oli8);
+	
+		}
+		
+		Boolean Transport = false;
+		if(pli.CPQ_Price_Class__c != null && pli.CPQ_Price_Class__c == 'Transportation'){
+		Transport = true;
+		}
+		
+		CPQ_Output_Line_Item__c oli2 = new CPQ_Output_Line_Item__c();
+		oli2.CPQ_Type__c = 'Line Item';
+		oli2.CPQ_Output_Quote_Proposal__c = tr[0];
+		oli2.CPQ_Product_Code__c = pli.Product_Code__c;
+		oli2.CPQ_Description__c = pli.CPQ_Final_Product_Name__c;
+		
+		if(pli.CPQ_Price_Class__c != null && pli.CPQ_Rollup_Group_Parent__c 
+		&& pli.CPQ_Service_Rollup_Price__c != null && pli.CPQ_Service_Rollup_Quantity__c != null){
+		oli2.CPQ_Quantity_2__c = pli.CPQ_Service_Rollup_Quantity__c;
+		oli2.CPQ_Net_Price__c = pli.CPQ_Service_Rollup_Price__c;			
+		}else{
+		oli2.CPQ_Quantity_2__c = pli.Apttus_QPConfig__Quantity2__c;
+		oli2.CPQ_Net_Price__c = pli.Apttus_QPConfig__NetPrice__c;
+		}
+		
 
-					if((pli.NokiaCPQ_Configuration_Type__c == 'Standalone' && pli.NokiaCPQ_Item_Type__c != null && (pli.NokiaCPQ_Item_Type__c == 'Software' || pli.NokiaCPQ_Item_Type__c == 'Hardware'))){
-						
-					  if(pli.Apttus_QPConfig__BasePriceOverride__c != null){
-						oli2.CPQ_DA_Unit_Price__c = pli.Apttus_QPConfig__BasePriceOverride__c;  
-						}else if(pli.CPQ_Agreement_Contract_Price__c != null){
-						oli2.CPQ_DA_Unit_Price__c = pli.CPQ_Agreement_Contract_Price__c;	
-						}else if(pli.Apttus_QPConfig__ListPrice__c != null){
-						oli2.CPQ_DA_Unit_Price__c = pli.Apttus_QPConfig__ListPrice__c;  
-						}
-						
-						
-					}
-					
-					if(((pli.NokiaCPQ_Configuration_Type__c == 'Standalone' && pli.NokiaCPQ_Item_Type__c != null && (pli.NokiaCPQ_Item_Type__c == 'Software' || pli.NokiaCPQ_Item_Type__c == 'Hardware')) || pli.CPQ_Secondary_Category__c == 'Site Model' || pli.CPQ_Secondary_Category__c == 'Solution Model' ) && pli.Apttus_QPConfig__NetUnitPrice__c != null){
-					oli2.CPQ_Net_Unit_Price__c = pli.Apttus_QPConfig__NetUnitPrice__c;  
-						
-					}
-					
-					if(pli.CPQ_Customer_Item_Code__c != null){
-					oli2.CPQ_Customer_Item_Code__c = pli.CPQ_Customer_Item_Code__c;
-					}
-					
-					if(Transport){
-					oli2.CPQ_Transportation__c = true;  
-					}
-					
-					sno = sno + 1;
-					oli2.CPQ_Line_Number__c = sno;
-					
-					oliListtobeInserted.add(oli2);
-					
-					String prodID;
-					if(pli.Apttus_QPConfig__OptionId__c != null){
-						prodID = pli.Apttus_QPConfig__OptionId__c;
-					}else{
-						prodID = pli.Apttus_Proposal__Product__c;
-					}
-					if(frumap.containsKey(prodID)){
-						for(CPQ_FRUCustItemCdMap__c fru:frumap.get(prodID)){
-							CPQ_Output_Line_Item__c oli3 = new CPQ_Output_Line_Item__c();
-							oli3.CPQ_Type__c = 'FRU'; 
-							oli3.CPQ_Output_Quote_Proposal__c = tr[0];	  
-							oli3.CPQ_Description__c = fru.CPQ_FRU_Description__c;
-							oli3.CPQ_Asset_Line_Quantity__c = fru.CPQ_Asset_Quantity__c;
-							if(Transport){
-							oli3.CPQ_Transportation__c = true;  
-							}
-							oliListtobeInserted.add(oli3);
-						}	   
-						
-					}
-					
-					/*if(siteLinesmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c)){
-						for(Apttus_Proposal__Proposal_Line_Item__c cLi:siteLinesmap.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c)){
-							
-							CPQ_Output_Line_Item__c oli5 = new CPQ_Output_Line_Item__c();
-							oli5.CPQ_Type__c = 'Child Line Item'; 
-							oli5.CPQ_Output_Quote_Proposal__c = tr[0];	  
-							oli5.CPQ_Description__c = cLi.Apttus_Proposal__Description__c;
-							oli5.CPQ_Asset_Line_Quantity__c = cLi.Apttus_QPConfig__Quantity2__c;
-							oliListtobeInserted.add(oli5);
-							
-						}	   
-						
-					}*/
-					
-					for(string chstr:ChildheadingSet){
-						if(transmapChild.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+chstr)){
-							CPQ_Output_Line_Item__c oli6 = new CPQ_Output_Line_Item__c();
-							oli6.CPQ_Type__c = 'Heading';
-							oli6.CPQ_Product_Code__c = chstr;  
-							oli6.CPQ_Output_Quote_Proposal__c = tr[0];
-							if(Transport){
-							oli6.CPQ_Transportation__c = true;  
-							}
-							oliListtobeInserted.add(oli6);
-							
-							
-							for(Apttus_Proposal__Proposal_Line_Item__c cLi:transmapChild.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+chstr)){
-								
-								CPQ_Output_Line_Item__c oli5 = new CPQ_Output_Line_Item__c();
-								oli5.CPQ_Type__c = 'Child Line Item'; 
-								oli5.CPQ_Output_Quote_Proposal__c = tr[0]; 
-								oli5.CPQ_Product_Code__c = cLi.Product_Code__c;							 
-								oli5.CPQ_Description__c = cLi.Apttus_Proposal__Description__c;
-								oli5.CPQ_Quantity_2__c = cLi.Apttus_QPConfig__Quantity2__c;
-								if(cLi.Apttus_QPConfig__ListPrice__c != null){
-								oli5.CPQ_DA_Unit_Price__c = cLi.Apttus_QPConfig__ListPrice__c;
-								}
-								if(pli.CPQ_Customer_Item_Code__c != null){
-								   oli5.CPQ_Customer_Item_Code__c = pli.CPQ_Customer_Item_Code__c;
-								 }
-								if(Transport){
-								oli5.CPQ_Transportation__c = true;  
-								 }
-								oliListtobeInserted.add(oli5);
-								
-								
-							}
-							
-								CPQ_Output_Line_Item__c oli7 = new CPQ_Output_Line_Item__c();
-								oli7.CPQ_Type__c = 'Space';
-								oli7.CPQ_Output_Quote_Proposal__c = tr[0];
-								if(Transport){
-								oli7.CPQ_Transportation__c = true;  
-								 }
-								oliListtobeInserted.add(oli7);
-								spaceCheck = true;
-							
-						}
-					}
-				
-					
-				}
-				
-				if(!spaceCheck){
-				CPQ_Output_Line_Item__c oli4 = new CPQ_Output_Line_Item__c();
-				oli4.CPQ_Type__c = 'Space';
-				oli4.CPQ_Output_Quote_Proposal__c = tr[0];
-				oliListtobeInserted.add(oli4);
-				}
+		if((pli.NokiaCPQ_Configuration_Type__c == 'Standalone' && pli.NokiaCPQ_Item_Type__c != null && (pli.NokiaCPQ_Item_Type__c == 'Software' || pli.NokiaCPQ_Item_Type__c == 'Hardware'))){
+			
+	if(pli.Apttus_QPConfig__BasePriceOverride__c != null){
+			oli2.CPQ_DA_Unit_Price__c = pli.Apttus_QPConfig__BasePriceOverride__c;  
+			}else if(pli.CPQ_Agreement_Contract_Price__c != null){
+			oli2.CPQ_DA_Unit_Price__c = pli.CPQ_Agreement_Contract_Price__c;	
+			}else if(pli.Apttus_QPConfig__ListPrice__c != null){
+			oli2.CPQ_DA_Unit_Price__c = pli.Apttus_QPConfig__ListPrice__c;  
+			}
+			oli2.CPQ_List_Price__c = pli.Apttus_QPConfig__ListPrice__c;
+			
+		}
+		
+		if(((pli.NokiaCPQ_Configuration_Type__c == 'Standalone' && pli.NokiaCPQ_Item_Type__c != null && (pli.NokiaCPQ_Item_Type__c == 'Software' || pli.NokiaCPQ_Item_Type__c == 'Hardware')) || pli.CPQ_Secondary_Category__c == 'Site Model' || pli.CPQ_Secondary_Category__c == 'Solution Model' ) && pli.Apttus_QPConfig__NetUnitPrice__c != null){
+		oli2.CPQ_Net_Unit_Price__c = pli.Apttus_QPConfig__NetUnitPrice__c;  
+			
+		}
+		
+		if(pli.CPQ_Customer_Item_Code__c != null){
+		oli2.CPQ_Customer_Item_Code__c = pli.CPQ_Customer_Item_Code__c;
+		}
+		
+		if(Transport){
+		oli2.CPQ_Transportation__c = true;  
+		}
+		
+		sno = sno + 1;
+		oli2.CPQ_Line_Number__c = sno;
+		
+		oliListtobeInserted.add(oli2);
+		
+		String prodID;
+		if(pli.Apttus_QPConfig__OptionId__c != null){
+			prodID = pli.Apttus_QPConfig__OptionId__c;
+		}else{
+			prodID = pli.Apttus_Proposal__Product__c;
+		}
+		if(frumap.containsKey(prodID)){
+			for(CPQ_FRUCustItemCdMap__c fru:frumap.get(prodID)){
+	CPQ_Output_Line_Item__c oli3 = new CPQ_Output_Line_Item__c();
+	oli3.CPQ_Type__c = 'FRU'; 
+	oli3.CPQ_Output_Quote_Proposal__c = tr[0];	  
+	oli3.CPQ_Description__c = fru.CPQ_FRU_Description__c;
+	oli3.CPQ_Asset_Line_Quantity__c = fru.CPQ_Asset_Quantity__c;
+	if(Transport){
+	oli3.CPQ_Transportation__c = true;  
+	}
+	oliListtobeInserted.add(oli3);
+			}	
+			
+		}
+		
+		/*if(siteLinesmap.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c)){
+			for(Apttus_Proposal__Proposal_Line_Item__c cLi:siteLinesmap.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c)){
+	
+	CPQ_Output_Line_Item__c oli5 = new CPQ_Output_Line_Item__c();
+	oli5.CPQ_Type__c = 'Child Line Item'; 
+	oli5.CPQ_Output_Quote_Proposal__c = tr[0];	  
+	oli5.CPQ_Description__c = cLi.Apttus_Proposal__Description__c;
+	oli5.CPQ_Asset_Line_Quantity__c = cLi.Apttus_QPConfig__Quantity2__c;
+	oliListtobeInserted.add(oli5);
+	
+			}	
+			
+		}*/
+		
+		for(string chstr:ChildheadingSet){
+			if(transmapChild.containsKey(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+chstr)){
+	CPQ_Output_Line_Item__c oli6 = new CPQ_Output_Line_Item__c();
+	oli6.CPQ_Type__c = 'Heading';
+	oli6.CPQ_Product_Code__c = chstr;  
+	oli6.CPQ_Output_Quote_Proposal__c = tr[0];
+	if(Transport){
+	oli6.CPQ_Transportation__c = true;  
+	}
+	oliListtobeInserted.add(oli6);
+	
+	
+	for(Apttus_Proposal__Proposal_Line_Item__c cLi:transmapChild.get(pli.Apttus_Proposal__Proposal__c+'_'+pli.Apttus_QPConfig__LineNumber__c+'_'+chstr)){
+		
+		CPQ_Output_Line_Item__c oli5 = new CPQ_Output_Line_Item__c();
+		oli5.CPQ_Type__c = 'Child Line Item'; 
+		oli5.CPQ_Output_Quote_Proposal__c = tr[0]; 
+		oli5.CPQ_Product_Code__c = cLi.Product_Code__c;		
+		oli5.CPQ_Description__c = cLi.CPQ_Final_Product_Name__c;
+		oli5.CPQ_Quantity_2__c = cLi.Apttus_QPConfig__Quantity2__c;
+		if(cLi.Apttus_QPConfig__ListPrice__c != null){
+		oli5.CPQ_DA_Unit_Price__c = cLi.Apttus_QPConfig__ListPrice__c;
+		oli5.CPQ_List_Price__c = cLi.Apttus_QPConfig__ListPrice__c;
+		}
+		if(pli.CPQ_Customer_Item_Code__c != null){
+	 oli5.CPQ_Customer_Item_Code__c = pli.CPQ_Customer_Item_Code__c;
+		 }
+		if(Transport){
+		oli5.CPQ_Transportation__c = true;  
+		 }
+		oliListtobeInserted.add(oli5);
+		
+		
+	}
+	
+		CPQ_Output_Line_Item__c oli7 = new CPQ_Output_Line_Item__c();
+		oli7.CPQ_Type__c = 'Space';
+		oli7.CPQ_Output_Quote_Proposal__c = tr[0];
+		if(Transport){
+		oli7.CPQ_Transportation__c = true;  
+		 }
+		oliListtobeInserted.add(oli7);
+		spaceCheck = true;
+	
+			}
+		}
+	
+		
+	}
+	
+	if(!spaceCheck){
+	CPQ_Output_Line_Item__c oli4 = new CPQ_Output_Line_Item__c();
+	oli4.CPQ_Type__c = 'Space';
+	oli4.CPQ_Output_Quote_Proposal__c = tr[0];
+	oliListtobeInserted.add(oli4);
+	}
 			}
 			}
 			
 			
 			if(!oliListtobeInserted.isEmpty()){
-				Insert oliListtobeInserted;   
-				
+	Insert oliListtobeInserted;   
+	
 			}
 			
 		} 
@@ -789,25 +784,25 @@ public static boolean isFutureCalled=false;
 			String appliedDiscountsInfo;
 			String quoteId;
 			for(Apttus_Proposal__Proposal_Line_Item__c pli:propList){
-				if(String.isNotBlank(pli.CPQ_Applied_Discounts_Info__c)) {
-					appliedDiscountsInfo = pli.CPQ_Applied_Discounts_Info__c;
-					quoteId = pli.Apttus_Proposal__Proposal__c;
-				}
+	if(String.isNotBlank(pli.CPQ_Applied_Discounts_Info__c)) {
+		appliedDiscountsInfo = pli.CPQ_Applied_Discounts_Info__c;
+		quoteId = pli.Apttus_Proposal__Proposal__c;
+	}
 			}
 			if(String.isNotBlank(appliedDiscountsInfo)) {
-				Map<Id, CPQ_QuoteContractualDiscount__c> discountEntryById = new Map<Id, CPQ_QuoteContractualDiscount__c>([
-					SELECT Id, CPQ_Applied_Discount__c FROM CPQ_QuoteContractualDiscount__c WHERE CPQ_Proposal__c = :quoteId
-				]);
-				for(String discountInfo : appliedDiscountsInfo.split(';')) {
-					String discountEntryId = discountInfo.split(':')[0].trim();
-					Decimal appliedDiscount = Decimal.valueOf(discountInfo.split(':')[1].trim());
-					if(discountEntryById.containsKey(discountEntryId)) {
-						discountEntryById.get(discountEntryId).CPQ_Applied_Discount__c = appliedDiscount;
-					}
-				}
-				if(!discountEntryById.isEmpty()) {
-					update discountEntryById.values();
-				}
+	Map<Id, CPQ_QuoteContractualDiscount__c> discountEntryById = new Map<Id, CPQ_QuoteContractualDiscount__c>([
+		SELECT Id, CPQ_Applied_Discount__c FROM CPQ_QuoteContractualDiscount__c WHERE CPQ_Proposal__c = :quoteId
+	]);
+	for(String discountInfo : appliedDiscountsInfo.split(';')) {
+		String discountEntryId = discountInfo.split(':')[0].trim();
+		Decimal appliedDiscount = Decimal.valueOf(discountInfo.split(':')[1].trim());
+		if(discountEntryById.containsKey(discountEntryId)) {
+			discountEntryById.get(discountEntryId).CPQ_Applied_Discount__c = appliedDiscount;
+		}
+	}
+	if(!discountEntryById.isEmpty()) {
+		update discountEntryById.values();
+	}
 			}
 		} catch(Exception e) {
 			System.debug('Exception parsing Discounts applied under quote: ' + e.getStackTraceString());

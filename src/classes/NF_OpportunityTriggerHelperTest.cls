@@ -23,7 +23,7 @@ private with sharing class NF_OpportunityTriggerHelperTest{
 	*Method Name: ClosedChatterPost
 	*Description: Test Method to cover NF_OpportunityTriggerHelper class
 	********************************/
-	static testMethod void ClosedChatterPost1(){
+	static testMethod void closedChatterPost1(){
 
 		NCP_CustomerCommunitySetting__c cs = new NCP_CustomerCommunitySetting__c();
 		cs.Name = 'Default';
@@ -66,9 +66,7 @@ private with sharing class NF_OpportunityTriggerHelperTest{
 			optyCreation.get(0).Amount=100;
 
 			optyCreation.get(0).Lead_BG__c='MN';
-			optyCreation.get(0).Supporting_BG_AA__c='NSW';
 			optyCreation.get(0).Country__c='India';
-			optyCreation.get(0).Supporting_BG_GS__c='GS';
 			optyCreation.get(0).LOA_Level__c='A';
 			insert optyCreation;
 			test.startTest();
@@ -131,7 +129,7 @@ private with sharing class NF_OpportunityTriggerHelperTest{
 	*Method Name: ChatterPostNotification
 	*Description: Test Method to cover NF_OpportunityTriggerHelper class
 	********************************/
-	static testMethod void ChatterPostNotification(){
+	static testMethod void chatterPostNotification(){
 		user userCreation = TestDataFactory.userCreation(1,'System Administrator')[0];
 		userList.add(userCreation);
 		user userCreation1 = TestDataFactory.userCreation(1,'System Administrator')[0];

@@ -1,12 +1,17 @@
+/********************************************************************************
+* Name : HWS_EmailNotifications_Test 
+* Description : Test class for HWS_EmailNotifications
+
+********************************************************************************/
 @isTest
-public class HWS_EmailNotifications_Test {  
-   
+public class HWS_EmailNotifications_Test { 
 	public static testmethod void pendingReferralFMARCAEmailTest(){		
 	   Test.startTest();
 		Map<String, String> fieldsMap = new Map<String, String>();
 		insert new Global_Control__c(ObjectTriggerByPass__c='ACCT, CNTCT, Product, Asset, Case, SVCNTRT,cli');
-	   Set<Id> parentCaseIdSet = new Set<Id>();
-		 Set<Id> childCaseIdSet = new Set<Id>();		 
+		Set<Id> parentCaseIdSet = new Set<Id>();
+		Set<Id> childCaseIdSet = new Set<Id>();
+		 
 		List<Account> parentAccountList= HWS_TestFactoryDefaults.createAccountData(true, 1, 'Legal_Entity');
 		fieldsMap.put('AccountId', parentAccountList[0].ParentId); 
 		List<Contact> contactList = HWS_TestFactoryDefaults.createContact(true, 1, null, fieldsMap);
@@ -48,7 +53,21 @@ public class HWS_EmailNotifications_Test {
 		HWS_EmailNotifications.workgroupEmailAssignment(ChildCase[0].ParentId, 'HWS Pending Order Summary Manual Split',null,null);
 		emailNots.entExceptionCheck = true;
 		emailNots.getCases();
+		HWS_EmailNotifications.workgroupEmailAssignment(ChildCase[0].ParentId, 'HWS Order Acknowledgement Escalated Case',null,null);
+		emailNots.entExceptionCheck = true;
+		emailNots.alertType = 'HWS Order Acknowledgement Escalated Case';
+		emailNots.getCases();
 		Test.stopTest(); 
-		
+		HWS_DataFactory_TEST.createWGSetupServiceQuote();
+		CH_Workgroup__c cdmWg = [SELECT Id,Name,CH_Type__c FROM CH_Workgroup__c WHERE Name='HWS_EQS-CDM_CDM_NAM_US' LIMIT 1];
+		Id dpqRecordTypeId = HWS_Utilty.getRecordTypeByName('HWS_Service_Quote__c','HWS_Damaged_Part_Quote');
+		List<HWS_Service_Quote__c> damagedServiceQuoteList = HWS_DataFactory_TEST.createServiceQuote(1,dpqRecordTypeId,false,ChildCase[0].Id);
+		damagedServiceQuoteList[0].HWS_Workgroup__c = cdmWg.Id;
+		insert damagedServiceQuoteList;
+		HWS_EmailNotifications.serviceQuoteWGAssignmentEmail(damagedServiceQuoteList);
+		HWS_EmailNotifications.ownerReAssignmentEmail(new List<Id>{damagedServiceQuoteList[0].Id});
+		HWS_EmailNotifications clsObj= new HWS_EmailNotifications();
+		clsObj.quotationId = damagedServiceQuoteList[0].Id;
+		clsObj.getQuotation();
 	}	
 }

@@ -1,10 +1,10 @@
 public  without sharing class CH_CA_Pickup_CaseController {
-	
 	public static final String HWSTickets = 'HWS Tickets';
 	public static final String SWSTickets = 'SWS Tickets';
 	public class CaseWrapper {
 		@AuraEnabled public Case oCase {get;set;}
 		@AuraEnabled public Datetime targetDate {get;set;}
+		@AuraEnabled public String Country {get;set;}
 	}
 	public class WorkgroupMemberWrapper {
 		@AuraEnabled public String Id {get;set;} 
@@ -56,19 +56,18 @@ public  without sharing class CH_CA_Pickup_CaseController {
 		String quotationReq = 'Quotation Required';
 		IF(caseType == 'Incident'){
 			if(caseServiceType == 'Hardware Services'){
-				getQuery='SELECT Id,HWS_Parent_case_Number__c,CH_Workgroup__c,CH_Workgroup__r.Name,CH_CurrentQueue__c,CreatedById,CreatedBy.Name,CH_InternalStatus__c,CaseNumber,LastModifiedBy.Name,Hws_Ship_to_Party_Address__r.Name,LastModifiedById,ProductId, CH_Product_Name__c, AccountId,CH_Account_Name__c, CreatedDate,(SELECT HWS_ServiceType__c,Id FROM Cases) FROM Case '+
-		   'WHERE Status !=: excludeCancelled AND Status !=: excludeCompleted AND (OwnerId in :queuesIds) AND (CH_Workgroup__c IN : workgroupIds) '+
-							   'AND (RecordType.Name in :caseTypeSet ) AND '+
-							   '(CH_SecurityGroup__c in :groupNames OR CH_GWC_SecurityGroup__c in :groupNames OR CH_3rdPartySecurityGroup__c in :groupNames ) '+
-							   'AND (CH_InternalStatus__c =:internalStatusVR_HWS OR CH_InternalStatus__c = :quotationReq) AND HWS_RecordTypeCheck__c = true FOR update ';
-
+				getQuery='SELECT Id,HWS_Parent_case_Number__c,CH_RecordTypeDevName__c,Country__c,CreatedBy.Country__c,CH_Originating_Incident_Number__c,CH_Workgroup__c,CH_Workgroup__r.Name,CH_CurrentQueue__c,CreatedById,CreatedBy.Name,CH_InternalStatus__c,CaseNumber,LastModifiedBy.Name,Hws_Ship_to_Party_Address__r.Name,LastModifiedById,ProductId, CH_Product_Name__c, AccountId,CH_Account_Name__c, CreatedDate,(SELECT HWS_ServiceType__c,Id FROM Cases) FROM Case '+
+	 'WHERE Status !=: excludeCancelled AND Status !=: excludeCompleted AND (OwnerId in :queuesIds) AND (CH_Workgroup__c IN : workgroupIds) '+
+		  'AND (RecordType.Name in :caseTypeSet ) AND '+
+		  '(CH_SecurityGroup__c in :groupNames OR CH_GWC_SecurityGroup__c in :groupNames OR CH_3rdPartySecurityGroup__c in :groupNames ) '+
+		  'AND (CH_InternalStatus__c =:internalStatusVR_HWS OR CH_InternalStatus__c = :quotationReq) AND HWS_RecordTypeCheck__c = true FOR update ';
 			}
 			else{
-	getQuery='SELECT Id, CH_Rep_CDBContractType__c, Country__c, CreatedById, CreatedBy.Name, HWS_Customer_ID__c,CH_InternalStatus__c,LastModifiedById,LastModifiedBy.Name,ProductId, CH_Product_Name__c, CH_Product_Release_Name__c, AccountId, CH_Account_Name__c,CaseNumber, Severity__c, CH_Outage__c, Status, CH_CRStatus__c, Subject, CreatedDate, CH_Workgroup__r.Name, CH_Workgroup__c,CH_CurrentQueue__c, CH_ServiceType__c FROM Case WHERE Status !=: excludeCancelled AND Status !=: excludeCompleted AND (OwnerId in :queuesIds) AND (CH_Workgroup__c IN : workgroupIds) AND (CH_ServiceType__c = :caseServiceType )AND (RecordType.Name in :caseTypeSet ) AND (CH_SecurityGroup__c in :groupNames OR CH_GWC_SecurityGroup__c in :groupNames OR CH_3rdPartySecurityGroup__c in :groupNames )  FOR update ';
+	getQuery='SELECT Id,CH_Rep_CDBContractType__c,Country__c,CreatedById,CreatedBy.Name,CreatedBy.Country__c,CH_RecordTypeDevName__c,CH_Originating_Incident_Number__c, HWS_Customer_ID__c,CH_InternalStatus__c,LastModifiedById,LastModifiedBy.Name,ProductId, CH_Product_Name__c, CH_Product_Release_Name__c, AccountId, CH_Account_Name__c,CaseNumber, Severity__c, CH_Outage__c, Status, CH_CRStatus__c, Subject, CreatedDate, CH_Workgroup__r.Name, CH_Workgroup__c,CH_CurrentQueue__c, CH_ServiceType__c FROM Case WHERE Status !=: excludeCancelled AND Status !=: excludeCompleted AND (OwnerId in :queuesIds) AND (CH_Workgroup__c IN : workgroupIds) AND (CH_ServiceType__c = :caseServiceType )AND (RecordType.Name in :caseTypeSet ) AND (CH_SecurityGroup__c in :groupNames OR CH_GWC_SecurityGroup__c in :groupNames OR CH_3rdPartySecurityGroup__c in :groupNames )  AND CH_RecordTypeCheck__c = true FOR update ';
 			}
 			}
-		ELSE{
-			getQuery='SELECT Id, Country__c, HWS_Customer_ID__c, CreatedById, CreatedBy.Name, ProductId, CH_Product_Name__c, CH_Product_Release_Name__c, AccountId, CH_Account_Name__c,CaseNumber, Severity__c, CH_Outage__c, Status, CH_CRStatus__c, Subject, CreatedDate, CH_Workgroup__r.Name, CH_Workgroup__c,CH_CurrentQueue__c, CH_ServiceType__c FROM Case WHERE Status !=: excludeCancelled AND Status !=: excludeCompleted AND (OwnerId in :queuesIds) AND (CH_Workgroup__c IN : workgroupIds) AND (RecordType.Name in :caseTypeSet ) AND (CH_SecurityGroup__c in :groupNames OR CH_GWC_SecurityGroup__c in :groupNames OR CH_3rdPartySecurityGroup__c in :groupNames )  FOR update ';
+		ELSE {
+			getQuery='SELECT Id,Country__c,CreatedBy.Country__c,CreatedById,CreatedBy.Name,CH_RecordTypeDevName__c,CH_Originating_Incident_Number__c,CH_Originating_Incident_Number__r.Country__c, HWS_Customer_ID__c, ProductId, CH_Product_Name__c, CH_Product_Release_Name__c, AccountId, CH_Account_Name__c,CaseNumber, Severity__c, CH_Outage__c, Status, CH_CRStatus__c, Subject, CreatedDate, CH_Workgroup__r.Name, CH_Workgroup__c,CH_CurrentQueue__c, CH_ServiceType__c FROM Case WHERE Status !=: excludeCancelled AND Status !=: excludeCompleted AND (OwnerId in :queuesIds) AND (CH_Workgroup__c IN : workgroupIds) AND (RecordType.Name in :caseTypeSet ) AND (CH_SecurityGroup__c in :groupNames OR CH_GWC_SecurityGroup__c in :groupNames OR CH_3rdPartySecurityGroup__c in :groupNames )  AND CH_RecordTypeCheck__c = true FOR update ';
 		}
 		
 		unassignedCases  =Database.Query(getQuery);
@@ -77,7 +76,23 @@ public  without sharing class CH_CA_Pickup_CaseController {
 		for(Case unassignedCase : unassignedCases){
 			CaseWrapper wCase = new CaseWrapper();
 			wCase.oCase = unassignedCase;
+			//Assign the Country Variable of CaseWrapper for the incident cases from Case record NOKIASC-34934
+			if(unassignedCase.CH_Originating_Incident_Number__c == NULL && ( unassignedCase.CH_RecordTypeDevName__c == 'CH_NokiaStandardCase' || unassignedCase.CH_RecordTypeDevName__c == 'CH_NokiaIncidentWithRestoration' || unassignedCase.CH_RecordTypeDevName__c=='CH_NokiaInformationRequest'))
+				wCase.Country = unassignedCase.Country__c;
+			//Assign the Country Variable of CaseWrapper with Created By User's Country if Originating incident doesn't exist For Problem Case 
+			//NOKIASC-34958
+			else if(unassignedCase.CH_Originating_Incident_Number__c == NULL){
+				wCase.Country = unassignedCase.CreatedBy.Country__c;
+			}
+			//Assign the Country Variable of CaseWrapper with Country of Originating incident For Problem Case NOKIASC-34958
+			else
+			{
+				 wCase.Country = unassignedCase.Country__c;
+			}
+			
 			wCase.targetDate = null;
+			
+			
 			unassignedCasesMap.put(unassignedCase.Id, wCase);
 		}
 		for(CaseMilestone caseMilestone : [SELECT TargetDate, CaseID FROM CaseMilestone WHERE CaseID in :unassignedCasesMap.keySet() AND IsCompleted = FALSE AND IsDeleted = FALSE ORDER BY TargetDate ASC] ) {
@@ -87,6 +102,7 @@ public  without sharing class CH_CA_Pickup_CaseController {
 	unassignedCasesMap.put(caseMilestone.CaseID, unassignedCase);	
 			}
 		}
+		
 		return unassignedCasesMap.values();
 	}
 	
@@ -111,6 +127,7 @@ public  without sharing class CH_CA_Pickup_CaseController {
 			}
 		}
 	
+		
 		// If no valid cases
 		if (validCases.size() == 0){
 			return 'No unassigned cases selected. Please refresh the screen and try again';
@@ -139,6 +156,7 @@ public  without sharing class CH_CA_Pickup_CaseController {
 	} 
 			}
 		}
+		
 		
 		CH_CA_Service service = new CH_CA_Service(); 
 		service.assignUser(assignments);

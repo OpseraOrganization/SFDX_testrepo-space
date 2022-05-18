@@ -15,7 +15,7 @@ Private class Approval_ApprovalNotification_CompTest{
 	private static List<OpportunityTeamMember> opptyTeamMemberList = new List<OpportunityTeamMember>();
 	Private static List<Apttus_Approval__Approval_Request__c>Approvalrequestinfo = new List<Apttus_Approval__Approval_Request__c>();
 	Private static List<Apttus_Approval__Approval_Request__c>Approvalrequestinfo1 = new List<Apttus_Approval__Approval_Request__c>();
- 
+
 	private static Account currentAccount;
 	private static Opportunity currentOpportunity;
 	private static Opportunity currentOpportunityC1;
@@ -25,7 +25,7 @@ Private class Approval_ApprovalNotification_CompTest{
 	Private Static List<Offer__c> offerListEmp = new List<Offer__c>();
 	Private Static  List<Opportunity> OpplistEmp=new List<Opportunity>();
 
-	static testMethod void Notification(){
+	static testMethod void notification(){
 		Userlist.add(testUser);
 		Userlist.add(sysAdminUser);
 		Database.insert(Userlist);

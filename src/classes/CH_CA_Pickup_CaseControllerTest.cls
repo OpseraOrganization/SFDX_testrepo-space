@@ -1,11 +1,12 @@
 @isTest
 public class CH_CA_Pickup_CaseControllerTest {
+	
 	@testSetup
 	public static void setup(){
 		Test.startTest();
 		CH_UTIL_TEST.setupCase(false);	
 		Test.stopTest();
-	}  
+	} 
 	@isTest
 	public static void workgroupMemberWrapper()
 	{		
@@ -255,6 +256,7 @@ public class CH_CA_Pickup_CaseControllerTest {
 			CH_CA_Pickup_CaseController.removeFromDesktopView('HWS Tickets','Both');
 			CH_CA_Pickup_CaseController.removeFromDesktopView('HWS Tickets','HWS Tickets');
 			Test.stopTest();
+			
 		}
 	}
 }

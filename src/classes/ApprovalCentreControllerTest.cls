@@ -5,9 +5,7 @@ private class ApprovalCentreControllerTest {
 		List<user> userList = new List<User>();
 		List<Account> accountList = new List<Account>();
 		List<Opportunity> opportunityList = new List<Opportunity>();
-		List<Opportunity> opportunityList1 = new List<Opportunity>();
 		List<Offer__c> offerList = new List<Offer__c>();
-		List<Offer__c> offerList1 = new List<Offer__c>();
 		userList = TestDataFactory.userCreation(2, 'Data Loader Profile');
 		database.insert(userList);
 		fileSharingCustomSettingList = new List<File_Sharing_Custom_Setting__c>();
@@ -51,7 +49,6 @@ private class ApprovalCentreControllerTest {
 			
 			// Create an offer
 			offerList = TestDataFactory.OfferCreation(1,opportunityList[0]);
-			offerList[0].Approval_Recommendation__c = 'Approval will get Approve Button Enabled if they having any pending approval request on Opportunity.';
 			offerList[0].Approval_Scope__c = 'Scope to test approval center';
 			offerList[0].LoA_Approval_Level__c = 'A';
 			offerList[0].LoA_Level_Before_Trigger_Approval__c = 'A' ;
@@ -125,16 +122,13 @@ private class ApprovalCentreControllerTest {
 			offerList[0].LoA_Currency__c = null;
 			test.stopTest();
 		}
-
 	}
 	static testMethod void basicApprovalDetails1(){
 		Test.startTest();
 		List<user> userList = new List<User>();
 		List<Account> accountList = new List<Account>();
 		List<Opportunity> opportunityList = new List<Opportunity>();
-		List<Opportunity> opportunityList1 = new List<Opportunity>();
 		List<Offer__c> offerList = new List<Offer__c>();
-		List<Offer__c> offerList1 = new List<Offer__c>();
 		userList = TestDataFactory.userCreation(2, 'Data Loader Profile');
 		database.insert(userList);
 		fileSharingCustomSettingList = new List<File_Sharing_Custom_Setting__c>();
@@ -173,9 +167,7 @@ private class ApprovalCentreControllerTest {
 		List<user> userList = new List<User>();
 		List<Account> accountList = new List<Account>();
 		List<Opportunity> opportunityList = new List<Opportunity>();
-		List<Opportunity> opportunityList1 = new List<Opportunity>();
 		List<Offer__c> offerList = new List<Offer__c>();
-		List<Offer__c> offerList1 = new List<Offer__c>();
 		userList = TestDataFactory.userCreation(2, 'Data Loader Profile');
 		database.insert(userList);
 		fileSharingCustomSettingList = new List<File_Sharing_Custom_Setting__c>();
@@ -201,7 +193,6 @@ private class ApprovalCentreControllerTest {
 
 			// Create an offer
 			offerList = TestDataFactory.OfferCreation(1,opportunityList[0]);
-			offerList[0].Approval_Recommendation__c = 'Approval will get Approve Button Enabled if they having any pending approval request on Opportunity.';
 			offerList[0].Approval_Scope__c = 'Scope to test approval center';
 			offerList[0].LoA_Approval_Level__c = 'A';
 			offerList[0].LoA_Level_Before_Trigger_Approval__c = 'A' ;
@@ -310,8 +301,6 @@ private class ApprovalCentreControllerTest {
 			// Create an offer
 			offerList = TestDataFactory.OfferCreation(1,opportunityList[0]);
 			offerList[0].ActiveOffer__c = true;
-			offerList[0].Offer_DSO__c = 99;
-			offerList[0].Offer_IRD__c = 101;
 			database.insert(offerList);
 			id offerId = offerList[0].id;
 			system.assert(offerId!=null);
@@ -448,8 +437,6 @@ private class ApprovalCentreControllerTest {
 	{
 		Test.startTest();
 		List<user> userList = new List<User>();
-		List<Account> accountList = new List<Account>();
-		List<Opportunity> opportunityList = new List<Opportunity>();
 		fileSharingCustomSettingList = new List<File_Sharing_Custom_Setting__c>();
 		fileSharingCustomSettingList = TestDataFactory.create_File_Sharing_Custom_Setting();
 		Database.insert(fileSharingCustomSettingList);

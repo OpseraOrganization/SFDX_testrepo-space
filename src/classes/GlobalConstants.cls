@@ -263,9 +263,6 @@ global class GlobalConstants {
   //OIF class
   public static string UPDATE_OPPTY_AMOUNT = 'updateOpportunityAmount';
 
-  //Requirement 529
-  public static string SET_ALU_TRUE = 'setAluasTrue';
-
   // Doc Strategy : Sprint 3- REQ-605
   public static string HND_CONTENT_DOCUMENT_HANDLER= 'to be updated';
   public static string DELETE_RELATED_DOCUMENT= 'to be updated';
@@ -717,7 +714,7 @@ global class GlobalConstants {
   //Sales Process Req 1454
   Public Static String OPTY_TO_OIF_PROGRAM_FLAG = 'copyOpptyProgramFlagToOif';
   //SF Ticket 00003242: Sales Process
-  Public Static String REFERENCE_OPPTY_ERROR = 'Reference Opportunity cannot be blank when Offer is active and G4/G5 bypass offer condition is G4 approved or contracted'; // Label Changed - SF Ticket 00956787
+  Public Static String REFERENCE_OPPTY_ERROR = 'Reference Opportunity cannot be blank when Offer is active and G4/G5 bypass offer condition is G4 approved or contracted'; // Label Changed - SF Ticket 00956787
   //Requirement 2381: Sales Process
   Public Static String PTA_PRODUCT_ONLY_OFFER_NOT_SAME = 'PTA Signed on Opportunity and Product/Software Only on Offer should not be checked at the same time';
 
@@ -733,7 +730,7 @@ global class GlobalConstants {
   Public Static String RISK_ORDER_ONLY = 'Risk Order Only'; //Pre-Sales:Sprint 6: Req#2171
   Public static String RISK_ORDER_WITH_SHIPMENT = 'Risk Order With Risk Shipment';
   Public Static String PREPARATION = 'Preparation';  //Pre-Sales:Sprint 6: Req#2171
-  Public Static String IN_EXECUTION= 'In execution'; //Pre-Sales:Sprint 6: Req#2171
+  Public Static String IN_EXECUTION= 'In Execution'; //Pre-Sales:Sprint 6: Req#2171
   public static string OPPERROR ='You cannot change any value When In Execution stage except Decription/Justification'; //Pre-Sales:Sprint 6: Req#2171
   public static string OPP_OUTCOME_ERROR ='You cannot change any value When In Execution stage except Decription/Justification Outcome and Outcome Detail'; //Pre-Sales:Sprint 6: Req#2171
   public static string GETNOKIAPERIODNAME = 'getNokiaPeriodName'; //Pre-Sales:Sprint 6: Req#2171
@@ -866,7 +863,6 @@ global class GlobalConstants {
   Public static boolean OPPORTUNITYTRIGGER_POPULATE_PHASESTATUS = False;
   Public static boolean OPPORTUNITYTRIGGER_FREEZE_RECORD = False;
   Public static boolean OPPORTUNITYTRIGGER_COMPARE_UNWEIGHTED_VALUE = False;
-  Public static boolean OPPORTUNITYTRIGGER_SET_ALU_TRUE = False;
   Public static boolean OPPORTUNITYTRIGGER_FOLLOW_OPPTY = False;
   Public static boolean OPPORTUNITYTRIGGER_PROB_UPDATE = False;
   Public static boolean OPPORTUNITYTRIGGER_CHECK_LE_EMPTY = False;
@@ -1031,7 +1027,7 @@ global class GlobalConstants {
   Public Static Boolean OPPORTUNITY_PSR_stakeHolder_CHECK=false;
   Public Static Boolean OPPORTUNITY_CLOSE_CHECK=false;
   public static String OPPTY_CLOSE_IDENTIFY_PHASE='Opportunity has been closed at Identify Phase';
-  public static String NF_APPROVALREQUEST='NF_ApprovalRequestClass';
+  public static String NF_APPROVALREQUEST='NF_ApprovalRequestClass';  
   public static String PTA_HANDOVER='PTA (PROJECT TARGET AGREEMENT) HANDOVER TO DELIVERY/OPERATIONS';
   public static String G5_APPROVAL_TECH= 'Approved G2,Approved G3,Approved G4,Approved G5';
 
@@ -1072,8 +1068,10 @@ global class GlobalConstants {
   public static String COSTCALCULATIONWHENESTIMATEDCOSTCHECKED = 'costCalculationWhenEstimatedCostChecked'; //Pre Sales Req - 3097
   public static String WIN_POST_LINE1='Dear Gate Participants,';
   public static String WIN_POST_LINE2='we are pleased to inform you that this opportunity* has been declared won.';
-  public static String WIN_POST_LINE3='Thank you for your participation!';
-  public static String WIN_POST_LINE4='Nokia Salesforce CRM';
+  public static String WIN_POST_LINE3='Be aware that' ; //Thank you for your participation!'; //02288601
+  public static String WIN_POST_LINE4=  'G6 Bypass (No Execute needed) =' ;  //'Nokia Salesforce CRM'; //02288601
+  public static String WIN_POST_LINE5 = 'Please act accordingly to ensure a successful delivery.'; //02288601
+  public static String WIN_POST_LINE6 = 'Thank you!' ;//02288601
   public static String WIN_DECLARATION_NOTIFICATION='WindeclarationNotification';
   public static String NOTIFY_OFFER_CONTROLER='NotifyOfferController';
 
@@ -1113,7 +1111,7 @@ global class GlobalConstants {
   Public Static String PRESALES_UPLOAD_FILE_ERROR = 'go to the related tab and attach a Pre-Sales Risk BoM/BoQ document to the \'Files\' section' ;
 
   //Defect D-4025 LoA/Doc
-  Public Static String WARNING_MESSAGE_ON_DELETING_LOA_TEMPLATE = 'Sorry you are unauthorised to delete the document' ; // Label Changed - SF Ticket 00956787
+  Public Static String WARNING_MESSAGE_ON_DELETING_LOA_TEMPLATE = 'Sorry you are unauthorised to delete the document' ; // Label Changed - SF Ticket 00956787
   Public Static String RESTRICTSAMETEAMROLE= 'restrictSameTeamandAdditionalTeamRole';
 
   //People Stream Release 4
@@ -1153,7 +1151,7 @@ global class GlobalConstants {
   public static String CREATE_PROSPECT_CREATE_REQUEST='CreateProspectCreateRequest';
   public static String CREATE_REQUEST='createRequest';
   public static String SELECT_ID_NAME_ACCNO='select id, Name, AccountNumber from ';
-  public static String CUSTOM_LOOKUP_QUERY=' where Name LIKE: searchKey and recordtype.name <> \'Customer\' order by createdDate DESC limit 5';
+  public static String CUSTOM_LOOKUP_QUERY=' where Name LIKE: searchKey and recordtype.name <> \'Customer\' AND Active__c = true order by AccountNumber ASC LIMIT 10';
   public static String CONTACT_TRIGGER_HELPER='ContactTriggerHelper';
   public static String VALIDATE_AND_SEND_CONTACT='validateAndSendContact';
   public static String VALIDATE_AND_SEND_CONTACT_FOR_UPDATE='validateAndSendContactforUpdate';
@@ -1275,7 +1273,7 @@ global class GlobalConstants {
   public static String APPROVAL_COMPLETION_DAYS = 'ApprovalCompletionDays';
 
   //sales process sprint 12 'validateRefOpptyAndPTASigned' method Optimized
-  public static String Validate_Ref_Oppty_And_PTA_Signed = 'validateRefOpptyAndPTASigned';
+  //public static String Validate_Ref_Oppty_And_PTA_Signed = 'validateRefOpptyAndPTASigned';
 
   //CMDPack4 Scheduler & Batch
   public static String SCH_USERTERRITORY_REMOVAL_INTERVAL = 'Sch_UserTerritoryRemoval Run Interval';
@@ -1381,7 +1379,7 @@ global class GlobalConstants {
   public static String ERRORHP1 = 'Please reprice the quote';
   public static String ERRORJB = 'The Quote cannot be approved. Please contact your Partner Sales Manager.';
   public static String ERRORRS = 'The Quote cannot be approved as the Opportunity has passed G5.1';
-  public static String ERRORABD = 'The Quote cannot be validated as it contains products that are no longer available for purchase. Please go to the Cart to remove those items.';
+  public static String ERRORABD = 'The Quote cannot be validated as it contains products that are no longer available for purchase. Please go to the Cart to remove these items:';
   public static String ERRORBM = 'Some products contained in this quote have been updated since it was created. Please check and finalise your quote again.';
   public static String ERRORMS = 'It is possible that prices or conditions have changed since this quote was created. Please return and re-price the quote to update to the latest prices.';
   public static String ERRORSS = 'Quote cannot be validated. Please contact your Partner Sales Manager (Invalid Offer condition).';
@@ -1392,7 +1390,7 @@ global class GlobalConstants {
   public static String ERRORLP = 'Quote cannot be validated. Please contact your Partner Sales Manager (LEO requires Approval)';
   public static String ERRORAll = 'Quote cannot be validated. Please contact your Partner Sales Manager (Maintenance Price/Custom Product/LEO/CAD Approval required)';
   public static String ERRORCAD = 'Quote cannot be validated. Please contact your Partner Sales Manager (CAD amount Approval required)';
-  public static String ERROROCA = 'The quote will require G4/WTD approval. Please submit the approval. Pricing Manager will need to update the approval status in the Opportunity'; // Label Changed - SF Ticket 00956787
+  public static String ERROROCA = 'The quote will require G4/WTD approval. Please submit the approval. Pricing Manager will need to update the approval status in the Opportunity'; // Label Changed - SF Ticket 00956787
   public static String ERRORPSMMPO = 'Please submit the quote for approval(Maintenance Price Approval required)';
   public static String ERRORPSMCP = 'Please submit the quote for approval(Custom Product requires Approval)';
   public static String ERRORPSMLP = 'Please submit the quote for approval(LEO requires Approval)';
@@ -1648,8 +1646,8 @@ global class GlobalConstants {
   public static String Country = 'Country:';
   public static String SupportingBG = 'Supporting BGs:';
   public static String SupportingBU = 'Supporting BUs:';
-  public static String LoALevel = 'Approval Level:'; // Label Changed - SF Ticket 00956787
-  public static String LoA_Level_Before_STA = 'Approval Level before STA:'; // Label Changed - SF Ticket 00956787
+  public static String LoALevel = 'Approval Level:'; // Label Changed - SF Ticket 00956787
+  public static String LoA_Level_Before_STA = 'Approval Level before STA:'; // Label Changed - SF Ticket 00956787
   public static String Sales_Outcomes= 'Sales Outcome:';
   public static String Main_Reason = 'Main Reason:';
   public static String Second_Reasons = 'Second Reason:';
@@ -1864,6 +1862,8 @@ global class GlobalConstants {
   /*****CQ Constants*****/
   public static String QuoteProposal_RecordType_1 = 'Contracted_Quote';
   public static String QuoteProposal_RecordType_2 = 'CQ_Read_Only';
+  public static String CQ_New_RecordType_Edit = 'CPQ_QTC_CQ_Quote';
+  public static String CQ_New_RecordType_Read = 'CPQ_QTC_CQ_Quote_Read_Only';
   public static String CQ_ProposalTriggerHandler = 'CQ_ProposalTriggerHandler';
   public static String CQ_ProposalTriggerHandler_AfterInsert = 'AfterInsert';
   public static String CQ_ProposalTriggerHandler_AfterUpdate = 'AfterUpdate';
@@ -2022,11 +2022,11 @@ global class GlobalConstants {
   public static String addOpptyTeamMembermethod = 'addOpptyTeamMember';
   public static String chatterNotificationToAccountOwnermethod = 'chatterNotificationToAccountOwner';
   public static String PartnerSalesManager_User = 'Partner Sales Manager';
-  public static String Alliance = 'Alliance';
+  //public static String Alliance = 'Alliance';  // changed for SH2022: Alliance was deactivated
   public static String Distributor = 'Distributor';
   public static String DirectCustomer = 'Direct Customer';
   public static String DirectResellerPartner = 'Direct Reseller Partner';
-  public static String AlliancePartner = 'Alliance Partner';
+  //public static String AlliancePartner = 'Alliance Partner'; // changed for SH2022: Alliance was deactivated
   public static String GPPDistributorPartner = 'GPP Distributor Partner';
   public static String GPPSPAAPpartner = 'GPP SPAAP partner';
   public static String GPPVARpartner = 'GPP VAR partner';
@@ -2273,7 +2273,7 @@ global class GlobalConstants {
   public static string GET_CERT_VALUES_METHOD = 'getCertificationsValuesforComponent';
   public static string GET_ACCR_VALUES_METHOD = 'getAccreditationValuesforComponent';
 
-	//Erros and success messagesfor CoOpInvoiceManager component
+  //Erros and success messagesfor CoOpInvoiceManager component
  public static String ERROR_MESSAGE_UPDATE = 'Error updating records';
  public static String ERROR_MESSAGE_CREATE = 'Error creating a new record';
  public static String ERROR_MESSAGE_GET = 'Error retrieving records';
@@ -2283,7 +2283,7 @@ global class GlobalConstants {
  public static String SUCCESS_MESSAGE_CREATE = 'New record created successfully!';
  public static String SUCCESS_MESSAGE_GET = 'Records retrieved successfully!';
  public static String SUCCESS_MESSAGE_DELETE = 'Records deleted successfully!';
-	
+
   //Field Values
   Public static String COUNT = 'mycount';
   public static string CERTIF_STATUS_INPROGRESS = 'In Progress';
@@ -2301,7 +2301,7 @@ global class GlobalConstants {
   public static string ACCOUNT_RECTYPE_CUSTOMER = 'Customer';
   public static string ACCREDITATION_RECTYPE_GPP0 = 'Reseller GPP 0.0';
   public static string CLAIM_STATUS_CLAIMABLE = 'Claimable';
-  public static string CLAIM_STATUS_INCOMPLETE = 'Incomplete';  
+  public static string CLAIM_STATUS_INCOMPLETE = 'Incomplete';
 
   public static String OPEN_STATUS_OIF = 'RoP,Secure,Risk,Upside,Excluded'; //F1784
   public static String TRICORN_ROLES = 'Account Manager (TRICORN Sales Case Owner (SCO));Solution Manager (TRICORN Customer Solution Owner (CSO));Project Execution Owner (TRICORN Project Execution Owner (PEO));Solution Manager (Lead);Services Solution Manager (Lead);Pricing Manager (Lead);Bid Manager'; //F1999
@@ -2351,131 +2351,151 @@ global class GlobalConstants {
   public static string H_INBOUND_EMAIL = 'handleInboundEmail';
   //ft-2056
   public static String ACTIVE_OFFER_FOR_APPROVAL = 'Please Check the Active Offer Information';
-  public static String MANDATORY_PARAMETERS_G2_APPROVAL_MSG = 'Following parameters are mandatory for submission to G2 approval';
-  public static String ERROR_MANDATORY_PARAMETERS_G2_APPROVAL_MSG = 'All fields below are mandatory for submission to G2 approval';
+  public static String MANDATORY_PARAMETERS_G2_APPROVAL_MSG = 'The following fields are mandatory for submission to G2 approval:';
 
-	//ft-14
-	public static String ACCOUNT_NOT_VALID = 'This Account is not Valid to submit the Approval';
-	public static String SALES_OUTCOME_CLOSED = 'You can not submit for approval if the Sales outcome is: Cancelled by Customer or Lost to Competitor or Obsolete or Withdrawn by Nokia';
-	public static String MANDATORY_OIF_FOR_APPROVAL = 'You cannot submit for approval until you create an Order Intake Forecast.';
-	public static String MANDATORY_LOA_FOR_APPROVAL = 'Please indicate the Expected LoA Level before notifying the G3 Facilitator.';
-	public static String CANNOT_SUBMIT_APPROVAL_FROM_PROSPECT_ACC = 'You cannot submit for approval an opportunity belonging to a Prospect account.';
-	public static String MANDATORY_LEAD_BG = 'You cannot submit for Approval until you specify the Lead BG{0}, Unweighted Value, G3 Planned Date, Win Declaration Planned Date and Contract Signing Entity. Please fill these fields. ';
-	public static String MANDATORY_PTA_SIGNED_G6 = 'Before submitting for Gate 6 approval make sure "PTA Signed" field is ticked and PTA file uploaded to the opportunity with type "Project Target Agreement (PTA)"';
-	public static String MANDATORY_ACTIVE_OFFER = 'To proceed please create an offer for real G4/G5 approval or with G4/G5 bypass condition';
-	public static String MANDATORY_G4BYPASS_OFFER = 'This opportunity bypassed Gate 3 and therefore only allows G4/G5 bypass. Please select the correct "G4/G5 Bypass condition" in the active offer or perform a real G3';
+  //ft-14
+  public static String ACCOUNT_NOT_VALID = 'This Account is not Valid to submit the Approval';
+  public static String SALES_OUTCOME_CLOSED = 'You can not submit for approval if the Sales outcome is: Cancelled by Customer or Lost to Competitor or Obsolete or Withdrawn by Nokia';
+  public static String MANDATORY_OIF_FOR_APPROVAL = 'You cannot submit for approval until you create an Order Intake Forecast.';
+  public static String MANDATORY_LOA_FOR_APPROVAL = 'Please indicate the Expected LoA Level before notifying the G3 Facilitator.';
+  public static String CANNOT_SUBMIT_APPROVAL_FROM_PROSPECT_ACC = 'You cannot submit for approval an opportunity belonging to a Prospect account.';
+  public static String MANDATORY_LEAD_BG = 'You cannot submit for Approval until you specify the Lead BG{0}{1}, Unweighted Value, G3 Planned Date, Win Declaration Planned Date and Contract Signing Entity. Please fill these fields. ';
+  public static String MANDATORY_PTA_SIGNED_G6 = 'Before submitting for Gate 6 approval make sure "PTA Signed" field is ticked and PTA file uploaded to the opportunity with type "Project Target Agreement (PTA)"';
+  public static String MANDATORY_ACTIVE_OFFER = 'To proceed please create an offer for real G4/G5 approval or with G4/G5 bypass condition';
+  public static String MANDATORY_G4BYPASS_OFFER = 'This opportunity bypassed Gate 3 and therefore only allows G4/G5 bypass. Please select the correct "G4/G5 Bypass condition" in the active offer or perform a real G3';
 
-	public static String ACTIVE_OFFER_G4_APPROVED = 'The offer is already G4 approved, create a new active offer for next G4';
-	public static String MANDATORY_EXP_LOA_LEVEL_G3 = 'You cannot submit for Approval until you specify the Expected LoA Level.';
-	public static String FILL_COSTS_INFO_PSRO_MSG = 'Please Fill the Cost value';  
-	public static String FILL_SALES_INFO_PSRO_MSG = 'Please Fill the Sales value'; 
-	public static String NO_APPROVALS_NEEDED_MSG = 'No Approvals needed at this time';
-	public static string STAKEHOLDERS_PREVIEW_EMPTY_MSG = ' : Approval Stakeholders Preview is empty';
-	public static string BYPASS_STAKEHOLDERS_PREVIEW_EMPTY_MSG = ' offer condition activated: Approval Stakeholders Preview is empty';
-	public static string BYPASS_GATE_2_MSG ='Bypass GATE 2';
-	public static string BYPASS_GATE_3_MSG='Bypass GATE 3';
-	public static string BYPASS_GATE_4_MSG='Bypass GATE 4';
-	public static string BYPASS_GATE_5_MSG='Bypass GATE 5';
-	public static string BYPASS_GATE_6_MSG='Bypass GATE 6';  
-	public static string G3BYPASS_LOA_MSG = 'Gate 3 Bypass (No offer support)';
-	public static string G4BYPASS_LOA_MSG ='G4 Bypass: ';
-	public static string G5BYPASS_LOA_MSG ='G5 Bypass: ';
-	public static string G6BYPASS_LOA_MSG ='Gate 6 Bypass (No Execute needed)';
-	public static string SELECT_VALID_LOA_LEVEL_MSG = 'Please select valid Approval Level'; // Label Changed - SF Ticket 00956787
-	public static string SELECT_VALID_EXPECTED_LOA_LEVEL_MSG = 'Please select valid Expected LoA Level';
-	public static string CREATE_OFFER_MSG ='Please Create an Offer';
-	public static string PTA_FIELD_MISSING_MSG = 'PTA signed field need to be checked';
-	public static string G3_FACILITATOR_NOTIFIED_UPSELL = 'G3 facilitator to be notified - {0}';
-	public static string G3_FACILITATOR_NOTFOUND = 'No Facilitator Found';
-	public static string G3_FACILITATOR_BYPASS = 'No need to Notify the G3 facilitator in this case. Gate 3 can be bypassed. Please go ahead and submit gate 3 to bypass it.';
-	public static string LOA_LEVEL_E = 'E';
-	public static string G3_FACILITATOR_FOUND = 'The following is the G3 facilitator to be notified';
-	public static string G3_FACILITATOR_VALID_PROBABILITY = 'Probability must be a numeric value between 1 and 100.';
-	public static string MARKET_LATIN_AMERICA = 'Market Latin America';
-	public static string MARKET_NORTH_AMERICA = 'Market North America';
-	public static String FACILITATOR_EMAIL_TEMPLATE = 'NF_G3Facilitator_Apttus_OpptyNotifyOnly';
-	public static string TYPE_REQUEST_RFP_RFI = 'RFP/RFI';
-	public static string G3_FACILITATOR_INFO_MSG = 'Following parameters and completion of G3 Risk Assessment are mandatory for G3 Facilitator notification:';
-	public static String G3_FACILITATOR_MANDATORY_MSG = 'All fields below and completion of G3 Risk Assessment are mandatory for G3 Facilitator notification';
-	public static String G4_PLANNED_DATE_INFO = 'G4 Planned Date cannot be a past date.';
-	
-	//ft-51
-	public static string NEIOT = 'IoT';
-	public static string NEDAAAS = 'DAaaS';
-	public static string NEEOP = 'EOP';
-	
-	//ft-79
-	public static string G5_CONFIRM_POPUP_MSG = 'By submitting this offer for G5 approval, you confirm that the Contract/PO is fully in line with the last G4 Approval. Please confirm.';
-	public static string G5_CONFIRM_POPUP_TITLE = 'Gate 5 Approval Request';
-	
-	//ft-57
-	public static Boolean Sales_Role_Bypass = false;
-	
-	//ft-84
-	public static string G5_Submision_WO_RefOpp = 'Submission for Win declaration using G4/G5 bypass offer condition = "G4 approved or contracted" can be done only if an opportunity has been added in "Reference Opportunity" field and if that related oppty passed G5 contract approval'; // Label Changed - SF Ticket 00956787
+  public static String ACTIVE_OFFER_G4_APPROVED = 'The offer is already G4 approved, create a new active offer for next G4';
+  public static String MANDATORY_EXP_LOA_LEVEL_G3 = 'You cannot submit for Approval until you specify the Expected LoA Level.';
+  public static String FILL_COSTS_INFO_PSRO_MSG = 'Please Fill the Cost value';
+  public static String FILL_SALES_INFO_PSRO_MSG = 'Please Fill the Sales value';
+  public static String NO_APPROVALS_NEEDED_MSG = 'No Approvals needed at this time';
+  public static string STAKEHOLDERS_PREVIEW_EMPTY_MSG = ' : Approval Stakeholders Preview is empty';
+  public static string BYPASS_STAKEHOLDERS_PREVIEW_EMPTY_MSG = ' offer condition activated: Approval Stakeholders Preview is empty';
+  public static string BYPASS_GATE_2_MSG ='Bypass GATE 2';
+  public static string BYPASS_GATE_3_MSG='Bypass GATE 3';
+  public static string BYPASS_GATE_4_MSG='Bypass GATE 4';
+  public static string BYPASS_GATE_5_MSG='Bypass GATE 5';
+  public static string BYPASS_GATE_6_MSG='Bypass GATE 6';
+  public static string G3BYPASS_LOA_MSG = 'Gate 3 Bypass (No offer support)';
+  public static string G4BYPASS_LOA_MSG ='G4 Bypass: ';
+  public static string G5BYPASS_LOA_MSG ='G5 Bypass: ';
+  public static string G6BYPASS_LOA_MSG ='Gate 6 Bypass (No Execute needed)';
+public static string SELECT_VALID_LOA_LEVEL_MSG = 'Please select valid Approval Level'; // Label Changed - SF Ticket 00956787
+  public static string SELECT_VALID_EXPECTED_LOA_LEVEL_MSG = 'Please select valid Expected LoA Level';
+  public static string CREATE_OFFER_MSG ='Please Create an Offer';
+  public static string PTA_FIELD_MISSING_MSG = 'PTA signed field need to be checked';
+  public static string G3_FACILITATOR_NOTIFIED_UPSELL = 'G3 facilitator to be notified - {0}';
+  public static string G3_FACILITATOR_NOTFOUND = 'No Facilitator Found';
+  public static string G3_FACILITATOR_BYPASS = 'No need to Notify the G3 facilitator in this case. Gate 3 can be bypassed. Please go ahead and submit gate 3 to bypass it.';
+  public static string LOA_LEVEL_E = 'E';
+  public static string G3_FACILITATOR_FOUND = 'The following is the G3 facilitator to be notified';
+  public static string G3_FACILITATOR_VALID_PROBABILITY = 'Probability must be a numeric value between 1 and 100.';
+  public static string MARKET_LATIN_AMERICA = 'Market Latin America';
+  public static string MARKET_NORTH_AMERICA = 'Market North America';
+  public static String FACILITATOR_EMAIL_TEMPLATE = 'NF_G3Facilitator_Apttus_OpptyNotifyOnly';
+  public static string TYPE_REQUEST_RFP_RFI = 'RFP/RFI';
+  public static string G3_FACILITATOR_INFO_MSG = 'Following parameters and completion of G3 Risk Assessment are mandatory for G3 Facilitator notification:';
+  public static String G3_FACILITATOR_MANDATORY_MSG = 'All fields below and completion of G3 Risk Assessment are mandatory for G3 Facilitator notification';
+  public static String G4_PLANNED_DATE_INFO = 'G4 Planned Date cannot be a past date.';
 
-	//FT-128
-	public static string NON_SALES_USER_PROFILE = 'Non-Sales User Profile';
-	public static string ONLY_USERS_IN_OFFER_TEAM_CAN_EDIT = 'Nokia Sales users can only update pre opportunities if they are assigned as members in the opportunity team';
-	
-	//ft-158 - ft161
-	public static string EC_INFO_UNKNOWN = 'Currently Unknown End Customer';
-	public static string EC_INFO_MULTI = 'Multiple End Customer';
-	public static string EC_INFO_KNWON = 'Known End Customer';
-	public static string EC_UNKNOWN_AT_G5= 'Please input the real End Customer legal entity name before requesting G5 approval, or if more than one, select the option “Multiple End Customer"';
-		
-	//QAC-803
-	public static String BUSINESS_DEVELOPMENT ='Business Development';
-	//Indirect_Record_Type
-	public static String DIRECT_RECORD_TYPE = 'Direct_Record_Type';
-	public static String PREOPPTY_RECORD_TYPE = 'Pre_opportunity';
-	public static String LEGAL_ENTITY_RECORD_TYPE = 'Legal_Entity';
-	public static String INDIRECT_DEAL_REGISTRATION_RECORD_TYPE = 'PRMIndirect_Deal_Registration';
-	public static String BUSINESS_LINE_RECORD_TYPE = 'NokiaCPQ_Business_Line';
-	public static String FIELDS_AFFECTED_BY_ERROR = 'Fields that affected this error : ';
-	public static String SWX_UPSELL_PROPOSAL_RECORD_TYPE = 'SWx_Upsell_Proposal';
-	public static String CCRE_UPSELL_PROPOSAL_RECORD_TYPE = 'CCRE_Upsell_Proposal';
-	public static String READ_ONLY_DIRECT_RECORD_TYPE = 'Read_Only';
-	public static String READ_ONLY_INDIRECT_RECORD_TYPE = 'Read_Only_Indirect';
-	public static String PSR_RECORD_TYPE = 'Pre_Sales_Risk_Opportunity';
-	public static String READ_ONLY_PSR_RECORD_TYPE = 'Pre_Sales_Risk_Opportunity_read_only';
-	public static String UPSELL_DEAL_RECORD_TYPE= 'Upsell_Deal';
-	public static String CUSTOMER_DEVNAME = 'Customer';//Customer Account record type developer name
-	public static String LEGAL_ENTITY_DEVNAME = 'Legal_Entity';//Legal entity Account record type developer name
-	public static String SOLUTION_MANAGER = 'Solution Manager (TRICORN Customer Solution Owner (CSO))';
-	
-	//Added by Shashikant - IP Routing Portfolio Edit restriction line no 2410 to 2412
-	public static string PORTFOLIO_TYPE_IP_ROUTING = 'IP Routing';
-	public static string Exchange_Rate_Update_Errormsg = 'Exchange Rate Can not modify for IP routing Portfolio';
-	
-	//ft-159
-	public static String END_CUSTOMER_INFORMATION = 'End_Customer_Information__c';
-	public static String GET_ALL_EC_INFORMATION_VAL='getAllOppECInformationValues';
-	public static String M_O_U_EC_MARKET_SEGMENT='Multiple_or_Unknown_EC_Market_Segment__c';
-	public static String GET_ALL_MTK_SEG_VAL='getAllOppECMktSegValues';
-	public static String M_O_U_EC_Country='Multiple_or_Unknown_EC_Country__c';
-	public static String GET_ALL_COUNTRY_VAL='getAllOppECCountryValues';
-	public static String M_O_U_EC_ACT_SEC='Multiple_or_Unknown_EC_Activity_Sector__c';
-	public static String GET_ALL_ACT_SEC_VAL='getAllOppActSecValues';
-	
-	public static String BG_CNS = 'CNS';
-	public static String BG_NI = 'NI';
-	public static String BU_NI_FN = 'NI - FN';
-	public static String BU_NI_IPRTG = 'NI - IPRTG';
-	public static String BU_NI_OPTICS = 'NI - OPTICS';
-	
-	public static String GATE_MANAGEMENT_WTD_ERROR = 'Gate Approval will be managed in WtD';
-	
+  //ft-51
+  public static string NEIOT = 'IoT';
+  public static string NEDAAAS = 'DAaaS';
+  public static string NEEOP = 'EOP';
+
+  //ft-79
+  public static string G5_CONFIRM_POPUP_MSG = 'By submitting this offer for G5 approval, you confirm that the Contract/PO is fully in line with the last G4 Approval. Please confirm.';
+  public static string G5_CONFIRM_POPUP_TITLE = 'Gate 5 Approval Request';
+
+  //ft-57
+  public static Boolean Sales_Role_Bypass = false;
+
+  //ft-84
+public static string G5_Submision_WO_RefOpp = 'Submission for Win declaration using G4/G5 bypass offer condition = "G4 approved or contracted" can be done only if an opportunity has been added in "Reference Opportunity" field and if that related oppty passed G5 contract approval'; // Label Changed - SF Ticket 00956787
+
+  //FT-128
+  public static string NON_SALES_USER_PROFILE = 'Non-Sales User Profile';
+  public static string ONLY_USERS_IN_OFFER_TEAM_CAN_EDIT = 'Nokia Sales users can only update pre opportunities if they are assigned as members in the opportunity team';
+
+  //ft-158 - ft161
+  public static string EC_INFO_UNKNOWN = 'Currently Unknown End Customer';
+  public static string EC_INFO_MULTI = 'Multiple End Customer';
+  public static string EC_INFO_KNWON = 'Known End Customer';
+  public static string EC_UNKNOWN_AT_WIN_DECLARATION= 'Please input the real End Customer legal entity name before Win Declaration, or if more than one, select the option “Multiple End Customer"';
+
+  //QAC-803
+  public static String BUSINESS_DEVELOPMENT ='Business Development';
+  //Indirect_Record_Type
+  public static String DIRECT_RECORD_TYPE = 'Direct_Record_Type';
+  public static String PSRO_RECORD_TYPE = 'Pre_Sales_Risk_Opportunity';
+  public static String PREOPPTY_RECORD_TYPE = 'Pre_opportunity';
+  public static String LEGAL_ENTITY_RECORD_TYPE = 'Legal_Entity';
+  public static String INDIRECT_DEAL_REGISTRATION_RECORD_TYPE = 'PRMIndirect_Deal_Registration';
+  public static String BUSINESS_LINE_RECORD_TYPE = 'NokiaCPQ_Business_Line';
+  public static String FIELDS_AFFECTED_BY_ERROR = 'Fields that affected this error : ';
+  public static String SWX_UPSELL_PROPOSAL_RECORD_TYPE = 'SWx_Upsell_Proposal';
+  public static String CCRE_UPSELL_PROPOSAL_RECORD_TYPE = 'CCRE_Upsell_Proposal';
+  public static String READ_ONLY_DIRECT_RECORD_TYPE = 'Read_Only';
+  public static String READ_ONLY_INDIRECT_RECORD_TYPE = 'Read_Only_Indirect';
+  public static String PSR_RECORD_TYPE = 'Pre_Sales_Risk_Opportunity';
+  public static String READ_ONLY_PSR_RECORD_TYPE = 'Pre_Sales_Risk_Opportunity_read_only';
+  public static String UPSELL_DEAL_RECORD_TYPE= 'Upsell_Deal';
+  public static String CUSTOMER_DEVNAME = 'Customer';//Customer Account record type developer name
+  public static String LEGAL_ENTITY_DEVNAME = 'Legal_Entity';//Legal entity Account record type developer name
+  public static String SOLUTION_MANAGER = 'Solution Manager (TRICORN Customer Solution Owner (CSO))';
+
+  //Added by Shashikant - IP Routing Portfolio Edit restriction line no 2410 to 2412
+  public static string PORTFOLIO_TYPE_IP_ROUTING = 'IP Routing';
+  public static string Exchange_Rate_Update_Errormsg = 'Exchange Rate Can not modify for IP routing Portfolio';
+
+  //ft-159
+  public static String END_CUSTOMER_INFORMATION = 'End_Customer_Information__c';
+  public static String GET_ALL_EC_INFORMATION_VAL='getAllOppECInformationValues';
+  public static String M_O_U_EC_MARKET_SEGMENT='Multiple_or_Unknown_EC_Market_Segment__c';
+  public static String GET_ALL_MTK_SEG_VAL='getAllOppECMktSegValues';
+  public static String M_O_U_EC_Country='Multiple_or_Unknown_EC_Country__c';
+  public static String GET_ALL_COUNTRY_VAL='getAllOppECCountryValues';
+  public static String M_O_U_EC_ACT_SEC='Multiple_or_Unknown_EC_Activity_Sector__c';
+  public static String GET_ALL_ACT_SEC_VAL='getAllOppActSecValues';
+
+  public static String BG_CNS = 'CNS';
+  public static String BG_NI = 'NI';
+  public static String BU_NI_FN = 'NI - FN';
+  public static String BU_NI_IPRTG = 'NI - IPRTG';
+  public static String BU_NI_OPTICS = 'NI - OPTICS';
+
+  public static String GATE_MANAGEMENT_WTD_ERROR = 'Gate Approval will be managed in WtD';
+
   //ft-241
   public static String RENEWAL_OPP_SUFFIX = '_Care Renewal';
   public static String RENEWAL_CONTRACT_TYPE = 'Renewal  of Contract';
-  
-	//Added by Christie JJ for rqmt 6987 for March 21.3
-	public static string DUPLICATE = 'This CSV file is already uploaded. Please select a different file to upload';
-	public static string ABANDON = 'Abandon';
-	public static string PAGEACTION = 'pageAction';
-	
-	public static boolean RUNFLAG = false;
-	public static string BELOW5M = '< 5M';
+
+  //Added by Christie JJ for rqmt 6987 for March 21.3
+  public static string DUPLICATE = 'This CSV file is already uploaded. Please select a different file to upload';
+  public static string ABANDON = 'Abandon';
+  public static string PAGEACTION = 'pageAction';
+
+  public static boolean RUNFLAG = false;
+  public static string BELOW5M = '< 5M';
   public static string ABOVEOREQUAL5M = '>= 5M';
+  public static String OPPTYSEGMENT_ENTERPRISE = 'ENT';
+
+  //ft-299
+  public static boolean SKIP_NO_COMPLEX_OFFER_DM_ASSIGNMENT = false;//Used to prevent the No_Complex_Offer_Decision_Maker__c fill in when the Gate_2_Bypass_no_complex_offer__c is automatically updated
+  public static String RENEWAL_OF_CONTACT= 'Renewal of a Contract';
+  public static String G3FACILITATORNOTIFIED = 'G3 Facilitator Notified';
+  public static String G5PREPINITIATED = 'G5 Preparation Initiated';
+  public static String FASTTRACKTYPE_CANNOTCHANGE = 'Not allowed to change Opportunity Type to or from Fast Track Opportunity.';
+  public static Boolean BYPASS_OPPTYPECHANGE = false;
+
+  //ft-334 - Fast Track
+  public static String FAST_TRACK_OPP_TYPE = 'Fast Track Opportunity';
+  public static string G4_APPROVED_TECH='Approved G2,Approved G3,Approved G4';
+  public static string G4_APPROVED='Approved G4';
+  public static String OPEN_OIF_RT_DEVNAME = 'OIF_Open';
+  public static String ACCOUNT_MANAGER_TRICORN = 'Account Manager (TRICORN Sales Case Owner (SCO))';
+
+  //FT-352
+  public static String OPP_ACCID_ALLOCATION_ERROR= 'It is not possible to change the Account in the Opportunity to this Market NAM Account, as it is impacted by allocations logic. Please create a new Opportunity.';
+  public static String OPP_REV_REC_ALLOCATION_ERROR = '';
 }

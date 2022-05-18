@@ -59,34 +59,34 @@
 			Id siteId = Site.getSiteId();
 			
 			if(pprofileName == 'CH_Agent'){
-				return true;
-			}		   
+	return true;
+			}			
 			if(!oCaseTeamMembers.isEmpty()){
-				for(CaseTeamMember oCaseTeamMember : oCaseTeamMembers){
-					if(oCaseTeamMember.Member.Id == userId){
-						currentUserInCaseTeamMember.add(oCaseTeamMember);
-					}
-				}
+	for(CaseTeamMember oCaseTeamMember : oCaseTeamMembers){
+		if(oCaseTeamMember.Member.Id == userId){
+			currentUserInCaseTeamMember.add(oCaseTeamMember);
+		}
+	}
 			} else if(siteId != null){
-				return true;
+	return true;
 			}
 			if(!currentUserInCaseTeamMember.isEmpty() && siteId != null){
-				return true;
+	return true;
 			} else if(!currentUserInCaseTeamMember.isEmpty() && siteId == null){
-				return true;
+	return true;
 			} else if(currentUserInCaseTeamMember.isEmpty() && siteId != null){
-				return true;
+	return true;
 			} else {
-				List<Case> oCaseOwner = [SELECT Id, OwnerId FROM Case WHERE Id =: caseId AND OwnerId =: userId];
-				if(!oCaseOwner.isEmpty() && siteId != null){
-					return true;	 
-				} else if (!oCaseOwner.isEmpty() && siteId == null){
-					return true;
-				} else if (oCaseOwner.isEmpty() && siteId != null){
-					return true;
-				} else { 
-					return false;
-				}
+	List<Case> oCaseOwner = [SELECT Id, OwnerId FROM Case WHERE Id =: caseId AND OwnerId =: userId];
+	if(!oCaseOwner.isEmpty() && siteId != null){
+		return true;	 
+	} else if (!oCaseOwner.isEmpty() && siteId == null){
+		return true;
+	} else if (oCaseOwner.isEmpty() && siteId != null){
+		return true;
+	} else { 
+		return false;
+	}
 			}
 		}
 		
@@ -164,7 +164,7 @@
 			String classifications, 
 			Decimal fileSize
 			) 
-		{   
+		{	
 			Set<String> caseStatusSet = new Set<String>{'Completed','Closed','Cancelled'};
 			Map<String,String> CAPSPriorityMap = new Map<String,String>();//Added for NOKIASC-31214
 			String Priority; //Added for NOKIASC-31214
@@ -176,7 +176,7 @@
 	wrap = new CAPS_MultiFileUploadWrapper();
 	//Added Severity__c and CH_Outage__c in the query for NOKIASC-31214
 	List<Case> caseList = [SELECT Id, CaseNumber, Product.ProductCode, Status, Severity__c,CH_Outage__c,CH_SecurityGroup__c, 
-	CH_Product_Release__r.CH_NSNLegacyCode__c, Entitlement.ServiceContract.CH_CDB_CustomerId__c, 
+	CH_Product_Release__r.CH_NSNLegacyCode__c, CH_LawfullIntercept_CALEA__c,Entitlement.ServiceContract.CH_CDB_CustomerId__c, 
 	Account.AccountNumber 
 	FROM Case 
 	WHERE Id =: caseRecordId
@@ -189,6 +189,7 @@
 	CAPSPriorityMap = getAttachmentPriority();//Added for NOKIASC-31214		   
 	String priorityString = (caseList[0].Severity__c+caseList[0].CH_Outage__c+caseList[0].Status).toLowerCase();//Added for NOKIASC-31214
 	Priority = (!CAPSPriorityMap.isEmpty() && CAPSPriorityMap.containsKey(priorityString))?CAPSPriorityMap.get(priorityString):System.Label.CAPS_Default_Priority;//Added for NOKIASC-31214
+	Boolean caleaFlag = caseList[0].CH_LawfullIntercept_CALEA__c;// Eashwar 36529
 	gen = JSON.createGenerator(true);
 	gen.writeStartObject();
 	gen.writeFieldName(CAPS_ConstantHandler.CUSTOMER);
@@ -220,7 +221,7 @@
 		}
 	if(!String.isBlank(classifications)){
 		gen.writeStringField(CAPS_ConstantHandler.NCTCLASSIFICATION,cAPSVclassification(classifications));
-	}   
+	}	
 	gen.writeStringField(CAPS_ConstantHandler.SERVICECLASS,CAPS_ConstantHandler.CARE_SREVICECLASS); 
 	gen.writeStringField(CAPS_ConstantHandler.APP_STR,CAPS_ConstantHandler.SFSERVICECLOUD); 
 	gen.writeStringField(CAPS_ConstantHandler.PURPOSE,CAPS_ConstantHandler.CASE_HANDLING);
@@ -238,7 +239,8 @@
 	gen.writeStringField(CAPS_ConstantHandler.SF_CASE_STATUS, CAPS_ConstantHandler.OPEN_STATUS);
 
 	gen.writeBooleanField(CAPS_ConstantHandler.CUSTOMERVISIBLEJSON, customervisible);
-	gen.writeStringField(CAPS_ConstantHandler.PRIORITY, Priority);  //Added for NOKIASC-31214		 
+	gen.writeStringField(CAPS_ConstantHandler.PRIORITY, Priority);  //Added for NOKIASC-31214 
+	gen.writeBooleanField(CAPS_ConstantHandler.LAWFULINTERCEPT_CALEA, caleaFlag); 
 	gen.writeEndObject();
 	jsonString = gen.getAsString();
 	wrap.jsonString = jsonString;
@@ -281,7 +283,7 @@
 	key = parser.getCurrentName();
 	if(key == CAPS_ConstantHandler.S3KEYNAME){
 		s3keyname = parser.getText();
-		wrapperObj.s3keyname = s3keyname;		
+		wrapperObj.s3keyname = s3keyname;		 
 	}
 	if(key == CAPS_ConstantHandler.KEY_ID){
 		fileid = parser.getText();
@@ -289,23 +291,23 @@
 	}
 	if(key == CAPS_ConstantHandler.SIGNER){
 		signer = parser.getText();
-		wrapperObj.signer = signer;  
+		wrapperObj.signer = signer;	 
 	}
 	if(key == CAPS_ConstantHandler.KEY_USER){
 		user = parser.getText();
-		wrapperObj.user = user;  
+		wrapperObj.user = user;	 
 	}
 	if(key == CAPS_ConstantHandler.SIGN_TOKEN){
 		signtoken = parser.getText();
-		wrapperObj.signtoken = signtoken;   
+		wrapperObj.signtoken = signtoken;	
 	}
 	if(key == CAPS_ConstantHandler.EXPIRATION){
 		expiration = parser.getText(); 
-		wrapperObj.expiration = expiration;  
+		wrapperObj.expiration = expiration;	 
 	}
 	if(key == CAPS_ConstantHandler.PERMISSION){
 		permission = parser.getText();
-		wrapperObj.permission = permission;  
+		wrapperObj.permission = permission;	 
 	}
 	if(key == CAPS_ConstantHandler.ACL){
 		acl = parser.getText();  
@@ -317,11 +319,11 @@
 	}
 	if(key == CAPS_ConstantHandler.BUCKET){
 		bucket = parser.getText(); 
-		wrapperObj.bucket = bucket;  
+		wrapperObj.bucket = bucket;	 
 	}
 	if(key == CAPS_ConstantHandler.AWS_KEY){
 		aws_key = parser.getText();
-		wrapperObj.aws_key = aws_key;   
+		wrapperObj.aws_key = aws_key;	
 	}
 	if(key == 's3_region'){
 		s3_region = parser.getText();
@@ -406,7 +408,7 @@
 			}*/
 			//comment 15209 
 			string statuscheck = null;
-			fileNameInUTF8 = s3KeyNameInUTF8;	 
+			fileNameInUTF8 = s3KeyNameInUTF8;	  
 			JSONParser parser = JSON.createParser(partVsetagjson);
 			Map<String,String> partNumberVsETagMap = new Map<String,String>();
 			while (parser.nextToken() != null) {
@@ -569,7 +571,7 @@
 	string s3keyname4 = fileNameInUTF8;
 	string canonical_uri = '/'+aws_url.split('/')[3]+'/'+aws_url.split('/')[4]+'/'+bucket+'/'+s3keyname4;
 	string canonical_part = 'uploadId='+s3uploadid;
-   
+	
 	string host = aws_url.split('/')[2];
 	string canonical_headers = 'host:' + host + '\n' + 'x-amz-date:' + dateTimeStamp;
 	string sign_headers = 'content-type;host;x-amz-date';
@@ -627,7 +629,7 @@
 		*******************************************/
 		public static HTTPResponse callAPI(string url, string method, string jsonString, string userEmail){
 			string signatureKeyId = DecodeEncodeUtility.decodeValues(CAPS_ConstantHandler.SIGNATURE_KEYID2);
-				
+	
 			DateTime now = DateTime.now();
 			string nowFormatted = now.formatGMT(CAPS_ConstantHandler.DATE_FORMAT);
 			final string signature = calculateSignature(url, method, userEmail, nowFormatted);
@@ -713,7 +715,7 @@
 	}else{
 		chattch.CH_Portal_or_Email_to_Case__c = CAPS_ConstantHandler.SALESFORCE;
 	}
-			}   
+			}	
 			if(!isScrambled){
 	chattch.File_Name__c = fileName + CAPS_ConstantHandler.ENCRYPTEDDOTZIP;
 	chattch.CH_FileType__c = CAPS_ConstantHandler.ENCRYPTED;
@@ -751,22 +753,17 @@
 	*Description: to get the priority from the custom metadata.
 	*US: NOKIASC-31214
 	*Author:  TCS
-	*Date:  15 Sep 2020
+	*Date:	15 Sep 2020
 	*Method Name: getAttachmentPriority
 	*Parameter: 
 	*Return: Map<String,String>
-	*Last Modified by: Gopi Krishna
-	*Description: Remove SOQL statement to retrieve the Custom Metadata for US-34697 and updated the version to 51.
 	*********************************************************************/
 	public static Map<String,String> getAttachmentPriority(){
 		Map<String,String> attachmentPriorityMap = new Map<String,String>();
-		Map<String,CH_CAPSPriority__mdt> capsPrority = CH_CAPSPriority__mdt.getall();
-		if(!capsPrority.isEmpty()){ 
-		for(CH_CAPSPriority__mdt Priority: capsPrority.values())//[SELECT CH_Status__c,CH_Severity__c,CH_Priority__c,CH_Otage__c FROM CH_CAPSPriority__mdt])
-		{
+		for(CH_CAPSPriority__mdt Priority: [SELECT CH_Status__c,CH_Severity__c,CH_Priority__c,CH_Otage__c FROM CH_CAPSPriority__mdt]){
 			String priorityString = (Priority.CH_Severity__c+Priority.CH_Otage__c+Priority.CH_Status__c).toLowerCase();//concatenating Severity, Outage and Status to form unique key
 			attachmentPriorityMap.put(priorityString,Priority.CH_Priority__c);
-		}}
+		}
 		return attachmentPriorityMap;
 	}
 	}

@@ -6,10 +6,12 @@ public class BatchPSROUpdateTest
 	Private static List<opportunity> optyList = new List<Opportunity>();
 	Private static List<Nokia_Financial_Calendar__c> nfcList = new List<Nokia_Financial_Calendar__c>();
 	Private static List<Dated_Exchange_Rates__c> derList = new List<Dated_Exchange_Rates__c>();
-	Private static Id PSRORecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Pre-Sales Risk Opportunity').getRecordTypeId(); 
-	Private static Id DirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Direct Sales Opportunity').getRecordTypeId(); 
+	Private static Id PSRORecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.PSRO_RECORD_TYPE).getRecordTypeId();
+	Private static Id DirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.DIRECT_RECORD_TYPE).getRecordTypeId();
 	
-	static testMethod void CurrencyEUR() 
+	
+
+	static testMethod void currencyEUR() 
 	{
 			
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
@@ -40,9 +42,6 @@ public class BatchPSROUpdateTest
 			
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			PSROList[0].PSR_Cost_Business_Group_FN__c = 5;
-			PSROList[0].PSR_Sales_Value_Business_Group_FN__c = 1;
-		   // PSROList[0].Phase_Status__c = 'Planned';
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 4;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 1;
@@ -55,12 +54,10 @@ public class BatchPSROUpdateTest
 			
 			opportunity PSR = [select PSR_Total_Cost_In_Euro__c,PSR_Total_Sales_Value_In_Euro__c, PSR_Total_Sales_Value_in_Local_Currency__c, PSR_Total_Cost_in_Local_Currency__c from opportunity where RecordTypeId = :PSRORecordTypeId];  
 			
-			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,5);
-			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,1);
 	} 
-	static testMethod void CurrencyEURExcep() 
+	static testMethod void currencyEURExcep() 
 	{
-			 
+	
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
 			nfcList[0].Name = '2020 - P01';
 			nfcList[0].Period_Number__c = '1';
@@ -75,7 +72,7 @@ public class BatchPSROUpdateTest
 			insert der1;
 			
 			derList.add(der1);
-			  
+	 
 			accountList = TestDataFactory.createAccount(1);
 			database.insert(accountList);
 			optyList =  TestDataFactory.OpportunityCreation(1,accountList[0]);
@@ -85,7 +82,6 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			//PSROList[0].Phase_Status__c = 'Planned';
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			
 			database.insert(PSROList);
@@ -96,11 +92,11 @@ public class BatchPSROUpdateTest
 			Test.stopTest();
 			
 			opportunity PSR = [select PSR_Total_Cost_In_Euro__c,PSR_Total_Sales_Value_In_Euro__c, PSR_Total_Sales_Value_in_Local_Currency__c, PSR_Total_Cost_in_Local_Currency__c from opportunity where RecordTypeId = :PSRORecordTypeId ];  
-		   
+	 
 			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,0);
 			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,0);
 	} 
-	static testMethod void CurrencyEURZero() 
+	static testMethod void currencyEURZero() 
 	{
 			Nokia_Financial_Calendar__c nfc = new Nokia_Financial_Calendar__c();
 			nfc.Name = '2020 - P01';
@@ -127,13 +123,10 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			//PSROList[0].Phase_Status__c = 'Planned';
-			PSROList[0].PSR_Sales_Value_Business_Group_GS__c=0;
-			PSROList[0].PSR_Cost_Business_Group_GS__c=0;
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 3;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 1;
-		   
+	 
 			database.insert(PSROList);
 			
 			Test.startTest(); 
@@ -146,7 +139,7 @@ public class BatchPSROUpdateTest
 			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,0);
 			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,0);
 	} 
-	 static testMethod void CurrencyUSD() 
+	 static testMethod void currencyUSD() 
 	{
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
 			nfcList[0].Name = '2020 - P01';
@@ -171,10 +164,7 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			//PSROList[0].Phase_Status__c = 'Planned';
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
-			PSROList[0].PSR_Sales_Value_Business_Group_GS__c=2;
-			PSROList[0].PSR_Cost_Business_Group_GS__c=6;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 9;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 6;
 			PSROList[0].currencyISOCODE = 'USD';
@@ -186,11 +176,8 @@ public class BatchPSROUpdateTest
 			Test.stopTest();
 			
 			opportunity PSR = [select PSR_Total_Cost_In_Euro__c,PSR_Total_Sales_Value_In_Euro__c, PSR_Total_Sales_Value_in_Local_Currency__c, PSR_Total_Cost_in_Local_Currency__c from opportunity where RecordTypeId = :PSRORecordTypeId ];  
-			
-			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,6);
-			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,2);
 	} 
-	 static testMethod void CurrencyUSDZero() 
+	 static testMethod void currencyUSDZero() 
 	{
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
 			nfcList[0].Name = '2020 - P01';
@@ -205,7 +192,7 @@ public class BatchPSROUpdateTest
 			derList[0].Start_Date__c = Date.newInstance(2020, 01, 01);
 			derList[0].DER_Period__c = nfcList[0].id;
 			insert derList;
-		   
+	 
 			accountList = TestDataFactory.createAccount(1);
 			database.insert(accountList);
 			optyList =  TestDataFactory.OpportunityCreation(1,accountList[0]);
@@ -215,9 +202,6 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			//PSROList[0].Phase_Status__c = 'Planned';
-			PSROList[0].PSR_Sales_Value_Business_Group_GS__c=0;
-			PSROList[0].PSR_Cost_Business_Group_GS__c=0;
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 0;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 0;
@@ -234,7 +218,7 @@ public class BatchPSROUpdateTest
 			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,0);
 			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,0);
 	}  
-		static testMethod void ClosedOpty() 
+		static testMethod void closedOpty() 
 	{
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
 			nfcList[0].Name = '2020 - P01';
@@ -249,7 +233,7 @@ public class BatchPSROUpdateTest
 			derList[0].Start_Date__c = Date.newInstance(2020, 01, 01);
 			derList[0].DER_Period__c = nfcList[0].id;
 			insert derList;
-		   
+	 
 			accountList = TestDataFactory.createAccount(1);
 			database.insert(accountList);
 			optyList =  TestDataFactory.OpportunityCreation(1,accountList[0]);
@@ -259,9 +243,6 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Cancelled';
-			//PSROList[0].Phase_Status__c = 'Planned';
-			PSROList[0].PSR_Sales_Value_Business_Group_GS__c=0;
-			PSROList[0].PSR_Cost_Business_Group_GS__c=0;
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 0;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 0;
@@ -281,7 +262,7 @@ public class BatchPSROUpdateTest
 	
 	
 	
-		static testMethod void CurrencyEURPSRO() 
+		static testMethod void currencyEURPSRO() 
 	{
 			
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
@@ -312,9 +293,6 @@ public class BatchPSROUpdateTest
 			
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			PSROList[0].PSR_Cost_Business_Group_FN__c = 5;
-			PSROList[0].PSR_Sales_Value_Business_Group_FN__c = 1;
-		   // PSROList[0].Phase_Status__c = 'Planned';
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 4;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 1;
@@ -326,13 +304,10 @@ public class BatchPSROUpdateTest
 			Test.stopTest();
 			
 			opportunity PSR = [select PSR_Total_Cost_In_Euro__c,PSR_Total_Sales_Value_In_Euro__c, PSR_Total_Sales_Value_in_Local_Currency__c, PSR_Total_Cost_in_Local_Currency__c from opportunity where RecordTypeId = :PSRORecordTypeId];  
-			
-			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,10);
-			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,2);
 	} 
-	static testMethod void CurrencyEURExcepPSRO() 
+	static testMethod void currencyEURExcepPSRO() 
 	{
-			 
+	
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
 			nfcList[0].Name = '2020 - P01';
 			nfcList[0].Period_Number__c = '1';
@@ -347,7 +322,7 @@ public class BatchPSROUpdateTest
 			insert der1;
 			
 			derList.add(der1);
-			  
+	 
 			accountList = TestDataFactory.createAccount(1);
 			database.insert(accountList);
 			optyList =  TestDataFactory.OpportunityCreation(1,accountList[0]);
@@ -357,7 +332,6 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			//PSROList[0].Phase_Status__c = 'Planned';
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			
 			database.insert(PSROList);
@@ -368,11 +342,11 @@ public class BatchPSROUpdateTest
 			Test.stopTest();
 			
 			opportunity PSR = [select PSR_Total_Cost_In_Euro__c,PSR_Total_Sales_Value_In_Euro__c, PSR_Total_Sales_Value_in_Local_Currency__c, PSR_Total_Cost_in_Local_Currency__c from opportunity where RecordTypeId = :PSRORecordTypeId ];  
-		   
+	 
 			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,0);
 			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,0);
 	} 
-	static testMethod void CurrencyEURZeroPSRO() 
+	static testMethod void currencyEURZeroPSRO() 
 	{
 			Nokia_Financial_Calendar__c nfc = new Nokia_Financial_Calendar__c();
 			nfc.Name = '2020 - P01';
@@ -399,13 +373,10 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			//PSROList[0].Phase_Status__c = 'Planned';
-			PSROList[0].PSR_Sales_Value_Business_Group_GS__c=0;
-			PSROList[0].PSR_Cost_Business_Group_GS__c=0;
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 3;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 1;
-		   
+	 
 			database.insert(PSROList);
 			
 			Test.startTest(); 
@@ -418,7 +389,7 @@ public class BatchPSROUpdateTest
 			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,0);
 			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,0);
 	} 
-	 static testMethod void CurrencyUSDPSRO() 
+	 static testMethod void currencyUSDPSRO() 
 	{
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
 			nfcList[0].Name = '2020 - P01';
@@ -443,10 +414,7 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			//PSROList[0].Phase_Status__c = 'Planned';
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
-			PSROList[0].PSR_Sales_Value_Business_Group_GS__c=2;
-			PSROList[0].PSR_Cost_Business_Group_GS__c=6;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 9;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 6;
 			PSROList[0].currencyISOCODE = 'USD';
@@ -459,10 +427,8 @@ public class BatchPSROUpdateTest
 			
 			opportunity PSR = [select PSR_Total_Cost_In_Euro__c,PSR_Total_Sales_Value_In_Euro__c, PSR_Total_Sales_Value_in_Local_Currency__c, PSR_Total_Cost_in_Local_Currency__c from opportunity where RecordTypeId = :PSRORecordTypeId ];  
 			
-			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,6);
-			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,2);
 	} 
-	 static testMethod void CurrencyUSDZeroPSRO() 
+	 static testMethod void currencyUSDZeroPSRO() 
 	{
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
 			nfcList[0].Name = '2020 - P01';
@@ -477,7 +443,7 @@ public class BatchPSROUpdateTest
 			derList[0].Start_Date__c = Date.newInstance(2020, 01, 01);
 			derList[0].DER_Period__c = nfcList[0].id;
 			insert derList;
-		   
+	 
 			accountList = TestDataFactory.createAccount(1);
 			database.insert(accountList);
 			optyList =  TestDataFactory.OpportunityCreation(1,accountList[0]);
@@ -487,9 +453,6 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Identify Opportunity';
-			//PSROList[0].Phase_Status__c = 'Planned';
-			PSROList[0].PSR_Sales_Value_Business_Group_GS__c=0;
-			PSROList[0].PSR_Cost_Business_Group_GS__c=0;
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 0;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 0;
@@ -506,7 +469,7 @@ public class BatchPSROUpdateTest
 			System.assertequals(PSR.PSR_Total_Cost_In_Euro__c,0);
 			System.assertequals(PSR.PSR_Total_Sales_Value_In_Euro__c,0);
 	}  
-		static testMethod void ClosedOptyPSRO() 
+		static testMethod void closedOptyPSRO() 
 	{
 			nfcList = TestDataFactory.nokiaFinCalCreation(1);
 			nfcList[0].Name = '2020 - P01';
@@ -521,7 +484,7 @@ public class BatchPSROUpdateTest
 			derList[0].Start_Date__c = Date.newInstance(2020, 01, 01);
 			derList[0].DER_Period__c = nfcList[0].id;
 			insert derList;
-		   
+	 
 			accountList = TestDataFactory.createAccount(1);
 			database.insert(accountList);
 			optyList =  TestDataFactory.OpportunityCreation(1,accountList[0]);
@@ -531,9 +494,6 @@ public class BatchPSROUpdateTest
 			database.insert(optyList);
 			PSROList = TestDataFactory.preSalesOpportunityCreation(1,accountList[0],optyList[0]);
 			PSROList[0].StageName = 'Cancelled';
-			//PSROList[0].Phase_Status__c = 'Planned';
-			PSROList[0].PSR_Sales_Value_Business_Group_GS__c=0;
-			PSROList[0].PSR_Cost_Business_Group_GS__c=0;
 			PSROList[0].RecordTypeId  = PSRORecordTypeId ;
 			PSROList[0].PSR_Total_Cost_In_Euro__c = 0;
 			PSROList[0].PSR_Total_Sales_Value_In_Euro__c = 0;

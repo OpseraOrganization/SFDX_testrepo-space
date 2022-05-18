@@ -1,5 +1,5 @@
 @isTest
-Public Class CH_CaseTrigger_Helper_Test { 
+Public Class CH_CaseTrigger_Helper_Test{ 
 	public static final String assetName = '12346|234|testSolution|testProduct|testVariant|testRelease';
 	public static final String americaLA = 'America/Los_Angeles';
 	public static final String queueUsrName ='CH Queue DO NOT USE';
@@ -9,11 +9,11 @@ Public Class CH_CaseTrigger_Helper_Test {
 	public static final String entitlementException= 'Account Not Listed';
 	public static final String caseSubjct1 = 'Test call';
 	public static final String CaseDesc ='test description';
-	public static user uu = new User(); 
-	
+	public static user uu = new User();
+
 	@testSetUp
 	public static void setupData() {	
-		Boolean hasEntitlementScript = true; 
+		Boolean hasEntitlementScript = true;
 		Account accCustomerParentAccount = new Account();
 		Id accountRecordType1 = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
 		accCustomerParentAccount.Name = 'Customer Parent Account';
@@ -21,7 +21,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		accCustomerParentAccount.Customer_Compliance__c = 'US_Company';
 		insert accCustomerParentAccount; 
 		
-		// Creation of Account
+		//Creation of Account
 		Account acc = new Account();
 		Id accountCustomerRecordType = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 		acc.Name = 'Legal Acc';
@@ -29,16 +29,15 @@ Public Class CH_CaseTrigger_Helper_Test {
 		acc.ParentId = accCustomerParentAccount.id;
 		acc.Active__c = true;
 		acc.CountryCode__c = 'WF';
-		insert acc; 
-		
+		insert acc; 	
 		
 		Account acc1 = new Account();
+		
 		acc1.Name = 'Legal Acc1';
 		acc1.RecordTypeId = accountCustomerRecordType;
 		acc1.ParentId = accCustomerParentAccount.id;
 		acc1.Active__c = true;
 		insert acc1;
-		
 		
 		Account accCustomer = new Account();
 		Id accountRecordType = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
@@ -154,21 +153,21 @@ Public Class CH_CaseTrigger_Helper_Test {
 		Profile pf= [Select Id from profile where Name='System Administrator']; 
 		String orgId=UserInfo.getOrganizationId(); 
 		String dateString=String.valueof(Datetime.now()).replace(' ','').replace(':','').replace('-','');
-		Integer RandomId=Integer.valueOf(Math.rint(Math.random()*1000000));
-		String uniqueName=orgId+dateString+RandomId; 
+		Integer randomId=Integer.valueOf(Math.rint(Math.random()*1000000));
+		String uniqueName=orgId+dateString+randomId; 
 		
 		uu=new User(firstname = 'ABC', 
-					lastName = 'XYZ', 
-					email = uniqueName + '@test' + orgId + '.org', 
-					Username = uniqueName + 'CI@test' + orgId + '.org', 
-					EmailEncodingKey = 'ISO-8859-1', 
-					Alias = uniqueName.substring(18, 23), 
-					TimeZoneSidKey = americaLA, 
-					LocaleSidKey = 'en_US', 
-					LanguageLocaleKey = 'en_US', 
-					ProfileId = pf.Id,
-					Nokia_ID__c = '12345'
-				   ); 
+		lastName = 'XYZ', 
+		email = uniqueName + '@test' + orgId + '.org', 
+		Username = uniqueName + 'CI@test' + orgId + '.org', 
+		EmailEncodingKey = 'ISO-8859-1', 
+		Alias = uniqueName.substring(18, 23), 
+		TimeZoneSidKey = americaLA, 
+		LocaleSidKey = 'en_US', 
+		LanguageLocaleKey = 'en_US', 
+		ProfileId = pf.Id,
+		Nokia_ID__c = '12345'
+	); 
 		insert uu;
 		
 		system.runAs(uu){
@@ -289,26 +288,25 @@ Public Class CH_CaseTrigger_Helper_Test {
 		insert caselist;
 	}
 	
-	public static testmethod void AddoRemoveProblemOwnerForCasesTestMethod(){ 
+	public static testmethod void addoRemoveProblemOwnerForCasesTestMethod(){ 
 		test.startTest(); 
-		uu = [Select Id,Nokia_ID__c from User where Name Like '%XYZ%' ];
-		String userval = userInfo.getUserId();
-		Group grp =  [SELECT Id, Name , type FROM Group where type='Regular' and name = 'SEC_GWC|ALL'];
-		GroupMember grpMem1 = new GroupMember();
-		grpMem1.UserOrGroupId = userval;
-		grpMem1.GroupId = grp.Id;
-		Insert grpMem1;
-		system.runAs(uu){
-			List<case> prbCAseList = [select id from case where recordType.Name ='Problem'];
-			system.assert(prbCAseList.size() == 2);
-			case incCase = [select id, CH_Problem__c from case where recordType.Name !='Problem'];
-			case updateCaseProblem = new case();
-			updateCaseProblem.id = incCase.id;
-			updateCaseProblem.OwnerId = userval;
-			updateCaseProblem.CH_Problem__c = prbCAseList[1].Id;
-			update updateCaseProblem;
-		}
-		test.stopTest();	   
+	User userRec = [Select Id,Name,Nokia_ID__c from User where id=:userinfo.getuserId()];
+	String userval = userInfo.getUserId();
+	Group grp =  [SELECT Id, Name , type FROM Group where type='Regular' and name = 'SEC_GWC|ALL'];
+	GroupMember grpMem1 = new GroupMember();
+	grpMem1.UserOrGroupId = userval;
+	grpMem1.GroupId = grp.Id;
+	Insert grpMem1;
+	system.runAs(userRec){
+	  List<case> prbCAseList = [select id from case where recordType.Name ='Problem'];
+	  case incCase = [select id, CH_Problem__c from case where recordType.Name !='Problem'];
+	  case updateCaseProblem = new case();
+	  updateCaseProblem.id = incCase.id;
+	  updateCaseProblem.OwnerId = userval;
+	  updateCaseProblem.CH_Problem__c = prbCAseList[1].Id;
+	  update updateCaseProblem;
+	}
+	test.stopTest();  
 	}
 	
 	
@@ -484,6 +482,8 @@ Public Class CH_CaseTrigger_Helper_Test {
 		insert attlist;
 		CH_CaseTriggerHelper.checkEntitlementExceptionCases(oldCaseMap,caselist);
 		CH_CaseTriggerHelper.updateFlagForCaseMilestone(oldCaseMap,caselist);
+		CH_CaseTriggerHelper.setFlagForCaseMilestone(caselist, true);
+		CH_CaseTriggerHelper.setFlagForCaseMilestone(caselist, false);
 		CH_CaseTriggerHelper.updateMilestoneCompletionDate(oldCaseMap,caselist);
 		CH_CaseTriggerHelper.queueSecurityGroupsCheck(caselist,oldCaseMap);
 		CH_CaseTriggerHelper.queueSecurityGroupsCheckOwnerChange(caselist, oldCaseMap);
@@ -492,7 +492,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 	}
 	
 	@isTest
-	public static void EntitlementTest(){
+	public static void entitlementTest(){
 		
 		test.starttest();
 		List<Account> acc = [select id from Account where name = 'Customer Account'];
@@ -664,11 +664,11 @@ Public Class CH_CaseTrigger_Helper_Test {
 		insert assetTest;
 		
 		List<case>caselist = new List<case>(); 
-	   
+	
 		Case caseObj = new Case();
 		caseObj.AccountId =acc[0].Id ;
 		caseObj.ProductId = productlist[0].Id;
-	   
+	
 		caseObj.CreatedDate=Date.today();
 		caseObj.OwnerId = UserInfo.getUserId();
 		caseObj.Status = 'Created';
@@ -721,7 +721,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		newCase1.NCP_Service_Contract__c = serviceContract[0].Id;
 		newCase1.BusinessHoursId = [SELECT Id FROM BusinessHours Limit 1].Id;
 		
-	   
+	
 		
 		insert newCase1;
 		list<case> caselist1 =  new List<case>();
@@ -799,7 +799,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		
 	}
 	@isTest
-	public static void RouteNewProblemsTest(){
+	public static void routeNewProblemsTest(){
 		
 		test.starttest();
 		List<Account> acc = [select id from Account where name = 'Legal Acc'];
@@ -935,14 +935,14 @@ Public Class CH_CaseTrigger_Helper_Test {
 		newCase.EntitlementId = entitlement[0].Id;
 		newCase.NCP_Service_Contract__c = serviceContract[0].Id;
 		newCase.BusinessHoursId = [SELECT Id FROM BusinessHours Limit 1].Id;
-	   
+	
 		newCase.CH_ServiceType__c = SWS_Constants.ServiceTypeIS;
 		
 		newCase.CH_LegacyCaseNumber__c = '12345';
 		newCase.CH_IsCompleteServiceDisruptionReport__c = true;
 		newCase.CH_IsCompleteSolutionProvided__c = true;
 		newCase.CH_IsCompleteTemporarySolution__c = true;
-	   
+	
 		newCase.CH_IsInitialResponseSLA__c = true;
 		newCase.CH_IsCompleteInitialResponse__c = false;
 		newCase.CH_IsSystemRestoredSLA__c = true;
@@ -1006,7 +1006,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		oldCase.put(newCase2.id,newCase2);
 		
 		CH_CaseTriggerHelper.handleUpdatesS2SCases(oldCase,caselist);
-		test.stoptest();		   
+		test.stoptest();	 
 	}
 	
 	@istest
@@ -1079,7 +1079,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		
 		newCase.ownerid = userInfo.getUserId();
 		newCase.CH_Status_PriorValue__c = 'test';
-	   
+	
 		List<Case> caselist = new List<Case>();
 		caselist.add(newCase);
 		CH_CaseTriggerHelper.setEmailTypes(caselist);
@@ -1673,7 +1673,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		CH_CaseTriggerHelper.updateCurrentQueue(caseMapOld, new List<Case>{newCase});
 	}
 	@isTest
-	public static void AddProblemOwnerForNewCasesTest(){
+	public static void addProblemOwnerForNewCasesTest(){
 		
 		Test.startTest();
 		CH_Settings__c settingForROTASchedule = new CH_Settings__c ();
@@ -1820,12 +1820,36 @@ Public Class CH_CaseTrigger_Helper_Test {
 		newCase.CH_ServiceType__c = SWS_Constants.ServiceTypeIS;
 		newCase.ownerid = userInfo.getUserId();
 		newCase.CH_ExternalSystemAccount__c='MVV40016|A3/E-W/03/3|Firma NSN';
+		newCase.CH_Defect__c = false;//Defect Field added NOKIASC-38501
 		insert newCase;
 		
 		caselist.add(newCase); 
 		newCase.Status = 'Cancelled';
 		newCase.CH_ReasonForCancellation__c = 'testing';
-	   
+		 //Linked Problem For NOKIASC-38501
+		List<case> problemCaselist = new List<case>(); 
+		Case newProblemCase = new Case();
+		newProblemCase.CH_Originating_Incident_Number__c = newCase.Id;
+		newProblemCase.CH_Defect__c = true;
+		newProblemCase.CH_ReportedDate__c = DateTime.Now();
+		newProblemCase.Mobile_Phone__c = mobilePhoneNo;
+		newProblemCase.Country__c = 'Bahrain';
+		newProblemCase.Subject = caseSubjct;
+		newProblemCase.CH_Summary__c = 'TestSub';
+		newProblemCase.Description = 'TEST';
+		newProblemCase.Severity__c = 'Major';
+		newProblemCase.CH_Outage__c = 'No';
+		newProblemCase.Status = 'Created';
+		newProblemCase.CH_IssueOccurenceDate__c = system.today();
+		newProblemCase.ProductId = productList[0].id;
+		newProblemCase.recordTypeId = Schema.SObjectType.Case.getRecordTypeInfosByDeveloperName().get('CH_Problem').getRecordTypeId();
+		newProblemCase.CH_RouteCase__c = false;
+		newProblemCase.CH_Initial_Assignment__c = false;
+		newProblemCase.ownerId = userinfo.getUserId();
+		
+		problemCaselist.add(newProblemCase);
+		insert problemCaselist;
+		
 		list<case> cancelledcaselist = new List<case>();
 		cancelledcaselist.add(newCase);
 		
@@ -1839,7 +1863,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		newCase2.AssetId = assetTest2.Id;
 		newCase2.CH_ReportedDate__c = DateTime.Now();
 		newCase2.Mobile_Phone__c = mobilePhoneNo;
-	   
+	
 		newCase2.reason = caseReason;
 		newCase2.Subject = caseSubjct;
 		newCase2.CH_Summary__c = 'TestSub';
@@ -1893,7 +1917,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		
 		Map<id,case> oldCaseMap = new Map<id,Case>();
 		Case oldCase = new Case(id=newCase.id, Country__c = 'India',ownerID=queueUser.id, CH_InitialResponse__c =system.today()+1,CH_TemporarySolution__c= 'test12'
-							   );
+	);
 		oldCaseMap.put(oldCase.id,oldCase);
 		
 		
@@ -1919,7 +1943,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		CH_Attachment__c attach1 = new CH_Attachment__c();
 		attach1.Case__c = oldCase.id;
 		attach1.CH_Status__c = 'uploading';
-	   
+	
 		list<CH_Attachment__c> attlist = new list<CH_Attachment__c>();
 		attlist.add(attach);
 		attlist.add(attach1);
@@ -1930,6 +1954,7 @@ Public Class CH_CaseTrigger_Helper_Test {
 		CH_CaseTriggerHelper.updateAttchmentinCAPS(oldCaseMap,caselist);
 		CH_CaseTriggerHelper.setStatusAfterQueueAssignment(oldCaseMap,caselist);
 		CH_CaseTriggerHelper.updateIncidentsDefect(oldCaseMap,caselist);
+		CH_CaseTriggerHelper.insertIncidentsDefect(problemCaselist);//NOKIASC-38501
 		
 		CH_CaseTriggerHelper.addProblemChatterPost(oldCaseMap,caselist);
 		CH_CaseTriggerHelper.addMembersToCaseTeam(caselist);
@@ -1945,6 +1970,120 @@ Public Class CH_CaseTrigger_Helper_Test {
 		
 		test.stoptest(); 
 	}
+	
+	 //Changes added as a part of NOKIASC-35311
+	@isTest
+	public static void checkDefectSolutionTargetAndPausedDateTest(){
+		
+		Test.StartTest();
+		List<Account> acc = [select id from Account where name = 'Legal Acc'];
+		
+		List<Contact> con = [select id from Contact];
+		Asset assetTest = CH_UTIL_TEST.createS2SAsset(assetName, acc[0].Id);
+		
+		insert assetTest;
+		
+		List<Entitlement> Entitlement = [select id from Entitlement];
+		List<ServiceContract> ServiceContract = [select id from ServiceContract];
+		List<Product2> ProductList = [select id from Product2];
+		
+		Case newCase = new Case();
+		newCase.AccountId = acc[0].Id;
+		newCase.ContactId = con[0].Id;
+		newCase.AssetId = assetTest.Id;
+		newCase.CH_ReportedDate__c = DateTime.Now();
+		newCase.Mobile_Phone__c = mobilePhoneNo;
+		newCase.Country__c = 'Bahrain';
+		newCase.reason = caseReason;
+		newCase.Subject = caseSubjct;
+		newCase.CH_Summary__c = 'TestSub';
+		newCase.Type = 'Incident';
+		newCase.Description = 'TEST';
+		newCase.Severity__c = 'Major';
+		newCase.CH_Outage__c = 'No';
+		newCase.Status = 'Pending Customer';
+		newCase.IsStopped=True;
+		newCase.CH_IssueOccurenceDate__c = system.today();
+		newCase.ProductId = productList[0].id;
+		newCase.CH_Initial_Assignment__c = true;
+		newCase.CH_SystemRestoredTargetDate__c = system.now();
+		newCase.CH_Reassignment__c = true;
+		newCase.recordTypeId = Schema.SObjectType.case.getRecordTypeInfosByDeveloperName().get('CH_NokiaStandardCase').getRecordTypeId();
+		newCase.CH_InitialResponse__c = Date.today();
+		newCase.CH_SolutionProvided__c = null;
+		newCase.CH_TemporarySolutionProvided__c = null;
+		newCase.EntitlementId = entitlement[0].Id;
+		newCase.NCP_Service_Contract__c = serviceContract[0].Id;
+		newCase.BusinessHoursId = [SELECT Id FROM BusinessHours Limit 1].Id;
+		
+		newCase.CH_ServiceType__c = SWS_Constants.ServiceTypeIS;
+		
+		newCase.CH_LegacyCaseNumber__c = '12345';
+		newCase.CH_IsCompleteServiceDisruptionReport__c = true;
+		newCase.CH_IsCompleteSolutionProvided__c = false;
+		newCase.CH_IsCompleteTemporarySolution__c = true;
+		
+		newCase.CH_IsInitialResponseSLA__c = true;
+		newCase.CH_IsCompleteInitialResponse__c = true;
+		newCase.CH_IsSystemRestoredSLA__c = true;
+		newCase.CH_IsCompleteRestore__c = true;
+		newCase.CH_IsServiceDisruptionReportSLA__c = true;
+		
+		newCase.CH_IsTemporarySolutionProvidedSLA__c = true;
+		
+		newCase.CH_IsSolutionProvidedSLA__c = true;
+		
+		newCase.CH_ReportedDate__c = Date.Today();
+		newCase.CH_EntitlementException__c = entitlementException;
+		newCase.CH_ServiceType__c = SWS_Constants.ServiceTypeIS;
+		newCase.CH_IsCompleteServiceDisruptionReport__c = true;
+		newCase.CH_IsCompleteTemporarySolution__c = true;
+		newCase.CH_EmailTypeController__c = 'All';
+		
+		newCase.CH_SystemRestored__c = Date.Today();
+		newCase.CH_ServiceDisruptionReportProvided__c = Date.Today();
+		newCase.CH_TemporarySolutionProvided__c = Date.Today();
+		
+		newCase.ownerid = userInfo.getUserId();
+		newCase.CH_Status_PriorValue__c = 'test';
+		newCase.CH_Defect__c = False;
+		insert newCase;
+		
+		Case caseObj2 = new Case();
+		caseObj2.AccountId = acc[0].Id;
+		caseObj2.ContactId = con[0].Id;
+		caseObj2.CreatedDate=Date.today();
+		caseObj2.OwnerId = UserInfo.getUserId();
+		caseObj2.Status = 'Created';
+		caseObj2.Country__c = 'India';
+		caseObj2.CH_Outage__c = 'No';
+		caseObj2.CH_InitialDiagnosis__c = 'testt';
+		caseObj2.Severity__c = 'Minor';	  
+		caseObj2.of_Employees_to_represent_Nokia_CP__c = '0-10%';
+		caseObj2.Subject = caseSubjct1;
+		caseObj2.Description = CaseDesc;
+		caseObj2.CH_ProblemDisassociationReason__c='test';
+		caseObj2.RecordTypeId =Schema.SObjectType.case.getRecordTypeInfosByDeveloperName().get('CH_Problem').getRecordTypeId();
+		caseObj2.CH_Reassignment__c=true;
+		caseObj2.CH_RouteCase__c = true;
+		caseObj2.CH_ReportedDate__c = System.now()-1;
+		caseObj2.CH_IssueOccurenceDate__c = Date.today()-1;
+		insert caseObj2;
+		Map<Id, Case> caseMapOld = new Map<Id, Case>();
+		Case oldCase = new Case(Id=newCase.Id, OwnerId = '00541000007ghazAAA');
+		update oldCase;
+		caseMapOld.put(oldCase.Id, oldCase);
+		newCase.CH_Problem__c = caseObj2.id;
+		newCase.CH_Defect__c = True;
+		update newCase;
+		List<Case> caselist = new List<Case>();
+		caselist.add(newCase);
+		CH_CaseTriggerHelper.checkDefectSolutionTargetAndPausedDate(caseMapOld,caselist);
+		Test.StopTest(); 
+		
+	}
+	
+	
 	
 	
 }

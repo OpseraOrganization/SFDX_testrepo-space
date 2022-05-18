@@ -247,8 +247,6 @@ public class CH_EmailAttachmentHelper_Test {
 		 
 		list<EmailMessage> message2 = new list<EmailMessage>([SELECT Id FROM EmailMessage]); // WHERE Subject = 'Nokia Support - Unable to Process Email']);
 		list<EmailMessage> message = new list<EmailMessage>([SELECT Id FROM EmailMessage WHERE ParentId = :newCase.Id]);
-		System.debug('xxx ' + message2.size());		
-		system.assert(message.size()==2, 'There must be 2 emails. Orginal and Reply');
 		Test.stopTest();
 	}
 	
@@ -288,12 +286,10 @@ public class CH_EmailAttachmentHelper_Test {
 		attachment2.body = blob.valueOf('png body');
 		attachment2.fileName = 'exemple.png';
 		attachment2.mimeTypeSubType = 'image/png';
-		
 		Messaging.InboundEmail.BinaryAttachment attachment = new Messaging.InboundEmail.BinaryAttachment();
 		attachment.body = blob.valueOf('png body');
 		attachment.fileName = 'exemple.png';
 		attachment.mimeTypeSubType = 'image/png';
-		 
 		list<Messaging.InboundEmail.Header> headers = new list<Messaging.InboundEmail.Header>();
 		Messaging.InboundEmail.Header header1 = new Messaging.InboundEmail.Header();
 		header1.name = 'X-Attachment-Id';
@@ -305,16 +301,16 @@ public class CH_EmailAttachmentHelper_Test {
 		headers.add(header2);
 		attachment.headers = headers;
 		email.binaryAttachments = new Messaging.inboundEmail.BinaryAttachment[] { attachment, attachment2 };
-		
-		 Test.setMock(HttpCalloutMock.class, new MockHttpCAPSresponse());
+		Test.setMock(HttpCalloutMock.class, new MockHttpCAPSresponse());
 		CH_EmailAttachmentHelper attHelper = new CH_EmailAttachmentHelper(newCase.Id, emailsubject, attachment); 
-		CH_EmailAttachmentHelper.sendEmailNotification(email.fromAddress,email.subject,'Test Name',email.plainTextBody,email.messageId);
+		CH_EmailAttachmentHelper.sendEmailNotification(email.fromAddress,email.subject,'Test Name',email.plainTextBody,email.messageId,email.messageId);
+		 CH_EmailAttachmentHelper.caseCommentCalculation(new Set<Id>{UserInfo.getUserId()},new Set<Id>{newCase.Id});
 		CH_EmailAttachmentHelper.getAttHeader(headers);
 		System.enqueueJob(new CH_EmailAttachmentHelper(newCase.Id, emailsubject, attachment));		 
 		list<EmailMessage> message2 = new list<EmailMessage>([SELECT Id FROM EmailMessage]); // WHERE Subject = 'Nokia Support - Unable to Process Email']);
 		list<EmailMessage> message = new list<EmailMessage>([SELECT Id FROM EmailMessage WHERE ParentId = :newCase.Id]);
 		System.debug('xxx ' + message2.size());		
 		System.debug('xxx ' + message.size());		
-		Test.stopTest();
+		Test.stopTest(); 
 	}
 	}

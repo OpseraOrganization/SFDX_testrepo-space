@@ -50,7 +50,7 @@ public with sharing class DML_SObject_Batch implements Database.Batchable<sObjec
 		if(failedOperation != null) {
 			System.debug('###DML_SObject_Batch retry ' + failedSObjects.get(0).getSObjectType() + ' ' + DML_SObject_Helper.operationName(operationType) + ':' + failedOperation.getMessage());
 			if(currentAttempt <= RETRY_ATTEMPTS) {
-				Database.executeBatch(new DML_SObject_Batch(failedSObjects, operationType, withoutSharing, currentAttempt));
+	Database.executeBatch(new DML_SObject_Batch(failedSObjects, operationType, withoutSharing, currentAttempt));
 			}
 			else new DML_CriticalErrorHandler(failedOperation, DML_SObject_Helper.operationName(operationType) + ' and Retry Attempt('+ RETRY_ATTEMPTS +')', failedSObjects);
 		}

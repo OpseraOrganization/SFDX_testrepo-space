@@ -10,11 +10,17 @@ public without sharing class HWS_Utilty {
 	public static Map<String, Id> bhNameIdMap = new Map<String, Id>();
 	public static Map<String, String> bhTimezoneIdMap = new Map<String, String>();
 	public static List<BusinessHours> listBusinessHours = new List<BusinessHours>();
+	//Added by Eashwar for NOKIASC-37193
+	public static Integer retryCount=0;//NOKIASC-37193
+	public static Boolean fromSOOUser=false;
 	//Added by Kunal
 	public static String latitude   {get; set;}
-	public static String longitude	{get; set;}
+	public static String longitude  {get; set;}
 	public static final String classification = 'HWS Service';
-	
+	public static boolean isCallFromBulkRequest = false; // NOKIASC-37920  | true if called from bulk request
+	//NOKIASC-37150-start
+	public static final Set<String> SETLESTATUS = new Set<String>{HWS_Constants.LE_APPROVAL_PICKLIST_VALUE1,HWS_Constants.LE_APPROVAL_PICKLIST_VALUE2,HWS_Constants.LE_APPROVAL_PICKLIST_VALUE3};
+	//NOKIASC-37150-end
 	//32414
 	public static Set<String> childCaseStatusesforDuplicte = new Set<String>{'Closed','Cancelled','Delivered'};
 		//32414
@@ -38,7 +44,7 @@ public without sharing class HWS_Utilty {
 	}
 	public static Id childCaseReadOnly {
 		get {
-			if(childCaseReadOnly == null){			
+			if(childCaseReadOnly == null){		  
 				childCaseReadOnly = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_CHILD_CASE_READ_ONLY);
 			}
 			return childCaseReadOnly;
@@ -99,7 +105,7 @@ public without sharing class HWS_Utilty {
 			return esclationCase;
 		}
 		set;
-	}	
+	}   
 	
 	/****************************************
 * Name : getRecordTypeByName
@@ -113,11 +119,11 @@ public without sharing class HWS_Utilty {
 			if(getBusinessHourMap == null){  
 				getBusinessHourMap = getBusinessHouDetails();   
 			}   
-			return getBusinessHourMap;	
+			return getBusinessHourMap;  
 		}   
 		set; 
 	}
-	public static Id getRecordTypeByName(String objectName, String recordTypeName){	 
+	public static Id getRecordTypeByName(String objectName, String recordTypeName){  
 		Id recordTypeId= Schema.getGlobalDescribe().get(objectName).getDescribe().getRecordTypeInfosByDeveloperName().get(recordTypeName).getRecordTypeId();
 		
 		return recordTypeId;
@@ -133,7 +139,7 @@ public without sharing class HWS_Utilty {
 	public static List<Account> getAccounts(Set<Id> listAccIds){
 		return [
 			SELECT Id, Name, AccountNumber, Acc_No__c, Country__c, BillingCity, BillingStreet,
-			CH_Account_Name_Alias__c,CH_ParentAccountName__c,OperationalCustomerName__c
+			CH_Account_Name_Alias__c,CH_ParentAccountName__c,OperationalCustomerName__c,type
 			FROM Account WHERE Id IN :listAccIds
 		];
 	}
@@ -200,7 +206,7 @@ public without sharing class HWS_Utilty {
 		}   
 		else{   
 			//added  for PMD Error - NOKIASC-32425
-			bh = [SELECT Id,TimeZoneSidKey FROM BusinessHours WHERE Name =: '24x7' ];		
+			bh = [SELECT Id,TimeZoneSidKey FROM BusinessHours WHERE Name =: '24x7' ];	   
 		}
 
 		if(specifiedTime!='' && specifiedTime!=null){
@@ -324,7 +330,7 @@ public without sharing class HWS_Utilty {
 * Returns : List of Assets
 *****************************************/
 	//3697 - passing contactId
-	public static List<Asset> getAllServiceTypes(Set<Id> prodIds, Set<Id> accIds,String serviceType, String contractNumber, Id contactId, String country ){	 
+	public static List<Asset> getAllServiceTypes(Set<Id> prodIds, Set<Id> accIds,String serviceType, String contractNumber, Id contactId, String country ){  
 		String expired = 'Expired';
 		String inactive = 'Inactive';
 		String externalStatus = 'Active';
@@ -332,14 +338,17 @@ public without sharing class HWS_Utilty {
 		//2503 SPS Last Order Date validation started added HWS_Product_SPSLOD__c field
 		//NOKIASC-25659 for NEA count  added CH_QtyCoveredNetworkElementAssets__c field
 		//NOKIASC-32212:Added HWS_ContractLineItem__r.HWS_InvoicingType__c,HWS_ContractLineItem__r.HWS_WarrantyVerificationRequired__c,HWS_ContractLineItem__r.HWS_QuotationRequiredFlag__c
-		String assetQuery1 = 'SELECT Id,HWS_ContractLineItem__r.HWS_PONumber__c,HWS_SourceSystem__c,HWS_Product_SPSLOD__c,HWS_SpecifiedDeliveryTargetTime__c,HWS_Service_Contract_Number__c,HWS_Currency__c,HWS_Price__c,Contract_Number__c,HWS_ContractLineItem__r.Asset.Product2.Name,HWS_ContractLineItem__r.CH_ServiceOffering__c,HWS_ContractLineItem__c,HWS_ContractLineItem__r.ServiceContract.HWS_Currency__c, HWS_ContractLineItem__r.CH_LineItemEntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_EntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryCode__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryName__c,HWS_ContractLineItem__r.ServiceContractId,HWS_ContractLineItem__r.CH_CoverageGroup__c,HWS_ContractLineItem__r.HWS_AdditionalSIInfo1__c,HWS_ContractLeadTimeUnit__c,AccountId,HWS_ContractLeadTimeDuration__c,Product2Id,Product2.Name,ProductCode,'+
-			'HWS_ServiceItemCode__c,HWS_ContractLineItem__r.ServiceContract.CH_ERPSystem__c, HWS_Part_Code__c,HWS_Service_Type__c,HWS_Product_Name__c, HWS_ContractLineItem__r.CH_BusinessHour__r.Id,HWS_ServiceItemDescription__c,HWS_ServiceOffering__c,HWS_High_Level_Product_Name__c, HWS_ContractLineItem__r.CH_QtyCoveredNetworkElementAssets__c,  HWS_ContractLineItem__r.CH_CountryISOName__c,HWS_ContractLineItem__r.HWS_InvoicingType__c,HWS_ContractLineItem__r.HWS_WarrantyVerificationRequired__c,HWS_ContractLineItem__r.HWS_QuotationRequiredFlag__c FROM Asset WHERE Product2Id IN: prodIds AND AccountId IN: accIds AND (HWS_ContractLineItem__r.ServiceContract.NCP_External_Status__c =: externalStatus) AND (HWS_ContractLineItem__r.ServiceContract.Status =: externalStatus) AND HWS_ContractLineItem__r.CH_ServiceClassification__c=: classification AND HWS_ContractLineItem__r.NCP_External_Status__c=: externalStatus AND HWS_ExternalStatus__c=: externalStatus AND HWS_IsSynced__c =:sync';
+		//NOKIASC-36280 HWS_ContractLineItem__r.ServiceContract.HWS_PurchaserType__c
+		//NOKIASC-36275:New ship to party creation for Combined Ordering(Added ServiceContract.HWS_Combined_Ordering__c field)
+		//NOKIASC-37150 Added HWS_PartLEStatus__c in query and filter criteria
+		String assetQuery1 = 'SELECT Id,HWS_PartLEStatus__c,HWS_ContractLineItem__r.ServiceContract.HWS_PurchaserType__c,HWS_ContractLineItem__r.HWS_PONumber__c,HWS_SourceSystem__c,HWS_Product_SPSLOD__c,HWS_SpecifiedDeliveryTargetTime__c,HWS_Service_Contract_Number__c,HWS_Currency__c,HWS_Price__c,Contract_Number__c,HWS_ContractLineItem__r.Asset.Product2.Name,HWS_ContractLineItem__r.CH_ServiceOffering__c,HWS_ContractLineItem__c,HWS_ContractLineItem__r.ServiceContract.HWS_Currency__c, HWS_ContractLineItem__r.CH_LineItemEntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_EntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryCode__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryName__c,HWS_ContractLineItem__r.ServiceContract.HWS_Combined_Ordering__c,HWS_ContractLineItem__r.ServiceContractId,HWS_ContractLineItem__r.CH_CoverageGroup__c,HWS_ContractLineItem__r.HWS_AdditionalSIInfo1__c,HWS_ContractLeadTimeUnit__c,AccountId,HWS_ContractLeadTimeDuration__c,Product2Id,Product2.Name,ProductCode,'+
+			'HWS_ServiceItemCode__c,HWS_ContractLineItem__r.ServiceContract.CH_ERPSystem__c, HWS_Part_Code__c,HWS_Service_Type__c,HWS_Product_Name__c, HWS_ContractLineItem__r.CH_BusinessHour__r.Id,HWS_ServiceItemDescription__c,HWS_ServiceOffering__c,HWS_High_Level_Product_Name__c, HWS_ContractLineItem__r.CH_QtyCoveredNetworkElementAssets__c,  HWS_ContractLineItem__r.CH_CountryISOName__c,HWS_ContractLineItem__r.HWS_InvoicingType__c,HWS_ContractLineItem__r.HWS_WarrantyVerificationRequired__c,HWS_ContractLineItem__r.HWS_QuotationRequiredFlag__c FROM Asset WHERE Product2Id IN: prodIds AND AccountId IN: accIds AND (HWS_ContractLineItem__r.ServiceContract.NCP_External_Status__c =: externalStatus) AND (HWS_ContractLineItem__r.ServiceContract.Status =: externalStatus) AND HWS_ContractLineItem__r.CH_ServiceClassification__c=: classification AND HWS_ContractLineItem__r.NCP_External_Status__c=: externalStatus AND HWS_ExternalStatus__c=: externalStatus AND HWS_IsSynced__c =:sync AND HWS_PartLEStatus__c IN:SETLESTATUS';
 		//getting only Authorized serviceContract Records
 		//3697 - passing contactId  ****************Start*********
 		List<EntitlementContact> servContList1 = [select id, Entitlement.Name, Entitlement.ServiceContract.Name, Entitlement.ServiceContract.Id, Entitlement.ServiceContract.ContractNumber, Entitlement.Account.Name, Entitlement.AccountId, contact.Name, ContactId from EntitlementContact where ContactId = :contactId];
 		Map<Id, Set<String>> servContrMap1 = new Map<Id, Set<String>>();
 		if(servContList1.size()>0){
-			for(EntitlementContact ent:servContList1){	  
+			for(EntitlementContact ent:servContList1){	
 				if(servContrMap1.containskey(ent.Entitlement.AccountId)){
 					servContrMap1.get(ent.Entitlement.AccountId).add(ent.Entitlement.ServiceContract.ContractNumber);
 				}
@@ -438,7 +447,8 @@ public without sharing class HWS_Utilty {
 		String externalStatus = 'Active';
 		//2503
 		//NOKIASC-25659 for NEA count  added CH_QtyCoveredNetworkElementAssets__c field
-		String strQuery2='SELECT Id, CH_ServiceClassification__c,CH_QtyCoveredNetworkElementAssets__c,PricebookEntry.Product2.HWS_SPS_Last_Order_Date__c,HWS_AdditionalSIInfo1__c,CH_ServiceType__c,ServiceContract.CH_ERPSystem__c,HWS_ServiceContractName__c,HWS_ServiceContractNumber__c,ServiceContract.CH_EntitlementScript__c,CH_LineItemEntitlementScript__c,ServiceContract.CH_CountryCode__c,ServiceContract.CH_CountryName__c,CH_CoverageGroup__c, CH_CountryISOName__c FROM ContractLineItem '+
+		//NOKIASC-36275:New ship to party creation for Combined Ordering(Added ServiceContract.HWS_Combined_Ordering__c field)
+		String strQuery2='SELECT Id, CH_ServiceClassification__c,CH_QtyCoveredNetworkElementAssets__c,PricebookEntry.Product2.HWS_SPS_Last_Order_Date__c,HWS_AdditionalSIInfo1__c,CH_ServiceType__c,ServiceContract.CH_ERPSystem__c,HWS_ServiceContractName__c,HWS_ServiceContractNumber__c,ServiceContract.CH_EntitlementScript__c,CH_LineItemEntitlementScript__c,ServiceContract.CH_CountryCode__c,ServiceContract.CH_CountryName__c,ServiceContract.HWS_Combined_Ordering__c,CH_CoverageGroup__c, CH_CountryISOName__c FROM ContractLineItem '+
 			'WHERE (ServiceContract.CH_CARES_ServiceAgreement__c LIKE :contractNumber OR ServiceContract.CH_SAP_ContractNumber__c LIKE :contractNumber) AND ServiceContract.AccountId IN: accIds AND (ServiceContract.NCP_External_Status__c =: externalStatus) AND (ServiceContract.Status =: externalStatus) AND NCP_External_Status__c=: externalStatus AND CH_ServiceClassification__c=:classification';
 		//getting only Authorized serviceContract Records
 		//3697 - passing contactId *************Start*********
@@ -447,7 +457,7 @@ public without sharing class HWS_Utilty {
 		List<EntitlementContact> servContList2 = [select id, Entitlement.Name, Entitlement.ServiceContract.Name, Entitlement.ServiceContract.Id, Entitlement.ServiceContract.ContractNumber, Entitlement.Account.Name, Entitlement.AccountId, contact.Name, ContactId from EntitlementContact where ContactId = :contactId ];
 		Map<Id, Set<String>> servContrMap2 = new Map<Id, Set<String>>();
 		if(servContList2.size()>0){
-			for(EntitlementContact ent:servContList2){	  
+			for(EntitlementContact ent:servContList2){	
 				if(servContrMap2.containskey(ent.Entitlement.AccountId)){
 					servContrMap2.get(ent.Entitlement.AccountId).add(ent.Entitlement.ServiceContract.ContractNumber);
 				}
@@ -487,7 +497,7 @@ public without sharing class HWS_Utilty {
 * Parameters: Contract Number, Selected Account Ids, Service type
 * Returns : List of Contract line item
 *****************************************/
-	public static List<ContractLineItem> getserviceContractsInactive(String contractNumber, set<Id> accIds,String serviceType){	 
+	public static List<ContractLineItem> getserviceContractsInactive(String contractNumber, set<Id> accIds,String serviceType){  
 		list<ContractLineItem> listserviceContracts;
 		String expired = 'Expired';
 		String inactive = 'Inactive';
@@ -513,8 +523,13 @@ public without sharing class HWS_Utilty {
 		Boolean sync = true;
 		//2503
 		//added  for PMD Error - NOKIASC-32425
-		list<Asset> listAssets = [SELECT Id,HWS_ContractLineItem__r.HWS_PONumber__c,HWS_ContractLineItem__r.Asset.Product2.Name,HWS_SourceSystem__c,HWS_Service_Contract_Number__c,HWS_Product_SPSLOD__c,Contract_Number__c,HWS_ContractLineItem__r.CH_LineItemEntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_EntitlementScript__c,HWS_ContractLeadTimeDuration__c,AccountId,HWS_ContractLeadTimeUnit__c,Product2Id,Product2.Name,ProductCode,HWS_Currency__c,HWS_Price__c,
-								  HWS_ServiceItemCode__c,HWS_ServiceItemDescription__c,HWS_ServiceOffering__c,HWS_ContractLineItem__r.ServiceContract.CH_ERPSystem__c,HWS_Service_Type__c,HWS_Part_Code__c,HWS_Product_Name__c,HWS_ContractLineItem__r.HWS_AdditionalSIInfo1__c,HWS_ContractLineItem__r.CH_BusinessHour__r.Id,HWS_ContractLineItem__r.ServiceContract.CH_CountryCode__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryName__c,HWS_ContractLineItem__r.CH_CountryISOName__c,HWS_SpecifiedDeliveryTargetTime__c,HWS_High_Level_Product_Name__c FROM Asset WHERE HWS_ContractLineItem__c IN: servIDs AND HWS_ExternalStatus__c=: ExternalStatus AND HWS_IsSynced__c =:sync ];
+		//NOKIASC-36275:New ship to party creation for Combined Ordering(Added ServiceContract.HWS_Combined_Ordering__c field)
+		//NOKIASC-37150 Added HWS_PartLEStatus__c in query and filter criteria
+		list<Asset> listAssets = [SELECT Id,HWS_PartLEStatus__c,HWS_ContractLineItem__r.HWS_PONumber__c,HWS_ContractLineItem__r.Asset.Product2.Name,HWS_SourceSystem__c,HWS_Service_Contract_Number__c,HWS_Product_SPSLOD__c,Contract_Number__c,HWS_ContractLineItem__r.CH_LineItemEntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_EntitlementScript__c,HWS_ContractLeadTimeDuration__c,AccountId,HWS_ContractLeadTimeUnit__c,Product2Id,Product2.Name,ProductCode,HWS_Currency__c,HWS_Price__c,
+								  HWS_ServiceItemCode__c,HWS_ServiceItemDescription__c,HWS_ServiceOffering__c,HWS_ContractLineItem__r.ServiceContract.CH_ERPSystem__c,HWS_Service_Type__c,HWS_Part_Code__c,HWS_Product_Name__c,HWS_ContractLineItem__r.HWS_AdditionalSIInfo1__c,HWS_ContractLineItem__r.CH_BusinessHour__r.Id,HWS_ContractLineItem__r.ServiceContract.CH_CountryCode__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryName__c,HWS_ContractLineItem__r.ServiceContract.HWS_Combined_Ordering__c,
+								  HWS_ContractLineItem__r.CH_CountryISOName__c,HWS_SpecifiedDeliveryTargetTime__c,HWS_High_Level_Product_Name__c,HWS_ContractLineItem__r.HWS_WarrantyVerificationRequired__c 
+								  FROM Asset WHERE HWS_ContractLineItem__c IN: servIDs AND HWS_ExternalStatus__c=: ExternalStatus AND HWS_IsSynced__c =:sync 
+		  AND HWS_PartLEStatus__c IN:SETLESTATUS];
 		
 		return listAssets;
 	}
@@ -526,7 +541,7 @@ public without sharing class HWS_Utilty {
 * Returns : 
 *****************************************/
 	@AuraEnabled 
-	public static Map<String, List<String>> getDependentMap(sObject objDetail, string contrfieldApiName,string depfieldApiName) {   
+	public static Map<String, List<String>> getDependentMap(sObject objDetail, string contrfieldApiName,string depfieldApiName, String countryName) {   
 		String controllingField = contrfieldApiName.toLowerCase();
 		String dependentField = depfieldApiName.toLowerCase();
 		
@@ -623,7 +638,7 @@ public without sharing class HWS_Utilty {
 		public String label {get;set;}
 		public String value {get;set;}
 		public String validFor {get;set;}
-		public PicklistEntryWrapper(){	
+		public PicklistEntryWrapper(){  
 		}
 		
 	}
@@ -650,7 +665,7 @@ public without sharing class HWS_Utilty {
 		List<EntitlementContact> servContList3 = [select id, Entitlement.Name, Entitlement.ServiceContract.Name, Entitlement.ServiceContract.Id, Entitlement.ServiceContract.ContractNumber, Entitlement.Account.Name, Entitlement.AccountId, contact.Name, ContactId from EntitlementContact where ContactId = :contactId ];
 		Map<Id, Set<String>> servContrMap3 = new Map<Id, Set<String>>();
 		if(servContList3.size()>0){
-			for(EntitlementContact ent:servContList3){	  
+			for(EntitlementContact ent:servContList3){	
 				if(servContrMap3.containskey(ent.Entitlement.AccountId)){
 					servContrMap3.get(ent.Entitlement.AccountId).add(ent.Entitlement.ServiceContract.ContractNumber);
 				}
@@ -705,7 +720,7 @@ public without sharing class HWS_Utilty {
 * Returns : List of Assets
 *****************************************/
 	//3697
-	public static List<Asset> getAllServiceTypesPortal(Set<Id> prodIds, String accId,String serviceType, String contractNumber, Id contactId, String country){	
+	public static List<Asset> getAllServiceTypesPortal(Set<Id> prodIds, String accId,String serviceType, String contractNumber, Id contactId, String country){  
 		String expired = 'Expired';
 		String inactive = 'Inactive';
 		String externalStatus = 'Active';
@@ -714,15 +729,19 @@ public without sharing class HWS_Utilty {
 		Boolean enableForPortal = true;
 		//2503 SPS Last Order Date validation started added HWS_Product_SPSLOD__c field
 		// NOKIASC-25677 added CH_CountryISOName__c field for country name capturing
-		String assetQuery4 = 'SELECT Id,HWS_ContractLineItem__r.HWS_PONumber__c,HWS_ContractLineItem__r.Asset.Product2.Name,HWS_ContractLineItem__r.CH_ServiceOffering__c,HWS_SourceSystem__c,HWS_Product_SPSLOD__c,HWS_SpecifiedDeliveryTargetTime__c,HWS_Service_Contract_Number__c,HWS_Currency__c,HWS_Price__c,Contract_Number__c,HWS_ContractLineItem__c,HWS_ContractLineItem__r.CH_LineItemEntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_EntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryCode__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryName__c,HWS_ContractLineItem__r.ServiceContractId,HWS_ContractLineItem__r.HWS_AdditionalSIInfo1__c,HWS_ContractLeadTimeUnit__c,AccountId,HWS_ContractLeadTimeDuration__c,Product2Id,Product2.Name,ProductCode,'+
-			'HWS_ServiceItemCode__c,HWS_ContractLineItem__r.ServiceContract.HWS_Currency__c,HWS_ContractLineItem__r.ServiceContract.CH_ERPSystem__c,HWS_Part_Code__c,HWS_Service_Type__c,HWS_Product_Name__c, HWS_ContractLineItem__r.CH_BusinessHour__r.Id,HWS_ServiceItemDescription__c,HWS_ServiceOffering__c,HWS_High_Level_Product_Name__c, HWS_ContractLineItem__r.CH_QtyCoveredNetworkElementAssets__c, HWS_ContractLineItem__r.CH_CountryISOName__c,HWS_ContractLineItem__r.HWS_InvoicingType__c,HWS_ContractLineItem__r.HWS_WarrantyVerificationRequired__c,HWS_ContractLineItem__r.HWS_QuotationRequiredFlag__c,Product2.NokiaCPQ_State__c FROM Asset WHERE  Product2Id IN: prodIds AND AccountId =: accId AND (HWS_ContractLineItem__r.ServiceContract.NCP_External_Status__c =: externalStatus) AND (HWS_ContractLineItem__r.ServiceContract.Status =: externalStatus) AND HWS_ContractLineItem__r.CH_ServiceClassification__c=: classification AND HWS_ContractLineItem__r.NCP_External_Status__c=: externalStatus AND  HWS_ExternalStatus__c=: externalStatus AND HWS_IsSynced__c =:sync AND HWS_ContractLineItem__r.ServiceContract.CH_PortalCaseCreationHWS__c =: enableForPortal'; 
+		//NOKIASC-36280 HWS_ContractLineItem__r.ServiceContract.HWS_PurchaserType__c
+		//NOKIASC-36275:New ship to party creation for Combined Ordering(Added ServiceContract.HWS_Combined_Ordering__c field)
+		//NOKIASC-37150 Added HWS_PartLEStatus__c in query and filter criteria
+		String assetQuery4 = 'SELECT Id,HWS_PartLEStatus__c,HWS_ContractLineItem__r.ServiceContract.HWS_PurchaserType__c,HWS_ContractLineItem__r.HWS_PONumber__c,HWS_ContractLineItem__r.Asset.Product2.Name,HWS_ContractLineItem__r.CH_ServiceOffering__c,HWS_SourceSystem__c,HWS_Product_SPSLOD__c,HWS_SpecifiedDeliveryTargetTime__c,HWS_Service_Contract_Number__c,HWS_Currency__c,HWS_Price__c,Contract_Number__c,HWS_ContractLineItem__c,HWS_ContractLineItem__r.CH_LineItemEntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_EntitlementScript__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryCode__c,HWS_ContractLineItem__r.ServiceContract.CH_CountryName__c,HWS_ContractLineItem__r.ServiceContract.HWS_Combined_Ordering__c,HWS_ContractLineItem__r.ServiceContractId,HWS_ContractLineItem__r.HWS_AdditionalSIInfo1__c,HWS_ContractLeadTimeUnit__c,AccountId,HWS_ContractLeadTimeDuration__c,Product2Id,Product2.Name,ProductCode,'+
+			'HWS_ServiceItemCode__c,HWS_ContractLineItem__r.ServiceContract.HWS_Currency__c,HWS_ContractLineItem__r.ServiceContract.CH_ERPSystem__c,HWS_Part_Code__c,HWS_Service_Type__c,HWS_Product_Name__c, HWS_ContractLineItem__r.CH_BusinessHour__r.Id,HWS_ServiceItemDescription__c,HWS_ServiceOffering__c,HWS_High_Level_Product_Name__c, HWS_ContractLineItem__r.CH_QtyCoveredNetworkElementAssets__c, HWS_ContractLineItem__r.CH_CountryISOName__c,HWS_ContractLineItem__r.HWS_InvoicingType__c,HWS_ContractLineItem__r.HWS_WarrantyVerificationRequired__c,HWS_ContractLineItem__r.HWS_QuotationRequiredFlag__c,Product2.NokiaCPQ_State__c FROM Asset WHERE  Product2Id IN: prodIds AND AccountId =: accId AND (HWS_ContractLineItem__r.ServiceContract.NCP_External_Status__c =: externalStatus) AND (HWS_ContractLineItem__r.ServiceContract.Status =: externalStatus) AND HWS_ContractLineItem__r.CH_ServiceClassification__c=: classification AND HWS_ContractLineItem__r.NCP_External_Status__c=: externalStatus AND  HWS_ExternalStatus__c=: externalStatus AND HWS_IsSynced__c =:sync AND HWS_ContractLineItem__r.ServiceContract.CH_PortalCaseCreationHWS__c =: enableForPortal'+
+			' AND HWS_PartLEStatus__c IN: SETLESTATUS'; 
 		//getting only Authorized serviceContract Records
 		//3697 - passing contactId  ****************Start*********
 		//added  for PMD Error - NOKIASC-32425
 		List<EntitlementContact> servContList4 = [select id, Entitlement.Name, Entitlement.ServiceContract.Name, Entitlement.ServiceContract.Id, Entitlement.ServiceContract.ContractNumber, Entitlement.Account.Name, Entitlement.AccountId, contact.Name, ContactId from EntitlementContact where ContactId = :contactId ];
 		Map<Id, Set<String>> servContrMap = new Map<Id, Set<String>>();
 		if(servContList4.size()>0){
-			for(EntitlementContact ent:servContList4){	  
+			for(EntitlementContact ent:servContList4){	
 				if(servContrMap.containskey(ent.Entitlement.AccountId)){
 					servContrMap.get(ent.Entitlement.AccountId).add(ent.Entitlement.ServiceContract.ContractNumber);
 				}
@@ -758,7 +777,7 @@ public without sharing class HWS_Utilty {
 		return listAssets;
 	}
 	
-	public static Id childRecordTypes(String serviceType){	  
+	public static Id childRecordTypes(String serviceType){	
 		Id caseRecTypeId;
 		//added  for PMD Error - NOKIASC-32425
 		HWS_ChildCase_Record_Types__mdt caseRecTypes = [SELECT MasterLabel,HWS_Service_Type__c,HWS_Rercord_Type__c FROM HWS_ChildCase_Record_Types__mdt where HWS_Service_Type__c=:serviceType ]; 
@@ -823,43 +842,43 @@ public without sharing class HWS_Utilty {
 				else{
 					
 					return true;
-				}	
+				}   
 			}
 		}
 		return true;
 	}
 	
-	/*************************	
-Method Name : getContractlineItemsPartCodeRevision	
-Description : method to get List of Assets	
-Parameters: Set<Account> listAccounts,String searchValue,String serviceType, String contractNumber	
-Returns : Map<String, List<Asset>>	
+	/*************************  
+Method Name : getContractlineItemsPartCodeRevision  
+Description : method to get List of Assets  
+Parameters: Set<Account> listAccounts,String searchValue,String serviceType, String contractNumber  
+Returns : Map<String, List<Asset>>  
 created for HWST-4182 as part of i4  
 Created By  : Satya  
 Created Date: 09/27/2019 (MM/DD/YYYY)   
 Modified By :   
-Modified Date:	
+Modified Date:  
 ******************************/  
 	@auraEnabled		
 	public static List<Asset> getContractlineItemsPartCodeRevision(List<Account> listAccounts,String searchValue,String serviceType, String contractNumber, String contactId, String fromType, String  country ){   
 		List<Asset> lCli = new List<Asset>();   
 		Set<Id> prodIds = new Set<Id>();		
 		Set<Id> accIds = new Set<Id>();  
-		for(Account a : listAccounts){	
+		for(Account a : listAccounts){  
 			accIds.add(a.Id);   
 		}   
 		String searchCode = searchValue.replaceAll('[^a-zA-Z0-9]', '').toUpperCase();
 		//added  for PMD Error - NOKIASC-32425
-		List<HWS_VersionItem__c> verItemList = [Select Id, HWS_Part_Code_Part_Revision__c, HWS_Version_Code__c, HWS_Hardware_Sellable_Item__c, HWS_Hardware_Sellable_Item__r.CARE_PartCode__c from HWS_VersionItem__c where HWS_Part_Code_Part_Revision__c =:searchCode ];	
-	  	
-		if(verItemList .size()>0){	
+		List<HWS_VersionItem__c> verItemList = [Select Id, HWS_Part_Code_Part_Revision__c, HWS_Version_Code__c, HWS_Hardware_Sellable_Item__c, HWS_Hardware_Sellable_Item__r.CARE_PartCode__c from HWS_VersionItem__c where HWS_Part_Code_Part_Revision__c =:searchCode ];  
+		
+		if(verItemList .size()>0){  
 			for(HWS_VersionItem__c vi: verItemList ){   
-				if(vi.HWS_Hardware_Sellable_Item__c != null ){	
-					prodIds.add(vi.HWS_Hardware_Sellable_Item__c);	
+				if(vi.HWS_Hardware_Sellable_Item__c != null ){  
+					prodIds.add(vi.HWS_Hardware_Sellable_Item__c);  
 				}   
 			}   
 			if(!(prodIds.isEmpty() && accIds.isEmpty())){   
-				if(fromType == 'Console'){	
+				if(fromType == 'Console'){  
 					lCli = getAllServiceTypes(prodIds, accIds,serviceType,contractNumber,contactId, country);   
 				}   
 				if(fromType == 'Portal'){   
@@ -897,23 +916,30 @@ Modified Date:
 			}   
 			Set<Id> prodIdSetwithANYvi = new Set<Id>();  
 			//added  for PMD Error - NOKIASC-32425
-			List<HWS_VersionItem__c> viList = [SELECT HWS_Version_Code__c, HWS_Hardware_Sellable_Item__c FROM HWS_VersionItem__c where HWS_Hardware_Sellable_Item__c IN :prodIds And HWS_Version_Code__c = 'ANY' ];	
+			List<HWS_VersionItem__c> viList = [SELECT HWS_Version_Code__c, HWS_Hardware_Sellable_Item__c FROM HWS_VersionItem__c where HWS_Hardware_Sellable_Item__c IN :prodIds And HWS_Version_Code__c = 'ANY' ]; 
 			if(viList.size()>0){		
-				for(HWS_VersionItem__c vi:viList){	
+				for(HWS_VersionItem__c vi:viList){  
 					prodIdSetwithANYvi.add(vi.HWS_Hardware_Sellable_Item__c);   
 				}   
 			}   
 			if(!(prodIdSetwithANYvi.isEmpty() && accIds.isEmpty())){		
-				if(fromType == 'Console'){	
+				if(fromType == 'Console'){  
 					lCli = getAllServiceTypes(prodIdSetwithANYvi, accIds,serviceType,contractNumber,contactId, country);		
 				}   
 				if(fromType == 'Portal'){   
-					lCli = getAllServiceTypesPortal(prodIdSetwithANYvi, listAccounts[0].Id,serviceType,contractNumber,contactId, country);	
+					lCli = getAllServiceTypesPortal(prodIdSetwithANYvi, listAccounts[0].Id,serviceType,contractNumber,contactId, country);  
 				}   
 			}   
 		}   
 		return lCli;		
 	}
+	// NOKIASC-37920 | This method will only called from bulk | Start
+	public static plannedDeliveryDateWrapper accountTimeZoneplannedDeliveryDateTime(List<Case> listChildCases, String selectedAccountTimeZone, Boolean isCallFromBulk ){
+		HWS_Utilty.isCallFromBulkRequest = isCallFromBulk;
+		return accountTimeZoneplannedDeliveryDateTime(listChildCases, selectedAccountTimeZone);
+
+	}
+	// NOKIASC-37920 | This method will only called from bulk | End
 	//Added by Ajesh - Start
 	public static plannedDeliveryDateWrapper accountTimeZoneplannedDeliveryDateTime(List<Case> listChildCases, String selectedAccountTimeZone ){
 		plannedDeliveryDateWrapper pdw;
@@ -956,7 +982,10 @@ Modified Date:
 				if(bussinessHourName != '24x7' && selectedAccountTimeZone != '24x7' && selectedAccountTimeZone != null){
 					String st1 = bussinessHourName.substringAfter('|');
 					String st2 = st1.substringBetween('| ',' |');
-					String bussinessHourNameAccTimeZone = bussinessHourName.replace(st2, selectedAccountTimeZone);
+					String bussinessHourNameAccTimeZone = '';
+					if(bussinessHourName != '' && bussinessHourName != null && st2 != '' && st2!= null){
+					  bussinessHourNameAccTimeZone = bussinessHourName.replace(st2, selectedAccountTimeZone);
+					}
 					
 					if(bhNameIdMap.get(bussinessHourNameAccTimeZone) != Null){
 						caseRec.HWS_Delivery_TimeZone__c = selectedAccountTimeZone;
@@ -1012,43 +1041,53 @@ Modified Date:
 			bhNameIdMap.put(bs.Name, bs.Id);
 			bhTimezoneIdMap.put(bs.Name, bs.TimeZoneSidKey);
 		}
-		return busMap;	
+		return busMap;  
 	}
 	//Added by Ajesh - Start
 	public static plannedDeliveryDateWrapper plannedDeliveryDateTimeCalculation(List<Case> timeZoneupdatedCaseList, Map<Id,Asset> IdAssetMap, String bhTimeZone){
 		List<Case> newTimeZoneCaseList = new List<Case>();  
 		String delTimeZone = bhTimeZone;
 		for(Case caseRec : timeZoneupdatedCaseList){
-			DateTime plannedDatetime = plannedDeliveryDateTime(caseRec.BusinessHoursId, IdAssetMap.get(caseRec.AssetId).HWS_ContractLeadTimeUnit__c, IdAssetMap.get(caseRec.AssetId).HWS_ContractLeadTimeDuration__c, null, IdAssetMap.get(caseRec.AssetId).HWS_SpecifiedDeliveryTargetTime__c);
-			caseRec.HWS_Planned_Delivery_Date__c = plannedDatetime; 
-		   
-			if(bhTimeZone!='24x7' && bhTimeZone!=null){ //commenting unused variable - NOKIASC-32425
-				
-				delTimeZone = bhTimeZone.substring(0,12);
-				string strTimeZone = caseRec.HWS_Delivery_TimeZone__c;
-			   
-				string strCurrentTime = plannedDatetime.format('YYYY-MM-dd HH:mm:ss', strTimeZone);
-				
-				caseRec.HWS_PlannedDeliveryDateShipment__c= strCurrentTime;
-			}
-			Id businessHourId = caseRec.BusinessHoursId;
-			String bsName = '';
-			if(busMap.get(businessHourId) !=null){
-				bsName = busMap.get(businessHourId).Name;
-			}
-		   
-			if(bsName == '24x7'){
-				string strTimeZone = caseRec.HWS_Delivery_TimeZone__c;
-				
-				string strCurrentTime = plannedDatetime.format('YYYY-MM-dd HH:mm:ss', strTimeZone);
-				DateTime customerDateTime = DateTime.valueofGmt(strCurrentTime);
-				TimeZone customerTimeZone = TimeZone.getTimeZone(strTimeZone);
-				Integer offsetToCustomersTimeZone = customerTimeZone.getOffset(customerDateTime);
-				Double gmtOffset = offsetToCustomersTimeZone / (1000 * 60 *60);
-			  
-				delTimeZone = getGmtValue(gmtOffset);
-			}
-			newTimeZoneCaseList.add(caseRec);	 
+			if(IdAssetMap.get(caseRec.AssetId) != null){ // NOKIASC-37921
+	DateTime plannedDatetime = plannedDeliveryDateTime(caseRec.BusinessHoursId, IdAssetMap.get(caseRec.AssetId).HWS_ContractLeadTimeUnit__c, IdAssetMap.get(caseRec.AssetId).HWS_ContractLeadTimeDuration__c, null, IdAssetMap.get(caseRec.AssetId).HWS_SpecifiedDeliveryTargetTime__c);
+	caseRec.HWS_Planned_Delivery_Date__c = plannedDatetime; 
+	  
+	if(bhTimeZone!='24x7' && bhTimeZone!=null){ //commenting unused variable - NOKIASC-32425
+		
+		delTimeZone = bhTimeZone.substring(0,12);
+		string strTimeZone = caseRec.HWS_Delivery_TimeZone__c;
+	   
+		//NOKIASC-37920 | ByPassing user formatted locale value in HWS_PlannedDeliveryDateShipment__c field for bulk request| isCallFromBulkRequest is true if it is a bulk request | Start
+		string strCurrentTime = '';				
+		if(HWS_Utilty.isCallFromBulkRequest){
+			strCurrentTime = plannedDatetime.format('dd MMM YYYY HH:mm:ss a', strTimeZone);  
+			caseRec.HWS_PlannedDeliveryDateShipment__c= strCurrentTime+' ( '+caseRec.HWS_Delivery_TimeZone__c+' )';   
+		}
+		else{
+			strCurrentTime = plannedDatetime.format('YYYY-MM-dd HH:mm:ss', strTimeZone);
+			caseRec.HWS_PlannedDeliveryDateShipment__c= strCurrentTime;
+		}
+		//NOKIASC-37920 | ByPassing user formatted locale value in HWS_PlannedDeliveryDateShipment__c field | End
+	}
+	Id businessHourId = caseRec.BusinessHoursId;
+	String bsName = '';
+	if(busMap.get(businessHourId) !=null){
+		bsName = busMap.get(businessHourId).Name;
+	}
+	  
+	if(bsName == '24x7'){
+		string strTimeZone = caseRec.HWS_Delivery_TimeZone__c;
+		
+		string strCurrentTime = plannedDatetime.format('YYYY-MM-dd HH:mm:ss', strTimeZone);
+		DateTime customerDateTime = DateTime.valueofGmt(strCurrentTime);
+		TimeZone customerTimeZone = TimeZone.getTimeZone(strTimeZone);
+		Integer offsetToCustomersTimeZone = customerTimeZone.getOffset(customerDateTime);
+		Double gmtOffset = offsetToCustomersTimeZone / (1000 * 60 *60);
+	  
+		delTimeZone = getGmtValue(gmtOffset);
+	}
+	newTimeZoneCaseList.add(caseRec); 
+			} //NOKIASC-37921
 		}
 		plannedDeliveryDateWrapper pw = new plannedDeliveryDateWrapper(newTimeZoneCaseList,delTimeZone);
 		return pw;
@@ -1169,11 +1208,11 @@ Created Date: 26/11/2020 (MM/DD/YYYY)
 Modified By :
 Modified Date:
 ******************************/  
-	public static HWS_NetworkElementAssetWrapper.AssetPagerWrapper getNetworkElementAssets(Id accId, Id cliId,List<Id> cliIdList,Integer recordLimit, Integer recordOffset,String searchText){		
-		HWS_NetworkElementAssetWrapper.AssetPagerWrapper assetPagerWrapper =  new HWS_NetworkElementAssetWrapper.AssetPagerWrapper();		
+	public static HWS_NetworkElementAssetWrapper.AssetPagerWrapper getNetworkElementAssets(Id accId, Id cliId,List<Id> cliIdList,Integer recordLimit, Integer recordOffset,String searchText){	  
+		HWS_NetworkElementAssetWrapper.AssetPagerWrapper assetPagerWrapper =  new HWS_NetworkElementAssetWrapper.AssetPagerWrapper();	   
 		   
 		String neaRectypeId = Schema.getGlobalDescribe().get('Asset').getDescribe().getRecordTypeInfosByDeveloperName().get('CH_NetworkElementAsset').getRecordTypeId();
-		String cneaStatus = 'Active';		   
+		String cneaStatus = 'Active';		  
 		String neaAssetQuery = 'Select Id,Name, CH_LabEnvironment__c,CH_NetworkElementID__c, ';
 		neaAssetQuery = neaAssetQuery+ ' Product2.Name, Product2Id,CH_Solution__c,CH_ProductVariant__c, CH_ProductRelease__c, ';
 		neaAssetQuery = neaAssetQuery+ ' Address__r.CH_AddressDetails__c,CH_CountryISOName__c,CH_ContractLineItem__c, ';
@@ -1190,7 +1229,7 @@ Modified Date:
 		if(!String.isBlank(SearchText)){
 			SearchText = '%'+SearchText+'%';
 			neaAssetQuery = neaAssetQuery+ ' AND ( CH_NetworkElementID__c LIKE  \''+SearchText+'\' ';
-			neaAssetQuery = neaAssetQuery+ ' OR Name LIKE \''+SearchText+'\' ';						
+			neaAssetQuery = neaAssetQuery+ ' OR Name LIKE \''+SearchText+'\' ';					 
 			neaAssetQuery = neaAssetQuery+ ' OR Address__r.Street LIKE \''+SearchText+'\' ';
 			neaAssetQuery = neaAssetQuery+ ' OR Address__r.postalcode LIKE \''+SearchText+'\' ';
 			neaAssetQuery = neaAssetQuery+ ' OR Address__r.Country LIKE \''+SearchText+'\' ';
@@ -1276,7 +1315,7 @@ Modified Date:
 	@auraEnabled
 	public static List<Case> getCasesByCaseNumber(List<String> caseNumberLst){
 		List<Case> caseLst = [Select Id,CaseNumber,RecordType.DeveloperName,RecordTypeId, AccountId, CH_ServiceType__c, CH_RecordTypeCheck__c from Case where CaseNumber IN :caseNumberLst];		
-		return caseLst;		
+		return caseLst;	 
 	}
 	/****************************************
 * Name : warrantyCheck
@@ -1286,7 +1325,7 @@ Modified Date:
 * written on 21st Oct 2020
 * User Story : NOKIASC-32212 & NOKIASC-32213
 *****************************************/
-	public static string warrantyCheck(String materialCode,String serialNumber,String sourceSystem) {		
+	public static string warrantyCheck(String materialCode,String serialNumber,String sourceSystem) {	   
 		return HWS_CheckWarranty_SVC.getWarrentStatus(materialCode,serialNumber,sourceSystem);
 	}
 	/****************************************
@@ -1299,7 +1338,7 @@ Modified Date:
 *****************************************/
 	
 	@auraEnabled
-	public static List<String> cancelChildCases(String casId,String cancelReason,String reasonForCancel,String platform){	 
+	public static List<String> cancelChildCases(String casId,String cancelReason,String reasonForCancel,String platform){	
 		List<String> caseList = new List<String>(); 
 		List<Case> caseList2 = new List<Case>();
 		List<Case> orderChildCases = new List<Case>();
@@ -1363,7 +1402,7 @@ Modified Date:
 									c.Cancellation_Reason__c = cancelReason;
 									c.CH_ReasonForCancellation__c = reasonForCancel; 
 								}
-								else if (platform=='portal'){			
+								else if (platform=='portal'){		   
 									c.Cancellation_Reason__c=HWS_Constants.REQUESTED_BY_CUSTOMER;//NOKIASC-31917
 								}
 								
@@ -1466,7 +1505,7 @@ Modified Date:
 	//32414
 	//method to findout duplicate falty unit serial for each material code  
 	@auraEnabled
-	public static list<Case> duplicateSerialNumberInfo(string serialNumber, string materialCode){	  
+	public static list<Case> duplicateSerialNumberInfo(string serialNumber, string materialCode){	 
 		List<Case> caselist = new List<Case>();
 		try{
 			caselist = [Select id,HWS_Faulty_Serial_Number__c,CaseNumber,Status From Case 
@@ -1475,7 +1514,7 @@ Modified Date:
 		} catch(queryException qe){
 		   
 			throw new AuraHandledException(String.valueOf(qe.getMessage()));
-		}	  
+		}	 
 		return caselist ;
 	}
 	
@@ -1487,7 +1526,7 @@ Modified Date:
 *****************************************/
 	//3697 - passing contactId
 	@auraEnabled
-	public static Map<String, List<Asset>> getContractlineItems(String accountId, String searchValue, String serviceType, String contractNumber, Id contactId, String country, String consolePortal){	
+	public static Map<String, List<Asset>> getContractlineItems(String accountId, String searchValue, String serviceType, String contractNumber, Id contactId, String country, String consolePortal){   
 		String searchCode = searchValue +'%';
 		String itemDesc = '%'+searchValue +'%';
 		List<Asset> lCli = new List<Asset>();
@@ -1533,7 +1572,7 @@ Modified Date:
 		prodIds.add(prod.Id);
 				}
 			}
-		}	   
+		}	  
 		
 		if(!(prodIds.isEmpty() && (AccountId == null || AccountId == ''))){ 
 			List<Asset> accRelatedAssetProduct = [SELECT Id, ProductCode, Product2Id, Product2.Name
@@ -1545,8 +1584,8 @@ Modified Date:
 			{
 				mapContractLine.put('Error Message3',lCli);  
 				
-			}	 
-			else {	  
+			}	
+			else {	
 				//3697 - passing contactId
 				if(consolePortal == 'Portal'){
 					lCli = HWS_Utilty.getAllServiceTypesPortal(prodIds, AccountId,serviceType,contractNumber,contactId , country);
@@ -1563,8 +1602,6 @@ Modified Date:
 		
 	}
 	
-	//if(assetProd.size()>0 && kitProdIds.size()>0 && assetProd.size() == kitProdIds.size() && assetProd.equals(kitProdIds)){
-	//
 	if(assetProd.size()>0 && kitProdIds.size()>0 && ((assetProd.size() == kitProdIds.size() && assetProd.equals(kitProdIds)) || (assetProd.size() < kitProdIds.size() && kitProdIds.containsAll(assetProd)))){
 		allkitRelProd = true;
 	}
@@ -1580,16 +1617,16 @@ Modified Date:
 				}
 			}
 		}
-		//HWST- HWST-4182	
-		if(lCli.size()<=0 && searchValue.length()>6){	
+		//HWST- HWST-4182   
+		if(lCli.size()<=0 && searchValue.length()>6){   
 			List<Account> listAccounts = new List<Account>{new Account(Id = AccountId)};	
-				lCli = HWS_Utilty.getContractlineItemsPartCodeRevision(listAccounts, searchValue, serviceType, contractNumber, contactId, consolePortal, country);	
+				lCli = HWS_Utilty.getContractlineItemsPartCodeRevision(listAccounts, searchValue, serviceType, contractNumber, contactId, consolePortal, country);  
 			if(lCli.size()>0){  
-				mapContractLine.put('No Error',lCli);	
-			}	
+				mapContractLine.put('No Error',lCli);   
+			}   
 		}
 		return mapContractLine;
-	}	
+	}   
 	
 	/*************************32414
 Method Name : getChildCaseDetails
@@ -1618,23 +1655,42 @@ Modified By :
 Modified Date:
 ******************************/
 	public static HWS_SendServiceRequesttoSOO_SVC.processResponse makeSOOCallout(Id parentCaseId,String condition){
+		Id childsCaseReadOnlyRType = childCaseReadOnly;
 		Id parentCaseReadOnlyRType = parentCaseReadOnly;		
+		Id spsReadOnlyCaseRecordType = spsReadOnly;
+		Id spsCaseRecordType = sPSCaseRType;
+		Id childCaseAEDaysRecordType = exchangeInDays;
+		Id childCaseAEHoursRecordType = exchangeInHours;
+		Id childCaseReturnForRepairRecordType = rfr;
+		//Milestone CPU Time Limit Fix	  
+		Boolean runBatchForMilestone = true;		
+		String serviceType = null;
+		
 		
 		HWS_SendServiceRequesttoSOO_SVC.processResponse pr= HWS_SendServiceRequesttoSOO_SVC.sendToSOO(parentCaseId,condition);
 		Case parentCase = new Case(id=parentCaseId);
 		List<Case> childCases = new List<Case>();
+		//NOKIASC-32212:Declare List case variable to store final child case list
+		//List<Case> tempChildCasesList = new List<Case>();
+		//End
+		List<Entitlement> entitlementLst = new List<Entitlement>();
+		
+		Set<Id> cliIdSet = new Set<Id>();
+		Map<Id, Id> cliIdEntilmentIdMap = new Map<Id, Id>();
+		List<Case> listNewCases = New List<Case>();
 		
 		if(!pr.isError){
 			parentCase.HWS_Sent_To_SOO__c =true;
 			parentCase.HWS_SOO_Reference_Number__c =pr.SOORequestID;
 			parentCase.RecordTypeId = parentCaseReadOnlyRType;
 			parentCase.HWS_Case_Ordered_Date__c=System.now();
+			parentCase.HWS_Is_Error__c  =false;
 			/* Added HWS_Case_Ordered_Date__c in the query for user story 2997*/
 			//NOKIASC-32212:Added HWS_WarrantyStatus__c and variable name changed from childCases to tempChildCasesList
 			if(condition!=null)
 			{
-	  // childCases = [select Id, Status,HWS_Communication_Contact__c, RecordTypeId, HWS_ServiceType__c,HWS_Case_Ordered_Date__c,AssetId, HWS_FaultyUnitReceivedDate__c, HWS_Contract_Line_Item__c, HWS_Contract_Line_Item__r.CH_BusinessHour__c, HWS_StartMilestone__c,HWS_WarrantyStatus__c from Case where ParentId =: parentCaseId AND Status!='Cancelled' AND HWS_isQuoteRequired__c=false AND ((HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_4' and HWS_WarrantyStatus__c = 'In Warranty') OR(HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_4' and HWS_WarrantyStatus__c = 'Out of Warranty') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_5' and HWS_WarrantyStatus__c = 'In Warranty') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_5' and HWS_WarrantyStatus__c = 'Out of Warranty') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_9' and HWS_WarrantyStatus__c = 'Out of Warranty' ) OR(HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_8' and HWS_WarrantyStatus__c = 'In Warranty' )  OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_9' and HWS_WarrantyStatus__c = 'In Warranty' ) OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_3' and HWS_WarrantyStatus__c = 'In Warranty' ) OR(HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_3' and HWS_WarrantyStatus__c = 'Out of Warranty' )OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_6_7' and HWS_WarrantyStatus__c = 'Out of Warranty' ) OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_2A' and HWS_WarrantyStatus__c = 'In Warranty') OR (HWS_WarrantyStatus__c = 'Not Applicable') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_6_7' and HWS_WarrantyStatus__c = 'In Warranty') OR(HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_1' and HWS_WarrantyStatus__c = 'In Warranty') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_2B' and HWS_WarrantyStatus__c = 'In Warranty'))];	  
-	   childCases = [select Id, Status,HWS_Communication_Contact__c, RecordTypeId, HWS_ServiceType__c,HWS_Case_Ordered_Date__c,AssetId, HWS_FaultyUnitReceivedDate__c, HWS_Contract_Line_Item__c, HWS_Contract_Line_Item__r.CH_BusinessHour__c, HWS_StartMilestone__c,HWS_WarrantyStatus__c from Case where ParentId =: parentCaseId AND Status!='Cancelled' AND Status!='On Hold' AND Status='Draft'];	 
+	  // childCases = [select Id, Status,HWS_Communication_Contact__c, RecordTypeId, HWS_ServiceType__c,HWS_Case_Ordered_Date__c,AssetId, HWS_FaultyUnitReceivedDate__c, HWS_Contract_Line_Item__c, HWS_Contract_Line_Item__r.CH_BusinessHour__c, HWS_StartMilestone__c,HWS_WarrantyStatus__c from Case where ParentId =: parentCaseId AND Status!='Cancelled' AND HWS_isQuoteRequired__c=false AND ((HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_4' and HWS_WarrantyStatus__c = 'In Warranty') OR(HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_4' and HWS_WarrantyStatus__c = 'Out of Warranty') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_5' and HWS_WarrantyStatus__c = 'In Warranty') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_5' and HWS_WarrantyStatus__c = 'Out of Warranty') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_9' and HWS_WarrantyStatus__c = 'Out of Warranty' ) OR(HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_8' and HWS_WarrantyStatus__c = 'In Warranty' )  OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_9' and HWS_WarrantyStatus__c = 'In Warranty' ) OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_3' and HWS_WarrantyStatus__c = 'In Warranty' ) OR(HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_3' and HWS_WarrantyStatus__c = 'Out of Warranty' )OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_6_7' and HWS_WarrantyStatus__c = 'Out of Warranty' ) OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_2A' and HWS_WarrantyStatus__c = 'In Warranty') OR (HWS_WarrantyStatus__c = 'Not Applicable') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_6_7' and HWS_WarrantyStatus__c = 'In Warranty') OR(HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c='HWS_W_AND_Q_UC_1' and HWS_WarrantyStatus__c = 'In Warranty') OR (HWS_Contract_Line_Item__r.HWS_W_AND_Q_CONDITION__c= 'HWS_W_AND_Q_UC_2B' and HWS_WarrantyStatus__c = 'In Warranty'))];   
+		childCases = [select Id, Status,HWS_Communication_Contact__c, RecordTypeId, HWS_ServiceType__c,HWS_Case_Ordered_Date__c,AssetId, HWS_FaultyUnitReceivedDate__c, HWS_Contract_Line_Item__c, HWS_Contract_Line_Item__r.CH_BusinessHour__c, HWS_StartMilestone__c,HWS_WarrantyStatus__c from Case where ParentId =: parentCaseId AND Status!='Cancelled' AND Status!='On Hold' AND Status='Draft'];	 
 			}
 			else
 			{
@@ -1643,23 +1699,42 @@ Modified Date:
 			PopulateEntitlementIdOnParentChildList parentChildList = populateEntitlementIdAndStatusOrderForCases(childCases,parentCase);
 			parentCase = parentChildList.parentCase;
 			HWS_CasetriggerHandler.isNewCase = true;
+			//parentCase.HWS_ErrorReason__c='false';
 		}
 		else{
 			parentCase.HWS_Is_Error__c  =true;
 			
 		}
+		try{
 		update parentCase;
+		}
+		catch(Exception ex)//added try and catch block to retry whenever parent update fails
+		{
+			if(retryCount<2 && ( ex.getMessage().containsIgnoreCase('UNABLE_TO_LOCK_ROW') || ex.getMessage().containsIgnoreCase('Read timed out') && ex.getMessage().containsIgnoreCase('Bad Gateway')) )
+			{
+				Interface_Log__c ilog=new Interface_Log__c(Name='HWS Make SOO call',Message_Type__c='Outbound',Operation_Type__c='Insert',Status__c='Post Processing Error',Comment__c=ex.getMessage());
+				insert ilog;
+				retryCount++;
+				makeSOOCallout(parentCaseId,'true');
+			}
+			Interface_Log__c ilog=new Interface_Log__c(Name='HWS Make SOO call',Message_Type__c='Outbound',Operation_Type__c='Insert',Status__c='Post Processing Error',Comment__c=ex.getMessage());
+			insert ilog;
+		}
+		if(!parentCase.HWS_Is_Error__c){
 		Set<Id> childIds = new Set<Id>();
 		Integer processingSize = 20;
-		if((!Test.isRunningTest()) && (HWS_GenericSettings__c.getValues('OrderedProcessingSize').HWS_Field1__c!=null) ){
+		
+		if(!Test.isRunningTest() && HWS_GenericSettings__c.getValues('OrderedProcessingSize').HWS_Field1__c!=null){
 			processingSize = Integer.valueOf(HWS_GenericSettings__c.getValues('OrderedProcessingSize').HWS_Field1__c);
 		}
-		if(!System.isFuture()){
+		System.debug('user is'+UserInfo.getFirstName()+''+UserInfo.getLastName());
+		if(!System.isFuture() && !System.isBatch()  ){ //NOKIASC-37921
 			for(Case caseRec : childCases){
 				if(childIds.size()<processingSize){
 					childIds.add(caseRec.Id);
 				}
 				else{
+				   
 					makeOrderedOnChildCases(childIds);  
 					childIds.clear(); 
 					childIds.add(caseRec.Id);
@@ -1670,9 +1745,19 @@ Modified Date:
 				makeOrderedOnChildCases(childIds);   
 			}
 		}
+		else if(UserInfo.getFirstName()+''+UserInfo.getLastName()=='SOOUser')	
+		{		
+			for(Case caseRec : childCases){
+			 caseRec.status = 'Ordered';
+				caseRec.HWS_Case_Ordered_Date__c=System.now();
+			}		  
+			update childCases;	  
+		}
 		List<Case> parentCaseList = new List<Case>();
 		parentCaseList.add(parentCase);
 		CH_AuthorizedContactSharing.handleSharing(new Map<Id, Case>(parentCaseList), new Map<Id, Case>(), true, false);
+		
+		}
 		return pr;
 	}
 	public static PopulateEntitlementIdOnParentChildList populateEntitlementIdAndStatusOrderForCases(List<Case> childList, Case parentCase){
@@ -1702,8 +1787,6 @@ Modified Date:
 		
 		if(childList.size()!=0){
 			for(Case childCase : childList){
-				childCase.status = 'Ordered';
-				childcase.HWS_Case_Ordered_Date__c=System.now();
 				childcase.EntitlementId =cliIdEntilmentIdMap.get(childCase.HWS_Contract_Line_Item__c);
 				if(parentCase != null){
 					childcase.HWS_Case_Ordered_Date__c = parentCase.HWS_Case_Ordered_Date__c;
@@ -1712,12 +1795,12 @@ Modified Date:
 					}
 				}
 				if(childCase.RecordTypeId == spsCaseRecordType){
-					childCase.RecordTypeId = spsReadOnlyCaseRecordType;	
+					childCase.RecordTypeId = spsReadOnlyCaseRecordType; 
 				}
 				else{
 					childCase.RecordTypeId = childsCaseReadOnlyRType;
 				}
-				populatedCaseList.add(childCase);	
+				populatedCaseList.add(childCase);   
 			}
 		}
 		parentChildList = new PopulateEntitlementIdOnParentChildList(parentCase,populatedCaseList); 
@@ -1733,11 +1816,23 @@ Modified Date:
 	}
 	@future(callout=true)
 	public static void makeOrderedOnChildCases(Set<Id> caseIds){
+		Id childsCaseReadOnlyRType = childCaseReadOnly;
+		Id spsReadOnlyCaseRecordType = spsReadOnly;
+		Id spsCaseRecordType = sPSCaseRType;
+
 		if(!caseIds.isEmpty()){
 			List<Case> newChildList = new List<Case>();
-			List<Case> childCaseList = [Select Id from Case where Id IN: CaseIds];
+			List<Case> childCaseList = [Select Id,RecordTypeId from Case where Id IN: CaseIds];
 			for(Case caseRec : childCaseList){
 				caseRec.Status = 'Ordered';
+				caseRec.HWS_Case_Ordered_Date__c=System.now();//added newly 
+				if(caseRec.RecordTypeId == spsCaseRecordType){
+		caseRec.RecordTypeId = spsReadOnlyCaseRecordType; 
+	}
+	else{
+		caseRec.RecordTypeId = childsCaseReadOnlyRType;
+	}
+
 				newChildList.add(caseRec);
 			}
 			update newChildList;
@@ -1769,7 +1864,7 @@ Modified Date:
 	* Created Date: 06 Nov 2020
 	* User story : NOKIASC-32645
 	*****************************************/ 
-	public static void updateParentInternalStatus(Set<Id> parentCaseIdSet){		
+	public static void updateParentInternalStatus(Set<Id> parentCaseIdSet){	 
 		List<Case> parentCaseToUpdate = new List<Case>();
 		for(Case parentCase: [Select Id, CH_InternalStatus__c, (SELECT Id, CaseNumber, Subject, Status, HWS_WarrantyStatus__c, HWS_Part_Code__c, HWS_Faulty_Serial_Number__c, CH_EntitlementException__c, CH_EntitlementStatus__c, Parent.HWS_Sent_To_SOO__c FROM Cases) from Case where Id = :parentCaseIdSet]){
 			Boolean parentToUpdate = true;
@@ -1780,12 +1875,12 @@ Modified Date:
 						parentToUpdate = false;
 					}
 				}
-			}		
+			}	   
 			if(parentToUpdate && parentCase.CH_InternalStatus__c !=null){
 				parentCase.CH_InternalStatus__c=null; 
 				parentCaseToUpdate.add(parentCase); 
 			}
-		}		
+		}	   
 		if(!parentCaseToUpdate.isEmpty()){
 			update parentCaseToUpdate; 
 		}

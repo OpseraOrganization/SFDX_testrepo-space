@@ -1,12 +1,12 @@
 /*****************************************************************
 Description: Wrapper class to store Parent Case attributes that are being sent to SOO
-History																														
-DATE			AUTHOR		  CHANGE
+History									
+DATE			AUTHOR	CHANGE
 11/11/2018	  Shiv Maila	  Created
 20/12/2018	  Vinod Ch		Updated
 10/03/2019	Harikishore	Updated
 *****************************************************************/
-Public class HWS_ParentCase_WRAPPER {
+Public without sharing class HWS_ParentCase_WRAPPER {
 	Public String SRMRequestID;
 	Public String CaseNumber;
 	Public String RequestOrigin;
@@ -33,9 +33,24 @@ Public class HWS_ParentCase_WRAPPER {
 	Public String CustomerCompliance;
 	Public String AddressType;
 	Public String PickupLocation=System.Label.Account_ID_of_Global_Warehouse_Addresses;
-	Public List<HWS_ChildCases_WRAPPER> Requestitems;	   
-	
-	Public HWS_ParentCase_WRAPPER(Case ParentCase,String erpSystem,String serviceType) {
+	//NOKIASC-35959
+	Public String ShipToAddressIDLocal;
+	Public String DeliveryNoteLocal;
+	Public String PostalCodLocal;
+	Public String StreetLocal;
+	Public String AddressLine2Local;
+	Public String AddressLine3Local;
+	Public String StateLocal;
+	Public String CountryLocal;
+	Public String CityLocal;
+	Public String RegionLocal;
+	Public String AddressTypeLocal;
+	Public List<HWS_ChildCases_WRAPPER> Requestitems;	
+	Public Boolean LocalCharactersAccepted = False;
+	//NOKIASC-36273
+	Public String OrderType ;
+	//NOKIASC-36273 combOrdering,childIASAPP20ID
+	Public HWS_ParentCase_WRAPPER(Case ParentCase,String erpSystem,String serviceType,String purchaserType, String invoiceRefId, Boolean combOrdering, String childIASAPP20ID) {
 		this.SRMRequestID = ParentCase.id;
 		this.CaseNumber = ParentCase.CaseNumber;
 		this.RequestOrigin= ParentCase.Origin;
@@ -48,12 +63,55 @@ Public class HWS_ParentCase_WRAPPER {
 		this.DateCreated=convetDateTimetoSOOFormatGMT(ParentCase.CreatedDate);
 		this.CustomerReferenceNumber=ParentCase.HWS_Customer_Reference_Number__c;
 		this.CreatedBy= ParentCase.CreatedBy.Name;
-		this.CustomerCompliance=ParentCase.Account.LE_Customer_Compliance__c;
 		this.Status = ParentCase.Status;
+		//added for NOKIASC-35934 
+		if(purchaserType != null && purchaserType == 'Customer via Partner'){
+			//query account referring to CH_InvoiceReferentialId__c
+			if(invoiceRefId != null){
+	Account resellerAccount = [SELECT Id,Name,AccountNumber,NCP_P20_ID__c,LE_Customer_Compliance__c FROM Account WHERE AccountNumber =: invoiceRefId LIMIT 1];
+	if(resellerAccount != null){
 		if(erpSystem=='P20'){
-			this.SoldToID=ParentCase.Account.NCP_P20_ID__c;
-		}else{
-			this.SoldToID=ParentCase.Account.AccountNumber;
+			this.SoldToID=resellerAccount.NCP_P20_ID__c;
+		}
+		else{
+			this.SoldToID=resellerAccount.AccountNumber;
+		}
+		this.CustomerCompliance = resellerAccount.LE_Customer_Compliance__c;
+		this.AccountName = resellerAccount.Name;
+	}
+			}  
+		}
+		else{
+	  //modified for NOKIASC-38421 -- START
+			if(combOrdering && erpSystem.startswith('P20')){
+				this.SoldToID = 'eSpares-'+invoiceRefId+';P20-'+ParentCase.Account.NCP_P20_ID__c+';exception-'+ParentCase.Account.NCP_P20_ID__c;
+				Account coInvoiceRefAccount = new Account();
+				if(invoiceRefId != null){
+					coInvoiceRefAccount = [SELECT Id,Name FROM Account WHERE AccountNumber =: invoiceRefId LIMIT 1];
+				}
+				this.AccountName = 'eSpares-'+coInvoiceRefAccount.Name+';P20-'+ParentCase.Account.Name+';exception-'+ParentCase.Account.Name;
+				this.OrderType = 'CombinedOrder';
+			}
+			else if(combOrdering && !erpSystem.startswith('P20')){
+				this.SoldToID = 'eSpares-'+ParentCase.Account.AccountNumber+';P20-'+childIASAPP20ID+';exception-'+ParentCase.Account.NCP_P20_ID__c;
+				Account coP20Account = new Account();
+				if(childIASAPP20ID != null){
+					coP20Account = [SELECT Id,Name,NCP_P20_ID__c FROM Account WHERE NCP_P20_ID__c =: childIASAPP20ID LIMIT 1];
+				}
+				this.AccountName = 'eSpares-'+ParentCase.Account.Name+';P20-'+coP20Account.Name+';exception-'+ParentCase.Account.Name;
+				this.OrderType = 'CombinedOrder';
+			}
+			//modified for NOKIASC-38421 -- END
+			else if(erpSystem == 'P20'){
+				this.SoldToID=ParentCase.Account.NCP_P20_ID__c;
+	this.AccountName=ParentCase.Account.Name;
+			}
+			else{
+				this.SoldToID=ParentCase.Account.AccountNumber;
+	this.AccountName=ParentCase.Account.Name;
+			}
+			this.CustomerCompliance=ParentCase.Account.LE_Customer_Compliance__c;
+			//this.AccountName=ParentCase.Account.Name;
 		}
 		//52130 code indicates the service type is Advanced Exchange in Hours-- Added as part of HWST-3435
 		if(serviceType=='Advanced Exchange in Hours' && ((PickupLocation!=Null || PickupLocation!='')&& PickupLocation==ParentCase.Hws_Ship_to_Party_Address__r.ParentId)){
@@ -61,7 +119,6 @@ Public class HWS_ParentCase_WRAPPER {
 		}else{
 			this.AddressType='Delivery';
 		}
-		this.AccountName=ParentCase.Account.Name;
 		this.ShipmentRecipientName=ParentCase.HWS_Shipment_Recipient_Name__c;
 		this.ShipmentRecipientPhone=ParentCase.HWS_Shipment_Recipient_Phone__c;
 		this.ShipmentRecipientEmail=ParentCase.HWS_ShipmentRecipientEmailId__c;
@@ -79,8 +136,26 @@ Public class HWS_ParentCase_WRAPPER {
 		this.Country=ParentCase.Hws_Ship_to_Party_Address__r.BillingCountryCode;
 		this.City=ParentCase.Hws_Ship_to_Party_Address__r.BillingCity;
 		this.Region=ParentCase.Hws_Ship_to_Party_Address__r.Region__c;
-	  
+		//NOKIASC-35959
+		this.ShipToAddressIDLocal = ParentCase.Hws_Ship_to_Party_Address__r.P20_Logistic_ID__c;
+		this.DeliveryNoteLocal=ParentCase.HWS_Delivery_Additional_Information__c;
+		this.PostalCodLocal =ParentCase.Hws_Ship_to_Party_Address__r.ShippingPostalCode;
+		this.StreetLocal=ParentCase.Hws_Ship_to_Party_Address__r.HWS_AddressLineLocal1__c;
+		this.AddressLine2Local=ParentCase.Hws_Ship_to_Party_Address__r.HWS_AddressLineLocal2__c;
+		this.AddressLine3Local=ParentCase.Hws_Ship_to_Party_Address__r.HWS_AddressLineLocal3__c;
+		if(ParentCase.Hws_Ship_to_Party_Address__r.ShippingState!='- - -'){
+	this.StateLocal=ParentCase.Hws_Ship_to_Party_Address__r.ShippingStateCode;
+		}else{
+	this.StateLocal='';
+		}
+		this.CountryLocal=ParentCase.Hws_Ship_to_Party_Address__r.ShippingCountryCode;
+		this.CityLocal=ParentCase.Hws_Ship_to_Party_Address__r.ShippingCity;
+		this.RegionLocal=ParentCase.Hws_Ship_to_Party_Address__r.Region__c;
+		this.AddressTypeLocal='Delivery';
 		this.Requestitems= new List<HWS_ChildCases_WRAPPER>();	
+		if(ParentCase.Hws_Ship_to_Party_Address__r.ShippingStreet != null){
+			this.LocalCharactersAccepted = True;
+		}
 	}
 	/*****************************************************************
 	Description: Method to Convert DateTime field value to 'yyyymmdd' format

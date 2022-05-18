@@ -16,10 +16,10 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		CH_ManageCreateQueueAsynchQueue.doChainJob = false;
 		
 		CH_Workgroup__c wg = new CH_Workgroup__c(CH_End_of_Business_Hours_Threshold__c = 60,
-			 CH_Level_Of_Support__c = 'Initial Support',
-			 CH_Start_of_Business_Hours_Threshold__c = 60,
-			 CH_Type__c = 'Engineer',
-			 Name='TestWorkgroupforScheduleSearch');
+	CH_Level_Of_Support__c = 'Initial Support',
+	CH_Start_of_Business_Hours_Threshold__c = 60,
+	CH_Type__c = 'Engineer',
+	Name='TestWorkgroupforScheduleSearch');
 		insert wg;
 		
 		//Creating Workgroup Schedule without any filter 
@@ -46,11 +46,11 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		
 		//Creating filter 
 		CH_Workgroup_Filter__c schedulefilter = new CH_Workgroup_Filter__c(CH_Country__c = 'India',
-					 CH_Outage__c = 'Yes',
-					 CH_Region__c='Market India',
-					 CH_Severity__c='Critical',
-					 CH_Workgroup_Schedule__c=wgScheduleWithFilter.Id,
-					 CH_Workgroup_Type__c = 'Engineer' );
+		 CH_Outage__c = 'Yes',
+		 CH_Region__c='Market India',
+		 CH_Severity__c='Critical',
+		 CH_Workgroup_Schedule__c=wgScheduleWithFilter.Id,
+		 CH_Workgroup_Type__c = 'Engineer' );
 		insert schedulefilter;
 		
 		
@@ -68,7 +68,7 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		
 		//Creating filter 
 		CH_Workgroup_Filter__c schedulefilter1 = new CH_Workgroup_Filter__c(CH_Country__c = 'India',
-							CH_Workgroup_Schedule__c=wgScheduleWithFilter1.Id);
+				CH_Workgroup_Schedule__c=wgScheduleWithFilter1.Id);
 		insert schedulefilter1;
 		
 		//Creating Workgroup Schedule with filter and weight 2
@@ -85,8 +85,8 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		
 		//Creating filter 
 		CH_Workgroup_Filter__c schedulefilter2 = new CH_Workgroup_Filter__c(CH_Country__c = 'India',
-							CH_Outage__c = 'Yes',
-							CH_Workgroup_Schedule__c=wgScheduleWithFilter2.Id);
+				CH_Outage__c = 'Yes',
+				CH_Workgroup_Schedule__c=wgScheduleWithFilter2.Id);
 		insert schedulefilter2;
 		
 		//Creating Workgroup Schedule with filter and weight 3
@@ -102,9 +102,9 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		
 		//Creating filter 
 		CH_Workgroup_Filter__c schedulefilter3 = new CH_Workgroup_Filter__c(CH_Country__c = 'India',
-							CH_Outage__c = 'Yes',
-							CH_Workgroup_Type__c = 'Engineer',
-							CH_Workgroup_Schedule__c=wgScheduleWithFilter3.Id);
+				CH_Outage__c = 'Yes',
+				CH_Workgroup_Type__c = 'Engineer',
+				CH_Workgroup_Schedule__c=wgScheduleWithFilter3.Id);
 		insert schedulefilter3;
 		
 		//Creating Workgroup Schedule with filter and weight 4
@@ -120,10 +120,10 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		
 		//Creating filter 
 		CH_Workgroup_Filter__c schedulefilter4 = new CH_Workgroup_Filter__c(CH_Country__c = 'India',
-							CH_Outage__c = 'Yes',
-							CH_Workgroup_Type__c = 'Engineer',
-							CH_Severity__c='Critical',
-							CH_Workgroup_Schedule__c=wgScheduleWithFilter4.Id);
+				CH_Outage__c = 'Yes',
+				CH_Workgroup_Type__c = 'Engineer',
+				CH_Severity__c='Critical',
+				CH_Workgroup_Schedule__c=wgScheduleWithFilter4.Id);
 		insert schedulefilter4;
 		
 		//Creating Workgroup Schedule with filter and weight 5 
@@ -139,10 +139,10 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		
 		//Creating filter 
 		CH_Workgroup_Filter__c schedulefilter5 = new CH_Workgroup_Filter__c(CH_Country__c = 'Albania',
-							CH_Outage__c = 'No',
-							CH_Workgroup_Type__c = 'Expert',
-							CH_Severity__c='Minor',
-							CH_Workgroup_Schedule__c=wgScheduleWithFilter5.Id);
+				CH_Outage__c = 'No',
+				CH_Workgroup_Type__c = 'Expert',
+				CH_Severity__c='Minor',
+				CH_Workgroup_Schedule__c=wgScheduleWithFilter5.Id);
 		insert schedulefilter5;
 		
 		//Creating Workgroup Schedule with filter and weight 6
@@ -158,11 +158,11 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		
 		//Creating filter 
 		CH_Workgroup_Filter__c schedulefilter6 = new CH_Workgroup_Filter__c(CH_Country__c = 'India',
-							CH_Outage__c = 'Yes',
-							CH_Region__c='Market India',
-							CH_Severity__c='Critical',
-							CH_Workgroup_Schedule__c=wgScheduleWithFilter6.Id,
-							CH_Workgroup_Type__c = 'Engineer' );
+				CH_Outage__c = 'Yes',
+				CH_Region__c='Market India',
+				CH_Severity__c='Critical',
+				CH_Workgroup_Schedule__c=wgScheduleWithFilter6.Id,
+				CH_Workgroup_Type__c = 'Engineer' );
 		insert schedulefilter6;
 		//Associating filter with customer
 		Id accountLegalEntityRecordType = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
@@ -191,11 +191,11 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		
 		//Creating filter 
 		CH_Workgroup_Filter__c schedulefilter7 = new CH_Workgroup_Filter__c(CH_Country__c = 'India',
-							CH_Outage__c = 'Yes',
-							CH_Region__c='Market India',
-							CH_Severity__c='Critical',
-							CH_Workgroup_Schedule__c=wgScheduleWithFilter7.Id,
-							CH_Workgroup_Type__c = 'Engineer' );
+				CH_Outage__c = 'Yes',
+				CH_Region__c='Market India',
+				CH_Severity__c='Critical',
+				CH_Workgroup_Schedule__c=wgScheduleWithFilter7.Id,
+				CH_Workgroup_Type__c = 'Engineer' );
 		insert schedulefilter7;
 		//Associating filter with customer
 		CH_Workgroup_Filter_Customer_Association__c custAsso7 = new CH_Workgroup_Filter_Customer_Association__c();
@@ -235,6 +235,8 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		List<string> expectedOptions = new List<string>();
 		expectedOptions.add('Customer Care Manager');
 		expectedOptions.add('Engineer');
+		expectedOptions.add('Exclusions Quotation Support-CDM');
+		expectedOptions.add('Exclusions Quotation Support-OC');
 		expectedOptions.add('Expert');
 		expectedOptions.add('Field Support');
 		expectedOptions.add('Incident Managers');
@@ -272,19 +274,19 @@ public class CH_CA_WorkgroupScheduleSearch_Test {
 		string workgroupId = [SELECT ID FROM CH_Workgroup__C WHERE Name='TestWorkgroupforScheduleSearch'].Id; 
 		//getting actual results of workgroup schedules
 		List <Object> actual = CH_CA_WorkgroupScheduleSearch_Controller.searchSchedules( startDate,  endDate, setStartTime, setEndTime,  active,  workgroupType, 
-							customer,  region,  country, 
-							severity,  product, outage , '',workgroupId,'','','');
+				customer,  region,  country, 
+				severity,  product, outage , '',workgroupId,'','','');
 		
 		//creating expected list of results i.e workgroup schedules with Active = true
 		DateTime strtD = DateTime.now().addDays(-20);
 		DateTime endD = DateTime.now().addDays(20);
 		List <sObject> expected = [SELECT Id,Name,CH_Start_DateTime__c,CH_EndDateTime__c,CH_StartDateTime__c,CH_End_DateTime__c,CH_Active__c ,CH_Workgroup_Filters_Count__c, 
-		   (SELECT CH_Workgroup_Type__c,CH_Region__c,CH_Country__c,CH_Severity__c,CH_Outage__c  FROM CH_Workgroup_Filters__r)
-		   FROM CH_Workgroup_Schedule__c 
-		   WHERE CH_Workgroup__c = : workgroupId 
-		   AND CH_Start_DateTime__c >= :strtD
-		   AND CH_Start_DateTime__c <= :endD
-		   AND CH_Active__c =true]; 
+	 (SELECT CH_Workgroup_Type__c,CH_Region__c,CH_Country__c,CH_Severity__c,CH_Outage__c  FROM CH_Workgroup_Filters__r)
+	 FROM CH_Workgroup_Schedule__c 
+	 WHERE CH_Workgroup__c = : workgroupId 
+	 AND CH_Start_DateTime__c >= :strtD
+	 AND CH_Start_DateTime__c <= :endD
+	 AND CH_Active__c =true]; 
 		//comparing expected results with actual ones
 		system.assertEquals(string.valueOf(expected), string.valueOf(actual));
 		test.stopTest();

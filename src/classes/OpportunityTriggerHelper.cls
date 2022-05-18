@@ -7,10 +7,10 @@ Note : Fix to handle unwanted update on probability in inline editing on Opportu
 ******************************/
 public inherited sharing class OpportunityTriggerHelper
 {
-	private final Id directRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.DIRECT_RECORD_TYPE).getRecordTypeId();
-	private final Id inDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_record_type).getRecordTypeId();
-	private final Id readOnlyDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.READ_ONLY_DIRECT_RECORD_TYPE).getRecordTypeId();
-	private final Id readOnlyIndirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.READ_ONLY_INDIRECT_RECORD_TYPE).getRecordTypeId();
+	public final Id directRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.DIRECT_RECORD_TYPE).getRecordTypeId();
+	public final Id inDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_record_type).getRecordTypeId();
+	public final Id readOnlyDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.READ_ONLY_DIRECT_RECORD_TYPE).getRecordTypeId();
+	public final Id readOnlyIndirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.READ_ONLY_INDIRECT_RECORD_TYPE).getRecordTypeId();
 	private final Id preOppRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.PREOPPTY_RECORD_TYPE).getRecordTypeId();
 	public String approvaldata;
 	public static boolean isExecuting = false;
@@ -29,17 +29,17 @@ public inherited sharing class OpportunityTriggerHelper
 
 	//Sales Process: Sprint 5 : Req-758 Notify HSSE
 	/*****************************
-	*Method Name: notifyHSSERiskCountry
-	*Description: On update of phase status
-	*Parameters: Map<Id, Opportunity> oldMap, Map<Id, Opportunity> newMap
-	*******************************/
+*Method Name: notifyHSSERiskCountry
+*Description: On update of phase status
+*Parameters: Map<Id, Opportunity> oldMap, Map<Id, Opportunity> newMap
+*******************************/
 	@InvocableMethod
-	public static void notifyHSSERiskCountry(List<Opportunity> OpportunityList) {
+	public static void notifyHSSERiskCountry(List<Opportunity> opportunityList) {
 		try {
 			if(GlobalConstants.OPPORTUNITYTRIGGER_NOTIFY_HSSE == False) {
 	String country;
 	Set<String> isoCodeList = new Set<String>();
-	Map<String, String> ISOcodeCountryMap = new Map<String, String>();
+	Map<String, String> isoCodeCountryMap = new Map<String, String>();
 	List<ID> idlist = new List<ID>();
 	List<Risk_Country__c> csList = new List<Risk_Country__c>();
 	List<SendTo__c> recipientList = new List<SendTo__c>();
@@ -49,7 +49,7 @@ public inherited sharing class OpportunityTriggerHelper
 	if(csList != Null) {
 		for (Risk_Country__c obj1: csList) {
 			isoCodeList.add(obj1.ISO_Code__c);
-			ISOcodeCountryMap.put(obj1.ISO_Code__c, obj1.Country__c);
+			isoCodeCountryMap.put(obj1.ISO_Code__c, obj1.Country__c);
 		}
 		Id oppDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.DIRECT_RECORD_TYPE).getRecordTypeId();
 		Id oppIndirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_record_type).getRecordTypeId();
@@ -57,20 +57,20 @@ public inherited sharing class OpportunityTriggerHelper
 		for(SendTo__c obj: recipientList) {
 			sendToList.add(obj.Name);
 		}
-		for(Opportunity optyid : OpportunityList) {
+		for(Opportunity optyid : opportunityList) {
 			idlist.add(optyid.Id);
 		}
 		List<Opportunity> optyList = [SELECT id, End_Customer__r.CountryNameISO2__c FROM Opportunity WHERE id in:idlist];
 		If(!optyList.isEmpty()) {
 			for(Opportunity optyObject : optyList) {
-	optyIdISOcode.put(optyObject.id, optyObject.End_Customer__r.CountryNameISO2__c);
+				optyIdISOcode.put(optyObject.id, optyObject.End_Customer__r.CountryNameISO2__c);
 			}
 		}
-		for (Opportunity Obj: OpportunityList) {
+		for (Opportunity Obj: opportunityList) {
 			if((Obj.RecordTypeId.equals(oppDirectRecordTypeId) || Obj.RecordTypeId.equals(oppIndirectRecordTypeId)) && isoCodeList.contains(optyIdISOcode.get(Obj.Id))) {
-	country = ISOcodeCountryMap.get(optyIdISOcode.get(Obj.Id));
-	OpportunityTriggerHelper OpptTrigHelper = new OpportunityTriggerHelper();
-	OpptTrigHelper.sendEmail(Obj.Id, sendToList, country);
+				country = isoCodeCountryMap.get(optyIdISOcode.get(Obj.Id));
+				OpportunityTriggerHelper opptTrigHelper = new OpportunityTriggerHelper();
+				opptTrigHelper.sendEmail(Obj.Id, sendToList, country);
 			}
 		}
 	}
@@ -82,32 +82,32 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: Currenychange
-	*Description: Update unweighted amount
-	*Parameters: OpptyID
-	*******************************/
+*Method Name: Currenychange
+*Description: Update unweighted amount
+*Parameters: OpptyID
+*******************************/
 	@Future
-	public static void Currenychange(Set<ID> Opptyid) {
-		List<Opportunity> UpdateOppty = new List<Opportunity>();
-		Map<Object, Set<String>> AggResultMap = new Map<Object, Set<String>>();
+	public static void Currenychange(Set<ID> opptyid) {
+		List<Opportunity> updateOppty = new List<Opportunity>();
+		Map<Object, Set<String>> aggResultMap = new Map<Object, Set<String>>();
 		try {
 			List<AggregateResult> aggResultList = [SELECT Business_Group__c, Opportunity__c FROM Order_Intake_Forecast__c
-	  WHERE Opportunity__c  = :Opptyid AND Allocation__c = false
-	  GROUP BY Business_Group__c, Opportunity__c Limit:Limits.getLimitQueryRows()];
+			   WHERE Opportunity__c  = :opptyid AND Allocation__c = false
+			   GROUP BY Business_Group__c, Opportunity__c Limit:Limits.getLimitQueryRows()];
 			for(AggregateResult aggResult:aggResultList)
 			{
-	if (!AggResultMap.containsKey(aggResult.get('Opportunity__c')))
-		AggResultMap.put(aggResult.get('Opportunity__c'), new Set<String>());
+	if (!aggResultMap.containsKey(aggResult.get('Opportunity__c')))
+		aggResultMap.put(aggResult.get('Opportunity__c'), new Set<String>());
 
-	if (AggResultMap.containsKey(aggResult.get('Opportunity__c')))
-		AggResultMap.get(aggResult.get('Opportunity__c')).add(String.ValueOf(aggResult.get('Business_Group__c')));
+	if (aggResultMap.containsKey(aggResult.get('Opportunity__c')))
+		aggResultMap.get(aggResult.get('Opportunity__c')).add(String.ValueOf(aggResult.get('Business_Group__c')));
 			}
 
-			List<Opportunity> newoppList = [SELECT id, Positive_OIF_EUR__c, OIF_Value_Won_USD__c, Mono_or_Multi_BG__c, Sales_Outcome__c, OIF_Value_Cancel_USD__c, Positive_OIF__c, Negative_OIF_EUR__c, Negative_OIF__c, RecordType.name FROM Opportunity WHERE id = :Opptyid AND RecordType.name != 'Pre-opportunity' Limit:Opptyid.size()];
+			List<Opportunity> newoppList = [SELECT id, Positive_OIF_EUR__c, OIF_Value_Won_USD__c, Mono_or_Multi_BG__c, Sales_Outcome__c, OIF_Value_Cancel_USD__c, Positive_OIF__c, Negative_OIF_EUR__c, Negative_OIF__c, RecordType.name FROM Opportunity WHERE id = :opptyid AND RecordType.name != 'Pre-opportunity' Limit:opptyid.size()];
 			for (Opportunity newopp:newoppList) {
-	if(AggResultMap <> Null &&AggResultMap.get(newopp.id) <> Null && AggResultMap.get(newopp.id).size() > 1)
+	if(aggResultMap <> Null &&aggResultMap.get(newopp.id) <> Null && aggResultMap.get(newopp.id).size() > 1)
 		newopp.Mono_or_Multi_BG__c='Multi-BG';
-	else if(AggResultMap <> Null &&AggResultMap.get(newopp.id) <> Null && AggResultMap.get(newopp.id).size() == 1)
+	else if(aggResultMap <> Null &&aggResultMap.get(newopp.id) <> Null && aggResultMap.get(newopp.id).size() == 1)
 		newopp.Mono_or_Multi_BG__c='Mono-BG';
 	else
 		newopp.Mono_or_Multi_BG__c = null;
@@ -122,10 +122,10 @@ public inherited sharing class OpportunityTriggerHelper
 		newopp.Unweighted_Amount_USD__c = newopp.OIF_Value_Cancel_USD__c.setScale(2);
 		newopp.Is_Automated__c = TRUE;
 	}
-	UpdateOppty.add(newopp);
+	updateOppty.add(newopp);
 			}
-			if(!UpdateOppty.isEmpty()) {
-	update UpdateOppty;
+			if(!updateOppty.isEmpty()) {
+	update updateOppty;
 	GlobalConstants.OPPORTUNITYTRIGGER_CURRENCY_CHANGE = TRUE;
 			}
 		} catch (Exception ex) {
@@ -134,30 +134,30 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: MassupdateonOIFLines
-	*Description: This method will used to update the all OIF lines to cancelled/Lost
-	*Parameters: List<Opportunity>
-	*******************************/
+*Method Name: MassupdateonOIFLines
+*Description: This method will used to update the all OIF lines to cancelled/Lost
+*Parameters: List<Opportunity>
+*******************************/
 	@Future
-	public static void MassupdateonOIFLines(Set<Id> OpptyMap) {
-		list<Order_Intake_Forecast__c> OIFUpdate = new List<Order_Intake_Forecast__c>();
+	public static void MassupdateonOIFLines(Set<Id> opptyMap) {
+		list<Order_Intake_Forecast__c> oifUpdate = new List<Order_Intake_Forecast__c>();
 		try{
-			List<Order_Intake_Forecast__c> oifRecList = [SELECT Id, Opportunity__c, Opportunity__r.Sales_Outcome__c, Forecast_Category__c, BusinessLine__c FROM Order_Intake_Forecast__c WHERE Opportunity__c = :OpptyMap and Allocation__c = false AND BusinessLine__c != Null];
+			List<Order_Intake_Forecast__c> oifRecList = [SELECT Id, Opportunity__c, Opportunity__r.Sales_Outcome__c, Forecast_Category__c, BusinessLine__c FROM Order_Intake_Forecast__c WHERE Opportunity__c = :opptyMap and Allocation__c = false AND BusinessLine__c != Null];
 			for(Order_Intake_Forecast__c OIFRec:oifRecList) {
 	if(OIFRec.Opportunity__r.Sales_Outcome__c <> Null && (OIFRec.Opportunity__r.Sales_Outcome__c.equalsignorecase(GlobalConstants.CANCEL_BY_CUSTOMER) || OIFRec.Opportunity__r.Sales_Outcome__c.equalsignorecase(GlobalConstants.WITHDRAWN_BY_NOKIA) || OIFRec.Opportunity__r.Sales_Outcome__c.equalsignorecase(GlobalConstants.OPP_OBSOLETE)))
 	{
 		OIFRec.Forecast_Category__c = GlobalConstants.CANCEL;
-		OIFUpdate.add(OIFRec);
+		oifUpdate.add(OIFRec);
 	} else if(OIFRec.Opportunity__r.Sales_Outcome__c <> Null && (OIFRec.Opportunity__r.Sales_Outcome__c.equalsignorecase(GlobalConstants.OPP_LOST_TO_COMPETITOR))) {
 		if(OIFRec.Forecast_Category__c <> Null && !OIFRec.Forecast_Category__c.equalsignorecase(GlobalConstants.CANCEL) && !OIFRec.Forecast_Category__c.equalsignorecase(GlobalConstants.EXCLUDED))
 			OIFRec.Forecast_Category__c = GlobalConstants.LOST;
 		if(OIFRec.Forecast_Category__c <> Null && OIFRec.Forecast_Category__c.equalsignorecase(GlobalConstants.EXCLUDED))
 			OIFRec.Forecast_Category__c = GlobalConstants.CANCEL;
-		OIFUpdate.add(OIFRec);
+		oifUpdate.add(OIFRec);
 	}
 			}
-			if(!OIFUpdate.isEmpty())
-	Database.update(OIFUpdate, False);
+			if(!oifUpdate.isEmpty())
+	Database.update(oifUpdate, False);
 		}
 		catch(Exception ex) {
 			ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.MASS_UPDATE);
@@ -165,12 +165,12 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: updateProbabilityOfPSROInFuture
-	*Description: This method will call FROM 'updateProbabilityOfPSROAsSalesOptyAfterUpdate'
-	*Requirement: PreSales : 5072
-	*Parameters: salesOptyIdsSet
-	*Test coverage from: OpportunityTriggerHelperTest
-	*******************************/
+*Method Name: updateProbabilityOfPSROInFuture
+*Description: This method will call FROM 'updateProbabilityOfPSROAsSalesOptyAfterUpdate'
+*Requirement: PreSales : 5072
+*Parameters: salesOptyIdsSet
+*Test coverage from: OpportunityTriggerHelperTest
+*******************************/
 	@future
 	public static void updateProbabilityOfPSROInFuture(Set<Id> salesOptyIdsSet) {
 		List<Opportunity> salesOptyList = new List<Opportunity>();
@@ -193,12 +193,12 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: ClosedOpptyStatustoTeam
-	*Description:  Chatter Post to Oppty and Offer Team members to inform about to Opportunity Closed Status info
-	Req:5077 - chatter post on oppty close(positive and negative)
-	Req 5546 Ap release
-	*Parameters: opportunitiesMap
-	*******************************/
+*Method Name: ClosedOpptyStatustoTeam
+*Description:  Chatter Post to Oppty and Offer Team members to inform about to Opportunity Closed Status info
+Req:5077 - chatter post on oppty close(positive and negative)
+Req 5546 Ap release
+*Parameters: opportunitiesMap
+*******************************/
 	@future
 	public static void ClosedOpptyStatustoTeam(Set<Id> opptyIdSet) {
 
@@ -211,7 +211,7 @@ public inherited sharing class OpportunityTriggerHelper
 		Map<ID, Set<ID>> cTHeadDelegate = new Map<ID, Set<ID>>();
 		Map<ID, ID> cTHeadID = new Map<ID, ID>();
 		Map<ID, Offer__c> opptyIdOfferMap = new Map<ID, Offer__c>();
-		String SupportingBGsBUs='';
+		String supportingBGsBUs='';
 		ConnectApi.FeedItemInput feedItemInput ;
 		ConnectApi.MessageBodyInput messageBodyInput;
 		ConnectApi.TextSegmentInput textSegmentInput;
@@ -219,8 +219,8 @@ public inherited sharing class OpportunityTriggerHelper
 			GlobalConstants.OPPORTUNITY_CLOSE_CHECK = True;
 			if(opptyIdSet.size() > 0) {
 	opportunitiesMap = new Map<Id,Opportunity>([SELECT Id,Org_L7__c,CT_Head__c,OwnerId,Name,Account_Name__c,StageName,Opportunity_ID__c,Country__c,CurrencyIsoCode,Amount,Lead_BU__c,
-			Lead_BG__c,Supporting_BGs_BUs__c,LOA_Level__c,Sales_Outcome__c,Sales_Outcome_Reason__c,Second_Reason__c,Third_Reason__c FROM opportunity
-			WHERE id in: opptyIdSet LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()]);
+						Lead_BG__c,Supporting_BGs_BUs__c,LOA_Level__c,Sales_Outcome__c,Sales_Outcome_Reason__c,Second_Reason__c,Third_Reason__c FROM opportunity
+						WHERE id in: opptyIdSet LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()]);
 			}
 			Map<Id, Offer__c> offerinfo = new Map<Id, Offer__c>([SELECT id, name, Opportunity__c, LoA_Approval_Level__c, LoA_Level_Before_Trigger_Approval__c FROM Offer__c WHERE ActiveOffer__c = True AND Opportunity__c = :opportunitiesMap.keySet() LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows() ]);
 			for(Offer__c offr : offerinfo.values()) {
@@ -258,7 +258,7 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 	//colleceting the delegates info
 	List<Apttus_Approval__Backup_Approver__c> delegateInfoList = [SELECT id, Apttus_Approval__Current_User__c, Delegate_Approver1__c, Delegate_Approver2__c, Delegate_Approver3__c, Apttus_Approval__Backup_User__c
-		 FROM Apttus_Approval__Backup_Approver__c WHERE Apttus_Approval__IsActive__c = true and Apttus_Approval__InEffect__c = true and Apttus_Approval__Current_User__c = :cTHeadID.Keyset() LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()];
+					 FROM Apttus_Approval__Backup_Approver__c WHERE Apttus_Approval__IsActive__c = true and Apttus_Approval__InEffect__c = true and Apttus_Approval__Current_User__c = :cTHeadID.Keyset() LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()];
 	for (Apttus_Approval__Backup_Approver__c delegateInfo:delegateInfoList) {
 		if(!CTHeadDelegate.containsKey(DelegateInfo.Apttus_Approval__Current_User__c)) {
 			emptySet = new Set<Id>();
@@ -279,17 +279,17 @@ public inherited sharing class OpportunityTriggerHelper
 	for (Opportunity opp: opportunitiesMap.values()) {
 		if(cTHeadinfo.get(opp.Org_L7__c) <> Null) {
 			if (opp.Org_L7__c <> Null && !mapOppIdRelatedUsers.containsKey(opp.Id)) {
-	emptySet = new Set<Id>();
-	mapOppIdRelatedUsers.put(opp.Id, emptySet);
+				emptySet = new Set<Id>();
+				mapOppIdRelatedUsers.put(opp.Id, emptySet);
 			}
 			if(opp.Org_L7__c <> Null)
-	mapOppIdRelatedUsers.get(opp.Id).add(cTHeadinfo.get(opp.Org_L7__c));
+				mapOppIdRelatedUsers.get(opp.Id).add(cTHeadinfo.get(opp.Org_L7__c));
 			//passing the delegates id
 			if(!CTHeadDelegate.isEmpty() && CTHeadDelegate.get(cTHeadinfo.get(opp.Org_L7__c)).size() > 0) {
-	for(ID delegateID:CTHeadDelegate.get(cTHeadinfo.get(opp.Org_L7__c))) {
+				for(ID delegateID:CTHeadDelegate.get(cTHeadinfo.get(opp.Org_L7__c))) {
 		if(DelegateID <> NUll)
 			mapOppIdRelatedUsers.get(opp.Id).add(DelegateID);
-	}
+				}
 			}
 		}
 	}
@@ -306,8 +306,8 @@ public inherited sharing class OpportunityTriggerHelper
 		String[] delegateApproverIds = ReqInfo.Apttus_Approval__DelegateApproverIds__c.split(GlobalConstants.COMMA);
 		for (string delegateapproverId: delegateApproverIds) {
 			if (!mapOppIdRelatedUsers.containsKey(ReqInfo.Apttus_Approval__Object_Id__c)) {
-	emptySet = new Set<Id>();
-	mapOppIdRelatedUsers.put(ReqInfo.Apttus_Approval__Object_Id__c, emptySet);
+				emptySet = new Set<Id>();
+				mapOppIdRelatedUsers.put(ReqInfo.Apttus_Approval__Object_Id__c, emptySet);
 			}
 			mapOppIdRelatedUsers.get(ReqInfo.Apttus_Approval__Object_Id__c).add(delegateapproverId);
 		}
@@ -371,13 +371,13 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 
 			for (integer j = StartLoop; j < StartLoop + 24; j++) {
-	if (lstIds.size() > j) {
+				if (lstIds.size() > j) {
 		mentionSegmentInput = new ConnectApi.MentionSegmentInput();
 		mentionSegmentInput.id = lstIds[j];
 		if(mentionSegmentInput != null) {
 			messageBodyInput.messageSegments.add(mentionSegmentInput);
 		}
-	}
+				}
 			}
 			StartLoop += 24;
 			textSegmentInput = new ConnectApi.TextSegmentInput();
@@ -455,9 +455,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opportunitiesMap.get(oppId).Account_Name__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Account_Name__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Account_Name__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 
 			// Country name
@@ -470,9 +470,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opportunitiesMap.get(oppId).Country__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Country__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Country__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 
 			// Unweighted Amount
@@ -513,9 +513,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opportunitiesMap.get(oppId).Lead_BG__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Lead_BG__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Lead_BG__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 
 			//Lead BU
@@ -529,14 +529,14 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opportunitiesMap.get(oppId).Lead_BU__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Lead_BU__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Lead_BU__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 
 			//Supporting BG/BU
 			if(opportunitiesMap.get(oppId).Supporting_BGs_BUs__c <> Null && opportunitiesMap.get(oppId).Supporting_BGs_BUs__c <> ''){
-	SupportingBGsBUs = opportunitiesMap.get(oppId).Supporting_BGs_BUs__c.replaceAll(';',', ');
+				supportingBGsBUs = opportunitiesMap.get(oppId).Supporting_BGs_BUs__c.replaceAll(';',', ');
 			}
 			messageBodyInput.messageSegments.add(markupBeginSegmentSpace);
 			messageBodyInput.messageSegments.add(markupEndSegmentSpace);
@@ -546,10 +546,10 @@ public inherited sharing class OpportunityTriggerHelper
 			textSegmentInput.text +='Supporting BGs/BUs:'+GlobalConstants.SPACE;
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
-			if(SupportingBGsBUs != Null){
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE+SupportingBGsBUs;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+			if(supportingBGsBUs != Null){
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE+supportingBGsBUs;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 			messageBodyInput.messageSegments.add(markupBeginSegmentSpace);
 			messageBodyInput.messageSegments.add(markupEndSegmentSpace);
@@ -577,9 +577,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opptyIdOfferMap.size() > 0 && opptyIdOfferMap.containsKey(oppId) && opptyIdOfferMap.get(oppId).LoA_Approval_Level__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opptyIdOfferMap.get(oppId).LoA_Approval_Level__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opptyIdOfferMap.get(oppId).LoA_Approval_Level__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 
 			// LoA Level before STA
@@ -592,9 +592,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opptyIdOfferMap.size() > 0 && opptyIdOfferMap.containsKey(oppId) && opptyIdOfferMap.get(oppId).LoA_Level_Before_Trigger_Approval__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opptyIdOfferMap.get(oppId).LoA_Level_Before_Trigger_Approval__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opptyIdOfferMap.get(oppId).LoA_Level_Before_Trigger_Approval__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 
 			//New Paragraph
@@ -629,9 +629,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opportunitiesMap.get(oppId).Sales_Outcome__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Sales_Outcome__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Sales_Outcome__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 			messageBodyInput.messageSegments.add(markupBeginSegmentSpace);
 			messageBodyInput.messageSegments.add(markupEndSegmentSpace);
@@ -646,9 +646,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opportunitiesMap.get(oppId).Sales_Outcome_Reason__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Sales_Outcome_Reason__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Sales_Outcome_Reason__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 			messageBodyInput.messageSegments.add(markupBeginSegmentSpace);
 			messageBodyInput.messageSegments.add(markupEndSegmentSpace);
@@ -663,9 +663,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opportunitiesMap.get(oppId).Second_Reason__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Second_Reason__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Second_Reason__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 			messageBodyInput.messageSegments.add(markupBeginSegmentSpace);
 			messageBodyInput.messageSegments.add(markupEndSegmentSpace);
@@ -680,9 +680,9 @@ public inherited sharing class OpportunityTriggerHelper
 			messageBodyInput.messageSegments.add(textSegmentInput);
 			messageBodyInput.messageSegments.add(markupEndSegmentBold);
 			if(opportunitiesMap.get(oppId).Third_Reason__c != Null) {
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Third_Reason__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + opportunitiesMap.get(oppId).Third_Reason__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 			}
 			messageBodyInput.messageSegments.add(markupBeginSegmentSpace);
 			messageBodyInput.messageSegments.add(markupEndSegmentSpace);
@@ -737,7 +737,7 @@ public inherited sharing class OpportunityTriggerHelper
 			feedItemInput.feedElementType = ConnectApi.FeedElementType.FeedItem;
 			feedItemInput.subjectId = oppId;
 			if (!test.isRunningTest()) {
-	ConnectApi.FeedElement feedElement = ConnectApi.ChatterFeeds.postFeedElement(Network.getNetworkId(), feedItemInput);
+				ConnectApi.FeedElement feedElement = ConnectApi.ChatterFeeds.postFeedElement(Network.getNetworkId(), feedItemInput);
 			}
 		}
 	}
@@ -749,56 +749,37 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: probabilityUpdate
-	*Description: This method will update probability on oppty with the old value if changed by inline editing, and set 0 for negative value and 100 for positive
-	*Parameters: Opportunity List, Opportunity Map
-	*Test coverage from: OpportunityTriggerHelperTest
-	* 1.0: Chnaging the logic FROM Sales Outcome to StageName
-	*******************************/
+*Method Name: probabilityUpdate
+*Description: This method will update probability on oppty with the old value if changed by inline editing, and set 0 for negative value and 100 for positive
+*Parameters: Opportunity List, Opportunity Map
+*Test coverage from: OpportunityTriggerHelperTest
+* 1.0: Chnaging the logic FROM Sales Outcome to StageName
+*******************************/
 	public void probabilityUpdateInline( Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> opptyOldMap)
 	{
-		Set<ID> accountIdSet = new Set<ID>();
-		List<Opportunity> opptyList = new List<Opportunity>();
-		if (OpportunityTriggerHelper.isExecuting)
-		{
-			// if was executed during the same context
-			// avoid recursion
+		List<Opportunity> opptyRecList = new List<Opportunity>();
+		if (OpportunityTriggerHelper.isExecuting) // if was executed during the same context, avoid recursion
 			return;
-		}
-		for (Opportunity opty: opptyNewMap.values())
-		{
-			opptyList.add(opty);
-		}
+
 		try
 		{
-			for (Opportunity opptyObj: opptyList)
+			for (Opportunity opptyObj: opptyNewMap.values())
 			{
 	if (opptyObj.Probability == 0 && opptyOldMap.get(opptyObj.Id).probability != 0 &&
-		 opptyObj.StageName != opptyOldMap.get(opptyObj.Id).StageName &&
-		 (opptyObj.StageName == GlobalConstants.IDENTIFY_OPPORTUNITY || opptyObj.StageName == GlobalConstants.DEVELOP_OPPORTUNITY || opptyObj.StageName == GlobalConstants.CREATE_OFFER || opptyObj.StageName == GlobalConstants.WIN_THE_CASE_NEGOTIATE) &&
-		 (opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId))
+		opptyObj.StageName != opptyOldMap.get(opptyObj.Id).StageName &&
+		(opptyObj.StageName == GlobalConstants.IDENTIFY_OPPORTUNITY || opptyObj.StageName == GlobalConstants.DEVELOP_OPPORTUNITY || opptyObj.StageName == GlobalConstants.CREATE_OFFER || opptyObj.StageName == GlobalConstants.WIN_THE_CASE_NEGOTIATE) &&
+		(opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId))
 	{
-		accountIdSet.add(opptyObj.accountId);
+		Opportunity opptyRec = new Opportunity(Id = opptyObj.Id);
+		opptyRec.probability = opptyOldMap.get(opptyObj.Id).probability;
+		opptyRecList.add(opptyRec);
 	}
 			}
-			if (!accountIdSet.isEmpty())
+			if (!opptyRecList.isEmpty())
 			{
-	List<Opportunity> opptyRecList = new List<Opportunity>();
-	Map<ID, Account> accountMap = new Map<ID, Account>([SELECT id, AccountNumber FROM Account WHERE id IN: accountIdSet LIMIT: accountIdSet.size()]);
-	for (Opportunity oppty: opptyList)
-	{
-		if (accountMap.get(oppty.accountId).AccountNumber != NULL)
-		{
-			Opportunity opptyRec = new Opportunity(Id = oppty.Id);
-			opptyRec.probability = opptyOldMap.get(oppty.Id).probability;
-			opptyRecList.add(opptyRec);
-		}
-	}
-	if(!opptyRecList.isEmpty())
-		Database.update(opptyRecList, false);
-
-	OpportunityTriggerHelper.isExecuting = true;
+	Database.update(opptyRecList, false);
 			}
+			OpportunityTriggerHelper.isExecuting = true;
 		}
 		catch (Exception ex)
 		{
@@ -807,45 +788,48 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: setAccRole
-	*Description: This method will fill in the ACCOUNT ROLE field on indirect opp creation or converting it FROM a direct one
-	*Requirement: ft-128
-	*Parameters: Opportunity List
-	*Test coverage from: OpportunityTriggerHelperTest
-	*******************************/
-	public void setAccRole(List<Opportunity> opptyList, Map<Id, Opportunity> optyOldMap){
+*Method Name: setAccRole
+*Description: This method will fill in the ACCOUNT ROLE field on indirect opp creation or converting it FROM a direct one
+*Requirement: ft-128
+*Parameters: Opportunity List
+*Test coverage from: OpportunityTriggerHelperTest
+*******************************/
+	public void setAccRole(List<Opportunity> opptyList, Map<Id, Opportunity> optyOldMap)
+	{
 		Set<Id> accountIdSetForAccountRole = new Set<Id>();
 		Map<Id, Account> idToAccountMap;
 		List<CRM_AccountRole_Opp_Map__c> accRoleToBprMap = CRM_CreateOpportunityApexCtlr.getAccountRoleMappings();
-		
+
 		Map<string, string> accountRoleMap = CRM_CreateOpportunityApexCtlr.getAllAccountRoleValues();
-		for (Opportunity opptyObj: opptyList){
-			if(checkAccountRoleEleg(opptyObj)){
-				accountIdSetForAccountRole.add(opptyObj.accountId);
+		for (Opportunity opptyObj: opptyList)
+		{
+			if(checkAccountRoleEleg(opptyObj))
+			{
+	accountIdSetForAccountRole.add(opptyObj.accountId);
 			}
 		}
-		if (!accountIdSetForAccountRole.isEmpty()){
-			idToAccountMap = new Map<Id, Account>([SELECT id, LegalAccountName__c, Country__c, BusinessPartnerRole__c, ALCR_Record_Type__c FROM Account WHERE Id IN: accountIdSetForAccountRole LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()]);
+		if (!accountIdSetForAccountRole.isEmpty())
+		{
+			idToAccountMap = new Map<Id, Account>([SELECT id, Country__c, BusinessPartnerRole__c, ALCR_Record_Type__c FROM Account WHERE Id IN: accountIdSetForAccountRole LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()]);
 		}
-		
-		for (Opportunity opptyObj: opptyList){
-			if(checkAccountRoleEleg(opptyObj)){
-				Account acc = idToAccountMap.get(opptyObj.accountId);
-				String AccRoleValueLbl = CRM_CreateOpportunityApexCtlr.getAccountRoleDefaultValue(acc.BusinessPartnerRole__c, accRoleToBprMap);
-										
-					
-				opptyObj.Account_Role__c = accountRoleMap.get(AccRoleValueLbl);
+		for (Opportunity opptyObj: opptyList)
+		{
+			if(checkAccountRoleEleg(opptyObj))
+			{
+	Account acc = idToAccountMap.get(opptyObj.accountId);
+	String accRoleValueLbl = CRM_CreateOpportunityApexCtlr.getAccountRoleDefaultValue(acc.BusinessPartnerRole__c, accRoleToBprMap);
+	opptyObj.Account_Role__c = accountRoleMap.get(accRoleValueLbl);
 			}
 		}
 	}
 
 	/*********
-	*Method Name: checkAccountRoleEleg
-	*Description: This method will avaluate if the account role should or not be updated
-	*Requirement: ft-128
-	*Parameters: Opportunity List
-	*Test coverage from: OpportunityTriggerHelperTest
-	* *******/
+*Method Name: checkAccountRoleEleg
+*Description: This method will avaluate if the account role should or not be updated
+*Requirement: ft-128
+*Parameters: Opportunity List
+*Test coverage from: OpportunityTriggerHelperTest
+* *******/
 	@TestVisible
 	private Boolean checkAccountRoleEleg(Opportunity opptyObj, Map<Id, Opportunity> optyOldMap)
 	{
@@ -856,12 +840,12 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*********
-	*Method Name: checkAccountRoleEleg
-	*Description: This method will avaluate if the account role should or not be updated
-	*Requirement: ft-128
-	*Parameters: Opportunity List
-	*Test coverage from: OpportunityTriggerHelperTest
-	* *******/
+*Method Name: checkAccountRoleEleg
+*Description: This method will avaluate if the account role should or not be updated
+*Requirement: ft-128
+*Parameters: Opportunity List
+*Test coverage from: OpportunityTriggerHelperTest
+* *******/
 	private Boolean checkAccountRoleEleg(Opportunity opptyObj)
 	{
 		Boolean isIndirectOpp = opptyObj.RecordTypeId == inDirectRecordTypeId;
@@ -871,19 +855,19 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: convertionrateupdate
-	*Description: This method will update Unweighted Amount EUR to new rate vale(Ref:Dated Exchange Rate Values)
-	*Parameters: Opportunity opptyList
-	*******************************/
+*Method Name: convertionrateupdate
+*Description: This method will update Unweighted Amount EUR to new rate vale(Ref:Dated Exchange Rate Values)
+*Parameters: Opportunity opptyList
+*******************************/
 	public void convertionrateupdate(List<Opportunity> opptyList) {
-		Set<Opportunity> Opprec = new Set<Opportunity>();
-		Set<String> Oppcurrency = new Set<String>();
+		Set<Opportunity> opprec = new Set<Opportunity>();
+		Set<String> oppcurrency = new Set<String>();
 		map<String, Decimal> datedrate = new map<String, Decimal>();
 		// collecting today date
 		try {
 			for (Opportunity newrec: opptyList) {
-	Opprec.add(newrec);
-	Oppcurrency.add(newrec.CurrencyIsoCode);
+	opprec.add(newrec);
+	oppcurrency.add(newrec.CurrencyIsoCode);
 			}
 			//collecting the Active period
 			List<Nokia_Financial_Calendar__c > currentPeiod = [SELECT id, name, Start_Date__c, End_Date__c FROM Nokia_Financial_Calendar__c WHERE Current_Period__c = True ORDER BY End_Date__c ASC LIMIT 1];
@@ -891,25 +875,25 @@ public inherited sharing class OpportunityTriggerHelper
 			if(currentPeiod.size() > 0) {
 	//collecting the rate
 	List<Dated_Exchange_Rates__c> ratecollectList = [SELECT Id, CurrencyIsoCode, DER_Period__c, DER_Period__r.Start_Date__c, Exchange_Rate__c, Start_Date__c
-	 FROM Dated_Exchange_Rates__c
-	 WHERE(CurrencyIsoCode = :Oppcurrency or CurrencyIsoCode  = :GlobalConstants.USD)
-	 AND DER_Period__c = :currentPeiod.get(0).ID LIMIT: Limits.getLimitQueryRows()];
+				 FROM Dated_Exchange_Rates__c
+				 WHERE(CurrencyIsoCode = :oppcurrency or CurrencyIsoCode  = :GlobalConstants.USD)
+				 AND DER_Period__c = :currentPeiod.get(0).ID LIMIT: Limits.getLimitQueryRows()];
 	for (Dated_Exchange_Rates__c ratecollect: ratecollectList)
 		datedrate.put(ratecollect.CurrencyIsoCode, ratecollect.Exchange_Rate__c);
 	for (Opportunity updaterec: opptyList) {
 		if (updaterec.OIF_Lines__c == 0) {
 			if((!updaterec.CurrencyIsoCode.equalsignorecase(GlobalConstants.USD)) && updaterec.Amount <> 0) {
-	if((!updaterec.CurrencyIsoCode.equalsignorecase(GlobalConstants.EUR))&& datedrate.get(GlobalConstants.USD) <> NUll && datedrate.get(updaterec.CurrencyIsoCode) <> Null)
+				if((!updaterec.CurrencyIsoCode.equalsignorecase(GlobalConstants.EUR))&& datedrate.get(GlobalConstants.USD) <> NUll && datedrate.get(updaterec.CurrencyIsoCode) <> Null)
 		updaterec.Unweighted_Amount_USD__c=((updaterec.Amount/datedrate.get(updaterec.CurrencyIsoCode))*datedrate.get(GlobalConstants.USD)).setscale(2);
-	else if(datedrate.get(GlobalConstants.USD) <> Null && updaterec.CurrencyIsoCode.equalsignorecase(GlobalConstants.EUR)) {
+				else if(datedrate.get(GlobalConstants.USD) <> Null && updaterec.CurrencyIsoCode.equalsignorecase(GlobalConstants.EUR)) {
 		updaterec.Unweighted_Amount_USD__c=(updaterec.Amount*datedrate.get(GlobalConstants.USD)).setscale(2);
-	}
+				}
 			} else
-	updaterec.Unweighted_Amount_USD__c = updaterec.Amount;
+				updaterec.Unweighted_Amount_USD__c = updaterec.Amount;
 			if ((!updaterec.CurrencyIsoCode.equalsignorecase(GlobalConstants.EUR)) && updaterec.Amount <> 0) {
-	updaterec.Unweighted_Amount_EUR__c = (updaterec.Amount / datedrate.get(updaterec.CurrencyIsoCode)).setscale(2);
+				updaterec.Unweighted_Amount_EUR__c = (updaterec.Amount / datedrate.get(updaterec.CurrencyIsoCode)).setscale(2);
 			} else{
-	updaterec.Unweighted_Amount_EUR__c = updaterec.Amount;
+				updaterec.Unweighted_Amount_EUR__c = updaterec.Amount;
 			}
 		}
 	}
@@ -921,14 +905,14 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: BatchCurrenychange
-	*Description: Update unweighted amount
-	*Parameters: Oppty ID
-	*******************************/
-	public void BatchCurrenychange(Set<ID> Opptyid) {
-		List<Opportunity> UpdateOppty = new List<Opportunity>();
+*Method Name: BatchCurrenychange
+*Description: Update unweighted amount
+*Parameters: Oppty ID
+*******************************/
+	public void BatchCurrenychange(Set<ID> opptyid) {
+		List<Opportunity> updateOppty = new List<Opportunity>();
 		try {
-			List<Opportunity> newOppList = [SELECT id, Positive_OIF_EUR__c, OIF_Value_Won_USD__c, Sales_Outcome__c, OIF_Value_Cancel_USD__c, Positive_OIF__c, Negative_OIF_EUR__c, Negative_OIF__c FROM Opportunity WHERE id = :Opptyid Limit:Opptyid.size()];
+			List<Opportunity> newOppList = [SELECT id, Positive_OIF_EUR__c, OIF_Value_Won_USD__c, Sales_Outcome__c, OIF_Value_Cancel_USD__c, Positive_OIF__c, Negative_OIF_EUR__c, Negative_OIF__c FROM Opportunity WHERE id = :opptyid Limit:opptyid.size()];
 			for (Opportunity newopp:newOppList) {
 	if (String.IsEmpty(newopp.Sales_Outcome__c) || newopp.Sales_Outcome__c.equalsignorecase(GlobalConstants.WON) || newopp.Sales_Outcome__c.equalsignorecase(GlobalConstants.WON_REQUESTED)) {
 		newopp.Unweighted_Amount_EUR__c = newopp.Positive_OIF_EUR__c.setScale(2);
@@ -941,12 +925,12 @@ public inherited sharing class OpportunityTriggerHelper
 		newopp.Unweighted_Amount_USD__c = newopp.OIF_Value_Cancel_USD__c.setScale(2);
 		newopp.Is_Automated__c = TRUE;
 	}
-	UpdateOppty.add(newopp);
+	updateOppty.add(newopp);
 			}
 
-			if(!UpdateOppty.isEmpty()) {
-	List<Database.saveResult> srs = Database.update(UpdateOppty, false);
-	ExceptionHandler.addExceptionForOIFBtach(UpdateOppty, srs);
+			if(!updateOppty.isEmpty()) {
+	List<Database.saveResult> srs = Database.update(updateOppty, false);
+	ExceptionHandler.addExceptionForOIFBtach(updateOppty, srs);
 	GlobalConstants.OPPORTUNITYTRIGGER_CURRENCY_CHANGE = TRUE;
 			}
 		} catch (Exception ex) {
@@ -956,10 +940,10 @@ public inherited sharing class OpportunityTriggerHelper
 
 	//Requirement 722: Sales Process: Opportunity Decision date will update as per the NFC active period
 	/*****************************
-	*Method Name: DecisonUpdate
-	*Description: Opportunity Active rate will update as per the NFC active period, Req 5470
-	*Parameters: Opportunity List
-	*******************************/
+*Method Name: DecisonUpdate
+*Description: Opportunity Active rate will update as per the NFC active period, Req 5470
+*Parameters: Opportunity List
+*******************************/
 	public void DecisonUpdate(List<Opportunity> opptyList) {
 		try {
 			List<Opportunity> opportunityList = new List<Opportunity>();
@@ -987,10 +971,10 @@ public inherited sharing class OpportunityTriggerHelper
 
 	//Requirement 722: Sales Process: Opportunity owner will follow Opportunity on Chatter
 	/*****************************
-	*Method Name: FollowOpportunity
-	*Description: Opportunity owner will follow Opportunity on Chatter
-	*Parameters: Opportunity List
-	*******************************/
+*Method Name: FollowOpportunity
+*Description: Opportunity owner will follow Opportunity on Chatter
+*Parameters: Opportunity List
+*******************************/
 	public void FollowOpportunity(List<Opportunity> opptyList) {
 		List<EntitySubscription> opptyEntitySubList = new List<EntitySubscription>();
 		try {
@@ -1011,61 +995,62 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*
-	* @desc   this method used to create opportunity team members for delegates approvers
-	* @param   opportunities: the map of opportunities which are approved or rejected
-	*/
-	public void createOpportunityTeamMembers(map<Id, Opportunity> opportunitiesMap) {
-		// Variables declaration
-		map<ID, Set<Id>> mapOppIdMemberIds = new map<ID, Set<Id>>();
-		map<ID, Set<Id>> mapOppIdFacilitatorsIds = new map<ID, Set<Id>>();
-		List<OpportunityTeamMember> opportunitiesTeamMembersToCreate = new List<OpportunityTeamMember>();
-		//get the Delegate Approvers Ids map
-		for (Opportunity opportunity: opportunitiesMap.values()) {
-			if (!mapOppIdFacilitatorsIds.containsKey(opportunity.Id)) {
-	mapOppIdFacilitatorsIds.put(opportunity.Id, new Set<ID>());
-			}
-			if (opportunity.Facilitator_Delegate_1__c != null)
-	mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.Facilitator_Delegate_1__c);
-			if (opportunity.Facilitator_Delegate_2__c != null)
-	mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.Facilitator_Delegate_2__c);
-			if (opportunity.Facilitator_Delegate_3__c != null)
-	mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.Facilitator_Delegate_3__c);
-			if (opportunity.Facilitator_Backup__c != null)
-	mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.Facilitator_Backup__c);
-			if (opportunity.NF_Facilitator_User__c != null)
-	mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.NF_Facilitator_User__c);
-		}
-		// Fill the map of opportunity and related users in opportunity team members
-		List<OpportunityTeamMember> opportunitiesTeamMembers = [SELECT UserId, OpportunityId
-	FROM OpportunityTeamMember
-	WHERE OpportunityId IN: mapOppIdFacilitatorsIds.keySet()
-	  ];
-		for (OpportunityTeamMember oppTeamMember: opportunitiesTeamMembers) {
-			if (!mapOppIdMemberIds.containsKey(oppTeamMember.OpportunityId)) {
-	mapOppIdMemberIds.put(oppTeamMember.OpportunityId, new Set<ID>());
-			}
-			mapOppIdMemberIds.get(oppTeamMember.OpportunityId).add(oppTeamMember.UserId);
-		}
+* @desc   this method used to create opportunity team members for delegates approvers
+* @param   opportunities: the map of opportunities which are approved or rejected
+*/
+	/*
+public void createOpportunityTeamMembers(map<Id, Opportunity> opportunitiesMap) {
+// Variables declaration
+map<ID, Set<Id>> mapOppIdMemberIds = new map<ID, Set<Id>>();
+map<ID, Set<Id>> mapOppIdFacilitatorsIds = new map<ID, Set<Id>>();
+List<OpportunityTeamMember> opportunitiesTeamMembersToCreate = new List<OpportunityTeamMember>();
+//get the Delegate Approvers Ids map
+for (Opportunity opportunity: opportunitiesMap.values()) {
+if (!mapOppIdFacilitatorsIds.containsKey(opportunity.Id)) {
+mapOppIdFacilitatorsIds.put(opportunity.Id, new Set<ID>());
+}
+if (opportunity.Facilitator_Delegate_1__c != null)
+mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.Facilitator_Delegate_1__c);
+if (opportunity.Facilitator_Delegate_2__c != null)
+mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.Facilitator_Delegate_2__c);
+if (opportunity.Facilitator_Delegate_3__c != null)
+mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.Facilitator_Delegate_3__c);
+if (opportunity.Facilitator_Backup__c != null)
+mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.Facilitator_Backup__c);
+if (opportunity.NF_Facilitator_User__c != null)
+mapOppIdFacilitatorsIds.get(opportunity.Id).add(opportunity.NF_Facilitator_User__c);
+}
+// Fill the map of opportunity and related users in opportunity team members
+List<OpportunityTeamMember> opportunitiesTeamMembers = [SELECT UserId, OpportunityId
+FROM OpportunityTeamMember
+WHERE OpportunityId IN: mapOppIdFacilitatorsIds.keySet()
+];
+for (OpportunityTeamMember oppTeamMember: opportunitiesTeamMembers) {
+if (!mapOppIdMemberIds.containsKey(oppTeamMember.OpportunityId)) {
+mapOppIdMemberIds.put(oppTeamMember.OpportunityId, new Set<ID>());
+}
+mapOppIdMemberIds.get(oppTeamMember.OpportunityId).add(oppTeamMember.UserId);
+}
 
-		for (Id oppId: mapOppIdFacilitatorsIds.keySet()) {
-			set<ID> existingMemberIds = new set<ID>();
-			existingMemberIds = mapOppIdMemberIds.get(oppId);
-			for (Id FacilitatorId: mapOppIdFacilitatorsIds.get(oppId)) {
-	if (FacilitatorId != null && ((existingMemberIds != null && !existingMemberIds.contains(FacilitatorId)) || existingMemberIds == null)) {
-		opportunitiesTeamMembersToCreate.add(new OpportunityTeamMember(
-			UserId = FacilitatorId, OpportunityId = oppId, OpportunityAccessLevel = 'Edit'));
-	}
-			}
-		}
-	}
-
+for (Id oppId: mapOppIdFacilitatorsIds.keySet()) {
+set<ID> existingMemberIds = new set<ID>();
+existingMemberIds = mapOppIdMemberIds.get(oppId);
+for (Id FacilitatorId: mapOppIdFacilitatorsIds.get(oppId)) {
+if (FacilitatorId != null && ((existingMemberIds != null && !existingMemberIds.contains(FacilitatorId)) || existingMemberIds == null)) {
+opportunitiesTeamMembersToCreate.add(new OpportunityTeamMember(
+UserId = FacilitatorId, OpportunityId = oppId, OpportunityAccessLevel = 'Edit'));
+}
+}
+}
+}
+*/
 	//Requirement 870: Default Legal Entity Logic
 	/*****************************
-	*Method Name: populateDefaultLE
-	*Description: this method used to populate default legalEntities on opportunity
-	*Parameters: Opportunity List
-	*******************************/
-	public void populateDefaultLE(List<Opportunity> opportunityList, Map<ID, Opportunity> optyOldMap) {
+*Method Name: populateDefaultLE
+*Description: this method used to populate default legalEntities on opportunity
+*Parameters: Opportunity List
+*******************************/
+	public void populateDefaultLE(List<Opportunity> opportunityList, Map<ID, Opportunity> optyOldMap,  Map<Id,Account> accountsInfo) {
 		List<Opportunity> validCustomerChanges = new List<Opportunity>();
 		for (Opportunity opp: opportunityList) {
 			if (optyOldMap.size() > 0) {
@@ -1077,7 +1062,26 @@ public inherited sharing class OpportunityTriggerHelper
 		validCustomerChanges.add(opp);
 			}
 		}
-		if(validCustomerChanges.size() > 0) {
+		for (Opportunity opp: validCustomerChanges) {
+			if (opp.RecordTypeId == directRecordTypeId && opp.End_Customer__c != NULL) {
+	if(accountsInfo.containsKey(opp.End_Customer__c)){
+		Id endCustLEId = accountsInfo.get(opp.End_Customer__c).ChildAccounts.size() > 0 ? accountsInfo.get(opp.End_Customer__c).ChildAccounts[0].Id : null;
+		opp.End_Customer_LE__c = endCustLEId;
+	} else
+		opp.End_Customer_LE__c = NULL;
+			}
+			if (opp.accountId != NULL) {
+	if(accountsInfo.containsKey(opp.accountId)){
+		Id accLEId = accountsInfo.get(opp.accountId).ChildAccounts.size() > 0 ? accountsInfo.get(opp.accountId).ChildAccounts[0].Id : null;
+		opp.Legal_Entity__c = accLEId;
+	} else
+		opp.Legal_Entity__c = NULL;
+			}
+		}
+
+	// if(validCustomerChanges.size() > 0) {
+
+			/*
 			List<String> allAccountIds = new List<String>();
 			Map<string, string> customerVsDefaultLE = new Map<string, string>();
 			for (Opportunity opp: validCustomerChanges) {
@@ -1088,9 +1092,9 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 			}
 			List<Account> defaultLEList = [SELECT Id, parentId FROM Account WHERE RecordType.name = 'Legal Entity'
-	and Default_Legal_Entity__c = true
-	and parentId IN: allAccountIds
-	limit: (Limits.getLimitQueryRows() - Limits.getQueryRows())
+			 and Default_Legal_Entity__c = true
+			 and parentId IN: allAccountIds
+			 limit: (Limits.getLimitQueryRows() - Limits.getQueryRows())
 			];
 			for (Account defaultLE: defaultLEList) {
 	customerVsDefaultLE.put(defaultLE.parentId, defaultLE.Id);
@@ -1111,15 +1115,16 @@ public inherited sharing class OpportunityTriggerHelper
 			opp.Legal_Entity__c = NULL;
 	}
 			}
-		}
+
+		}*/
 	}
 
 	/***************************************
-	*Method Name: updateOffersOnG4ApprovalDateIsUpdated
-	*Description: This method will update the 'Active Offer' G4/G5 Approval date field on update of G4/G5 Appproval date of Opportunity. REQ#942& defect D-2793
-	*Parameters: Opportunity Maps old/new
-	*History : 22-12-2017 AJ: Requirement : 3545, Comment Logic to transfer G5 Approval date from Oppty to Active Offer & Delete field from Offer.
-	*******************************/
+*Method Name: updateOffersOnG4ApprovalDateIsUpdated
+*Description: This method will update the 'Active Offer' G4/G5 Approval date field on update of G4/G5 Appproval date of Opportunity. REQ#942& defect D-2793
+*Parameters: Opportunity Maps old/new
+*History : 22-12-2017 AJ: Requirement : 3545, Comment Logic to transfer G5 Approval date from Oppty to Active Offer & Delete field from Offer.
+*******************************/
 	public static void updateOffersOnG4ApprovalDateIsUpdated(Map<ID, Opportunity> opptyMap, Map<ID, Opportunity> opptyOldMap) {
 		List<Offer__c> offerToUpdate = new List<Offer__c>();
 		Map<ID, List<Offer__c>> oppOfferListMap = new Map<ID, List<Offer__c>>();
@@ -1140,14 +1145,14 @@ public inherited sharing class OpportunityTriggerHelper
 			List<Offer__c> offList = new List<Offer__c>();
 			//Opportunity can have multiple Offer hence the below check
 			if (oppOfferListMap.get(offer.Opportunity__c) != Null) {
-	//Fetching the already existing opportunity id and adding offer List
-	offList.addAll(oppOfferListMap.get(offer.Opportunity__c));
-	offList.add(offer);
-	oppOfferListMap.put(offer.Opportunity__c, offList);
+				//Fetching the already existing opportunity id and adding offer List
+				offList.addAll(oppOfferListMap.get(offer.Opportunity__c));
+				offList.add(offer);
+				oppOfferListMap.put(offer.Opportunity__c, offList);
 			}
 			if (oppOfferListMap.get(offer.Opportunity__c) == Null) {
-	offList.add(offer);
-	oppOfferListMap.put(offer.Opportunity__c, offList);
+				offList.add(offer);
+				oppOfferListMap.put(offer.Opportunity__c, offList);
 			}
 		}
 	}
@@ -1155,8 +1160,8 @@ public inherited sharing class OpportunityTriggerHelper
 		for (Offer__c off: oppOfferListMap.get(opptyID)) {
 			Opportunity opp = opptyMap.get(opptyID);
 			if (opp.G4_Approval_Date__c != Null && opptyOldMap.get(opp.id).G4_Approval_Date__c != opp.G4_Approval_Date__c) {
-	off.G4_Approval_Date__c = date.newinstance(opp.G4_Approval_Date__c.year(), opp.G4_Approval_Date__c.month(), opp.G4_Approval_Date__c.day());
-	offerToUpdate.add(off);
+				off.G4_Approval_Date__c = date.newinstance(opp.G4_Approval_Date__c.year(), opp.G4_Approval_Date__c.month(), opp.G4_Approval_Date__c.day());
+				offerToUpdate.add(off);
 			}
 			//Requirement : 3545, Comment Logic to transfer G5 Approval date from Oppty to Active Offer & Delete field from Offer. Logic is deleted from here.
 		}
@@ -1175,11 +1180,11 @@ public inherited sharing class OpportunityTriggerHelper
 
 	//Sales Process: Requirement 855
 	/*****************************
-	*Method Name: restrictOpptyCreationByOTMFromDiffrentTerritory
-	*Description: Checks the current user territory and account territory if maps allows opportunity Creation
-	*Parameters: Opportunity List
-	*Test coverage from: OpportunityTriggerHelperTest
-	*******************************/
+*Method Name: restrictOpptyCreationByOTMFromDiffrentTerritory
+*Description: Checks the current user territory and account territory if maps allows opportunity Creation
+*Parameters: Opportunity List
+*Test coverage from: OpportunityTriggerHelperTest
+*******************************/
 	public void restrictOpptyCreationByOTMFromDiffrentTerritory(List<Opportunity> newOpptyList) {
 		Map<Id, ObjectTerritory2Association> accountIdsAndOTMap = new Map<Id, ObjectTerritory2Association>();
 		Set<Id> terriIds = new Set<Id>();
@@ -1193,13 +1198,13 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	Map<Id, Territory2> idToTerritoryMap = new Map<Id, Territory2>([SELECT Id, Name, ParentTerritory2Id
-		 FROM Territory2
-		 WHERE Id IN: terriIds
-		 LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]);
+					FROM Territory2
+					WHERE Id IN: terriIds
+					LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]);
 	Map<Id, Territory2> allTerritory = new Map<Id, Territory2>([SELECT Id, Name, DeveloperName, ParentTerritory2Id
-		FROM Territory2
-		WHERE Territory2Model.state = :GlobalConstants.TERRITORY2MODEL_STATE_ACTIVE
-		LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]);
+							FROM Territory2
+							WHERE Territory2Model.state = :GlobalConstants.TERRITORY2MODEL_STATE_ACTIVE
+							LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]);
 
 	for (Opportunity opp: newOpptyList) {
 		accountIDs.add(opp.AccountID);
@@ -1214,23 +1219,23 @@ public inherited sharing class OpportunityTriggerHelper
 		if (opp.AccountID != null) {
 			ObjectTerritory2Association objectTerr = accountIdsAndOTMap.get(opp.AccountID);
 			if (allTerritory.get(objectTerr.Territory2Id) != null) {
-	Territory2 terr = allTerritory.get(objectTerr.Territory2Id);
-	objIDterriHerirachySet.add(terr.Id);
-	ID territoryParentID = terr.ParentTerritory2Id;
-	for (Integer i = 0; territoryParentID != null; i++) {
+				Territory2 terr = allTerritory.get(objectTerr.Territory2Id);
+				objIDterriHerirachySet.add(terr.Id);
+				ID territoryParentID = terr.ParentTerritory2Id;
+				for (Integer i = 0; territoryParentID != null; i++) {
 		objIDterriHerirachySet.add(territoryParentID);
 		if (allTerritory.get(territoryParentID).ParentTerritory2Id != null) {
 			territoryParentID = allTerritory.get(territoryParentID).ParentTerritory2Id;
 		} else {
 			territoryParentID = null;
 		}
-	}
+				}
 			}
 		}
 		Integer size = 0;
 		for (ID terrID: objIDterriHerirachySet) {
 			if (idToTerritoryMap.KeySet().contains(terrID)) {
-	Size++;
+				Size++;
 			}
 		}
 		if (size<1) {
@@ -1245,22 +1250,22 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: UpdateUserinformation
-	*Description: Update the Lastmodifieduser filed as per the Lastmodied custom data.
-	*Parameters: Opportunity List
-	*Test coverage from: OpportunityTriggerHelperTest
-	*******************************/
+*Method Name: UpdateUserinformation
+*Description: Update the Lastmodifieduser filed as per the Lastmodied custom data.
+*Parameters: Opportunity List
+*Test coverage from: OpportunityTriggerHelperTest
+*******************************/
 	public void UpdateUserinformation(List<Opportunity> newOpptyList) {
 		//collecting the Lastmodified custom data information
 		List<LastModified__c> customdata = LastModified__c.getall().values();
-		Map<Id, String> Customid = new Map<ID, String>();
+		Map<Id, String> customid = new Map<ID, String>();
 
 		//collecting the custom data User ID
 		for(LastModified__c custominfo:customdata)
-			Customid.put(custominfo.User_ID__c, custominfo.User_ID__c);
+			customid.put(custominfo.User_ID__c, custominfo.User_ID__c);
 		try{
 			for(Opportunity Opplist:newOpptyList) {
-	if(Opplist.Modified_User__c <>(Customid.get(Opplist.Modified_User__c)))
+	if(Opplist.Modified_User__c <>(customid.get(Opplist.Modified_User__c)))
 		Opplist.Last_User_Modified__c = System.now();
 			}
 		}
@@ -1271,11 +1276,11 @@ public inherited sharing class OpportunityTriggerHelper
 
 	//Sales Process: Sprint 5 : D-1512 Pupulate End Customer with Account and End customer LE with Account LE`
 	/*****************************
-	*Method Name: populateDefaultEndCustomerAndEndCustomerLegalEntity when record type is Direct
-	*Description: this method used to populate default legalEntities on opportunity
-	*Parameters: Opportunity List
-	*Change Log : 1.1 D-1645 Sprint 5 Hypercare Fixes(Sales Process)
-	*******************************/
+*Method Name: populateDefaultEndCustomerAndEndCustomerLegalEntity when record type is Direct
+*Description: this method used to populate default legalEntities on opportunity
+*Parameters: Opportunity List
+*Change Log : 1.1 D-1645 Sprint 5 Hypercare Fixes(Sales Process)
+*******************************/
 	public void populateEndCustomerAndEndCustomerLegalEntityForDirectRecordType(List<Opportunity> opportunityList, Map<ID, Opportunity> opportunityOldMap) {
 		try {
 			if(GlobalConstants.OPPORTUNITYTRIGGER_POPULATE_END_CUSTOMER == false) {
@@ -1285,20 +1290,20 @@ public inherited sharing class OpportunityTriggerHelper
 
 			// commented below for SF Ticket 01219748 (along with sonarcube adjustment) 25-01-2021
 			/*if (!opportunityOldMap.isEmpty() && opportunityOldMap.get(opp.Id).End_Customer__c != opp.End_Customer__c) {
-	opp.End_Customer__c = opp.AccountId;
-	if (opp.Legal_Entity__c != NULL) {
-	opp.End_Customer_LE__c = opp.Legal_Entity__c;
-	}
-	} else {
-	opp.End_Customer__c = opp.AccountId;
-	if (opp.Legal_Entity__c != NULL) {
-	opp.End_Customer_LE__c = opp.Legal_Entity__c;
-	}
-	}*/
+opp.End_Customer__c = opp.AccountId;
+if (opp.Legal_Entity__c != NULL) {
+opp.End_Customer_LE__c = opp.Legal_Entity__c;
+}
+} else {
+opp.End_Customer__c = opp.AccountId;
+if (opp.Legal_Entity__c != NULL) {
+opp.End_Customer_LE__c = opp.Legal_Entity__c;
+}
+}*/
 			// Added below for SF Ticket 01219748 (along with sonarcube adjustment) 25-01-2021
 			opp.End_Customer__c = opp.AccountId;
 			if (opp.Legal_Entity__c != NULL) {
-	opp.End_Customer_LE__c = opp.Legal_Entity__c;
+				opp.End_Customer_LE__c = opp.Legal_Entity__c;
 			}
 		}
 	}
@@ -1311,12 +1316,12 @@ public inherited sharing class OpportunityTriggerHelper
 
 	//Sales Process: Sprint 6 : Req-758 send Email
 	/*****************************
-	*Method Name: sendEmail
-	*Description: On update of phase status send mail to HSSE risk countries.
-	*Parameters: Id optyId, List<string> sendToList
-	*******************************/
+*Method Name: sendEmail
+*Description: On update of phase status send mail to HSSE risk countries.
+*Parameters: Id optyId, List<string> sendToList
+*******************************/
 	@TestVisible
-	private void sendEmail(Id optyId, List<String> sendToList, String Country) {
+	private void sendEmail(Id optyId, List<String> sendToList, String country) {
 		try{
 			if(GlobalConstants.OPPORTUNITYTRIGGER_SEND_EMAIL == False) {
 	List<Messaging.SingleEmailMessage> mails = new List<Messaging.SingleEmailMessage>();
@@ -1333,8 +1338,8 @@ public inherited sharing class OpportunityTriggerHelper
 		formattedDate = dt.format();
 	}
 	if(!optyTeamMemberList.isEmpty()) {
-		List<user> CMDuser = [SELECT name, Email FROM user WHERE id  = :optyTeamMemberList[0].UserId Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
-		projectExeOwnerNameEmail = GlobalConstants.COLON + GlobalConstants.BOLD + CMDuser[0].Name + GlobalConstants.ENDBOLD + GlobalConstants.BODY9 + GlobalConstants.COLON + CMDuser[0].Email;
+		List<user> cmdUser = [SELECT name, Email FROM user WHERE id  = :optyTeamMemberList[0].UserId Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
+		projectExeOwnerNameEmail = GlobalConstants.COLON + GlobalConstants.BOLD + cmdUser[0].Name + GlobalConstants.ENDBOLD + GlobalConstants.BODY9 + GlobalConstants.COLON + cmdUser[0].Email;
 	}
 	else{
 		projectExeOwnerNameEmail = GlobalConstants.COLON + GlobalConstants.BOLD + GlobalConstants.BODY10 + GlobalConstants.ENDBOLD;
@@ -1343,7 +1348,7 @@ public inherited sharing class OpportunityTriggerHelper
 	String emailBody = GlobalConstants.BODY1;
 	emailBody += GlobalConstants.LINEBREAK + GlobalConstants.BODY2 + GlobalConstants.LINK1 + sfdcBaseURL + GlobalConstants.LINK2 + optyId + GlobalConstants.URLPART6 + opty.Opportunity_ID__c + GlobalConstants.LINK3 + GlobalConstants.BODY3 + formattedDate;
 	emailBody += GlobalConstants.LINEBREAK + GlobalConstants.BODY4;
-	emailBody += GlobalConstants.LINEBREAK + GlobalConstants.BODY5 + GlobalConstants.COLON + GlobalConstants.BOLD + Country + GlobalConstants.ENDBOLD;
+	emailBody += GlobalConstants.LINEBREAK + GlobalConstants.BODY5 + GlobalConstants.COLON + GlobalConstants.BOLD + country + GlobalConstants.ENDBOLD;
 	emailBody += GlobalConstants.LINEBREAK + GlobalConstants.BODY6 + GlobalConstants.COLON + GlobalConstants.BOLD + optyOwner[0].name + GlobalConstants.ENDBOLD + GlobalConstants.BODY7 + GlobalConstants.COLON + optyOwner[0].Email;
 	emailBody += GlobalConstants.LINEBREAK + GlobalConstants.BODY8 + projectExeOwnerNameEmail;
 	emailBody += GlobalConstants.LINEBREAK + GlobalConstants.BODY11 + GlobalConstants.COLON + GlobalConstants.BOLD + opty.Lead_BG__c + GlobalConstants.ENDBOLD;
@@ -1361,13 +1366,14 @@ public inherited sharing class OpportunityTriggerHelper
 			docId1 = doc.Id;
 	}
 
-	Id OrgID = UserInfo.getOrganizationId();
+	Id orgID = UserInfo.getOrganizationId();
 	mail.setWhatId(optyId);
 	mail.setToAddresses(sendToList);
 	mail.setSubject(GlobalConstants.EMAILSUBJECT);
-	mail.setHtmlBody(GlobalConstants.URLPART1 + GlobalConstants.URLPART2 + sfdcBaseURL + GlobalConstants.URLPART3 + GlobalConstants.URLPART4 + docId + GlobalConstants.URLPART5 + OrgID + GlobalConstants.URLPART6 + GlobalConstants.URLPART7 + GlobalConstants.URLPART8 + emailBody + GlobalConstants.URLPART9 + GlobalConstants.URLPART10 + GlobalConstants.URLPART11 + sfdcBaseURL + GlobalConstants.URLPART3 + GlobalConstants.URLPART4 + docId1 + GlobalConstants.URLPART5 + OrgID + GlobalConstants.URLPART6 + GlobalConstants.URLPART12);
+	mail.setHtmlBody(GlobalConstants.URLPART1 + GlobalConstants.URLPART2 + sfdcBaseURL + GlobalConstants.URLPART3 + GlobalConstants.URLPART4 + docId + GlobalConstants.URLPART5 + orgID + GlobalConstants.URLPART6 + GlobalConstants.URLPART7 + GlobalConstants.URLPART8 + emailBody + GlobalConstants.URLPART9 + GlobalConstants.URLPART10 + GlobalConstants.URLPART11 + sfdcBaseURL + GlobalConstants.URLPART3 + GlobalConstants.URLPART4 + docId1 + GlobalConstants.URLPART5 + orgID + GlobalConstants.URLPART6 + GlobalConstants.URLPART12);
 	mails.add(mail);
-	Messaging.sendEmail(mails);
+	if(!Test.isRunningTest())
+		Messaging.sendEmail(mails);
 			}
 			GlobalConstants.OPPORTUNITYTRIGGER_SEND_EMAIL = True;
 		}catch(Exception ex) {
@@ -1376,11 +1382,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/***************************************************************************
-	*Method Name: validateRefOpptyAndPTASigned
-	*Description: This will serve as method for validation for No LOA and PTA Signed
-	*Parameters: Opportunity Map
-	*******************************************************************************/
-	public void validateRefOpptyAndPTASigned(Map<ID, Opportunity> opptyMap, Map<ID, Opportunity> opptyOldMap) {
+*Method Name: validateRefOpptyAndPTASigned
+*Description: This will serve as method for validation for No LOA and PTA Signed
+*Parameters: Opportunity Map
+*******************************************************************************/
+/*	public void validateRefOpptyAndPTASigned(Map<ID, Opportunity> opptyMap, Map<ID, Opportunity> opptyOldMap) {
 		Offer__c offerObj = new Offer__c();
 		try{
 			if(GlobalConstants.OPPORTUNITYTRIGGER_VALIDATE ==  False) {
@@ -1391,16 +1397,16 @@ public inherited sharing class OpportunityTriggerHelper
 			offerObj = Oppty.Offers__r;
 		if(offerObj != Null) {
 			If(oppty.Reference_Opportunity__c == NULL && OfferObj.LOA_Bypass__c == GlobalConstants.NO_LOA && oppty.SWx_Upsell_Proposal__c == Null) {
-	opptyMap.get(oppty.id).addError(GlobalConstants.REFERENCE_OPPTY_ERROR);
+				opptyMap.get(oppty.id).addError(GlobalConstants.REFERENCE_OPPTY_ERROR);
 			}
 			//Adding condition to check Opportunity's PTA Signed Gate_6_Bypass_No_Execute_needed__c is true at the same time
 			//Requiremet 2381
 			if(oppty.PTA_Signed__c == TRUE && oppty.Gate_6_Bypass_No_Execute_needed__c == TRUE) {
-	opptyMap.get(oppty.id).addError(label.PtaProduct_OnlyOfferAreNotSame);
+				opptyMap.get(oppty.id).addError(label.PtaProduct_OnlyOfferAreNotSame);
 			}
 			//Either 'PTA Signed' or 'Product/Software Only' should be checked before G6 approval
 			if(oppty.PTA_Signed__c == FALSE && (oppty.StageName.equalsignorecase(GlobalConstants.EXECUTE_OPPTY) && opptyOldMap.get(oppty.Id).StageName.equalsignorecase(GlobalConstants.HANDOVER_OPPTY)) && oppty.Gate_6_Bypass_No_Execute_needed__c == FALSE) {
-	opptyMap.get(oppty.id).addError(label.PTAOrProductOnlyOfferShouldBeChecked);
+				opptyMap.get(oppty.id).addError(label.PTAOrProductOnlyOfferShouldBeChecked);
 			}
 		}
 	}
@@ -1409,7 +1415,7 @@ public inherited sharing class OpportunityTriggerHelper
 		}Catch(Exception ex) {
 			ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.Validate_Ref_Oppty_And_PTA_Signed);
 		}
-	}
+	}	*/
 
 	/*Helper method to get optylist based on presales recordtype*/
 	public Map<Id, Opportunity> getIsApplicableForSalesNewMap(Map<Id, Opportunity> opptyMap) {
@@ -1427,12 +1433,34 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: checkLEIsEmpty
-	*Description: This method will check whether Legal Entity is Empty
-	*Parameters: Opportunity opptyList
-	*******************************/
-	public void checkLEIsEmpty(List<Opportunity> opportunityList, Map<ID, Opportunity> optyOldMap) {
+*Method Name: checkLEIsEmpty
+*Description: This method will check whether Legal Entity is Empty
+*Parameters: Opportunity opptyList
+*******************************/
+	public void checkLEIsEmpty(List<Opportunity> opportunityList, Map<ID, Opportunity> optyOldMap, Map<Id,Account> accountsInfo) {
 		try{
+	for (Opportunity opp: opportunityList) {
+	 if( opp.RecordTypeId == inDirectRecordTypeId || opp.RecordTypeId == directRecordTypeId){
+		 Boolean existLegalEntity = false;
+		 if(accountsInfo.containsKey(opp.AccountId) && accountsInfo.get(opp.AccountId).ChildAccounts.size() > 0){ //ChildAccounts refers to LE having the Account as parent
+			 existLegalEntity = true;
+		 }
+		 if(opp.Legal_Entity__c != optyOldMap.get(opp.Id).Legal_Entity__c && opp.Legal_Entity__c == null && existLegalEntity) {
+			opp.addError(label.Legal_Entity_Cannot_be_Empty);
+		 }
+		 Boolean existECLegalEntity = false;
+		 if(accountsInfo.containsKey(opp.End_Customer__c) && accountsInfo.get(opp.End_Customer__c).ChildAccounts.size() > 0){ //ChildAccounts refers to EC LE having the End Customer as parent
+			 existECLegalEntity = true;
+		 }
+		 if(opp.End_Customer_LE__c != optyOldMap.get(opp.Id).End_Customer_LE__c && opp.End_Customer_LE__c == null && existECLegalEntity) {
+			opp.addError(label.Legal_Entity_Cannot_be_Empty);
+		 }
+
+	 }
+	}
+
+
+			/*
 			Map<Id, List<Opportunity>> accountIdwithOpportunityMap = new Map<Id, List<Opportunity>>();
 			Map<Id, List<Opportunity>> endCustomerIdwithOpportunityMap = new Map<Id, List<Opportunity>>();
 			List<opportunity> optyList = new List<opportunity>();
@@ -1471,11 +1499,11 @@ public inherited sharing class OpportunityTriggerHelper
 	lstOppAccIds.addAll(endCustomerIdwithOpportunityMap.keyset());
 
 	List<AggregateResult> resultList = [SELECT count(Id), ParentId
-	FROM Account
-	WHERE recordtype.name = : GlobalConstants.LEGAL_ENTITY
-	GROUP BY parentId HAVING count(id) > 0
-	AND ParentId in: lstOppAccIds
-	LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()];
+				FROM Account
+				WHERE recordtype.name = : GlobalConstants.LEGAL_ENTITY
+				GROUP BY parentId HAVING count(id) > 0
+				AND ParentId in: lstOppAccIds
+				LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()];
 
 	boolean breakFlag = false;
 	for (AggregateResult result : resultList)
@@ -1486,12 +1514,12 @@ public inherited sharing class OpportunityTriggerHelper
 		{
 			for(Opportunity opp : lstOpty)
 			{
-	if (optyOldMap.get(opp.Id).Legal_Entity__c != Null && opp.Legal_Entity__c == NULL)
-	{
+				if (optyOldMap.get(opp.Id).Legal_Entity__c != Null && opp.Legal_Entity__c == NULL)
+				{
 		opp.addError(label.Legal_Entity_Cannot_be_Empty);
 		breakFlag = true;
 		break;
-	}
+				}
 			}
 		}
 
@@ -1501,12 +1529,12 @@ public inherited sharing class OpportunityTriggerHelper
 		{
 			for(Opportunity opp : lstOpty)
 			{
-	if (optyOldMap.get(opp.Id).End_Customer_LE__c  != Null && opp.End_Customer_LE__c == NULL)
-	{
+				if (optyOldMap.get(opp.Id).End_Customer_LE__c  != Null && opp.End_Customer_LE__c == NULL)
+				{
 		opp.addError(label.Legal_Entity_Cannot_be_Empty);
 		breakFlag = true;
 		break;
-	}
+				}
 			}
 		}
 
@@ -1515,17 +1543,17 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 			}
 			//---------------------------------------- END NEW CODE -------------------------------------------------
-
+			*/
 		}Catch(Exception ex) {
 			ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.METHOD_CHECK_LE_ISEMPTY);
 		}
 	}
 
 	/*****************************
-	*Method Name: offerPriceChange
-	*Description: This method will update offer Price
-	*Parameters: Opportunity opptyList, opportunity od map
-	*******************************/
+*Method Name: offerPriceChange
+*Description: This method will update offer Price
+*Parameters: Opportunity opptyList, opportunity od map
+*******************************/
 	public void offerPriceChange(List<opportunity> opptyList, Map<Id, opportunity> opptyOldMap) {
 		Map<Id, Offer__c> optyActiveOfferMap = new Map<Id, Offer__c>();
 		List<Offer__c> activeOfferList = new List<Offer__c>();
@@ -1547,8 +1575,8 @@ public inherited sharing class OpportunityTriggerHelper
 		 opp.Amount != opp.Active_Offer_Price__c && opp.Amount != opptyOldMap.get(opp.Id).Amount &&
 		 opp.Amount != NULL && optyActiveOfferMap.get(opp.Id).Price__c != opp.Amount &&
 		 optyActiveOfferMap.get(opp.Id).ActiveOffer__c == true) {
-	optyActiveOfferMap.get(opp.Id).Price__c = opp.Unweighted_Amount_Opportunity_Currency__c;
-	offerList.add(optyActiveOfferMap.get(opp.Id));
+		  optyActiveOfferMap.get(opp.Id).Price__c = opp.Unweighted_Amount_Opportunity_Currency__c;
+		  offerList.add(optyActiveOfferMap.get(opp.Id));
 		 }
 		}
 	}
@@ -1563,19 +1591,23 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: DeleteAllocationLine
-	*Description: Delete the Allocation lines as per the CSE flad
-	*Parameters: Opptyid
-	*******************************/
-	public void DeleteAllocationLine(Set<ID> Opptyid) {
-		List<Order_Intake_Forecast__c > OIFRecDelete = New List<Order_Intake_Forecast__c>();
+*Method Name: DeleteAllocationLine
+*Description: Delete the Allocation lines as per the CSE flad
+*Parameters: Opptyid
+*******************************/
+	public void DeleteAllocationLine(Set<ID> opptyid) {
+		List<Order_Intake_Forecast__c > oifRecDelete = New List<Order_Intake_Forecast__c>();
 		try{
 			if(GlobalConstants.OPPORTUNITY_DELETE_ALLOCATION == false) {
 	//Colleting the Clone Reocrds
-	for(Order_Intake_Forecast__c OIFinfo: [SELECT id, name, Update_Status__c FROM Order_Intake_Forecast__c WHERE Allocation__c = TRUE AND Opportunity__c = :Opptyid Limit:Limits.getLimitQueryRows()])
-		OIFRecDelete.add(OIFinfo);
-	if(OIFRecDelete.size() > 0)
-		Database.delete(OIFRecDelete);
+	for(Order_Intake_Forecast__c OIFinfo: [SELECT id, name, Update_Status__c FROM Order_Intake_Forecast__c WHERE Allocation__c = TRUE AND Opportunity__c = :opptyid Limit:Limits.getLimitQueryRows()])
+	{
+		oifRecDelete.add(OIFinfo);
+	}
+	if(oifRecDelete.size() > 0)
+	{
+		Database.delete(oifRecDelete);
+	}
 	GlobalConstants.OPPORTUNITY_DELETE_ALLOCATION = true;
 			}
 		}
@@ -1585,10 +1617,10 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: populateG5ContractApprovalDate
-	*Description: Req-3062 G5 Process: Date Fields
-	*Parameters: Trigger.new, Trigger.oldMap
-	*******************************/
+*Method Name: populateG5ContractApprovalDate
+*Description: Req-3062 G5 Process: Date Fields
+*Parameters: Trigger.new, Trigger.oldMap
+*******************************/
 	public void populateG5ContractApprovalDate(List<opportunity> opptyList, Map<Id, opportunity> opptyOldMap) {
 		System.debug('test enter populateG5ContractApprovalDate');
 		try{
@@ -1609,16 +1641,16 @@ public inherited sharing class OpportunityTriggerHelper
 
 	//Sales process: Sprint 9: requirement 3158, AP Release 5546
 	/******************************
-	*Method Name: chatterPostToAccountManager
-	*Description: This method is used inform Account Manager when G4/G5 approved
-	Opportunity  and OIF BG's deviate through chatter.
-	*Parameters:  OpptyNewMap, OpptyOldMap
-	********************************/
+*Method Name: chatterPostToAccountManager
+*Description: This method is used inform Account Manager when G4/G5 approved
+Opportunity  and OIF BG's deviate through chatter.
+*Parameters:  OpptyNewMap, OpptyOldMap
+********************************/
 	public void chatterPostToAccountManager(Map<Id, Opportunity > opptyMap, Map<Id, Opportunity > oldOpptyMap) {
 		//Oppty BG's set
 		Set<String> opportunityBGs = new Set<String>();
 		//OIF BG's set
-		Set<String> OIFBGs = new Set<String>();
+		Set<String> oifBGs = new Set<String>();
 		//AccountId set
 		Set<Id> accountIds = new Set<Id>();
 		Set<Id> opptyIdSet = new Set<Id>();
@@ -1632,32 +1664,32 @@ public inherited sharing class OpportunityTriggerHelper
 		ConnectApi.MarkupBeginSegmentInput markupBeginSegment2;
 		ConnectApi.MarkupEndSegmentInput markupEndSegment2;
 		ConnectApi.MentionSegmentInput mentionSegmentInput;
-		List<Order_Intake_Forecast__c> OIFList;
+		List<Order_Intake_Forecast__c> oifList;
 		//Account Map
 		Map<Id, Account> accountMap;
 		//map of oppty and related OIF's
-		Map<Id, list<Order_Intake_Forecast__c>> OIFMap = new Map<Id, List<Order_Intake_Forecast__c>>();
+		Map<Id, list<Order_Intake_Forecast__c>> oifMap = new Map<Id, List<Order_Intake_Forecast__c>>();
 		try {
 			for(opportunity opptyObj : opptyMap.values()) {
 	if((opptyObj.StageName == GlobalConstants.WIN_THE_CASE_OPPORTUNITY_STAGE && oldOpptyMap.get(opptyObj.Id).StageName == GlobalConstants.CREATE_OFFER)
-	  || (opptyObj.StageName == GlobalConstants.HANDOVER_OPPTY && oldOpptyMap.get(opptyObj.Id).StageName == GlobalConstants.WIN_THE_CASE_OPPORTUNITY_STAGE)
-	&& (opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId)) {
+	   || (opptyObj.StageName == GlobalConstants.HANDOVER_OPPTY && oldOpptyMap.get(opptyObj.Id).StageName == GlobalConstants.WIN_THE_CASE_OPPORTUNITY_STAGE)
+	   && (opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId)) {
 		opptyIdSet.add(opptyObj.id);
 		opptyList.add(opptyObj);
-	}
+	   }
 			}
 			if (GlobalConstants.CHATTER_POST_TO_ACCOUNT_MANAGER_FLAG == false && opptyIdSet.size() > 0) {
 	//Loop to add oppty and related OIF's in map
 	for (Order_Intake_Forecast__c orderIntakeForecast: [SELECT id, Business_Group__c, Business_Unit__c, Opportunity__c, Allocation__c FROM Order_Intake_Forecast__c WHERE Opportunity__c in :opptyIdSet and Allocation__c = False and Forecast_Category__c != : GlobalConstants.CANCEL and Forecast_Category__c != : GlobalConstants.Lost LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
-		if (OIFMap.containsKey(orderIntakeForecast.Opportunity__c)) {
-			OIFList = new List<Order_Intake_Forecast__c>();
-			OIFList = OIFMap.get(orderIntakeForecast.Opportunity__c);
-			OIFList.add(orderIntakeForecast);
-			OIFMap.put(orderIntakeForecast.Opportunity__c, OIFList);
+		if (oifMap.containsKey(orderIntakeForecast.Opportunity__c)) {
+			oifList = new List<Order_Intake_Forecast__c>();
+			oifList = oifMap.get(orderIntakeForecast.Opportunity__c);
+			oifList.add(orderIntakeForecast);
+			oifMap.put(orderIntakeForecast.Opportunity__c, oifList);
 		} else {
-			OIFList = new List<Order_Intake_Forecast__c>();
-			OIFList.add(orderIntakeForecast);
-			OIFMap.put(orderIntakeForecast.Opportunity__c, OIFList);
+			oifList = new List<Order_Intake_Forecast__c>();
+			oifList.add(orderIntakeForecast);
+			oifMap.put(orderIntakeForecast.Opportunity__c, oifList);
 		}
 	}
 	//Loop to get All account Ids in set
@@ -1674,96 +1706,96 @@ public inherited sharing class OpportunityTriggerHelper
 		if (GlobalConstants.CHATTER_POST_TO_ACCOUNT_MANAGER_FLAG == false && opptyIdSet.size() > 0) {
 			//Adding Oppty BG's in Set
 			if (String.isNotBlank(oppty.Lead_BG__c) && !String.isEmpty(oppty.Lead_BG__c)) {
-	opportunityBGs.add(oppty.Lead_BG__c);
+				opportunityBGs.add(oppty.Lead_BG__c);
 			}
 			//Adding Supporting BGs in Set
 			if (oppty.Supporting_BGs_BUs__c != null && oppty.Supporting_BGs_BUs__c != '') {
-	List<String> bgBuList = new List<String>();
-	bgBuList.addAll(oppty.Supporting_BGs_BUs__c.split(';'));
-	for(String bgBuValue : bgBuList) {
+				List<String> bgBuList = new List<String>();
+				bgBuList.addAll(oppty.Supporting_BGs_BUs__c.split(';'));
+				for(String bgBuValue : bgBuList) {
 		opportunityBGs.add(bgBuValue.split(' ')[0]);
-	}
+				}
 			}
 			//Looping over OIF map to add OIF BG's in set
-			for (Order_Intake_Forecast__c OIF: OIFMap.get(oppty.Id)) {
-	if (String.isNotBlank(OIF.Business_Group__c) && !String.isEmpty(OIF.Business_Group__c)) {
-		OIFBGs.add(OIF.Business_Group__c);
-	}
+			for (Order_Intake_Forecast__c OIF: oifMap.get(oppty.Id)) {
+				if (String.isNotBlank(OIF.Business_Group__c) && !String.isEmpty(OIF.Business_Group__c)) {
+		oifBGs.add(OIF.Business_Group__c);
+				}
 			}
 			//checking condition if BG's deviate
-			if (!opportunityBGs.equals(OIFBGs) && !opportunityBGs.containsAll(OIFBGs) && !OIFBGs.isEmpty()) {
-	//ConnecAPI For chatter Post
-	feedItemInput = new ConnectApi.FeedItemInput();
-	messageBodyInput = new ConnectApi.MessageBodyInput();
-	mentionSegmentInput = new ConnectApi.MentionSegmentInput();
-	mentionSegmentInput.id = oppty.ownerId;
-	messageBodyInput.messageSegments = new List<ConnectApi.MessageSegmentInput>();
-	messageBodyInput.messageSegments.add(mentionSegmentInput);
+			if (!opportunityBGs.equals(oifBGs) && !opportunityBGs.containsAll(oifBGs) && !oifBGs.isEmpty()) {
+				//ConnecAPI For chatter Post
+				feedItemInput = new ConnectApi.FeedItemInput();
+				messageBodyInput = new ConnectApi.MessageBodyInput();
+				mentionSegmentInput = new ConnectApi.MentionSegmentInput();
+				mentionSegmentInput.id = oppty.ownerId;
+				messageBodyInput.messageSegments = new List<ConnectApi.MessageSegmentInput>();
+				messageBodyInput.messageSegments.add(mentionSegmentInput);
 
-	markupBeginSegment1 = new ConnectApi.MarkupBeginSegmentInput();
-	markupBeginSegment1.markupType = ConnectApi.MarkupType.Bold;
-	messageBodyInput.messageSegments.add(markupBeginSegment1);
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + GlobalConstants.HYPHEN;
-	textSegmentInput.text += GlobalConstants.SPACE + System.Label.Chatter_Message;
-	messageBodyInput.messageSegments.add(textSegmentInput);
-	markupEndSegment1 = new ConnectApi.MarkupEndSegmentInput();
-	markupEndSegment1.markupType = ConnectApi.MarkupType.Bold;
-	messageBodyInput.messageSegments.add(markupEndSegment1);
+				markupBeginSegment1 = new ConnectApi.MarkupBeginSegmentInput();
+				markupBeginSegment1.markupType = ConnectApi.MarkupType.Bold;
+				messageBodyInput.messageSegments.add(markupBeginSegment1);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + GlobalConstants.HYPHEN;
+				textSegmentInput.text += GlobalConstants.SPACE + System.Label.Chatter_Message;
+				messageBodyInput.messageSegments.add(textSegmentInput);
+				markupEndSegment1 = new ConnectApi.MarkupEndSegmentInput();
+				markupEndSegment1.markupType = ConnectApi.MarkupType.Bold;
+				messageBodyInput.messageSegments.add(markupEndSegment1);
 
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + GlobalConstants.For_Oppty;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + GlobalConstants.For_Oppty;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 
-	markupBeginSegment2 = new ConnectApi.MarkupBeginSegmentInput();
-	markupBeginSegment2.markupType = ConnectApi.MarkupType.Paragraph;
-	messageBodyInput.messageSegments.add(markupBeginSegment2);
-	markupEndSegment2 = new ConnectApi.MarkupEndSegmentInput();
-	markupEndSegment2.markupType = ConnectApi.MarkupType.Paragraph;
-	messageBodyInput.messageSegments.add(markupEndSegment2);
+				markupBeginSegment2 = new ConnectApi.MarkupBeginSegmentInput();
+				markupBeginSegment2.markupType = ConnectApi.MarkupType.Paragraph;
+				messageBodyInput.messageSegments.add(markupBeginSegment2);
+				markupEndSegment2 = new ConnectApi.MarkupEndSegmentInput();
+				markupEndSegment2.markupType = ConnectApi.MarkupType.Paragraph;
+				messageBodyInput.messageSegments.add(markupEndSegment2);
 
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = oppty.Opportunity_ID__c + GlobalConstants.SPACE;
-	textSegmentInput.text += GlobalConstants.HYPHEN + GlobalConstants.SPACE + oppty.Name;
-	textSegmentInput.text += GlobalConstants.SPACE + GlobalConstants.HYPHEN;
-	textSegmentInput.text += GlobalConstants.SPACE + accountMap.get(oppty.AccountId).name;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = oppty.Opportunity_ID__c + GlobalConstants.SPACE;
+				textSegmentInput.text += GlobalConstants.HYPHEN + GlobalConstants.SPACE + oppty.Name;
+				textSegmentInput.text += GlobalConstants.SPACE + GlobalConstants.HYPHEN;
+				textSegmentInput.text += GlobalConstants.SPACE + accountMap.get(oppty.AccountId).name;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 
-	messageBodyInput.messageSegments.add(markupBeginSegment2);
-	messageBodyInput.messageSegments.add(markupEndSegment2);
+				messageBodyInput.messageSegments.add(markupBeginSegment2);
+				messageBodyInput.messageSegments.add(markupEndSegment2);
 
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.Check_And_Update;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.Check_And_Update;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 
-	messageBodyInput.messageSegments.add(markupBeginSegment2);
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.New_Black_Space;
-	messageBodyInput.messageSegments.add(textSegmentInput);
-	messageBodyInput.messageSegments.add(markupEndSegment2);
+				messageBodyInput.messageSegments.add(markupBeginSegment2);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.New_Black_Space;
+				messageBodyInput.messageSegments.add(textSegmentInput);
+				messageBodyInput.messageSegments.add(markupEndSegment2);
 
-	String oppty_BGs = '' + opportunityBGs;
-	oppty_BGs = oppty_BGs.remove(GlobalConstants.Curly_Braces_Start);
-	oppty_BGs = oppty_BGs.remove(GlobalConstants.Curly_Braces_End);
-	opportunityBGs.remove(oppty.Lead_BG__c);
-	String supporting_BGs = '' + opportunityBGs;
-	supporting_BGs = supporting_BGs.remove(GlobalConstants.Curly_Braces_Start);
-	supporting_BGs = supporting_BGs.remove(GlobalConstants.Curly_Braces_End);
-	String OIF_BGs = '' + OIFBGs;
-	OIF_BGs = OIF_BGs.remove(GlobalConstants.Curly_Braces_Start);
-	OIF_BGs = OIF_BGs.remove(GlobalConstants.Curly_Braces_End);
+				String oppty_BGs = '' + opportunityBGs;
+				oppty_BGs = oppty_BGs.remove(GlobalConstants.Curly_Braces_Start);
+				oppty_BGs = oppty_BGs.remove(GlobalConstants.Curly_Braces_End);
+				opportunityBGs.remove(oppty.Lead_BG__c);
+				String supporting_BGs = '' + opportunityBGs;
+				supporting_BGs = supporting_BGs.remove(GlobalConstants.Curly_Braces_Start);
+				supporting_BGs = supporting_BGs.remove(GlobalConstants.Curly_Braces_End);
+				String oif_BGs = '' + oifBGs;
+				oif_BGs = oif_BGs.remove(GlobalConstants.Curly_Braces_Start);
+				oif_BGs = oif_BGs.remove(GlobalConstants.Curly_Braces_End);
 
-	messageBodyInput.messageSegments.add(markupBeginSegment1);
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.Lead_BG + GlobalConstants.SPACE;
-	messageBodyInput.messageSegments.add(textSegmentInput);
-	messageBodyInput.messageSegments.add(markupEndSegment1);
+				messageBodyInput.messageSegments.add(markupBeginSegment1);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.Lead_BG + GlobalConstants.SPACE;
+				messageBodyInput.messageSegments.add(textSegmentInput);
+				messageBodyInput.messageSegments.add(markupEndSegment1);
 
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = oppty.Lead_BG__c;
-	messageBodyInput.messageSegments.add(textSegmentInput);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = oppty.Lead_BG__c;
+				messageBodyInput.messageSegments.add(textSegmentInput);
 
-	if (!opportunityBGs.isEmpty()) {
+				if (!opportunityBGs.isEmpty()) {
 		messageBodyInput.messageSegments.add(markupBeginSegment1);
 		textSegmentInput = new ConnectApi.TextSegmentInput();
 		textSegmentInput.text = GlobalConstants.SPACE + GlobalConstants.Supporting_BGs + GlobalConstants.SPACE;
@@ -1773,28 +1805,28 @@ public inherited sharing class OpportunityTriggerHelper
 		textSegmentInput = new ConnectApi.TextSegmentInput();
 		textSegmentInput.text = GlobalConstants.SPACE + supporting_BGs;
 		messageBodyInput.messageSegments.add(textSegmentInput);
-	}
-	messageBodyInput.messageSegments.add(markupBeginSegment2);
-	messageBodyInput.messageSegments.add(markupEndSegment2);
+				}
+				messageBodyInput.messageSegments.add(markupBeginSegment2);
+				messageBodyInput.messageSegments.add(markupEndSegment2);
 
-	messageBodyInput.messageSegments.add(markupBeginSegment1);
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.OIF_BGs + GlobalConstants.SPACE;
-	messageBodyInput.messageSegments.add(textSegmentInput);
-	messageBodyInput.messageSegments.add(markupEndSegment1);
+				messageBodyInput.messageSegments.add(markupBeginSegment1);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.oif_BGs + GlobalConstants.SPACE;
+				messageBodyInput.messageSegments.add(textSegmentInput);
+				messageBodyInput.messageSegments.add(markupEndSegment1);
 
-	textSegmentInput = new ConnectApi.TextSegmentInput();
-	textSegmentInput.text = GlobalConstants.SPACE + OIF_BGs;
-	messageBodyInput.messageSegments.add(textSegmentInput);
-	messageBodyInput.messageSegments.add(markupBeginSegment2);
-	messageBodyInput.messageSegments.add(markupEndSegment2);
+				textSegmentInput = new ConnectApi.TextSegmentInput();
+				textSegmentInput.text = GlobalConstants.SPACE + oif_BGs;
+				messageBodyInput.messageSegments.add(textSegmentInput);
+				messageBodyInput.messageSegments.add(markupBeginSegment2);
+				messageBodyInput.messageSegments.add(markupEndSegment2);
 
-	feedItemInput.body = messageBodyInput;
-	feedItemInput.feedElementType = ConnectApi.FeedElementType.FeedItem;
-	feedItemInput.subjectId = Oppty.Id;
-	if (!test.isRunningTest()) {
+				feedItemInput.body = messageBodyInput;
+				feedItemInput.feedElementType = ConnectApi.FeedElementType.FeedItem;
+				feedItemInput.subjectId = Oppty.Id;
+				if (!test.isRunningTest()) {
 		ConnectApi.FeedElement feedElement = ConnectApi.ChatterFeeds.postFeedElement(Network.getNetworkId(), feedItemInput);
-	}
+				}
 			}
 		}
 	}
@@ -1806,10 +1838,10 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: populateSalesOutcome
-	*Description: This method will populate Sales Outcome and Opportunity Sales Phase Tracking on Opportunity
-	*Parameters: List<Opportunity>, Map<ID, Opportunity> opptyOldMap
-	*******************************/
+*Method Name: populateSalesOutcome
+*Description: This method will populate Sales Outcome and Opportunity Sales Phase Tracking on Opportunity
+*Parameters: List<Opportunity>, Map<ID, Opportunity> opptyOldMap
+*******************************/
 	public void populateSalesOutcome(List<Opportunity> opptyList, Map<ID, Opportunity> opptyOldMap) {
 		Id readOnlyDirect = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.READ_ONLY_DIRECT_RECORD_TYPE).getRecordTypeId();
 		Id readOnlyIndirect = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.READ_ONLY_INDIRECT_RECORD_TYPE).getRecordTypeId();
@@ -1821,10 +1853,10 @@ public inherited sharing class OpportunityTriggerHelper
 	Set<Id> roRecordTypes = new Set<Id> {readOnlyDirect, readOnlyIndirect};
 		try{
 			if(GlobalConstants.OPPORTUNITYTRIGGER_POPULATE_SALES_OUTCOME == false) {
-	List<Stage_Sales_Outcome__c> salesOutcomeValues = Stage_Sales_Outcome__c.getAll().values();
-	List<Profile> currentProfile = [SELECT id, Name FROM profile WHERE Id  = :UserInfo.getProfileId()];
-	AllowReopenOpptyAndAccountChange__c userBypass = AllowReopenOpptyAndAccountChange__c.getInstance(UserInfo.getUserId());
-	for(Stage_Sales_Outcome__c csObj: salesOutcomeValues) {
+				List<Stage_Sales_Outcome__c> salesOutcomeValues = Stage_Sales_Outcome__c.getAll().values();
+				List<Profile> currentProfile = [SELECT id, Name FROM profile WHERE Id  = :UserInfo.getProfileId()];
+				AllowReopenOpptyAndAccountChange__c userBypass = AllowReopenOpptyAndAccountChange__c.getInstance(UserInfo.getUserId());
+				for(Stage_Sales_Outcome__c csObj: salesOutcomeValues) {
 		if(csObj.Stage_Type__c.equalsignorecase(GlobalConstants.ClosedLost)) {
 			lostPhases.put(csObj.Name, csObj);
 		} else if(csObj.Stage_Type__c.equalsignorecase(GlobalConstants.ClosedWon)) {
@@ -1832,65 +1864,65 @@ public inherited sharing class OpportunityTriggerHelper
 		} else if(csObj.Stage_Type__c.equalsignorecase(GlobalConstants.Open)) {
 			openPhases.put(csObj.Name, csObj);
 		}
-	}
-	for(Opportunity opp: opptyList) {
+				}
+				for(Opportunity opp: opptyList) {
 		if(!oppRecordTypes.contains(opp.RecordTypeId) || opp.StageName.equalsignorecase(opptyOldMap.get(opp.id).StageName)) {
 			continue;
 		}
 		if(openPhases.containsKey(opp.StageName)) {
 			//For a re-opened Oppty, clear Sales Outcome and populate Phase Status
 			if(lostPhases.containsKey(opptyOldMap.get(opp.id).StageName) && opptyOldMap.get(opp.id).Opportunity_Sales_Phase_Tracking__c == opp.StageName) {
-	opp.Sales_Outcome__c = openPhases.get(opp.StageName).Related_Sales_Outcome__c;
-	opp.Phase_Status__c = openPhases.get(opp.StageName).Related_Phase_Status__c;
-	opp.Opportunity_Sales_Phase_Tracking__c = GlobalConstants.BLANK_VALUE;
-	opp.Probability = GlobalConstants.DEFAULT_PROBABILITY;
+				opp.Sales_Outcome__c = openPhases.get(opp.StageName).Related_Sales_Outcome__c;
+				opp.Phase_Status__c = openPhases.get(opp.StageName).Related_Phase_Status__c;
+				opp.Opportunity_Sales_Phase_Tracking__c = GlobalConstants.BLANK_VALUE;
+				opp.Probability = GlobalConstants.DEFAULT_PROBABILITY;
 			}
 			//Navigating through Sales Phases
 			else if(openPhases.containsKey(opptyOldMap.get(opp.id).StageName) || wonPhases.containsKey(opptyOldMap.get(opp.id).StageName)) {
-	opp.Phase_Status__c = openPhases.get(opp.StageName).Related_Phase_Status__c;
+				opp.Phase_Status__c = openPhases.get(opp.StageName).Related_Phase_Status__c;
 			}
 			//When user re-opens Oppty with a different Sales Phase, throw error
 			else if(lostPhases.containsKey(opptyOldMap.get(opp.id).StageName) && opptyOldMap.get(opp.id).Opportunity_Sales_Phase_Tracking__c != opp.StageName) {
-	//Edit not allowed for non-admin profiles
-	if(roRecordTypes.contains(opp.RecordTypeId) && !profileBypass.contains(currentProfile[0].Name) && UserInfo.getUserEmail() != userBypass.Email__c && userBypass.Allow_Reopening_of_Closed_opportunity__c == false) {
-		opp.addError(Label.FreezeOppError);
-		break;
-	}
-	opp.addError(Label.Sales_Phase_Error + GlobalConstants.DOUBLE_STARTQUOTE + opptyOldMap.get(opp.id).Opportunity_Sales_Phase_Tracking__c + GlobalConstants.DOUBLE_ENDQUOTE);
+				//Edit not allowed for non-admin profiles
+				if(roRecordTypes.contains(opp.RecordTypeId) && !profileBypass.contains(currentProfile[0].Name) && UserInfo.getUserEmail() != userBypass.Email__c && userBypass.Allow_Reopening_of_Closed_opportunity__c == false) {
+					opp.addError(Label.FreezeOppError);
+					break;
+				}
+				opp.addError(Label.Sales_Phase_Error + GlobalConstants.DOUBLE_STARTQUOTE + opptyOldMap.get(opp.id).Opportunity_Sales_Phase_Tracking__c + GlobalConstants.DOUBLE_ENDQUOTE);
 			}
 		}
 		//Set Sales Outcome as appropriate FROM Custom Setting when Sales Phase is Closed
 		else if(lostPhases.containsKey(opp.StageName)) {
 			if(roRecordTypes.contains(opp.RecordTypeId) && lostPhases.containsKey(opptyOldMap.get(opp.id).StageName)) {
-	opp.addError(Label.ClosedOpportunityError);
-	break;
+				opp.addError(Label.ClosedOpportunityError);
+				break;
 			}
 			opp.Opportunity_Sales_Phase_Tracking__c = opptyOldMap.get(opp.id).StageName;
 			opp.Sales_Outcome__c = lostPhases.get(opp.StageName).Related_Sales_Outcome__c;
 			opp.Phase_Status__c = lostPhases.get(opp.StageName).Related_Phase_Status__c;
 			if(String.isNotBlank(lostPhases.get(opp.StageName).Default_Main_Reason__c)) {
-	opp.Sales_Outcome_Reason__c = lostPhases.get(opp.StageName).Default_Main_Reason__c;
-	opp.Second_Reason__c = GlobalConstants.BLANK_VALUE;
-	opp.Third_Reason__c = GlobalConstants.BLANK_VALUE;
+				opp.Sales_Outcome_Reason__c = lostPhases.get(opp.StageName).Default_Main_Reason__c;
+				opp.Second_Reason__c = GlobalConstants.BLANK_VALUE;
+				opp.Third_Reason__c = GlobalConstants.BLANK_VALUE;
 			}
 		} else if(wonPhases.containsKey(opp.StageName)) {
 			//Re-opening with Won Phase
 			if(lostPhases.containsKey(opptyOldMap.get(opp.id).StageName) && roRecordTypes.contains(opp.RecordTypeId) && !profileBypass.contains(currentProfile[0].Name) && UserInfo.getUserEmail() != userBypass.Email__c && userBypass.Allow_Reopening_of_Closed_opportunity__c == false) {
-	opp.addError(Label.FreezeOppError);
-	break;
+				opp.addError(Label.FreezeOppError);
+				break;
 			} else if(lostPhases.containsKey(opptyOldMap.get(opp.id).StageName) && opptyOldMap.get(opp.id).Opportunity_Sales_Phase_Tracking__c != opp.StageName && (profileBypass.contains(currentProfile[0].Name) || (UserInfo.getUserEmail() == userBypass.Email__c && userBypass.Allow_Reopening_of_Closed_opportunity__c == True))) {
-	opp.addError(Label.Sales_Phase_Error + GlobalConstants.DOUBLE_STARTQUOTE + opptyOldMap.get(opp.id).Opportunity_Sales_Phase_Tracking__c + GlobalConstants.DOUBLE_ENDQUOTE);
-	break;
+				opp.addError(Label.Sales_Phase_Error + GlobalConstants.DOUBLE_STARTQUOTE + opptyOldMap.get(opp.id).Opportunity_Sales_Phase_Tracking__c + GlobalConstants.DOUBLE_ENDQUOTE);
+				break;
 			}
 			opp.Sales_Outcome__c = wonPhases.get(opp.StageName).Related_Sales_Outcome__c;
 			opp.Phase_Status__c = wonPhases.get(opp.StageName).Related_Phase_Status__c;
 		}
-	}
-	GlobalConstants.OPPORTUNITYTRIGGER_POPULATE_SALES_OUTCOME = true;
+				}
+				GlobalConstants.OPPORTUNITYTRIGGER_POPULATE_SALES_OUTCOME = true;
 			}
 			if(Test.isRunningTest()) {
-	CustomException testingCatch = new CustomException(GlobalConstants.ERROR_TEXT);
-	throw testingCatch;
+				CustomException testingCatch = new CustomException(GlobalConstants.ERROR_TEXT);
+				throw testingCatch;
 			}
 		} catch(Exception ex) {
 			ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.populateSalesOutcome);
@@ -1898,10 +1930,10 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: populatePhaseStatusOnInsert
-	*Description: This method will populate Phase Status on new Opportunity
-	*Parameters: List<Opportunity>
-	*******************************/
+*Method Name: populatePhaseStatusOnInsert
+*Description: This method will populate Phase Status on new Opportunity
+*Parameters: List<Opportunity>
+*******************************/
 	public void populatePhaseStatusOnInsert(List<Opportunity> opptyList) {
 		try{
 			if(GlobalConstants.OPPORTUNITYTRIGGER_POPULATE_PHASESTATUS == false) {
@@ -1909,11 +1941,11 @@ public inherited sharing class OpportunityTriggerHelper
 	Set<Id> oppRecordTypes = new Set<Id> {directRecordTypeId, inDirectRecordTypeId};
 		for(Opportunity opp: opptyList) {
 			// added by-pass for Upsell Opportunity.
-			if(oppRecordTypes.contains(opp.RecordTypeId)&& opp.SWx_Upsell_Proposal__c == Null && (opp.Business_Type__c != GlobalConstants.COMMITTED_UPSELL || opp.Is_Auto_Upsell__c != True)) {
-	opp.StageName = phaseStatusValue.Name;
-	opp.Phase_Status__c = phaseStatusValue.Related_Phase_Status__c;
-	//Sales process Req#3791
-	opp.Probability = GlobalConstants.DEFAULT_PROBABILITY;
+			if(oppRecordTypes.contains(opp.RecordTypeId) && opp.SWx_Upsell_Proposal__c == Null && (opp.Business_Type__c != GlobalConstants.COMMITTED_UPSELL || opp.Is_Auto_Upsell__c != True) && opp.Business_Type__c != GlobalConstants.FAST_TRACK_OPP_TYPE) {
+				opp.StageName = phaseStatusValue.Name;
+				opp.Phase_Status__c = phaseStatusValue.Related_Phase_Status__c;
+				//Sales process Req#3791
+				opp.Probability = GlobalConstants.DEFAULT_PROBABILITY;
 			}
 		}
 	GlobalConstants.OPPORTUNITYTRIGGER_POPULATE_PHASESTATUS = true;
@@ -1929,23 +1961,23 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: populateReasons
-	*Description: This method will populate the win/loss reasons.
-	*Parameters:Opportunity List, Opportunity Map
-	*Requirement : 3217
-	*******************************/
+*Method Name: populateReasons
+*Description: This method will populate the win/loss reasons.
+*Parameters:Opportunity List, Opportunity Map
+*Requirement : 3217
+*******************************/
 	public void populateReasons( Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> opptyOldMap)
 	{
 		Map<Id, Opportunity> opptyMap = new Map<Id, Opportunity>();
 		Map<Id, Offer__c> opptyOfferMap = new Map<Id, Offer__C>();
 		set<String> loaBypassSet = new set<String>();
-		String Unweighted_Amount = System.Label.Unweighted_Amount_For_Sales_Outcome;
+		String unweighted_Amount = System.Label.Unweighted_Amount_For_Sales_Outcome;
 		Offer__C objOpptyOffer = null;
 
 		try {
 			for (Opportunity opptyObj: opptyNewMap.values()) {
 	if ((opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId)
-		&&((opptyObj.OIF_Amount_EUR__c == 0 && opptyObj.Amount >= Decimal.valueOf(Unweighted_Amount)) || opptyObj.OIF_Amount_EUR__c >= Decimal.valueOf(Unweighted_Amount)) &&
+		&&((opptyObj.OIF_Amount_EUR__c == 0 && opptyObj.Amount >= Decimal.valueOf(unweighted_Amount)) || opptyObj.OIF_Amount_EUR__c >= Decimal.valueOf(unweighted_Amount)) &&
 		(opptyObj.StageName == GlobalConstants.CANCELLED_BY_CUSTOMER || opptyObj.StageName == GlobalConstants.LOST_TO_COMPETITOR || opptyObj.StageName == GlobalConstants.WITH_DRAW_BY_NOKIA)
 		&& opptyObj.Apttus_Approval__Approval_Status__c != GlobalConstants.APPROVED && opptyObj.Apttus_Approval__Approval_Status__c != GlobalConstants.PENDING_APPROVAL)
 	{
@@ -1964,7 +1996,7 @@ public inherited sharing class OpportunityTriggerHelper
 			List<String> loaBypassList = System.label.LoA_Bypass_Offer_Condition.Split(GlobalConstants.COMMA);
 			loaBypassSet.addAll(loaBypassList);
 			if(objOpptyOffer != null && !loaBypassSet.contains(objOpptyOffer.LOA_Bypass__c) && (opptyObj.Sales_Outcome_Reason__c == null || opptyObj.Second_Reason__c == null || opptyObj.Third_Reason__c == null)) {
-	opptyObj.addError(System.label.PopulateReasonsOnOppty);
+				opptyObj.addError(System.label.PopulateReasonsOnOppty);
 			}
 		} else if(opptyObj.count_offer__c == 0 && (opptyObj.Sales_Outcome_Reason__c == null || opptyObj.Second_Reason__c == null || opptyObj.Third_Reason__c == null)) {
 			opptyObj.addError(System.label.PopulateReasonsOnOppty);
@@ -1978,52 +2010,44 @@ public inherited sharing class OpportunityTriggerHelper
 
 	//Requirement 3775: End customer autopopulate Logic
 	/*****************************
-	*Method Name: populateEnd Customer
-	*Description: this method used to populate End Customer on opportunity
-	*Parameters: Opportunity List
-	*******************************/
-	public void populateEndCustomer(List<Opportunity> opportunityList, Map<ID, Opportunity> optyOldMap) {
+*Method Name: populateEnd Customer
+*Description: this method used to populate End Customer on opportunity
+*Parameters: Opportunity List
+*******************************/
+	public void populateEndCustomer(List<Opportunity> opportunityList, Map<ID, Opportunity> optyOldMap, Map<Id,Account> accountsInfo) {
 		List<Opportunity> validCustomerChanges = new List<Opportunity>();
-		List<String> accountIds = new list<String>();
 		for (Opportunity opp: opportunityList) {
 			if (optyOldMap.size() > 0) {
 	if (opp.End_Customer_LE__c != optyOldMap.get(opp.Id).End_Customer_LE__c) {
 		validCustomerChanges.add(opp);
-		accountIds.add(opp.End_Customer_LE__c);
 	}
-			} else {
-	if (opp.End_Customer_LE__c != NULL) {
+			} else if (opp.End_Customer_LE__c != NULL) {
 		validCustomerChanges.add(opp);
-		accountIds.add(opp.End_Customer_LE__c);
-	}
 			}
 		}
-		Map<Id, Account> accMap = new Map<Id, Account>([SELECT Id, parentId FROM Account WHERE Id In : accountIds]);
-		if(validCustomerChanges.size() > 0) {
-			for (Opportunity opp: validCustomerChanges) {
-	if(accMap.containsKey(opp.End_Customer_LE__c))
-		opp.End_Customer__c = accMap.get(opp.End_Customer_LE__c).parentId;
-	else
-		opp.End_Customer__c = NULL;
-			}
+		for (Opportunity opp: validCustomerChanges) {
+			if(accountsInfo.containsKey(opp.End_Customer_LE__c))
+	opp.End_Customer__c = accountsInfo.get(opp.End_Customer_LE__c).parentId;
+			else
+	opp.End_Customer__c = NULL;
 		}
 	}
 
 	/*****************************
-	*Method Name: deleteOpenTasks
-	*Description: This method will populate the win/loss reasons.
-	*Parameters:Opportunity Set, Task Map
-	*Requirement : 4313
-	*******************************/
+*Method Name: deleteOpenTasks
+*Description: This method will populate the win/loss reasons.
+*Parameters:Opportunity Set, Task Map
+*Requirement : 4313
+*******************************/
 	public void deleteOpenTasks(Map<Id, Opportunity> opptyNewMap, Map<Id, Opportunity> opptyOldMap) {
 		Set<Id> opptyIdSet = new Set<Id>();
 		List<Task> taskList = new List<Task>();
 		try{
 			for(Opportunity opp : opptyNewMap.values()) {
 	if(opp.StageName <> null && opptyNewMap.get(opp.id).StageName <> null && (opp.StageName.equalsIgnoreCase(GlobalConstants.CANCELLED_BY_CUSTOMER)) || (opp.StageName.equalsIgnoreCase(GlobalConstants.WITH_DRAW_BY_NOKIA)) ||
-	(opp.StageName.equalsIgnoreCase(GlobalConstants.LOST_TO_COMPETITOR)) || (opp.StageName.equalsIgnoreCase(GlobalConstants.OBSOLETE))) {
+	   (opp.StageName.equalsIgnoreCase(GlobalConstants.LOST_TO_COMPETITOR)) || (opp.StageName.equalsIgnoreCase(GlobalConstants.OBSOLETE))) {
 		opptyIdSet.add(opp.Id);
-	}
+	   }
 			}
 			if(!opptyIdSet.isEmpty()) {
 	List<Task> taskRecList = [SELECT Id, Status, WhatId FROM Task WHERE WhatID = :opptyIdSet and Status = :GlobalConstants.Open Limit:Limits.getLimitQueryRows()];
@@ -2041,13 +2065,13 @@ public inherited sharing class OpportunityTriggerHelper
 			ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.DELETE_OPEN_TASK);
 		}
 	}
-	
+
 	/*****************************
-	*Method Name: removeG3Facilitator
-	*Description: this method work for removing G3 Facilitator at roll back oppty.
-	*Support Ticket:11982
-	*Parameters: Opportunity List, Opportunity Map
-	*******************************/
+*Method Name: removeG3Facilitator
+*Description: this method work for removing G3 Facilitator at roll back oppty.
+*Support Ticket:11982
+*Parameters: Opportunity List, Opportunity Map
+*******************************/
 	public void removeG3Facilitator(List<Opportunity> opptyList, Map<ID, Opportunity> opptyOldMap) {
 		for(Opportunity currentOppty:opptyList) {
 			if(currentOppty.StageName == GlobalConstants.IDENTIFY_OPPORTUNITY || (currentOppty.StageName == GlobalConstants.DEVELOP_OPPORTUNITY &&  opptyOldMap.get(currentOppty.Id).StageName != GlobalConstants.DEVELOP_OPPORTUNITY)) {
@@ -2062,10 +2086,10 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: updateMultiBG
-	*Description: update the isMultiBg field on opportunity.
-	*Parameters: Opportunity List
-	*******************************/
+*Method Name: updateMultiBG
+*Description: update the isMultiBg field on opportunity.
+*Parameters: Opportunity List
+*******************************/
 	public void updateMultiBG(List<Opportunity> opptyList)
 	{
 		for(Opportunity opp: opptyList)
@@ -2079,10 +2103,10 @@ public inherited sharing class OpportunityTriggerHelper
 		Boolean isMultiBG = false;
 		if(opp.Supporting_BGs_BUs__c != '' && opp.Supporting_BGs_BUs__c != null)
 		{
-			List<String> SupporingBGsBUsList = opp.Supporting_BGs_BUs__c.split(';');
-			for(String SuppBgBuVal : SupporingBGsBUsList)
+			List<String> supporingBGsBUsList = opp.Supporting_BGs_BUs__c.split(';');
+			for(String suppBgBuVal : supporingBGsBUsList)
 			{
-	if(!opp.Lead_BG__c.equals(SuppBgBuVal.split(' - ')[0]))
+	if(!opp.Lead_BG__c.equals(suppBgBuVal.split(' - ')[0]))
 	{
 		isMultiBG = true;
 		break;
@@ -2093,10 +2117,10 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Description: This method will make G4 Planned Date mandatory after G3 Facilitator notification and selection of G3 Bypass.
-	*Parameters:Opportunity List, Opportunity Map
-	*Requirement : 4879
-	*******************************/
+*Description: This method will make G4 Planned Date mandatory after G3 Facilitator notification and selection of G3 Bypass.
+*Parameters:Opportunity List, Opportunity Map
+*Requirement : 4879
+*******************************/
 	public void g4PlannedDateMandatory( Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> opptyOldMap)
 	{
 		Map<Id, Opportunity> opptyMap = new Map<Id, Opportunity>();
@@ -2111,12 +2135,12 @@ public inherited sharing class OpportunityTriggerHelper
 	if(opptyOldMap.get(opptyObj.id).Gate_3_Bypass_no_offer_support__c == false && opptyObj.Gate_3_Bypass_no_offer_support__c == true) {
 		opptyObj.No_Offer_Support_Decision_Maker__c = UserInfo.getName();
 	}
-	if(opptyOldMap.get(opptyObj.id).Gate_6_Bypass_No_Execute_needed__c == false && opptyObj.Gate_6_Bypass_No_Execute_needed__c == true) {
-		opptyObj.No_execute_Decision_maker__c = UserInfo.getName();
-	}
-	if(opptyOldMap.get(opptyObj.id).Gate_6_Bypass_No_Execute_needed__c == true && opptyObj.Gate_6_Bypass_No_Execute_needed__c == false) {
-		opptyObj.No_execute_Decision_maker__c = null;
-	}
+	/*if(opptyOldMap.get(opptyObj.id).Gate_6_Bypass_No_Execute_needed__c == false && opptyObj.Gate_6_Bypass_No_Execute_needed__c == true) {
+opptyObj.No_execute_Decision_maker__c = UserInfo.getName();
+}
+if(opptyOldMap.get(opptyObj.id).Gate_6_Bypass_No_Execute_needed__c == true && opptyObj.Gate_6_Bypass_No_Execute_needed__c == false) {
+opptyObj.No_execute_Decision_maker__c = null;
+}*/
 			}
 			if(!opptyMap.isEmpty()) {
 	for(Opportunity opptyObj: opptyMap.values()) {
@@ -2132,11 +2156,11 @@ public inherited sharing class OpportunityTriggerHelper
 
 	/*****************************
 *Method Name: resetG3BypassFlag
-	*Description: This method will prevent currentloggeduser with Role CO Sales Operations Market Head, closing committed upsell opty
-	*Requirement: 4999
-	*Parameters: opportunityNewMap, opportunityOldMap
-	*Test coverage from: OpportunityTriggerHelperTest
-	*******************************/
+*Description: This method will prevent currentloggeduser with Role CO Sales Operations Market Head, closing committed upsell opty
+*Requirement: 4999
+*Parameters: opportunityNewMap, opportunityOldMap
+*Test coverage from: OpportunityTriggerHelperTest
+*******************************/
 	public void resetG3BypassFlag( Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> opptyOldMap)
 	{
 		try {
@@ -2151,29 +2175,91 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: checkG2G6Approval
-	*Description: This method will check if G2 or G6 was approved to fill out the approver name
-	*Parameters: opportunityNewMap, opportunitiesoldMap
-	*******************************/
+*Method Name: updateG2BypassFlag
+*Description: This method will update the Gate_2_Bypass_no_complex_offer__c when criteria is met at UPDATE
+*Requirement: ft-299
+*******************************/
+	public void updateG2BypassFlag( List<Opportunity> optyList, Map<ID, Opportunity> opptyOldMap)
+	{
+		try {
+			Map<ID, Opportunity> opptyNewMap = new map<Id, Opportunity>(optyList);
+			for (Opportunity opptyObj: opptyNewMap.values())
+			{
+	if(GlobalConstants.IDENTIFY_OPPORTUNITY.equalsignorecase(opptyObj.StageName))
+	{
+		if((String.isBlank(opptyObj.No_Complex_Offer_Decision_Maker__c)) &&
+		(opptyOldMap.get(opptyObj.id).Gate_2_Bypass_no_complex_offer__c == opptyObj.Gate_2_Bypass_no_complex_offer__c) &&
+		(opptyOldMap.get(opptyObj.id).Unweighted_Amount_EUR__c != opptyObj.Unweighted_Amount_EUR__c || opptyOldMap.get(opptyObj.id).isMultiBG__c != opptyObj.isMultiBG__c || opptyOldMap.get(opptyObj.id).CLM_Contract_Request_Type__c != opptyObj.CLM_Contract_Request_Type__c) )
+		{
+			if(opptyObj.Unweighted_Amount_EUR__c > GlobalConstants.MINUNWEIGHTEDVALUE_G2APPROVAL && opptyObj.isMultiBG__c && opptyObj.CLM_Contract_Request_Type__c != GlobalConstants.RENEWAL_OF_CONTACT)
+			{
+				opptyObj.Gate_2_Bypass_no_complex_offer__c = false;
+			}
+			else
+			{
+				opptyObj.Gate_2_Bypass_no_complex_offer__c = true;
+			}
+			GlobalConstants.SKIP_NO_COMPLEX_OFFER_DM_ASSIGNMENT = true;
+		}
+		else if( (opptyOldMap.get(opptyObj.id).Gate_2_Bypass_no_complex_offer__c != opptyObj.Gate_2_Bypass_no_complex_offer__c) &&
+				(!GlobalConstants.SKIP_NO_COMPLEX_OFFER_DM_ASSIGNMENT) )
+		{
+			opptyObj.No_Complex_Offer_Decision_Maker__c = System.UserInfo.getName();
+		}
+	}
+			}
+		}catch (Exception ex) {
+			ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, ex.getMessage());
+		}
+	}
+
+	/*****************************
+*Method Name: setG2BypassFlag
+*Description: This method will update the Gate_2_Bypass_no_complex_offer__c when criteria is met at INSERT
+*Requirement: ft-299
+*******************************/
+	public void setG2BypassFlag(List<Opportunity> optyList)
+	{
+		for (Opportunity opptyObj: optyList)
+		{
+			if(opptyObj.Gate_2_Bypass_no_complex_offer__c == false)
+			{
+	if(opptyObj.Unweighted_Amount_EUR__c > GlobalConstants.MINUNWEIGHTEDVALUE_G2APPROVAL && opptyObj.isMultiBG__c && opptyObj.CLM_Contract_Request_Type__c != GlobalConstants.RENEWAL_OF_CONTACT)
+	{
+		opptyObj.Gate_2_Bypass_no_complex_offer__c = false;
+	}
+	else
+	{
+		opptyObj.Gate_2_Bypass_no_complex_offer__c = true;
+	}
+			}
+			else
+			{
+	opptyObj.No_Complex_Offer_Decision_Maker__c = System.UserInfo.getName();
+			}
+		}
+	}
+
+	/*****************************
+*Method Name: checkG2G6Approval
+*Description: This method will check if G2 or G6 was approved to fill out the approver name
+*Parameters: opportunityNewMap, opportunitiesoldMap
+*******************************/
 	public void checkG2G6Approval(Map<Id, Opportunity> opportunitiesNewMap, Map<Id, Opportunity> opportunitiesoldMap ) {
 
-		String Approver = null;
-		Set<id> Opptyid = new Set<id>();
+		String approver = null;
+		Set<id> opptyid = new Set<id>();
 		for (Opportunity newOpportunity : opportunitiesNewMap.values()) {
 			for(Opportunity oldOpportunity : opportunitiesoldMap.values()) {
 	if(newOpportunity.id.equals(oldOpportunity.id) && oldOpportunity.Phase_Status__c <> null && GlobalConstants.SUBMITTED_FOR_G2_APPROVAL.equalsIgnoreCase(oldOpportunity.Phase_Status__c) && GlobalConstants.DEVELOP_OPPORTUNITY.equalsIgnoreCase(newOpportunity.StageName)) {
-		Opptyid.add(newOpportunity.id);
-		Approver = 'g2';
-	}
-	else if(newOpportunity.id.equals(oldOpportunity.id) && oldOpportunity.Phase_Status__c <> null && GlobalConstants.SUBMITTED_FOR_G6_APPROVAL.equalsIgnoreCase(oldOpportunity.Phase_Status__c) && GlobalConstants.EXECUTE_OPPTY.equalsIgnoreCase(newOpportunity.StageName)) {
-		Opptyid.add(newOpportunity.id);
-		Approver = 'g6';
+		opptyid.add(newOpportunity.id);
+		approver = 'g2';
 	}
 			}
 		}
-		if(!Opptyid.isEmpty() && !GlobalConstants.RUNFLAG && !System.isFuture()) {
-			fillGateApprovers(Opptyid, Approver);
-			Opptyid.clear();
+		if(!opptyid.isEmpty() && !GlobalConstants.RUNFLAG && !System.isFuture()) {
+			fillGateApprovers(opptyid, approver);
+			opptyid.clear();
 			GlobalConstants.RUNFLAG = true;
 		}
 	}
@@ -2188,10 +2274,7 @@ public inherited sharing class OpportunityTriggerHelper
 	for(Opportunity oppty : listOpportunity) {
 		if(oppty.id.equals(apttus.Apttus_Approval__Related_Opportunity__c) && apttus.Apttus_Approval__ActualApproverName__c <> null) {
 			if(approver.equalsIgnoreCase('g2')) {
-	oppty.G2_Approver__c = apttus.Apttus_Approval__ActualApproverName__c;
-			}
-			else if(approver.equalsIgnoreCase('g6') && apttus.Apttus_Approval__ActualApproverName__c <> null) {
-	oppty.G6_Approver__c = apttus.Apttus_Approval__ActualApproverName__c;
+				oppty.G2_Approver__c = apttus.Apttus_Approval__ActualApproverName__c;
 			}
 			updateList.add(oppty);
 		}
@@ -2219,15 +2302,15 @@ public inherited sharing class OpportunityTriggerHelper
 		/*rollback G5 trigger / Comments for G5 preparation / G5 Approver / G6 Approver*/
 	} if(((oldOppty.StageName == 'Win the Case (Negotiate)' && oldOppty.Phase_status__c == 'Pending Win/Loss Declaration') || oldOppty.StageName == 'Handover (Prepare for Delivery)')
 		 && opptyObj.stageName != 'Handover (Prepare for Delivery)' && opptyObj.stageName != 'Execute (Start Delivery)' && opptyObj.stageName != 'Completed') {
-	opptyObj.G5_Trigger__c = null;
-	opptyObj.G5_Approver__c = null;
-	opptyObj.G6_Approver__c = null;
-	/*rollback G4 approver*/
+			 opptyObj.G5_Trigger__c = null;
+			 opptyObj.G5_Approver__c = null;
+			 opptyObj.G6_Approver__c = null;
+			 /*rollback G4 approver*/
 		 }if((oldOppty.stageName != 'Create Offer (Bid)' && oldOppty.stageName != 'Develop Opportunity' && oldOppty.stageName != 'Identify Opportunity')
-	&& (opptyObj.stageName == 'Create Offer (Bid)' || opptyObj.stageName == 'Develop Opportunity' || opptyObj.stageName == 'Identify Opportunity')) {
+			 && (opptyObj.stageName == 'Create Offer (Bid)' || opptyObj.stageName == 'Develop Opportunity' || opptyObj.stageName == 'Identify Opportunity')) {
 		opptyObj.G4_Approver__c = null;
 		opptyObj.G5_Trigger__c = null;
-	}
+			 }
 	/*rollback G3 approver*/
 	if(oldOppty.stageName != 'Develop Opportunity' && oldOppty.stageName != 'Identify Opportunity' && (opptyObj.stageName == 'Develop Opportunity' || opptyObj.stageName == 'Identify Opportunity')) {
 		opptyObj.G3_Approver__c = null;
@@ -2243,12 +2326,12 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: committedUpsellOptyClosureValidation
-	*Description: This method will prevent currentloggeduser with Role CO Sales Operations Market Head, closing committed upsell opty
-	*Requirement: 4999
-	*Parameters: opportunityNewMap, opportunityOldMap
-	*Test coverage from: OpportunityTriggerHelperTest
-	*******************************/
+*Method Name: committedUpsellOptyClosureValidation
+*Description: This method will prevent currentloggeduser with Role CO Sales Operations Market Head, closing committed upsell opty
+*Requirement: 4999
+*Parameters: opportunityNewMap, opportunityOldMap
+*Test coverage from: OpportunityTriggerHelperTest
+*******************************/
 	public void committedUpsellOptyClosureValidation(List<Opportunity> optyList, Map<Id, Opportunity> opportunityOldMap) {
 		Map<Id, Opportunity> opportunityAddErrorMap = new Map<Id, Opportunity>();
 		List<Sales_Role__c> salesRoleList = new List<Sales_Role__c>();
@@ -2273,11 +2356,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: updateUnweightedValueofOpptyGroup
-	*Description: This method will update unweighted value of its related deal opportunity grouping objects.
-	*Parameters:Opportunity List, Opportunity Map
-	*Requirement : 4943
-	*******************************/
+*Method Name: updateUnweightedValueofOpptyGroup
+*Description: This method will update unweighted value of its related deal opportunity grouping objects.
+*Parameters:Opportunity List, Opportunity Map
+*Requirement : 4943
+*******************************/
 	public void updateUnweightedValueofOpptyGroup( Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> opptyOldMap)
 	{
 		set<Id> opptyIdSet = new set<Id>();
@@ -2303,11 +2386,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: associateUpsellOpptyWithUpsellDeal
-	*Description: This method will check if upsell oppty is related with upsell deal.
-	*Parameters:Opportunity List, Opportunity Map
-	*Requirement : 5151
-	*******************************/
+*Method Name: associateUpsellOpptyWithUpsellDeal
+*Description: This method will check if upsell oppty is related with upsell deal.
+*Parameters:Opportunity List, Opportunity Map
+*Requirement : 5151
+*******************************/
 	public void associateUpsellOpptyWithUpsellDeal( Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> opptyOldMap)
 	{
 		Set<Id> opptyIdSet = new Set<Id>();
@@ -2341,12 +2424,12 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: updateProbabilityOfPSROAsSalesOptyAfterUpdate
-	*Description: This method will update probability of 'Sales opty' on 'PSRO' opty exlculding 'closed', 'cancelled' psro opty
-	*Requirement: 5072
-	*Parameters: opportunityNewMap, opportunityOldMap
-	*Test coverage from: OpportunityTriggerHelperTest
-	*******************************/
+*Method Name: updateProbabilityOfPSROAsSalesOptyAfterUpdate
+*Description: This method will update probability of 'Sales opty' on 'PSRO' opty exlculding 'closed', 'cancelled' psro opty
+*Requirement: 5072
+*Parameters: opportunityNewMap, opportunityOldMap
+*Test coverage from: OpportunityTriggerHelperTest
+*******************************/
 	public void updateProbabilityOfPSROAsSalesOptyAfterUpdate(Map<Id, Opportunity> optyNewMap, Map<Id, Opportunity> optyOldMap) {
 		Set<Id> salesOptyIdsSet = new Set<Id>();
 		try {
@@ -2365,11 +2448,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: validateSubstituteOptyWithSameUpsellDeal
-	*Description: This method will check, Committed upsell opportunities deal is same as Substitute opportunityies deal of type upsell deal
-	*Parameters:Opportunity List, Opportunity Map
-	*Requirement : 5001
-	*******************************/
+*Method Name: validateSubstituteOptyWithSameUpsellDeal
+*Description: This method will check, Committed upsell opportunities deal is same as Substitute opportunityies deal of type upsell deal
+*Parameters:Opportunity List, Opportunity Map
+*Requirement : 5001
+*******************************/
 	public void validateSubstituteOptyWithSameUpsellDeal( List<Opportunity> opptyList, Map<ID, Opportunity> opptyOldMap)
 	{
 		Map<Id, Id> salesOpIdAndSubstituteOpIdMap = new Map<Id, Id>();
@@ -2385,34 +2468,34 @@ public inherited sharing class OpportunityTriggerHelper
 			if(!salesOpIdAndSubstituteOpIdMap.isEmpty())
 			{
 	for(Opportunity_Group__c opptyGroupObj: [SELECT id, Opportunity__c, Deal__r.RecordType.Name
-		 FROM Opportunity_Group__c
-		 WHERE Opportunity__c IN: salesOpIdAndSubstituteOpIdMap.keySet()
-		 AND Deal__r.RecordType.Name = :GlobalConstants.UPSELL_DEAL
-		 AND Opportunity_Relation__c = :GlobalConstants.SUBORDINATE
-		 LIMIT :(Limits.getLimitQueryRows() - Limits.getQueryRows())
-		]) {
-			if(opptyGroupObj.Deal__c != null)
-	salesOpIdAndDealIdMap.put(opptyGroupObj.Opportunity__c, opptyGroupObj.Deal__c);
-			else
-	salesOpIdAndDealIdMap.put(opptyGroupObj.Opportunity__c, null);
-		}
+					 FROM Opportunity_Group__c
+					 WHERE Opportunity__c IN: salesOpIdAndSubstituteOpIdMap.keySet()
+					 AND Deal__r.RecordType.Name = :GlobalConstants.UPSELL_DEAL
+					 AND Opportunity_Relation__c = :GlobalConstants.SUBORDINATE
+					 LIMIT :(Limits.getLimitQueryRows() - Limits.getQueryRows())
+					]) {
+						if(opptyGroupObj.Deal__c != null)
+				salesOpIdAndDealIdMap.put(opptyGroupObj.Opportunity__c, opptyGroupObj.Deal__c);
+						else
+				salesOpIdAndDealIdMap.put(opptyGroupObj.Opportunity__c, null);
+					}
 	for(Opportunity_Group__c opptyGroupObj: [SELECT id, Opportunity__c, Deal__r.RecordType.Name
-		 FROM Opportunity_Group__c
-		 WHERE Opportunity__c IN: salesOpIdAndSubstituteOpIdMap.values()
-		 AND Deal__r.RecordType.Name = :GlobalConstants.UPSELL_DEAL
-		 AND Opportunity_Relation__c = :GlobalConstants.SUBORDINATE
-		 LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
-	if(opptyGroupObj.Deal__c != null)
-	 substituteOpIdAndDealIdMap.put(opptyGroupObj.Opportunity__c, opptyGroupObj.Deal__c);
-	else
-	 substituteOpIdAndDealIdMap.put(opptyGroupObj.Opportunity__c, null);
-		 }
+					 FROM Opportunity_Group__c
+					 WHERE Opportunity__c IN: salesOpIdAndSubstituteOpIdMap.values()
+					 AND Deal__r.RecordType.Name = :GlobalConstants.UPSELL_DEAL
+					 AND Opportunity_Relation__c = :GlobalConstants.SUBORDINATE
+					 LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
+				if(opptyGroupObj.Deal__c != null)
+				 substituteOpIdAndDealIdMap.put(opptyGroupObj.Opportunity__c, opptyGroupObj.Deal__c);
+				else
+				 substituteOpIdAndDealIdMap.put(opptyGroupObj.Opportunity__c, null);
+					 }
 
 	for( Opportunity opp : opptyList) {
 		if(salesOpIdAndDealIdMap.containsKey(opp.Id) && substituteOpIdAndDealIdMap.containsKey(salesOpIdAndSubstituteOpIdMap.get(opp.Id))) {
 			//get deal
 			if(salesOpIdAndDealIdMap.get(opp.Id) != substituteOpIdAndDealIdMap.get(salesOpIdAndSubstituteOpIdMap.get(opp.Id))) {
-	opp.addError(Label.UpsellOpportunityDealErrorMessage);
+				opp.addError(Label.UpsellOpportunityDealErrorMessage);
 			}
 		} else if(salesOpIdAndDealIdMap.containsKey(opp.Id) && substituteOpIdAndDealIdMap.isEmpty()) {
 			opp.addError(Label.UpsellOpportunityDealErrorMessage);
@@ -2426,55 +2509,55 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: restrictOpptyTypeChange
-	*Description: This method will check if oppty is associated as master oppty on changing opportunity type FROM standard to committed upsell.
-	*Parameters:Opportunity List, Opportunity Map
-	*Requirement : 5150
-	******************************
-	public void restrictOpptyTypeChange( Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> opptyOldMap)
-	{
-		Set<Id> opptyIdSet = new Set<Id>();
-		Set<Id> masterOpptyIdSet = new Set<Id>();
-		try {
-			for (Opportunity opptyObj: opptyNewMap.values()) {
-	if ((opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId) && opptyObj.Business_Type__c == GlobalConstants.COMMITTED_UPSELL && opptyOldMap.get(opptyObj.id).Business_Type__c == GlobalConstants.STANDARDOPPORTUNITY) {
-		opptyIdSet.add(opptyObj.id);
-	}
-			}
-			if(opptyIdSet.size() > 0) {
-	List<Opportunity_Group__c> opptyGroupObjList = [SELECT id, Opportunity__c, Opportunity_Relation__c FROM Opportunity_Group__c WHERE Opportunity__c IN: opptyIdSet and Opportunity_Relation__c = :GlobalConstants.MASTER LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())];
-	for(Opportunity_Group__c opptyGroupObj:opptyGroupObjList) {
-		masterOpptyIdSet.add(opptyGroupObj.Opportunity__c);
-	}
-	if(masterOpptyIdSet.size() > 0) {
-		for(Id opptyId: masterOpptyIdSet) {
-			opptyNewMap.get(opptyId).addError(System.label.ErrorOnChangingOpptyType);
-		}
-	}
-			}
-		}
-		catch (Exception ex) {
-			ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.restrictOpptyTypeChange);
-		}
-	}*/
+*Method Name: restrictOpptyTypeChange
+*Description: This method will check if oppty is associated as master oppty on changing opportunity type FROM standard to committed upsell.
+*Parameters:Opportunity List, Opportunity Map
+*Requirement : 5150
+******************************
+public void restrictOpptyTypeChange( Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> opptyOldMap)
+{
+Set<Id> opptyIdSet = new Set<Id>();
+Set<Id> masterOpptyIdSet = new Set<Id>();
+try {
+for (Opportunity opptyObj: opptyNewMap.values()) {
+if ((opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId) && opptyObj.Business_Type__c == GlobalConstants.COMMITTED_UPSELL && opptyOldMap.get(opptyObj.id).Business_Type__c == GlobalConstants.STANDARDOPPORTUNITY) {
+opptyIdSet.add(opptyObj.id);
+}
+}
+if(opptyIdSet.size() > 0) {
+List<Opportunity_Group__c> opptyGroupObjList = [SELECT id, Opportunity__c, Opportunity_Relation__c FROM Opportunity_Group__c WHERE Opportunity__c IN: opptyIdSet and Opportunity_Relation__c = :GlobalConstants.MASTER LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())];
+for(Opportunity_Group__c opptyGroupObj:opptyGroupObjList) {
+masterOpptyIdSet.add(opptyGroupObj.Opportunity__c);
+}
+if(masterOpptyIdSet.size() > 0) {
+for(Id opptyId: masterOpptyIdSet) {
+opptyNewMap.get(opptyId).addError(System.label.ErrorOnChangingOpptyType);
+}
+}
+}
+}
+catch (Exception ex) {
+ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.restrictOpptyTypeChange);
+}
+}*/
 
 	/*****************************
-	*Method Name: ClosedOpptyStatustoTeam
-	*Description:  Chatter Post to Oppty and Offer Team members to inform about to Opportunity Closed Status info
-	Req:5077 - chatter post on oppty close(positive and negative)
-	*Parameters: opportunitiesMap
-	*******************************/
+*Method Name: ClosedOpptyStatustoTeam
+*Description:  Chatter Post to Oppty and Offer Team members to inform about to Opportunity Closed Status info
+Req:5077 - chatter post on oppty close(positive and negative)
+*Parameters: opportunitiesMap
+*******************************/
 	public void OpportunityClosure(Map<Id, Opportunity> newMap, Map<Id, Opportunity> oldMap) {
 		Set<Id> chatterOpptyInfo = new Set<Id>();
 		try{
 			for(Opportunity opptyData:newMap.values()) {
 	if(opptyData.StageName != Null && opptyData.StageName != oldMap.get(opptyData.id).StageName &&
-	(opptyData.StageName.equalsignorecase(GlobalConstants.COMPLETED_OPPTY) ||
+	   (opptyData.StageName.equalsignorecase(GlobalConstants.COMPLETED_OPPTY) ||
 		opptyData.StageName.equalsignorecase(GlobalConstants.CANCELLED_BY_CUSTOMER) ||
 		opptyData.StageName.equalsignorecase(GlobalConstants.LOST_TO_COMPETITOR) ||
 		opptyData.StageName.equalsignorecase(GlobalConstants.WITH_DRAW_BY_NOKIA) ||
 		opptyData.StageName.equalsignorecase(GlobalConstants.OBSOLETE)) &&
-	(opptyData.RecordTypeId == directRecordTypeId || opptyData.RecordTypeId == inDirectRecordTypeId ||
+	   (opptyData.RecordTypeId == directRecordTypeId || opptyData.RecordTypeId == inDirectRecordTypeId ||
 		opptyData.RecordTypeId == readOnlyDirectRecordTypeId || opptyData.RecordTypeId == readOnlyIndirectRecordTypeId)) {
 			chatterOpptyInfo.add(opptyData.ID);
 		}
@@ -2490,55 +2573,40 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: opportunityTypeChangeRestriction
-	*Description: This method will prevent currentloggeduser with Role other than CO Sales Operations Market Head,
-	changing opportunity type after Identify stage.
-	*Requirement: 5003
-	*Parameters: opportunityNewMap, opportunityOldMap
-	*Test coverage from: OpportunityTriggerHelperTest
-	*******************************/
+*Method Name: opportunityTypeChangeRestriction
+*Description: This method will prevent currentloggeduser with Role other than CO Sales Operations Market Head,
+changing opportunity type after Identify stage.
+*Requirement: 5003
+*Parameters: opportunityNewMap, opportunityOldMap
+*Test coverage from: OpportunityTriggerHelperTest
+*******************************/
 	public void opportunityTypeChangeRestriction(List<Opportunity> optyList, Map<Id, Opportunity> opportunityOldMap) {
-		Map<Id, Opportunity> opportunityAddErrorMap = new Map<Id, Opportunity>();
-		Map<Id, Opportunity> opportunityMap = new Map<Id, Opportunity>();
-		List<Sales_Role__c> salesRoleList = new List<Sales_Role__c>();
-		try {
-			for(Opportunity opty : optyList)	{
-	if(opty.Business_Type__c != opportunityOldMap.get(opty.id).Business_Type__c &&
-	(opty.RecordTypeId == directRecordTypeId || opty.RecordTypeId == inDirectRecordTypeId || opty.RecordTypeId == readOnlyDirectRecordTypeId || opty.RecordTypeId == readOnlyIndirectRecordTypeId) &&
-	(opty.StageName == GlobalConstants.COMPLETED_OPPTY || opty.StageName == GlobalConstants.CANCELLED_BY_CUSTOMER || opty.StageName == GlobalConstants.LOST_TO_COMPETITOR || opty.StageName == GlobalConstants.WITH_DRAW_BY_NOKIA || opty.StageName == GlobalConstants.OBSOLETE ||
-		opty.Phase_Status__c == GlobalConstants.SUBMITTED_FOR_G2_APPROVAL || opty.Phase_Status__c == GlobalConstants.SUBMITTED_FOR_G3_APPROVAL || opty.Phase_Status__c == GlobalConstants.SUBMITTED_FOR_G4_APPROVAL || opty.Phase_Status__c == GlobalConstants.SUBMITTED_FOR_G5_APPROVAL || opty.Phase_Status__c == GlobalConstants.SUBMITTED_FOR_G6_APPROVAL)) {
-			opportunityAddErrorMap.put(opty.Id, opty);
-		} else if(opty.Business_Type__c != opportunityOldMap.get(opty.id).Business_Type__c && (opty.RecordTypeId == directRecordTypeId || opty.RecordTypeId == inDirectRecordTypeId)) {
-			opportunityMap.put(opty.Id, opty);
-		}
-			}
-
-			if(!opportunityMap.isEmpty()) {
-	salesRoleList = [SELECT id, Role_Code__c, Role_Name__c, User__c FROM Sales_Role__c WHERE User__c = :UserInfo.getUserId() AND (Role_Name__c like:GlobalConstants.WILDCARD_SEARCH + Label.CO_Sales_Operations_Market_Head AND Active__c = :GlobalConstants.VALUE_TRUE) LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()];
-	if(salesRoleList.isEmpty()) {
-		for(Opportunity optyToShowError : opportunityMap.values()) {
-			if(optyToShowError.StageName != GlobalConstants.IDENTIFY_OPPORTUNITY) {
-	optyToShowError.addError(System.Label.Opportunity_Type_Change);
-			}
+		Boolean notAllowed = ([SELECT Id FROM Sales_Role__c WHERE User__c = :UserInfo.getUserId() AND (Role_Name__c like:GlobalConstants.WILDCARD_SEARCH + Label.CO_Sales_Operations_Market_Head AND Active__c = :GlobalConstants.VALUE_TRUE) LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()]).isEmpty();
+		List<String> lockedPhases = new List<String>{GlobalConstants.COMPLETED_OPPTY, GlobalConstants.CANCELLED_BY_CUSTOMER, GlobalConstants.LOST_TO_COMPETITOR, GlobalConstants.WITH_DRAW_BY_NOKIA, GlobalConstants.OBSOLETE, GlobalConstants.SUBMITTED_FOR_G2_APPROVAL,GlobalConstants.SUBMITTED_FOR_G3_APPROVAL , GlobalConstants.SUBMITTED_FOR_G4_APPROVAL, GlobalConstants.SUBMITTED_FOR_G5_APPROVAL, GlobalConstants.SUBMITTED_FOR_G6_APPROVAL   };
+			try {
+	for(Opportunity opty : optyList){
+		if(opty.Business_Type__c != opportunityOldMap.get(opty.id).Business_Type__c &&
+		(opty.RecordTypeId == directRecordTypeId || opty.RecordTypeId == inDirectRecordTypeId || opty.RecordTypeId == readOnlyDirectRecordTypeId || opty.RecordTypeId == readOnlyIndirectRecordTypeId) ){
+		 if ( lockedPhases.contains(opty.StageName) || lockedPhases.contains(opty.Phase_Status__c) ) {
+		  opty.addError('Business_Type__c',System.Label.OpptyTypeChnage_whenOpptyLockedclosed);
+		 } else if( !GlobalConstants.BYPASS_OPPTYPECHANGE && (opty.Business_Type__c == GlobalConstants.FAST_TRACK_OPP_TYPE || opportunityOldMap.get(opty.id).Business_Type__c == GlobalConstants.FAST_TRACK_OPP_TYPE) ){
+		  opty.addError('Business_Type__c',GlobalConstants.FASTTRACKTYPE_CANNOTCHANGE);
+		 } else if( notAllowed &&  opty.StageName != GlobalConstants.IDENTIFY_OPPORTUNITY  && !(opty.Business_Type__c == GlobalConstants.FAST_TRACK_OPP_TYPE || opportunityOldMap.get(opty.id).Business_Type__c == GlobalConstants.FAST_TRACK_OPP_TYPE)) {
+		  opty.addError('Business_Type__c',System.Label.Opportunity_Type_Change);
+		 }
 		}
 	}
+			} catch (Exception ex) {
+	ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.opportunityTypeChangeRestriction);
 			}
-			if(!opportunityAddErrorMap.isEmpty()) {
-	for(Opportunity optyToShowError : opportunityAddErrorMap.values()) {
-		optyToShowError.addError(System.Label.OpptyTypeChnage_whenOpptyLockedclosed);
-	}
-			}
-		} catch (Exception ex) {
-			ExceptionHandler.addException(ex, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.opportunityTypeChangeRestriction);
-		}
 	}
 
 	/*****************************
-	*Method Name: upsellDeltaDifference
-	*Description: calculate Committed Upsell Deviation
-	*Parameters: List<Opportunity>, Map<ID, Opportunity>
-	*Requirement : 5107
-	*******************************/
+*Method Name: upsellDeltaDifference
+*Description: calculate Committed Upsell Deviation
+*Parameters: List<Opportunity>, Map<ID, Opportunity>
+*Requirement : 5107
+*******************************/
 	public void upsellDeltaDifference(List<Opportunity> lstOppty, Map<ID, Opportunity> opptyOldMap)
 	{
 		try {
@@ -2559,11 +2627,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: committedUnweightedValue
-	*Description: calculate Committed Unweighted Value of Upsell Opportunity
-	*Parameters: List<Opportunity>, Map<ID, Opportunity>
-	*Requirement : 5114
-	*******************************/
+*Method Name: committedUnweightedValue
+*Description: calculate Committed Unweighted Value of Upsell Opportunity
+*Parameters: List<Opportunity>, Map<ID, Opportunity>
+*Requirement : 5114
+*******************************/
 	public void committedUnweightedValue(List<Opportunity> lstOppty, Map<ID, Opportunity> opptyOldMap)
 	{
 		set<id> setOpptyId = new set<id>();
@@ -2572,7 +2640,6 @@ public inherited sharing class OpportunityTriggerHelper
 		list<opportunity> lstUpsellOppty = new list<opportunity>();
 		list<opportunity> lstUpsellOpptyToUpdate = new list<opportunity>();
 		string strStageName = GlobalConstants.OPPTYSALESPHASE;
-		list<string> lstStageName = strStageName.split(', ');
 		try
 		{
 			for(opportunity objOppty : lstOppty)
@@ -2586,9 +2653,9 @@ public inherited sharing class OpportunityTriggerHelper
 			if(setOpptyId.size() > 0)
 			{
 	List<Opportunity_Group__c> objDealGrouplist = [SELECT id, Opportunity__c, Deal__c
-	  FROM Opportunity_Group__c
-	  WHERE Opportunity__c in : setOpptyId
-	  AND Opportunity_Relation__c = :globalconstants.MASTER ];
+				  FROM Opportunity_Group__c
+				  WHERE Opportunity__c in : setOpptyId
+				  AND Opportunity_Relation__c = :globalconstants.MASTER ];
 
 	for(Opportunity_Group__c objDealGroup : objDealGrouplist) {
 		setDealId.add(objDealGroup.Deal__c);
@@ -2597,23 +2664,23 @@ public inherited sharing class OpportunityTriggerHelper
 	if(setDealId.size() > 0)
 	{
 		for(Opportunity_Group__c objDealGroup : [SELECT id, Opportunity__c, Deal__c
-	FROM Opportunity_Group__c
-	WHERE Deal__c in : setDealId
-	AND Opportunity_Relation__c = :globalconstants.SUBORDINATE ]) {
-	 setCommittedOppty.add(objDealGroup.Opportunity__c);
-	}
+				FROM Opportunity_Group__c
+				WHERE Deal__c in : setDealId
+				AND Opportunity_Relation__c = :globalconstants.SUBORDINATE ]) {
+				 setCommittedOppty.add(objDealGroup.Opportunity__c);
+				}
 
 		if(setCommittedOppty.size() > 0)
 		{
 			lstUpsellOpptyToUpdate = getCommittedUpsellOpptyList(setCommittedOppty);
 			for(opportunity objUpsellOptty : lstUpsellOpptyToUpdate)
 			{
-	if(objUpsellOptty.Is_Auto_Upsell__c == false)
-	{
+				if(objUpsellOptty.Is_Auto_Upsell__c == false)
+				{
 		objUpsellOptty.Committed_Unweighted_Value_in_EUR__c = calculateTotalSalesYear(objUpsellOptty.Opportunity_ID__c);
 		objUpsellOptty.Upsell_Delta__c = 0;
 		lstUpsellOppty.add(objUpsellOptty);
-	}
+				}
 			}
 		}
 	}
@@ -2625,11 +2692,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: calculateTotalSalesYear
-	*Description: To get the comitted Upsell Opportunity
-	*Parameters: list<opportunity>
-	*Requirement : 5008
-	*******************************/
+*Method Name: calculateTotalSalesYear
+*Description: To get the comitted Upsell Opportunity
+*Parameters: list<opportunity>
+*Requirement : 5008
+*******************************/
 	public decimal calculateTotalSalesYear(string strOpptyNumber)
 	{
 		decimal dTotalSales = 0.0;
@@ -2639,10 +2706,10 @@ public inherited sharing class OpportunityTriggerHelper
 		//---------------------------------------- NEW CODE -----------------------------------------------------
 		List<string> lstTemplates = new List<String> {Globalconstants.TEMPLATEIDENTIFIER_G4, Globalconstants.TEMPLATEIDENTIFIER_G5};
 			list<Upsell_Container__c> lstUpsell_G45 = [SELECT Upsell_Opportunity_Number__c, Template_Identifier__c, Total_Year_Sales__c, Quarter1_Period_Value__c,
-	Quarter2_Period_Value__c, Quarter3_Period_Value__c, Quarter4_Period_Value__c
-	FROM Upsell_Container__c
-	WHERE Template_Identifier__c IN :lstTemplates
-	AND Upsell_Opportunity_Number__c = :strOpptyNumber];
+				Quarter2_Period_Value__c, Quarter3_Period_Value__c, Quarter4_Period_Value__c
+				FROM Upsell_Container__c
+				WHERE Template_Identifier__c IN :lstTemplates
+				AND Upsell_Opportunity_Number__c = :strOpptyNumber];
 		for(Upsell_Container__c UC:lstUpsell_G45)
 		{
 			if(UC.Template_Identifier__c == Globalconstants.TEMPLATEIDENTIFIER_G5) {
@@ -2673,11 +2740,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: getCommittedUpsellOpptyList
-	*Description: To get the comitted Upsell Opportunity
-	*Parameters: set<id>
-	*Requirement : 5008
-	*******************************/
+*Method Name: getCommittedUpsellOpptyList
+*Description: To get the comitted Upsell Opportunity
+*Parameters: set<id>
+*Requirement : 5008
+*******************************/
 	public list<Opportunity> getCommittedUpsellOpptyList(set<id> setCommittedOppty)
 	{
 		try {
@@ -2690,15 +2757,15 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: upsellDeltaDifference
-	*Description: Restrict sign-off of Committed Upsell changes
-	*Parameters: List<Opportunity>, Map<ID, Opportunity>
-	*Requirement : 5008
-	*******************************/
+*Method Name: upsellDeltaDifference
+*Description: Restrict sign-off of Committed Upsell changes
+*Parameters: List<Opportunity>, Map<ID, Opportunity>
+*Requirement : 5008
+*******************************/
 	public void upsellChangeAccepted(List<Opportunity> lstOppty, Map<ID, Opportunity> opptyOldMap)
 	{
 		set<string> setRoleName = new set<string>();
-		Map<String, string> mapLeadSalesRole = new Map<String, string>();
+		Map<String, Set<String>> mapLeadSalesRole = new Map<String, Set<String>>();
 		List<Opportunity> lstNewOppty = new list<opportunity>();
 		try {
 			for(opportunity oOppty : lstOppty) {
@@ -2711,7 +2778,13 @@ public inherited sharing class OpportunityTriggerHelper
 			if(lstNewOppty.size() > 0) {
 	List<Committed_Upsell_Configuration__mdt> objUpsellConfigList = [SELECT Lead_BG__c, Sales_Role_Code__c FROM Committed_Upsell_Configuration__mdt];
 	for(Committed_Upsell_Configuration__mdt objUpsellConfig : objUpsellConfigList) {
-		mapLeadSalesRole.put(objUpsellConfig.Lead_BG__c, objUpsellConfig.Sales_Role_Code__c);
+		if(mapLeadSalesRole.containsKey(objUpsellConfig.Lead_BG__c)) {
+			Set<String> salesRoleVal=mapLeadSalesRole.get(objUpsellConfig.Lead_BG__c);
+			salesRoleVal.add(objUpsellConfig.Sales_Role_Code__c);
+			mapLeadSalesRole.put(objUpsellConfig.Lead_BG__c,salesRoleVal);
+		} else {
+			mapLeadSalesRole.put(objUpsellConfig.Lead_BG__c, new Set<String> {objUpsellConfig.Sales_Role_Code__c });
+		}
 	}
 
 	List<Sales_Role__c> objRoleNameList = [SELECT id, Role_Code__c, Role_Name__c, User__c FROM Sales_Role__c WHERE User__c = :UserInfo.getUserId()];
@@ -2727,24 +2800,28 @@ public inherited sharing class OpportunityTriggerHelper
 	for(opportunity objOppty : lstNewOppty) {
 		if(objOppty.Upsell_Change_Accepted__c == true && opptyOldMap.get(objOppty.id).Upsell_Change_Accepted__c != objOppty.Upsell_Change_Accepted__c) {
 			if(!setStageName.contains(objOppty.RecordType.DeveloperName) && !setStageName.contains(objOppty.Phase_Status__c)) {
-	if(setRoleName.size() > 0 || (UserInfo.getProfileId().equalsIgnoreCase(system.Label.Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Global_Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Nokia_Admin))) {
-		if(setRoleName.contains(mapLeadSalesRole.get(objOppty.Lead_BG__c)) || (UserInfo.getProfileId().equalsIgnoreCase(system.Label.Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Global_Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Nokia_Admin))) {
+				if(setRoleName.size() > 0 || (UserInfo.getProfileId().equalsIgnoreCase(system.Label.Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Global_Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Nokia_Admin))) {
+
+		Set<String> checkIntersection = new Set<String>(setRoleName);
+		checkIntersection.retainAll(mapLeadSalesRole.get(objOppty.Lead_BG__c));
+
+		if((checkIntersection.size()>0) || (UserInfo.getProfileId().equalsIgnoreCase(system.Label.Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Global_Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Nokia_Admin))) {
 			objOppty.Upsell_Change_Approved_by__c = username + globalconstants.SPACE + globalconstants.COMMA + globalconstants.SPACE + system.Now();
 		}else{
 			objOppty.addError(label.Upsell_Change_Accepted_Checked);
 		}
-	} else{
+				} else{
 		objOppty.addError(label.Upsell_Change_Accepted_Checked);
-	}
+				}
 			}else
-	objOppty.addError(GlobalConstants.ERROR_MESSAGE_OPPTY);
+				objOppty.addError(GlobalConstants.ERROR_MESSAGE_OPPTY);
 		}else if(objOppty.Upsell_Change_Accepted__c == false && opptyOldMap.get(objOppty.id).Upsell_Change_Accepted__c != objOppty.Upsell_Change_Accepted__c) {
 			if(!setStageName.contains(objOppty.RecordType.DeveloperName) && !setStageName.contains(objOppty.Phase_Status__c)) {
-	if((UserInfo.getProfileId().equalsIgnoreCase(system.Label.Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Global_Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Nokia_Admin))) {
+				if((UserInfo.getProfileId().equalsIgnoreCase(system.Label.Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Global_Admin) || UserInfo.getProfileId().equalsIgnoreCase(system.Label.Nokia_Admin))) {
 		objOppty.Upsell_Change_Approved_by__c = '';
-	}
+				}
 			}else
-	objOppty.addError(GlobalConstants.ERROR_MESSAGE_OPPTY);
+				objOppty.addError(GlobalConstants.ERROR_MESSAGE_OPPTY);
 		}
 	}
 			}
@@ -2754,11 +2831,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: populate_G4ApprovalCycleTimeOnOffer
-	*Description: This method will populate G4 Approval Cycle Time on offer when opportunity is submitted for g4 approval or g4 approved.
-	*Parameters:Opportunity List, Opportunity Map
-	*Requirement : 4422, Req 5470
-	*******************************/
+*Method Name: populate_G4ApprovalCycleTimeOnOffer
+*Description: This method will populate G4 Approval Cycle Time on offer when opportunity is submitted for g4 approval or g4 approved.
+*Parameters:Opportunity List, Opportunity Map
+*Requirement : 4422, Req 5470
+*******************************/
 	public void populate_G4ApprovalCycleTimeOnOffer(Map<ID, Opportunity> opptyMap, Map<ID, Opportunity> opptyOldMap)
 	{
 		Map<Id, Offer__c> opptyOfferMap = new Map<Id, Offer__c>();
@@ -2777,14 +2854,14 @@ public inherited sharing class OpportunityTriggerHelper
 	if(!opptyOfferMap.isEmpty()) {
 		for(Id opptyId: opptyOfferMap.keySet()) {
 			if(opptyMap.get(opptyId).G4_Submission_Date__c != null) {
-	if(opptyMap.get(opptyId).G4_Approval_Date__c != null) {
+				if(opptyMap.get(opptyId).G4_Approval_Date__c != null) {
 		if((opptyMap.get(opptyId).G4_Approval_Date__c).date() >= opptyMap.get(opptyId).G4_Submission_Date__c)
 			opptyOfferMap.get(opptyId).G4_Approval_Cycle_Time__c = opptyMap.get(opptyId).G4_Submission_Date__c.daysBetween(opptyMap.get(opptyId).G4_Approval_Date__c.date());
-	} else  {
+				} else  {
 		if(System.today() >= opptyMap.get(opptyId).G4_Submission_Date__c) {
 			opptyOfferMap.get(opptyId).G4_Approval_Cycle_Time__c = opptyMap.get(opptyId).G4_Submission_Date__c.daysBetween(System.today());
 		}
-	}
+				}
 			}
 			offerList.add(opptyOfferMap.get(opptyId));
 		}
@@ -2798,14 +2875,14 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: createCompetitorWhenOpportunityClosedNegatively
-	*Description: this method creates competitor when opportunity is closed not won
-	*Parameters: Opportunity List, Opportunity Map
-	*Req: 5073
-	*******************************/
+*Method Name: createCompetitorWhenOpportunityClosedNegatively
+*Description: this method creates competitor when opportunity is closed not won
+*Parameters: Opportunity List, Opportunity Map
+*Req: 5073
+*******************************/
 	public void createCompetitorWhenOpportunityClosedNegatively(List<Opportunity> opportunityList, Map<ID, Opportunity> optyOldMap)
 	{
-		List<Competitor__c> CompetitorsListOld = new List<Competitor__c>();
+		List<Competitor__c> competitorsListOld = new List<Competitor__c>();
 		List<Competitor__c> updateList = new List<Competitor__c>();
 		Set<String> compSet = new Set<String>();
 		Set<String> compSetOld = new Set<String>();
@@ -2814,7 +2891,7 @@ public inherited sharing class OpportunityTriggerHelper
 		Competitor__c compVar;
 		String[] compList = new List<String>();
 		Map<String, Competitor__c> updateMap;
-		Map<Id, List<Competitor__c>> OpptyIdAndCompetitorsMapOld = new Map<Id, List<Competitor__c>>();
+		Map<Id, List<Competitor__c>> opptyIdAndCompetitorsMapOld = new Map<Id, List<Competitor__c>>();
 		try{
 			for (Opportunity opptyObj: opportunityList) {
 	if ((opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId || opptyObj.RecordTypeId == readOnlyDirectRecordTypeId || opptyObj.RecordTypeId == readOnlyIndirectRecordTypeId)
@@ -2827,44 +2904,44 @@ public inherited sharing class OpportunityTriggerHelper
 			}
 			if(!opptyCompMap.isEmpty()) {
 	for (Competitor__c compObject: [SELECT id, Opportunity__c, Competitor_New__c, Opportunity_Won__c FROM Competitor__c WHERE Opportunity__c in: opptyCompMap.keyset() LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())]) {
-		if(OpptyIdAndCompetitorsMapOld.containsKey(compObject.Opportunity__c)) {
-			CompetitorsListOld = OpptyIdAndCompetitorsMapOld.get(compObject.Opportunity__c);
-			CompetitorsListOld.add(compObject);
-			OpptyIdAndCompetitorsMapOld.put(compObject.Opportunity__c, CompetitorsListOld);
+		if(opptyIdAndCompetitorsMapOld.containsKey(compObject.Opportunity__c)) {
+			competitorsListOld = opptyIdAndCompetitorsMapOld.get(compObject.Opportunity__c);
+			competitorsListOld.add(compObject);
+			opptyIdAndCompetitorsMapOld.put(compObject.Opportunity__c, competitorsListOld);
 		}  else  {
-			CompetitorsListOld.clear();
-			CompetitorsListOld.add(compObject);
-			OpptyIdAndCompetitorsMapOld.put(compObject.Opportunity__c, CompetitorsListOld);
+			competitorsListOld.clear();
+			competitorsListOld.add(compObject);
+			opptyIdAndCompetitorsMapOld.put(compObject.Opportunity__c, competitorsListOld);
 		}
 	}
 	for(Id oppId : opptyCompMap.keyset()) {
 		updateMap = new Map<String, Competitor__c>();
-		if(OpptyIdAndCompetitorsMapOld.containsKey(oppId)) {
-			for(Competitor__c comp : OpptyIdAndCompetitorsMapOld.get(oppId)) {
-	compSetOld.add(comp.Competitor_New__c);
-	updateMap.put(comp.Competitor_New__c, comp);
+		if(opptyIdAndCompetitorsMapOld.containsKey(oppId)) {
+			for(Competitor__c comp : opptyIdAndCompetitorsMapOld.get(oppId)) {
+				compSetOld.add(comp.Competitor_New__c);
+				updateMap.put(comp.Competitor_New__c, comp);
 			}
 		}
 		for(String str: opptyCompMap.get(oppId)) {
 			if(compSetOld.contains(str))
-	compSetOldFinal.add(str);
+				compSetOldFinal.add(str);
 		}
 		if(compSetOldFinal.size() > 0) {
 			for(String str : compSetOldFinal) {
-	if(updateMap.get(str).Opportunity_Won__c != true) {
+				if(updateMap.get(str).Opportunity_Won__c != true) {
 		updateMap.get(str).Opportunity_Won__c = true;
 		updateList.add(updateMap.get(str));
-	}
+				}
 			}
 		}
 		opptyCompMap.get(oppId).removeAll(compSetOldFinal);
 		if(opptyCompMap.get(oppId).size() > 0) {
 			for(String str : opptyCompMap.get(oppId)) {
-	compVar = new Competitor__c();
-	compVar.Competitor_New__c = str;
-	compVar.Opportunity__c = oppId;
-	compVar.Opportunity_Won__c = true;
-	updateList.add(compVar);
+				compVar = new Competitor__c();
+				compVar.Competitor_New__c = str;
+				compVar.Opportunity__c = oppId;
+				compVar.Opportunity_Won__c = true;
+				updateList.add(compVar);
 			}
 		}
 	}
@@ -2878,17 +2955,17 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: createUnknownCompetitorRecord
-	*Description: this method creates 'Unknown' competitor when no competitor is selected while opportunity closure
-	*Parameters: Opportunity List, Opportunity Map
-	*Req: 5073
-	*******************************/
+*Method Name: createUnknownCompetitorRecord
+*Description: this method creates 'Unknown' competitor when no competitor is selected while opportunity closure
+*Parameters: Opportunity List, Opportunity Map
+*Req: 5073
+*******************************/
 	public void createUnknownCompetitorRecord(List<Opportunity> opportunityList, Map<ID, Opportunity> optyOldMap)
 	{
 		List<Competitor__c> updateList = new List<Competitor__c>();
 		Set<Id> opptyIdSet = new Set<Id>();
 		Competitor__c compVar;
-		Map<Id, Competitor__c> OpptyIdAndCompetitorMap = new Map<Id, Competitor__c>();
+		Map<Id, Competitor__c> opptyIdAndCompetitorMap = new Map<Id, Competitor__c>();
 		try{
 			for (Opportunity opptyObj: opportunityList) {
 	if ((opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId || opptyObj.RecordTypeId == readOnlyDirectRecordTypeId || opptyObj.RecordTypeId == readOnlyIndirectRecordTypeId)
@@ -2899,12 +2976,12 @@ public inherited sharing class OpportunityTriggerHelper
 			if(opptyIdSet.size() > 0) {
 	List<Competitor__c> compObjectList = [SELECT id, Opportunity__c, Competitor_New__c, Opportunity_Won__c FROM Competitor__c WHERE Opportunity__c in: opptyIdSet AND Competitor_New__c = :GlobalConstants.UNKNOWN LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())];
 	for (Competitor__c compObject: compObjectList) {
-		OpptyIdAndCompetitorMap.put(compObject.Opportunity__c, compObject);
+		opptyIdAndCompetitorMap.put(compObject.Opportunity__c, compObject);
 	}
 	for(Id oppId : opptyIdSet) {
-		if(OpptyIdAndCompetitorMap.containsKey(oppId)) {
-			OpptyIdAndCompetitorMap.get(oppId).Opportunity_Won__c = true;
-			updateList.add(OpptyIdAndCompetitorMap.get(oppId));
+		if(opptyIdAndCompetitorMap.containsKey(oppId)) {
+			opptyIdAndCompetitorMap.get(oppId).Opportunity_Won__c = true;
+			updateList.add(opptyIdAndCompetitorMap.get(oppId));
 		} else  {
 			compVar = new Competitor__c();
 			compVar.Competitor_New__c = GlobalConstants.UNKNOWN;
@@ -2923,22 +3000,22 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: updateWinningCompOnOppty
-	*Description: this method updates Winning Competitor to 'unknown' when no competitor is selected.
-	*Parameters: Opportunity Map
-	*Req: 5073
-	*******************************/
+*Method Name: updateWinningCompOnOppty
+*Description: this method updates Winning Competitor to 'unknown' when no competitor is selected.
+*Parameters: Opportunity Map
+*Req: 5073
+*******************************/
 	public void updateWinningCompOnOppty(Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> optyOldMap)
 	{
 
 	}
 
 	/*****************************
-	*Method Name: insertOwnerInOpptyTeam
-	*Description: Insert Oppty owner in Oppty Team
-	*Parameters: List<Opportunity>
-	*Requirement : 5468
-	*******************************/
+*Method Name: insertOwnerInOpptyTeam
+*Description: Insert Oppty owner in Oppty Team
+*Parameters: List<Opportunity>
+*Requirement : 5468
+*******************************/
 	public void insertOwnerInOpptyTeam(List<Opportunity> opptyList)
 	{
 		List<OpportunityTeamMember> opptyTeamMemberList = new List<OpportunityTeamMember>();
@@ -2971,11 +3048,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: updateOwnerInOpptyTeam
-	*Description: Update Oppty owner in Oppty Team
-	*Parameters: List<Opportunity>, Map<Id, Opportunity>
-	*Requirement : 5468
-	*******************************/
+*Method Name: updateOwnerInOpptyTeam
+*Description: Update Oppty owner in Oppty Team
+*Parameters: List<Opportunity>, Map<Id, Opportunity>
+*Requirement : 5468
+*******************************/
 	public void updateOwnerInOpptyTeam(List<Opportunity> opptyList, Map<Id, Opportunity> opptyOldMap)
 	{
 		List<OpportunityTeamMember> opptyTeamMemberList = new List<OpportunityTeamMember>();
@@ -2987,6 +3064,7 @@ public inherited sharing class OpportunityTriggerHelper
 		try{
 			if(!opptyList.isEmpty()) {
 	for(Opportunity opp : opptyList) {
+		System.debug(opp.RecordTypeId + ' '+ opp.OwnerId + ' '+opptyOldMap.get(opp.Id).OwnerId);
 		if((opp.RecordTypeId == directRecordTypeId || opp.RecordTypeId == inDirectRecordTypeId) && opp.OwnerId != opptyOldMap.get(opp.Id).OwnerId)
 		{
 			opptyOldOwnerIdSet.put(opp.Id, opptyOldMap.get(opp.Id).OwnerId);
@@ -2996,27 +3074,27 @@ public inherited sharing class OpportunityTriggerHelper
 	if(opptyOldOwnerIdSet.size() > 0) {
 		for(OpportunityTeamMember oppTeamMem : [SELECT Id, UserId, OpportunityId, TeamMemberRole, OpportunityAccessLevel, Additional_Team_Role__c FROM OpportunityTeamMember WHERE UserId in : opptyOldOwnerIdSet.values() and OpportunityId in : opptyOldOwnerIdSet.keySet() LIMIT: Limits.getLimitQueryRows() - Limits.getQueryRows()]) {
 			if(oppTeamMem.TeamMemberRole == System.Label.ACC_MANAGER_TRICON_SCO) {
-	opptyTeamMemberMap.put(oppTeamMem.OpportunityId, oppTeamMem);
+				opptyTeamMemberMap.put(oppTeamMem.OpportunityId, oppTeamMem);
 			}
 		}
 	}
 	if(!opptyNewList.isEmpty()) {
 		for(Opportunity opp : opptyNewList) {
 			if(opptyTeamMemberMap.containsKey(opp.Id)) {
-	opptyTeamMemberListDelete.add(opptyTeamMemberMap.get(opp.Id));
-	opptyTeamMemberVar = new OpportunityTeamMember();
-	opptyTeamMemberVar.OpportunityId = opp.Id;
-	opptyTeamMemberVar.TeamMemberRole = System.Label.ACC_MANAGER_TRICON_SCO;
-	opptyTeamMemberVar.OpportunityAccessLevel = GlobalConstants.ALL_ACCESS;
-	opptyTeamMemberVar.UserId = opp.OwnerId;
-	opptyTeamMemberList.add(opptyTeamMemberVar);
+				opptyTeamMemberListDelete.add(opptyTeamMemberMap.get(opp.Id));
+				opptyTeamMemberVar = new OpportunityTeamMember();
+				opptyTeamMemberVar.OpportunityId = opp.Id;
+				opptyTeamMemberVar.TeamMemberRole = System.Label.ACC_MANAGER_TRICON_SCO;
+				opptyTeamMemberVar.OpportunityAccessLevel = GlobalConstants.ALL_ACCESS;
+				opptyTeamMemberVar.UserId = opp.OwnerId;
+				opptyTeamMemberList.add(opptyTeamMemberVar);
 			}else{
-	opptyTeamMemberVar = new OpportunityTeamMember();
-	opptyTeamMemberVar.OpportunityId = opp.Id;
-	opptyTeamMemberVar.TeamMemberRole = System.Label.ACC_MANAGER_TRICON_SCO;
-	opptyTeamMemberVar.OpportunityAccessLevel = GlobalConstants.ALL_ACCESS;
-	opptyTeamMemberVar.UserId = opp.OwnerId;
-	opptyTeamMemberList.add(opptyTeamMemberVar);
+				opptyTeamMemberVar = new OpportunityTeamMember();
+				opptyTeamMemberVar.OpportunityId = opp.Id;
+				opptyTeamMemberVar.TeamMemberRole = System.Label.ACC_MANAGER_TRICON_SCO;
+				opptyTeamMemberVar.OpportunityAccessLevel = GlobalConstants.ALL_ACCESS;
+				opptyTeamMemberVar.UserId = opp.OwnerId;
+				opptyTeamMemberList.add(opptyTeamMemberVar);
 			}
 		}
 	}
@@ -3033,11 +3111,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: insertOwnerInTeamOnReopening
-	*Description: Insert Oppty owner in Oppty Team
-	*Parameters: List<Opportunity>
-	*Requirement : 5468
-	*******************************/
+*Method Name: insertOwnerInTeamOnReopening
+*Description: Insert Oppty owner in Oppty Team
+*Parameters: List<Opportunity>
+*Requirement : 5468
+*******************************/
 	public void insertOwnerInTeamOnReopening(List<Opportunity> opptyList, Map<Id, Opportunity> opptyOldMap)
 	{
 		List<OpportunityTeamMember> opptyTeamMemberList = new List<OpportunityTeamMember>();
@@ -3048,11 +3126,11 @@ public inherited sharing class OpportunityTriggerHelper
 		try{
 			for(Opportunity opty : opptyList) {
 	if((opty.RecordTypeId == directRecordTypeId || opty.RecordTypeId == inDirectRecordTypeId || opty.RecordTypeId == readOnlyDirectRecordTypeId || opty.RecordTypeId == readOnlyIndirectRecordTypeId) &&
-	((opty.StageName == Globalconstants.EXECUTE_OPPTY && opptyOldMap.get(opty.Id).StageName == Globalconstants.COMPLETED_OPPTY) ||
+	   ((opty.StageName == Globalconstants.EXECUTE_OPPTY && opptyOldMap.get(opty.Id).StageName == Globalconstants.COMPLETED_OPPTY) ||
 		((opptyOldMap.get(opty.Id).StageName == GlobalConstants.CANCELLED_BY_CUSTOMER || opptyOldMap.get(opty.Id).StageName == GlobalConstants.LOST_TO_COMPETITOR  ||
-	opptyOldMap.get(opty.Id).StageName == GlobalConstants.WITH_DRAW_BY_NOKIA || opptyOldMap.get(opty.Id).StageName == GlobalConstants.OBSOLETE)&&
+		  opptyOldMap.get(opty.Id).StageName == GlobalConstants.WITH_DRAW_BY_NOKIA || opptyOldMap.get(opty.Id).StageName == GlobalConstants.OBSOLETE)&&
 		 (opty.StageName == GlobalConstants.IDENTIFY_OPPORTUNITY || opty.StageName == Globalconstants.DEVELOP_OPPORTUNITY ||
-	opty.StageName == GlobalConstants.CREATE_OFFER || opty.StageName == GlobalConstants.WIN_THE_CASE))))
+		  opty.StageName == GlobalConstants.CREATE_OFFER || opty.StageName == GlobalConstants.WIN_THE_CASE))))
 	{
 		opptyNewList.add(opty);
 		opptyOwnerIdMap.put(opty.Id, opty.OwnerId);
@@ -3082,11 +3160,11 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: updateCustomerOfferDueDate
-	*Description: this method updates Customer Offer Due Date to 'G4 Planned Date + 2 Days' for the active offers.
-	*Parameters: Opportunity Map
-	*Req: 5669
-	*******************************/
+*Method Name: updateCustomerOfferDueDate
+*Description: this method updates Customer Offer Due Date to 'G4 Planned Date + 2 Days' for the active offers.
+*Parameters: Opportunity Map
+*Req: 5669
+*******************************/
 	public void updateCustomerOfferDueDate(Map<ID, Opportunity> opptyNewMap)
 	{
 		List<Offer__c> offerListToUpdate = new List<Offer__c>();
@@ -3101,7 +3179,7 @@ public inherited sharing class OpportunityTriggerHelper
 		if ((objOffer.Opportunity__r.RecordTypeId == directRecordTypeId || objOffer.Opportunity__r.RecordTypeId == inDirectRecordTypeId|| objOffer.Opportunity__r.RecordTypeId == readOnlyDirectRecordTypeId || objOffer.Opportunity__r.RecordTypeId == readOnlyIndirectRecordTypeId)
 			&& (objOffer.Opportunity__r.StageName == GlobalConstants.CREATE_OFFER || objOffer.Opportunity__r.StageName == GlobalConstants.DEVELOP_OPPORTUNITY || objOffer.Opportunity__r.StageName == GlobalConstants.IDENTIFY_OPPORTUNITY)
 			&& objOffer.Opportunity__r.G4_Planned_Date__c != null) {
-	objOffer.Customer_Offer_Due_Date__c = objOffer.Opportunity__r.G4_Planned_Date__c + 2;
+				objOffer.Customer_Offer_Due_Date__c = objOffer.Opportunity__r.G4_Planned_Date__c + 2;
 			}
 		offerListToUpdate.add(objOffer);
 	}
@@ -3109,16 +3187,16 @@ public inherited sharing class OpportunityTriggerHelper
 			}
 		}
 		catch(Exception e) {
-			ExceptionHandler.addException(e, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.UPDATEWINNINGCOMPONOPPTY);
+			ExceptionHandler.addException(e, GlobalConstants.OPPTY_TRIGGER_HELPER, 'updateCustomerOfferDueDate');
 		}
 	}
 
 	/*****************************
-	*Method Name: UpdateOffer
-	*Description: Update Offer Field
-	*Parameters: List<Opportunity>, Map<ID, Opportunity>
-	*Requirement : 5669
-	*******************************/
+*Method Name: UpdateOffer
+*Description: Update Offer Field
+*Parameters: List<Opportunity>, Map<ID, Opportunity>
+*Requirement : 5669
+*******************************/
 	public void UpdateOffer(List<Opportunity> lstOppty, map<Id, Opportunity> opportunitiesoldMap)
 	{
 		set<id> setOpptyUpdate = new set<id>();
@@ -3143,23 +3221,23 @@ public inherited sharing class OpportunityTriggerHelper
 	update lstOffer;
 		}
 		catch(Exception e) {
-			ExceptionHandler.addException(e, GlobalConstants.OPPTY_TRIGGER_HELPER, GlobalConstants.UPDATEWINNINGCOMPONOPPTY);
+			ExceptionHandler.addException(e, GlobalConstants.OPPTY_TRIGGER_HELPER, 'UpdateOffer');
 		}
 	}
 
 	/*****************************
-	*Method Name: validateWonShareAllocationSum
-	*Description: this method will check total won share of all winning competitors and show error if sum is greater than 100
-	*Parameters: Opportunity Map, Opportunity Map
-	*Req: 5783 Sales Process
-	*******************************/
+*Method Name: validateWonShareAllocationSum
+*Description: this method will check total won share of all winning competitors and show error if sum is greater than 100
+*Parameters: Opportunity Map, Opportunity Map
+*Req: 5783 Sales Process
+*******************************/
 	public void validateWonShareAllocationSum(Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> optyOldMap)
 	{
-		List<Competitor__c> CompetitorsListOld = new List<Competitor__c>();
+		List<Competitor__c> competitorsListOld = new List<Competitor__c>();
 		Set<Id> opptyIdSet = new Set<Id>();
 		Set<String> allCompetitors;
 		String str = '';
-		Map<Id, List<Competitor__c>> OpptyIdAndCompetitorsMapOld = new Map<Id, List<Competitor__c>>();
+		Map<Id, List<Competitor__c>> opptyIdAndCompetitorsMapOld = new Map<Id, List<Competitor__c>>();
 		try{
 			for (Opportunity opptyObj: opptyNewMap.values()) {
 	if ((opptyObj.RecordTypeId == directRecordTypeId || opptyObj.RecordTypeId == inDirectRecordTypeId || opptyObj.RecordTypeId == readOnlyDirectRecordTypeId || opptyObj.RecordTypeId == readOnlyIndirectRecordTypeId)
@@ -3170,27 +3248,27 @@ public inherited sharing class OpportunityTriggerHelper
 			if(!opptyIdSet.isEmpty()) {
 	List<Competitor__c> compObjectList = [SELECT id, Opportunity__c, Competitor_New__c, Opportunity_Won__c, Won_Share_Allocation_in__c FROM Competitor__c WHERE Opportunity__c in: opptyIdSet LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows())];
 	for (Competitor__c compObject: compObjectList) {
-		if(OpptyIdAndCompetitorsMapOld.containsKey(compObject.Opportunity__c)) {
-			CompetitorsListOld = OpptyIdAndCompetitorsMapOld.get(compObject.Opportunity__c);
-			CompetitorsListOld.add(compObject);
-			OpptyIdAndCompetitorsMapOld.put(compObject.Opportunity__c, CompetitorsListOld);
+		if(opptyIdAndCompetitorsMapOld.containsKey(compObject.Opportunity__c)) {
+			competitorsListOld = opptyIdAndCompetitorsMapOld.get(compObject.Opportunity__c);
+			competitorsListOld.add(compObject);
+			opptyIdAndCompetitorsMapOld.put(compObject.Opportunity__c, competitorsListOld);
 		}  else {
-			CompetitorsListOld.clear();
-			CompetitorsListOld.add(compObject);
-			OpptyIdAndCompetitorsMapOld.put(compObject.Opportunity__c, CompetitorsListOld);
+			competitorsListOld.clear();
+			competitorsListOld.add(compObject);
+			opptyIdAndCompetitorsMapOld.put(compObject.Opportunity__c, competitorsListOld);
 		}
 	}
 	for(Id oppId : opptyIdSet) {
-		if(OpptyIdAndCompetitorsMapOld.containsKey(oppId)) {
+		if(opptyIdAndCompetitorsMapOld.containsKey(oppId)) {
 			Decimal sum = 0;
-			for(Competitor__c comp : OpptyIdAndCompetitorsMapOld.get(oppId)) {
-	str = opptyNewMap.get(oppId).Winning_Competitor__c;
-	allCompetitors = new Set<String>(str.split(GlobalConstants.SEMICOLON));
-	if((allCompetitors.contains(comp.Competitor_New__c) || comp.Opportunity_Won__c == true) && comp.Won_Share_Allocation_in__c > 0)
+			for(Competitor__c comp : opptyIdAndCompetitorsMapOld.get(oppId)) {
+				str = opptyNewMap.get(oppId).Winning_Competitor__c;
+				allCompetitors = new Set<String>(str.split(GlobalConstants.SEMICOLON));
+				if((allCompetitors.contains(comp.Competitor_New__c) || comp.Opportunity_Won__c == true) && comp.Won_Share_Allocation_in__c > 0)
 		sum += comp.Won_Share_Allocation_in__c;
 			}
 			if(sum > decimal.valueOf(System.Label.Hundred))
-	opptyNewMap.get(oppId).addError(System.Label.Won_Share_Sum_Validation);
+				opptyNewMap.get(oppId).addError(System.Label.Won_Share_Sum_Validation);
 		}
 	}
 			}
@@ -3200,14 +3278,14 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: BatchCurrenychangeDL
-	*Description: Update unweighted amount for dataloaderuser
-	*Parameters: Oppty ID
-	*********************************/
-	public void BatchCurrenychangeDL(Set<ID> Opptyid) {
-		List<Opportunity> UpdateOppty = new List<Opportunity>();
+*Method Name: BatchCurrenychangeDL
+*Description: Update unweighted amount for dataloaderuser
+*Parameters: Oppty ID
+*********************************/
+	public void BatchCurrenychangeDL(Set<ID> opptyid) {
+		List<Opportunity> updateOppty = new List<Opportunity>();
 		try {
-			List<Opportunity> newoppList = [SELECT id, Positive_OIF_EUR__c, OIF_Value_Won_USD__c, Sales_Outcome__c, OIF_Value_Cancel_USD__c, Positive_OIF__c, Negative_OIF_EUR__c, Negative_OIF__c FROM Opportunity WHERE id = :Opptyid Limit:Opptyid.size()];
+			List<Opportunity> newoppList = [SELECT id, Positive_OIF_EUR__c, OIF_Value_Won_USD__c, Sales_Outcome__c, OIF_Value_Cancel_USD__c, Positive_OIF__c, Negative_OIF_EUR__c, Negative_OIF__c FROM Opportunity WHERE id = :opptyid Limit:opptyid.size()];
 			for (Opportunity newopp:newoppList) {
 	if (String.IsEmpty(newopp.Sales_Outcome__c) || newopp.Sales_Outcome__c.equalsignorecase(GlobalConstants.WON) || newopp.Sales_Outcome__c.equalsignorecase(GlobalConstants.WON_REQUESTED)) {
 		newopp.Unweighted_Amount_EUR__c = newopp.Positive_OIF_EUR__c.setScale(2);
@@ -3218,11 +3296,11 @@ public inherited sharing class OpportunityTriggerHelper
 		newopp.amount = newopp.Negative_OIF__c.setScale(2);
 		newopp.Unweighted_Amount_USD__c = newopp.OIF_Value_Cancel_USD__c.setScale(2);
 	}
-	UpdateOppty.add(newopp);
+	updateOppty.add(newopp);
 			}
-			if(!UpdateOppty.isEmpty()) {
-	List<Database.saveResult> srs = Database.update(UpdateOppty, false);
-	ExceptionHandler.addExceptionForOIFBtach(UpdateOppty, srs);
+			if(!updateOppty.isEmpty()) {
+	List<Database.saveResult> srs = Database.update(updateOppty, false);
+	ExceptionHandler.addExceptionForOIFBtach(updateOppty, srs);
 	GlobalConstants.OPPORTUNITYTRIGGER_CURRENCY_CHANGE = TRUE;
 			}
 		} catch (Exception ex) {
@@ -3231,10 +3309,10 @@ public inherited sharing class OpportunityTriggerHelper
 	}
 
 	/*****************************
-	*Method Name: oppTeamPrMValidation
-	*Description: Prevent oppty creation, If user have wrong pricing manager or pricing manager(lead) in their default opportunity team
-	*Added by HCL Team
-	*********************************/
+*Method Name: oppTeamPrMValidation
+*Description: Prevent oppty creation, If user have wrong pricing manager or pricing manager(lead) in their default opportunity team
+*Added by HCL Team
+*********************************/
 	public void oppTeamPrMValidation(List<OpportunityTeamMember> oppTeamlst)
 	{
 		set<Id> oppIdSet = new set<Id>();
@@ -3253,7 +3331,7 @@ public inherited sharing class OpportunityTriggerHelper
 			for(OpportunityTeamMember oppteam : oppTeamlst)
 			{
 	if((oppTeam.TeamMemberRole == System.Label.NF_PricingManager || oppTeam.TeamMemberRole == System.Label.NF_PricingManagerLead)
-	  || (oppTeam.Additional_Team_Role__c != null
+	   || (oppTeam.Additional_Team_Role__c != null
 		&& (oppTeam.Additional_Team_Role__c.Contains(System.Label.NF_PricingManager) || oppTeam.Additional_Team_Role__c.Contains(System.Label.NF_PricingManagerLead))))
 	{
 		oppIdSet.add(oppteam.OpportunityId);
@@ -3280,16 +3358,16 @@ public inherited sharing class OpportunityTriggerHelper
 			for(OpportunityTeamMember oppTeam : oppTeamlst)
 			{
 	if(((!sRmap.isEmpty() && !sRmap.containsKey(oppTeam.UserId)) || sRmap.isEmpty()) &&
-	(oppTeam.TeamMemberRole == System.Label.NF_PricingManager || oppTeam.TeamMemberRole == System.Label.NF_PricingManagerLead)
-	  || (oppTeam.Additional_Team_Role__c != null && (oppTeam.Additional_Team_Role__c.Contains(System.Label.NF_PricingManager) || oppTeam.Additional_Team_Role__c.Contains(System.Label.NF_PricingManagerLead)))
-	 ) {
-	System.debug('Error for PrM');
-	if(oppTeam.Additional_Team_Role__c != null && oppTeam.Additional_Team_Role__c != '') {
-		slashForErrorMsg = '/';
-		additionalTeamRole = oppTeam.Additional_Team_Role__c;
-	}
-	Trigger.NewMap.get(oppTeam.Opportunityid).addError('You have a user named: ' + oppTeam.User.Name + ' having role ' + oppTeam.TeamMemberRole + slashForErrorMsg + additionalTeamRole + ' in your default opportunity team, which does not belongs to them. Please remove the user or change the role to proceed further.');
-	  }
+	   ((oppTeam.TeamMemberRole == System.Label.NF_PricingManager || oppTeam.TeamMemberRole == System.Label.NF_PricingManagerLead)
+		|| (oppTeam.Additional_Team_Role__c != null && (oppTeam.Additional_Team_Role__c.Contains(System.Label.NF_PricingManager) || oppTeam.Additional_Team_Role__c.Contains(System.Label.NF_PricingManagerLead)))
+	   )) {
+		System.debug('Error for PrM');
+		if(oppTeam.Additional_Team_Role__c != null && oppTeam.Additional_Team_Role__c != '') {
+		 slashForErrorMsg = '/';
+		 additionalTeamRole = oppTeam.Additional_Team_Role__c;
+		}
+		Trigger.NewMap.get(oppTeam.Opportunityid).addError('You have a user named: ' + oppTeam.User.Name + ' having role ' + oppTeam.TeamMemberRole + slashForErrorMsg + additionalTeamRole + ' in your default opportunity team, which does not belongs to them. Please remove the user or change the role to proceed further.');
+	   }
 			}
 		}
 		Catch (Exception ex)
@@ -3297,5 +3375,198 @@ public inherited sharing class OpportunityTriggerHelper
 			system.debug('ex' + ex);
 			ExceptionHandler.addException(ex, GlobalConstants.OPPORTUNITY_TEAM_HELPER, GlobalConstants.METHOD_OPPORTUNITYTEAM_PrMVALIDATION);
 		}
+	}
+
+	/*****************************
+*Method Name: checkEnterpriseOpportunity
+*Description: Distinguish between CSP versus Enterprise opportunities - at insert and update (Re-using field Opportunity.Type)
+*Parameters: Map<Id, Opportunity> oldOpptyMap , Map<Id,Opportunity> newOpptyList
+*********************************/
+	public void checkEnterpriseOpportunity(Map<Id, Opportunity> oldOpptyMap , List<Opportunity> newOpptyList ){
+		Set<Id> recordTypes = new Set<Id>{directRecordTypeId , inDirectRecordTypeId , readOnlyDirectRecordTypeId , readOnlyIndirectRecordTypeId };
+			Set<String> custAccountRoleNE = new Set<String>(System.Label.Enterprise_Customer_Account_Roles.split(';'));
+		Set<String> activitySectorsNE = new Set<String>();
+		for(Activity_Sector_Name__c sector : Activity_Sector_Name__c.getAll().values()){
+			activitySectorsNE.add(sector.Activity_Sector_Name__c);
+		}
+		for(Opportunity newOppty : newOpptyList){
+			if(!recordTypes.contains(newOppty.RecordTypeId)) continue;
+			Opportunity oldOppty = oldOpptyMap.containskey(newOppty.Id) ? oldOpptyMap.get(newOppty.Id) : null;
+			String activitySectorField = getActivitySectorField(newOppty);
+			if(checkEnterpriseParamChanged(oldOppty, newOppty,activitySectorField)){
+	List<Opportunity> recalculatedOppty = new List<Opportunity>{newOppty.clone(true,true,true)};
+		Formula.recalculateFormulas(recalculatedOppty);
+	Boolean isEnterprise = custAccountRoleNE.contains(newOppty.Account_Role__c) || activitySectorsNE.contains((String)recalculatedOppty[0].get(activitySectorField));
+	if(isEnterprise) {
+		newOppty.Type = GlobalConstants.OPPTYSEGMENT_ENTERPRISE;
+	} else {
+		newOppty.Type = null;
+	}
+			}
+		}
+	}
+	/*****************************
+*Method Name: checkEnterpriseParamChanged
+*Description: Verify if any param that could identify an oppty as NE or CSP has changed
+*Parameters: Opportunity oldOppty, Opportunity newOppty, String activitySectorField
+*********************************/
+	public Boolean checkEnterpriseParamChanged(Opportunity oldOppty, Opportunity newOppty, String activitySectorField){
+		return oldOppty == null || oldOppty.Account_Role__c != newOppty.Account_Role__c || (String)oldOppty.get(activitySectorField) != (String)newOppty.get(activitySectorField);
+	}
+	/*****************************
+*Method Name: getActivitySectorField
+*Description: Verify which field from Activity Sector should be used according to the record type
+*Parameters: Opportunity oppty
+*********************************/
+	public String getActivitySectorField(Opportunity oppty){
+		if(oppty.RecordTypeId == inDirectRecordTypeId || oppty.RecordTypeId == readOnlyIndirectRecordTypeId){
+			if(oppty.End_Customer_Information__c == GlobalConstants.EC_INFO_KNWON)
+	return 'End_Customer_Activity_Sector__c';
+			else
+	return 'Multiple_or_Unknown_EC_Activity_Sector__c';
+		}
+		return 'Account_Activity_Sector__c';
+	}
+	/*
+* @description  	CRM - When an Activity Sector change on a Legal Entity it's necessary to identify if the related opportunities are still NE or CSP - (Re-using field Opportunity.Type)
+* @param	Map<Id,Account> oldAccountMap, Map<Id,Account> newAccountMap
+* @return
+*/
+	public void checkActivitySectorChanges(Map<Id,Account> oldAccountMap, Map<Id,Account> newAccountMap){
+		Set<Id> changedLegalEntitiesId = new Set<Id>();
+		for(Account newAccount : newAccountMap.values()){
+			Account oldAccount = oldAccountMap.get(newAccount.Id);
+			if(oldAccount.Activity_Sector_Name__c != newAccount.Activity_Sector_Name__c){
+	changedLegalEntitiesId.add(newAccount.Id);
+			}
+		}
+		if(!changedLegalEntitiesId.isEmpty()){
+			OpportunityTriggerHelper oppTrHelper = new OpportunityTriggerHelper();
+			Set<Id> recordTypes = new Set<Id>{oppTrHelper.directRecordTypeId , oppTrHelper.inDirectRecordTypeId , oppTrHelper.readOnlyDirectRecordTypeId , oppTrHelper.readOnlyIndirectRecordTypeId };
+	List<Opportunity> opptyASChanged = [SELECT Id,RecordTypeId,End_Customer_Information__c,End_Customer_Activity_Sector__c,Multiple_or_Unknown_EC_Activity_Sector__c,Account_Activity_Sector__c,Account_Role__c,Type
+				FROM Opportunity WHERE (Legal_Entity__c IN :changedLegalEntitiesId OR End_Customer_LE__c IN :changedLegalEntitiesId) AND
+				RecordTypeId IN :recordTypes];
+			try{
+	oppTrHelper.checkEnterpriseOpportunity(new Map<Id,Opportunity>(), opptyASChanged);
+	Database.update(opptyASChanged, false);
+			} catch(Exception e){
+	System.debug('Error on checkActivitySectorChanges');
+	System.debug(e.getMessage());
+			}
+		}
+	}
+
+	/*
+* @description  	CRM - When a opp is created or its phase is changed to developer opportunity, a NOKIA competitor record is created for Win Plan
+* @param	Map<ID, Opportunity> opptyNewMap, Map<ID, Opportunity> optyOldMapp
+* @return
+*/
+
+	public void createNokiaCompetitorRecord(List<Opportunity> oppList, Map<Id, Opportunity> optyOldMap)
+	{
+		Boolean isCreate = optyOldMap == null;
+		List<Competitor__c> newNokiaCompetitorList = new List<Competitor__c>();
+
+		Set<Id> oppIdSet = new Set<Id>();
+		for(Opportunity newOpp : oppList)
+		{
+			oppIdSet.add(newOpp.Id);
+		}
+		List<Competitor__c> currentNokiaCompetitorList = [SELECT Id, Competitor_New__c, Opportunity__c FROM Competitor__c WHERE Opportunity__c in :oppIdSet AND Competitor_New__c = :Label.CRM_Nokia_Competitor_Name];
+		for(Opportunity newOpp : oppList)
+		{
+			if( (newOpp.RecordTypeId == directRecordTypeId || newOpp.RecordTypeId == inDirectRecordTypeId)
+	  && (isCreate || optyOldMap.get(newOpp.Id) == null || ((newOpp.StageName != optyOldMap.get(newOpp.Id).StageName) && newOpp.StageName.equals(GlobalConstants.DEVELOP_OPPORTUNITY)))
+	  && !existingNokiaCompetitor(newOpp.Id, currentNokiaCompetitorList))
+			{
+	Competitor__c nokiaCompetitor = new Competitor__c();
+	nokiaCompetitor.Competitor_New__c = Label.CRM_Nokia_Competitor_Name;
+	nokiaCompetitor.Opportunity__c = newOpp.Id;
+	newNokiaCompetitorList.add(nokiaCompetitor);
+			}
+		}
+		insert newNokiaCompetitorList;
+	}
+
+	private Boolean existingNokiaCompetitor(Id  oppId, List<Competitor__c> currentNokiaCompetitorList)
+	{
+		Boolean existingNokiaComp = false;
+		for(Competitor__c comp : currentNokiaCompetitorList)
+		{
+			if(comp.Opportunity__c == oppId)
+			{
+	existingNokiaComp = true;
+	break;
+			}
+		}
+		return existingNokiaComp;
+	}
+
+	public void validatePhaseStatusComment( List<Opportunity> newOptyLst){
+		for(Opportunity oppty : newOptyLst){
+			if( oppty.RecordTypeId == directRecordTypeId || oppty.RecordTypeId == inDirectRecordTypeId ){
+	if(oppty.StageName == GlobalConstants.DEVELOP_OPPORTUNITY && oppty.NF_Facilitator_Notified__c ){
+		oppty.Phase_Status_Comment__c = GlobalConstants.G3FACILITATORNOTIFIED;
+	} else if(oppty.StageName == GlobalConstants.WIN_THE_CASE_NEGOTIATE && oppty.Phase_Status__c != GlobalConstants.PENDING_WIN_LOSS_DECLARATION && oppty.G5_Trigger__c != null ){
+		oppty.Phase_Status_Comment__c = GlobalConstants.G5PREPINITIATED;
+	} else {
+		oppty.Phase_Status_Comment__c = null;
+	}
+			}
+		}
+	}
+
+	public void validateAccountChange(List<Opportunity> optyList, Map<Id, Opportunity> optyOldMap)
+	{
+		Set<Id> oppsToCheckRevRec = new Set<Id>();
+		for (Opportunity opp: optyList)
+		{
+			if (opp.AccountId != optyOldMap.get(opp.Id).AccountId
+	&& CRM_Account_to_Bypass_Allocation__c.getValues(opp.Account_Information__c.split(';')[0]) == null
+	&& GlobalConstants.Const_NAM.contains(opp.Org_L4__c)
+	&& CRM_Account_to_Bypass_Allocation__c.getValues(optyOldMap.get(opp.Id).Account_Information__c.split(';')[0]) != null
+	&& ! GlobalConstants.Const_NAM.contains(optyOldMap.get(opp.Id).Org_L4__c) )
+			{
+	opp.addError(GlobalConstants.OPP_ACCID_ALLOCATION_ERROR);
+			}
+		}
+	}
+
+	/* @description  	If the oppty is Direct/Indirect and does not have Oppty Type defined at creation, it defaults to Standard Opportunity
+* @param	List<Opportunity> oppty list
+* @return */
+	public void validateOpportunityType(List<Opportunity> opptyList){
+		for(Opportunity oppty : opptyList){
+			if( (oppty.RecordTypeId == directRecordTypeId || oppty.RecordTypeId == indirectRecordTypeId ) && oppty.Business_Type__c == null){
+	oppty.Business_Type__c = GlobalConstants.STANDARDOPPORTUNITY;
+			}
+		}
+	}
+
+
+	public Map<Id, Account> getAccountsInfo(List<Opportunity> opptyList, Map<Id,Opportunity> oldMapOppty){
+		Set<Id> accIds = new Set<Id>();
+
+		for(Opportunity oppty : opptyList){
+			Opportunity oldOppty = oldMapOppty.containsKey(oppty.Id) ? oldMapOppty.get(oppty.Id) : null;
+			if(oldOppty == null || oldOppty.AccountId != oppty.AccountId){
+	accIds.add(oppty.AccountId);
+			}
+			if(oldOppty == null || oldOppty.Legal_Entity__c != oppty.Legal_Entity__c){
+	accIds.add(oppty.AccountId);
+			}
+			if( oppty.End_Customer__c != null && ( oldOppty == null || oldOppty.End_Customer__c != oppty.End_Customer__c ) ) {
+	accIds.add(oppty.End_Customer__c);
+			}
+			if (oppty.End_Customer_LE__c != NULL && ( oldOppty == null || oldOppty.End_Customer_LE__c != oppty.End_Customer_LE__c ) ) {
+	accIds.add(oppty.End_Customer_LE__c);
+			}
+		}
+		if(accIds.size()>0){
+			return new Map<Id,Account>([SELECT Id, ParentId, (SELECT Id, Name, accountNumber FROM ChildAccounts WHERE RecordType.name = 'Legal Entity' AND Default_Legal_Entity__c = true)
+	FROM Account WHERE Id IN :accIds LIMIT: (Limits.getLimitQueryRows() - Limits.getQueryRows()) ]);
+		}
+		return new Map<Id,Account>();
+
 	}
 }

@@ -51,6 +51,9 @@ public with sharing class CH_WorkgroupMemberHandler_TH extends TriggerHandler {
 	public override void beforeUpdate(){
 		if (!PAD.cantRun(OBJECT_NAME)){
 			CH_WorkgroupMemberHandler_TL.updateUserId(newList);
+			if(!test.isRunningTest()){
+			CH_WorkgroupMember_Trigger_Handler.validateQueueBeforeDeletion(oldList,newList,oldMap,'update');
+			}
 		}
 	}
 
@@ -70,6 +73,9 @@ public with sharing class CH_WorkgroupMemberHandler_TH extends TriggerHandler {
 		if (!PAD.cantRun(OBJECT_NAME)){
 			System.enqueueJob(new CH_ManagePSAndQueueToWGMemberAsynchQueue(oldList,oldList,'remove'));
 			CH_WorkgroupMemberHandler_TL.deleteWorkgroupMemberToWorkgroupShare(oldList);
+			if(!test.isRunningTest()){
+			CH_WorkgroupMember_Trigger_Handler.validateQueueBeforeDeletion(oldList,newList,oldMap,'delete');
+			}
 		}
 	}
 

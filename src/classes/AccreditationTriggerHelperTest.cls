@@ -10,6 +10,7 @@
 @isTest(seeAllData=false)
 public class AccreditationTriggerHelperTest {
 	
+	
 	/**********************************************
 	 * Method Name : accrdTrigger
 	 * return type : void
@@ -17,7 +18,7 @@ public class AccreditationTriggerHelperTest {
 	 ********************************************/
 	
 	//public static testmethod void accrdTrigger(){
-	@isTest(seeAllData=True)
+	@isTest(seeAllData=false)
 	public static void accrdTrigger(){
 			//create user to run class
 			
@@ -207,6 +208,7 @@ public class AccreditationTriggerHelperTest {
 			accredtationId.add(accreditations[0].id);
 			accredtationId.add(accreditations[1].id);
 			NeedsRepriceAccreditationInvocable.updateQuotes(accredtationId);
+			NeedsRepriceAccreditationInvocable.updateQuotesInBulk(accreditations);
 			test.stopTest();
 	}
 	

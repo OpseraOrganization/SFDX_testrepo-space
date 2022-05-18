@@ -4,6 +4,7 @@
 * Created By: Accenture IDC
 * Created Date: 21/3/2017
 ***/
+
 private class CertificationDetailsTest 
 {
 	/**
@@ -24,6 +25,17 @@ private class CertificationDetailsTest
 		Database.insert(lstCont);
 		
 		Accreditation__c accred = PRM_TestDataFactory.createrAccreditation(1, partnerAcc.Id, null)[0];
+		//Modified by Christie JJ for ITCCPQ-3054 code coverage
+		//accred.Partner__c = partnerAcc.Id;
+		accred.Accreditation_Type__c = 'Product';
+		accred.Portfolio__c = 'IP Routing';
+		accred.Pricing_Cluster__c = 'NAM';
+		accred.Accreditation_Level__c = 'Premier';
+		accred.Accreditation_Date__c = date.today() + 9; 
+		accred.Pricing_Override_Expiration__c = date.today() + 9;
+		accred.Pricing_Level_Override__c = 'Premier';
+		accred.Reason_for_Level_Change__c = 'Change in Partner Program';
+		accred.RecordTypeId = Schema.SObjectType.Accreditation__c.getRecordTypeInfosByDeveloperName().get('Distributor_GPP_3_0').getRecordTypeId();
 		Database.insert(accred);
 		
 		List<Curriculum_Certification_Mapping__c> ccmList = new List<Curriculum_Certification_Mapping__c>();

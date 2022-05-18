@@ -128,7 +128,9 @@ public class CH_UserTriggerHelper_Test {
 			
 			Map<Id,User>oldUserMap = new Map<Id,User>();
 			oldUserMap.put(user2.ID, user2);
-			CH_UserTriggerHelper.shareCase(oldUserMap,newUserList);
+			set<string> activatedUserID = new set<string>();
+			activatedUserID.add(newUserList[0].id);
+			CH_UserTriggerHelper.queryActiveUser( activatedUserID );
 			CH_UserTriggerHelper.getEntitlementContact(oEntitlementContactList);
 		}  
 		Test.stopTest();	

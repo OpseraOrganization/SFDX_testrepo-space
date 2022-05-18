@@ -1,7 +1,7 @@
 /*
- *	@author Showket Bhat
- *	Revision History:24 Augest 2017
- */	  
+ *  @author Showket Bhat
+ *  Revision History:24 Augest 2017
+ */   
 /****************************************
  * Class Name : ReusableCustomLookUpController
  * Created Date: 24 Augest 2017
@@ -24,10 +24,11 @@ public class ReusableCustomLookUpController {
 		List < sObject > returnList = new List < sObject > ();
 		
 		try{
-			String searchKey = GlobalConstants.WILDCARD_SEARCH + searchKeyWord + GlobalConstants.WILDCARD_SEARCH;
+			//String searchKey = GlobalConstants.WILDCARD_SEARCH + searchKeyWord + GlobalConstants.WILDCARD_SEARCH;
+			String searchKey = searchKeyWord + GlobalConstants.WILDCARD_SEARCH; //SF Ticket#- 01987084/01936003	
 			
 			// Dynamic SOQL Query For Fetch Record List with LIMIT 5   
-			String sQuery =  GlobalConstants.SELECT_ID_NAME_ACCNO + ObjectName + GlobalConstants.CUSTOM_LOOKUP_QUERY;
+			String sQuery =  GlobalConstants.SELECT_ID_NAME_ACCNO + ObjectName + GlobalConstants.CUSTOM_LOOKUP_QUERY;		   
 			
 			List < sObject > lstOfRecords = Database.query(sQuery);
 			

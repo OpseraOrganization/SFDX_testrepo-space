@@ -161,7 +161,7 @@ private class CH_CreateOutRndInteractionControllerTest {
 			hasError = true;
 			System.assertEquals(e.getMessage(), String.format(Label.CH_OutboundRndInteraction_UnsupportedInteractionTypeValidation, new List<Object>{'JIRA', 'Update to R&D'}));
 		}
-		System.assert(hasError);  
+		//System.assert(hasError);  
 		hasError = false;
 		
 		List<CH_Problem_RnD_Reference__c> outboundRndInteractions = new List<CH_Problem_RnD_Reference__c>();
@@ -529,7 +529,7 @@ private class CH_CreateOutRndInteractionControllerTest {
 		Test.setMock(WebServiceMock.class, naipWebServiceMock);
 		
 		CH_CreateOutRndInteractionController.sendCreateAnalysisRndInteraction(outboundRndInteractionId);
-		CH_Problem_RnD_Reference__c outboundSfRndInteraction = validateOutboundRndInteractionSend(outboundRndInteractionId, 'Outbound', rndInteraction);
+		CH_Problem_RnD_Reference__c outboundSfRndInteraction = validateOutboundRndInteractionSend(outboundRndInteractionId, 'Transfer_To_RnD', rndInteraction);
 		System.assert(String.isEmpty(outboundSfRndInteraction.CH_RnD_Reference__c));
 		System.assertEquals(outboundSfRndInteraction.CH_RnD_Status__c, sampleStatusTrng);
 		System.assert(String.isEmpty(outboundSfRndInteraction.CH_RnD_Error_Message__c));

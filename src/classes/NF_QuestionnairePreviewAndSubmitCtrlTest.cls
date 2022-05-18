@@ -3,7 +3,7 @@
 * @author  Sara Elalaoui
 * @since   Feb 06, 2017
 * @desc	This Class is used to test the Questionnaire Preview And Submit
-* @history 
+* @history
 **/
 @isTest
 private class NF_QuestionnairePreviewAndSubmitCtrlTest {
@@ -174,24 +174,6 @@ private class NF_QuestionnairePreviewAndSubmitCtrlTest {
 		System.runAs(testUser1){
 			setupBasic(market, GlobalConstants.CUSTOMER, GlobalConstants.IDENTIFY_OPPORTUNITY, GlobalConstants.PLANNED, GlobalConstants.COMMITTED_UPSELL);
 			Test.startTest();
-			ApexPages.currentPage().getParameters().put('oppId', currentOpportunity.Id);
-			NF_QuestionnairePreviewAndSubmitCtrl questionnairePreviewAndSubmitCtrl= new NF_QuestionnairePreviewAndSubmitCtrl();
-			questionnairePreviewAndSubmitCtrl.init();
-			Test.stopTest();
-		}
-	}
-
-	testMethod static void testPTASigned(){
-		System.runAs(testUser1){
-			setupBasic(market, GlobalConstants.CUSTOMER, GlobalConstants.IDENTIFY_OPPORTUNITY, GlobalConstants.PLANNED, GlobalConstants.STANDARDOPPORTUNITY);
-			setupOIF(5000);
-			Test.startTest();
-			currentOpportunity.StageName=GlobalConstants.HANDOVER_OPPTY;
-			currentOpportunity.PTA_Signed__c=True;
-			currentOpportunity.Is_Automated__c=True;
-			currentOpportunity.Probability = 50;
-			currentOpportunity.Apttus_Approval__Approval_Status__c = 'Approved';
-			update currentOpportunity;
 			ApexPages.currentPage().getParameters().put('oppId', currentOpportunity.Id);
 			NF_QuestionnairePreviewAndSubmitCtrl questionnairePreviewAndSubmitCtrl= new NF_QuestionnairePreviewAndSubmitCtrl();
 			questionnairePreviewAndSubmitCtrl.init();

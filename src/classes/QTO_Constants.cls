@@ -98,6 +98,7 @@ public class QTO_Constants {
 	
 	public static final String STATUS_ENRICHED = 'Enriched(Lines)';
 	public static final String STATUS_ENRICHMENT_FAILED = 'Exception-Enrichment(Lines)';
+	public static final String STATUS_MANUAL_ENRICHED = 'Manually-Enriched(Lines)';
 	
 	public static final String STATUS_ASSOCIATED = 'Associated(Lines)';
 	public static final String STATUS_ASSOCIATION_FAILED = 'Exception-Association(Lines)';
@@ -107,6 +108,11 @@ public class QTO_Constants {
 	
 	public static final String ASSOCIATION_FAILED = 'Association Failed';
 
+	public static final String ENRICHMENT = 'Enrichment';
+	public static final String ASSOCIATION = 'Association';
+	public static final String MATCHING = 'Matching';
 	
-	
+	public static final String CD_STATUS_CPO_CREATION = 'Ready for CPO creation';
+	public static final String SUCCESSFUL = 'Successful';
+
 }

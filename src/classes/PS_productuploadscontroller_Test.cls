@@ -1,6 +1,6 @@
-/************************************************************************************************************
+/***********************************************************************************************************
 * Apex Class Name   : PS_productuploadscontroller_Test
-* Version	   : 1.0 
+* Version   : 1.0 
 * Created Date  : 24 Jan 2018
 * Function  : test class for PS_productuploadscontroller_Test 
 * Modification Log  :
@@ -20,7 +20,12 @@ private class PS_productuploadscontroller_Test
 	public static Blob csvFileBody;
 	static String str = 'Name,AccountNumber,Type,Accountsource,Industry\n Esha Patharabe,10001,Prospect,Test,Banking\n Trupti Nimje,10002,Prospect,Test,Banking';
 
-	@isTest static void lineitemTest10(){
+	@isTest static void lineitemTest10() {
+	List<user> runUSer = TestDataFactory.userCreation(1,'Data Loader Profile');
+	runUSer[0].UserRoleId  = system.Label.Global_Role_ID;
+	runUSer[0].NSA_Compliant__c = true;
+	database.insert(runUSer);
+	system.runAs(runUSer[0]){		
 	
 		//String csvContent = '/n /nProductCode,Quantity,SiteName\nFC11011;1;AB';
 	String csvContent = '/n /n ProductCode,Quantity,SiteName\n3EC17929UA,1,A B\n3FE31189BA,1,BC\n301049607,1,C D\n3HE06970AA,1,D E\n3FE31189BA,1,E F\nFC11011,1,F G';
@@ -42,7 +47,7 @@ private class PS_productuploadscontroller_Test
 	opportunities1[0].LOA_Level__c = '';
 	opportunities1[0].No_Loa__c = false;
 	opportunities1[0].Apttus_Approval__Approval_Status__c = 'Approved';
-	opportunities1[0].Account_Role__c = 'Alliance Partner';
+	opportunities1[0].Account_Role__c = 'GPP Distributor Partner';
 	insert opportunities1;
 	 
 	 opportunities1[0].StageName = 'Create Offer (Bid)';
@@ -79,12 +84,12 @@ private class PS_productuploadscontroller_Test
 		prod.Partner_Visible__c=True;
 		prod.ProductCode='FC11011';
 		prod.Apttus_Config2__Version__c=1;
-		prod.Portfolio__c='Airscale Wifi';
+		prod.Portfolio__c='Fixed Networks';
 		prod.Created_by_PMDI__c = False;
-		prod.Pricing_Clusters__c='NAM';
+		prod.Pricing_Clusters__c='FBA_N;POL_N';
 		prod.IsActive= True;
 		insert prod;
-
+	
 	 test.startTest();  
 	/*create pricelist*/
 		Apttus_Config2__PriceList__c ApttusTestPriceList = new Apttus_Config2__PriceList__c(
@@ -202,7 +207,8 @@ private class PS_productuploadscontroller_Test
 	 insert PA1;
 */   
 		test.stopTest();
-	 }
+		}
+	}
 	
 	
 
@@ -231,9 +237,9 @@ private class PS_productuploadscontroller_Test
 		prod.Partner_Visible__c=True;
 		prod.ProductCode='FC11011';
 		prod.Apttus_Config2__Version__c=1;
-		prod.Portfolio__c='Airscale Wifi';
+		prod.Portfolio__c='Fixed Networks';
 		prod.Created_by_PMDI__c = False;
-		prod.Pricing_Clusters__c='NAM';
+		prod.Pricing_Clusters__c='FBA_N;POL_N';
 		prod.IsActive= True;
 		prod.Direct_Portfolio__c = 'IP Routing';
 		insert prod;
@@ -265,7 +271,7 @@ private class PS_productuploadscontroller_Test
 		proposals[0].NokiaCPQ_Portfolio__c = 'IP Routing';
 		proposals[0].NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c = true;
 		proposals[0].RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId(); //direct quote
-		insert proposals;	
+		insert proposals;   
 	
 		Direct_Portfolio_General_Setting__mdt setting = new Direct_Portfolio_General_Setting__mdt();
 		setting.Portfolio__c = proposals[0].NokiaCPQ_Portfolio__c;
@@ -336,7 +342,7 @@ private class PS_productuploadscontroller_Test
 		prod.Apttus_Config2__Version__c=1;
 		prod.Portfolio__c='IP Routing';
 		prod.Created_by_PMDI__c = False;
-		prod.Pricing_Clusters__c='NAM';
+		prod.Pricing_Clusters__c='IPR_N';
 		prod.IsActive= True;
 		insert prod;
 
@@ -456,6 +462,11 @@ private class PS_productuploadscontroller_Test
 			test.stoptest();
 	}
 	 @isTest static void lineitemTest101(){
+		List<user> runUSer = TestDataFactory.userCreation(1,'Data Loader Profile');
+		runUSer[0].UserRoleId  = system.Label.Global_Role_ID;
+		runUSer[0].NSA_Compliant__c = true;
+		database.insert(runUSer);
+		system.runAs(runUSer[0]){ 
 	
 		//String csvContent = '/n /nProductCode,Quantity,SiteName\nFC11011;1;AB';
 	String csvContent = '/n /n ProductCode,Quantity,SiteName\nFC11011,1,A B\n3FE31189BA,1,BC\n301049607,1,C D\n3HE06970AA,1,D E\n3FE31189BA,1,E F\n301049607,1,F G';
@@ -476,7 +487,7 @@ private class PS_productuploadscontroller_Test
 	opportunities1[0].LOA_Level__c = '';
 	opportunities1[0].No_Loa__c = false;
 	opportunities1[0].Apttus_Approval__Approval_Status__c = 'Approved';
-	opportunities1[0].Account_Role__c = 'Alliance Partner';
+	opportunities1[0].Account_Role__c = 'GPP Distributor Partner';
 	insert opportunities1;
 	 
 	 opportunities1[0].StageName = 'Create Offer (Bid)';
@@ -515,7 +526,7 @@ private class PS_productuploadscontroller_Test
 		prod.Apttus_Config2__Version__c=1;
 		prod.Portfolio__c='IP Routing';
 		prod.Created_by_PMDI__c = False;
-		prod.Pricing_Clusters__c='NAM';
+		prod.Pricing_Clusters__c='IPR_N';
 		prod.IsActive= True;
 		prod.isInvalidProductCatalog__c = Nokia_CPQ_Constants.TrueValue;
 		prod.NokiaCPQ_Valid_for__c = 'Indirect';
@@ -618,7 +629,7 @@ private class PS_productuploadscontroller_Test
 		puc.createcart();
 		puc.addProductsfromfile();
 		//puc.Reprice();
-	  //  puc.Finalize();
+		//puc.Finalize();
 		puc.Saveconfig();
 		//puc.Finalize();
 		puc.returntocart();
@@ -627,15 +638,21 @@ private class PS_productuploadscontroller_Test
 		List<Apttus_Config2__LineItem__c> li = [select Id from Apttus_Config2__LineItem__c Limit 1];
 		Apttus_Config2__ProductAttributeValue__c PA1 = new Apttus_Config2__ProductAttributeValue__c();
 		
-	/* if(li != null && !li.isEmpty() && li[0] != null){
-			PA1.Apttus_Config2__LineItemId__c = li[0].id;
-			PA1.Q_SWSuite__c = 'Premium';
-		}
-	 insert PA1;
-*/   
+		/*if(li != null && !li.isEmpty() && li[0] != null){
+					PA1.Apttus_Config2__LineItemId__c = li[0].id;
+					PA1.Q_SWSuite__c = 'Premium';
+				}
+			insert PA1;
+		*/   
 		test.stopTest();
+		}
 	 }
 	 static testmethod void directInitTest1_1(){
+		List<user> runUSer = TestDataFactory.userCreation(1,'Data Loader Profile');
+		runUSer[0].UserRoleId  = system.Label.Global_Role_ID;
+		runUSer[0].NSA_Compliant__c = true;
+		database.insert(runUSer);
+		system.runAs(runUSer[0]){		 
 	//String csvContent = '/n /n ProductCode,Quantity,SiteName\n3EC17929UA ,1,A B\n3FE31189BA ,1,B C\n3HE06153AC ,1,C D\n3HE06970AA,1,D E\n3HE06970BA,1,E F\n  3HE06972AB,1,F G';
 	String csvContent = '/n /n ProductCode,Quantity,SiteName\n3EC17929UA ,1,A B\n3FE31189BA ,1,B C\n3HE06153AC ,1,C D\n3HE06970AA,1,D E\n3HE06970BA,1,E F\nFC11011,1,F G';
 		//create a Account
@@ -648,7 +665,10 @@ private class PS_productuploadscontroller_Test
 		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Direct_Record_Type').getRecordTypeId();
 		opportunities[0].CurrencyIsoCode = 'GBP'; 
 		insert opportunities;  
-	  
+		//added to avoid soql 101 by skipping productTrigger
+		Global_Control__c gc = new Global_Control__c();
+		gc.ObjectTriggerByPass__c = 'PROD2';
+		insert gc; 
 		 /*create product*/
 	product2 prod = new product2();
 		prod.name = '3HE06972AB';
@@ -662,7 +682,7 @@ private class PS_productuploadscontroller_Test
 		prod.Apttus_Config2__Version__c=1;
 		prod.Portfolio__c='IP Routing';
 		prod.Created_by_PMDI__c = False;
-		prod.Pricing_Clusters__c='NAM';
+		prod.Pricing_Clusters__c='IPR_N';
 	 //   prod.IsActive= True;
 		prod.Created_by_PMDI__c= false;
 		insert prod;
@@ -695,7 +715,7 @@ System.debug('----prod--'+ prod);
 		proposals[0].NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c = true;
 		proposals[0].RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId(); //direct quote
 		//proposals[0].Quote_Type__c = 'Direct CPQ';
-		insert proposals;	
+		insert proposals;   
 	
 		Direct_Portfolio_General_Setting__mdt setting = new Direct_Portfolio_General_Setting__mdt();
 		setting.Portfolio__c = proposals[0].NokiaCPQ_Portfolio__c;
@@ -721,12 +741,13 @@ System.debug('----prod--'+ prod);
 		puc.Finalize();
 		puc.returntocart();
 		puc.returntoquote();
-	//	puc.abandonCart();
+	//  puc.abandonCart();
 		
 		
 	  
 
 		Test.stopTest();	
+		}	
 		
 			
 }

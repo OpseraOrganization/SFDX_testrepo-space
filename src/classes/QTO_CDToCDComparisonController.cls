@@ -31,28 +31,42 @@ public with sharing class QTO_CDToCDComparisonController {
 		cdDoc.nokiaCdDoc = associationRec.QTO_Nokia_Customer_Document_ID__r;
 		
 		List<Customer_Document_Line_Items__c> cdLineItems =
-				[SELECT Id, QTO_Product_Code__c, Detailed_Product__c, QTO_Unit_of_Measure__c, Quantity__c,
-				 		QTO_Unit_Price__c, Total_Value__c, QTO_Requested_Delivery_Date__c, Contract_Item_Number__c 
+				[SELECT Id,
+				 QTO_Product_Code__c, Detailed_Product__c, High_level_Product__c,
+				 QTO_Unit_of_Measure__c, QTO_PDF_Unit_Of_Measure__c,
+				 Quantity__c, QTO_PDF_Quantity__c,
+				 QTO_Unit_Price__c, QTO_PDF_Unit_Price__c,
+				 Total_Value__c, QTO_PDF_Total_Value__c,
+				 QTO_Requested_Delivery_Date__c, QTO_PDF_Requested_Delivery_Date__c,
+				 Contract_Item_Number__c 
 				 FROM Customer_Document_Line_Items__c
 				 WHERE Customer_Document__c =:associationRec.Customer_Document__r.Id];
 		List<Customer_Document_Line_Items__c> nokiaCdLineItems =
-				[SELECT Id, QTO_Product_Code__c, Detailed_Product__c, QTO_Unit_of_Measure__c, Contract_Item_Number__c, 
-				 		QTO_Unit_Price__c, Total_Value__c, QTO_Requested_Delivery_Date__c, Quantity__c 
+				[SELECT Id,
+				 QTO_Product_Code__c, Detailed_Product__c, High_level_Product__c,
+				 QTO_Unit_of_Measure__c, QTO_PDF_Unit_Of_Measure__c,
+				 Contract_Item_Number__c, 
+				 QTO_Unit_Price__c, QTO_PDF_Unit_Price__c,
+				 Total_Value__c, QTO_PDF_Total_Value__c,
+				 QTO_Requested_Delivery_Date__c, QTO_PDF_Requested_Delivery_Date__c,
+				 Quantity__c, QTO_PDF_Quantity__c
 				 FROM Customer_Document_Line_Items__c
 				 WHERE Customer_Document__c =:associationRec.QTO_Nokia_Customer_Document_ID__r.Id];
 		Map<String, Customer_Document_Line_Items__c> wasLineProductWithLine =
 				new Map<String, Customer_Document_Line_Items__c>();
 		Set<String> allProductCodes = new Set<String>();
 		Map<String, String> productCodeToInternalCode = new Map<String, String>();
+		
 		List<Customer_Document_Line_Items__c> noProductCodeWasList =
 				new List<Customer_Document_Line_Items__c>();
 		List<Customer_Document_Line_Items__c> noProductCodeBecameList =
 				new List<Customer_Document_Line_Items__c>();
+		
 		for (Customer_Document_Line_Items__c wasLine: cdLineItems) {
-			if(wasLine.Contract_Item_Number__c  != null) {
-				allProductCodes.add(wasLine.Contract_Item_Number__c );
-				productCodeToInternalCode.put(wasLine.Contract_Item_Number__c , wasLine.QTO_Product_Code__c);
-				wasLineProductWithLine.put(wasLine.Contract_Item_Number__c, wasLine);
+			if(wasLine.High_level_Product__c != null) {
+				allProductCodes.add(wasLine.High_level_Product__c );
+				productCodeToInternalCode.put(wasLine.High_level_Product__c , wasLine.QTO_Product_Code__c);
+				wasLineProductWithLine.put(wasLine.High_level_Product__c, wasLine);
 			} else {
 			 //   noProductCodeWasList.add(wasLine);
 			}
@@ -60,11 +74,11 @@ public with sharing class QTO_CDToCDComparisonController {
 		
 		Map<String, Customer_Document_Line_Items__c> becameLineProductWithLine =
 				new Map<String, Customer_Document_Line_Items__c>();
-		for (Customer_Document_Line_Items__c wasLine: nokiaCdLineItems) {
-			if (wasLine.Contract_Item_Number__c != null) {
-				allProductCodes.add(wasLine.Contract_Item_Number__c);
-				productCodeToInternalCode.put(wasLine.Contract_Item_Number__c, wasLine.QTO_Product_Code__c);
-				becameLineProductWithLine.put(wasLine.Contract_Item_Number__c, wasLine);
+		for (Customer_Document_Line_Items__c becameLine: nokiaCdLineItems) {
+			if (becameLine.High_level_Product__c != null) {
+				allProductCodes.add(becameLine.High_level_Product__c);
+				productCodeToInternalCode.put(becameLine.High_level_Product__c, becameLine.QTO_Product_Code__c);
+				becameLineProductWithLine.put(becameLine.High_level_Product__c, becameLine);
 			} else {
 			 //   noProductCodeBecameList.add(wasLine);
 			}
@@ -76,44 +90,34 @@ public with sharing class QTO_CDToCDComparisonController {
 			CDLineItems cdLineItemObj = new CDLineItems();
 			cdLineItemObj.productCode = productCode;
 			cdLineItemObj.internalProductCode = productCodeToInternalCode.get(productCode);
+			cdLineItemObj.wasLine = wasLineProductWithLine.get(productCode);
+			cdLineItemObj.becameLine = becameLineProductWithLine.get(productCode);
 			
-			if (wasLineProductWithLine.get(productCode) != null) {
-				cdLineItemObj.wasLine = wasLineProductWithLine.get(productCode);
-			}
-			if (becameLineProductWithLine.get(productCode) != null) {
+			if (cdLineItemObj.wasLine != null && cdLineItemObj.becameLine != null) {
+				cdLineItemObj.colorQCode = (cdLineItemObj.wasLine.QTO_PDF_Quantity__c != cdLineItemObj.becameLine.QTO_PDF_Quantity__c)
+					? 'changeColor'
+					: cdLineItemObj.colorQCode;
 				
-				cdLineItemObj.becameLine = becameLineProductWithLine.get(productCode);
-				
-				if(cdLineItemObj.wasLine != null
-					&& (cdLineItemObj.wasLine.Quantity__c != cdLineItemObj.becameLine.Quantity__c)) {
-					cdLineItemObj.colorQCode = 'changeColor';
-				}
-				
-				if(cdLineItemObj.wasLine != null
-					&& (cdLineItemObj.wasLine.QTO_Unit_of_Measure__c != cdLineItemObj.becameLine.QTO_Unit_of_Measure__c)) {
-					cdLineItemObj.colorUCode = 'changeColor';
-				}
-				if(cdLineItemObj.wasLine != null
-					&& (cdLineItemObj.wasLine.QTO_Unit_Price__c != cdLineItemObj.becameLine.QTO_Unit_Price__c)) {
-					cdLineItemObj.colorPCode = 'changeColor';
-				}
-				if(cdLineItemObj.wasLine != null
-					&& (cdLineItemObj.wasLine.Total_Value__c != cdLineItemObj.becameLine.Total_Value__c)) {
-					cdLineItemObj.colorTCode = 'changeColor';
-				}if(cdLineItemObj.wasLine != null
-					&& (cdLineItemObj.wasLine.QTO_Requested_Delivery_Date__c != cdLineItemObj.becameLine.QTO_Requested_Delivery_Date__c)) {
-					cdLineItemObj.colorDCode = 'changeColor';
-				}
-				
+				cdLineItemObj.colorUCode = (cdLineItemObj.wasLine.QTO_PDF_Unit_Of_Measure__c != cdLineItemObj.becameLine.QTO_PDF_Unit_Of_Measure__c)
+					? 'changeColor'
+					: cdLineItemObj.colorUCode;
+				 
+				cdLineItemObj.colorPCode = (cdLineItemObj.wasLine.QTO_PDF_Unit_Price__c != cdLineItemObj.becameLine.QTO_PDF_Unit_Price__c)
+					? 'changeColor'
+					: cdLineItemObj.colorPCode;
+				   
+				cdLineItemObj.colorTCode = (cdLineItemObj.wasLine.QTO_PDF_Total_Value__c != cdLineItemObj.becameLine.QTO_PDF_Total_Value__c)
+					? 'changeColor'
+					: cdLineItemObj.colorTCode;
+				 
+				cdLineItemObj.colorDCode = (cdLineItemObj.wasLine.QTO_PDF_Requested_Delivery_Date__c != cdLineItemObj.becameLine.QTO_PDF_Requested_Delivery_Date__c)
+					? 'changeColor'
+					: cdLineItemObj.colorDCode;
 			}
 			
-			if (cdLineItemObj.wasLine == null) {
-				cdLineItemObj.colorNoWasCode = 'changeColorNoPre';
-			}
-			if (cdLineItemObj.becameLine == null) {
-				cdLineItemObj.colorNoBecameCode = 'changeColorNoNew';
-			}
-			
+			cdLineItemObj.colorNoWasCode = cdLineItemObj.wasLine == null ? 'changeColorNoPre' : cdLineItemObj.colorNoWasCode;			
+			cdLineItemObj.colorNoBecameCode = cdLineItemObj.becameLine == null ? 'changeColorNoNew' : cdLineItemObj.colorNoBecameCode;
+			System.debug('CD Line Item Wrapper \n' + cdLineItemObj.wasLine);
 			cdLineItemObjs.add(cdLineItemObj);
 		}
 		

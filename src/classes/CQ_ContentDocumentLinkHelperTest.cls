@@ -1,11 +1,12 @@
 @isTest
 public class CQ_ContentDocumentLinkHelperTest {
-	
+
+
 	Private static final Id Contracted_Quote_RecId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get(Label.CQ_RecordTypeId).getRecordTypeId();
 	Private static final Id CQ_Read_Only_RecId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('CQ_Read_Only').getRecordTypeId();
-	private static Id oppDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get(GlobalConstants.CREATE_DIRECT_SALES_OPPORTUNITY).getRecordTypeId();
-	private static  Id LERecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Legal Entity').getRecordTypeId();
-	private static Id custRecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Customer').getRecordTypeId(); 
+	private static Id oppDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.DIRECT_RECORD_TYPE).getRecordTypeId();
+	private static  Id LERecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get(GlobalConstants.LEGAL_ENTITY_DEVNAME).getRecordTypeId();
+	private static Id custRecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get(GlobalConstants.CUSTOMER_DEVNAME).getRecordTypeId(); 
 	public Static List<Account> accounts=new List<Account>(); 
 	public Static List<opportunity> opportunities=new List<opportunity>();
 	public Static List<contentDocumentLink> contentDocumentLink_list=new List<contentDocumentLink>();
@@ -35,15 +36,16 @@ public class CQ_ContentDocumentLinkHelperTest {
 		accountVZW_LegalEnt.ParentId=accounts[0].Id;
 		accountVZW_LegalEnt.Default_Legal_Entity__c = true;
 		accountVZW_LegalEnt.Partner_Program__c=null;	
-		accountVZW_LegalEnt.Qtc_sold_to__c=system.Label.VzW_Number;				
+		accountVZW_LegalEnt.Qtc_sold_to__c=system.Label.VzW_Number;	
 		accounts.add(accountVZW_LegalEnt);		
 		Database.upsert(accounts); 
 		system.debug('accounts_upsert--->>'+accounts);
 		
+		GlobalConstants.OPPORTUNITYTRIGGER_RESTRICT_OPPTY_CREATION = True;
 		Opportunity OpportunityVZW = NF_TestDataFactory.createOpportunity(accounts[0].Id, 'Create offer (bid)', 'Offer in Progress', Date.today().addDays(10), 7000000);
-		OpportunityVZW.Lead_BG__c='NSW';
+		OpportunityVZW.Lead_BG__c='MN';
 		OpportunityVZW.RecordTypeId = oppDirectRecordTypeId;
-		OpportunityVZW.Business_Type__c = 'Standard Opportunity';				
+		OpportunityVZW.Business_Type__c = 'Standard Opportunity';	
 		opportunities.add(OpportunityVZW);
 		Database.insert(opportunities);
 		system.debug('OpportunityVZW--->>##'+OpportunityVZW);
@@ -81,12 +83,12 @@ public class CQ_ContentDocumentLinkHelperTest {
 		
 		
 		Surround_CQ_Reporting__c cq_report = new Surround_CQ_Reporting__c(CQ_Number__c=quotes[0].NokiaCPQ_Proposal_Id__c,
-																		 CQ_Status__c='Approved',
-																		 CQ_Value__c=100,
-																		 CQ_Due_Date__c=system.today()+30,
-																		 Opportunity__c=opportunities[0].Id,
-																		 Account_Name__c=accounts[0].Id,
-																		 Customer_Organization_Segment__c='VERIZON WIRELESS INC.');		
+						 CQ_Status__c='Approved',
+						 CQ_Value__c=100,
+						 CQ_Due_Date__c=system.today()+30,
+						 Opportunity__c=opportunities[0].Id,
+						 Account_Name__c=accounts[0].Id,
+						 Customer_Organization_Segment__c='VERIZON WIRELESS INC.');		
 		
 		system.debug('cq_report before insert--->>'+cq_report);
 		reports.add(cq_report);
@@ -138,7 +140,7 @@ public class CQ_ContentDocumentLinkHelperTest {
 		system.assertEquals(reports[0].id, filenew_2.LinkedEntityId);
 		
 		
-		test.stopTest();	   
+		test.stopTest();	
 	}
 	
 	static testmethod void Sharecqfileto_CqReportTest(){
@@ -149,7 +151,7 @@ public class CQ_ContentDocumentLinkHelperTest {
 			//id contentdoc_id='06956000000IMkbAAG';			
 			test.startTest(); 
 			CQ_ContentDocumentLinkHelper.Sharecqfileto_CqReport(contentDocumentLink_list);
-			//CQ_ContentDocumentLinkHelper.FileShareFromCqToReport(contentDocumentLink_set, rep_map);		   
+			//CQ_ContentDocumentLinkHelper.FileShareFromCqToReport(contentDocumentLink_set, rep_map);	 
 			test.stopTest();
 		}
 		
@@ -163,7 +165,7 @@ System.RunAs(userCreation){
 
 
 
-test.startTest();		   
+test.startTest();	 
 
 contentDocumentLink filenew_2 = TestDataFactory.createContentDocumentLink_New(1,reports[0].id,contendDocId_list[0].ContentDocumentId)[2];
 filenew_2.ShareType='V';

@@ -1,7 +1,7 @@
 @istest
-public class HWS_Utilty_TEST {
+public class HWS_Utilty_TEST { 
 	public static final String  AED = 'Advanced Exchange in Days';  
-	public static final String  BD = 'Business Days';
+	public static final String  BD = 'Business Days' ;
 	@testSetup static void testDataSetup(){
 		Id customerAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.Customer);
 		Id legalEntityAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY);
@@ -10,7 +10,7 @@ public class HWS_Utilty_TEST {
 		ISO_Country_Codes__c setting = new ISO_Country_Codes__c();
 		setting.Name = 'IN';
 		setting.Country_Name__c = 'India';
-		setting.Market__c='Market India';
+		setting.Market__c='Market India' ; 
 		listISO.add(setting);
 		ISO_Country_Codes__c setting1 = new ISO_Country_Codes__c();
 		setting1.Name = 'AG';
@@ -18,7 +18,7 @@ public class HWS_Utilty_TEST {
 		setting1.Market__c='Market Latin America';
 		listISO.add(setting1);
 		insert listISO;
-		Account acc = HWS_DataFactory_TEST.insertAccount(); 
+		Account acc = HWS_DataFactory_TEST.insertAccount() ; 
 		acc.RecordTypeId =  customerAccountType;
 		acc.Customer_Compliance__c = 'US_AT&T';
 		insert acc;
@@ -27,6 +27,8 @@ public class HWS_Utilty_TEST {
 		acc1.RecordTypeId =  legalEntityAccountType;
 		acc1.ParentId = acc.Id;
 		acc1.Name = 'TestLE';
+		acc1.AccountNumber='123456';
+		acc1.NCP_P20_ID__c = '123456';
 		insert acc1;
 		
 		Account logisticAcc = HWS_DataFactory_TEST.createLogisticAccount();
@@ -46,7 +48,6 @@ public class HWS_Utilty_TEST {
 		con.CH_ContactType__c = 'Customer';
 		con.email='xyz@example.com';
 		insert con;
-		
 		
 		BusinessHours bhs1=[select Id from BusinessHours where IsDefault=false limit 1];
 		Product2 prod = HWS_DataFactory_TEST.insertproduct2();   
@@ -225,7 +226,7 @@ public class HWS_Utilty_TEST {
 		HWS_Utilty.getserviceContractsInactivePortal('00000052',acc.Id, AED);
 		HWS_Utilty.getServiceTypes(cliIdSet);
 		HWS_Utilty.getAllServiceTypesPortal(prodIdSet,acc.Id,AED,'00000052',cont.Id, 'Slovakia');
-		HWS_Utilty.getDependentMap(acc,'BillingCountryCode','BillingStateCode');
+		HWS_Utilty.getDependentMap(acc,'BillingCountryCode','BillingStateCode','Slovakia');
 		test.stopTest();
 	}
 	
@@ -513,7 +514,8 @@ public class HWS_Utilty_TEST {
 	public static testmethod void makeSOOCalloutTest(){	 
 		Id childRecordType = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_ADVANCE_EXCHANGE_IN_DAYS);	 
 		Product2 prod = [Select id from Product2 limit 1];
-		Account acc = [Select Id from Account where Name = 'TestLE' limit 1 ];
+		Account acc = [Select Id,AccountNumber from Account where Name = 'TestLE' limit 1 ];
+		System.debug('AccountNumber-'+acc);
 		ContractLineItem cli = [Select Id from ContractLineItem limit 1];
 		Asset ast = [Select id from Asset limit 1];
 		Case parentCase = [Select id from Case limit 1];
@@ -528,6 +530,15 @@ public class HWS_Utilty_TEST {
 	   
 		Test.setMock(HttpCalloutMock.class, new HWS_SendWarrantyCheckRequesttoSOO_Test(true,''));
 		HWS_Utilty.makeSOOCallout(parentCase.Id,null);
+		Date myDate = Date.newInstance(1960, 2, 17);
+		HWS_ParentCase_WRAPPER.convetDate(myDate);
+		Time myTime = Time.newInstance( 3, 3, 3, 0 );
+		DateTime objDT = DateTime.newInstance( myDate, myTime );
+		HWS_ParentCase_WRAPPER.convetDateTime(objDT);
+		HWS_ParentCase_WRAPPER wrapObj = new HWS_ParentCase_WRAPPER(childCase,'P20','Advanced Exchange in Hours','Customer via', '123456', true, '123456');
+		HWS_ParentCase_WRAPPER wrapObj1 = new HWS_ParentCase_WRAPPER(childCase,'eSpares','Advanced Exchange in Hours','Customer', '123456', true, '123456');
+	HWS_ParentCase_WRAPPER wrapObj2 = new HWS_ParentCase_WRAPPER(childCase,'eSpares','Advanced Exchange in Hours','Customer via Partner', '123456', true, '123456');
+	HWS_ParentCase_WRAPPER wrapObj3 = new HWS_ParentCase_WRAPPER(childCase,'P20','Advanced Exchange in Hours','Customer via Partner', '123456', true, '123456');
 		test.stopTest();
 	}
 	

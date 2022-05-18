@@ -12,6 +12,9 @@ public with sharing class QTO_CDParser {
 	
 	private static final String PDF_QUOTE_REF = 'PDF Quote Ref';
 	private static final String CONTRACT_REF = 'PDF CONTRACT REF';
+	// DSI-2322
+	private static final String ATTRIBUTE_LABEL_PDFSITECODE = 'PDF SITE CODE';
+	private static final String ATTRIBUTE_LABEL_PDFOPPORTUNITYREF = 'PDF OPPORTUNITY REF';
 	
 	public static Map<Id,QTO_CDParsingWrapper> parseAllAssociationData(Set<Id> setCustomerDocumentIds){
 		Map<Id,QTO_CDParsingWrapper> mapReturnData = new Map<Id,QTO_CDParsingWrapper>();
@@ -67,6 +70,14 @@ public with sharing class QTO_CDParser {
 			else if(currentAttribute.Attribute_Label__c.equalsIgnoreCase(PDF_QUOTE_REF)){
 				currentWrapper.setHeaderQuotes.add(currentAttribute.Attribute_Value__c);
 			}
+			// DSI-2322 collect pdf site codes from cd cfas
+			else if(currentAttribute.Attribute_Label__c == ATTRIBUTE_LABEL_PDFSITECODE) {
+				currentWrapper.pdfSiteCodeRefs.add(currentAttribute.Attribute_Value__c);
+			}
+			// DSI-2322 collect pdf opportunity refs from cd cfas
+			else if(currentAttribute.Attribute_Label__c == ATTRIBUTE_LABEL_PDFOPPORTUNITYREF) {
+				currentWrapper.pdfOpportunityRefs.add(currentAttribute.Attribute_Value__c);
+			}
 			mapReturnData.put(currentAttribute.QTO_Customer_Document__c,currentWrapper);
 		}
 		system.debug('mapReturnDatamapReturnData'+mapReturnData);
@@ -107,11 +118,19 @@ public with sharing class QTO_CDParser {
 		}
 		for(Customer_facing_Attribute__c currentAttribute:[select id,name,QTO_Customer_Document__c,Attribute_Label__c,Attribute_Value__c,QTO_Customer_Document_Line_Items__c,QTO_Customer_Document_Line_Items__r.Customer_Document__c from Customer_facing_Attribute__c where QTO_Customer_Document_Line_Items__c in :setCDLIs]){
 			QTO_CDParsingWrapper currentWrapper = mapWrapperData.get(currentAttribute.QTO_Customer_Document_Line_Items__r.Customer_Document__c);
-			if(currentAttribute.Attribute_Label__c.equalsIgnoreCase(PDF_QUOTE_REF)){
+			if(currentAttribute.Attribute_Label__c!=null && currentAttribute.Attribute_Label__c.equalsIgnoreCase(PDF_QUOTE_REF)){
 				currentWrapper.setLineItemQuotes.add(currentAttribute.Attribute_Value__c);
 			}
-			else if(currentAttribute.Attribute_Label__c.equalsIgnoreCase(CONTRACT_REF)){
+			else if(currentAttribute.Attribute_Label__c!=null && currentAttribute.Attribute_Label__c.equalsIgnoreCase(CONTRACT_REF)){
 				currentWrapper.setLineItemAgreements.add(currentAttribute.Attribute_Value__c);
+			}
+			// DSI-2322 collect pdf site codes from cd cfas
+			else if(currentAttribute.Attribute_Label__c == ATTRIBUTE_LABEL_PDFSITECODE) {
+				currentWrapper.pdfSiteCodeRefs.add(currentAttribute.Attribute_Value__c);
+			}
+			// DSI-2322 collect pdf opportunity refs from cd cfas
+			else if(currentAttribute.Attribute_Label__c == ATTRIBUTE_LABEL_PDFOPPORTUNITYREF) {
+				currentWrapper.pdfOpportunityRefs.add(currentAttribute.Attribute_Value__c);
 			}
 			mapWrapperData.put(currentAttribute.QTO_Customer_Document_Line_Items__r.Customer_Document__c,currentWrapper);
 		}

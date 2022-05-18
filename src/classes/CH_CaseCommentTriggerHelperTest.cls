@@ -20,7 +20,7 @@ public class CH_CaseCommentTriggerHelperTest {
 	public testMethod static void TestScrambled(){
 		list<case> caselst = new list<case>();
 		case caserec=new case();
-		Id caseRecordtypeid = Schema.SObjectType.case.getRecordTypeInfosByName().get('Problem').getRecordTypeId();
+		Id caseRecordtypeid = Schema.SObjectType.case.getRecordTypeInfosByDeveloperName().get('CH_Problem').getRecordTypeId();
 		caserec.RecordTypeId = caseRecordtypeid;
 		caserec.Allow_admin_login__c=true;
 		caserec.Status='Created';
@@ -47,7 +47,7 @@ public class CH_CaseCommentTriggerHelperTest {
 		list<case> caselst = new list<case>();
 		
 		case caserec=new case();
-		Id caseRecordtypeid = Schema.SObjectType.case.getRecordTypeInfosByName().get('Problem').getRecordTypeId();
+		Id caseRecordtypeid = Schema.SObjectType.case.getRecordTypeInfosByDeveloperName().get('CH_Problem').getRecordTypeId();
 		caserec.RecordTypeId = caseRecordtypeid;
 		caserec.Allow_admin_login__c=true;
 		caserec.Status='Created';
@@ -64,7 +64,6 @@ public class CH_CaseCommentTriggerHelperTest {
 		cc1.CommentBody ='063.383.239.641';
 		cc1.ParentId = caserec.id;  
 		insert cc1;
-		
 		Test.StartTest();
 		cc1.CommentBody ='483.937.912.050';
 		cc1.IsPublished = true;

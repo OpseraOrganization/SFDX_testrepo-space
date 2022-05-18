@@ -1,9 +1,8 @@
-@isTest(seeAllData = true)
+@isTest
 public class CPQ_SSFUploadControllerTest{
-  
 	@isTest
 	public static void test_SSF(){
-		Apttus_Config2__ProductConfiguration__c config = [Select Id from Apttus_Config2__ProductConfiguration__c LIMIT 1];
+		//Apttus_Config2__ProductConfiguration__c config = [Select Id from Apttus_Config2__ProductConfiguration__c LIMIT 1];
 		
 		Demo__c dm = new Demo__c(Name='Test');
 		insert dm;
@@ -20,13 +19,13 @@ public class CPQ_SSFUploadControllerTest{
 		
 		Test.startTest();
 		CPQ_SSFUploadController.WrapperData wrapper = new CPQ_SSFUploadController.WrapperData();
-		wrapper = CPQ_SSFUploadController.uploadSSF(EncodingUtil.base64Encode(attachment.Body), config.Id);
+		wrapper = CPQ_SSFUploadController.uploadSSF(EncodingUtil.base64Encode(attachment.Body), 'a6803000000GXLjAAO');
 		List<CPQ_QTC_CartServices.ProductData> csvDataRows = wrapper.csvData;
 		Test.stopTest();
 		
 		System.assertNotEquals(null, csvDataRows, 'CSV read successfully');
 		//CPQ_SSFUploadController.handleCommaInCSV(csv);
 		//CPQ_SSFUploadController.addProductsToCartSSF(csvDataRows,config.Id);
-		CPQ_SSFUploadController.repriceCart(config.Id);
+		//CPQ_SSFUploadController.repriceCart(config.Id);
 	}
 }

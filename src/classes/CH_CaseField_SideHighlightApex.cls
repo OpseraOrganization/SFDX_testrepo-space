@@ -5,6 +5,10 @@
  * Last Modified By Vinod -Added New Methods : NOKIASC-34727 Mar 2021
  ****************/
 public without sharing class CH_CaseField_SideHighlightApex {
+	
+	public static final String errorMsg='You are not authorized to change this case';
+	public static final String errorMsg2 ='Contact System Administrator, Do not have enough permission to edit';
+	
 	@AuraEnabled
 	public static void setAssignment(string fieldId){
 		case findCase = new case();
@@ -28,6 +32,17 @@ public without sharing class CH_CaseField_SideHighlightApex {
 		findCase = [select Id, CH_TCAReady__c from case where Id=:fieldId];
 		return findCase.CH_TCAReady__c;
 	}
+
+	@AuraEnabled
+	public static Boolean getCaseStatus(Id caseId){
+		Case findCase = new Case();
+		findCase = [SELECT Id FROM Case WHERE Id = :caseId AND Status = 'Solution Provided'];
+		if(findCase != NULL){			
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
 	@AuraEnabled
 	public static boolean accessCheck(Id caseId){
@@ -43,7 +58,7 @@ public without sharing class CH_CaseField_SideHighlightApex {
 		
 		if (!problems.isEmpty()) {
 			List<CH_Problem_RnD_Reference__c> rndInteractions = [SELECT Id FROM CH_Problem_RnD_Reference__c 
-					WHERE CH_Related_Record__c =: caseId AND CH_RnD_Type__c = 'Transfer to R&D'];
+		WHERE CH_Related_Record__c =: caseId AND CH_RnD_Type__c = 'Transfer to R&D'];
 			if (rndInteractions.isEmpty()) {
 	interfaceType = problems[0].CH_RDInterface__c;
 			}
@@ -55,8 +70,8 @@ public without sharing class CH_CaseField_SideHighlightApex {
 	@AuraEnabled
 	public static Boolean transferRndRequiredFieldsCheck(Id caseId) {
 		Case problem = [SELECT Id, CH_RDInterface__c, Description, CH_Originating_Incident_Number__c, Subject, CH_CustomerDescription__c, CH_ProblemStatement__c, Severity__c, 
-		  CH_AssessedOutage__c, CH_ReportedDate__c, ProductId, CH_Product_Release__c, CH_Problem_Type__c, CH_Pronto_Group__c, CH_Discovered_in__c, 
-		  CH_Repeatability__c, Account.AccountNumber, Account.NCP_P20_ID__c, CH_ProductVariant__c, CH_OwnerName__c
+	CH_AssessedOutage__c, CH_ReportedDate__c, ProductId, CH_Product_Release__c, CH_Problem_Type__c, CH_Pronto_Group__c, CH_Discovered_in__c, 
+	CH_Repeatability__c, Account.AccountNumber, Account.NCP_P20_ID__c, CH_ProductVariant__c, CH_OwnerName__c
 			FROM Case WHERE Id =: caseId];
 		return transferRndRequiredFieldsCheck(problem);
 	}
@@ -84,16 +99,15 @@ public without sharing class CH_CaseField_SideHighlightApex {
 			
 		}
 		catch(DmlException e){
-			for (Integer i = 0; i < e.getNumDml(); i++) {			   
-				errorMsg =+ e.getDmlMessage(i) +  '\n' ;
-			}		   
+			for (Integer i = 0; i < e.getNumDml(); i++) {	  
+	errorMsg =+ e.getDmlMessage(i) +  '\n' ;
+			}	 
 			throw new AuraHandledException(errorMsg);
 		}
 		catch(Exception e){
 			
 			throw new AuraHandledException(e.getMessage());
 		}
-		
 		
 	}
 	/****
@@ -104,8 +118,8 @@ public without sharing class CH_CaseField_SideHighlightApex {
 	@AuraEnabled
 	public static Case transferRndFlowFieldsQuery(Id caseId) {
 		Case problem = [SELECT Id, CH_RDInterface__c, CH_Originating_Incident_Number__c, Subject, CH_CustomerDescription__c, CH_ProblemStatement__c, Severity__c, 
-		  CH_AssessedOutage__c, CH_ReportedDate__c, ProductId, CH_Product_Release__c, CH_Problem_Type__c, CH_Pronto_Group__c, CH_Discovered_in__c, 
-		  CH_Repeatability__c, Account.AccountNumber, Account.NCP_P20_ID__c, 
+	CH_AssessedOutage__c, CH_ReportedDate__c, ProductId, CH_Product_Release__c, CH_Problem_Type__c, CH_Pronto_Group__c, CH_Discovered_in__c, 
+	CH_Repeatability__c, Account.AccountNumber, Account.NCP_P20_ID__c, 
 			CH_ProductVariant__c, CH_OwnerName__c,CH_Workgroup__r.Name,Owner.Name,
 			OwnerId, CH_Workgroup__c,CaseNumber ,CH_Case_Number__c, Steps_to_Reproduce_Issue__c, 
 			CH_SummaryofAnalysis__c, CH_ValidationofRootCause__c, CH_Product_Release_Name__c , CH_Product_Name__c,
@@ -173,7 +187,7 @@ public without sharing class CH_CaseField_SideHighlightApex {
 	@AuraEnabled
 	public static Void sendCreateAnalysisRndInteraction(String rndId) {
 		List<CH_Problem_RnD_Reference__c> rndInteractions = [SELECT Id FROM CH_Problem_RnD_Reference__c 
-					WHERE Id =: rndId AND CH_RnD_Type__c = 'Transfer to R&D'];
+		WHERE Id =: rndId AND CH_RnD_Type__c = 'Transfer to R&D'];
 		if(!rndInteractions.isempty() && rndInteractions!=null && rndInteractions[0].id !=null){
 			CH_ExternalInterfaceUTIL.sendOutboundCreateAnalysisRndInteraction(rndInteractions[0].id);	
 		} 
@@ -333,15 +347,15 @@ public without sharing class CH_CaseField_SideHighlightApex {
 		
 		If(rectypeName=='Nokia Incident with Restoration') 
 		{
-			   
+	  
 	if((fetchCase[0].CH_CaseCause__c!= null )&&(fetchCase[0].CH_TCAReady__c== true )&& ( fetchCase[0].Status =='Restoration Provided' && fetchCase[0].CH_Stage__c=='Resolve' || fetchCase[0].Status =='Temp Sol. Provided' && fetchCase[0].CH_Stage__c=='Resolve' || fetchCase[0].Status ==SWS_Constants.SolnProvided && fetchCase[0].CH_Stage__c =='Close' ) )
 	{
 		setissueresolveflag = false;
 	}
-				else
-				{
-					setissueresolveflag= true;
-				}
+	else
+	{
+		setissueresolveflag= true;
+	}
 		}
 		else if(rectypeName==SWS_Constants.NSC)
 		{
@@ -349,10 +363,10 @@ public without sharing class CH_CaseField_SideHighlightApex {
 	{
 		setissueresolveflag = false;
 	}
-				else
-				{
-					setissueresolveflag= true;
-				}
+	else
+	{
+		setissueresolveflag= true;
+	}
 		}
 		else if(rectypeName=='Nokia Information Request') 
 		{
@@ -360,10 +374,10 @@ public without sharing class CH_CaseField_SideHighlightApex {
 	{
 		setissueresolveflag = false;
 	}
-				else
-				{
-					setissueresolveflag= true;
-				}
+	else
+	{
+		setissueresolveflag= true;
+	}
 		
 		}
 		else
@@ -440,11 +454,11 @@ public without sharing class CH_CaseField_SideHighlightApex {
 		List<ISO_Country_Codes__c> countryList =[Select NCIBURL__c from ISO_Country_Codes__c where Country_Name__c=:caseList[0].Country__c];
 		
 			if(countryList[0].NCIBURL__c!=null){
-				countryCaseMap.put('caseURL',countryList[0].NCIBURL__c);
+	countryCaseMap.put('caseURL',countryList[0].NCIBURL__c);
 			}
 			else
 			{
-				countryCaseMap.put('caseURL','noValue');
+	countryCaseMap.put('caseURL','noValue');
 			}
 			
 		}
@@ -500,5 +514,201 @@ public without sharing class CH_CaseField_SideHighlightApex {
 	@AuraEnabled
 	public static boolean caseOwnerUpdate(Id caseId){
 		return CH_AcceptOwnership_Controller.assignSelfOwnership(caseId);
+	}
+	
+	//Changes added as a Part of NOKIASC-35322
+	@AuraEnabled
+	Public Static Boolean isPausedDate(Id caseId){
+		Boolean flag=false;
+		Case fetchPausedSinceDate=[SELECT Id, CH_PausedSinceDate__c FROM Case WHERE Id=:caseId];
+		if(fetchPausedSinceDate!=NULL && fetchPausedSinceDate.CH_PausedSinceDate__c!= null){
+	 
+	flag = True;
+			
+		}
+		return flag;
+	}
+	//Changes added as part of NOKIASC-35941
+	@AuraEnabled
+	public static Case updateComment(Id caseId,string comment){
+		case getcase;
+		try{
+			getcase=new Case(Id = caseId, Comment__c = comment);
+			update 	getcase;
+		}catch(Exception e){
+			throw new AuraHandledException(CH_CaseFlow_Controller.errorMsg3  + e.getMessage());
+		}
+		return getcase;
+	}
+	
+	//Changes added for NOKIASC-24257
+	@AuraEnabled
+	public Static Boolean isAccessEnabled(Id caseId){
+		Boolean isValidUser = false;
+		List<Case> getProblemList=[Select Id from case where Id=: caseId and Owner.Id=:UserInfo.getUserId()];
+		if(!getProblemList.isEmpty()&& getProblemList.size()>0){ isValidUser=True;  }
+		if(!isValidUser){
+		List<CaseTeamMember> getCaseTeamMembers=[SELECT Id, Member.Name, TeamRole.Name, CreatedDate,Member.Id FROM CaseTeamMember 
+			 WHERE ParentId =:caseId and Member.Id=:UserInfo.getUserId()];
+		if(!getCaseTeamMembers.isEmpty()&& getCaseTeamMembers.size()>0){ isValidUser=True; }}
+		if(!isValidUser){
+			List<CollaborationGroupMember>  getCollaboration=[SELECT CollaborationGroup.Name FROM CollaborationGroupMember WHERE MemberId =:UserInfo.getUserId()
+				 AND CollaborationGroup.CollaborationType = 'Private'];
+			if(!getCollaboration.isEmpty() && getCollaboration.size()>0){			  
+			List<CH_PrivateFeed__Feed> publishedPrivateFeedRecords = new List<CH_PrivateFeed__Feed>();
+	Map<Id, CH_PrivateFeed__Feed> privateFeedMap = new Map<Id, CH_PrivateFeed__Feed>([SELECT Id, ParentId, Body FROM CH_PrivateFeed__Feed Where Parent.CH_Problem__c=:caseId]);
+	for(FeedItem oFeedItem : [SELECT Id, Status FROM FeedItem WHERE Id IN :privateFeedMap.keySet()]) {
+		if(oFeedItem.Status.equals('Published')) {
+			publishedPrivateFeedRecords.add(privateFeedMap.get(oFeedItem.Id));
+		}
+	}
+	if(!publishedPrivateFeedRecords.isEmpty() && publishedPrivateFeedRecords.size()>0){
+		for(CollaborationGroupMember getCollMem:getCollaboration){
+			for(CH_PrivateFeed__Feed getFeedRec:publishedPrivateFeedRecords){
+				system.debug('getFeedRec body is : '+getFeedRec.Body);
+				system.debug('CollaborationGroup.Name is : '+getCollMem.CollaborationGroup.Name);
+				if(getFeedRec.Body.contains(getCollMem.CollaborationGroup.Name)){
+		isValidUser=True;
+		break;
+				}
+			}
+		}
+	}
+			}	
+		}
+		return isValidUser;
+	}
+	
+	//Changes added for NOKIASC-35878
+	@AuraEnabled	
+	Public static void savePrivateFeed(Id privateFeedId, String privateNotes,String targetRelease,Date targetReleaseDate){
+		CH_PrivateFeed__c updatePrivateFeed = new CH_PrivateFeed__c(Id=privateFeedId, CH_PrivateNotes__c = privateNotes,CH_TargetRelease__c=targetRelease,CH_TargetReleaseDate__c=targetReleaseDate);
+		update updatePrivateFeed; 
+	}
+	
+	//Changes added for NOKIASC-24257/35878
+	@AuraEnabled
+	Public Static List<CH_PrivateFeed__c> getPrivateFeedRecord(Id caseId){
+		List<CH_PrivateFeed__c> getFeedRecord=new List<CH_PrivateFeed__c>();
+		CH_PrivateFeed__c[] feedRec=[Select Id,ch_problem__c,CH_PrivateNotes__c,CH_TargetRelease__c,CH_TargetReleaseDate__c from CH_PrivateFeed__c where ch_problem__c=:caseId];
+		if(feedRec.size()>0){ getFeedRecord.add(feedRec[0]);   }
+		if(feedRec.size()<1){
+			CH_PrivateFeed__c createFeedRecord =  new CH_PrivateFeed__c(ch_problem__c=caseId);
+			insert createFeedRecord;
+			getFeedRecord.add(createFeedRecord);
+		}
+		
+		return getFeedRecord;
+	}
+	//Changes added for NOKIASC-35878
+	@AuraEnabled	
+	Public static void updateProblemRecord(Id caseId,String targetRelease,Date targetReleaseDate){
+		Case updateCaseRec = new Case(Id=caseId,CH_Target_Release__c=targetRelease,CH_Target_Release_Date__c=targetReleaseDate);
+		update updateCaseRec; 
+	}
+	
+	//Changes added for NOKIASC-35878
+	Public Static Void createorUpdatePrivateFeedRecord(Id caseId,String targetRelease,Date targetReleaseDate){
+		CH_PrivateFeed__c[] feedRec=[Select Id,ch_problem__c,CH_PrivateNotes__c,CH_TargetRelease__c,CH_TargetReleaseDate__c from CH_PrivateFeed__c where ch_problem__c=:caseId];
+		if(feedRec.size()>0){ for (CH_PrivateFeed__c fedRec : feedRec) {
+			fedRec.CH_TargetRelease__c=targetRelease;fedRec.CH_TargetReleaseDate__c=targetReleaseDate;
+		}  }
+		if(feedRec.size()<1){
+			CH_PrivateFeed__c createFeedRecord =  new CH_PrivateFeed__c(ch_problem__c=caseId,CH_TargetRelease__c=targetRelease,CH_TargetReleaseDate__c=targetReleaseDate);
+			feedRec.add(createFeedRecord);}
+		upsert feedRec;
+		
+	}
+	
+	//Changes added for NOKIASC-38611
+	@AuraEnabled
+	public static String hasCaseEditAcess(Id caseRecordId, List<String> fields) {
+		String message = '';
+		if (caseRecordId != null ) {
+			//Checking record level access
+			message = checkRecordLevelAccess(caseRecordId);
+			if (String.isNotBlank(message)) {
+	return message = errorMsg;  
+			}
+			//Checking object level access
+			message = checkObjectAccess('Case', new String[] {'Edit'});
+			if (String.isNotBlank(message)) {
+	return message = errorMsg;
+			}
+			//Checking field level access
+			Map < String, String > fieldLevelPermissionMap = new Map < String, String >();
+			for(String field : fields){
+	fieldLevelPermissionMap.put(field, 'Edit');
+			}
+			Map < String, String > fieldLevelAccessMap =  CH_CreateCaseController.checkFieldAccess('Case', fieldLevelPermissionMap);
+			for(String field : fields){
+	if(String.isNotBlank(fieldLevelAccessMap.get(field))){
+		message = errorMsg;
+		return message ;
+	}
+			}
+			if(String.isBlank(message)) {
+	Case caseObj = [SELECT Id, CH_Stage__c, RecordType.Name, AccountId, EntitlementId, ContactId, CH_IsCompleteInitialResponse__c,CH_IsCompleteRestore__c,CH_IsCompleteTemporarySolution__c,CH_IsCompleteSolutionProvided__c,CH_IsCompleteServiceDisruptionReport__c,status FROM Case WHERE Id =: caseRecordId LIMIT 1];
+	if(caseObj != null && caseObj.RecordType.Name.equals('Problem')) {
+		//Defect 26533: Status has been added in the below criteria-TCS-Partha Roy-3rd Feb,2020		 
+		 
+		if(caseObj.CH_Stage__c.equals('Close') && caseObj.Status.equals('Closed')) {
+			message = 'Problem Details cannot be modified once Problem is closed.';
+		}
+	}
+	else {
+		if(caseObj.CH_IsCompleteRestore__c || caseObj.CH_IsCompleteTemporarySolution__c || caseObj.CH_IsCompleteSolutionProvided__c || caseObj.CH_IsCompleteServiceDisruptionReport__c) {
+			message = 'Entitlement related details cannot be modified once Restore, Temporary Solution or Solution Provided events have been completed.';
+		}
+	}
+			}
+			return message;
+		}	
+		return errorMsg2;
+	}
+	
+	/*******************
+	* Method Name: checkRecordLevelAccess
+	* Parameter: Id objectID
+	* Description: TO check the record level access
+	* Reference: NOKIASC-16337
+	*******************/   
+	//Changes added for NOKIASC-38611
+	public static String checkRecordLevelAccess(Id objectID){ 
+		String message = '';
+		if (objectID != null){
+			UserRecordAccess recordAccess =  [SELECT RecordId  ,HasEditAccess FROM UserRecordAccess WHERE UserId =:UserInfo.getUserId() AND RecordId =: objectID Limit 1];
+			if(recordAccess != null && recordAccess.HasEditAccess){
+	message = ''; 
+			} else {
+	message = 'Does not have edit access over record for this user';
+			}	 
+		}  
+		return message;
+	}
+	
+	/********************
+	* Method Name: checkObjectAccess
+	* Parameter: String sObjectName, String[] accessLevel
+	* Description: Used to check access of given object with provided access level
+	* Reference: NOKIASC-15495/15083
+	*******************/
+	//Changes added for NOKIASC-38611
+	public static string checkObjectAccess(String sObjectName, String[] accessLevel) {
+		SObjectType sObjectTypeName = Schema.getGlobalDescribe().get(sObjectName);
+		for(String access: accessLevel) {
+			if(access == 'Read' && !sObjectTypeName.getDescribe().isAccessible()) {
+	return 'No Read Access';
+			} else if(access == 'Create' && !sObjectTypeName.getDescribe().isCreateable()) {
+	return 'No Create Access';
+			} else if(access == 'Edit' && !sObjectTypeName.getDescribe().isUpdateable()) {
+	return 'No Edit Access';
+			} else if(access == 'Delete' && !sObjectTypeName.getDescribe().isDeletable()) {
+	return 'No Delete Access';
+			} else {
+	return '';
+			}
+		}
+		return 'Invalid object access level';	
 	}
 }

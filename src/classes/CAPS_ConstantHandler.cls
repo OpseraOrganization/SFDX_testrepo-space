@@ -141,6 +141,7 @@ public without sharing class CAPS_ConstantHandler{
 	public static final String PARTNUMBER_P_INSMALL = 'partNumber';
 	public static final String ETAGVARIABLE = 'etag';
 	public static final String PRIORITY = 'ticket.priority'; //Added as part of NOKIASC-21314
+	public static final String LAWFULINTERCEPT_CALEA = 'nct_lawful_intercept'; //NOKIASC-36529
 	
 	public static string cAPSAttachmentDelete = 'CAPS_Attachment_Delete';
 	public static string cHCAPSCaseTriggerHelper = 'CH_CAPSCaseTriggerHelper';

@@ -33,7 +33,7 @@ public class CAPS_MultiFileUploadControllerTest{
 	}
 	
 	public testMethod static void CAPS_MultiFileinitiateUpload(){
-		
+		CH_Attachment__c chObj = new CH_Attachment__c();
 		system.runAs(new User(Id = UserInfo.getUserId())){
 			CAPS_TestDataUtil.createCustomSettingsData();
 			List<Case> caseListQuery = new List<Case>();
@@ -103,7 +103,7 @@ public class CAPS_MultiFileUploadControllerTest{
 		}
 	}
 	public testMethod static void CAPS_MultiFileuploadComplete(){
-		
+		CH_Attachment__c chObj = new CH_Attachment__c();
 		system.runAs(new User(Id = UserInfo.getUserId())){
 			
 			CAPS_TestDataUtil.createCustomSettingsData();

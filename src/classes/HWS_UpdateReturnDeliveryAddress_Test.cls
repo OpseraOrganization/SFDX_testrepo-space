@@ -1,6 +1,6 @@
 @isTest
-public class HWS_UpdateReturnDeliveryAddress_Test {
-	@testSetup static void testDataSetup(){
+public class HWS_UpdateReturnDeliveryAddress_Test {  
+	@testSetup static void testDataSetup(){ 
 		Id customerAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.Customer);
 		Id legalEntityAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY);
 		Id assetRecordType = HWS_Utilty.getRecordTypeByName('Asset','HWS_Covered_Part');
@@ -75,6 +75,7 @@ public class HWS_UpdateReturnDeliveryAddress_Test {
 		
 		Case parentCase = HWS_DataFactory_TEST.insertParentCase();
 		parentCase.AccountId = legalAcc.id;
+		parentCase.HWS_ReturnAddressReceivedFromSOO__c = false;
 		insert parentCase;
 		Case childCase = HWS_DataFactory_TEST.insertChildCase();
 		parentCase.AccountId = legalAcc.id;
@@ -103,6 +104,7 @@ public class HWS_UpdateReturnDeliveryAddress_Test {
 		bulkupl.HWS_ServiceType__c=HWS_Constants.IR;
 		bulkupl.HWS_Service_Contract_Number__c ='';
 		bulkupl.HWS_LSPResponse__c ='{"ParentCaseId":"'+parentCase.Id+'","ChildCases":[ {"LogisticNode":"US-DC","LogisticNodeName":"DC US P20","ReturnAddressNode":"RLC-CA P20","SRMServiceItemID":"'+childCase.Id+'"}] ,"DeliveryAddress":[ {"AddressType":"Return Location","City":"Mississauga","Country":"CA","Name":"RLC-CA","PostalCode":"L5S 1W3","Region":"NAR","ReturnAddressNode":"RLC-CA P20","State":"Ontario","Street":"Nokia c/o UPS SCS"}] ,"SupplierNodes":[ {"LogisticNode":"US-DC","LogisticNodeName":"DC US P20","pxObjClass":"NSN-Data-SRM-ChildCase"}] }';
+		bulkupl.ParentCaseId__c = parentCase.Id; 
 		bulkToInsertLst.add(bulkupl);
 		
 		insert bulkToInsertLst;
@@ -121,8 +123,7 @@ public class HWS_UpdateReturnDeliveryAddress_Test {
 			   childCaseRecId=cs.Id; 
 			}
 		}
-		System.debug('parentCaseRecId:'+parentCaseRecId+' childCaseRecId:'+childCaseRecId);
-		String JsonMsg = '{"ParentCaseId": "'+parentCaseRecId+'","SupplierNodes": [],"DeliveryAddress": [{"ReturnAddressNode": "D1111","AddressLine3": "Nokiacs.Batta@Cevalogistics.com -","AddressLine2": "Faulty Inbound RLC / Iparos u. 4. DC2","State": "","DeliveryNote": "","Country": "HU","PostalCode": "2440","Region": "EMEA","Street": "Nokia OY  c/o Ceva Contract Logistics Kft","City": "Szazhalombatta","AddressType": "Return Location","Name": "RLC-EMEA"}],"ChildCases": [{"SRMServiceItemID": "'+childCaseRecId+'","LogisticNode": "N11111","LogisticNodeName": "DHL","ReturnAddressNode": "D1111"}]}';
+		 String JsonMsg = '{"ParentCaseId": "'+parentCaseRecId+'","SupplierNodes": [{"LogisticNode": "N11111","LogisticNodeName": "DHL","ReferralInstruction":"PGh0bWw"}],"DeliveryAddress": [{"ReturnAddressNode": "D1111","AddressLine3": "Nokiacs.Batta@Cevalogistics.com -","AddressLine2": "Faulty Inbound RLC / Iparos u. 4. DC2","State": "","DeliveryNote": "","Country": "HU","PostalCode": "2440","Region": "EMEA","Street": "Nokia OY  c/o Ceva Contract Logistics Kft","City": "Szazhalombatta","AddressType": "Return Location","Name": "RLC-EMEA"}],"ChildCases": [{"SRMServiceItemID": "'+childCaseRecId+'","LogisticNode": "N11111","LogisticNodeName": "DHL","ReturnAddressNode": "D1111"}]}';
 		RestRequest req = new RestRequest(); 
 		RestResponse res = new RestResponse();		
 		req.requestURI = '/services/apexrest/api/LSPInstructions/';
@@ -133,8 +134,37 @@ public class HWS_UpdateReturnDeliveryAddress_Test {
 		Test.startTest();		
 		HWS_UpdateReturnDeliveryAddressOnCase.updateCaseWithReturnDeliveryAddress();
 		HWS_UpdateReturnDeliveryAddressOnCase.createInterfaceLogError('test', 20);
+		Case pCase = new Case(Id=parentCaseRecId,HWS_ReturnAddressReceivedFromSOO__c = true);
+		update pCase;
 		HWS_UpdateReturnDeliveryAddress.updateReturnDeliveryAddressOnChildCase(new Set<Id>{childCaseRecId},parentCaseRecId);
 		HWS_UpdateReturnDeliveryAddress.createInterfaceLogError('Test',12);
+		Test.stopTest();
+	}
+	static testMethod void updateCaseWithReturnDeliveryAddressTest2() {  
+		List<Case> listCase = [Select Id,Recordtype.DeveloperName from Case];
+		String parentCaseRecId;
+		String childCaseRecId;
+		for(Case cs : listCase){
+			System.debug('cs:**'+cs);
+			if(cs.Recordtype.DeveloperName == 'HWS_Parent_Case'){
+			   parentCaseRecId=cs.Id; 
+			}
+			if(cs.Recordtype.DeveloperName == 'HWS_Advance_Exchange_In_Days'){
+			   childCaseRecId=cs.Id; 
+			}
+		}
+		String JsonMsg = '{"ParentCaseId": "'+parentCaseRecId+'","SupplierNodes": [],"DeliveryAddress": [{"ReturnAddressNode": "D1111","AddressLine3": "Nokiacs.Batta@Cevalogistics.com -","AddressLine2": "Faulty Inbound RLC / Iparos u. 4. DC2","State": "","DeliveryNote": "","Country": "HU","PostalCode": "2440","Region": "EMEA","Street": "Nokia OY  c/o Ceva Contract Logistics Kft","City": "Szazhalombatta","AddressType": "Return Location","Name": "RLC-EMEA"}],"ChildCases": [{"SRMServiceItemID": "'+childCaseRecId+'","LogisticNode": "N11111","LogisticNodeName": "DHL","ReturnAddressNode": "D1111"}]}'; 
+		RestRequest req = new RestRequest(); 
+		RestResponse res = new RestResponse();		
+		req.requestURI = '/services/apexrest/api/LSPInstructions/';
+		req.httpMethod = 'POST';//HTTP Request Type
+		req.requestBody = Blob.valueof(JsonMsg);
+		RestContext.request = req;
+		RestContext.response= res;
+		Test.startTest();		
+		HWS_UpdateReturnDeliveryAddressOnCase.updateCaseWithReturnDeliveryAddress();
+		HWS_UpdateReturnDeliveryAddressOnCase.createInterfaceLogError('test', 20);
+		
 		Test.stopTest();
 	}
 }

@@ -55,12 +55,14 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 	@AuraEnabled
 	public Id productVariant;
 	@AuraEnabled
+	public Id productRelease;
+	@AuraEnabled
 	public Id solution;
 	@AuraEnabled
 	public string contractType;
 	//NOKIASC-34641-variable added to check HWS or SWS case
 	@AuraEnabled public Boolean HWSRecordTypeCheck {get;set;}
-	
+	@AuraEnabled public String serviceQuoteId {get;set;}
 	public CH_CA_Assignment_Criteria_DTO(){
 		levelOfSupport = new List<string>();
 		customerGroupIds = new List<Id>();
@@ -112,7 +114,7 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 			}
 		}
 	}
-
+	
 	public static String getRegionByCountry(String country) {
 		//map the countries in a region
 		Map<String, List<String>> regionCountryMap  = CH_CA_TestWorkgroupRules_Controller.getDependentMap(new CH_Workgroup_Rule__c(), 'CH_Region1__c', 'CH_Country1__c');
@@ -167,6 +169,7 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 		caseAssignmentDetails.serviceType = supportCase.CH_ServiceType__c;
 		caseAssignmentDetails.productModule = supportCase.CH_Product_Module__c;
 		caseAssignmentDetails.productVariant = supportCase.CH_ProductVariant__c;
+		caseAssignmentDetails.productRelease = supportCase.CH_Product_Release__c;
 		caseAssignmentDetails.solution = supportCase.CH_Solution__c;
 		caseAssignmentDetails.HWSRecordTypeCheck = supportCase.HWS_RecordTypeCheck__c; //34868
 		
@@ -189,7 +192,7 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 		caseAssignmentDetails.supportCase = supportCase;
 		
 		// Create search criteria
-		caseAssignmentDetails.contractType='';
+		caseAssignmentDetails.contractType='--None--';
 		caseAssignmentDetails.contract = '';
 		caseAssignmentDetails.severity = supportCase.Severity__c;
 		//14488
@@ -258,7 +261,7 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 		if (calculateActiveSpecifics(caseAssignmentDetails)){
 			System.debug('CH_CA: Case fields are part of workgroup specifics');
 			if(!Test.isRunningTest()){
-			return true;
+				return true;
 			}
 		}
 		
@@ -304,7 +307,7 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 			for(CH_Workgroup_Business_Hours_Association__c wbha:lstWBH){
 				if (BusinessHours.isWithin(wbha.CH_Business_Hours__c, milestoneStartDate)){
 					validBusinessHours2.add(wbha);
-				  }
+				}
 			}
 			
 			// Outside all business hours
@@ -349,6 +352,24 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 						isActiveAssignment = validateNextStartBH(firstMilestoneTargetDate, nextStartBusinessHours, startThreshold);
 					}
 				}
+	/******************************* Check for WG out of BH Start *********************************/
+				//First MS startdate with start thresold
+				DateTime milestoneStartMinusPlusTH = milestoneStartDate.addminutes(startThreshold); 
+				//First MS startdate with start thresold is within BH
+				Boolean milestoneStartDatePlusTHWithin = BusinessHours.isWithin(validBusinessHours.CH_Business_Hours__c, milestoneStartMinusPlusTH);
+				//First MS targetdate with end thresold
+				DateTime firstMilestoneTargetMinusStartTH = firstMilestoneTargetDate.addminutes(-startThreshold);
+				//First MS targetdate with end thresold is within BH
+				Boolean firstMilestoneTargetDateWithinStartTH = BusinessHours.isWithin(validBusinessHours.CH_Business_Hours__c, firstMilestoneTargetMinusStartTH);
+				if(!milestoneStartDatePlusTHWithin && !firstMilestoneTargetDateWithinStartTH){
+					//Check for next working day
+					DateTime nextStartBusinessHours = calculateNextStartBH(lstWBH, milestoneStartDate);
+					
+					//Check if next working day is before MS target date then it's Passive else it active
+					isActiveAssignment = validateNextStartBH(firstMilestoneTargetDate, nextStartBusinessHours, startThreshold);
+				}
+				/******************************* Check for WG out of BH End *********************************/
+	
 				// If passive then stop further calcualtion
 				if (!isActiveAssignment){
 					System.debug('CH_CA: Stop processing calculatiob is Passive ');
@@ -524,6 +545,8 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 	 private boolean isMinimalReactionTime(CH_CA_Assignment_Criteria_DTO caseAssignmentDetails){
 		Case supportCase = caseAssignmentDetails.supportCase;
 		Boolean isMinimalReactionTime = false;
+		//Changes added as a part of NOKIASC-34937
+		if(supportCase.Status=='Created'||supportCase.Status=='Assigned'){
 		// Get the first milestones
 		List<CaseMilestone> caseMilestones = [SELECT TargetDate, Startdate,TargetResponseInMins FROM CaseMilestone WHERE CaseId = :supportCase.Id 
 											  ORDER BY TargetDate ASC NULLS LAST LIMIT 1];
@@ -549,6 +572,7 @@ public without sharing class CH_CA_Assignment_Criteria_DTO {
 					isMinimalReactionTime = true;
 				}
 			}
+		}
 		}
 		return isMinimalReactionTime;
 	}

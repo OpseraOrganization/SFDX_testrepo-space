@@ -1,6 +1,11 @@
 @isTest
-public class HWS_CaseFlow_TEST {
+public class HWS_CaseFlow_TEST  {
+
 	@testSetup static void testDataSetup(){
+		HWS_GenericSettings__c record = new HWS_GenericSettings__c();
+		record.Name='HWS_ServicedAccountNumber';
+		record.HWS_Field1__c = '1234';
+		insert record;
 		Id customerAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.Customer);
 		Id legalEntityAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY);
 		Id assetRecordType = HWS_Utilty.getRecordTypeByName('Asset','HWS_Covered_Part');
@@ -196,7 +201,7 @@ public class HWS_CaseFlow_TEST {
 		childCase.HWS_ServiceType__c = 'Advance Exchange in Days';  
 		childCase.HWS_Sellable_Product__c = prod.Id;
 		test.startTest();
-				
+	
 		childCaseList.add(childCase);
 		
 		try{
@@ -210,7 +215,7 @@ public class HWS_CaseFlow_TEST {
 		HWS_CaseFlow.getPayPerUse(parentCase.Id);
 		HWS_CaseFlow.getCaseInitiationTime();
 		HWS_CaseFlow.getContactInfo(cont.Id);
-		HWS_CaseFlow.accountTimeZoneplannedDeliveryDateTime(childCaseList,acc.Id);
+		HWS_CaseFlow.accountTimeZoneplannedDeliveryDateTime(childCaseList,acc.Id, false); // NOKIASC-37920
 		HWS_CaseFlow.warrantyCheck('12345','12345','PUMA1');		
 		system.assertNotEquals(childCaseList, null); 
 		HWS_CaseFlow.checkWarrantyVerification(parentCase.Id);
@@ -231,7 +236,7 @@ public class HWS_CaseFlow_TEST {
 		system.assertNotEquals(childCase, null);
 		test.stopTest();
 	}
-	public static testmethod void ecsalateCaseTest(){		  
+	public static testmethod void ecsalateCaseTest(){	
 		Id recId = schema.SobjectType.Case.getRecordTypeInfosByDeveloperName().get('HWS_Case_Escalation').getRecordTypeId();
 		List<Account> accList = new List<Account>();
 		Account acc = [Select id from Account limit 1];
@@ -287,5 +292,10 @@ public class HWS_CaseFlow_TEST {
 	}
 	public static testmethod void validateSWSCaseTest(){
 		HWS_CaseFlow.validateSWSCase(new List<String>{'123456'});
+	}
+	public static testmethod void getServicedAccountNumbersTst(){
+		Test.startTest();
+		String result = HWS_CaseFlow.getServicedAccountNumbers();
+		Test.stopTest();
 	}
 }

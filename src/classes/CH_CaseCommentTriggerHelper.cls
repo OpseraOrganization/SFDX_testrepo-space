@@ -12,7 +12,7 @@ public with sharing class CH_CaseCommentTriggerHelper {
 	/***************************************************************** 
 	Description:  Logic to fetch the Case Comments fields and to scramble
 	Returns: void 
-	History				
+	History	
 	DATE	 AUTHOR	 Change 
 	12/20/2018   Ganga Prasuna	Created 
 	*****************************************************************/ 
@@ -58,6 +58,27 @@ public with sharing class CH_CaseCommentTriggerHelper {
 		}
 	}
 			}
+		}
+	}
+	
+	//Changes added for NOKIASC-36637
+	Public Static void calculatePlannedAutomaticDateTimer(List < CaseComment > newcommentList){
+		String naipUsrId = System.Label.CH_NaipUserId;
+		Set<Id> userRec= new Set<Id>();
+		Set<Id> userIds=new Set<Id>();
+		Set<Id> caseIds=new Set<Id>();
+		for(CaseComment cref: newcommentList) {		 
+			if(cref.ParentId != null && cref.CreatedById != naipUsrId ) {	
+				String getCommentBody=cref.CommentBody;
+				if(!(getCommentBody.startsWithIgnoreCase('CAPS') && getCommentBody.startsWithIgnoreCase('OUR ISSUE IS RESOLVED'))){
+					userRec.add(cref.CreatedById);
+					caseIds.add(cref.ParentId);
+				}
+			}
+		}
+		if(!userRec.isEmpty()){
+			for(User  getUserRec : [Select ID,IsPortalEnabled from User where ID IN : userRec AND IsPortalEnabled = True]){ userIds.add(getUserRec.Id); }
+			if(!userIds.ISEMPTY() && userIds.Size()>0 && !caseIds.ISEMPTY() && caseIds.Size()>0){ CH_EmailAttachmentHelper.caseCommentCalculation(userIds,caseIds); }
 		}
 	}
 }

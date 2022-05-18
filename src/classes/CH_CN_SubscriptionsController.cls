@@ -25,8 +25,8 @@ public without sharing class CH_CN_SubscriptionsController{
 		List<Schema.RecordTypeInfo> recordtypeList = recordType.getRecordTypeInfos();
 		for (Schema.RecordTypeInfo rtInfo : recordtypeList) {
 			if (rtInfo.isDefaultRecordTypeMapping()) {
-				recordTypeName = rtInfo.getDeveloperName();
-				break;
+	recordTypeName = rtInfo.getDeveloperName();
+	break;
 			}
 		}		
 		return recordTypeName;
@@ -45,8 +45,8 @@ public without sharing class CH_CN_SubscriptionsController{
 		CH_CNNotificationLimits__c notificationPerUser = CH_CNNotificationLimits__c.getValues('Subscription Limit');
 		//Check login user's total number of subscriptions
 		Integer notificationPerUserCount= [SELECT count()
-										   from CH_NotificationSubscription__c 
-										   WHERE  OwnerId= : loginUserID];
+			 from CH_NotificationSubscription__c 
+			 WHERE  OwnerId= : loginUserID];
 		if(notificationPerUserCount>=Integer.valueOf(notificationPerUser.CH_NotificationLimitValue__c)) {			
 			isLimitExceeded ='You have reached maximum limit of '+ notificationPerUser.CH_NotificationLimitValue__c +' subscriptions, please review and delete existing subscription to create a new one.';			
 		}
@@ -78,7 +78,7 @@ public without sharing class CH_CN_SubscriptionsController{
 		String selectedWorkgroups='',selectedCountries='',selectedLegalEntities='',selectedProducts='';
 		
 		Savepoint sp = Database.setSavepoint();
-		try{	   
+		try{	
 			
 			//deserialize Notification Subscription json string to object
 			CH_NotificationSubscription__c upsertNotificationSubscription = (CH_NotificationSubscription__c)JSON.deserialize(strNotificationSubscription, CH_NotificationSubscription__c.Class);			
@@ -87,22 +87,22 @@ public without sharing class CH_CN_SubscriptionsController{
 			
 			//Initialize child data to store in parent			
 			for(CH_NotificationSubscriptionDetail__c details : notificationSubscriptionChild){
-				switch on details.CH_AttributeType__c {
-					when 'Workgroup' {
-						selectedWorkgroups += details.CH_AttributeRecordID__c +',';
-					}
-					when 'Country' {
-						selectedCountries += details.CH_AttributeRecordID__c +',';
-					}
-					when 'Legal Entity Account','Parent Account' {
-						selectedLegalEntities += details.CH_AttributeRecordID__c +',';
-					}
-					when 'Product' {
-						SelectedProducts += details.CH_AttributeRecordID__c +',';   
-					}
-					when else{ //Do Nothing
-			}					
-				}
+	switch on details.CH_AttributeType__c {
+		when 'Workgroup' {
+			selectedWorkgroups += details.CH_AttributeRecordID__c +',';
+		}
+		when 'Country' {
+			selectedCountries += details.CH_AttributeRecordID__c +',';
+		}
+		when 'Legal Entity Account','Parent Account' {
+			selectedLegalEntities += details.CH_AttributeRecordID__c +',';
+		}
+		when 'Product' {
+			SelectedProducts += details.CH_AttributeRecordID__c +',';   
+		}
+		when else{ //Do Nothing
+			}		
+	}
 			}
 			//Insert /Update Notification Subscription Master object
 			upsertNotificationSubscription.CH_SelectedWorkgroups__c=selectedWorkgroups.removeEnd(',');
@@ -112,15 +112,15 @@ public without sharing class CH_CN_SubscriptionsController{
 			upsert upsertNotificationSubscription;  
 			
 			if(String.isBlank(strNotificationId)){
-				//assign notification subscriprtion id after insert records 
-				strNotificationId=upsertNotificationSubscription.Id;
+	//assign notification subscriprtion id after insert records 
+	strNotificationId=upsertNotificationSubscription.Id;
 			}
 			else{
-				//Delete existing records from Notification Subscription details object
-				List<CH_NotificationSubscriptionDetail__c> deleteNotificationSubscription = (List<CH_NotificationSubscriptionDetail__c>) JSON.deserialize(strdeleteNotificationSubscriptionDetails, List<CH_NotificationSubscriptionDetail__c>.class);				
-				if(deleteNotificationSubscription.size()>0){
-					delete deleteNotificationSubscription;  
-				}
+	//Delete existing records from Notification Subscription details object
+	List<CH_NotificationSubscriptionDetail__c> deleteNotificationSubscription = (List<CH_NotificationSubscriptionDetail__c>) JSON.deserialize(strdeleteNotificationSubscriptionDetails, List<CH_NotificationSubscriptionDetail__c>.class);	
+	if(deleteNotificationSubscription.size()>0){
+		delete deleteNotificationSubscription;  
+	}
 			}
 			
 			//deserialize Notification Subscription details json string to object
@@ -128,23 +128,23 @@ public without sharing class CH_CN_SubscriptionsController{
 			
 			// insert Notification Subscription details object 
 			if(notificationSubscriptionDetails.size()>0){
-				List<CH_NotificationSubscriptionDetail__c> insertNotificationSubscriptionDetails =new List<CH_NotificationSubscriptionDetail__c>();
-				for(CH_NotificationSubscriptionDetail__c details : notificationSubscriptionDetails){
-					CH_NotificationSubscriptionDetail__c detail = new CH_NotificationSubscriptionDetail__c();
-					detail=details;
-					detail.CH_AttributeRecordID__c=details.CH_AttributeType__c=='Default'?strNotificationId:details.CH_AttributeRecordID__c;
-					detail.CH_NotificationSubscription__c=strNotificationId;
-					insertNotificationSubscriptionDetails.add(detail);				
-				}
-				insert insertNotificationSubscriptionDetails;
+	List<CH_NotificationSubscriptionDetail__c> insertNotificationSubscriptionDetails =new List<CH_NotificationSubscriptionDetail__c>();
+	for(CH_NotificationSubscriptionDetail__c details : notificationSubscriptionDetails){
+		CH_NotificationSubscriptionDetail__c detail = new CH_NotificationSubscriptionDetail__c();
+		detail=details;
+		detail.CH_AttributeRecordID__c=details.CH_AttributeType__c=='Default'?strNotificationId:details.CH_AttributeRecordID__c;
+		detail.CH_NotificationSubscription__c=strNotificationId;
+		insertNotificationSubscriptionDetails.add(detail);	
+	}
+	insert insertNotificationSubscriptionDetails;
 			}
 			return strNotificationId;
 		}
 		catch(DmlException e){ 
 			//Rollback to savepoint incase of exception
 			Database.rollback(sp);
-			for (Integer i = 0; i < e.getNumDml(); i++) {				
-				errorMsg =+ e.getDmlMessage(i) +  '\n' ;
+			for (Integer i = 0; i < e.getNumDml(); i++) {	
+	errorMsg =+ e.getDmlMessage(i) +  '\n' ;
 			}			
 			throw new AuraHandledException(errorMsg);
 		}
@@ -165,9 +165,9 @@ public without sharing class CH_CN_SubscriptionsController{
 	@AuraEnabled
 	public static List<CH_NotificationSubscription__c> getNotificationSubscriptionData(String notificationSubscriptionId){
 		return [ SELECT id,Name , CH_BusinessGroup__c, CH_BusinessUnit__c, CH_Country__c, CH_DomainType__c, 
-				CH_EventType__c, CH_NotificationMode__c,CH_Product__c, CH_Region__c, CH_Workgroup__c ,CH_LegalEntityAccount__c,CH_ParentAccount__c 
-				from CH_NotificationSubscription__c 
-				WHERE Id=:notificationSubscriptionId LIMIT 1 ];
+	CH_EventType__c, CH_NotificationMode__c,CH_Product__c, CH_Region__c, CH_Workgroup__c ,CH_LegalEntityAccount__c,CH_ParentAccount__c 
+	from CH_NotificationSubscription__c 
+	WHERE Id=:notificationSubscriptionId LIMIT 1 ];
 	}
 	/****************************************
 * Name : getNotificationSubscriptionDetails
@@ -178,8 +178,8 @@ public without sharing class CH_CN_SubscriptionsController{
 	@AuraEnabled
 	public static List<CH_NotificationSubscriptionDetail__c > getNotificationSubscriptionDetails(String notificationSubscriptionId){
 		return [ select Id ,CH_NotificationSubscription__c,CH_AttributeCode__c, CH_AttributeName__c, CH_AttributeType__c,CH_AttributeRecordID__c 
-				from CH_NotificationSubscriptionDetail__c 
-				WHERE CH_NotificationSubscription__c=:notificationSubscriptionId ];
+	from CH_NotificationSubscriptionDetail__c 
+	WHERE CH_NotificationSubscription__c=:notificationSubscriptionId ];
 	}
 	/****************************************
 * Name : getBusinessGroupsandUnits
@@ -192,20 +192,20 @@ public without sharing class CH_CN_SubscriptionsController{
 *****************************************/
 	@auraEnabled
 	public static Map<String, List<String>> getBusinessGroupsandUnits(){
-		Map<String, List<String>> bgbuMap = new Map<String, List<String>>();				   
+		Map<String, List<String>> bgbuMap = new Map<String, List<String>>();	   
 		List<AggregateResult> bgbuAgrLst = [select CH_Business_Group__c,CH_Business_Unit__c from Product2 where CH_Valid__c = true and CH_Business_Group__c !=null and CH_Business_Unit__c !=null group by CH_Business_Group__c, CH_Business_Unit__c];
 		if(bgbuAgrLst.size()>0){
 			for(AggregateResult prd:bgbuAgrLst){
-				String bg = String.valueOf(prd.get('CH_Business_Group__c'));
-				String bu = String.valueOf(prd.get('CH_Business_Unit__c'));
-				if(bu != null && bu !=''){
-					if(bgbuMap.containskey(bg)){
-						bgbuMap.get(bg).add(bu);
-					}
-					else{
-						bgbuMap.put(bg, new List<String>{bu});
-					}
-				}
+	String bg = String.valueOf(prd.get('CH_Business_Group__c'));
+	String bu = String.valueOf(prd.get('CH_Business_Unit__c'));
+	if(bu != null && bu !=''){
+		if(bgbuMap.containskey(bg)){
+			bgbuMap.get(bg).add(bu);
+		}
+		else{
+			bgbuMap.put(bg, new List<String>{bu});
+		}
+	}
 			}
 		}		
 		
@@ -242,15 +242,15 @@ public without sharing class CH_CN_SubscriptionsController{
 			prodQuery = prodQuery+' AND IsActive = true AND PMD_Portfolio_Classification__c NOT IN :pmdPortfolioClassificationSet AND PMD_Additional_Classification__c NOT IN :pmdAdditionalClassificationSet AND NokiaCPQ_State__c NOT IN :nokiaCPQStateSet ';			
 			//if(!selectedAllBG && selectedBGLst.size()>0){
 			if(selectedBGLst.size()>0){
-				prodQuery = prodQuery+' AND CH_Business_Group__c IN :selectedBGLst';				
+	prodQuery = prodQuery+' AND CH_Business_Group__c IN :selectedBGLst';	
 			}
 			//if(!selectedAllBU && selectedBULst.size()>0){
 			if(selectedBULst.size()>0){
-				prodQuery = prodQuery+' AND CH_Business_Unit__c IN :selectedBULst';				
+	prodQuery = prodQuery+' AND CH_Business_Unit__c IN :selectedBULst';	
 			}
 			if(!selectedAllProds && searchKey !=null){
-				searchKey = '%'+searchKey+'%';
-				prodQuery = prodQuery+' AND Name LIKE :searchKey';				
+	searchKey = '%'+searchKey+'%';
+	prodQuery = prodQuery+' AND Name LIKE :searchKey';	
 			}
 		}
 		ProductSearchLimit++;
@@ -268,16 +268,12 @@ public without sharing class CH_CN_SubscriptionsController{
 * written on 26th Jun 2020
 * By Gopi Krishna
 * NOKIASC-28840
+* Modified By Eashwar regions to get from Workgroup Rule object dependant map as part of NOKIASC-37902 on 27th Aug 2021
 *****************************************/ 
 	@AuraEnabled
 	public static List<String> getRegion(){
-		set<string>regionsSet = new set<string>();
-		string countryQuery = 'select id,Name,Country_Name__c,Market__c from ISO_Country_Codes__c';
-		List<ISO_Country_Codes__c> countryList = database.query(countryQuery);
-		for(ISO_Country_Codes__c cou : countryList){
-			regionsSet.add(cou.Market__c);
-		}
-		List<String> regionsList = new list<String>(regionsSet);
+		Map<String, List<String>> regionCountryMap  = CH_CA_TestWorkgroupRules_Controller.getDependentMap(new CH_Workgroup_Rule__c(), 'CH_Region1__c', 'CH_Country1__c');
+		List<String> regionsList = new List<String>(regionCountryMap.keySet());
 		return regionsList;
 	}
 	
@@ -289,25 +285,101 @@ public without sharing class CH_CN_SubscriptionsController{
 * written on 26th Jun 2020
 * By Gopi Krishna
 * NOKIASC-28840
+*Modified NOKIASC-37902 updated ISO Countrycodes with Workgroup rule picklist values
 *****************************************/
 	@AuraEnabled
-	public static List<ISO_Country_Codes__c> getcountries(list<string> regions,string searchCountry){
-		
-		string country = '%'+searchCountry+'%';
-		string countryQuery = 'select id,Name,Country_Name__c,Market__c from ISO_Country_Codes__c';
-		if(regions.size()>0){
-			if(searchCountry != null){
-				countryQuery = countryQuery+' where Market__c in:regions and Country_Name__c like : country';}
-			else{
-				countryQuery = countryQuery+' where Market__c in:regions';
-			}}
-		else{
-			countryQuery = countryQuery+' where Country_Name__c like : country';
+	public static List<regionCountryWrapper> getcountries(list<string> regions,string searchCountry){
+
+				List<regionCountryWrapper> rcm=new List<regionCountryWrapper>();
+		Map<String, List<String>> regionCountryMap  = CH_CA_TestWorkgroupRules_Controller.getDependentMap(new CH_Workgroup_Rule__c(), 'CH_Region1__c', 'CH_Country1__c');
+		List<String> regionsList = new List<String>(regionCountryMap.keySet());
+	  	List<String> countryList=new List<String>();
+		Map<String,String> lsMap=new Map<String,String>();
+		if(regions[0]=='All')
+		{
+			regions=regionsList;
 		}
-		List<ISO_Country_Codes__c> countryList = database.query(countryQuery);
-		return countryList;
+		for(ISO_Country_Codes__c cc:[select id,Name,Country_Name__c,Market__c from ISO_Country_Codes__c])
+		{
+			lsMap.put(cc.Country_Name__c,cc.Name);
+		}
+		String countryCode;
+		 if(searchCountry!=null)
+	   {
+		 for(String mk:regions)   
+		//for(String mk:regionsList)
+		{
+		   for(String ct: regionCountryMap.get(mk))
+		   {
+			   if(ct.containsIgnoreCase(searchCountry))
+			   {
+				   countryCode=lsMap.get(ct);
+				   regionCountryWrapper rc=new regionCountryWrapper(ct,countryCode,mk);
+				   rcm.add(rc);
+			   }
+		   }
+		}
+	   }
+		else if(searchCountry==null)
+		{
+			for(String mk:regions)
+			//for(String mk:regionsList)
+			{
+				for(String ct: regionCountryMap.get(mk))
+				{
+					 countryCode=lsMap.get(ct);
+				   regionCountryWrapper rc=new regionCountryWrapper(ct,countryCode,mk);
+				   rcm.add(rc);
+				}
+			}   
+		}
+		return rcm;
 	}
 	
+	   @AuraEnabled
+	public static List<String> getRegionFromWKRule(){
+		
+		Map<String, List<String>> regionCountryMap  = CH_CA_TestWorkgroupRules_Controller.getDependentMap(new CH_Workgroup_Rule__c(), 'CH_Region1__c', 'CH_Country1__c');
+		List<String> regionsList = new List<String>(regionCountryMap.keySet());
+		Integer rc=regionsList.indexOf('NNO Others');// Removing as this is extra value
+		regionsList.remove(rc);
+		return regionsList;
+	  
+	}
+	
+	   @AuraEnabled
+	public static Map<String,regionCountryWrapper> getcountriesFromWGRule(){
+		List<regionCountryWrapper> rcm=new List<regionCountryWrapper>();
+		Map<String, List<String>> regionCountryMap  = CH_CA_TestWorkgroupRules_Controller.getDependentMap(new CH_Workgroup_Rule__c(), 'CH_Region1__c', 'CH_Country1__c');
+		List<String> regionsList = new List<String>(regionCountryMap.keySet());
+		Integer rct=regionsList.indexOf('NNO Others');// Removing as this is extra value
+		regionsList.remove(rct);
+	  	List<String> countryList=new List<String>();
+		Map<String,String> lsMap=new Map<String,String>();
+		Map<String,regionCountryWrapper> lsMap2=new Map<String,regionCountryWrapper>();
+		for(ISO_Country_Codes__c cc:[select id,Name,Country_Name__c,Market__c from ISO_Country_Codes__c])
+		{
+			lsMap.put(cc.Country_Name__c,cc.Name);
+		}
+		String countryCode;
+	  
+	 
+		   // for(String mk:regions)
+			for(String mk:regionsList)
+			{
+				for(String ct: regionCountryMap.get(mk))
+				{
+					 countryCode=lsMap.get(ct);
+				   regionCountryWrapper rc=new regionCountryWrapper(ct,countryCode,mk);
+				   lsMap2.put(ct,rc);
+				}
+			}   
+		
+		return lsMap2;
+	   
+	}
+	
+  
 	/****************************************
 * Name : getAccounts
 * Description : return All Account records
@@ -321,7 +393,7 @@ public without sharing class CH_CN_SubscriptionsController{
 	public static List<Account> getAccounts(String searchString,String accountTypeValue,Integer legalEntitySearchLimit){
 		string searchStringValue = '%'+searchString+'%';
 		List<Account> accountList= [SELECT id,AccountNumber,RecordType.name,Name,Active__c FROM Account WHERE RecordType.name = :accountTypeValue AND Active__c = true AND 
-									(name LIKE: searchStringValue OR AccountNumber LIKE :searchStringValue)  ORDER BY Name LIMIT :legalEntitySearchLimit+1 ]; 
+			(name LIKE: searchStringValue OR AccountNumber LIKE :searchStringValue)  ORDER BY Name LIMIT :legalEntitySearchLimit+1 ]; 
 
 		return accountList;	
 	}
@@ -351,15 +423,32 @@ public without sharing class CH_CN_SubscriptionsController{
 * NOKIASC-28995
 *****************************************/
 	@AuraEnabled
-	public static list<ISO_Country_Codes__c> setCountriesList(list<Id> countriesID){
+	public static List<regionCountryWrapper> setCountriesList(list<String> countriesID){
 		
-		list<ISO_Country_Codes__c> countryList = new list<ISO_Country_Codes__c>();
-		
-		string countryQuery = 'select id,Name,Country_Name__c,Market__c from ISO_Country_Codes__c where Id IN :countriesID';
-		countryList = database.query(countryQuery);
-		
-		
-		return countryList;	
+		List<regionCountryWrapper> rcm=new List<regionCountryWrapper>();
+		Map<String, List<String>> regionCountryMap  = CH_CA_TestWorkgroupRules_Controller.getDependentMap(new CH_Workgroup_Rule__c(), 'CH_Region1__c', 'CH_Country1__c');
+		List<String> regionsList = new List<String>(regionCountryMap.keySet());
+	  	List<String> countryList=new List<String>();
+		Map<String,String> lsMap=new Map<String,String>();
+		for(ISO_Country_Codes__c cc:[select id,Name,Country_Name__c,Market__c from ISO_Country_Codes__c])
+		{
+			lsMap.put(cc.Country_Name__c,cc.Name);
+		}
+		String countryCode;
+		String searchCountry;
+		for(String mk:regionsList)
+		{
+		   for(String ct: regionCountryMap.get(mk))
+		   {
+			   if(countriesID.contains(lsMap.get(ct)))
+			   {
+				   countryCode=lsMap.get(ct);
+				   regionCountryWrapper rc=new regionCountryWrapper(ct,countryCode,mk);
+				   rcm.add(rc);
+			   }
+		   }
+		}
+		return rcm;
 	}
 	
 	/****************************************
@@ -382,5 +471,29 @@ public without sharing class CH_CN_SubscriptionsController{
 		
 		
 		return workgroupList;	
+	}
+	
+		/****************************************
+*  Name : regionCountryWrapper
+* Description : return Country,Market,ISOCode 
+* Parameters: 
+* Returns : List
+* written on 27th Aug 2021
+* By Eashwar Alluri
+* NOKIASC-37902
+*****************************************/
+	public class regionCountryWrapper{
+	   @AuraEnabled public String Country_Name_c;
+	   @AuraEnabled public String Id;
+	   @AuraEnabled public String Name; 
+	   @AuraEnabled public String Market_c;
+		regionCountryWrapper(String country,String isoCode,String region)
+		{
+			this.Country_Name_c=country;
+			this.Id=isoCode;
+			this.Name=isoCode;
+			this.Market_c= region;
+		}
+		
 	}
 }

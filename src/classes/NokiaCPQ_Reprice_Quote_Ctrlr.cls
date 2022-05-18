@@ -107,9 +107,9 @@ public with sharing class NokiaCPQ_Reprice_Quote_Ctrlr
 	for(Apttus_Config2__LineItem__c cli : configLineItems ){
 		 if(cli.is_Custom_Product__c && cli.Nokia_Maint_Y1_Per__c == null){
 			showCustomObjectError = true;
-		}		
+		}	   
 	}
-			} // Shubham ITCEPP-811 - End-1			
+			} // Shubham ITCEPP-811 - End-1		 
 
 			
 			if(quote.NokiaCPQ_Needs_Reprice__c == false){
@@ -253,7 +253,7 @@ public with sharing class NokiaCPQ_Reprice_Quote_Ctrlr
 			else if(isDirect == false){
 				// For Indirect, both Bundles and Options are processed together
 				configLineItem.Apttus_Config2__PricingStatus__c= 'Pending';
-				configLineItemsOptions.add(configLineItem);	 
+				configLineItemsOptions.add(configLineItem);  
 			}  
 		}
 		system.debug('configLineItemsBundles-->'+configLineItemsBundles);
@@ -279,8 +279,10 @@ public with sharing class NokiaCPQ_Reprice_Quote_Ctrlr
 	isError = false;
 	
 	if(!Test.isRunningTest()){
-		Apttus_CpqApi.CPQ.UpdatePriceResponseDO result = Apttus_CpqApi.CPQWebService.updatePriceForCart(objUpdatePriceRequestDO);
-		hasPendingItems = result.IsPricePending;
+		//srisailam : commented as a part of defect 2068
+		/*Apttus_CpqApi.CPQ.UpdatePriceResponseDO result = Apttus_CpqApi.CPQWebService.updatePriceForCart(objUpdatePriceRequestDO);
+		hasPendingItems = result.IsPricePending; */
+		actionPollerActive = true;
 		system.debug('hasPendingItems in runningtest--> '+hasPendingItems);
 	}
 	else{
@@ -319,7 +321,7 @@ public with sharing class NokiaCPQ_Reprice_Quote_Ctrlr
 			countSRSMaintenance = [Select count() from Apttus_Config2__LineItem__c where Apttus_Config2__ConfigurationId__c = :configId and Apttus_Config2__ChargeType__c in :srsMaintenanceSet];
 			//flagUpdatePrice = true;
 			if(flagUpdatePrice == true){  
-	ApexPages.addmessage(new ApexPages.message(ApexPages.severity.CONFIRM,Nokia_CPQ_Constants.REPRICING_WAIT_MSG));	  
+	ApexPages.addmessage(new ApexPages.message(ApexPages.severity.CONFIRM,Nokia_CPQ_Constants.REPRICING_WAIT_MSG));   
 	objUpdatePriceRequestDO = new Apttus_CpqApi.CPQ.UpdatePriceRequestDO();
 	objUpdatePriceRequestDO.CartId = configId;
 	if(!Test.isRunningTest()){
@@ -354,7 +356,7 @@ public with sharing class NokiaCPQ_Reprice_Quote_Ctrlr
 	}
 	
 	//Update Maintenance Lines in 4th call
-	if(configLineItemsArcadiaBundles.size()==0 && configLineItemsBundles.size()==0 && configLineItemsSRSMaintenance.size()>0 && isDirect == true && hasPendingItems == False){	
+	if(configLineItemsArcadiaBundles.size()==0 && configLineItemsBundles.size()==0 && configLineItemsSRSMaintenance.size()>0 && isDirect == true && hasPendingItems == False){  
 		
 		Database.update(configLineItemsSRSMaintenance,false);
 		hasPendingItems = true;
@@ -392,12 +394,12 @@ public with sharing class NokiaCPQ_Reprice_Quote_Ctrlr
 		completedLineItems = countOptions+countBundles+countArcadiaItems+countSRSMaintenance;
 	}
 
-	if(hasPendingItems == false){	
+	if(hasPendingItems == false){   
 		
-		ApexPages.addmessage(new ApexPages.message(ApexPages.severity.CONFIRM,Nokia_CPQ_Constants.REPRICING_COMPLETE_MSG));	  
+		ApexPages.addmessage(new ApexPages.message(ApexPages.severity.CONFIRM,Nokia_CPQ_Constants.REPRICING_COMPLETE_MSG));   
 		Apttus_CpqApi.CPQ.FinalizeCartRequestDO requestFinalizeCart = new Apttus_CpqApi.CPQ.FinalizeCartRequestDO(); 
 		requestFinalizeCart.CartId = configId; 
-		if(!Test.isRunningTest()){	
+		if(!Test.isRunningTest()){  
 			Apttus_CpqApi.CPQ.FinalizeCartResponseDO responseFinalizeCart = Apttus_CpqApi.CPQWebService.finalizeCart(requestFinalizeCart);
 	
 			if(responseFinalizeCart.IsSuccess){

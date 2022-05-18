@@ -138,108 +138,108 @@ insert ac;*/
 		
 		if(CPAID1 != null){
 			List<CH_Corrective_Preventive_Action__c> CPAList = new List<CH_Corrective_Preventive_Action__c>([SELECT Id
-									 FROM CH_Corrective_Preventive_Action__c 
-									 WHERE Id = :CPAID1 
-									 LIMIT 1]);
+			 FROM CH_Corrective_Preventive_Action__c 
+			 WHERE Id = :CPAID1 
+			 LIMIT 1]);
 			
 			string fileNamesOver3mb = '';
 			system.debug('###handleInboundEmail:CPAID1:' + CPAID1);
 			list<FeedItem> feedItems = new list<FeedItem>();
 			// Check if text attachment need to be uploaded to CAPS
 			if(email.textAttachments != null)
-				for(Messaging.InboundEmail.TextAttachment att : email.textAttachments){
+	for(Messaging.InboundEmail.TextAttachment att : email.textAttachments){
 		if(att.body.length() <= fileMaxSizeBytes){
 			if(att.body != null && !Test.isRunningTest()){
-				
-				CH_EmailAttachmentHelper help = new CH_EmailAttachmentHelper(CPAID1, email.Subject, att);
-				if(!isClosedOrCancelled){ ID jobId = System.enqueueJob(help);
-					system.debug('###CH_EmailAttachmentHandler:JobId:' + jobId);
-				}   
+	
+	CH_EmailAttachmentHelper help = new CH_EmailAttachmentHelper(CPAID1, email.Subject, att);
+	if(!isClosedOrCancelled){ ID jobId = System.enqueueJob(help);
+		system.debug('###CH_EmailAttachmentHandler:JobId:' + jobId);
+	}   
 			} 
 		}else{
 			feedItems.add(new FeedItem(ParentId = CPAID1, Body = feedbody + '(' + att.fileName + ')', Type = 'TextPost'));
 			fileNamesOver3mb += string.isBlank(fileNamesOver3mb) ? att.fileName : ', ' + att.fileName;
 		}
 		
-				} 
+	} 
 			
 			map<string, Attachment> contentIdAttachment = new map<string, Attachment>();
 			// Save email inline content as Salesforce attachments and replace the header attachment id with the attachment url in the email html body
 			// And send non inline attachment to CAPS 
 			if(email.binaryAttachments != null){
-				for(Messaging.InboundEmail.BinaryAttachment att : email.binaryAttachments){
+	for(Messaging.InboundEmail.BinaryAttachment att : email.binaryAttachments){
 		system.debug('#HEADERS:' + att.headers);
 		CH_EmailAttachmentHelper.AttachmentHeader attHeader = CH_EmailAttachmentHelper.getAttHeader(att.headers);
 		system.debug('#attHeader:' + attHeader);
 		if(attHeader.contentDisposition == 'inline'){ contentIdAttachment.put(attHeader.attachementId, new Attachment(parentId = CPAID1, Body = att.body, ContentType = attHeader.contentType, Name = att.fileName, Description = 'Inline attachment from email reply'));
 		}else{
 			if(att.body.size() <= fileMaxSizeBytes){
-				if(!Test.isRunningTest()){ CH_EmailAttachmentHelper help = new CH_EmailAttachmentHelper(CPAID1, email.Subject, att);
-					if(!isClosedOrCancelled){ ID jobId = System.enqueueJob(help);
+	if(!Test.isRunningTest()){ CH_EmailAttachmentHelper help = new CH_EmailAttachmentHelper(CPAID1, email.Subject, att);
+		if(!isClosedOrCancelled){ ID jobId = System.enqueueJob(help);
 			system.debug('###CH_EmailAttachmentHandler:JobId:' + jobId); 
-					}			 
-				}   
+		}	
+	}   
 			}else{
-				feedItems.add(new FeedItem(ParentId = CPAID1, Body = feedbody + '(' + att.fileName + ')', Type = 'TextPost'));
-				fileNamesOver3mb += string.isBlank(fileNamesOver3mb) ? att.fileName : ', ' + att.fileName;
+	feedItems.add(new FeedItem(ParentId = CPAID1, Body = feedbody + '(' + att.fileName + ')', Type = 'TextPost'));
+	fileNamesOver3mb += string.isBlank(fileNamesOver3mb) ? att.fileName : ', ' + att.fileName;
 			}
 			
 		}
-				} 
-				
-				system.debug('#feedItems:' + feedItems.size());
-				if(!feedItems.isEmpty() && !isClosedOrCancelled) insert feedItems;
-				
-				system.debug('#contentIdAttachment:' + contentIdAttachment.size());
-				system.debug('#contentIdAttachment:' + contentIdAttachment);
-				if(!contentIdAttachment.isEmpty()) insert contentIdAttachment.values();
-				
+	} 
+	
+	system.debug('#feedItems:' + feedItems.size());
+	if(!feedItems.isEmpty() && !isClosedOrCancelled) insert feedItems;
+	
+	system.debug('#contentIdAttachment:' + contentIdAttachment.size());
+	system.debug('#contentIdAttachment:' + contentIdAttachment);
+	if(!contentIdAttachment.isEmpty()) insert contentIdAttachment.values();
+	
 			} 
 			
 			// Attach the new email reply to the case
 			string toAddresses = '';
 			if(email.toAddresses != null && !email.toAddresses.isEmpty())
-				for(string toAdd : email.toAddresses) toAddresses += toAdd + ', ';
+	for(string toAdd : email.toAddresses) toAddresses += toAdd + ', ';
 			toAddresses = toAddresses.substringBeforeLast(', ');
 			
 			string htBody = email.htmlBody;
 			if(!string.isBlank(htBody) && contentIdAttachment != null)
-				for(string attId : contentIdAttachment.KeySet())
-				htBody = htBody.replace('cid:' + attId, '/servlet/servlet.FileDownload?file=' + contentIdAttachment.get(attId).Id);
+	for(string attId : contentIdAttachment.KeySet())
+	htBody = htBody.replace('cid:' + attId, '/servlet/servlet.FileDownload?file=' + contentIdAttachment.get(attId).Id);
 			
 			EmailMessage newEmail = new EmailMessage(   RelatedToId = CPAID1, 
-				 Subject = email.subject, 
-				 FromAddress = email.FromAddress, 
-				 FromName = email.FromName, 
-				 TextBody = email.plainTextBody,
-				 HtmlBody = htBody, 
-				 toAddress ='',
-				 CH_Email_Type__c = emailType,
-																Status ='2');
+	 Subject = email.subject, 
+	 FromAddress = email.FromAddress, 
+	 FromName = email.FromName, 
+	 TextBody = email.plainTextBody,
+	 HtmlBody = htBody, 
+	 toAddress ='',
+	 CH_Email_Type__c = emailType,
+				Status ='2');
 			
 			
 			
 			insert newEmail;
 			
 			system.debug('#fileNamesOver3mb:' + fileNamesOver3mb);
-			if(!string.isBlank(fileNamesOver3mb) && !isClosedOrCancelled){ CH_EmailAttachmentHelper.sendEmailNotification(email.fromAddress, 'Undeliverable: [ ref:' + threadId + ':ref ]', System.Label.CH_SenderDisplayName, System.Label.CH_AttachmentSizeRejectionBody + '\n\n File Name: ' + fileNamesOver3mb ,  email.messageId);
-			}			 
+			if(!string.isBlank(fileNamesOver3mb) && !isClosedOrCancelled){ CH_EmailAttachmentHelper.sendEmailNotification(email.fromAddress, 'Undeliverable: [ ref:' + threadId + ':ref ]', System.Label.CH_SenderDisplayName, System.Label.CH_AttachmentSizeRejectionBody + '\n\n File Name: ' + fileNamesOver3mb ,  email.messageId, null);
+			}	
 		} 
 	}
 	else{ 
 			CH_EmailAttachmentHelper.sendEmailNotification(email.fromAddress, 
-				  'Nokia Support - Unable to Process Email', 
-				  System.Label.CH_SenderDisplayName, 
-				  'Dear Sender,'+'\n\nUnfortunately your email was not attached to a Corrective and Preventive Action. This means that your email will not be processed by one of our support agents. Please reply to an email that you received from Nokia, or contact the support team via email.'+'\n\nRegards,\n\nNokia Support',  
-				  null);
+	  'Nokia Support - Unable to Process Email', 
+	  System.Label.CH_SenderDisplayName, 
+	  'Dear Sender,'+'\n\nUnfortunately your email was not attached to a Corrective and Preventive Action. This means that your email will not be processed by one of our support agents. Please reply to an email that you received from Nokia, or contact the support team via email.'+'\n\nRegards,\n\nNokia Support',  
+	  null, null);
 			}
 			}
-				else{ 
+	else{ 
 			CH_EmailAttachmentHelper.sendEmailNotification(email.fromAddress, 
-				  'Nokia Support - Unable to Process Email', 
-				  System.Label.CH_SenderDisplayName, 
-				  'Dear Sender,'+'\n\nUnfortunately your email was not attached to a Corrective and Preventive Action. This means that your email will not be processed by one of our support agents. Please reply to an email that you received from Nokia, or contact the support team via email.'+'\n\nRegards,\n\nNokia Support',  
-				  null);
+	  'Nokia Support - Unable to Process Email', 
+	  System.Label.CH_SenderDisplayName, 
+	  'Dear Sender,'+'\n\nUnfortunately your email was not attached to a Corrective and Preventive Action. This means that your email will not be processed by one of our support agents. Please reply to an email that you received from Nokia, or contact the support team via email.'+'\n\nRegards,\n\nNokia Support',  
+	  null, null);
 			}
 			
 			

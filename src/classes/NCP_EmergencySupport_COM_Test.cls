@@ -1,7 +1,8 @@
 @isTest
 private class NCP_EmergencySupport_COM_Test {
 
-	@testSetup static void setup() {
+	@testSetup
+	static void setup() {
 		NCP_EmergencySupport_Setting__c emergencySupportSetting = NCP_TestFactory.insertEmergencySupport();
 		NCP_EmergencySupport_Setting__c emergencySupportSetting1 = NCP_TestFactory.insertEmergencySupport();
 		emergencySupportSetting1.NCP_Type__c = 'NCT';
@@ -21,18 +22,18 @@ private class NCP_EmergencySupport_COM_Test {
 		System.assertNotEquals(null, emergencyGlobalSupportSetting);
 	}
 
-	/*@isTest
-	static void TestGetCountries() {
+	@isTest
+	static void testGetCountries() {
 
-		User CustomerUser;
+		User customerUser;
 		System.runAs(NCP_TestFactory.createUser(true, 'AES Admin', null, 'test@nokia.com.dev')) {
 			Account acc = NCP_TestFactory.createAccount();
 			Contact cont = NCP_TestFactory.createContact(acc);
-			CustomerUser = NCP_TestFactory.createUser(false, 'test', cont, 'test2@nokian.com.dev');
-			insert CustomerUser;
+			customerUser = NCP_TestFactory.createUser(false, 'test', cont, 'test2@nokian.com.dev');
+			insert customerUser;
 		}
-		System.runAs(CustomerUser) {
-			System.assert([select isPortalEnabled from user where id = :CustomerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
+		System.runAs(customerUser) {
+			System.assert([select isPortalEnabled from user where id = :customerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
 			List<NCP_EmergencySupport_Setting__c> countries = NCP_TestFactory.loadCountries();
 			Test.startTest();
 			List<NCP_EmergencySupport_Wrapper> v = NCP_EmergencySupport_COM.getCountries();
@@ -42,17 +43,17 @@ private class NCP_EmergencySupport_COM_Test {
 	}
 
 	@isTest
-	static void TestGetEmergencySupport() {
+	static void testGetEmergencySupport() {
 
-		User CustomerUser;
+		User customerUser;
 		System.runAs(NCP_TestFactory.createUser(true, 'AES Admin', null, 'test@nokia.com.dev')) {
 			Account acc = NCP_TestFactory.createAccount();
 			Contact cont = NCP_TestFactory.createContact(acc);
-			CustomerUser = NCP_TestFactory.createUser(false, 'test', cont, 'test2@nokian.com.dev');
-			insert CustomerUser;
+			customerUser = NCP_TestFactory.createUser(false, 'test', cont, 'test2@nokian.com.dev');
+			insert customerUser;
 		}
-		System.runAs(CustomerUser) {
-			System.assert([select isPortalEnabled from user where id = :CustomerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
+		System.runAs(customerUser) {
+			System.assert([select isPortalEnabled from user where id = :customerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
 			List<NCP_EmergencySupport_Setting__c> telSupport = NCP_TestFactory.loadTeleContact('IN');
 			Test.startTest();
 			NCP_EmergencyContact_Wrapper v = NCP_EmergencySupport_COM.getEmergencyContactSupport('IN');
@@ -62,18 +63,18 @@ private class NCP_EmergencySupport_COM_Test {
 	}
 
 	@isTest
-	static void TestGetUser() {
+	static void testGetUser() {
 
-		User CustomerUser;
+		User customerUser;
 		System.runAs(NCP_TestFactory.createUser(true, 'AES Admin', null, 'test@nokia.com.dev')) {
 			Account acc = NCP_TestFactory.createAccount();
 			Contact cont = NCP_TestFactory.createContact(acc);
-			CustomerUser = NCP_TestFactory.createUser(false, 'test', cont, 'test2@nokian.com.dev');
-			insert CustomerUser;
+			customerUser = NCP_TestFactory.createUser(false, 'test', cont, 'test2@nokian.com.dev');
+			insert customerUser;
 		}
 
-		System.runAs(CustomerUser) {
-			System.assert([select isPortalEnabled from user where id = :CustomerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
+		System.runAs(customerUser) {
+			System.assert([select isPortalEnabled from user where id = :customerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
 			Test.startTest();
 			user u = NCP_EmergencySupport_COM.getUser();
 			System.assertNotEquals(u, null);
@@ -82,21 +83,21 @@ private class NCP_EmergencySupport_COM_Test {
 	}
 
 	@isTest
-	static void TestGetDefaultCountry() {
+	static void testGetDefaultCountry() {
 
-		User CustomerUser;
+		User customerUser;
 		System.runAs(NCP_TestFactory.createUser(true, 'AES Admin', null, 'test@nokia.com.dev')) {
 			Account acc = NCP_TestFactory.createAccount();
 			Contact cont = NCP_TestFactory.createContact(acc);
-			CustomerUser = NCP_TestFactory.createUser(false, 'test', cont, 'test2@nokian.com.dev');
-			insert CustomerUser;
+			customerUser = NCP_TestFactory.createUser(false, 'test', cont, 'test2@nokian.com.dev');
+			insert customerUser;
 		}
 
-		System.runAs(CustomerUser) {
-			System.assert([select isPortalEnabled from user where id = :CustomerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
+		System.runAs(customerUser) {
+			System.assert([select isPortalEnabled from user where id = :customerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
 			Test.startTest();
-			String DefaultCountry = NCP_EmergencySupport_COM.getDefaultCounry();
+			String defaultCountry = NCP_EmergencySupport_COM.getDefaultCounry();
 			Test.stopTest();
 		}
-	}*/
+	}
 }

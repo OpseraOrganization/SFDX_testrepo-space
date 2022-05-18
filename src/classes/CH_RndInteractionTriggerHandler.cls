@@ -8,25 +8,23 @@ public without sharing class CH_RndInteractionTriggerHandler {
 	public static void setCaseReferenceNumber(List<CH_Problem_RnD_Reference__c> rndInteractions, Map<Id, CH_Problem_RnD_Reference__c> oldRndItneractions) {
 		Map<Id, CH_Problem_RnD_Reference__c> transferToRndInteractions = new Map<Id, CH_Problem_RnD_Reference__c>();
 		for (CH_Problem_RnD_Reference__c rndInteraction : rndInteractions) {
-			if (oldRndItneractions.get(rndInteraction.Id).CH_RnD_Reference__c != rndInteraction.CH_RnD_Reference__c && !String.isEmpty(rndInteraction.CH_RnD_Reference__c) && 
-				oldRndItneractions.get(rndInteraction.Id).CH_RnD_Status__c != rndInteraction.CH_RnD_Status__c && rndInteraction.CH_RnD_Status__c == 'Completed' && 
-				rndInteraction.CH_RnD_Direction__c == 'outbound' && 
-				rndInteraction.CH_RnD_Type__c == 'Transfer to R&D' &&
-				rndInteraction.CH_Related_Record__c != NULL) {
-				if (!transferToRndInteractions.containsKey(rndInteraction.CH_Related_Record__c)) {
-					transferToRndInteractions.put(rndInteraction.CH_Related_Record__c, rndInteraction);
-				}
+			if ((oldRndItneractions.get(rndInteraction.Id).CH_RnD_Reference__c != rndInteraction.CH_RnD_Reference__c && !String.isEmpty(rndInteraction.CH_RnD_Reference__c) && 
+	oldRndItneractions.get(rndInteraction.Id).CH_RnD_Status__c != rndInteraction.CH_RnD_Status__c && rndInteraction.CH_RnD_Status__c == 'Completed' && 
+	rndInteraction.CH_RnD_Direction__c == 'outbound' && 
+	rndInteraction.CH_RnD_Type__c == 'Transfer to R&D' &&
+	rndInteraction.CH_Related_Record__c != NULL) && (!transferToRndInteractions.containsKey(rndInteraction.CH_Related_Record__c))) {
+	transferToRndInteractions.put(rndInteraction.CH_Related_Record__c, rndInteraction);
 			}
 		}
 
 		if (!transferToRndInteractions.isEmpty()) {
 			List<Case> cases = [SELECT Id, CH_CRNumber__c FROM Case WHERE Id IN :transferToRndInteractions.keySet() AND CH_CRNumber__c = NULL AND CH_R_D_Interface_Flag__c = false];
 			if (!cases.isEmpty()) {
-				for(Case c : cases) {
-					c.CH_CRNumber__c = transferToRndInteractions.get(c.Id).CH_RnD_Reference__c;
-					c.CH_R_D_Interface_Flag__c = true;
-				}
-				update cases;
+	for(Case c : cases) {
+		c.CH_CRNumber__c = transferToRndInteractions.get(c.Id).CH_RnD_Reference__c;
+		c.CH_R_D_Interface_Flag__c = true;
+	}
+	update cases;
 			}
 		}
 	}
@@ -34,7 +32,7 @@ public without sharing class CH_RndInteractionTriggerHandler {
 	public static void preventInboundRndInteractionDelete(List<CH_Problem_RnD_Reference__c> rndInteractions) {
 		for (CH_Problem_RnD_Reference__c rndInteraction : rndInteractions) {
 			if (rndInteraction.CH_RnD_Direction__c == 'inbound') {
-				rndInteraction.addError(String.format(Label.CH_InboundRndInteraction_PreventDeletionValidation, new List<Object>{rndInteraction.Name}));
+	rndInteraction.addError(String.format(Label.CH_InboundRndInteraction_PreventDeletionValidation, new List<Object>{rndInteraction.Name}));
 			}
 		}
 	}
@@ -42,9 +40,9 @@ public without sharing class CH_RndInteractionTriggerHandler {
 	public static void preventInboundRndInteractionModify(List<CH_Problem_RnD_Reference__c> rndInteractions, Map<Id, CH_Problem_RnD_Reference__c> oldRndItneractions) {
 		if (enablePreventInboundRndInteractionModifyValidation) {
 			for (CH_Problem_RnD_Reference__c rndInteraction : rndInteractions) {
-				if (oldRndItneractions.get(rndInteraction.Id).CH_RnD_Direction__c == 'inbound') {
-					rndInteraction.addError(String.format(Label.CH_InboundRndInteraction_PreventUpdateValidation, new List<Object>{rndInteraction.Name}));
-				}
+	if (oldRndItneractions.get(rndInteraction.Id).CH_RnD_Direction__c == 'inbound') {
+		rndInteraction.addError(String.format(Label.CH_InboundRndInteraction_PreventUpdateValidation, new List<Object>{rndInteraction.Name}));
+	}
 			}
 		}
 	
@@ -58,33 +56,33 @@ public without sharing class CH_RndInteractionTriggerHandler {
 
 		for (CH_Problem_RnD_Reference__c rndInteraction : rndInteractions) {
 			if (rndInteraction.CH_RnD_Direction__c == 'inbound') {
-				if (rndInteraction.CH_RnD_Type__c == 'Workaround') {
-					rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Workaround');
-					continue;
-				}
-				if (rndInteraction.CH_RnD_Type__c == 'Correction Response') {
-					rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Correction');
-					continue;
-				}
-				if (rndInteraction.CH_RnD_Type__c == 'Information Request') {
-					rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Information_Request');
-					continue;
-				}
-				rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Inbound');
+	if (rndInteraction.CH_RnD_Type__c == 'Workaround') {
+		rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Workaround');
+		continue;
+	}
+	if (rndInteraction.CH_RnD_Type__c == 'Correction Response') {
+		rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Correction');
+		continue;
+	}
+	if (rndInteraction.CH_RnD_Type__c == 'Information Request') {
+		rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Information_Request');
+		continue;
+	}
+	rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Inbound');
 			} else {
-				if (rndInteraction.CH_RnD_Status__c == 'Open') {
-					rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Open');
-					continue;
-				}
-				if (rndInteraction.CH_RnD_Status__c == 'Failed') {
-					rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Failed');
-					continue;
-				}
-				if (rndInteraction.CH_RnD_Type__c == 'Transfer to R&D' && rndInteraction.CH_RnD_Interface__c == 'PRONTO') {
-					rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Transfer_To_RnD');
-					continue;
-				}
-				rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Outbound');
+	if (rndInteraction.CH_RnD_Status__c == 'Open') {
+		rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Open');
+		continue;
+	}
+	if (rndInteraction.CH_RnD_Status__c == 'Failed') {
+		rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Failed');
+		continue;
+	}
+	if (rndInteraction.CH_RnD_Type__c == 'Transfer to R&D') {
+		rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Transfer_To_RnD');
+		continue;
+	}
+	rndInteraction.RecordTypeId = rndInteractionRecordTypes.get('Outbound');
 			}
 		}
 	}
@@ -92,7 +90,7 @@ public without sharing class CH_RndInteractionTriggerHandler {
 	public static void setCompletionDate(List<CH_Problem_RnD_Reference__c> rndItneractions) {
 		for (CH_Problem_RnD_Reference__c rndInteraction : rndItneractions) {
 			if (rndInteraction.CH_RnD_Status__c == 'Completed') {
-				rndInteraction.CH_Completion_Date__c = Datetime.Now();
+	rndInteraction.CH_Completion_Date__c = Datetime.Now();
 			}
 		}
 	}
@@ -101,7 +99,7 @@ public without sharing class CH_RndInteractionTriggerHandler {
 		for (CH_Problem_RnD_Reference__c newRndInteraction : newRndItneractions.values()) {
 			CH_Problem_RnD_Reference__c oldRndInteraction = oldRndItneractions.get(newRndInteraction.Id);
 			if (newRndInteraction.CH_RnD_Status__c != oldRndInteraction.CH_RnD_Status__c && newRndInteraction.CH_RnD_Status__c == 'Completed') {
-				newRndInteraction.CH_Completion_Date__c = Datetime.Now();
+	newRndInteraction.CH_Completion_Date__c = Datetime.Now();
 			}
 		}
 	}
@@ -123,19 +121,19 @@ public without sharing class CH_RndInteractionTriggerHandler {
 		List<CH_Problem_RnD_Reference__c> processedRndInteractions = new List<CH_Problem_RnD_Reference__c>();
 		for (CH_Problem_RnD_Reference__c rndInteraction : rndItneractions) {
 			if (rndInteraction.CH_Related_Record__c != NULL && rndInteraction.CH_RnD_Direction__c == 'inbound') {
-				ConnectApi.FeedItemInput feedItemInput = createFeedItemForNewInboundRndInteraction(rndInteraction);
-				feedItemInputs.add(feedItemInput);
-				batchFeedItemInputs.add(new ConnectApi.BatchInput(feedItemInput));
-				processedRndInteractions.add(rndInteraction);
+	ConnectApi.FeedItemInput feedItemInput = createFeedItemForNewInboundRndInteraction(rndInteraction);
+	feedItemInputs.add(feedItemInput);
+	batchFeedItemInputs.add(new ConnectApi.BatchInput(feedItemInput));
+	processedRndInteractions.add(rndInteraction);
 			}
 		}
 		if (!batchFeedItemInputs.isEmpty() && !Test.isRunningTest()) {
 			ConnectApi.BatchResult[] batchResults = ConnectApi.ChatterFeeds.postFeedElementBatch(null, batchFeedItemInputs);
 			for (Integer br = 0; br < batchResults.size(); br++) {
-				ConnectApi.BatchResult batchResult = batchResults[br];
-				if (!batchResult.isSuccess()) {
-					processedRndInteractions[br].addError(batchResult.getErrorMessage());
-				}
+	ConnectApi.BatchResult batchResult = batchResults[br];
+	if (!batchResult.isSuccess()) {
+		processedRndInteractions[br].addError(batchResult.getErrorMessage());
+	}
 			}
 		}
 		
