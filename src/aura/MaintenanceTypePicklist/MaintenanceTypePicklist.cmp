@@ -1,0 +1,147 @@
+<!--
+  @description       : 
+  @author            : Yashdeep Prajapati
+  @group             : 
+  @last modified on  : 01-31-2022
+  @last modified by  : Yashdeep Prajapati
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" controller="Quote_Maintenance_Picklist_handler">
+    
+    <aura:attribute name="num1" type="integer" default="0"/>
+    <aura:attribute name="boolVal" type="Boolean" default="true"/> 
+    <aura:attribute name="isexpanded" type="String" default="slds-section slds-is-open"/>
+    <aura:attribute name="recordId" type="String"/> 
+    <aura:attribute name="favoritelist" type="String[]"/>
+    <aura:attribute name="numberlist" type="String[]"/>
+    <aura:attribute name="subscrlist1" type="String[]" />
+    <aura:attribute name="subscrlist2" type="String[]" />
+    <aura:attribute name="extMaintList" type="String[]"/>
+    <aura:attribute name="sldsValue" type="String"/>
+    <aura:attribute name="disableboolSSP" type="Boolean"/>
+    <aura:attribute name="disableboolSRS" type="Boolean"/>
+    <aura:attribute name="readOnlybool" type="Boolean"/>
+    <aura:attribute name="resultVal" type="String"/>
+    <aura:attribute name="MaintenanceLvl" type="String[]"/>
+    <aura:attribute name="portfolio_check" type="String"/>
+    <aura:attribute name="accreditation_check" type="String"/>
+    
+    <!--- Commented out for ITCCPQ-2556 by Chrisie JJ -->
+    <!-- <aura:attribute name="disableboolNBOS" type="Boolean"/> -->
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!-- create 2 aura handler with waiting and donewaiting events--> 
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    
+            <!--- Added by RG: for LEO req -->
+   <aura:dependency resource="markup://force:refreshView" type="EVENT" />
+   <aura:handler event="force:refreshView" action="{!c.doInit}" /> 
+    	   <!-- Added by RG: for LEO req -->
+    
+    <!--create a component attributs -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    
+    <!--Display the fields in component -->
+    <div class="{!v.isexpanded}">
+        <h3 class="slds-section__title">
+            <button aria-controls="expando-unique-id" aria-expanded="{!v.boolVal}" class="slds-button slds-section__title-action" onclick="{!c.changeState}">
+                <lightning:icon aura:id="articleOne" iconName="utility:switch" size="xx-small" alternativeText="switch"/>
+                <span class="slds-truncate slds-m-left_x-small" title="Section Title"> Maintenance, SSP and SRS </span>
+            </button>
+        </h3>
+        
+      <div aria-hidden="{!!v.boolVal}" class="slds-section__content slds-form-element slds-grid slds-wrap slds-gutters" id="expando-unique-id">
+        <!-- Modified & Commented out for ITCCPQ-2556 by Christie JJ 
+         <div class="slds-col slds-size_1-of-2">
+					<div class="slds-is-relative">
+							<div style="position: absolute; left : 9rem; bottom: 2.7rem;">
+								<lightning:helptext content="Select “Yes” If you would like the quote to contain Nokia Brand of Service (NBOS) options rather than your normal service options. If NBOS is your standard service level, it is selected automatically."/>
+							</div>
+                
+								<lightning:Select label="Nokia Brand of Service?" aura:id="Maintlvl" disabled="{!v.disableboolNBOS}" onchange="{!c.handleClick}" class="slds-hidden">
+									<aura:iteration items="{!v.MaintenanceLvl}" var="MaintenanceLvl">
+										<option label="{!MaintenanceLvl}" text="{!MaintenanceLvl}"></option>
+									</aura:iteration>
+								</lightning:Select>
+					</div>
+             </div> -->
+
+             <div class="slds-col slds-size_1-of-2 slds-p-top_small">
+                <lightning:Select label="Maintenance Type" aura:id="picklistArray" required="true" onchange="{!c.handleClick}" disabled="{!v.readOnlybool}">
+                    <aura:iteration items="{!v.favoritelist}" var="obj">
+                    <option label="{!obj}" text="{!obj}"></option>
+                    </aura:iteration>
+                </lightning:Select>            
+                
+            </div>
+					
+          <div class="slds-col slds-size_1-of-2 slds-p-top_small">
+						<div class="slds-is-relative">
+								<div style="position: absolute; left : 13rem; bottom: 2.7rem;">
+									<lightning:helptext content="SSP is only applicable for IP Routing portfolio."/>
+								</div> 
+									<lightning:Select label="Software Subscription Plan Level" aura:id="releaseSubLevel1" required="true" disabled="{!v.disableboolSSP}" onchange="{!c.handleClick}">
+										<aura:iteration items="{!v.subscrlist1}" var="numobj1">
+											<option label="{!numobj1}" text="{!numobj1}"></option>
+										</aura:iteration>
+									</lightning:Select>
+                    
+						</div>
+					</div>
+			
+
+                             
+			<div class="slds-col slds-size_1-of-2 slds-p-top_small">
+                <!--Srisailam Commented the below as a part of req 1089(Remove Airscale wifi portfolio)-->
+               <!--div style="position: absolute; left : 13rem; bottom: 2.7rem;" >
+                       <lightning:helptext content="For AirScale Wifi quotes, this question can be ignored."/>
+               </div-->
+               <lightning:Select label="Existing Maintenance Contract?" aura:id="ExistMaint" onchange="{!c.handleClickExistMaint}" required="true" disabled="{!v.readOnlybool}">
+                   <aura:iteration items="{!v.extMaintList}" var="extMaintobj">
+                       <option label="{!extMaintobj}" text="{!extMaintobj}"></option>
+                   </aura:iteration>
+               </lightning:Select>
+               
+           </div>
+			
+			<div class="slds-col slds-size_1-of-2 slds-p-top_small">
+                <div class="slds-is-relative">
+                    <div style="position: absolute; left : 14rem; bottom: 2.7rem;" >
+                        <lightning:helptext content="SRS is only applicable for IP Routing and Nuage portfolio."/>
+                    </div>
+                    
+                    <lightning:Select label="Software Release Subscription Level" aura:id="releaseSubLevel" required="true" disabled="{!v.disableboolSRS}" onchange="{!c.handleClick}">
+                        <aura:iteration items="{!v.subscrlist2}" var="subscrobj2">
+                            <option label="{!subscrobj2}" text="{!subscrobj2}"></option>
+                        </aura:iteration>
+                    </lightning:Select>
+                    
+                </div>
+            </div>
+
+			<div class="slds-col slds-size_1-of-2 slds-p-top_small"></div>
+			<div class="slds-col slds-size_1-of-2 slds-p-top_small">
+                <lightning:Select label="No. of Years for Maintenance" aura:id="noMaintYears" required="true" onchange="{!c.handleClick}" disabled="{!v.readOnlybool}">
+                    <aura:iteration items="{!v.numberlist}" var="numobj">
+                        <option label="{!numobj}" text="{!numobj}"></option>
+                    </aura:iteration>
+                </lightning:Select>
+            </div> 
+			
+			<aura:if isTrue="{!v.Spinner}">
+                <div aura:id="spinnerId" class="slds-spinner_container" style="background-color: rgb(220,220,220); height: 13rem;">
+                    <lightning:spinner aura:id="mySpinner" variant="Brand"/>
+                </div>
+            </aura:if>
+  </div>
+        <!--
+        <h3 class="slds-section__title slds-p-top_small">
+        <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action" >
+            <span class="slds-truncate" title="Section Title"> Quote Details </span>
+        </button>
+        </h3>-->
+    </div>   
+    
+    
+</aura:component>

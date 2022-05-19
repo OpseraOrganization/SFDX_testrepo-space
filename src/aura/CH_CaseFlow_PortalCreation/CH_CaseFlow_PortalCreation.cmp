@@ -1,0 +1,401 @@
+<aura:component controller ="CH_LightningController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">    
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{! c.init }" />
+    <aura:handler name="change" value="{! v.selectedEntitlement }" action="{! c.handleBHCalculation }" />
+    <aura:handler name="change" value="{! v.selectedNEA }" action="{! c.handleBHCalculation }" />
+    <!-- Main Attributes -->
+    <aura:attribute name="selectedContact" type = "Object" access="private" description="" />
+    <aura:attribute name="selectedLegalEntity" type = "Object" access="private" description="" />
+    <aura:attribute name="selectedAsset" type = "Object" access="private" description="" />
+    <aura:attribute name="selectedEntitlement" type = "Object" access="private" description="" />
+    <aura:attribute name="selectedNEA" type = "Object" description="" />
+    <aura:attribute name="selectedTimeZone" type="String" default="" description="" />
+    <aura:attribute name="selectedBusinessHours" type="Object" description="" />
+    <aura:attribute name="firAnswers" type="CH_FIRAnswer__c[]" description="" />
+    <!-- 35156 -->
+    <aura:attribute name="selectedProductModule" type = "Object" description="" />
+    <aura:attribute name="selectedSWComponent" type = "Object"  description="" />
+    <aura:attribute name="selectedSWRelease" type = "Object"  description="" />
+    <aura:attribute name="selectedSWModule" type = "Object"  description="" />
+    <aura:attribute name="selectedSWBuild" type = "Object"  description="" />
+    <aura:attribute name="selectedHWComponent" type = "Object" description="" />
+    <!-- Article Attributes -->
+    <aura:attribute name="articleSearchActive" type = "Boolean" description="" default="false" />
+    <aura:attribute name="allArticles" type = "List" description="" default="[]" />
+    <aura:attribute name="filteredArticles" type = "List" description="" default="[]" /> 
+    <aura:attribute name="allFilterArticles" type = "List" description="" default="[]" />
+    <!-- NOKIASC-33498-Add attribute for pazination for article section -->  
+    <aura:attribute name="currentPageNumber" type="Integer" default="1" description="use for current page number in data table"/>
+    <aura:attribute name="pageSizeOptions" type="Integer[]" default="5,10,15,20" />
+    <aura:attribute name="pageSize" type="Integer" default="10" description="use for number of rows will populate in current page"/>
+    <aura:attribute name="totalPages" type="Integer" default="0"/>
+    <aura:attribute name="countofRecords" type="Integer" default="0"/>
+    <aura:attribute name="totalRecords" type="Integer" default="0"/>    
+    <aura:attribute name="PreviousPageNumber" type="Integer" />
+    <aura:attribute name="NextPageNumber" type="Integer" />
+    <aura:attribute name="FilterText" type="String" description="Used to filter the records " />
+    <!-- Column Attributes -->
+    <aura:attribute name="legalEntityColumns" type="List" access="private" description="" />
+    <aura:attribute name="assetColumns" type="List" default="" access="private" description="" />
+    <aura:attribute name="entitlementColumns" type="List" access="private" description="" />
+    <aura:attribute name="neaColumns" type="List" access="private" description="" />
+    <!-- Helper Attributes -->
+    <aura:attribute name="ndaKey" type="String" description="" />
+    <aura:attribute name="provisoryNEA" type = "Object" description="" />
+    <aura:attribute name="preSeverity" type = "String" access="private" description="" />
+    <aura:attribute name="preSubject" type = "String" access="private" description="" />
+    <aura:attribute name="preDescription" type = "String" access="private" description="" default=""/>
+    <aura:attribute name="preSite" type="String" description="" />
+    <aura:attribute name="recordTypeId" type="Id" description="" default=""/>
+    <aura:attribute name="portalOwnerId" type="Id" description="" default=""/>
+    <aura:attribute name="actionCounter" type="Integer" default="0" access="private" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <aura:attribute name="save" type="String" default="" />
+    <!-- Navigation Attributes -->
+    <aura:attribute name="stageNumber" type="Integer" default="0" description="Page to Display" access="private" />
+    <aura:attribute name="stagePercentage" type="Integer" default="25" description="Page to Display" access="private" />
+    <aura:attribute name="neaStageNumber" type="Integer" default="-1" description="" access="private" />
+    <aura:attribute name="timeZoneMissing" type="Boolean" default="false" description="" access="private" />
+    <aura:attribute name="showFIR" type="Boolean" default="true" description="" access="private" />
+    <aura:attribute name="completedFIR" type="Boolean" default="false" description="" />
+    <aura:attribute name="disabledFIRCopy" type="Boolean" default="false" access="private"/>
+    <!-- Design Variables -->
+    <aura:attribute name="caseCreationTitle" type="String" description="" default="Support Ticket Creation"/>
+    <aura:attribute name="caseCreationSubtitle" type="String" description="" default=""/>
+    <aura:attribute name="caseCreationSearchLabel" type="String" description="" default="Please describe your issue and include product info for better search results"/>
+    <aura:attribute name="caseCreationInfo" type="String" description="" default="Attention: Outage or critical severity support tickets cannot be created in the portal. Please find below emergency contact details."/>
+    <aura:attribute name="caseCreationButton" type="String" description="" default="Start"/>
+    <aura:attribute name="articlesTitle" type="String" description="" default="Articles Search"/>
+    <aura:attribute name="articlesSubtitle" type="String" description="" default="Type something on the Ticket Description and hit enter key to search for Knowledge Articles."/>
+    <aura:attribute name="caseDetailsInfo" type="String" description="" default="To ensure data privacy, please DO NOT enter any of the following types of information in the “Customer Description” field: \n\nAn IP address\nA MAC address\nA phone number\n\nAny of the above types of information, if typed in the “Customer Description” field, will be made unreadable. If you need to include this information, please upload in an attachment."/>
+    <!-- Main Component -->
+    <aura:if isTrue="{! v.stageNumber == 0 }">
+        <div style="position: relative;">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+            </aura:if>
+            <!-- First Page -->
+            <div class="slds-box slds-theme--shade slds-m-vertical_large">
+                <div class="slds-p-around_large side-section-container">
+                    <div class="side-section slds-p-right_large slds-p-vertical_small">
+                        <h2 class="slds-m-vertical_small slds-text-heading_medium">{! v.caseCreationTitle }</h2>
+                        <div class="slds-m-vertical_medium">{! v.caseCreationSubtitle }</div>
+                        <div onkeydown="{! c.knowledgeSearch }">
+                            <lightning:input aura:id="descriptionField" name="Description" label="{! v.caseCreationSearchLabel }" class="requiredOverRide slds-m-vertical_large"/>
+                        </div>
+                        <lightning:recordEditForm recordTypeId="{! v.recordTypeId }" aura:id="requiredFields" objectApiName="Case" class="slds-m-vertical_large">
+                            <lightning:inputField fieldName="Severity__c" class="requiredOverRide"/>
+                        </lightning:recordEditForm>
+                        <div class="slds-box slds-m-vertical_large slds-m-horizontal_xxx-small">{! v.caseCreationInfo }</div>
+                        <aura:if isTrue="{! and(v.save != '', v.save != 'true') }">
+                            <span class="slds-text-color_error">{! v.save }</span>
+                        </aura:if>
+                        <lightning:button class="slds-float_right slds-no-border-radius" variant="brand" label="{! v.caseCreationButton }" title="{! v.caseCreationButton }" onclick="{!c.startCaseCreation}"/>
+                    </div>
+                    <div class="side-section slds-p-left_large slds-border_left slds-p-vertical_small min-height">
+                        <h2 class="slds-m-vertical_small slds-text-heading_medium">{! v.articlesTitle }</h2>
+                        <aura:if isTrue="{! v.articleSearchActive }">
+                            <aura:if isTrue="{! v.allArticles.length != 0 }">
+                                <div class="fixed-height">
+                                    <ul class="slds-has-dividers--bottom">
+                                        <!-- NOKIASC-33498-Add Filter section for article -->  
+                                        <div class="slds-p-around_small slds-grid slds-grid_align-spread slds-grid_vertical-align-start">
+                                            <div>
+                                                <lightning:select label="No of entries:"
+                                                                  value="{! v.pageSize }"
+                                                                  onchange="{! c.onPageSizeChange }">
+                                                    <aura:iteration items="{! v.pageSizeOptions }" var="options">
+                                                        <option text="{! options }"></option>
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </div>                                           
+                                            <div>
+                                                <lightning:input aura:id="FilterText" 
+                                                                 type="search"
+                                                                 value="{! v.FilterText }" 
+                                                                 onchange="{! c.filterArticleEntities }"
+                                                                 placeholder="Filter"
+                                                                 />
+                                            </div>
+                                        </div>
+                                        <!--End-->
+                                        <aura:iteration items="{! v.filteredArticles }" var="article">
+                                            <li class="slds-p-vertical--small slds-p-horizontal--large slds-border_bottom">
+                                                <div class="slds-tile">
+                                                    <h3 class="slds-truncate" title="{! article.Title }">
+                                                        <a href="{! './article/'+article.UrlName}" target="_black" data-id="{! article.Id }" onmouseover="{! c.setCompactLayout }">{! article.Title }</a>
+                                                    </h3>
+                                                    <div class="slds-tile__detail slds-text-body_small">
+                                                        <p class="slds-truncate" title="{! article.ArticleNumber}">
+                                                            {! ' '+article.ArticleNumber+' 🞄 Last Modified '}
+                                                            <lightning:formattedDateTime value="{! article.LastModifiedDate }" year="numeric" month="short" day="numeric" hour="2-digit"
+                                                                                         minute="2-digit" timeZoneName="short" hour12="true"/>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </aura:iteration>
+                                        <!-- NOKIASC-33498-Add pagination for article section -->  
+                                        <lightning:layout multipleRows="true" horizontalAlign="center">
+                                            <lightning:layoutItem class="slds-var-p-vertical_x-small" flexibility="auto">
+                                                <lightning:button label="First" variant="brand-outline"
+                                                                  onclick="{!c.onFirst}" disabled="{! v.currentPageNumber == 1}"/>
+                                                <lightning:button iconName="utility:chevronleft" iconPosition="left" title="Previous" variant="brand-outline" class='slds-p-horizontal--x-small'
+                                                                  onclick="{!c.onPrev}" disabled="{! v.currentPageNumber == 1}"/>
+                                                <span class="slds-var-p-horizontal_xx-small slds-tile__detail slds-text-body_small">
+                                                    Page {! (v.currentPageNumber) } of {! (v.totalPages) } (Total Records :{!v.countofRecords} of {!v.totalRecords}) 
+                                                </span>
+                                                <lightning:button iconName="utility:chevronright" iconPosition="right" title="Next" variant="brand-outline"  class='slds-p-horizontal--x-small'
+                                                                  disabled="{! v.currentPageNumber == v.totalPages}" onclick="{!c.onNext}"/>
+                                                <lightning:button label="Last" variant="brand-outline"
+                                                                  disabled="{! v.currentPageNumber == v.totalPages}" onclick="{!c.onLast}"/>
+                                            </lightning:layoutItem>
+                                        </lightning:layout>  
+                                        <!--End-->
+                                    </ul>
+                                </div>
+                                <aura:set attribute="else">
+                                    <div class="slds-m-vertical_medium">Search without any article correspondence.</div>
+                                </aura:set>
+                            </aura:if>
+                            <aura:set attribute="else">
+                                <div class="slds-m-vertical_medium">{! v.articlesSubtitle }</div>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{! v.stageNumber != 0 }">
+        <article class="slds-card slds-is-relative">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+            </aura:if>
+            <!-- Header -->
+            <div class="slds-card__header slds-grid">
+                <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                    <div class="slds-media__body">
+                        <h2 class="slds-m-vertical_small slds-text-heading_medium">{! v.caseCreationTitle }</h2>
+                    </div>
+                </header>
+            </div>
+            <!-- Body -->
+            <div class="slds-card__body slds-card__body_inner slds-m-bottom_medium">
+                <!-- Selection Information -->
+                <div class="slds-grid slds-wrap">
+                    <aura:if isTrue="{! v.stageNumber > 1 }">
+                        <div class="slds-col slds-size_6-of-12 slds-p-horizontal_medium">
+                            <ui:outputText value="Legal Entity Name:"/>&nbsp;
+                            <b><ui:outputText value="{! v.notLinkedToCustomer?v.internalAccount.Name:v.selectedLegalEntity.Name }"/></b>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{! !v.unhappyPath }">
+                        <aura:if isTrue="{! and(v.stageNumber > 2, v.selectedAsset != null) }">
+                            <div class="slds-col slds-size_6-of-12 slds-p-horizontal_medium">
+                                <ui:outputText value="Asset Name:"/>&nbsp;
+                                <b><ui:outputText value="{! v.selectedAsset.Name }"/></b>
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{! and(v.stageNumber > 3, v.selectedEntitlement != null) }">
+                            <div class="slds-col slds-size_6-of-12 slds-p-horizontal_medium slds-p-top_small">
+                                <ui:outputText value="Entitlement Name:"/>&nbsp;
+                                <b><ui:outputText value="{! v.selectedEntitlement.Name }"/></b>
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{! and(v.stageNumber > 1, v.selectedNEA != null) }">
+                            <div class="slds-col slds-size_6-of-12 slds-p-horizontal_medium slds-p-top_small">
+                                <ui:outputText value="Network Element Asset Id:"/>&nbsp;
+                                <b><ui:outputText value="{! v.selectedNEA.CH_NetworkElementID__c }"/></b>
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{! and(v.stageNumber > 5, v.selectedBusinessHours != null) }">
+                            <div class="slds-col slds-size_6-of-12 slds-p-horizontal_medium slds-p-top_small">
+                                <ui:outputText value="Computed Business Hours:"/>&nbsp;
+                                <b><ui:outputText value="{! v.selectedBusinessHours.Name }"/></b>
+                            </div>
+                        </aura:if>
+                    </aura:if>
+                </div>
+                <!-- Account Screen -->
+                <div class="{! v.stageNumber == 1 ? 'slds-grid slds-wrap slds-m-top_small': 'slds-hide'}">
+                    <c:CH_LegalEntitySelection aura:id="legalEntitySelection"
+                                               contact="{! v.selectedContact }"
+                                               onEvent="{! c.eventHandler}"
+                                               showOnlyAuthEntitiesToggle="false"
+                                               withoutSharing="true"
+                                               tableColumns="{!v.legalEntityColumns}"
+                                               swMaintenance="true"/>
+                </div>
+                <!-- Asset Screen -->
+                <div class="{! v.stageNumber == 2 ? 'slds-grid slds-wrap slds-m-top_medium': 'slds-hide'}">
+                    <c:CH_AssetSelection aura:id="assetSelection"
+                                         contact="{! v.selectedContact }"
+                                         account="{! v.selectedLegalEntity }"
+                                         netElemAsset="{! v.selectedNEA }"
+                                         onEvent="{! c.eventHandler }"
+                                         showDescription="true"
+                                         withoutSharing="true"
+                                         tableColumns="{!v.assetColumns}"
+                                         globalActions="[{name:'neaSelection', label:'Select NEA'}, {name:'clearNEA', label: 'Clear NEA'}, {name:'clearSelection', label:'Clear Selection'}]"
+                                         swMaintenance="true"/>
+                </div>
+                <!-- Entitlement Screen -->
+                <div class="{! v.stageNumber == 3 ? 'slds-grid slds-wrap slds-m-top_medium': 'slds-hide'}">
+                    <c:CH_EntitlementSelection aura:id="entitlementSelection"
+                                               asset="{! v.selectedAsset }"
+                                               contact="{! v.selectedContact }"
+                                               account="{! v.selectedLegalEntity }"
+                                               netElemAsset="{! v.selectedNEA }"
+                                               onEvent="{! c.eventHandler }"
+                                               showScripts="false"
+                                               withoutSharing="true"
+                                               displayEntitlementScriptVerified="false"
+                                               tableColumns="{!v.entitlementColumns}"
+                                               globalActions="[{name:'neaSelection', label:'Select NEA'}, {name:'clearNEA', label: 'Clear NEA'}, {name:'clearSelection', label:'Clear Selection'}]"
+                                               swMaintenance="true"/>
+                </div>
+                <!-- NEA Screen -->
+                <div class="{! v.stageNumber == 4 ? 'slds-grid slds-wrap slds-m-top_medium': 'slds-hide'}">
+                    <c:CH_NEASelection aura:id="neaSelection"
+                                       account="{! v.selectedLegalEntity?v.selectedLegalEntity:'' }"
+                                       asset="{! and(v.stageNumber > 2, v.neaStageNumber != 2)? v.selectedAsset : null }"
+                                       entitlement="{! and(v.stageNumber > 3, and(v.neaStageNumber == -1, v.selectedEntitlement.NEACount != 0)) ? v.selectedEntitlement : null }"
+                                       selectionType="{! v.neaStageNumber !=-1 ? 'Network Element Asset' : 'Covered Network Element Asset' }"
+                                       onEvent="{!c.eventHandler}"
+                                       tableColumns="{!v.neaColumns}"
+                                       globalActions=""
+                                       withoutSharing="true"/>
+                </div>
+                <!-- Timezone Screen -->
+                <div class="{! v.stageNumber == 5 ? '': 'slds-hide'}">
+                    <div class="slds-grid slds-wrap slds-p-top_large">
+                        <c:CH_TimeZoneSelection aura:id="timeZoneSelection"
+                                                onEvent="{! c.eventHandler }"
+                                                country="{! v.selectedEntitlement.ContractLineItem.CH_CountryISOName__c }"/>
+                    </div> 
+                </div>
+                <!-- Details Screen -->
+                <div class="{! v.stageNumber == 6 ? 'slds-grid slds-wrap slds-p-vertical_small': 'slds-hide'}">
+                    <c:CH_FIRForm aura:id="firForm" disabledCopy="{! v.disabledFIRCopy }" onEvent="{! c.eventHandler }"/>
+                </div>
+                <div class="{! v.stageNumber == 7 ? 'slds-grid slds-wrap slds-p-vertical_small': 'slds-hide'}">
+                    <div class="slds-col slds-size_6-of-12 slds-m-top_x-large slds-p-right_medium">
+                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" aura:id="reqCaseDetailFields" objectApiName="Case">
+                            <lightning:inputField fieldName="Severity__c" class="requiredOverRide" value="{!v.preSeverity}"/>
+                        </lightning:recordEditForm>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-m-top_x-large slds-p-left_medium">
+                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" aura:id="notReqCaseDetailFields" objectApiName="Case">
+                            <lightning:inputField fieldName="Reference_Number__c" />
+                        </lightning:recordEditForm>
+                    </div>
+                    <div class="slds-col slds-size_12-of-12 slds-m-bottom_x-large">
+                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" aura:id="preCaseDetailFields" objectApiName="Case">
+                            <lightning:inputField fieldName="Subject" class="requiredOverRide" value="{!v.preSubject}"/>
+                            <lightning:inputField fieldName="CH_CustomerDescription__c" class="requiredOverRide" value="{!v.preDescription}"/>
+                        </lightning:recordEditForm>
+                        <lightning:recordEditForm recordTypeId="{!v.recordTypeId}" aura:id="emailCaseDetailFields" objectApiName="Case">
+                            <lightning:inputField fieldName="CH_AdditionalContacts__c"/>
+                        </lightning:recordEditForm>
+                        <div class="slds-box slds-m-top_x-small" style="color: rgb(194, 57, 52);">
+                            <p>To ensure data privacy, please DO NOT enter any of the following types of information in the “Customer Description” field:</p>
+                            <br></br>
+                            <p>An IP address</p><p>A MAC address</p><p>A phone number</p>
+                            <br></br>
+                            <p>Any of the above types of information, if  in the “Customer Description” field (including images), will be made unreadable, images deleted. If you need to include this type of information, please upload using the, “Attachments” button within the submitted ticket, which you will find in, “Manage Support Tickets”, once you have completed submission of this ticket.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <footer class="slds-card__footer slds-grid">
+                <div class="slds-col slds-size_3-of-12">   
+                    <lightning:button class="slds-float_left" variant="brand" label="Cancel" onclick="{! c.cancel }"/>
+                </div>
+                <div class="slds-col slds-size_6-of-12">
+                    <div class="slds-progress">
+                        <ol class="slds-progress__list">
+                            <li class="slds-progress__item slds-is-completed">
+                                <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon" iconName="utility:success" variant="bare" alternativeText="Service Type"/>
+                            </li>
+                            <li class="{! 'slds-progress__item' + (v.selectedLegalEntity != null ? ' slds-is-completed' : '') }">
+                                <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"
+                                                      iconName="{! v.selectedLegalEntity != null ? 'utility:success' : 'utility:record' }"
+                                                      variant="bare" alternativeText="Legal Entity" name="stage1"/>
+                            </li>
+                            <li class="{! 'slds-progress__item' + (v.selectedAsset != null ? ' slds-is-completed' : '') }">
+                                <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"
+                                                      iconName="{! v.selectedAsset != null ? 'utility:success' : 'utility:record' }"
+                                                      variant="bare" alternativeText="Covered Product (Asset)" name="stage2" />
+                            </li>
+                            <li class="{! 'slds-progress__item' + (v.selectedEntitlement != null ? ' slds-is-completed' : '') }">
+                                <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"
+                                                      iconName="{! v.selectedEntitlement != null ? 'utility:success' : 'utility:record' }"
+                                                      variant="bare" alternativeText="Entitlement" name="stage3" />
+                            </li>
+                            <aura:if isTrue="{! and(v.selectedEntitlement != null, v.selectedEntitlement.NEACount != 0) }">
+                                <li class="{! 'slds-progress__item' + (v.selectedNEA != null ? ' slds-is-completed' : '') }">
+                                    <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"
+                                                          iconName="{! v.selectedNEA != null ? 'utility:success' : 'utility:record' }"
+                                                          variant="bare" alternativeText="Network Element Asset" name="stage4" />
+                                </li>
+                            </aura:if>
+                            <aura:if isTrue="{! and(v.selectedEntitlement != null, v.timeZoneMissing) }">
+                                <li class="{! 'slds-progress__item'+(v.selectedTimeZone != '' ? ' slds-is-completed' : '') }">
+                                    <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"
+                                                          iconName="{! v.selectedTimeZone != '' ? 'utility:success' : 'utility:record' }"
+                                                          variant="bare" alternativeText="Time Zone Information" name="stage6"/>
+                                </li>
+                            </aura:if>
+                            <aura:if isTrue="{! v.showFIR }">
+                                <li class="{! 'slds-progress__item'+(v.stageNumber > 6 ? ' slds-is-completed' : '') }">
+                                    <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"
+                                                          iconName="{! v.stageNumber > 6 ? 'utility:success' : 'utility:record' }"
+                                                          variant="bare" alternativeText="FIR" name="stage6"/>
+                                </li>
+                            </aura:if>
+                            <li class="{! 'slds-progress__item'+( v.save == 'true' ? ' slds-is-completed' : '') }">
+                                <lightning:buttonIcon class="slds-progress__marker slds-progress__marker_icon"
+                                                      iconName="{! v.save == 'true' ? 'utility:success' : 'utility:record' }"
+                                                      variant="bare" alternativeText="Other Information" name="stage7"/>
+                            </li>
+                        </ol>
+                        <lightning:progressBar value="{! v.stagePercentage }" size="x-small"/>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_3-of-12">
+                    <aura:if isTrue="{! v.stageNumber == 1 }">
+                        <lightning:button class="slds-float_right" variant="brand" disabled="{! v.selectedLegalEntity == null }" label="Next" onclick="{! c.next }" />   
+                    </aura:if>
+                    <aura:if isTrue="{! v.stageNumber == 2 }">
+                        <lightning:button class="slds-float_right" variant="brand" disabled="{! v.selectedAsset == null }" label="Next" onclick="{! c.next }" />   
+                    </aura:if>
+                    <aura:if isTrue="{! v.stageNumber == 3 }">
+                        <lightning:button class="slds-float_right" variant="brand" disabled="{! v.selectedEntitlement == null }" label="Next" onclick="{! c.next }" />   
+                    </aura:if>
+                    <aura:if isTrue="{! v.stageNumber == 4 }">
+                        <lightning:button class="slds-float_right" variant="brand" disabled="{! (v.neaStageNumber != -1 ? v.provisoryNEA == null : v.selectedNEA == null) }" label="Next" onclick="{! c.next }" />
+                    </aura:if>
+                    <aura:if isTrue="{! v.stageNumber == 5 }">
+                        <lightning:button class="slds-float_right" variant="brand" disabled="{! v.selectedTimeZone == '' }" label="Confirm" title="Confirm" onclick="{! c.handleTimeZoneConfirmation }"/>
+                    </aura:if>
+                    <aura:if isTrue="{! v.stageNumber == 6 }">
+                        <lightning:button class="slds-float_right" variant="brand" disabled="{! !v.completedFIR }" label="Next" title="Next" onclick="{! c.next }"/>
+                    </aura:if>
+                    <aura:if isTrue="{! v.stageNumber == 7 }">
+                        <aura:if isTrue="{! and(v.save != '', v.save != 'true') }">
+                            <span class="slds-float_right slds-error_message">{! v.save }</span>
+                        </aura:if>
+                        <lightning:button class="slds-float_right" variant="brand" label="Create" title="Create" onclick="{! c.saveCaseHandler }" />
+                    </aura:if>
+                    <aura:if isTrue="{! v.stageNumber != 1 }">
+                        <lightning:button class="slds-float_right slds-m-right_x-small" variant="Neutral" label="Previous"  onclick="{! c.previous }"/>
+                    </aura:if>
+                </div>
+            </footer>
+        </article>
+    </aura:if>
+</aura:component>

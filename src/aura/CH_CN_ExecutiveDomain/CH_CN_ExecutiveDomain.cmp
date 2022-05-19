@@ -1,0 +1,204 @@
+<aura:component controller="CH_CN_SubscriptionsController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride,lightning:isUrlAddressable" access="global" >
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <lightning:navigation aura:id="navService"/>
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <!--Declare Handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>    
+     
+    <aura:handler event="lightning:tabClosed" action="{! c.onTabClosed }"/> 
+    <aura:attribute name="tooltip" type="boolean" default="false" />
+
+    <!--<aura:handler event="aura:waiting" action="{!c.handleShowSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.handleHideSpinner}"/>-->
+    <!-- attributes -->
+    <aura:attribute name="recordId" type="string" description="Id of CH_NotificationSubscription__c"/>
+    <aura:attribute name="notificationId" type="string" description="copy Id of CH_NotificationSubscription__c"/>  
+    <aura:attribute type="Integer"  name="SubscriptionLimitPerUser"      default="15"/>
+    <aura:attribute name="recordTypeName" type="string" />
+    <aura:attribute name="lastStage" type="Boolean" default="false"/>
+    <aura:attribute name="steps" type="List"/>      
+    <aura:attribute name="showStage" type="Boolean" default="false" />
+    <aura:attribute name="recordTypeId" type="string" />
+    <aura:attribute name="selectedStage" type="string" default="1" description="Page to Display" access="private" />        
+    <aura:attribute name="currentStageName" type="String" default=""  />
+    <aura:attribute type="Boolean"     name="newPageLoad"      default="false"/>
+    <aura:attribute type="String"     name="subscriptionName"      default=""/>    
+    <aura:attribute name="notificationSubscription" type="List" default="[]"/>
+    <aura:attribute name="notificationSubscriptionDetails" type="List" default="[]"/>
+    <aura:attribute name="notificationSubscriptionChild" type="List" default="[]"/>
+    <aura:attribute name="deleteNotificationSubscriptionDetails" type="List" default="[]"/>    
+    <aura:attribute name="isReset" type="boolean" default="false"/>
+    <!-- Attribute for Geographic Dimension -->
+    <aura:attribute type="List"     name="selectedCountry"      default=""/>
+    <aura:attribute name="selectedRegion" type="List" default="[]"/>
+    <aura:attribute name ="isRegion" type="Boolean" default="false"/>
+    <aura:attribute name ="isCountry" type="Boolean" default="false"/>
+    <aura:attribute type="Integer"  name="CountryLimit"      default="1000"/>
+    <!-- Attribute for Workgroup Dimension -->
+    <aura:attribute name="selectedWorkgroup" type="List" default=""/>
+    <aura:attribute name ="isWorkgroup" type="Boolean" default="false"/>
+    <aura:attribute type="Integer"  name="WorkgroupLimit"      default="1000"/>
+    <!-- Attribute for Product Dimension -->
+    <aura:attribute type="Integer"  name="ProductSearchLimit"      default="2000"/>
+    <aura:attribute type="Integer"  name="ProductSelectionLimit"      default="1"/>
+    <aura:attribute type="List"     name="SelectedproductList"      default=""/>
+    <aura:attribute name="selectedBGs" type="List" default="[]"/>
+    <aura:attribute name="selectedBUs" type="List" default="[]"/>
+    <aura:attribute name="selectedAllBGs" type="Boolean" default="false"/>
+    <aura:attribute name="selectedAllBUs" type="Boolean" default="false"/>
+    <aura:attribute name="isAllProductsSelected" type="Boolean" default="false"/>    
+    <!-- Attribute for Event Subscription -->
+    <aura:attribute name="eventTypeList" type="String" default=""/>
+    <aura:attribute type="String"     name="notificationMode"      default=""/>
+    <aura:attribute type="Boolean"     name="checkedAllEventType"      default="false"/>
+    <!-- Attribute for Account Dimension -->
+    
+    <aura:attribute type="Integer"  name="LegalEntitySearchLimit"      default="2000"/>
+    <aura:attribute type="Integer"  name="LegalEntitySelectionLimit"      default="10000"/>
+    <aura:attribute type="List"  name="selectedAccount"      default=""/>
+    <aura:attribute name="accountType" type="String" default="Legal Account"/>
+    <aura:attribute name="isLegalAccountChecked" type="Boolean" default="false"/>
+    
+    <!-- Reset Attributes -->
+    <aura:attribute type="boolean"  name="disabledAllCountry" default="true"/>
+    <aura:attribute type="boolean"  name="disabledRegion"/>
+    <aura:attribute type="boolean"  name="disabledAll"/>
+    <aura:attribute type="boolean"  name="searchCountry" default="true"/>
+    <aura:attribute type="boolean"  name="showSearch" default="true"/>
+    <aura:attribute type="boolean"  name="showTable" default="true"/>
+    
+    <aura:attribute type="string" 	name="searchKeyword"/>
+    <aura:attribute type="string" 	name="FilterText"/>
+    <aura:attribute type="string" name="searchParentKeyword"/>
+    <aura:attribute type="string" name="searchLegalKeyword"/>
+    <aura:attribute type="boolean" name="bgDisableSelection"/>
+    <aura:attribute type="boolean" name="buRadioDisableSelection"/>
+    <aura:attribute type="string" name="productFilterText"/>
+    
+    
+    
+    
+    <!-- Attribute for Spinner -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>            
+        </div>
+    </aura:if>        
+    <!-- Card For different Domain Subscriptions -->
+    <article class="slds-card slds-p-around--medium slds-m-bottom--x-large">        
+        <aura:if isTrue="{!v.showStage}">
+            <div>
+                <div class="slds-size_6-of-12 slds-m-bottom_medium">
+                    <lightning:input  aura:Id="subscriptionNameValue" messageWhenValueMissing="Please provide Subscription Name." required="true" value="{!v.subscriptionName}" label="Subscription Name" />
+                </div>
+                <lightning:progressIndicator currentStep="{!v.selectedStage}" type="path" variant="base"  >
+                    <aura:iteration items="{! v.steps }" var="step" indexVar="index">
+                        
+                        <lightning:progressStep  id="{!step.value}" label="{! step.label }" value="{! step.value }"  onstepfocus="{!c.handleCiickOnSelectedStage}"/>
+                        
+                    </aura:iteration>
+                </lightning:progressIndicator>
+                <div class="slds-p-around--medium">      
+                    <aura:if isTrue="{!v.recordTypeName=='CH_Executive_Domain'}">
+                        <!--Geographic Dimention -->
+                        <div class="{!v.selectedStage == '1' ? 'slds-show' : 'slds-hide'}">
+                            <!--   <h1>For Geograhic_Dimension lighting page </h1>-->
+                            
+                            <c:CH_CN_GeographicDimension aura:id="geoDimension" selectedCountry="{!v.selectedCountry}" selectedRegion="{!v.selectedRegion}" isRegion="{!v.isRegion}" isCountry="{!v.isCountry}" recordId="{!v.recordId}"  maxRowsCountry="{!v.CountryLimit}"/> 
+                            
+                        </div>
+                        <!--Account Dimension -->
+                        <div class="{!v.selectedStage == '2' ? 'slds-show' : 'slds-hide'}">
+                            <!--<h1>For Account Dimension lighting page  </h1>-->
+                           
+                            <c:CH_CN_AccountDimension   aura:id="accountDimension" LegalEntitySearchLimit="{!v.LegalEntitySearchLimit}" currentStageName="{!v.currentStageName}"   maxRowsAccount="{!v.LegalEntitySelectionLimit}" isLegalChecked="{!v.isLegalAccountChecked}" recordTypeId="{!v.recordTypeId}" recordId="{!v.recordId}" selectedAccount="{!v.selectedAccount}" accountType="{!v.accountType}" searchParentKeyword= "{!v.searchParentKeyword}" searchLegalKeyword="{!v.searchLegalKeyword}" selection="{!v.selection}" showTable="{v.showTable}"/>
+                           
+                        </div>
+                        <!--Product Dimension -->
+                        <div class="{!v.selectedStage == '3' ? 'slds-show' : 'slds-hide'}">
+                            <!-- <h1>for Product Dimension lighting page </h1>-->   
+                            <c:CH_CN_ProductDimension aura:id="productDimension" ProductSearchLimit="{!v.ProductSearchLimit}" currentStageName="{!v.currentStageName}"  maxRowsProduct="{!v.ProductSelectionLimit}" isAllProductsSelected="{!v.isAllProductsSelected}" selectedAllBUs="{!v.selectedAllBUs}" selectedAllBGs="{!v.selectedAllBGs}" selectedProduct="{!v.SelectedproductList}" selectedBGs="{!v.selectedBGs}" selectedBUs="{!v.selectedBUs}" recordId="{!v.recordId}" />
+                            
+                        </div>
+                        <!--Event Subscription -->
+                        <div class="{!v.selectedStage == '4' ? 'slds-show' : 'slds-hide'}">                            
+                            
+                            <c:CH_CN_EventsSubscription  aura:id="eventSubscription" recordTypeId="{!v.recordTypeId}" recordId="{!v.recordId}" eventTypeList="{!v.eventTypeList}" notificationMode="{!v.notificationMode}"  checkedAllEventType="{!v.checkedAllEventType}"  />              
+                            
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.recordTypeName=='CH_Workgroup_Domain'}">
+                        <!--Workgroup Dimention -->
+                        <div class="{!v.selectedStage == '1' ? 'slds-show' : 'slds-hide'}">
+                            <!--   <h1>For Geograhic_Dimension lighting page </h1>-->
+                            
+                            <c:CH_CN_WorkgroupDimension aura:id="wgDimension" maxRowsWorkgroup="{!v.WorkgroupLimit}" selectedWorkgroup="{!v.selectedWorkgroup}" isWorkgroup="{!v.isWorkgroup}" recordId="{!v.recordId}" />                                     
+                            
+                        </div>
+                        <!--Geographic Dimention -->
+                        <div class="{!v.selectedStage == '2' ? 'slds-show' : 'slds-hide'}">
+                            <!--   <h1>For Geograhic_Dimension lighting page </h1>-->
+                            <c:CH_CN_GeographicDimension aura:id="geoDimension" selectedCountry="{!v.selectedCountry}" selectedRegion="{!v.selectedRegion}" isRegion="{!v.isRegion}" isCountry="{!v.isCountry}" recordId="{!v.recordId}"  maxRowsCountry="{!v.CountryLimit}" />                                      
+                            
+                        </div>
+                        <!--Account Dimension -->
+                        <div class="{!v.selectedStage == '3' ? 'slds-show' : 'slds-hide'}">
+                            <!--<h1>For Account Dimension lighting page  </h1>-->
+                            <c:CH_CN_AccountDimension   aura:id="accountDimension" LegalEntitySearchLimit="{!v.LegalEntitySearchLimit}" currentStageName="{!v.currentStageName}"   maxRowsAccount="{!v.LegalEntitySelectionLimit}" recordTypeId="{!v.recordTypeId}" recordId="{!v.recordId}" isLegalChecked="{!v.isLegalAccountChecked}" selectedAccount="{!v.selectedAccount}" accountType="{!v.accountType}"   />
+                        </div>
+                        <!--Product Dimension -->
+                        <div class="{!v.selectedStage == '4' ? 'slds-show' : 'slds-hide'}">
+                            <!-- <h1>for Product Dimension lighting page </h1>-->
+                            <c:CH_CN_ProductDimension aura:id="productDimension" ProductSearchLimit="{!v.ProductSearchLimit}" currentStageName="{!v.currentStageName}"   maxRowsProduct="{!v.ProductSelectionLimit}" isAllProductsSelected="{!v.isAllProductsSelected}" selectedAllBUs="{!v.selectedAllBUs}" selectedAllBGs="{!v.selectedAllBGs}" selectedProduct="{!v.SelectedproductList}" selectedBGs="{!v.selectedBGs}" selectedBUs="{!v.selectedBUs}" recordId="{!v.recordId}" />
+                            
+                        </div>
+                        <!--Event Subscription -->
+                        <div class="{!v.selectedStage == '5' ? 'slds-show' : 'slds-hide'}">                            
+                            <c:CH_CN_EventsSubscription aura:id="eventSubscription" recordTypeId="{!v.recordTypeId}" recordId="{!v.recordId}" eventTypeList="{!v.eventTypeList}" notificationMode="{!v.notificationMode}"  checkedAllEventType="{!v.checkedAllEventType}"  />
+                            <!-- <h1>for Event Selection lighting page </h1>-->
+                            
+                        </div>
+                    </aura:if>
+                </div>
+            <div style="padding-bottom:20px">  
+   
+                <div class="slds-grid slds-gutters"><!--class="slds-grid slds-gutters" -->
+                   <div class="slds-col">
+                    <aura:if isTrue="{!v.selectedStage != '1' }">
+                        <lightning:button  class="slds-m-around_xxx-small" variant="brand" label="Previous" title="Go to Previous Page" onclick="{! c.handleClickPrevious }" />
+                    </aura:if>
+                  </div>
+                    
+                    <div style="padding-left:100px;position:relative" > <!-- style="padding-left:550px;position:absolute; -->
+                      <button variant="brand-outline" aria-describedby="help" class="slds-button slds-button_outline-brand" title="Clear Selection" onclick="{!c.handleReset}" onmouseover="{!c.showToolTip}" onmouseout="{!c.HideToolTip}">Clear Selection </button> &nbsp;&nbsp; 
+                        
+                            <aura:if isTrue="{!v.tooltip}">
+                                <div class="slds-popover slds-popover_tooltip slds-nubbin_left-top"  role="tooltip" id="help" style="position:absolute;top:-4px;left:240px;width:230px;height:50px">
+                                    <div class="slds-popover__body" style="width:270px">Clear to the last saved values in this dimension</div>
+                                </div>
+                            </aura:if>
+                         
+                    </div>
+                   <div class="slds-col slds-clearfix"> <!-- class="slds-col slds-clearfix" -->
+                        <aura:if isTrue="{!v.lastStage}">
+                            <lightning:button class="slds-float_right slds-m-around_xxx-small" variant="brand" label="Save" title="Click To Save"  disabled="{!v.Spinner}"  onclick="{! c.handleSubmit }" />                            
+                            <aura:set attribute="else">
+                                <lightning:button variant="brand" class="slds-float_right slds-m-around_xxx-small" label="Next" title="Go to Next Page" onclick="{! c.handleClickNext }" />                        
+                            </aura:set>
+                        </aura:if>                
+                        
+                       
+                                
+                        <lightning:button variant="brand-outline" class="slds-m-around_xxx-small slds-float_right" label="Cancel" title="Click To Cancel" onclick="{! c.handleCancel }" />
+                    </div>
+                </div>
+            </div>
+		</div>	
+        </aura:if>        
+    </article>
+</aura:component>

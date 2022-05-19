@@ -1,0 +1,144 @@
+<aura:component controller="CH_CA_CaseTeamAssignment_Controller" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />    
+    <aura:handler name="messageboxEvent" event="c:CH_CA_MS_ConfirmationMessagebox_Event" action="{!c.handleMessageboxEvent}"/>
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <c:CH_CA_MS_ConfirmationMessagebox aura:id="messageBox" />
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    
+    <!-- aura attributes-->
+    <aura:attribute name="recordId" type="String"/>  
+    <aura:attribute name="recordTypeName" type="String"/>
+    <aura:attribute name="showSelectRoleModal" type="Boolean" default="false"/>
+    <aura:attribute name="scriptLoaded" type="boolean" default="false" />
+    <aura:attribute name="userIdToAddToCaseTeam" type="String" />
+
+    <aura:attribute name="caseTeamRoles" type="List" />
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="selectedValue" type="String" />
+	 
+	<aura:attribute name="captureWorkgroupId" type="String" />
+	<aura:attribute name="captureWorkgroupName" type="String" />
+	<aura:attribute name="showworkgroupInstructions" type="Boolean" default="false"/>
+    <!-- NOKIASC-34648 -->
+    <aura:attribute name="disableServiceType" type="Boolean" default="false"/> 
+    <!-- Load the datatable classes -->
+    <ltng:require styles="{!join(',', 
+                          $Resource.datatable + '/DataTables-1.10.16/media/css/jquery.dataTables.min.css',
+                          $Resource.datatable + '/DataTables-1.10.16/extensions/Select/css/select.dataTables.min.css')}"
+                  scripts="{!join(',', 
+                           $Resource.CH_jquery224, 
+                           $Resource.datatable + '/DataTables-1.10.16/media/js/jquery.dataTables.min.js',
+                           $Resource.datatable + '/DataTables-1.10.16/extensions/Select/js/dataTables.select.min.js')}" 
+                  afterScriptsLoaded="{!c.scriptsLoaded}"/> 
+    
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+	
+	<!--Code for displaying WorkGroup Instructions-->
+	<aura:if isTrue="{!v.showworkgroupInstructions}">
+        <c:CH_CA_Workgroup_Instructions aura:id="workgroupInstructionsModal" />
+    </aura:if>
+   
+    
+    <!-- ******** Select Case Team Role ********** -->
+    <aura:if isTrue="{!v.showSelectRoleModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open" >
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Member</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="height: 210px;">
+                    <p><b> Select Case team role to add selected user to current Support Ticket</b></p>
+                    <div class="custom-box">
+                        <lightning:combobox name="role" placeholder="Select Role...." options="{!v.caseTeamRoles}" aura:id="caseTeamRole"/>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button label="Add" onclick="{!c.addMemberToTeam}"/>
+                    <lightning:button label="Cancel" onclick="{!c.closePopup}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>   
+    <!-- ******** Select Case Team Role ********** -->
+    
+    <article class="slds-card">
+        <div class="slds-card__header">
+            <div class="slds-grid">
+                <div class="slds-col">
+                    <div align="right">
+                        <lightning:button onclick="{!c.search}" label="Search" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-card__body slds-card__body_inner">
+            
+            <lightning:recordEditForm objectApiName="CH_Workgroup_Rule_Search__c" 
+                                      aura:id="caseTeamSearchFieldsForm" 
+                                      onsubmit="{!c.stopSubmit}" >
+                <lightning:messages />
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning:inputField aura:id="severity" fieldName="CH_Severity__c" />
+                        <lightning:inputField aura:id="customer" fieldName="CH_Customer__c" />
+                        <lightning:inputField aura:id="customerGroup" fieldName="CH_Customer_Grouping__c" />
+                        <lightning:inputField aura:id="outage" fieldName="CH_Outage__c" />
+						 <!-- NOKIASC-34648 -->
+                        <lightning:inputField aura:id="serviceType" fieldName="CH_ServiceType__c" disabled="{!v.disableServiceType}"/>
+                        <lightning:inputField aura:id="solution" fieldName="CH_Solution__c" />
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <div>
+                            <lightning:inputField aura:id="levelOfSupport" fieldName="CH_Level_Of_Support__c" />
+                            <lightning:inputField aura:id="product" fieldName="CH_Product__c" />
+                            <lightning:inputField aura:id="productGroup" fieldName="CH_Product_Grouping__c" />
+                            <lightning:inputField aura:id="workgroupType" fieldName="CH_Workgroup_Type__c" />
+							<!-- 34648 -->
+							<ui:inputText aura:id="workgroupTypeError" class="slds-hide"/>
+                            <lightning:inputField aura:id="productModule" fieldName="CH_Product_Module__c" />
+                           <!-- <lightning:inputField aura:id="productModule1" fieldName="CH_Contract_Type__c" />-->
+                            <lightning:select name="mySelect" label="Contract Type" aura:id="mySelect" value="{!v.selectedValue}" onchange="{!c.typeChanged}">
+                                <aura:iteration items="{!v.options}" var="item">
+                                    <option text="{!item}" value="{!item}" />
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <div>
+                            <lightning:inputField aura:id="contract" fieldName="CH_ServiceContract__c" />
+                            <lightning:inputField aura:id="region" fieldName="CH_Region__c" />
+                            <lightning:inputField aura:id="country" fieldName="CH_Country__c" />
+                            <lightning:inputField aura:id="productVariant" fieldName="CH_ProductVariant__c" />
+                            <lightning:inputField aura:id="productRelease" fieldName="CH_ProductRelease__c" />
+                            <div><br/>
+                                <div class="slds-text-body_small slds-text-color_weak">Schedule</div>
+                                <div><ui:inputCheckbox aura:id="schedule" /></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </lightning:recordEditForm>
+        </div>
+        <div class="slds-m-top_xx-small slds-m-bottom_xx-small slds-scrollable" style="height: 22rem;">
+            <table id="{!'workgroupMembers-' + v.recordId}" style="table-layout: fixed; 
+                                                width: 100%
+                                                overflow:hidden; text-overflow: ellipsis;
+                                                word-wrap:break-word;"
+                   class="hover row-border">
+            </table>
+        </div> 
+    </article>
+</aura:component>
