@@ -1,0 +1,381 @@
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" access="global" controller="CRM_OppContactRoles_listViewController">
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <aura:handler name="CRM_CustomLookupChangeSelEvent" event="c:CRM_CustomLookupChangeSelEvent" action="{!c.handleContactChange}"/>
+    
+    <aura:attribute name="oppId" type="Id" />
+    <aura:attribute name="loaded" type="Boolean" default="true"/>
+    <aura:attribute name="contactRoleWrapperList" type="Object" />
+    <aura:attribute name="contactRoleWrapperListBackup" type="Object" />
+    <aura:attribute name="uncontactActivityList" type="Object" />
+    <aura:attribute name="taskToModal" type="Map"/>
+    <aura:attribute name="uncontactActivitiesBol" type="Boolean"/>
+    <aura:attribute name="deleteConfirmation" type="Boolean" default="false"/>
+    <aura:attribute name="contactIdValuesMap" type="Map"/>
+    <aura:attribute name="engagementPLV" type="Map" />
+    <aura:attribute name="opinionPLV" type="Map"/>
+    <aura:attribute name="rolePLV" type="Map"/>
+    <aura:attribute name="taskPriorityPLV" type="Map"/>
+    <aura:attribute name="taskStatusPLV" type="Map"/>
+    <aura:attribute name="today" type="date"/>
+    <aura:attribute name="accContactList" type="list"/>
+    <aura:attribute name="crIndexToDelete" type="Integer" default="-1"/>
+    <aura:attribute name="caIndexToDelete" type="Integer" default="-1"/>
+    <aura:attribute name="crIndexToCreateTask" type="Integer" default="-1"/>
+    <aura:attribute name="warningMessage" type="Integer" default="-1"/>
+    <aura:attribute name="warningTitle" type="Integer" default="-1"/>
+    <aura:attribute name="contactSearchScope" type="String" default="All Contacts"/>
+    
+        
+    <div class="slds-is-relative">
+        <div class="slds-form--compound">
+            <div>
+                <div class="slds-section__title slds-float_left slds-m-vertical_x-small">Engagement Plan</div>
+                <div class="slds-m-vertical_x-small slds-float_right">
+                    <!--lightning:select value="{!v.contactSearchScope}" name="contactSearchScope" label="Contact Search Scope" class=".slds-button inline-block" required="false">
+                        <option text="All Contacts" value="All Contacts"/>
+                        <option text="Account Related" value="Account Related" />
+                    </lightning:select-->
+                    <lightning:button variant="brand" label="Add Contact Role" title="New Contact Role" onclick="{!c.handleCreateContactRole }" />
+                    <lightning:button variant="neutral" label="Refresh" title="Refresh tables" onclick="{!c.init }" />
+                </div>
+                <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered"  >
+                    <thead>
+                        <tr class="slds-line-height_reset slds-text-title_caps">
+                            <th class="" scope="col" style="width:20%;">
+                                <div class="slds-truncate" title="Customer Contact">Customer Contact</div>
+                            </th>
+                            <th class="" scope="col" style="width:20%;">
+                                <div class="slds-truncate" title="Customer Contact">Account Name</div>
+                            </th>
+                            <th class="" scope="col" style="width:15%;" >
+                                <div class="slds-truncate" title="Role">Role</div>
+                            </th>
+                            <th class="" scope="col" style="width:15%;">
+                                <div class="slds-truncate" title="Opinion of Nokia">Opinion of Nokia</div>
+                            </th>
+                            <th class="" scope="col" style="width:15%;">
+                                <div class="slds-truncate" title="Engagement Level">Engagement Level</div>
+                            </th>
+                            <th class="" scope="col" style="width:12.5%;">
+                                <div class="slds-truncate slds-assistive-text" title="Activities">Activities</div>
+                            </th>
+                            <th class="" scope="col" style="width:2.5%;">
+                                <div class="slds-truncate slds-assistive-text" title="Actions">Actions</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.contactRoleWrapperList}" var="cr" indexVar="crIndex">
+                            <tr class="slds-hint-parent" >
+                                <aura:if isTrue="{!cr.readMode}">
+                                    <td >
+                                        <a class="slds-truncate break-word" href="{!'/one/one.app?#/sObject/'+ cr.contactId + '/view'}" target="_blank">{!cr.contactName}</a>
+                                    </td>
+                                    <td >
+                                        <div class="slds-truncate break-word" title="">{!cr.accName}</div>
+                                    </td>
+                                    <td >
+                                        <div class="slds-truncate break-word" title="">{!cr.role}</div>
+                                    </td>
+                                    <td >
+                                        <div class="slds-truncate break-word" title="">{!cr.opinionOfNokia}</div>
+                                    </td>
+                                    <td >
+                                        <div class="slds-truncate break-word" title="">{!cr.engagementLevel}</div>
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <td >
+                                            <aura:if isTrue="{!v.contactSearchScope == 'All Contacts'}">
+                                                <c:CRM_CustomLookup objectName="Contact" fieldName="Name" iconName="standard:contact" placeholder="Enter Value" value="{!cr.contactId}" indexOnList="{!crIndex}"/>
+                                                <aura:set attribute="else">
+                                                    <c:CRM_CustomLookup objectName="Contact" fieldName="Name" iconName="standard:contact" placeholder="Enter Value" value="{!cr.contactId}" indexOnList="{!crIndex}" fullList="{!v.accContactList}"/>
+                                                </aura:set>	
+                                            </aura:if> 
+                                        </td>
+                                        <td >
+                                            <div class="slds-truncate break-word" title="">{!cr.accName}</div>
+                                        </td>
+                                        <td >
+                                            <lightning:select value="{!cr.role}" name="rolePicklist" class="hideLabel" required="false" variant="label-hidden">
+                                                <option value=""></option>
+                                                <aura:iteration items="{!v.rolePLV}" var="plv" indexVar="key">
+                                                    <option text="{!plv.value}" value="{!plv.key}" selected="{! if(or(cr.role == '',cr.role==null), plv.key==cr.contactRole, plv.key==cr.role)}" />
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </td>
+                                        <td >
+                                            <lightning:select value="{!cr.opinionOfNokia}" name="opinionPicklist" class="hideLabel" required="false" variant="label-hidden">
+                                                <option value=""></option>
+                                                <aura:iteration items="{!v.opinionPLV}" var="plv" indexVar="key">
+                                                    <option text="{!plv.value}" value="{!plv.key}" selected="{! if(or(cr.opinionOfNokia == '',cr.opinionOfNokia==null), plv.key==cr.contactAttitude, plv.key==cr.opinionOfNokia)}" />
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </td>
+                                        <td >
+                                            <lightning:select value="{!cr.engagementLevel}" name="engagementPicklist" class="hideLabel" required="false" variant="label-hidden">
+                                                <option value=""></option>
+                                                <aura:iteration items="{!v.engagementPLV}" var="plv" indexVar="key">
+                                                    <option text="{!plv.value}" value="{!plv.key}" selected="{!plv.key==cr.engagementLevel}" />
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </td>
+                                    </aura:set>	
+                                </aura:if> 
+                                <td >
+                                    <div class="slds-align_absolute-center" title="">
+                                        <aura:if isTrue="{!and(cr.showActivities,cr.readMode)}">
+                                            <lightning:button label="Hide Activity Plan" variant="base" onclick="{!c.showHideActions}" value="{!crIndex}"/>
+                                            <aura:set attribute="else">
+                                                <lightning:button label="Show Activity Plan" variant="base" onclick="{!c.showHideActions}" value="{!crIndex}"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                </td>
+                                
+                                <td role="gridcell">
+                                    <aura:if isTrue="{!(cr.readMode)}">
+                                        <lightning:buttonMenu variant="border-filled" iconSize="x-small" menuAlignment="right" onselect="{! c.handleCRMenu }">
+                                            <lightning:menuItem value="{!join(',', 'edit', crIndex)}" label="Edit" iconName="utility:edit"/>
+                                            <lightning:menuItem value="{!join(',', 'createTask', crIndex)}" label="Create Task" iconName="utility:add"/>
+                                            <lightning:menuItem value="{!join(',', 'delete', crIndex)}" label="Delete" iconName="utility:delete"/>
+                                        </lightning:buttonMenu>
+                                        <aura:set attribute="else">
+                                            <lightning:buttonIcon iconName="utility:undo"  onclick="{! c.handleCRMenu }" value="{!join(',', 'cancel', crIndex)}" title="Cancel/Undo"></lightning:buttonIcon>
+                                            <lightning:buttonIcon iconName="utility:save"  onclick="{! c.handleCRMenu }" value="{!join(',', 'save', crIndex)}"  title="Save"></lightning:buttonIcon>
+                                        </aura:set>
+                                    </aura:if>
+                                </td>
+                            </tr>   
+                            <aura:if isTrue="{!cr.showActivities}">
+                                <tr class ="slds-m-around_medium slds-no-row-hover">
+                                    <td>
+                                        <lightning:icon iconName="utility:level_down"  size="small"  class="slds-float_right"/>
+                                    </td>
+                                    <td colspan="5" class ="slds-no-row-hover" style="padding:20px;">
+                                        <table class="slds-table slds-table_cell-buffer slds-table_bordered" >
+                                            <thead>
+                                                <tr class="slds-line-height_reset slds-text-title_caps">
+                                                    <th class="" scope="col" style="width:27.5%;">
+                                                        <div class="slds-truncate break-word" title="Customer Contact">Subject</div>
+                                                    </th>
+                                                    <th class="" scope="col" style="width:20%;" >
+                                                        <div class="slds-truncate break-word" title="Role">Owner</div>
+                                                    </th>
+                                                    <th class="" scope="col" style="width:20%;">
+                                                        <div class="slds-truncate break-word" title="Opinion of Nokia">Due Date</div>
+                                                    </th>
+                                                    <th class="" scope="col" style="width:20%;">
+                                                        <div class="slds-truncate break-word" title="Engagement Plan">Status</div>
+                                                    </th>
+                                                    <th class="" scope="col" style="width:2.5%;">
+                                                        <div class="slds-truncate slds-assistive-text" title="Actions">Actions</div>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <aura:iteration items="{!cr.contactActivities}" var="ca" indexVar="caIndex">
+                                                    <tr class="slds-hint-parent">
+                                                        <td >
+                                                            <a class="slds-truncate break-word" href="{!'/one/one.app?#/sObject/'+ ca.Id + '/view'}" target="_blank">{!ca.Subject}</a>
+                                                        </td>
+                                                        <td >
+                                                            <div class="slds-truncate break-word" title="">{!ca.Owner.Name}</div>
+                                                        </td>
+                                                        <td >
+                                                            <div class="slds-truncate break-word" title="">{!ca.ActivityDate}</div>
+                                                        </td>
+                                                        <td >
+                                                            <div class="slds-truncate break-word" title="">{!ca.Status}</div>
+                                                        </td>
+                                                        
+                                                        <td role="gridcell">
+                                                            <lightning:buttonMenu variant="border-filled" iconSize="x-small" menuAlignment="right" onselect="{! c.handleCAMenu }">
+                                                                <lightning:menuItem value="{!join(',', 'edit', crIndex, caIndex)}" label="Edit" iconName="utility:edit"/>
+                                                                <lightning:menuItem value="{!join(',', 'delete', crIndex, caIndex)}" label="Delete" iconName="utility:delete"/>
+                                                            </lightning:buttonMenu>
+                                                        </td>
+                                                    </tr>
+                                                </aura:iteration>
+                                                
+                                                <aura:if isTrue="{!cr.contactActivities.length == 0}">
+                                                    <tr class="slds-hint-parent">
+                                                        <td colspan="4">
+                                                            <div class="slds-truncate slds-align_absolute-center" >There are no tasks assigned to this contact.</div>
+                                                        </td>
+                                                    </tr>
+                								</aura:if>
+                                            </tbody>                                        
+                                        </table>
+                                    </td>
+                                </tr>
+                            </aura:if>
+                        </aura:iteration>
+                        <aura:if isTrue="{!v.contactRoleWrapperList.length == 0}">
+                            <tr class="slds-hint-parent">
+                                <td colspan="7">
+                                    <div class="slds-truncate slds-align_absolute-center" >There are no Contact Roles assigned to this Opportunity.</div>
+                                </td>
+                            </tr>
+                        </aura:if>                        
+                    </tbody>
+                </table>
+                <br></br>
+                <div id="contactRoles_table" class="slds-clearfix">
+                    <div class="slds-section__title slds-float_left slds-m-vertical_x-small">Activity Plan</div>
+                    <div class="slds-m-vertical_x-small slds-float_right">
+                        <lightning:button variant="brand" label="New Task" title="New Task" onclick="{!c.handleCreateTask }" />
+                    </div>
+                </div>
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered" >
+                    <thead>
+                        <tr class="slds-line-height_reset slds-text-title_caps">
+                            <th class="" scope="col" style="width:27.5%;">
+                                <div class="slds-truncate" title="Customer Contact">Related Tasks with no contact assigned</div>
+                            </th>
+                            <th class="" scope="col" style="width:20%;" >
+                                <div class="slds-truncate break-word" title="Role">Owner</div>
+                            </th>
+                            <th class="" scope="col" style="width:20%;">
+                                <div class="slds-truncate break-word" title="Opinion of Nokia">Due Date</div>
+                            </th>
+                            <th class="" scope="col" style="width:20%;">
+                                <div class="slds-truncate break-word" title="Engagement Plan">Status</div>
+                            </th>
+                            <th class="" scope="col" style="width:2.5%;">
+                                <div class="slds-truncate slds-assistive-text" title="Actions">Actions</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.uncontactActivityList}" var="ca" indexVar="caIndex">
+                            <tr class="slds-hint-parent">
+                                <td >
+                                    <a class="slds-truncate  break-word" href="{!'/one/one.app?#/sObject/'+ ca.Id + '/view'}" target="_blank">{!ca.Subject}</a>
+                                </td>
+                                <td >
+                                    <div class="slds-truncate break-word" title="">{!ca.Owner.Name}</div>
+                                </td>
+                                <td >
+                                    <div class="slds-truncate break-word" title="">{!ca.ActivityDate}</div>
+                                </td>
+                                <td >
+                                    <div class="slds-truncate break-word" title="">{!ca.Status}</div>
+                                </td>
+                                
+                                <td role="gridcell">
+                                    <lightning:buttonMenu variant="border-filled" iconSize="x-small" menuAlignment="right" onselect="{! c.handleCAMenu }">
+                                        <lightning:menuItem value="{!join(',', 'edit', -1, caIndex)}" label="Edit" iconName="utility:edit"/>
+                                        <lightning:menuItem value="{!join(',', 'delete', -1, caIndex)}" label="Delete" iconName="utility:delete"/>
+                                    </lightning:buttonMenu>
+                                </td>
+                            </tr>
+                        </aura:iteration>
+                        
+                        <aura:if isTrue="{!v.uncontactActivityList.length == 0}">
+                            <tr class="slds-hint-parent">
+                                <td colspan="4">
+                                    <div class="slds-truncate slds-align_absolute-center" >There are no tasks assigned to this opportunity not having a related contact.</div>
+                                </td>
+                            </tr>
+                        </aura:if>
+                    </tbody>                                        
+                </table>
+                
+                <aura:if isTrue="{!v.taskToModal != null}">
+                    
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.handleCancelTask }"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"/>
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{! if(v.taskToModal.Id == null, 'Create Task', 'Edit Task')}</h2>
+                            </header>
+                            
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <div class="slds-grid">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="slds-form-element_stacked">
+                                            <lightning:input type="text" name="subjectEdit" required="true" value="{!v.taskToModal.Subject}" label="Subject"/>
+                                        </div>
+                                        <div class="slds-form-element_stacked">
+                                            <lightning:input type="text" name="commentsEdit" required="true" value="{!v.taskToModal.Description}" label="Comments"/>
+                                        </div>
+                                        <lightning:select name="priorityEdit"  value="{!v.taskToModal.Priority}" class="slds-form-element_stacked" label="Priority" required="true" >
+                                            <option value=""></option>
+                                            <aura:iteration items="{!v.taskPriorityPLV}" var="plv" indexVar="key">
+                                                <option text="{!plv.value}" value="{!plv.key}" selected="{!plv.key==v.taskToModal.Priority}" class="slds-form-element_stacked"/>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                        <div class="slds-form-element_stacked">
+                                            <lightning:input type="checkbox" name="reminderSetEdit" label="Reminder Set" checked="{!v.taskToModal.IsReminderSet}" class="slds-form-element_stacked" />
+                                        </div>
+                                        <div class="slds-form-element_stacked">
+                                            <lightning:input type="text" name="contactNameRead" value="{!v.taskToModal.ContactName}" label="Contact Name" disabled="true"/>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="slds-form-element_stacked">
+                                            <c:CRM_CustomLookup objectName="User" fieldName="Name" iconName="standard:user" placeholder="Enter Value" recordCount="10" value="{!v.taskToModal.OwnerId}" label="Owner"/>    
+                                        </div>           
+                                        <div class="slds-form-element_stacked">
+                                            <lightning:input type="date" name="activityDateEdit" value="{!v.taskToModal.ActivityDate }"  label="Due Date" class="slds-form-element_stacked"/>    
+                                        </div>  
+                                        <lightning:select value="{!v.taskToModal.Status}" name="statusEdit"  class="slds-form-element_stacked" label="Status" required="true">
+                                            <option value=""></option>
+                                            <aura:iteration items="{!v.taskStatusPLV}" var="plv" indexVar="key">
+                                                <option text="{!plv.value}" value="{!plv.key}" selected="{!plv.key==v.taskToModal.Status}" />
+                                            </aura:iteration>
+                                        </lightning:select>
+                                        <div class="slds-form-element_stacked">
+                                            <lightning:input type="datetime" name="reminderDateTimeEdit" label="" value="{!v.taskToModal.ReminderDateTime }" min="{! v.today}" class="{! if(v.taskToModal.IsReminderSet,'slds-show','slds-hide') }" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <footer class="slds-modal__footer">
+                                <lightning:button label="{! if(v.taskToModal.Id != null, 'Update Task', 'Create Task')}" onclick="{!c.handleSubmitTask}" class="slds-m-top_small" disabled="{! not(v.loaded) }"/>
+                                <lightning:button label="Cancel" onclick="{!c.handleCancelTask}" class="slds-m-top_small" disabled="{! not(v.loaded) }" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.deleteConfirmation == true}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{! v.warningTitle}</h2>
+                            </header>
+                            
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>{! v.warningMessage}</p>
+                            </div>  
+                            
+                            <footer class="slds-modal__footer">
+                                <lightning:button label="No" variant="Neutral" onclick="{!c.handleCancelDeletion}" class="slds-m-top_small" />
+                                <lightning:button label="Yes" variant="Destructive" onclick="{!c.handleConfirmDeletion}" class="slds-m-top_small"/>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+            </div>
+            <aura:if isTrue="{! v.loaded }">
+                <aura:set attribute="else">
+                    <div class="slds-spinner_container">
+                        <div class="slds-spinner slds-spinner--medium" aria-hidden="false" role="alert">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </aura:set>
+            </aura:if>
+        </div>
+    </div>
+</aura:component>

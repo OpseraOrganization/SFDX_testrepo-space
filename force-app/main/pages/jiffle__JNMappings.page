@@ -1,0 +1,151 @@
+<apex:page controller="jiffle.JNMappings" tabStyle="JiffleNow_Mappings__tab">
+<apex:include pageName="jiffle__JNGlobals"/>
+<style>
+    .col1 {width:30%; }
+    .col2 {width:40%; } 
+    .col3 {width:30%; } 
+    .colpnl1 {width:30%; }
+    .colpnl2 {width:70%; } 
+  
+    .myHeader {
+        background: #cecece;
+        font-weight: bold;
+        font-style: initial;
+        height:15px;
+     }
+    .optlbl{
+         font-size:13px;
+         font-weight:bold;
+         padding:10px;
+         display: block; 
+     }
+     .relMap{
+         font-size:13px;
+         padding-left:20px !important;
+         display: block;
+         font-weight:bold;
+         text-align:center;
+     }
+     
+</style>
+    <script>
+    var fldCounter = 0;
+    function selectField(selected){
+        if(selected.checked){
+            fldCounter ++;
+        }
+        if(!selected.checked){
+            fldCounter --;
+        }
+    }   
+   function  resetCount(){
+   fldCounter = 0;
+   }
+    </script> 
+<apex:sectionHeader title="Field Mapping" subtitle="Field Mapping" help="{!URLFOR($Page.jiffle__JNMappingsHelp)}"/>
+    <apex:pageMessages escape="false" id="msgs"/>
+    <apex:form id="theForm" >
+        <apex:pageBlock id="srchresults1" >
+            <apex:pageBlockButtons >
+                <apex:commandButton value="Save Mapping" immediate="false" reRender="msgs" action="{!doSave}"/>
+                <apex:commandButton value="Cancel" action="{!doCancel}"/>
+            </apex:pageBlockButtons>
+            <apex:panelGrid columns="3"  width="100%" columnClasses="col1,col2,col3" >
+                <apex:outputPanel >
+                    <apex:outputText value="Search Object"/>&nbsp;&nbsp;
+                    <apex:inputText Title="List of Objects" value="{!objName}"  label="Search Objects" />&nbsp;&nbsp;
+                    <apex:commandButton value="Go!" onclick="return window.confirm('Searching for Objects without saving will clear the selections made! Do you wish to proceed?');" action="{!populateObjects}" title="Go!"/>
+                </apex:outputPanel>
+                <apex:outputPanel >
+                    <apex:outputText value="Search Fields"/>&nbsp;&nbsp;
+                    <apex:inputText value="{!fieName}" title="List of fields for the selected object" label="Search Objects" />&nbsp;&nbsp;
+                    <apex:commandButton value="Go!"  onclick="return window.confirm('Searching for fields without saving will clear the selections made! Do you wish to proceed?');" action="{!populateFields}"    title="Go!"/>
+                </apex:outputPanel>
+             <apex:outputPanel >
+                    <font color="Blue">No. of Fields selected : 
+                        <apex:outputPanel id="myScript" >
+                            <script type="text/javascript">
+                                document.getElementById("j_id0:theForm:srchresults1:myScript").innerHTML=fldCounter;
+                            </script>
+                        </apex:outputPanel>
+                    </font>
+                </apex:outputPanel>
+            </apex:panelGrid>  
+            <br/>
+             
+            <apex:panelGrid columns="2" id="theGrid"  width="100%" columnClasses="colpnl1,colpnl2 ">
+                <apex:outputPanel >
+                    <apex:outputPanel style="padding:5px;" layout="block" styleClass="myHeader">
+                        <apex:outputText value="Objects"/>
+                    </apex:outputPanel>
+                   
+                    <!--<apex:actionFunction name="populateFields1" action="{!populateFields}" reRender="fieldtbl"/>-->
+                    <!--<apex:pageBlockTable value="" id="cases_table" title="Objects" >
+                        <apex:column >-->
+                            <!--<input type="radio" name="letters"  value="{!o.oName}" onclick="changeValue(this,'{!$Component.RadioButtonValue}');" /> {!o.oLabel}-->
+                    <apex:selectRadio id="objSelector" value="{!selectedValue}" layout="pageDirection" rendered="{!dispFlag}">
+                        <apex:SelectOptions value="{!objvalues}" />
+                            <apex:actionSupport onbeforedomupdate="resetCount();" event="onchange"  reRender="fieldtbl,myScript,relobj" action="{!populateFields}" />
+                    </apex:selectRadio>                            
+                        <!--</apex:column>
+                    </apex:pageBlockTable>-->
+                    <!--<apex:inputHidden value="{!selectedValue}" id="RadioButtonValue" />-->
+                    <apex:outputPanel styleClass="optlbl"  rendered="{!!dispFlag}" > 
+                        <apex:outputLabel styleClass="optlbl" >No matches found!</apex:outputLabel>
+                    </apex:outputPanel>
+
+                </apex:outputPanel>
+           
+                <apex:outputPanel id="fieldtbl" >
+                    <apex:outputPanel style="padding:5px;" layout="block" styleClass="myHeader" >
+                        <apex:outputText value=" Displaying fields for {!selectedValue}"/>
+                    </apex:outputPanel>
+                    <apex:pageBlockTable value="{!fieldLstToShow}" var="f"  id="cases_table1" title="Fields" rendered="{!fieldFlag}" >
+                        <apex:column headerValue="Select">
+                            <apex:inputCheckbox value="{!f.isChecked}"  onchange="selectField(this);" >
+                            <apex:actionSupport event="onclick" rerender="myScript" status="searchstatus1"/>
+                            </apex:inputCheckbox>
+                        </apex:column>
+                        <apex:column value="{!f.fLabel}" headerValue="Field Label"/>
+                        <apex:column value="{!f.fName}" headerValue="Field Name"/>
+                        <apex:column value="{!f.fType}" headerValue="Field Type"/>
+                        <apex:column headerValue="Pick values from SFDC?">
+                            <apex:inputCheckbox value="{!f.SFDC}"/>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                     <apex:outputPanel styleClass="optlbl"  rendered="{!!fieldFlag}" > 
+                        <apex:outputLabel styleClass="optlbl" >No matches found!</apex:outputLabel>
+                    </apex:outputPanel>
+                    <apex:outputPanel >
+                    <table width="100%">&nbsp;
+                        <tr>
+                            <td width="85%">&nbsp;</td>
+                            <td width="15%">
+                                <apex:commandButton image="{!$Resource.jiffle__pale_blue_previous}" rendered="{!!DisablePrevious}" rerender="fieldtbl"  action="{!beginning}" style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  />
+                                <apex:commandButton image="{!$Resource.jiffle__grey_previous}"      rendered="{!DisablePrevious}"  rerender="fieldtbl"   style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"/>
+                                <apex:commandButton image="{!$Resource.jiffle__pale_blue_left}"     rendered="{!!DisablePrevious}"  rerender="fieldtbl"  action="{!previous}" style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;" />
+                                <apex:commandButton image="{!$Resource.jiffle__grey_left}"          rendered="{!DisablePrevious}"   rerender="fieldtbl"  style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"/> 
+                                <apex:commandButton image="{!$Resource.jiffle__pale_blue_right}"    rendered="{!!DisableNext}"   rerender="fieldtbl"  action="{!next}" style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"/>
+                                <apex:commandButton image="{!$Resource.jiffle__grey_right}"         rendered="{!DisableNext}"    rerender="fieldtbl"   style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;" />
+                                <apex:commandButton image="{!$Resource.jiffle__pale_blue_last}"     rendered="{!!DisableNext}"  rerender="fieldtbl"  action="{!last}" style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;" /> 
+                                <apex:commandButton image="{!$Resource.jiffle__grey_last}"          rendered="{!DisableNext}"   rerender="fieldtbl"   style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"/> 
+                            </td>
+                        </tr>
+                    </table>              
+                    
+    </apex:outputPanel>                        
+                </apex:outputPanel>
+                <apex:outputPanel style="padding:5px;" rendered="{!dispFlag}" layout="block" styleClass="myHeader"> 
+                    <apex:outputText value="Mappings related to?"/>
+                </apex:outputPanel> 
+            </apex:panelGrid> 
+            <apex:outputPanel styleClass="relMap"  rendered="{!dispFlag}" id="relobj">&nbsp;
+                <apex:inputField styleClass="relMap" value="{!mapObj.jiffle__Related_to_Object__c}">
+                    <apex:actionSupport event="onchange" reRender="msgs"/>
+                </apex:inputField>
+            </apex:outputPanel>  
+        </apex:pageBlock>
+ 
+    </apex:form>
+  
+</apex:page>
