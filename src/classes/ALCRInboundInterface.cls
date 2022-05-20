@@ -12,6 +12,7 @@ global class ALCRInboundInterface{
 
 ****************************************************************/
 	// Response class to send status info to ALCR interface
+    test
 	global class Response{
 		webservice String message;
 		webservice Integer errorCode;
