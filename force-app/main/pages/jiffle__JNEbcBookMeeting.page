@@ -1,0 +1,907 @@
+<apex:page controller="jiffle.JNBookMeeting" standardStylesheets="false" showHeader="true" sidebar="false" tabStyle="Jifflenow_Meetings__tab">
+<link rel="stylesheet" href="{!URLFOR($Resource.JNResources, 'JNResources/application.css')}"/>
+<html lang="en">
+<apex:include pageName="jiffle__JNGlobals"/>
+<div id="sf-jiffle-now" class="jiffle-briefings iris-bootstrap">
+
+  <div class="notification-modal modal fade green" style="z-index: 1051;">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close js-modal-close" aria-label="Close"><span aria-hidden="true">×</span></button>
+          <h4 class="modal-title"></h4>
+        </div>
+        <div class="modal-body"></div>
+        <div class="modal-footer">
+          <button type="button" data-dismiss="modal" class="btn btn-blue modal-done" data-i18n="YES"></button>
+          <button type="button" data-dismiss="modal" class="btn btn-blue modal-cancel" data-i18n="NO"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="iris-react">
+    <div class="notification-mount"></div>
+  </div>
+
+  <div id="meeting-request-container" class="hide">
+    <div class="bm-page">
+      <div class="detail-container">
+        <div class="precond-head">
+          <div class="row">
+            <div class="col-xs-8">
+              <form id="details-form" action="javascript:void(0)" class="jn-form-inline precond-form">
+                <div class="row">
+                  <div class="col-xs-3">
+                    <div class="precond-meetingwith form-group" id="req-page-briefing-meeting-with-form">
+                      <label>Meeting With</label>
+                      <input class="form-control" id="meetingWithField" type="text" name="first_name" placeholder="Meeting with" autocomplete="off" disabled="disabled" />
+                    </div>
+                  </div>
+                  <div class="col-xs-3">
+                    <div class="precond-briefinginfo">Briefing attendee information
+                      <i class="jif-info" id="briefing-info"></i>
+                    </div>
+                  </div>
+                  <div class="col-xs-3">
+                    <div class="form-group hide precond-topic" id="js-select-topic-holder">
+                      <label>Topic</label>
+                      <i class="jif-info" id="topic-description"></i>
+                      <div class="jn-select2">
+                        <select id="topicField" type="text" name="topicField" class="form-control" placeholder="Topic Name"
+                          autocomplete="off"></select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div class="col-xs-4">
+              <div class="action-btns text-right">
+                <button class="btn blue-btn hide" id="quick_submit_btn" data-i18n="quick_book"></button>
+                <button class="btn btn-tertiary delete-btn" id="cancel-btn" data-ol-has-click-handler="">Discard</button>
+                <button class="btn blue-btn" id="proceed-btn" data-i18n="proceed"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal select-time-modal mapping-time-popup" id="custom_popup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-body">
+              <div class="select-time">
+                <div id="error_block" style="color:red"></div>
+                <form class="jiffle-form">
+                  <div class="row">
+                    <label class="font-semi-bold pull-left margin-top-4 bottom-margin-10" data-i18n="set_time"></label>
+                    <span class="pull-right point-cursor" id="custom_popup_close">
+                      <i class="jif-iris-cancel-thin jif-8-10"></i>
+                    </span>
+                    <div class="col-xs-12">
+                      <div class="form-group" data-form-i18n="start_time">
+                        <label>Start</label>
+                        <input type="text" class="form-control" placeholder="HH:MM" id="start_time" />
+                      </div>
+                    </div>
+                    <div class="col-xs-12">
+                      <div class="form-group" data-form-i18n="end_time">
+                        <label>End</label>
+                        <input type="text" class="form-control" placeholder="HH:MM" id="end_time" />
+                      </div>
+                    </div>
+                    <div class="col-xs-12">
+                      <a href="javascript:void(0)" class="btn btn-blue" id="custom_popup_submit" data-i18n="Confirm"></a>
+                      <a href="javascript:void(0)" class="font-10 font-blue" id="custom_popup_unselect">Discard</a>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bm-container">
+        <div class="bm-attendee-col">
+          <div class="section attendees-section">
+            <div class="section-header">
+              <span class="section-title pull-left">
+                Internal Attendees<span class="section-attendee-count" id="internalAttendeeCount">0</span>
+              </span>
+              <div class="section-actions">
+                <i class="jif-iris-add js_tooltip" title="Add Attendee" data-placement="top" id="attendee-addbtn" data-target="#add-attendee-modal" data-toggle="modal"></i>
+                <i class="copy-customer-info jif-iris-copy js-copy-attendee js_tooltip" title="Copy Attendee" data-placement="top"></i>
+              </div>
+            </div>
+
+            <div class="pick-tool">
+              <div class="search-field-icon-left search-field-container jif-dark2-grey">
+                <i id="search-field-context-icon-internal" class="jif-12 jif-iris-search contextual-field-icon js_clear-search"></i>
+                <i id="search-field-context-icon-external" class="jif-12 jif-iris-search contextual-field-icon js_clear-search hide"></i>
+                <input type="text" class="form-control search-box user-search-box" placeholder="Search" autocomplete="off" />
+              </div>
+              <ul class="nav navbar-nav navbar-right navbar-icon hide" id="attendee-filter-panel">
+                <li class="dropdown filter-dropdown">
+                  <a href="javascript:void(0)" class="filter-dropdown-toggle" data-toggle="dropdown"></a>
+                  <div class="dropdown-menu">
+                    <form action="javascript:void(0)" class="form">
+                      <div class="form-group-search">
+                        <div class="row">
+                          <div class="col-sm-10">
+                            <input type="text" class="form-control" id="attendee-filter-search" />
+                          </div>
+                          <div class="col-sm-2"></div>
+                        </div>
+                      </div>
+                      <span data-i18n="filter_by"></span>
+                      <div class="form-group">
+                        <div class="row" id="attendee-filter"></div>
+                      </div>
+                      <div class="text-left">
+                        <a href="javascript:void(0)" class="cancel pull-left" data-i18n="reset"></a>
+                        <button class="btn btn-blue pull-right apply" data-i18n="apply_filter"></button>
+                      </div>
+                    </form>
+                  </div>
+                </li>
+              </ul>
+            </div>
+    
+            <div class="section-content">
+              <div class="tab-content tabs-attendees-content">
+                <div role="tabpanel" class="tab-pane active" id="internal-attendees-tab">
+                  <div class="added-intetrnal-attendee"></div>
+                  <div class="attendees-list"></div>
+                  <div class="loading hide">
+                    <span>
+                      <b data-i18n="loading"></b>
+                    </span>
+                  </div>
+                </div>
+                <div role="tabpanel" class="tab-pane" id="external-attendees-tab">
+                  <div class="added-external-attendee"></div>
+                  <div class="attendees-list"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bm-calendar-col book-meeting">
+          <div class="js-date-picker-section jn-form-inline timezone-field">
+          </div>
+          <div class="section calendar-section ">
+            <div class="section-header">
+              <div class="header-left pull-left">
+                <span class="section-title calendar-section-title" data-i18n="select_meeting"></span>
+                <span class="cal-help-text" data-i18n="select_hold_drag"></span>
+              </div>
+              <div class="js-date-picker-section jn-form-inline timezone-field">
+              </div>
+            </div>
+            <div class="section-caltime">
+              <div class="nav-buttons">
+                <div class="js-calendar-dropleft">
+                  <i class="jif-iris-dropleft"></i>
+                </div>
+                <div class="js-calendar-dropright">
+                  <i class="jif-iris-dropright"></i>
+                </div>
+              </div>
+              <div class="section-caltime-right">
+                <button class="btn-week-picker" id='meeting-week-picker'>Change Date Range <i class="jif-iris-dropdown"></i></button>
+              </div>
+              <div class="granular-edit">
+                <form class="js-set-time-form">
+                  <div class="caltime-form">
+                    <div class="timezone-text text-ellipsis"></div>
+                    <div class="section-caltime-left">
+                      <span>From</span>
+                      <div class="section-caltime-bx">
+                        <input type="text" name="start_time" readonly="true"></input>
+                      </div>
+                      <span>To</span>
+                      <div class="section-caltime-bx">
+                        <input type="text" name="end_time" readonly="true"></input>
+                      </div>
+                    </div>
+                    <div class='pull-left'>
+                      <i class='js-clear-cal-event jif-iris-trash point-cursor'></i>
+                    </div>
+                    <div id="error_block" class="caltime-error" style="color: #a94442">
+                    </div>
+                  </div>
+                  <div class="secondary-time js-secondary-time">
+                    <div class="text-ellipsis timezone"></div>
+                    <div class="date-time">
+                      <div class="sec-time"></div>
+                      <div class="sec-date"></div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="section-content cal-content">
+              <div class="text-center hidden-lg hidden-md hidden-sm" id="timeLabel"></div>
+              <div class="calender">
+                <div id="scheduler_here" class="dhx_cal_container">
+                  <div class="timezone-name-container">
+                    <ul class="timezone-list new">
+                      <li><a data-toggle="modal" data-target="#changeTimezoneModal" href="#changeTimezoneModal" class="secondary-timezone text-ellipsis">Timezone</a></li>
+                      <li><a data-toggle="modal" data-target="#changeTimezoneModal" href="#changeTimezoneModal" class="primary-timezone text-ellipsis"></a></li>
+                    </ul>
+                  </div>
+                  <div class="dhx_cal_navline hide">
+                    <div class="dhx_cal_prev_button">&nbsp;</div>
+                    <div class="dhx_cal_next_button">&nbsp;</div>
+                    <div class="dhx_cal_date hide"></div>
+                  </div>
+                  <div class="dhx_cal_header">
+                  </div>
+                  <div class="dhx_cal_data">
+                  </div>
+                </div>
+                <div class="bm-cal-loader hide">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th><lines class="shine"></lines></th>
+                        <th><lines class="shine"></lines></th>
+                        <th><lines class="shine"></lines></th>
+                        <th><lines class="shine"></lines></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <div class="lines-cont">
+                            <lines class="shine"></lines>
+                            <lines class="shine"></lines>
+                          </div>
+                          <div class="lines-cont">
+                            <lines class="shine"></lines>
+                            <lines class="shine"></lines>
+                          </div>
+                          <div class="lines-cont">
+                            <lines class="shine"></lines>
+                            <lines class="shine"></lines>
+                          </div>
+                          <div class="lines-cont">
+                            <lines class="shine"></lines>
+                            <lines class="shine"></lines>
+                          </div>
+                          <div class="lines-cont">
+                            <lines class="shine"></lines>
+                            <lines class="shine"></lines>
+                          </div>
+                          <div class="lines-cont">
+                            <lines class="shine"></lines>
+                            <lines class="shine"></lines>
+                          </div>
+                        </td>
+                        <td>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                        </td>
+                        <td>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                        </td>
+                        <td>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                        </td>
+                        <td>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                          <box class="shine"></box>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bm-room-col">
+          <div class="section meeting-type-section">
+            <div class="section-header">
+              <span class="section-title" data-i18n="pick_meeting_type_and_room"></span>
+            </div>
+
+            <div class="section-tabs">
+              <ul class="nav nav-tabs hide" id="roomsTabList" role="tablist">
+                <li role="presentation" class="active" id="mappedTab">
+                  <a href="#mappedroom" role="tab" data-roomType="mappedRooms" data-toggle="tab" aria-expanded="true" class="js_popover" data-placement="bottom" data-content="Rooms mapped to this meeting type">Recommended</a>
+                </li>
+                <li role="presentation" id="othersTab" class="others-tab-label">
+                  <a href="#otherroom" role="tab" data-roomType="otherRooms" data-toggle="tab" aria-expanded="true" class="js_popover" data-placement="bottom" data-content="Rooms not mapped to this meeting type">Others</a>
+                </li>
+                <li role="presentation" id="offsiteTab" class="offsite-tab-label js-offsite-location">
+                  <a href="#offsite" role="tab" data-roomType="offsiteLocation" data-toggle="tab" aria-expanded="true" data-i18n="add_offsite_location" class="js_popover" data-placement="bottom"></a>
+                </li>
+              </ul>
+            </div>
+
+            <div class="section-content">
+              <div class="tab-content tabs-attendees-content">
+                <div role="tabpanel" class="tab-pane active room-list-container" id="mappedroom">
+                  <div class="meeting-list js_selected_room"></div>
+
+                  <div class="room-select-list">
+                    <div class="room-select-item select-room-btn booth-tour-item non-jmm-room js-selectNonJmmMstRoom hide" id="nonJmmRoom">
+                      <div class="offsite-detail">
+                        <div class="type-title text-ellipsis" id="nonJmmRoomName" data-i18n="mst_on_site_room"></div>
+                      </div>
+                    </div>
+                    <div class="room-select-item select-room-btn booth-tour-item js_check_room js-selectBoothTour" id="boothTour">
+                      <div class="offsite-detail">
+                        <div class="type-title text-ellipsis" id="boothTourName"></div>
+                        <div class="type-detail">
+                          <span class="boothtour-address">ADDRESS</span>
+                          <span id="boothTourAddress" class="boothtour-detail"></span>
+                        </div>
+                      </div>
+                      <i class="jif-iris-boothtour booth-tour-icon js_tooltip" title="Booth tour" data-placement="left"></i>
+                    </div>
+                    <div class="room-list"></div>
+                  </div>
+                </div>
+                <div role="tabpanel" class="tab-pane other-room-list-container" id="otherroom">
+                  <div class="meeting-list"></div>
+
+                  <div class="room-select-list">
+                    <div class="room-list"></div>
+                  </div>
+                </div>
+
+                <div role="tabpanel" class="tab-pane" id="offsite">
+                  <div class="meeting-list"></div>
+                  <div class="mst-offsite-check">
+                    <div class="room-selected active mst-selected-offsite js-mst-toggle-offsite">
+                      <div class="room-selected-icon hide">
+                        <i class="jif-check"></i>
+                      </div>
+                      <div class="offsite-detail">
+                        <div class="type-title text-ellipsis">Offsite</div>
+                      </div>
+                    </div>
+
+                  </div>
+                  <div class="room-select-list">
+                    <div class="offsite-location js-offsite-location">
+                      <form action="javascript:void(0)" class="jiffle-form">
+                        <div class="form-group" data-form-i18n="location_name">
+                          <label class="required">Location Name</label>
+                          <input type="text" name="offsiteName" class="form-control" id="name" required="required" />
+                        </div>
+                        <div class="form-group" data-form-i18n="address">
+                          <label>Details</label>
+                          <textarea type="text" name="offsiteAddress" class="form-control" id="address"></textarea>
+                        </div>
+                        <div class="form-group text-center">
+                          <button class="btn blue-btn pull-left" id="add-offsite-btn" data-i18n="SAVE"></button><br/>
+                          <a href="javascript:void(0)" class="cancel hide" id="create-cancel-btn" data-i18n="CANCEL"></a>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="section section-meeting-making hide" id="activity_in_making">
+            <div class="section-header">
+              <span class="section-title" data-i18n="meeting_in_making">
+              </span>
+            </div>
+            <div class="section-content">
+              <div class="selected-item selected-time">
+                <div class="selected-title" data-i18n="selected_time">
+                </div>
+              </div>
+              <div class="selected-item selected-room">
+                <div class="selected-title" data-i18n="selected_location">
+                </div>
+              </div>
+              <div class="selected-item selected-internal-attendee">
+                <div class="selected-title">
+                  <span class="count selectedInternalAttendeeCount">0</span>
+                  <span data-i18n="internal_participants">
+                  </span>
+                </div>
+                <div class="selected-attendee-list scroll-y">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="proceed_page" class="hide">
+    <div class="book-meeting bottom-margin-70">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-4 col-sm-5">
+            <div class="section section-meeting-proceed">
+              <div class="section-content">
+                <div class="selected-item selected-time"></div>
+                <div class="selected-item selected-room"></div>
+
+                <div class="selected-item selected-internal-attendee no-padding-left-right">
+                  <div class="selected-title" >
+                    <div class="selected-title-left">
+                      <i class="jif-user-circle-o jif-16"></i>
+                      <span data-i18n="internal_participants"></span>
+                      <span class="count selectedInternalAttendeeCount">0</span>
+                    </div>
+                    <div>
+                      <a href="javascript:void(0)" class='go-to-main-internal hide pull-right'>
+                        <i class="jif-plus-circle-o"></i><span data-i18n="Add"></span>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="selected-attendee-list scroll-y">
+                    <div class="attendee-empty-state internal">
+                      <div class="empty-img">
+                        <div class="empty-user-svg"></div>
+                      </div>
+                      <div class="empty-txt">
+                        <div>No attendees available</div>
+                        <div>Add new users or map users to this meeting type and topic</div>
+                        <a href="javascript:void(0)" class="add-participant"><i class="jif-plus-circle-o"></i> <span data-i18n="add_internal_participants"></span></a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-8 col-sm-7">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="section section-meeting-proceed">
+                  <div class="section-header">
+                    <div>
+                      <div class="status-content js-single-meetings">
+                        <div class="meeting-status"></div>
+                        <span class='approved-text'></span>
+                      </div>
+                      <div class="meeting-id" data-i18n="meeting_in_making">Meeting Details</div>
+                      <div class="activity js-activity-name"></div> <!-- rails_to_html.activity_name -->
+                      <a class="js-change-meeting-type cursor-pointer hide" data-i18n="change_meeting_type_link"></a>
+                    </div>
+                    <div>
+                      <button class="btn btn-secondary approve-meeting hide" data-i18n="approve"></button>
+                      <button class="btn btn-secondary accept-meeting hide" data-i18n="accept"></button>
+                      <button class="btn btn-secondary conflict-meeting hide" data-i18n="conflicts"></button>
+                      <button class="btn btn-tertiary cancel-meeting hide" data-i18n="cancel"></button>
+                      <div class="dropdown cursor-pointer pull-right">
+                        <a data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="js-secondary-action-dropdown hide">
+                          <i class="jif-more"></i>
+                        </a>
+                        <ul class="dropdown-menu js-secondary-action-list">
+                          <li id="js-meeting-survey" class="js-meeting-survey hide">
+                            <a href="javascript:void(0)">
+                              <div class="font-12">Survey</div>
+                            </a>
+                          </li>
+                          <li class="decline-meeting hide">
+                            <a href="javascript:void(0)">
+                              <div class="font-12" data-i18n="decline"></div>
+                            </a>
+                          </li>
+                          <li class="transfer-meeting hide">
+                            <a href="javascript:void(0)">
+                              <div class="font-12" data-i18n="transfer"></div>
+                            </a>
+                          </li>
+                          <li class="participation-meeting hide">
+                            <a href="javascript:void(0)">
+                              <div class="font-12" data-i18n="Participation"></div>
+                            </a>
+                          </li>
+                          <li class="export-report-meeting hide">
+                            <a href="javascript:void(0)">
+                              <div class="font-12" data-i18n="Export Report"></div>
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="meet-details-custom">
+              <div class="back-to-briefing">
+                <i class="jif-iris-dropleft"></i><span class="briefing-id-btn"></span>
+              </div>
+              <form action="javascript:void(0)" class="jiffle-form meeting-summary">
+                <div class="form-group" data-form-i18n="requestor_select">
+                  <div>
+                    <label class="required">Requestor Name</label>
+                    <select class="form-control" name="requestor_list" id='requestor-select' required="required"></select>
+                    <div id="requestor-label-div" class="requestor-label-div form-control disabled hide"></div>
+                  </div>
+                  <div>
+                    <button class="btn btn-secondary hide" id="send-requestor-mail-btn"><i class="jif-email"></i> Mail</button>
+                    <button class="btn btn-secondary js-meeting-survey hide" id="js-requestor-survey"><i class="jif-survey"></i> Survey</button>
+                  </div>
+                </div>
+              </form>
+
+              <ul class="jn-c-tabs meeting-detail-tabs" role="tablist">
+                <li role="presentation" class="active">
+                  <a href="#meeting-info" role="tab" data-toggle="tab" aria-expanded="true">Meeting Information</a>
+                </li>
+                <li role="presentation" class="hide">
+                  <a href="#meeting-notes" role="tab" data-toggle="tab" aria-expanded="true" id='js-meeting-notes-tab'>Notes</a>
+                </li>
+                <li role="presentation" class="hide">
+                  <a href="#meeting-history-tab" role="tab" id='js-meeting-history-tab' data-toggle="tab" aria-expanded="true">History</a>
+                </li>
+              </ul>
+
+              <div class="tab-content jn-c-tab-content">
+                <div role="tabpanel" class="tab-pane active" id="meeting-info">
+                  <div class="external_request_url text-right hide">
+                    <a href="" class="" target="_blank" data-i18n="external_request_details">
+                    </a>
+                  </div>
+                  <form action="javascript:void(0)" class="jiffle-form custom-form" id='customer_form'>
+                    <div class="bottom-margin-15 text-right pull-right">
+                      <span class="btn btn-secondary copy-customer-info js-copy-customer-info point-cursor">
+                        <span class="jif-iris-copy font-blue"></span>
+                        <span class='font-blue  text-capitalize' data-i18n="copy_from"></span>
+                      </span>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 col-xs-12">
+                        <div id='dynamic_form'></div>
+                      </div>
+                    </div>
+                  </form>
+                  <div class="row">
+                    <div class="col-md-6 col-xs-12">
+                      <form class="jiffle-form custom-form hide" id="js-attachments-form">
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                <div role="tabpanel" class="tab-pane" id="meeting-notes"></div>
+                <div role="tabpanel" class="tab-pane" id="meeting-history-tab">
+                  <div class="jn-p-meeting_history__header" data-spy="affix" data-offset-top="322">
+                    <div class="row">
+                      <div class="col-md-6 col-sm-6">
+                        <span class="line-height-35 all_updates">Showing all Updates</span>
+                      </div>
+                      <div class="col-md-4 col-sm-6 col-md-offset-2">
+                        <form autocomplete="off">
+                          <div class="form-group bottom-margin-0 jn-c-form-control--search-icon">
+                            <input type="text" class="jn-c-form-control--search form-control history-search-box" name="" placeholder="Search" autocomplete="off"/>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="meeting-history"></div>
+                  <div id="load_more" class="load_more_history"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bulk-action button-bar">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-2 col-md-offset-5 col-xs-6">
+            <a href="javascript:void(0)" class="btn btn-tertiary btn-block cancel discard-meeting text-center" data-i18n="discard"></a>
+          </div>
+          <div class="col-md-2 col-xs-6">
+            <button type="submit" class="btn btn-blue btn-block btn-submit" id="submitButton" data-i18n="SUBMIT"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal select-time-modal" id="custom_meeting_popup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-body">
+          <div class="select-time">
+            <div id="error_block" style="color:red">
+            </div>
+            <h5 data-i18n="select_time"></h5>
+            <form action="javascript:void(0)" class="jiffle-form">
+              <div class="form-group">
+                <div class="row">
+                  <div class="col-xs-12"><span class="date" id="meeting_date"></span></div>
+                  <div class="col-xs-12">
+                    <label>Start Time</label>
+                    <div class="time-spinner" id="meeting_start_time"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="row">
+                  <div class="col-xs-12">
+                    <label>End Time</label>
+                    <div class="time-spinner" id="meeting_end_time"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-xs-12">
+                  <div class="text-right">
+                    <a href="javascript:void(0)" class="cancel" id="meeting_popup_close" data-i18n="CANCEL"></a>
+                    <a href="javascript:void(0)" class="btn btn-blue" id="meeting_popup_submit" data-i18n="OK"></a>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal modal-jiffle modal-list event-list-modal blue fade js-attendee-survey-modal" data-backdrop="static" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+          <h4 class="modal-title">Select Survey(s)</h4>
+        </div>
+        <div class="modal-body">
+          <div class="container-fluid no-padding event-list-content card-container list-view">
+            <div class="row hide">
+              <div class="col-md-12">
+                <div class="font-red"></div>
+              </div>
+            </div>
+            <div class="row" id="attendee-survey-container">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-blue" id="js-attendee-survey-mail">send email</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal modal-jiffle blue fade" id="comments_modal">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content bg-white">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i class="jif-iris-cancel-thin"></i></span></button>
+          <h4 class="modal-title"></h4>
+        </div>
+        <div class="modal-body">
+          <form class="form js-comment-form">
+            <div class="row">
+              <div class="col-xs-12">
+                <select class="form-control js-comments" name="comments" required="required"></select>
+              </div>
+              <div class="col-xs-12">
+                <textarea class="js-others-comments form-control margin-top-15 hide" name="others_comments" rows="1"></textarea>
+              </div>
+            </div>
+          </form>
+          <div class="comment-error error-block" data-i18n="comments_error"></div>
+        </div>
+        <div class="modal-footer">
+          <div class='edit-btn'>
+            <a class="cancel" data-dismiss="modal" data-i18n="comments_close"></a>
+            <button type="button" class="btn btn-blue modal-done js-action-btn"></button>
+          </div>
+        </div>
+        <div class="note-footer" data-i18n="comments_footer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade jn-c-modal" tabindex="-1" role="dialog" id="changeTimezoneModal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><i class="jif-iris-close jif-12"></i></button>
+            <h4 class="modal-title">Time zone</h4>
+          </div>
+          <div class="modal-body">
+            <div class="jiffle-form">
+              <div class="form-group">
+                <label>Primary Timezone</label>
+                <select id="primary-city-for-time-zone" class="primary-timezone-select" data-type='primary-timezone' name="primary_city_for_time_zone" tabindex="-1" aria-hidden="true" >
+                    <option>Timezone</option>
+                  </select>
+              </div>
+              <div class="form-group">
+                <label>Secondary Timezone</label>
+                <select id="city-for-time-zone" class="secondary-timezone-select" data-type='secondary-timezone' name="city_for_time_zone" tabindex="-1" aria-hidden="true">
+                  <option>Timezone</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id='save-timezone'>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  <div class="modal fade js-add-attendee-modal" type="internal" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="content">
+        <div class="jiffle-panel">
+          <div class="jiffle-panel-head">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+            <h1 data-i18n="add_attendee"></h1>
+            <span class="hint" data-i18n="add_attendee_hint"></span>
+          </div>
+          <div class="jiffle-panel-body">
+            <form action="javascript:void(0)" class="jiffle-form js-add-attendee-form" role="form">
+              <div id="internalPrimaryFields"></div>
+              <div id="internalAdditionalFormFields"></div>
+              <div class="termsandcondition hide js-termsandcondition ">
+                <div class="checkbox">
+                  <input type="checkbox" name="consent" id="internal_consent" value="true" />
+                  <label for="internal_consent" class="add_user_consent_message"></label>
+                </div>
+              </div>
+
+              <div class="form-group" data-form-i18n="add">
+                <button type="button" class="btn btn-lg btn-block btn-blue add-attendee-btn js-add_attendee">Add</button>
+              </div>
+              <div class="foot-privacypolicy"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade js-add-attendee-modal" type="external" role="dialog" data-backdrop="static" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="content">
+        <div class="jiffle-panel">
+          <div class="jiffle-panel-head">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+            <h1 data-i18n="add_attendee"></h1>
+            <span class="hint" data-i18n="add_attendee_hint"></span>
+          </div>
+          <div class="jiffle-panel-body">
+            <form action="javascript:void(0)" class="jiffle-form js-add-attendee-form" role="form">
+              <div class="form-group toggle-switch-m hide js-sync-contact-sfdc" id="js-external-sync-contact-sfdc">
+                <div class="row">
+                  <div class="col-xs-8">
+                    <label class="js-sync-sfdc">Sync contact to SFDC</label>
+                  </div>
+                  <div class="col-xs-4">
+                    <div class="toggle-switch">
+                      <input type="checkbox" name="sync_contact" id="external_sync_sfdc_contact" />
+                      <label for="external_sync_sfdc_contact"></label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="externalPrimaryFields"></div>
+              <div id="externalAdditionalFormFields"></div>
+              <div class="termsandcondition hide js-termsandcondition">
+                <div class="checkbox">
+                  <input type="checkbox" name="consent" id="external_consent" value="true" />
+                  <label for="external_consent" class="add_user_consent_message"></label>
+                </div>
+              </div>
+
+              <div class="form-group" data-form-i18n="add">
+                <button type="button" class="btn btn-lg btn-block btn-blue add-attendee-btn js-add_attendee">Add</button>
+              </div>
+              <div class="foot-privacypolicy"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal select-time-modal fade" id="select-time">
+    <div class="modal-dialog">
+      <div class="select-time">
+        <h5 data-i18n="select_time"></h5>
+        <form action="javascript:void(0)" class="jiffle-form">
+          <div class="row">
+            <div class="col-xs-6">
+              <div class="form-group" data-form-i18n="start_time">
+                <label>Start</label>
+                <input type="text" class="form-control" placeholder="HH:MM" id="start-time" />
+              </div>
+            </div>
+            <div class="col-xs-6">
+              <div class="form-group" data-form-i18n="end_time">
+                <label>End</label>
+                <input type="text" class="form-control" placeholder="HH:MM" id="end-time" />
+              </div>
+            </div>
+            <div class="col-xs-12">
+              <div class="text-right">
+                <a href="javascript:void(0)" class="cancel-" data-i18n="CANCEL"></a>
+                <a href="javascript:void(0)" class="btn btn-blue" data-i18n="OK"></a>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade modal-user-info" id="attendee-information">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="myModalLabel" data-i18n="basic_info"></h4>
+        </div>
+        <div class="modal-body">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cover">
+    <div class="loaders">
+      <div style="display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="54" height="54"><style>path{stroke:#fff;stroke-width:2.2}</style><defs><circle id="c" cy="-22.6" r="4.4" fill="#0d9cd7"/></defs><g transform="translate(27 27)"><circle r="15" fill="#11171f"/><g id="circles"><use xlink:href="#c"/><use xlink:href="#c" transform="rotate(45)"/><use xlink:href="#c" transform="rotate(90)"/><use xlink:href="#c" transform="rotate(135)"/><use xlink:href="#c" transform="rotate(180)"/><use xlink:href="#c" transform="rotate(225)"/><use xlink:href="#c" transform="rotate(270)"/><use xlink:href="#c" transform="rotate(315)"/><animateTransform attributeName="transform" dur="10s" type="rotate" from="0" to="360" repeatCount="indefinite"/></g><path id="long-hand" d="M0-13V0"><animateTransform attributeName="transform" dur="1.6667s" type="rotate" from="0" to="360" repeatCount="indefinite"/></path><path id="short-hand" d="M0-8.5V0"><animateTransform attributeName="transform" dur="20s" type="rotate" from="0" to="360" repeatCount="indefinite"/></path><path stroke-linecap="round" d="M0 0l0 0"/></g></svg>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  window.CKEDITOR_BASEPATH = "{!URLFOR($Resource.JNCKeditor, 'ckeditor/')}";
+</script>
+<script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNCKeditor, 'ckeditor/ckeditor.js')}"></script>
+<script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNResources, 'JNResources/application.js')}"></script>
+<script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNResources, 'JNResources/dhtmlx.js')}"></script>
+<script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNBooks)}"></script>
+<script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNBooksReact)}"></script>
+<script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNJqueryMigrate)}"></script>
+<script type="text/javascript">
+  Visualforce.remoting.timeout = 120000;
+</script>
+</html>
+</apex:page>
