@@ -1,0 +1,814 @@
+<aura:component
+    implements="flexipage:availableForAllPageTypes,force:hasRecordId,forceCommunity:availableForAllPageTypes"
+    access="global" controller="NokiaCPQquoteActionsController">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <!-- handle Application level event after the Product Status Check. Use the function to proceed with Order Export -->
+    <aura:handler event="c:CPQ_Evt_ProceedForExport" action="{!c.handleProductStatusCheckEvent}" />
+    <aura:registerEvent name="appEvent" type="c:CPQ_Evt_ToCallStatusCheck" />
+    <aura:attribute name="IsSpinner" type="boolean" default="false" />
+
+    <aura:attribute name="recordId" type="Id" description="The Id of the record" />
+    <aura:attribute name="profileName" type="Boolean"
+        description="Check if the current user has Access to prm export" />
+    <aura:attribute name="loaAccess" type="Boolean" description="Check if the current user has Access to prm export" />
+    <aura:attribute name="showApprovals" type="Boolean" />
+    <aura:attribute name="newProposal" type="Boolean" default="true" />
+    <aura:attribute name="grandTotal" type="Double" />
+    <aura:attribute name="proposalStatus" type="Apttus_Proposal__Proposal__c" />
+    <aura:attribute name="proposal" type="Apttus_Proposal__Proposal__c" />
+    <aura:attribute name="isPricingManager" type="Boolean" default="false" />
+    <aura:attribute name="isSubmitApproval" type="Boolean" default="true" />
+    <!--- Added by Imran Wipro -->
+    <aura:attribute name="QuoteConfiguration" type="String" />
+    <aura:attribute name="OldQuote" type="Boolean" />
+    <!--- Added by Tiago Almeida for PRM Partner Portal Project  -->
+    <aura:attribute name="isPortal" type="Boolean" default="false"/>
+
+    <aura:attribute name="ShowQuoteDoc" type="Boolean" default="false" />
+    <aura:attribute name="value" type="String" default="" />
+
+    <aura:attribute name="recordInfo" type="Object" description="The record object to be displayed" />
+    <aura:attribute name="simpleRecord" type="Object" description="A simplified view record object to be displayed" />
+    <aura:attribute name="recordError" type="String" description="An error message bound to force:recordData" />
+    <aura:attribute name="recEditaccess" type="Boolean" />
+
+    <aura:attribute name="showConfirmDialog" type="boolean" default="false" />
+    <aura:attribute name="hasAggregation" type="boolean" default="false" />
+    <aura:attribute name="configId" type="string" />
+    <!-- <aura:attribute name="isTurbo" type="boolean" default="false" /> -->
+    <aura:attribute name="action" type="string" />
+    <aura:attribute name="showTurbo" type="boolean" /> <!-- surinder-->
+    <aura:attribute name="IsTurboSpinner" type="boolean" default="false" /><!--surinder-->
+    <aura:attribute name="validForTurboFeature" type="boolean" /><!--surinder-->
+    <force:recordData aura:id="recordLoader" recordId="{!v.recordId}" layoutType="FULL" targetRecord="{!v.recordInfo}"
+        targetFields="{!v.simpleRecord}" fields="Apttus_Proposal__Primary__c,NokiaCPQ_Needs_Reprice__c, Is_Turbo_Pricing__c,Make_Primary_Button_Field__c, IsCollaborationProgress__c, 
+                              Configure_Collaboration_Button_Field__c, Configure_button_field__c,Accept_Button_Field__c,
+                              Export_Quote_Button_Field__c,NokiaCPQ_Environment_Access_Type__c,
+                              Roll_Up_Of_Proposal_Line_Item__c,Quote_Type__c, Bill_of_Material_Button_Field__c,
+                              CSP_Export_Button_Field__c, Apttus_Proposal__Approval_Stage__c, 
+                              NokiaCPQ_Configure_Products_button_field__c,Config_button_visible__c,Basic_Quote_Export__c,is_LEO_Criteria_Matc__c,NokiaCPQ_LEO_Discount__c,
+                              is_CustomProductQuote__c,SRS__c,SSP__c,Maintenance_Y1__c,Maintenance_Y2__c,NokiaCPQ_CAD__c,NokiaCPQ_has_Partner_Certified__c,Apttus_QPConfig__ConfigurationFinalizedDate__c,Apttus_QPApprov__Approval_Status__c,
+                              Custom_Product_Quote__c,Indirect_Approval_Required__c,APTS_ConfigureProductsTP__c"
+        targetError="{!v.recordError}" mode="VIEW" />
+    <aura:if isTrue="{!v.IsSpinner}">
+        <lightning:spinner aura:id="mySpinner" size="medium" />
+    </aura:if>
+    <!--<ltng:require styles="/resource/slds080/assets/styles/salesforce-lightning-design-system-vf.css" />-->
+    <div class="{! v.isPortal ? 'portalview' : 'internalview'}">
+        <div class="slds-grid slds-gutters">
+            <aura:if isTrue="{! !v.isPortal }">
+                <div class="slds-col" style="margin-top: 7px; margin-bottom: 7px; color: rgb(72,72,72); font-weight: 600; font-size: 16px; ">
+                    <span>
+                        <h1 style="font-size: 16px; letter-spacing: .0625em; font-family: 'Salesforce Sans',Arial,sans-serif; line-height: 1.5;">
+                            Quote Actions
+                        </h1>
+                    </span>
+                </div>
+                <aura:set attribute="else">
+                    <div style="width: 90%; margin: 0 5%;"><c:QuoteWarningMessage recordId="{! v.recordId }"></c:QuoteWarningMessage></div>
+                </aura:set>
+            </aura:if>
+            <!-- div added for turbo surinder-->
+            <aura:if isTrue="{!v.validForTurboFeature}">
+                <aura:if isTrue="{!(v.proposal.Quote_Type__c=='Indirect CPQ')}">
+                    <aura:if isTrue="{!and(v.proposal.NokiaCPQ_Needs_Reprice__c==false,v.QuoteConfiguration=='')}">                        
+                        <div class="slds-col">    
+                            <!-- <aura:if isTrue="{!v.IsTurboSpinner}">                               
+                                    <lightning:spinner alternativeText="Loading" variant="brand" size="medium" />
+                            </aura:if> -->
+                            <span>
+                                <h1
+                                    style="font-size: 16px; letter-spacing: .0625em; font-family: 'Salesforce Sans',Arial,sans-serif; line-height: 1.5;">
+                                <b>  <lightning:input type="toggle"  style="font-size: 16px; letter-spacing: .0625em; font-family: 'Salesforce Sans',Arial,sans-serif; line-height: 1.5;" label="Turbo " aura:id="inputToggle" value="{!v.showTurbo}"  checked="{!v.showTurbo}" name="toggleButton"  onchange="{!c.onChangeToggle}"/><br/></b></h1>
+                            </span> 
+                        </div>
+                    </aura:if>                
+                </aura:if>
+            </aura:if>
+        </div>
+        <aura:if isTrue="{! and(not(v.recEditaccess), v.proposal.CPQ_CQ_Check__c)}">
+            <div>
+            </div>
+            <aura:set attribute="else">
+                <div class="full forcePageBlockSectionRow" style="margin-top: 10px;">
+                    <p class="full forcePageBlockItem forcePageBlockItemView" style="width:100%;text-align:center">
+                    <div class="slds">
+                        <div class="slds-grid">
+                            <aura:if
+                                isTrue="{!or(or(v.proposal.Apttus_Proposal__Approval_Stage__c=='Draft',v.proposal.Apttus_Proposal__Approval_Stage__c=='Approved'),or(v.proposal.Apttus_Proposal__Approval_Stage__c=='Approval Required',v.proposal.Apttus_Proposal__Approval_Stage__c=='Rebid'))}">
+                                <!--added by Rajitha -->
+                                <!--console.log('1'); -->
+                                <aura:if isTrue="{! and(or(v.proposal.CPQ_NCQ_Check__c, v.proposal.CPQ_CQ_Check__c), v.proposal.Classic_Pricing_Enable__c)}">
+                                    <!-- added Imran Wipro -->
+                                    <!--    <aura:if isTrue="{!or(v.proposal.Is_Classic_Pricing__c,v.OldQuote==true,v.QuoteConfiguration=='')}">-->
+                                    <div
+                                        class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                        <a aura:id="ConfigureProducts" onclick="{!c.configureProductsNCQ}">
+                                            <!--console.log('2');-->
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Cart" alt="Configure Products"
+                                                border="0" title="Configure Products" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">Configure Products/Pricing</span>
+                                    </div>
+                                </aura:if>
+                                <!-- surround turbo -->
+                                <aura:if
+                                    isTrue="{!and(v.proposal.CPQ_CQ_Check__c,v.proposal.Turbo_Pricing_Enable__c==true)}">
+                                    <div
+                                        class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                        <a aura:id="ConfigureProducts"
+                                            onclick="{!c.configureMethodTurbo}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Cart"
+                                                alt="Configure Products" border="0"
+                                                title="Configure Products" />
+                                        </a>
+                                        <br />
+
+                                        <span class="osOutputLabel">Configure Turbo
+                                            Products/Pricing</span>
+                                    </div>
+                                </aura:if>
+                            </aura:if>
+                            <!--end-->
+                            <!--added by Rajitha -->
+                            <aura:if
+                                isTrue="{!and(v.proposal.Apttus_Proposal__Approval_Stage__c=='In Review',v.proposal.CPQ_NCQ_Check__c==true)}">
+                                <div
+                                    class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                    <a aura:id="ConfigureProducts" onclick="{!c.configureProductsNCQ}">
+                                        <!--console.log('2');-->
+                                        <img src="/resource/1536158833000/Nokia_CPQ_Cart" alt="Configure Products"
+                                            border="0" title="Configure Products" />
+                                    </a>
+                                    <br />
+                                    <span class="osOutputLabel">Configure Products/Pricing</span>
+                                </div>
+                            </aura:if>
+                            
+                            <!--end-->
+                            <aura:if
+                                isTrue="{!or(or(v.proposal.Apttus_Proposal__Approval_Stage__c=='Draft',v.proposal.Apttus_Proposal__Approval_Stage__c=='Rejected'),or(v.proposal.Apttus_Proposal__Approval_Stage__c=='Requires Approval',v.proposal.Apttus_Proposal__Approval_Stage__c=='Denied'))}">
+                                <aura:if
+                                    isTrue="{!and(v.proposal.IsCollaborationProgress__c,v.proposal.NokiaCPQ_Environment_Access_Type__c=='PRM')}">
+
+                                    <aura:if isTrue="{!v.proposal.Configure_Collaboration_Button_Field__c!=null}">
+                                        <div
+                                            class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                            <a aura:id="collaboration" onclick="{!c.collaboration}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Cart" alt="Collaboration"
+                                                    border="0" title="Collaboration" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">View Products/Pricing</span>
+                                        </div>
+
+                                    </aura:if>
+
+                                    <aura:set attribute="else">
+                                         <!-- <aura:if
+                                            isTrue="{!and(and(v.proposal.Quote_Type__c=='Indirect CPQ', v.proposal.Classic_Pricing_Enable__c), not(empty(v.proposal.Configure_button_field__c)))}"> -->
+                                        <!--- Added by Imran Wipro -->
+                                        <!-- <aura:if
+                                                isTrue="{!or(v.proposal.Is_Classic_Pricing__c,v.OldQuote==true,v.QuoteConfiguration=='')}"> -->
+                                        <!--added by surinder-->
+                                        <!-- <aura:if isTrue="{!v.proposal.NokiaCPQ_Needs_Reprice__c==false}"> -->
+                                            <aura:if
+                                            isTrue="{!and(and(v.proposal.Quote_Type__c=='Indirect CPQ', not(empty(v.proposal.Configure_button_field__c))),and(v.proposal.NokiaCPQ_Needs_Reprice__c==false,or(and(v.QuoteConfiguration=='',and(not(v.proposal.Is_Turbo_Pricing__c),v.proposal.Classic_Pricing_Enable__c)),and(v.QuoteConfiguration!='',v.proposal.Is_Classic_Pricing__c))))}">
+                                            <div
+                                                class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                                <a aura:id="ConfigureProducts" onclick="{!c.configureProducts}">
+                                                    <img src="/resource/1536158833000/Nokia_CPQ_Cart"
+                                                        alt="Configure Products" border="0"
+                                                        title="Configure Products" />
+                                                </a>
+                                                <br />
+                                                <span class="osOutputLabel">Configure Products/Pricing</span>
+                                            </div>
+                                        </aura:if>
+                                        <!--</aura:if>
+
+                                        </aura:if> -->
+                                        <!--- Added by Nandeesh to enable TP button for partners -->
+                                        <!-- <aura:if
+                                            isTrue="{!and(v.proposal.Quote_Type__c=='Indirect CPQ',v.proposal.Turbo_Pricing_Enable__c==true)}"> -->
+                                        <!--added by surinder-->
+                                        <!-- <aura:if isTrue="{!v.proposal.NokiaCPQ_Needs_Reprice__c==false}"> -->
+                                        <!-- <aura:if
+                                                    isTrue="{!or(v.proposal.Is_Turbo_Pricing__c,v.OldQuote==true,v.QuoteConfiguration=='')}"> -->
+                                        <aura:if
+                                            isTrue="{!and(and(v.proposal.Quote_Type__c=='Indirect CPQ', v.proposal.NokiaCPQ_Needs_Reprice__c==false),or(and(v.QuoteConfiguration=='',or(v.proposal.Is_Turbo_Pricing__c,v.proposal.Turbo_Pricing_Enable__c)),and(v.QuoteConfiguration!='',v.proposal.Is_Turbo_Pricing__c)))}">
+                                            <div
+                                                class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                                <a aura:id="ConfigureProducts" onclick="{!c.configureMethodTurbo}">
+                                                    <img src="/resource/1536158833000/Nokia_CPQ_Cart"
+                                                        alt="Configure Products" border="0"
+                                                        title="Configure Products" />
+                                                </a>
+                                                <br />
+
+                                                <span class="osOutputLabel">Configure Products/Pricing</span>
+                                            </div>
+                                        </aura:if>
+                                        <!--</aura:if>
+                                        </aura:if> -->
+
+                                        <aura:if
+                                            isTrue="{!and(v.proposal.Quote_Type__c=='Direct CPQ', not(empty(v.proposal.Configure_grid_flow_button__c)))}">
+                                            <aura:if isTrue="{!v.proposal.NokiaCPQ_Portfolio__c!='Airscale Wifi'}">
+                                                <!--- Added by Imran Wipro -->
+                                                <!-- <aura:if isTrue="{!or(v.proposal.Is_Classic_Pricing__c,v.OldQuote==true,v.QuoteConfiguration=='')}"> -->
+                                                <aura:if isTrue="{!v.proposal.Classic_Pricing_Enable__c==true}">
+                                                    <!--added by surinder-->
+                                                    <aura:if isTrue="{!v.proposal.NokiaCPQ_Needs_Reprice__c==false}">
+                                                        <div class="slds-col slds-size--3-of-12">
+                                                            <a aura:id="ConfigureProductsDirect"
+                                                                onclick="{!c.configureProductsDirect}">
+                                                                <img src="/resource/1536158833000/Nokia_CPQ_Cart"
+                                                                    alt="Configure Products" border="0"
+                                                                    title="Configure Products" />
+                                                            </a>
+                                                            <br />
+                                                            <span class="osOutputLabel">Configure
+                                                                Products/Pricing</span>
+                                                        </div>
+                                                    </aura:if>
+                                                </aura:if>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.proposal.NokiaCPQ_Portfolio__c=='Airscale Wifi'}">
+                                                <!--- Added by Imran Wipro -->
+                                                <!-- <aura:if isTrue="{!or(v.proposal.Is_Classic_Pricing__c,v.OldQuote==true,v.QuoteConfiguration=='')}"> -->
+                                                <aura:if isTrue="{!v.proposal.Classic_Pricing_Enable__c==true}">
+                                                    <!--added by surinder-->
+                                                    <aura:if isTrue="{!v.proposal.NokiaCPQ_Needs_Reprice__c==false}">
+                                                        <div
+                                                            class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                                            <a aura:id="ConfigureProductsDirect"
+                                                                onclick="{!c.configureProductsMNDirect}">
+                                                                <img src="/resource/1536158833000/Nokia_CPQ_Cart"
+                                                                    alt="Configure Products" border="0"
+                                                                    title="Configure Products" />
+                                                            </a>
+                                                            <br />
+                                                            <span class="osOutputLabel">Configure
+                                                                Products/Pricing</span>
+                                                        </div>
+                                                    </aura:if>
+                                                </aura:if>
+                                            </aura:if>
+                                        </aura:if>
+
+                                    </aura:set>
+
+                                </aura:if>
+
+
+                                <aura:set attribute="else">
+                                    <aura:if isTrue="{!v.proposal.Quote_Type__c=='Direct CPQ'}">
+                                        <aura:if isTrue="{!v.proposal.NokiaCPQ_Portfolio__c=='Airscale Wifi'}">
+                                            <div class="slds-col slds-size--3-of-12">
+                                                <a aura:id="ViewProductsDirect" onclick="{!c.viewProductsMNDirect}">
+                                                    <img src="/resource/1536158833000/Nokia_CPQ_Cart"
+                                                        alt="View Products" border="0" title="View Products" />
+                                                </a>
+                                                <br />
+                                                <span class="osOutputLabel">View Products/Pricing</span>
+                                            </div>
+                                            <aura:set attribute="else">
+                                                <div class="slds-col slds-size--3-of-12">
+                                                    <a aura:id="ViewProductsDirect" onclick="{!c.viewProductsDirect}">
+                                                        <img src="/resource/1536158833000/Nokia_CPQ_Cart"
+                                                            alt="View Products" border="0" title="View Products" />
+                                                    </a>
+                                                    <br />
+                                                    <span class="osOutputLabel">View Products/Pricing</span>
+                                                </div>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:if>
+
+                                    <aura:if isTrue="{!v.proposal.Quote_Type__c=='Indirect CPQ'}">
+                                        <div
+                                            class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                            <a aura:id="ViewProducts" onclick="{!c.viewProducts}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Cart" alt="View Products"
+                                                    border="0" title="View Products" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">View Products/Pricing</span>
+                                        </div>
+                                    </aura:if>
+
+                                </aura:set>
+                                <!--- Added by Imran Wipro -->
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Turbo_Pricing_Enable__c==true,v.proposal.Quote_Type__c=='Direct CPQ',v.proposal.NokiaCPQ_Portfolio__c=='IP Routing')}">
+                                    <!-- <aura:if isTrue="{!or(v.proposal.Is_Turbo_Pricing__c,v.QuoteConfiguration=='',v.OldQuote==true)}"> -->
+                            <aura:if isTrue="{!v.proposal.NokiaCPQ_Needs_Reprice__c==false}">  	 
+                                    <div
+                                        class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                        <a aura:id="configureMethodTurbo" onclick="{!c.configureMethodTurbo}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Cart" alt="Configure Products"
+                                                border="0" title="Configure Products" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">Configure Products/Pricing</span>
+                                    </div>
+                                    </aura:if>
+                                    <!-- </aura:if> -->
+                                </aura:if>
+                                <!--Imran Wipro end-->
+                            </aura:if>
+                            <!--- Send to NPT - MPW/Microwave -->
+                            <aura:if
+                                isTrue="{!and(and(v.proposal.Quote_Type__c=='Indirect CPQ', not(empty(v.proposal.Apttus_QPConfig__ConfigurationFinalizedDate__c))),and(v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM',and(or(v.proposal.NokiaCPQ_Portfolio__c=='Microwave',v.proposal.NokiaCPQ_Portfolio__c=='Modular Private Wireless Solution'),or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'In Review',or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Requires Approval',v.proposal.Apttus_Proposal__Approval_Stage__c == 'Draft')))))}">
+                                <div
+                                    class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                    <a aura:id="NPTbtn" onclick="{!c.sendBomToNPT}">
+                                        <img src="/resource/1536158833000/Nokia_CPQ_Cart" alt="Send To NPT" border="0"
+                                            title="Send To NPT" />
+                                    </a>
+                                    <br />
+                                    <span class="osOutputLabel">Send to NPT Cloud</span>
+                                </div>
+                            </aura:if>
+                            <!-- End of Send to NPT - MPW/Microwave -->
+
+
+                            <aura:if isTrue="{!not(v.proposal.CPQ_NCQ_Check__c)}">
+                                <aura:if isTrue="{!not(empty(v.proposal.Make_Primary_Button_Field__c))}">
+                                    <aura:if isTrue="{!not(v.proposal.Apttus_Proposal__Primary__c)}">
+                                        <div
+                                            class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+
+                                            <a aura:id="makePrimary" onclick="{!c.makePrimary}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Primary" alt="Make Primary"
+                                                    border="0" title="Make Primary" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">Make Primary</span>
+
+                                        </div>
+                                    </aura:if>
+                                </aura:if>
+                            </aura:if>
+
+                            <!-- Generate Proposal in Quote Action -->
+                            <aura:if isTrue="{!or(v.proposal.CPQ_NCQ_Check__c, v.proposal.CPQ_CQ_Check__c)}">
+                                <div class="slds-col slds-size--3-of-12">
+                                    <a aura:id="Generate" onclick="{!c.Generate}">
+                                        <img src="/resource/1536158833000/Nokia_CPQ_Primary" alt="Generate" border="0"
+                                            title="Generate" />
+                                    </a>
+                                    <br />
+                                    <span class="osOutputLabel">Generate</span>
+
+                                </div>
+                            </aura:if>
+
+                            <!--end-->
+
+                            <aura:if isTrue="{!v.proposal.Export_Quote_Button_Field__c!=null}">
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Quote_Type__c=='Indirect CPQ',or(v.proposal.Apttus_Proposal__Approval_Stage__c=='Approved', v.proposal.Apttus_Proposal__Approval_Stage__c=='Accepted'))}">
+
+                                    <div
+                                        class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                        <a aura:id="quoteExp" onclick="{!c.quoteExport}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="Quote Export"
+                                                border="0" title="Quote Export" />
+                                        </a>
+                                        <br />
+                                        <aura:if isTrue="{!v.proposal.NokiaCPQ_Portfolio__c == 'Microwave'}">
+                                            <span class="osOutputLabel">Quote Export</span>
+                                            <aura:set attribute="else">
+                                                <span class="osOutputLabel">Advanced Quote Export</span>
+                                                <!-- RG: Renamed for Req-6611 -->
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                </aura:if>
+                            </aura:if>
+
+                            <!--RG Start:Renamed for Req-6611 -->
+                            <aura:if
+                                isTrue="{!and(v.proposal.Basic_Quote_Export__c!=null,v.proposal.NokiaCPQ_Portfolio__c != 'Microwave')}">
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Quote_Type__c=='Indirect CPQ',or(v.proposal.Apttus_Proposal__Approval_Stage__c=='Approved', v.proposal.Apttus_Proposal__Approval_Stage__c=='Accepted'))}">
+                                    <div
+                                        class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                        <a aura:id="basicquoteExp" onclick="{!c.baiscquoteExport}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="Basic Quote Export"
+                                                border="0" title="Basic Quote Export" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">Basic Quote Export</span>
+
+                                    </div>
+                                </aura:if>
+                            </aura:if>
+                            <!-- RG End:Renamed for Req-6611 -->
+                            <!-- <aura:if isTrue="{!(v.proposal.Apttus_Proposal__Approval_Stage__c=='Approved')}"> ITCCPQ-1948 - Yashdeep changed the condition-->
+                            <aura:if
+                                isTrue="{!and(v.proposal.Apttus_Proposal__Approval_Stage__c=='Approved',or(v.proposal.Quote_Type__c!='Indirect CPQ', and(v.proposal.Quote_Type__c=='Indirect CPQ',or(v.proposal.NokiaCPQ_SAPIntegrationStatus__c == undefined,or(v.proposal.NokiaCPQ_SAPIntegrationStatus__c == '',v.proposal.NokiaCPQ_SAPIntegrationStatus__c == 'Failed')))))}">
+                                <aura:if isTrue="{!not(empty(v.proposal.Accept_Button_Field__c))}">
+                                    <div class="slds-col slds-size--3-of-12">
+                                        <a aura:id="acceptProp" onclick="{!c.acceptProposal}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Accept" alt="Accept" border="0"
+                                                title="Only Primary Quotes can be accepted" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">Accept</span>
+
+                                    </div>
+                                    <aura:set attribute="else">
+                                        <div
+                                            class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                            <a aura:id="acceptProp">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Accept_Disabled"
+                                                    alt="Accept" border="0"
+                                                    title="Only Primary Quotes can be accepted" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">Accept</span>
+
+                                        </div>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:if>
+                            <!-- Added by RG start -->
+                            <!-- <aura:if isTrue="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'}"> -->
+                            <!-- <aura:if isTrue="{!v.proposal.Indirect_Approval_Required__c}"> -->
+                            <aura:if
+                                isTrue="{!and(and(and(and(v.proposal.Quote_Type__c=='Indirect CPQ',v.isSubmitApproval),v.proposal.NokiaCPQ_Portfolio__c != 'Microwave'), not(empty(v.proposal.Apttus_QPConfig__ConfigurationFinalizedDate__c))),and(v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM',or(v.proposal.Apttus_Proposal__Approval_Stage__c=='Requires Approval',v.proposal.Apttus_Proposal__Approval_Stage__c=='Rejected')))}">
+                                <aura:if
+                                    isTrue="{!and(or(or(or(v.proposal.Maintenance_Y1__c > 0,v.proposal.Maintenance_Y2__c > 0),or(v.proposal.SSP__c > 0,v.proposal.SRS__c > 0)),or(v.proposal.NokiaCPQ_CAD__c > 0,v.proposal.Custom_Product_Quote__c > 0)),not(v.proposal.NokiaCPQ_LEO_Discount__c))}">
+
+                                    <aura:if isTrue="{!v.proposal.Indirect_Approval_Required__c}">
+                                        <div
+                                            class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                            <a aura:id="SubmitForApproval" onclick="{!c.submitforApproval}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                    alt="Submit for Approval" border="0" title="Submit for Approval" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">Submit for Approval</span>
+                                        </div>
+                                        <aura:set attribute="else">
+                                            <div
+                                                class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                                <a aura:id="SubmitForApproval">
+                                                    <img src="/resource/1536158833000/Nokia_CPQ_Quote_Disabled"
+                                                        alt="Submit for Approval" border="0"
+                                                        title="Submit for Approval" />
+                                                </a>
+                                                <br />
+                                                <span class="osOutputLabel">Submit for Approval</span>
+                                            </div>
+                                        </aura:set>
+                                    </aura:if>
+                                </aura:if>
+                                <aura:if
+                                    isTrue="{!and(v.proposal.NokiaCPQ_LEO_Discount__c,v.proposal.NokiaCPQ_has_Partner_Certified__c)}">
+                                    <aura:if isTrue="{!v.proposal.Indirect_Approval_Required__c}">
+                                        <div
+                                            class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                            <a aura:id="SubmitForApproval" onclick="{!c.submitforApproval}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                    alt="Submit for Approval" border="0" title="Submit for Approval" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">Submit for Approval</span>
+                                        </div>
+                                        <aura:set attribute="else">
+                                            <div
+                                                class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                                <a aura:id="SubmitForApproval">
+                                                    <img src="/resource/1536158833000/Nokia_CPQ_Quote_Disabled"
+                                                        alt="Submit for Approval" border="0"
+                                                        title="Submit for Approval" />
+                                                </a>
+                                                <br />
+                                                <span class="osOutputLabel">Submit for Approval</span>
+                                            </div>
+                                        </aura:set>
+                                    </aura:if>
+                                </aura:if>
+                                <aura:if
+                                    isTrue="{!and(v.proposal.NokiaCPQ_LEO_Discount__c,not(v.proposal.NokiaCPQ_has_Partner_Certified__c))}">
+                                    <div
+                                        class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                        <a aura:id="SubmitForApproval">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote_Disabled"
+                                                alt="Submit for Approval" border="0" title="Submit for Approval" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">Submit for Approval</span>
+                                    </div>
+                                </aura:if>
+                            </aura:if>
+                            <!-- </aura:if> -->
+                            <aura:if
+                                isTrue="{!and(and(and(v.proposal.Quote_Type__c=='Indirect CPQ',v.proposal.NokiaCPQ_Portfolio__c != 'Microwave'), not(empty(v.proposal.Apttus_QPConfig__ConfigurationFinalizedDate__c))),and(v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM',and(v.proposal.Apttus_Proposal__Approval_Stage__c=='In Review',v.proposal.Apttus_QPApprov__Approval_Status__c=='Pending Approval')))}">
+                                <div
+                                    class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+
+                                    <a aura:id="recallApproval" onclick="{!c.recallforApproval}">
+                                        <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="Recall Approval"
+                                            border="0" title="Recall Approval" />
+                                    </a>
+                                    <br />
+                                    <span class="osOutputLabel">Recall Approval</span>
+                                </div>
+                            </aura:if>
+                            <!-- </aura:if> -->
+                            <!-- Added by RG end -->
+                            <!-- Added by Elakkiya for EBG Approval Start -->
+                            <aura:if
+                                isTrue="{!and(v.proposal.Quote_Type__c=='Direct CPQ',or(v.proposal.NokiaCPQ_Portfolio__c =='IP Routing',v.proposal.NokiaCPQ_Portfolio__c =='Fixed Network'))}">
+                                <aura:if isTrue="{!and(or(v.proposal.Apttus_Proposal__Approval_Stage__c=='Requires Approval',v.proposal.Apttus_Proposal__Approval_Stage__c=='Rejected'),
+						not(empty(v.proposal.Apttus_QPConfig__ConfigurationFinalizedDate__c)))}">
+                                    <aura:if isTrue="{!v.proposal.NokiaCPQ_Approval_Required_Flag__c}">
+                                        <div
+                                            class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                            <a aura:id="SubmitForApproval" onclick="{!c.submitforApprovalEBG}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                    alt="Submit for Approval" border="0" title="Submit for Approval" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">Submit for Approval</span>
+                                        </div>
+                                        <aura:set attribute="else">
+                                            <div
+                                                class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+                                                <a aura:id="SubmitForApproval">
+                                                    <img src="/resource/1536158833000/Nokia_CPQ_Quote_Disabled"
+                                                        alt="Submit for Approval" border="0"
+                                                        title="Submit for Approval" />
+                                                </a>
+                                                <br />
+                                                <span class="osOutputLabel">Submit for Approval</span>
+                                            </div>
+                                        </aura:set>
+                                    </aura:if>
+                                </aura:if>
+
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Apttus_Proposal__Approval_Stage__c=='Pending Approval',v.proposal.Apttus_QPApprov__Approval_Status__c=='Pending Approval')}">
+                                    <div
+                                        class="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'? 'slds-col slds-size--3-of-12' : 'slds-col slds-size--2-of-12'}">
+
+                                        <a aura:id="recallApproval" onclick="{!c.recallforApproval}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="Recall Approval"
+                                                border="0" title="Recall Approval" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">Recall Approval</span>
+                                    </div>
+                                </aura:if>
+                            </aura:if>
+                            <!--    Added by Elakkiya for EBG Approval End -->
+                        </div>
+
+                        <br />
+
+                        <aura:if isTrue="{!v.proposal.NokiaCPQ_Environment_Access_Type__c=='sCRM'}">
+                            <div class="slds-grid">
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Quote_Type__c=='Indirect CPQ', not(empty(v.proposal.Bill_of_Material_Button_Field__c)))}">
+
+                                    <div class="slds-col slds-size--3-of-12">
+                                        <a aura:id="bomExportProposal" onclick="{!c.bomExport}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="BOM Export"
+                                                border="0"
+                                                title="The BOM can be exported when the Cart has been finalised. Exports are available in Notes and Attachments section of the Quote Related Tab." />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">BOM Export</span>
+                                    </div>
+                                </aura:if>
+
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Quote_Type__c=='Indirect CPQ', empty(v.proposal.Bill_of_Material_Button_Field__c))}">
+                                    <div class="slds-col slds-size--3-of-12">
+                                        <a aura:id="bomExportProposal">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote_Disabled" alt="BOM Export"
+                                                border="0"
+                                                title="The BOM can be exported when the Cart has been finalised. Exports are available in Notes and Attachments section of the Quote Related Tab." />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">BOM Export</span>
+                                    </div>
+                                </aura:if>
+
+
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Quote_Type__c=='Direct CPQ',not(empty(v.proposal.Customer_Export_Quote_with_BOQ_and_CLP__c)))}">
+                                    <div class="slds-col slds-size--3-of-12">
+
+                                        <a aura:id="bomExportProposal" onclick="{!c.boqClpExport}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                alt="Customer Simple Quote with BOQ and CLP" border="0" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">Customer Quote Export</span>
+
+                                    </div>
+                                </aura:if>
+
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Quote_Type__c=='Direct CPQ',not(empty(v.proposal.LOA_Export__c)))}">
+                                    <aura:if isTrue="{!v.loaAccess==True}">
+                                        <div class="slds-col slds-size--3-of-12">
+
+                                            <a aura:id="bomExportProposal" onclick="{!c.loaFileExport}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="G4/G5 File"
+                                                    border="0" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">G4/G5 File</span>
+
+                                        </div>
+                                    </aura:if>
+                                </aura:if>
+                            </div>
+                            <br />
+                            <div class="slds-grid">
+                                <aura:if
+                                    isTrue="{!or(v.proposal.NokiaCPQ_Portfolio__c=='Airscale Wifi',v.proposal.NokiaCPQ_Portfolio__c=='Nokia Software')}">
+                                    <aura:if
+                                        isTrue="{!or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Approved',v.proposal.Apttus_Proposal__Approval_Stage__c == 'Accepted')}">
+                                        <div class="slds-col slds-size--3-of-12">
+                                            <a aura:id="cspExportProposal" onclick="{!c.startOrderExportForCSP}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="CSP Export"
+                                                    border="0" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">CSP Export</span>
+                                        </div>
+                                    </aura:if>
+                                </aura:if>
+                                <!-- For Order Export for Alliance, QTC, P20   -->
+                                <aura:if
+                                    isTrue="{!or(and(v.proposal.Quote_Type__c=='Direct CPQ',and(v.proposal.NokiaCPQ_Portfolio__c !='IP Routing',v.proposal.NokiaCPQ_Portfolio__c !='Fixed Network')),and(v.proposal.Quote_Type__c=='Indirect CPQ',or(v.proposal.NokiaCPQ_Portfolio__c=='Airscale Wifi',v.proposal.NokiaCPQ_Portfolio__c=='Nokia Software')))}">
+                                    <aura:if
+                                        isTrue="{!or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Approved', v.proposal.Apttus_Proposal__Approval_Stage__c == 'Accepted')}">
+                                        <div class="slds-col slds-size--3-of-12">
+                                            <a aura:id="allianceExport" onclick="{!c.startOrderExportForAlliance}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                    alt="Order Export for Alliance/QTC/P20" border="0" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">Blue Planet (Alliance) Export</span>
+                                        </div>
+                                    </aura:if>
+                                </aura:if>
+
+                                <!--   end of order export section for Alliance, QTC, P20   -->
+                                <!-- QTC Export -->
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Quote_Type__c=='Direct CPQ', or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Approved', v.proposal.Apttus_Proposal__Approval_Stage__c == 'Accepted'))}">
+                                    <aura:if isTrue="{!v.proposal.NokiaCPQ_Portfolio__c=='Nokia Software'}">
+                                        <div class="slds-col slds-size--3-of-12">
+                                            <a aura:id="QTCExport" onclick="{!c.startOrderExportForQTC}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                    alt="QTC (Surround) Export" border="0" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">QTC (Surround) Export</span>
+                                        </div>
+                                    </aura:if>
+                                </aura:if>
+                                <!-- End QTC -->
+                                <!-- QTC SITE Export -->
+
+                                <aura:if
+                                    isTrue="{!and(v.proposal.Quote_Type__c=='Direct CPQ', or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Approved', v.proposal.Apttus_Proposal__Approval_Stage__c == 'Accepted'))}">
+
+                                    <aura:if isTrue="{!v.proposal.NokiaCPQ_Portfolio__c=='Nokia Software'}">
+                                        <div class="slds-col slds-size--3-of-12">
+                                            <a aura:id="QTCSiteExport" onclick="{!c.startOrderExportForQTCSite}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                    alt="QTC (SITE) Export" border="0" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">QTC (SITE) Export</span>
+                                        </div>
+                                    </aura:if>
+
+                                </aura:if>
+
+                                <!-- End QTC SITE -->
+                            </div>
+                            <br />
+                            <div class="slds-grid">
+                                <!-- Send Quote to QTC -->
+                                <!-- <aura:if isTrue="{!and(v.proposal.Quote_Type__c=='Direct CPQ', or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Approved', and(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Accepted',or(v.proposal.NokiaCPQ_Portfolio__c == 'IP Routing',v.proposal.NokiaCPQ_Portfolio__c == 'Fixed Network') ),and(v.proposal.Quote_Status__c == 'Validate',v.proposal.Apttus_Proposal__Approval_Stage__c == 'Draft')))}"> ITCCPQ-1948 - Yashdeep changed the condition -->
+                                <aura:if
+                                    isTrue="{!and(and(v.proposal.Quote_Type__c=='Direct CPQ', or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Approved', and(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Accepted',or(v.proposal.NokiaCPQ_Portfolio__c == 'IP Routing',v.proposal.NokiaCPQ_Portfolio__c == 'Fixed Network') ),and(v.proposal.Quote_Status__c == 'Validate',v.proposal.Apttus_Proposal__Approval_Stage__c == 'Draft'))),or(v.proposal.NokiaCPQ_SAPIntegrationStatus__c == undefined,or(v.proposal.NokiaCPQ_SAPIntegrationStatus__c == '',v.proposal.NokiaCPQ_SAPIntegrationStatus__c == 'Failed')))}">
+                                    <div class="slds-col slds-size--3-of-12">
+                                        <a aura:id="SendQuotetoQtC" onclick="{!c.sendAddQuoteMessage}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="Send Quote to QtC"
+                                                border="0" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">Send Quote to QTC</span>
+                                    </div>
+                                </aura:if>
+                                <!-- Microwave Nov 2020 -->
+                                <!-- Edited if condition by Christie for ITCCPQ 677 -->
+                                <!--aura:if isTrue="{!and(v.proposal.Quote_Type__c=='Indirect CPQ',not(v.proposal.NokiaCPQ_Geo_Level_1_ID__c =='RG_NAM'),v.proposal.Apttus_Proposal__Approval_Stage__c == 'Approved')}">
+                                <div class="slds-col slds-size3-of-12">
+                                        <a aura:id="SendQuotetoQtC" onclick="{!c.sendAddQuoteMessage}" >
+                                             <img src="/resource/1536158833000/Nokia_CPQ_Quote" alt="Send Quote to QtC" border="0"/>
+                                        </a>
+                                        <br/>
+                                        <span class="osOutputLabel">Send Quote to QTC</span>                              
+                                    </div>                                                           
+                                </aura:if -->
+                                <!-- End Send Quote to QTC -->
+
+                                <!--Cq Order Document Start-->
+                                <aura:if isTrue="{!v.ShowQuoteDoc}">
+                                    <div class="slds-col slds-size--3-of-12">
+                                        <a aura:id="CQ Order Doc-Without Child records"
+                                            onclick="{!c.CQOrderDocExportWithoutChildhandler}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                alt="CQ order Document generation" border="0" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">NAM Quote Report</span>
+                                    </div>
+                                    <div class="slds-col slds-size--3-of-12">
+                                        <a aura:id="CQ Order Document" onclick="{!c.CQOrderDocExporthandler}">
+                                            <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                alt="CQ order Document generation" border="0" />
+                                        </a>
+                                        <br />
+                                        <span class="osOutputLabel">NAM Quote Report with RollUp</span>
+                                    </div>
+                                </aura:if>
+                                <!--Cq Order Document End-->
+                                <!-- For Reconciliation Export Start-->
+                                <aura:if
+                                    isTrue="{!or(and(v.proposal.Quote_Type__c=='Direct CPQ',and(v.proposal.NokiaCPQ_Portfolio__c !='IP Routing',v.proposal.NokiaCPQ_Portfolio__c !='Fixed Network')),and(v.proposal.Quote_Type__c=='Indirect CPQ',v.proposal.NokiaCPQ_Portfolio__c=='Airscale Wifi'))}">
+                                    <aura:if
+                                        isTrue="{!or(v.proposal.Apttus_Proposal__Approval_Stage__c == 'Approved', v.proposal.Apttus_Proposal__Approval_Stage__c == 'Accepted')}">
+                                        <div class="slds-col slds-size--3-of-12">
+                                            <a aura:id="reconciliationExport" onclick="{!c.startReconciliationExport}">
+                                                <img src="/resource/1536158833000/Nokia_CPQ_Quote"
+                                                    alt="Reconciliation Export" border="0" />
+                                            </a>
+                                            <br />
+                                            <span class="osOutputLabel">Reconciliation Export</span>
+                                        </div>
+                                    </aura:if>
+                                </aura:if>
+                                <!-- For Reconciliation Export End-->
+                            </div>
+                        </aura:if>
+                    </div>
+                    </p>
+                </div>
+            </aura:set>
+        </aura:if>
+    </div>
+    <div class="slds-m-around_xx-large">
+        <aura:if isTrue="{!v.showConfirmDialog}">
+            <!--Modal Box Start-->
+            <div role="dialog" class="slds-modal slds-fade-in-open ">
+                <div class="slds-modal__container">
+                    <!--Modal Box Header Start-->
+                    <header class="slds-modal__header">
+                        <h1 class="slds-text-heading--medium">Confirmation</h1>
+                    </header>
+                    <!--Modal Box Header End-->
+
+                    <!--Modal Box Content Start-->
+                    <div class="slds-modal__content slds-p-around--medium">
+                        <b>This quote contains Site Aggregation. In order to edit the Cart, use the Direct
+                            Pricing Tool. In order to finalize, please proceed to the Cart.</b><br /><br />
+                            <p>
+                                <b>NOTE: </b>To be able to use Direct Pricing Tool, you need to have an X-Author license and the
+                                X-Author plugin installed on your PC. The installation package for this plugin, if not
+                                installed yet, can be found <a href="javascript:void(0)" onclick="{!c.goToInstallLink}">HERE</a>.
+                            </p>
+                        
+                    </div>
+                    <!--Modal Box Content End-->
+                    <!--Modal Box Button Start-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand" label='Launch Direct Pricing Tool' onclick="{!c.launchDPT}" />
+                        <lightning:button variant="brand" label='Proceed to Cart' onclick="{!c.goToCart}" />
+                        <lightning:button label='Cancel' onclick="{!c.cancelDialog}" />
+                    </footer>
+                    <!--Modal Box Button End-->
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+    </div>
+
+</aura:component>

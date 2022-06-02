@@ -1,0 +1,339 @@
+<aura:component controller="CH_CaseField_SideHighlightApex" implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowActions,force:lightningQuickActionWithoutHeader" access="global"> 
+    
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="recordSaveError" type="String" default=""/>
+    <aura:attribute name="createArticleFinished" type="boolean" default="true"/>
+    <aura:attribute name="issueResolvedFinished" type="boolean" default="true"/>
+    <aura:attribute name="pullProblemFinished" type="boolean" default="true"/>
+    <aura:attribute name="disablesetissueresolve" type="boolean" default="false"/>
+    <aura:attribute name="tag" type="Object" />
+    
+    <aura:attribute name="reload" type="boolean" />
+    <aura:attribute name="edit" type="boolean" />
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:attribute name="disableButton" type="Boolean" default="false"/>
+    
+    <!--NOKIASC-23315-->
+    <aura:attribute name="errorlogo" type="boolean" default="false" />
+    <aura:attribute name="closePopupBtn" type="Boolean" default="false"/>
+    <aura:attribute name="ErrorBtn" type="Boolean" default="false"/>
+    <aura:attribute name="isFieldError" type="Boolean" default="false"/>    
+    <aura:attribute name="pageLevelErrors" type="List" default="[]" />
+    <aura:attribute name="fieldLevelErrors" type="List" default="[]" />
+    <!--NKIASC-23315-->
+	<aura:attribute name="validaterequiredfields" type="String" default="" />
+    <aura:attribute name="createArticleFinish" type="boolean" default="false"/>
+    
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.reDoInit}"/>
+    <!-- <aura:if isTrue="{!v.createArticleFinished}">
+        <div class="createArticleFinished">
+            <lightning:flow aura:id="createArticle" onstatuschange="{!c.handleCreateArticleChange}"/>
+        </div> 
+    </aura:if> 
+ -->
+    
+    
+    <!--NOKIASC-31219 Us Start-->
+    
+    <aura:if isTrue="{!v.createArticleFinish}">
+        <div class="createArticleFinish">
+            <div class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.closeArticlepopup}">
+                            <lightning:icon iconName="utility:close" variant="bare"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Create Article</h2>
+                    </header>
+                    <div style="position:relative">
+                        <aura:if isTrue="{!v.showSpinner}">
+                            <lightning:spinner alternativeText="Loading" size="large" />
+                        </aura:if>
+                        <div class="slds-modal__content slds-p-around_medium slds-scrollable_y" style="height:17rem;">
+                            <lightning:flow aura:id="createArticle" onstatuschange="{!c.handleCreateArticleChange}"/>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop_open"></div> 
+        </div> 
+    </aura:if>
+    <!-- 31219 US End-->
+    
+    
+    <!--
+    <aura:if isTrue="{!v.issueResolvedFinished}">
+        <div class="issueResolvedFinished">
+            <lightning:flow aura:id="issueResolved" onstatuschange="{!c.handleIssueResolvedChange}"/>
+        </div> 
+    </aura:if>
+-->
+    <!-- Us Start-->
+    <aura:attribute name="issueResolvedFinish" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.issueResolvedFinish}">
+        <div class="issueResolvedFinish">
+            <div class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.close}">
+                            <lightning:icon iconName="utility:close" variant="bare"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Set Issue Resolved</h2>
+                    </header>
+                    <div style="position:relative">
+                        <aura:if isTrue="{!v.showSpinner}">
+                            <lightning:spinner alternativeText="Loading" size="large" />
+                        </aura:if>
+                        <div class="slds-modal__content slds-p-around_medium slds-scrollable_y" style="height:13rem;">
+                            <lightning:flow aura:id="issueResolved" onstatuschange="{!c.handleIssueResolvedChange}"/>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop_open"></div> 
+        </div> 
+    </aura:if>
+    <!-- US End-->
+    <!-- <aura:if isTrue="{!v.reload}"> Commented as part of defect NOKIASC-30068 -->
+    <aura:if isTrue="{!v.edit}">
+        <lightning:layout class="blockdisplay" horizontalAlign="Left">
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <Lightning:recordEditForm aura:id="recordEditForm" 
+                                          recordId="{!v.recordId}"
+                                          objectApiName="Case"
+                                          onsuccess="{!c.handleSuccess}" 
+                                          onerror="{!c.handleOnError}" >
+                    <!--<Lightning:messages />-->
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <Lightning:inputField fieldName="CH_TemporarySolution__c"  />
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <Lightning:inputField fieldName="CH_SolutionDetails__c" /> 
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col">    
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:inputField class="customRequired" fieldName="CH_CaseCause__c" aura:id="CH_CaseCause__c"/>
+                                </div>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-col">     
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <Lightning:inputField fieldName="CH_Defect__c"/> 
+                                </div>
+                            </div>
+                            <br/>
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <Lightning:inputField fieldName="CH_SuspectedDataBreach__c" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Tag</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">
+                                                <a href="{! '/lightning/r/'+v.tag.Id+'/view' }">{! v.tag.CH_TagName__c }</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <br/>
+					<span id="validaterequiredfields" style="color: rgb(194, 57, 52);">{!v.validaterequiredfields}</span>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:button class="slds-m-top_small" variant="brand" type="button" name="update" label="Save" onclick="{!c.update}" />
+                                </div>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <c:CH_CaseTagSelection id="{!v.recordId}" object="Case"/>
+                                </div>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:button class="slds-m-top_small" variant="brand" type="button" name="update" label="Create Article" onclick="{!c.launchCreateArticle}" disabled="{!v.disableButton}"/>
+                                </div>
+                            </div>
+                        </div>     
+                        <br/>
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:button class="slds-m-top_small" variant="brand" type="button" name="update" label="Set Issue Resolved" onclick="{!c.finalSolution}" disabled="{!v.disablesetissueresolve}" />
+                                </div>
+                            </div>
+                        </div>
+                        <br/>
+                    </div>
+                </Lightning:recordEditForm>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <aura:set attribute="else">
+            <lightning:layout horizontalAlign="Left">
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <Lightning:recordViewForm aura:id="recordViewForm" 
+                                              recordId="{!v.recordId}"
+                                              objectApiName="Case">
+                        <!--<Lightning:messages />-->
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <Lightning:outputField fieldName="CH_TemporarySolution__c"  />
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <Lightning:outputField fieldName="CH_SolutionDetails__c" /> 
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">    
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputField class="customRequired" fieldName="CH_CaseCause__c" />
+                                    </div>
+                                </div>
+                            </div>
+                            <br/>
+                            <div class="slds-col">     
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <Lightning:outputField fieldName="CH_Defect__c"/> 
+                                    </div>
+                                </div>
+                                <br/>
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <Lightning:outputField fieldName="CH_SuspectedDataBreach__c" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <div class="slds-form-element slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Tag</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{! v.tag.CH_TagName__c }</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Lightning:recordViewForm>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:set>
+    </aura:if>
+    
+    <!--23315-->
+    <aura:if isTrue="{!v.edit}">
+        <div>
+            <!--<div class="slds-docked-form-footer">--> 
+            <div class="slds-col">
+                <div class="slds-form-element">
+                    <div class="slds-form-element__control">
+                        <aura:if isTrue="{!v.errorlogo}">
+                            <!--<div class="slds-docked-form-footer" id="footer" style="width: 626px; position: fixed; left: 367.5px; bottom: 40px; height: 40px; right: inherit;" >-->
+                            <lightning:icon iconName="utility:error" alternativeText="Error!" variant="error" title="Show Error" size="small" class="slds-p-right_x-small slds-align_absolute-center" onclick="{!c.openPopup}" style="" />
+                            
+                            <!--check popup -->
+                            <div class="{!v.closePopupBtn==false? 'slds-show' : 'slds-hide'}" >
+                                <section aria-describedby="dialog-body-id-5" aria-labelledby="dialog-heading-id-2" class="slds-popover slds-popover_error slds-nubbin_bottom-left" role="dialog" style="position:absolute;bottom:56px;left:65%;margin-left:38px;transform:translateX(-50%)">
+                                    <button class="slds-button slds-button_icon slds-button_icon-small slds-float_right slds-popover__close slds-button_icon-inverse" title="Close dialog" onclick="{!c.closePopup}">
+                                        <lightning:icon iconName="utility:close" aria-hidden="true" alternativeText="close!" size="x-small" title="close" variant="inverse" />
+                                        <span class="slds-assistive-text">Close dialog</span>
+                                    </button>
+                                    <header class="slds-popover__header">
+                                        <div class="slds-media slds-media_center slds-has-flexi-truncate ">
+                                            <div class="slds-media__figure">
+                                                <span class="slds-icon_container slds-icon-utility-error">
+                                                    <lightning:icon iconName="utility:error" aria-hidden="true" alternativeText="error"  size="x-small" title="error" variant="inverse" />
+                                                </span>
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <h2 class="slds-truncate slds-text-heading_medium" id="dialog-heading-id-2" title="Resolve error">We hit a snag.</h2>
+                                            </div>
+                                        </div>
+                                    </header>
+                                    
+                                    <div class="slds-popover__body slds-popover_warning__body" id="dialog-body-id-101">
+                                        <aura:if isTrue="{!not(empty(v.pageLevelErrors))}">
+                                            <div class="pageLevelErrors">
+                                                <div class="genericNotification"><strong>Review the errors on this page </strong></div>
+                                                <ul class="errorsList slds-list_dotted slds-m-left_medium">                                                    
+                                                    <aura:iteration items="{!v.pageLevelErrors }" var="pageLevelError" indexVar="index">
+                                                        <li>{!pageLevelError.message}</li>
+                                                    </aura:iteration>                                                   
+                                                </ul>
+                                            </div>
+                                        </aura:if>
+                                        <aura:if isTrue="{!not(empty(v.fieldLevelErrors))}">
+                                            <div class="genericNotification"><strong>Review the following fields</strong></div>                                                                                              
+                                            <ul class="errorsList slds-list_dotted slds-m-left_medium">
+                                                <aura:iteration items="{!v.fieldLevelErrors }" var="fieldLevelError" indexVar="index1">
+                                                    <li>{!fieldLevelError.fieldLabel}</li>
+                                                </aura:iteration>
+                                            </ul> 
+                                        </aura:if>
+                                    </div>
+                                </section>
+                            </div>
+                            <!--</div>-->
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <!--23315-->
+    
+    <!--</aura:if> -->
+</aura:component>
