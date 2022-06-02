@@ -1,0 +1,103 @@
+<apex:page controller="jiffle.JNMappingList" action="{!doConfigcheck}" tabStyle="Jifflenow_Mappings__tab">
+<apex:sectionHeader title="Jifflenow Mappings" subtitle="Manage Mappings" help="{!URLFOR($Page.jiffle__JNMappingsHelp)}"/>
+<style>
+    .labelclass {
+    font-style: normal;
+    color:#B11818!important;
+    font-weight: bold;
+    }
+    .lnk{
+    font-style: normal;
+    font-weight:bold;
+    }
+    .lblstyle{
+    color: #B11818!important;
+    font-size: 1.2em;
+    padding-left:5px;
+    }
+</style>
+
+    <apex:outputPanel id="Errorpanel" rendered="{!displayerror}"> 
+    <apex:include pageName="jiffle__JNGlobals"/>
+        <table>
+            <tr>
+                <td class="lblstyle">
+                       <!--Added for error-->
+                <div class="empty-info">
+                 <div class="text"><apex:outputLabel >{!$Label.jiffle__jnconfigerrormsg}</apex:outputLabel>&nbsp;</div>
+               </div>   
+                       <!--Added for error-->               
+                </td>           
+            </tr>
+        </table>    
+     </apex:outputPanel><!--error div panel ends--> 
+    <apex:form id="detailsfrm" rendered="{!!displayerror}">
+        <apex:pageblock rendered="{!disflg}">
+             <table>
+                <tr>
+                    <td class="lblstyle">
+                        <apex:outputLabel >{!$Label.jiffle__jncreatemappingmsg}</apex:outputLabel>
+                        &nbsp;<apex:commandButton value="Create Mapping" action="{!CRedirect}"/>
+                    </td>
+                </tr>
+             </table>
+           
+        </apex:pageblock>
+        <apex:pageBlock id="details" rendered="{!!disflg}">
+            <apex:pageBlockButtons location="Top">
+                    <apex:commandButton value="Add Mapping" action="{!ARedirect}" />
+                    <apex:commandButton value="Send to Jifflenow" action="{!JNSend}"/>
+            </apex:pageBlockButtons>
+            <apex:pageBlockSection title="List of Objects & Fields"/>
+            <apex:pageblockTable value="{!lstMap}" var="m">
+                <apex:column headerValue="Action">
+                    <apex:commandLink value="Enable" styleClass="lnk" style="color:{!IF(m.jiffle__Enabled__c!=true && NOT( ISBLANK(m.jiffle__Mapping_UUID__c)) && m.jiffle__Field_API_Name__c!='id', 'green', '#472400')};"  action="{!EnableRecord}" rendered="{!m.jiffle__Enabled__c!=true && NOT( ISBLANK(m.jiffle__Mapping_UUID__c)) && m.jiffle__Field_API_Name__c!='id'}" rerender="details">
+                        <apex:inputHidden value="{!m.id}"/>
+                        <apex:param name="abc" value="{!m.id}" assignTo="{!EnableId}"/>
+                    </apex:commandLink>
+                    <apex:outputText value="Enable" rendered="{!m.jiffle__Enabled__c==true || ISBLANK(m.jiffle__Mapping_UUID__c) || m.jiffle__Field_API_Name__c=='id'}" />
+                  
+                  <apex:outputText value=" | " styleClass="labelclass" / >  
+                    <apex:commandLink value="Disable" styleClass="lnk" style="color:{!IF(m.jiffle__Enabled__c==true && NOT( ISBLANK(m.jiffle__Mapping_UUID__c)) && m.jiffle__Field_API_Name__c!='id', '#800033', 'green')};" action="{!DisableRecord}" rendered="{!m.jiffle__Enabled__c==true && NOT( ISBLANK(m.jiffle__Mapping_UUID__c)) && m.jiffle__Field_API_Name__c!='id'}" rerender="details">
+                        <apex:inputHidden value="{!m.id}"/>
+                        <apex:param name="abc" value="{!m.id}" assignTo="{!EnableId}"/>
+                    </apex:commandLink>
+                    <apex:outputText value="Disable" rendered="{!m.jiffle__Enabled__c!=true || ISBLANK(m.jiffle__Mapping_UUID__c) || m.jiffle__Field_API_Name__c=='id'}" />
+                  <apex:outputText value=" | " styleClass="labelclass" / >   
+                    <apex:commandLink value="Del" styleClass="lnk" style="color:{!IF(ISBLANK(m.jiffle__Mapping_UUID__c) && m.jiffle__Field_API_Name__c!='id', 'red', 'black')};" action="{!DeleteRecord}" rendered="{!ISBLANK(m.jiffle__Mapping_UUID__c) && m.jiffle__Field_API_Name__c!='id'}" rerender="details">
+                        <apex:inputHidden value="{!m.id}"/>
+                        <apex:param name="abc" value="{!m.id}" assignTo="{!EnableId}"/>
+                    </apex:commandLink>
+                    <apex:outputText value="Del" style="color:{!IF(NOT(ISBLANK(m.jiffle__Mapping_UUID__c)) || m.jiffle__Field_API_Name__c=='id', 'black', 'red')};" rendered="{!NOT(ISBLANK(m.jiffle__Mapping_UUID__c)) || m.jiffle__Field_API_Name__c=='id'}" />
+                    </apex:column>
+                    <apex:column headerValue="Mapping Id">
+                        <apex:outputLink value="/{!m.id}">{!m.Name}</apex:outputLink>
+                        
+                    </apex:column>
+                    <apex:column value="{!m.jiffle__Object_API_Name__c}"/>
+                    <apex:column value="{!m.jiffle__Field_Label__c}"/>
+                    <apex:column value="{!m.jiffle__Field_API_Name__c}"/>
+                    <apex:column value="{!m.jiffle__Field_Type__c}"/>
+                    <apex:column value="{!m.jiffle__Related_to_Object__c}" />
+                    <apex:column value="{!m.jiffle__Mapping_UUID__c}"/>
+                    <apex:column value="{!m.jiffle__Enabled__c}"/>
+                </apex:pageblockTable>
+                    <table width="100%">&nbsp;
+                        <tr>
+                            <td width="88%">&nbsp;</td>
+                            <td width="12%">
+                                <apex:commandButton image="{!$Resource.jiffle__pale_blue_previous}" style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  rendered="{!!First}" rerender="detailsfrm"  action="{!FirstPage}" disabled="{!prev}"/>
+                                <apex:commandButton image="{!$Resource.jiffle__grey_previous}"      style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  rendered="{!First}"  rerender="detailsfrm"  action="{!FirstPage}" disabled="{!prev}"/>
+                                <apex:commandButton image="{!$Resource.jiffle__pale_blue_left}"     style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  rendered="{!!prev}"  rerender="detailsfrm"  action="{!previous}"  disabled="{!prev}"/>
+                                <apex:commandButton image="{!$Resource.jiffle__grey_left}"          style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  rendered="{!prev}"   rerender="detailsfrm"  action="{!previous}"  disabled="{!prev}"/> 
+                                <apex:commandButton image="{!$Resource.jiffle__pale_blue_right}"    style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  rendered="{!!nxt}"   rerender="detailsfrm"  action="{!next}"      disabled="{!nxt}"/>
+                                <apex:commandButton image="{!$Resource.jiffle__grey_right}"         style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  rendered="{!nxt}"    rerender="detailsfrm"  action="{!next}"      disabled="{!nxt}"/>
+                                <apex:commandButton image="{!$Resource.jiffle__pale_blue_last}"     style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  rendered="{!!Last}"  rerender="detailsfrm"  action="{!LastPage}"  disabled="{!nxt}"/> 
+                                <apex:commandButton image="{!$Resource.jiffle__grey_last}"          style="border:none; height:20px; width:20px;background:none;padding:0px;vertical-align:top;"  rendered="{!Last}"   rerender="detailsfrm"  action="{!LastPage}"  disabled="{!nxt}"/> 
+                            </td>
+                        </tr>
+                    </table>
+        </apex:pageBlock>
+        <!--<apex:pageMessages id="PM" rendered="{!!disflg}"/>-->
+    </apex:form>
+</apex:page>
