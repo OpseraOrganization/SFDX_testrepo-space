@@ -1,0 +1,121 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" controller="DS_cpActionsController">
+    <aura:attribute name="record" type="Apttus_Proposal__Proposal__c"/>
+    <aura:attribute name="recordError" type="String"/>
+    <aura:attribute name="modalText" type="String"/>
+    <aura:attribute name="isAcceptPressed" type="Boolean"/>
+    <aura:attribute name="isSpinnerVisible" type="Boolean" default="false"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+
+    <force:recordData aura:id="record"
+        fields="Name,Apttus_Proposal__Approval_Stage__c,Proposal_Recommendation_Type__c,PO_Required__c,Apttus_QPConfig__PONumber__c,Apttus_QPConfig__PODate__c"
+        recordId="{!v.recordId}"
+        targetError="{!v.recordError}"
+        targetFields ="{!v.record}"
+        mode="VIEW"/>
+
+    <!-- spinner -->
+    <aura:if isTrue="{!v.isSpinnerVisible}">
+        <div class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.recordError == null}">
+        <!-- vertical bar of action buttons for Commercial Proposals -->
+        <lightning:layout horizontalAlign="end">
+            <lightning:layoutItem>
+                <lightning:buttonGroup>
+                    <lightning:button variant="neutral" label="Export" title="Export Commercial Proposal to Excel" iconName="utility:copy" iconPosition="left" onclick="{!c.handleExport}"/>
+                    <lightning:button variant="neutral" label="Edit" title="Edit Commercial Proposal" iconName="utility:edit" iconPosition="left" onclick="{!c.editRecord}" disabled="{!not(or(v.record.Apttus_Proposal__Approval_Stage__c == 'Approved',or(v.record.Apttus_Proposal__Approval_Stage__c == 'Published - In Progress', v.record.Apttus_Proposal__Approval_Stage__c == 'Published - Ready')))}"/>
+                    <lightning:button
+                        variant="neutral"
+                        label="Set as Published"
+                        title="Export to Customer System is not started"
+                        iconName="utility:chevronleft"
+                        iconPosition="left"
+                        onclick="{!c.handleIntermediateStageChange}"
+                        value="Approved"
+                        disabled="{!not(or(v.record.Apttus_Proposal__Approval_Stage__c == 'Published - In Progress', v.record.Apttus_Proposal__Approval_Stage__c == 'Published - Ready'))}"/>
+                    <lightning:button
+                        variant="neutral"
+                        label="Set as In Progress"
+                        title="Export to Customer System is in Progress"
+                        iconName="utility:clock"
+                        iconPosition="left"
+                        onclick="{!c.handleIntermediateStageChange}"
+                        value="Published - In Progress"
+                        disabled="{!not(or(v.record.Apttus_Proposal__Approval_Stage__c == 'Approved', v.record.Apttus_Proposal__Approval_Stage__c == 'Published - Ready'))}"/>
+                    <lightning:button
+                        variant="neutral"
+                        label="Set as Ready"
+                        title="Export to Customer System is ready"
+                        iconName="utility:check"
+                        iconPosition="left"
+                        onclick="{!c.handleIntermediateStageChange}"
+                        value="Published - Ready"
+                        disabled="{!not(or(v.record.Apttus_Proposal__Approval_Stage__c == 'Approved',v.record.Apttus_Proposal__Approval_Stage__c == 'Published - In Progress'))}"/>
+                </lightning:buttonGroup>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="horizontal-large">
+                <!-- OR does not work for 3 parameters -->
+                <lightning:button
+                    variant="brand"
+                    label="Accept"
+                    title="Accept Commercial Proposal"
+                    iconName="utility:like"
+                    iconPosition="left"
+                    onclick="{!c.acceptDialog}"
+                    disabled="{!not(or(v.record.Apttus_Proposal__Approval_Stage__c == 'Approved',or(v.record.Apttus_Proposal__Approval_Stage__c == 'Published - In Progress', v.record.Apttus_Proposal__Approval_Stage__c == 'Published - Ready')))}"/>
+                <lightning:button
+                    variant="destructive"
+                    label="Reject"
+                    title="Reject Commercial Proposal"
+                    iconName="utility:dislike"
+                    iconPosition="left"
+                    onclick="{!c.rejectDialog}"
+                    disabled="{!not(or(v.record.Apttus_Proposal__Approval_Stage__c == 'Approved',or(v.record.Apttus_Proposal__Approval_Stage__c == 'Published - In Progress', v.record.Apttus_Proposal__Approval_Stage__c == 'Published - Ready')))}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+
+        <!-- modal window for Accept and Reject buttons -->
+        <div aura:id="acceptRejectDialog" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open slds-modal_small slds-hide">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" variant="bare-inverse" onclick="{!c.handleClose}" alternativeText="Close" size="large" class="slds-modal__close"/>
+                    <aura:if isTrue="{!v.isAcceptPressed}">
+                        <h2 id="modal-heading-01" class="slds-text-heading--medium">Accept Commercial Proposal</h2>
+                        <aura:set attribute="else">
+                            <h2 id="modal-heading-01" class="slds-text-heading--medium">Reject Commercial Proposal</h2>
+                        </aura:set>
+                    </aura:if>
+                </header>
+                <div class="slds-modal__content slds-p-horizontal_medium slds-p-vertical_x-large">
+                    <aura:unescapedHtml value="{!v.modalText}"/>
+                    <aura:if isTrue="{!not(v.isAcceptPressed)}">
+                        <lightning:textarea aura:id="rejectionReason" label="Comment" required="true" messageWhenValueMissing="This field is required"/>
+                    </aura:if>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Cancel" onclick="{!c.handleClose}"/>
+                    <lightning:button aura:id="acceptRejectButton" variant="{!v.isAcceptPressed ? 'brand' : 'destructive'}" label="{!v.isAcceptPressed ? 'Accept' : 'Reject'}" onclick="{!c.handleAcceptReject}" value="{!v.isAcceptPressed ? 'Accepted' : 'Rejected'}"/>
+                </footer>
+            </div>
+        </div>
+        <div aura:id="overlay" class="slds-backdrop slds-backdrop--open slds-hide"></div>
+
+        <!-- error handling (might not needed as header has this check also) -->
+        <aura:set attribute="else">
+            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="status">
+                <span class="slds-assistive-text">error</span>
+                <span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small">
+                    <lightning:icon iconName="utility:error" alternativeText="Error!" variant="inverse" size="small"/>
+                </span>
+                <h2>{!v.recordError}</h2>
+            </div>
+        </aura:set>
+    </aura:if>
+</aura:component>

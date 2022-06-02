@@ -1,0 +1,251 @@
+<!--
+/****************************************
+* Class Name : CH_CreateNEA
+* Created Date: 31 Oct 2019
+* Created By : Prateek Sarangi (prateek.sarangi.ext@nokia.com)
+* Description : UI Component To Create NEA from CLI component (CH_CreateNEA)- Assigned in CLI Quick Action button
+
+Name            Last Modified DATE       Comments
+Rajeshwari		22 Nov					 NOKIASC-25121 - Only NE Admin Permission User Should have access to create NEA
+           								 NOKIASC-25095 - Redirect to CLI if it is Linked to CLI else Redirect the Page to created NEA
+Rajeshwari		20 Feb 2019				 NOKIASC-25159 - CLI cannot have NEAs linked when Contract type internal or Service Classification blank.
+*****************************************/
+-->
+<aura:component controller="CH_CreateNEA_Controller" implements="force:lightningQuickActionWithoutHeader,force:hasRecordId" access="global" >
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="c:AccountIdPass" action="{!c.handleApplicationEvent}"/>
+    <aura:handler name="HWS_LookupReturnValueEvent" event="c:HWS_LookupReturnValueEvent" action="{!c.handleLookupEvent}"/>
+    <!-- Field Attributes -->
+    <aura:attribute name="classHWS" type="String" default="HWS Service"/>
+    <aura:attribute name="checkbox" type="Boolean" default="true"/>
+    <aura:attribute name="object" type="String" default="ContractLineItem"/>
+    <aura:attribute name="Asset" type="Asset" default="{'sobjectType':'Asset'}" />
+    <aura:attribute name="testObj" type="Asset" default="{ 'sobjectType': 'Asset' }"/>
+    <aura:attribute name="CLI" type="ContractLineItem" default="{'sobjectType':'ContractLineItem'}" />
+    <aura:attribute name="id" type="String" />
+    <aura:attribute name="country" type="Object" description="" default=""/>
+    <aura:attribute name="product" type="Object" description="" default=""/>
+    <aura:attribute name="productRelease" type = "Object" access="private" description="" />
+    <aura:attribute name="assetProductRelease" type = "Object" access="private" description="" />
+    <aura:attribute name="productVariant" type = "Object" access="private" description="" />
+    <aura:attribute name="solution" type = "Object" access="private" description="" />
+    <aura:attribute name="Account" type="string" description="" default=""/>
+    <aura:attribute name="AccountId" type="string" description="" default=""/>
+    <aura:attribute name="accountNumber" type="string" description="" default=""/>
+    <aura:attribute name="accountNumberWhenSelected" type="string" description="" default=""/>
+    <aura:attribute name="Address" type="Object" description="" default=""/>
+    <aura:attribute name="CountryISOName" type = "Object" access="private" description="" />
+    <aura:attribute name="NetworkElementID" type = "Object" access="private" description="" />
+    <aura:attribute name="LabEnvironment" type = "Object" access="private" description="" />
+    <aura:attribute name="preDefProductFields" type = "Object" access="private" description="" default=""/>
+    <!-- Suniti:NOKIASC-24906 -->
+    <aura:attribute name="buttonAccess" type="Boolean" default="false"  />
+    <!-- Tiago:NOKIASC-29426 -->
+    <aura:attribute name="tabMode" type="boolean" default="false" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="locationId" type = "String" description=""/>
+    <!-- LoadingFramework Variables -->
+    <aura:attribute name="actionCounter" type="Integer" default="0" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <aura:attribute name="authorizedUser" type="Boolean" default="false"  />
+    <aura:attribute name="ServiceClassification" type="Object" description="" default=""/>    
+    <!-- Modal Correction -->	
+	<!-- NOKIASC-36196 -->
+    <aura:attribute name="swComponent" type = "Object" access="private" description="" />
+    <aura:attribute name="swRelease" type = "Object" access="private" description="" />
+    <aura:attribute name="swModule" type = "Object" access="private" description="" />
+    <aura:attribute name="swBuild" type = "Object" access="private" description="" />
+    <aura:attribute name="countryMap" type="Map"/>
+    <aura:attribute name="countryCodeMap" type="Map"/>
+	<!-- NOKIASC-36208 Boolean Attribute To Enable/Disable Country In Non CLI NEAs Based On address-->
+    <aura:attribute name="countryPicklistFlag" type="Boolean" default="false"/>
+    <aura:html tag="style">
+        .slds-modal__container {
+            margin: 0 auto;
+            width : 80% !important;
+            max-width : 80% !important;			
+        }
+        .slds-modal__container > .slds-modal__content {
+        	position: relative;
+        }
+        .cuf-content {
+        	padding: 0 0rem !important;
+        }
+        .slds-p-around--medium {
+        	padding: 0rem !important;
+        }
+    </aura:html>
+    <!--LoadingFramework Component-->
+    <aura:if isTrue="{! v.showSpinner }">
+        <div class="slds-align_absolute-center">
+            <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+        </div>
+    </aura:if>
+    <!-- Component -->
+    <aura:if isTrue="{!and(v.authorizedUser, v.buttonAccess)}">
+        <!-- Modal Header -->    
+        <div class="{!'modal-header slds-modal__header slds-size_1-of-1'+(v.tabMode?' isTab':'')}">
+            <h4 class="title slds-text-heading--medium">New Network Element Asset</h4>
+        </div>
+        <!-- Content -->    
+        <div class="{!'slds-modal__content slds-p-around_medium slds-size_1-of-1 scrollable'+(v.tabMode?' isTab':'')}" aura:id="modalbody" id="modalbody">
+            <h3 class="slds-section__title slds-theme--shade primaryPaletteBorder">
+                <span class="test-id__section-header-title section-header-title slds-p-horizontal--small slds-truncate">Information</span>
+            </h3>
+            <div class="slds-p-around_medium">
+                <lightning:input aura:id="inputToggle"
+                                 label="Link to Contract Line Item?"
+                                 type="toggle"
+                                 checked="true"
+                                 messageToggleActive="Yes"
+                                 messageToggleInactive="No" 
+                                 onchange="{!c.handleToggleChanged}"/>
+                <div class="slds-m-around_medium">
+                    <aura:if isTrue="{!v.checkbox}">
+                        <lightning:layout horizontalAlign="center">
+                            <lightning:layoutItem size="5">
+                                <lightning:input aura:id="inputAccount"
+                                                 fieldName="CH_Account__c"
+                                                 label="Account"
+                                                 type="Object"
+                                                 value="{!v.Account}" 
+                                                 disabled="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="2">
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="5">
+                                <lightning:input aura:id="inputAccountNumber"
+                                                 fieldName="accountNumber"
+                                                 label="Account Number"
+                                                 type="Object"
+                                                 value="{!v.accountNumber}" 
+                                                 readonly="true"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        <aura:set attribute="else">
+                            <lightning:layout horizontalAlign="center">
+                                <lightning:layoutItem size="5">
+                                    <c:CH_CustomLookup aura:id= "inputAccountFromLookup" objectName="Account" Asset="{!v.Asset}" fieldName="Name" label="Account Name" iconName="standard:account" placeholder="Enter Account" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="2">
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="5">
+                                    <lightning:input aura:id="inputAccountID"
+                                                     fieldName="Asset.Account.AccountNumber"
+                                                     label="Account Number"
+                                                     type="Object"
+                                                     value="{!v.accountNumberWhenSelected}" 
+                                                     readonly="true"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            
+                        </aura:set>
+                    </aura:if>
+                     <lightning:layout horizontalAlign = "center">
+                        <lightning:layoutItem size="5">
+                            <lightning:input aura:id="inputNetworkElementId"
+                                             label="Network Element Id"
+                                             type="String"
+                                             value="{!v.Asset.CH_NetworkElementID__c}"
+                                             />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="2">
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="5">
+                            <lightning:input aura:id="assetName"
+                                             label="Asset Name"
+                                             type="String"
+                                             value="{!v.Asset.Name}" 
+                                             />
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    <lightning:layout horizontalAlign = "center">
+                    <lightning:layoutItem size="5">
+                            <lightning:input aura:id="siteName"
+                                             label="Site Name"
+                                             type="String"
+                                             value="{!v.Asset.CH_SiteName__c}" 
+                                             />
+                    </lightning:layoutItem>
+                        <lightning:layoutItem size="2">
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="5">
+                            <lightning:input aura:id="networkmanagementId"
+                                             label="Network Management System ID"
+                                             type="String"
+											 maxlength="75"
+                                             value="{!v.Asset.CH_NetworkManagementSystemID__c}" 
+                                             />
+                    </lightning:layoutItem>
+                    </lightning:layout>					
+                    <ui:inputCheckbox aura:id="checkbox" label="Lab Environment" value="{!v.Asset.CH_LabEnvironment__c}"/>					
+                </div>
+            </div>
+            <br/>
+            <!-- Address & Country Section -->
+            <h3 class="slds-section__title slds-theme--shade primaryPaletteBorder">
+                <span class="test-id__section-header-title section-header-title slds-p-horizontal--small slds-truncate">Address</span>
+            </h3>
+            <div class="slds-p-around_medium slds-grid slds-wrap">
+                <lightning:recordEditForm class="slds-size_5-of-12 slds-p-left_medium" objectApiName="Asset">
+                    <lightning:inputField aura:id="assetAddress" fieldName="Address__c" onchange="{!c.onChangeAddress}"/>
+                </lightning:recordEditForm>
+                <div class="slds-size_2-of-12">
+                    <lightning:buttonIcon iconName="utility:add" class="slds-m-top_large" variant="neutral" alternativeText="Create New" title="Create New" onclick="{! c.createAddress }"/>
+                </div>
+            <!--</div>
+            <div class="slds-p-around_medium slds-grid slds-wrap"> -->
+                <aura:if isTrue="{!v.checkbox}">
+                    <lightning:input aura:id="inputCountry"
+                                     class="slds-size_5-of-12 slds-p-left_medium"
+                                     label="Country"
+									 required="true"
+                                     type="Object"
+                                     value="{!v.CountryISOName}" 
+                                     disabled="true"/>
+                    <aura:set attribute="else">
+					<!--NOKIASC-36208 Added Enable/Disable Flag For Country Based On Address For Non CLI Linked NEAs -->
+                        <lightning:select aura:id="inputSelectCountry"
+                                     	 class="slds-size_5-of-12 slds-p-left_medium"
+                                         label="Country" 
+										 required="true"
+                                         value="{!v.Asset.CH_CountryISOName__c}"
+										 disabled="{!v.countryPicklistFlag}">
+                            			<option value="">--None--</option>
+                            <aura:iteration items="{!v.countryMap}" var="con" >
+                        <option text="{!con.value}" value="{!con.key}" />
+                    </aura:iteration>
+                </lightning:select>
+                    </aura:set>
+                </aura:if>
+            </div>
+            <br/>
+            <!-- Product Selection Section -->
+            <h3 class="slds-section__title slds-theme--shade primaryPaletteBorder">
+                <span class="test-id__section-header-title section-header-title slds-p-horizontal--small slds-truncate">Product</span>
+            </h3>
+            <div class="slds-p-around_medium">
+                <lightning:input aura:id="inputReleaseToggle"
+                                 label="Use Product Release from Contract Line Item?"
+                                 type="toggle"
+                                 checked="true"
+                                 messageToggleActive="Yes"
+                                 messageToggleInactive="No" 
+                                 onchange="{! c.handleReleaseToggle }"
+                                 disabled="{! !(v.ServiceClassification == 'HWS Service'?false:v.checkbox) }"/>
+                <c:CH_Product2Selection object="Asset"
+                                        type="{! and(v.ServiceClassification == 'HWS Service', v.checkbox)?'MinimalHWS':'Minimal' }"
+                                        onEvent="{! c.handleProductSelection }"
+                                        lockedFields="{! and(v.ServiceClassification != 'HWS Service',v.checkbox)?'All':''}"
+                                        predefinedFields="{! v.preDefProductFields }"/>
+            </div>
+        </div>  
+        <!-- Modal Footer -->
+        <div class="{!'modal-footer slds-modal__footer slds-size_1-of-1'+(v.tabMode?' isTab slds-text-align_center':'')}">
+            <lightning:button variant="neutral" label="Cancel" onclick="{! c.cancelQuickAction}"/>
+            <lightning:button variant="brand" label="Save" onclick="{! c.saveNEA }"/>
+        </div>
+    </aura:if>
+  </aura:component>

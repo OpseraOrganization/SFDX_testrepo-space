@@ -1,0 +1,225 @@
+<aura:component controller="OpportunityStrategyController" implements="force:lightningQuickActionWithoutHeader,lightning:actionOverride,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowScreens" access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+
+    <aura:attribute name="opptyRecord" type="Object" default="false" />
+    <aura:attribute name="recordLoadError" type="String" default="false" />
+    <aura:attribute name="activeSections" type="List" default="['customerReqNokiaProp','commRes', 'compAnalysis', 'planWin']" />
+    <aura:attribute name="readOnlySection" type="Boolean" default="true" />
+    <aura:attribute name="requiredCommentStrategy" type="Boolean" default="false" />
+
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Risk_Assessment__c"
+                      targetFields="{!v.opptyRecord}"
+                      targetError="{!v.recordLoadError}"
+                      recordUpdated="{!c.handleRecordDataUpdated}" />
+
+    <aura:attribute name="seeActions" type="Boolean" default="false" />
+    <aura:attribute name="readOnlyNotesCompt" type="Boolean" default="true" />
+
+
+    <div class="slds-container_width slds-m-around_x-small" aura:id="header" style="position:relative;">
+        <lightning:spinner aura:id="spinner" alternativeText="Loading" size="medium" class="hidden_element"/>
+        <lightning:card class="slds-m-bottom_x-small slds-p-vertical_x-small slds-card_boundary " aura:id="cardHeader" >
+            <aura:set attribute="title">
+                <span class="slds-page-header__title slds-truncate" title="">Strategy &amp; Win Plan</span>
+            </aura:set>
+            <aura:set attribute="actions">
+                <lightning:button variant="neutral" aura:id="riskAssessment_button" label="Go to G3 Risk Assessment"  onclick="{! c.handleRiskAssessBtn }" class="slds-m-right_xx-small" />
+                <lightning:button variant="neutral" aura:id="editSections_button" label="Edit Strategy sections"  onclick="{! c.handleEditSecBtn }" class="slds-m-right_xx-small"  />
+                <lightning:button variant="neutral" aura:id="export_button" label="Export"  onclick="{! c.handleExportBtn }"  />
+            </aura:set>
+        </lightning:card>
+
+        <lightning:messages aura:id="messages"/>
+
+        <lightning:accordion
+                             class="slds-m-horizontal_x-small"
+                             allowMultipleSectionsOpen="true"
+                             activeSectionName="{!v.activeSections}"
+                             >
+<!-- ============ Customer Request & Nokia Proposition ============ -->
+            <lightning:accordionSection name="customerReqNokiaProp" label="Customer Request &amp; Nokia Proposition" >
+
+                <table class="slds-table slds-table_bordered slds-m-bottom_small"  aria-labelledby="element-with-table-label other-element-with-table-label">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="" scope="col" style="width:50%; font-size:14px;">
+                                <div class="slds-truncate slds-text-title_caps" title="Customer" style="font-weight:700;">Customer</div>
+                            </th>
+                            <th class="" scope="col" style="width:50%; font-size:14px;">
+                                <div class="slds-truncate slds-text-title_caps" title="Nokia" style="font-weight:700;">Nokia</div>
+                            </th>
+                        </tr>
+                    </thead>
+                </table>
+
+                <aura:if isTrue="{!v.readOnlySection}">
+                    <!-- ============ READ ONLY ============ -->
+                    <lightning:recordViewForm recordId="{!v.recordId}" objectApiName="Opportunity"  >
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Customer_Request__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="StrategicContextCompetitiveSituation__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Customer_pain_points_challenges__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Pursue_Strategy__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Selection_Criteria__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="High_level_Solution_Installed_base__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Customer_Commitment__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Solution_Scope_Installed_base__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-1">
+                                <lightning:outputField fieldName="Comments_Cust_Req_Nokia_Prop__c" class="slds-form-element_1-col"/>
+                            </div>
+                        </div>
+                    </lightning:recordViewForm>
+
+                    <aura:set attribute="else">
+                    <!-- ============ EDIT ============ -->
+                        <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="Opportunity" aura:id="custReqNokiaProp_Form"
+                                                  onsuccess="{!c.handleDismissForm}"
+                                                  onerror="{!c.handleFormError}"
+                                                  onload="{!c.handleRecordEditLoad}">
+                            <div class="slds-grid slds-wrap">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Customer_Request__c" aura:id="Customer_Request__c" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="StrategicContextCompetitiveSituation__c" aura:id="StrategicContextCompetitiveSituation__c" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Customer_pain_points_challenges__c" aura:id="Customer_pain_points_challenges__c" onchange="{!c.checkCommentStrategyRequired}" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Pursue_Strategy__c" aura:id="Pursue_Strategy__c" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Selection_Criteria__c" aura:id="Selection_Criteria__c" onchange="{!c.checkCommentStrategyRequired}" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="High_level_Solution_Installed_base__c" aura:id="High_level_Solution_Installed_base__c" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Customer_Commitment__c" aura:id="Customer_Commitment__c" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Solution_Scope_Installed_base__c" aura:id="Solution_Scope_Installed_base__c" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-1">
+                                    <lightning:inputField fieldName="Comments_Cust_Req_Nokia_Prop__c" aura:id="Comments_Cust_Req_Nokia_Prop__c" required="{!v.requiredCommentStrategy}" onchange="{!c.handleCommentStrategy}" class="slds-form-element_1-col"/>
+                                </div>
+                            </div>
+                        </lightning:recordEditForm>
+                    </aura:set>
+
+                </aura:if>
+            </lightning:accordionSection>
+
+<!-- ================= Commercials & Resources ================ -->
+            <lightning:accordionSection name="commRes" label="Commercials &amp; Resources">
+
+                <table class="slds-table slds-table_bordered slds-m-bottom_small"  aria-labelledby="element-with-table-label other-element-with-table-label">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="" scope="col" style="width:50%; font-size:14px;">
+                                <div class="slds-truncate slds-text-title_caps" title="Customer" style="font-weight:700;">Customer</div>
+                            </th>
+                            <th class="" scope="col" style="width:50%; font-size:14px;">
+                                <div class="slds-truncate slds-text-title_caps" title="Nokia" style="font-weight:700;">Nokia</div>
+                            </th>
+                        </tr>
+                    </thead>
+                </table>
+
+                <aura:if isTrue="{!v.readOnlySection}">
+                    <!-- ============ READ ONLY ============ -->
+                    <lightning:recordViewForm recordId="{!v.recordId}" objectApiName="Opportunity" >
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Target_Price_Budget__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Commercial_strategy__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField fieldName="Probability" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField fieldName="Likelyhood_to_Win__c" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:outputField fieldName="Pres_sales_Cost_And_Resources__c" />
+                            </div>
+                        </div>
+                    </lightning:recordViewForm>
+
+                    <aura:set attribute="else">
+                    <!-- ============ EDIT ============ -->
+                        <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="Opportunity" aura:id="commRes_Form"
+                                              onsuccess="{!c.handleDismissForm}"
+                                              onerror="{!c.handleFormError}" >
+                            <div class="slds-grid slds-wrap">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Target_Price_Budget__c" aura:id="Target_Price_Budget__c" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Commercial_strategy__c" aura:id="Commercial_strategy__c" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <div class="slds-grid slds-wrap">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Probability" aura:id="Probability" />
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Likelyhood_to_Win__c" aura:id="Likelyhood_to_Win__c" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Pres_sales_Cost_And_Resources__c" aura:id="Pres_sales_Cost_And_Resources__c" />
+                                </div>
+                            </div>
+                        </lightning:recordEditForm>
+                    </aura:set>
+                </aura:if>
+            </lightning:accordionSection>
+
+<!-- ================= Competitive Analysis ================ -->
+            <lightning:accordionSection name="compAnalysis" label="Competitive Analysis">
+                <c:CRM_CompetitiveAnalysis_listView recordId="{!v.recordId}" />
+            </lightning:accordionSection>
+<!-- ================= Plan to Win ================ -->
+            <lightning:accordionSection name="planWin" label="Plan to Win">
+                <c:CRM_OppContactRoles_ListView recordId="{!v.recordId}" />
+            </lightning:accordionSection>
+        </lightning:accordion>
+
+        <br/>
+        <aura:if isTrue="{!(!v.readOnlySection)}">
+            <div class="slds-docked-form-footer stickyFooter " style="right:0; position:sticky;width:auto;">
+                <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.handleDismissForm}" />
+                <lightning:button variant="brand" label="Save" title="Save" onclick="{!c.handleSaveForm}"/>
+            </div>
+        </aura:if>
+    </div>
+    <br/>
+
+</aura:component>

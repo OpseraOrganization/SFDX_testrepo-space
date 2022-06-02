@@ -1,0 +1,199 @@
+<aura:component implements="force:lightningQuickActionWithoutHeader,flexipage:availableForAllPageTypes,force:hasRecordId" controller="CustomLeadConversion" access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.myAction}" />
+    <aura:attribute name="recordId" type="String" />
+     <!-- <aura:handler event="aura:waiting" action="{!c.showSpinner}"/> -->
+     <aura:attribute name="ErrMessage" type="String" />
+    <aura:attribute name="LeadDetails" type="Lead" />
+    <aura:attribute name="OppDetails" type="Opportunity" default="{ 'sobjectType': 'Opportunity' }"/>
+    <aura:attribute name="OpptyName" type="String" />
+     <aura:attribute name="OpptyId" type="String" />
+    <aura:attribute name="EndCustomerName" type="String" />
+    <aura:attribute name="EndCustomer" type="String" />
+    <aura:attribute name="ContactDetail" type="User" />
+    <aura:attribute name="isPartnerUser" type="Boolean" default="true"/>
+	<aura:attribute name="partnerConversionPSM" type="Boolean" default="false"/>
+    <aura:attribute name="bGAndBUValues" type="Map" />
+    <aura:attribute name="bGValues" type="List" />
+    <aura:attribute name="bUValues" type="List" />
+    <aura:attribute name="defaultBGValue" type="string" default=""/>
+    <aura:attribute name="defaultBUValue" type="string" default="--- None --"/>
+    <aura:attribute name="disabledChildField" type="boolean" default="true"/>
+    <aura:attribute name="lead" type="Lead" default="{ 'sobjectType': 'Lead' }"/>
+    <!-- Modal Correction -->
+    <aura:html tag="style">
+        .slds-modal__container {
+            margin: 0 auto;
+            width : 50% !important;
+            max-width : 50% !important;
+        }
+        .slds-modal__container > .slds-modal__content {
+        	position: relative;
+        }
+        .cuf-content {
+        	padding: 0 0rem !important;
+        }
+        .slds-p-around--medium {
+        	padding: 0rem !important;
+        }
+    </aura:html>
+    <!-- Modal Header -->
+    <div class="modal-header slds-modal__header slds-size_1-of-1">
+        <h2 class="title slds-text-heading--medium" aura:id="ConvertHeader">Convert Lead</h2>
+        <h2 class="title slds-text-heading--medium" aura:id="ConvertedHeader">Lead Converted</h2>
+    </div>
+    <!-- Content -->
+    <div class="slds-modal__content slds-p-around_medium slds-size_1-of-1 scrollable">
+        <aura:if isTrue="{!not(v.isPartnerUser)}">
+            <div class="reminder" aura:id="prm_reminder">
+                <ui:outputText value="REMINDER: Please fill in all the Required Gate Fields on this page which are critical in Opportunity Management Process."/>
+            </div>
+        </aura:if>
+        <div style="color:red"><ui:outputText value="{!v.ErrMessage}"/></div>
+        <div class="slds-form--stacked" style="text-align: center;" aura:id="ConvertedBody">
+            <br/>
+            <div class="slds-form-element">
+                <lightning:icon iconName="standard:account" size="large" />
+            </div>
+            <div class="slds-form-element">
+                <label class="slds-form-element__label " style="font-size: 1.5rem;" for="inputSample2">Account</label>
+                <div class="slds-form-element__control">
+                    <ui:outputText class="slds-output" value="{!v.LeadDetails.PartnerAccount.Name}" click="{!c.navigateToAccount}"></ui:outputText>
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <lightning:icon iconName="standard:contact" size="large" />
+            </div>
+            <div class="slds-form-element">
+                
+                <label class="slds-form-element__label" style="font-size: 1.5rem;" for="inputSample2">Contact</label>
+                <div class="slds-form-element__control">
+                    <ui:outputText class="slds-output" value="{!v.ContactDetail.Contact.Name}" click="{!c.navigateToContact}"></ui:outputText>
+                </div>
+            </div>
+            <div class="slds-form-element">
+                <lightning:icon iconName="standard:opportunity" size="large" />
+            </div>
+            <div class="slds-form-element">
+                <label class="slds-form-element__label" style="font-size: 1.5rem;" for="inputSample2">Opportunity</label>
+                <div class="slds-form-element__control">
+                    <ui:outputText class="slds-output" value="{!v.OpptyName}" click="{!c.navigateToOppty}"></ui:outputText>
+                </div>
+            </div>
+        </div>
+        <div class="slds-form--stacked" aura:id="ConvertBody">
+            <aura:if isTrue="{!not(v.isPartnerUser)}">
+                <div class="slds-form-element">
+                    <label class="slds-form-element__label" for="inputSample2"><label class="required">*</label>Converted Status</label>
+                    <div class="slds-form-element__control">
+                        <ui:inputText aura:id="inputSample2" disabled="true" value="Closed - Converted (Qualified)" class="slds-input"  />
+                    </div>
+                </div>
+                <div class="slds-form-element">
+                    <label class="slds-form-element__label" for="textareaSample2"><label class="required">*</label>Record Owner</label>
+                    <div class="slds-form-element__control">
+                        <ui:inputText aura:id="textareaSample2" value="PSM" disabled="true" class="slds-textarea"/>
+                        
+                    </div>
+                </div>
+                <div class="slds-form-element">
+                    <label class="slds-form-element__label" for="textareaSample2"><label class="required">*</label>Account Name</label>
+                    <div class="slds-form-element__control">
+                        <ui:inputText aura:id="textareaSample2" value="{!v.LeadDetails.PartnerAccount.Name}"  disabled="true" class="slds-textarea"/>
+                    </div>
+                </div>
+                <div class="slds-form-element">
+                    <label class="slds-form-element__label" for="textareaSample2"><label class="required">*</label>End Customer Legal Entity</label>
+                    <div class="slds-form-element__control">
+                        <ui:inputText aura:id="textareaSample2" value="{!v.LeadDetails.End_Customer_Legal_Entity_Account__r.Name}" disabled="true" class="slds-textarea"/>
+                    </div>
+                </div>
+            </aura:if>
+            <div class="slds-form-element">
+                <label class="slds-form-element__label" for="textareaSample2">Opportunity Name</label>
+                <div class="slds-form-element__control">
+                    <ui:inputText aura:id="OpptyName" value="{!v.LeadDetails.Deal_Name__c}" class="slds-textarea"/>
+                </div>
+            </div>
+
+
+            <aura:if isTrue="{!not(and(v.LeadDetails.Lead_BG__c, v.LeadDetails.Lead_BU__c))}">
+                <div class="slds-form-element">
+                    <!--<label class="slds-form-element__label" for="textareaSample2"><label class="required">*</label>Lead BG</label>-->
+                    <div class="slds-form-element__control">
+                        <!--<force:inputField aura:id="LeadBG" value="{!v.OppDetails.Lead_BG__c}"/>-->
+                        <lightning:select name="LeadBG" aura:id="LeadBG"
+                                        label="Lead BG"
+                                        required="true"
+                                        onchange="{!c.onBGFieldChange}">
+                            <option value="">--- None --</option>
+                            <aura:iteration items="{!v.bGValues}" var="value">
+                                <option value="{!value}">{!value}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </div>
+                </div>
+            
+                <div class="slds-form-element">
+                    <!--<label class="slds-form-element__label" for="textareaSample2"><label class="required">*</label>Lead BU</label>-->
+                    <div class="slds-form-element__control">
+                        <!--<force:inputField aura:id="LeadBU" value="{!v.OppDetails.Lead_BU__c}"/>-->
+                        <lightning:select name="LeadBU"
+                                        aura:id="LeadBU"
+                                        label="Lead BU"
+                                        required="true"
+                                        disabled="{!v.disabledChildField}">
+                            <option value="">--- None --</option>
+                            <aura:iteration items="{!v.bUValues}" var="value">
+                                <option value="{!value}">{!value}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </div>
+                </div>
+            </aura:if>
+            <br/>
+            <aura:if isTrue="{!not(v.isPartnerUser)}">
+                <div class="slds-form-element">
+                    <div class="slds-form-element__control">
+                        <lightning:input type="checkbox" label="Convert and prepare for Offer" checked="{!v.partnerConversionPSM}"/>
+                    </div>
+                </div>
+                <aura:if isTrue="{!not(v.partnerConversionPSM)}">
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <lightning:input type="date" aura:id="G3_Planned_Date" label="G3 Planned Date" value="{!v.lead.G3_Planned_Date__c}"/>
+                        </div>
+                    </div>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <lightning:input type="date" aura:id="G4_Approval_Date" label="G4 Planned Date" value="{!v.lead.G4_Approval_Date__c}"/>
+                        </div>
+                    </div>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <lightning:input type="date" aura:id="G5_Planned_Date" label="G5 Planned Date" value="{!v.lead.G5_Planned_Date__c}"/>
+                        </div>
+                    </div>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <lightning:input type="date" aura:id="G6_Planned_Date" label="G6 Planned Date" value="{!v.lead.G6_Planned_Date__c}"/>
+                        </div>
+                    </div> 
+                </aura:if>
+            </aura:if>
+            <br/>
+            <div class="slds-form-element" style="color:red">
+                <div class="slds-form-element__control">
+                    <ui:outputText value="{!v.ErrMessage}"/>
+                </div>
+            </div>
+        </div>
+    </div>  
+    <!-- Modal Footer -->
+    <div class="modal-footer slds-modal__footer slds-size_1-of-1" aura:id="FooterComp">
+        <lightning:button variant="neutral" label="Cancel" onclick="{! c.closeButton}"/>
+        <lightning:button variant="brand" label="Convert" onclick="{! c.convrtLead }"/>
+    </div>
+    <div aura:id="waitingCase">
+        <center><lightning:spinner variant="brand" aura:id="spinner" size="large"/></center>
+    </div>
+</aura:component>

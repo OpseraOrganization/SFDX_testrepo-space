@@ -1,0 +1,112 @@
+<aura:component controller="NCP_ListView_COM" implements="flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes" access="global">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- Internal attributes -->
+    <aura:attribute name="objectName" type="String" default="Products"/>
+    <aura:attribute name="objectAPIName" type="String" default=""/>
+    <aura:attribute name="listViews" type="String[]" default="[]" />
+    <!-- <aura:attribute name="selectedListView" type="String" default=""/> -->
+    <aura:attribute name="productList" type="Object[]" />
+    <aura:attribute name="pages" type="integer"/>
+    <aura:attribute name="page" type="integer"/>
+    <aura:attribute name="pageSize" type="integer" default="10"/>
+    <aura:attribute name="visibility" type="String" default="false" access="global"/>
+    <aura:attribute name="totalItems" type="String" default="" access="global"/>
+    <aura:attribute name="listViewName" type="String" default=""/>
+    <aura:attribute name="isLoadingProducts" type="Boolean" default="true"/>
+
+    <!-- <aura:handler name="change"  value="{!v.listViewName}"  action="{!c.setListView}" /> -->
+
+    <div class="slds-page-header_object-home slds-p-top_medium">
+        <div class="slds-grid">
+            <div class="slds-col slds-has-flexi-truncate">
+                <div class="slds-media slds-no-space slds-grow">
+                    <div class="slds-media__figure">
+                        <lightning:icon iconName="standard:product" class="slds-icon-background-brand" alternativeText="product"/>
+                    </div>
+                    <div class="slds-media__body">
+                        <p class="slds-text-title--caps slds-line-height--reset">{#v.objectName}</p>
+                        <div class="slds-dropdown-trigger slds-dropdown-trigger--click" onclick="{!c.toggleVisibility}" aura:Id="ncp-listViewMenu">
+                            <div class="slds-grid slds-type-focus slds-no-space sf-titleContainer">
+                                <h1 class="slds-page-header__title slds-p-right--x-small">
+                                    <span class="slds-truncate ncp-releaseTitle ncp-text-headline_three">{!v.listViewName}</span>
+                                    <button class="slds-button slds-shrink-none slds-align-middle slds-m-left--x-small ncp-title-icon">
+                                        <lightning:icon iconName="utility:down" size="xx-small" alternativeText="search" class="slds-icon_container slds-icon-utility-filterList icon slds-button__icon forceIcon"/>
+                                        <span class="slds-assistive-text">View More</span>
+                                    </button>
+                                </h1>
+                            </div>
+                            <div class="slds-dropdown slds-dropdown--left slds-dropdown--small ncp-input">
+                                <ul role="menu">
+                                    <aura:iteration var="view" items="{!v.listViews}">
+                                        <li class="slds-dropdown__item ncp-listViewElement" id="{!view}" data-name="{!view}" onclick="{!c.setListView}">
+                                            <a href="javascript:void(0);" role="menuitem" class="slds-grid">
+                                                <div class="slds-col slds-size_1-of-8">
+                                                    <span>
+                                                        <aura:if isTrue="{!view == v.listViewName}">
+                                                            <lightning:icon iconName="utility:check" size="xx-small" alternativeText="search" class="ncp-icon-selected slds-icon_container slds-icon-utility-filterList icon slds-button__icon forceIcon"/>
+                                                        </aura:if>
+                                                    </span>
+                                                </div>
+                                                <div class="slds-col">{!view}</div>
+                                            </a>
+                                        </li>
+                                    </aura:iteration>
+                                </ul>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-no-flex slds-grid slds-align-top slds-p-bottom--xx-small">
+                <div class="slds-button-group" role="group">
+                </div>
+            </div>
+        </div>
+        <div class="slds-grid">
+            <div class="slds-col slds-align-bottom slds-size_4-of-8">
+                <p class="slds-text-body--small">{!v.totalItems} items • Sorted by Name</p>
+            </div>
+            <div class="slds-col slds-no-flex slds-grid slds-align-bottom slds-size_4-of-8">
+                <!-- <c:NCP_FilterCmp objectAPIName="Product2" IconName="standard:product" /> -->
+                <!-- <c:NCP_ProductSearch isDeepLinking="true" showLabel="false"/> -->
+                
+                <!--<c:NCP_ProductSearchPlus isDeepLinking="true" showLabel="false"/>-->
+                <c:NCP_JsonSearch isDeepLinking="true" showLabel="false"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="slds-grid slds-grid_vertical">
+        <aura:if isTrue="{!v.isLoadingProducts}">
+            <div class="slds-is-relative" style="height: 10rem;">
+                <div role="status" class="slds-spinner slds-spinner_medium">
+                    <span class="slds-assistive-text">Loading</span>
+                    <div class="slds-spinner__dot-a"></div>
+                    <div class="slds-spinner__dot-b"></div>
+                </div>
+            </div>
+            <aura:set attribute="else">
+                <!-- List view -->
+                <aura:if isTrue="{!v.productList.length > 0}">
+                    <c:NCP_LightningTableCmp currentList="{!v.productList}" listViewName="{!v.listViewName}"/>
+                    <div class="slds-col slds-m-top_small">
+                        <c:NCP_TablePaginatorCmp page="{!v.page}" pages="{!v.pages}" pagePrevious="{!c.onPagePrevious}" pageNext="{!c.onPageNext}"/>
+                    </div>
+                    <aura:set attribute="else">
+                        <div class="slds-col">
+                            <aura:if isTrue="{!v.listViewName == 'Favorite Products'}" >
+                                <c:NCP_LoginPrompt myHeadline="Favorite Products Results" myExplanation="{#$Label.c.NCP_no_favorite}" />
+                            </aura:if>
+                        </div>
+                    </aura:set>
+                </aura:if>
+                <!-- End of list view -->
+            </aura:set>
+        </aura:if>
+
+
+    </div>
+</aura:component>

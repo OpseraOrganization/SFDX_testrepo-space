@@ -1,0 +1,314 @@
+<aura:component controller="CH_CA_WorkgroupMember_Controller" implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride" access="global" >
+
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <c:CH_CA_MS_ConfirmationMessagebox aura:id="messageBox" />
+	<!--30651-->
+    <aura:attribute name="cloneRecordId" type="string" description="cloneRecordId of CH_Workgroup_Member__c" />
+    <aura:attribute name="pageReference" type="Object"/>
+    <lightning:navigation aura:id="navService"/>
+     <aura:attribute name="isClone" type="boolean"  /> 
+    <aura:attribute name="showCloneButton" type="boolean" default="false"/> 
+    <aura:attribute name="isCloned" type="boolean"  />
+    <!--<lightning:button label="Clone" onclick="{!c.openSubtab}"/>  -->   
+    <!--End -->
+    <aura:attribute name="recordId" type="string" description="Id of CH_Workgroup_Member__c" />
+    <aura:attribute name="selectedType" type="string" default="User" />
+    <aura:attribute name="workgroupMemberTypes" type="List" default="['Hotline','Queue','User']"/>
+    <aura:attribute name="refresh" type="boolean" default="false" description="Needed to load the dependent picklists"/>
+	<aura:handler name="render" value="{!this}" action="{!c.showDependency}" /> 
+    <aura:attribute name="userId" type="string" />
+	<aura:attribute name="offdutyCheck" type="boolean" default="false" description=""/>    
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <aura:attribute name="edit" type="boolean"  /> <!-- 27494 -->
+	
+    <aura:attribute name="users" type="User" />  
+    <aura:attribute name="defaultselectedRecord" type="Object" default="false"/>  
+    <aura:attribute name="wgMemberRoles" type="List" />
+    <aura:attribute name="chkOffDuty" type="boolean" default="true" description=""/>
+    <aura:attribute name="selectedWorkgroup" type="Object" default="false"/>    
+    
+    <aura:attribute name="disableOffDuty" type="boolean" default="true"/>
+    <aura:attribute name="disableSaveButton" type="boolean" default="true"/>
+    <!--<aura:handler name="init" value="{!this}" action="{!c.onInit}"/>-->
+    <aura:attribute name="buttonValue" type="string" />
+    <aura:attribute name="disableOffDutyButton" type="boolean" default="true"/>
+    <aura:attribute name="OffDutyButtonValue" type="boolean" default="true"/>
+    <aura:attribute name="getValue" type="string" />
+	<aura:attribute name="recordTypeId" type="string" />
+	<aura:attribute name="isQueueError" type="boolean" default="true" /> <!-- NOKIASC-38811 -->
+	
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    
+   <aura:if isTrue="{!v.edit}">  
+    <lightning:card>
+        <div class="slds-card__header">
+            <lightning:select aura:id="selectType" label="Workgroup Member Type" required="true" onchange="{!c.typeChanged}" value="{!v.selectedType}" >
+                <aura:iteration items="{!v.workgroupMemberTypes}" var="type">
+                    <option value="{!type}" text="{!type}"></option>
+                </aura:iteration>
+            </lightning:select>
+        </div>
+        <div class="slds-border_bottom slds-p-top_xxx-small">
+        </div>
+        <div class="slds-card__header">
+            <!-- create edit a hotline -->
+            <aura:if isTrue="{!v.selectedType == 'Hotline'}">
+                <lightning:recordEditForm objectApiName="CH_Workgroup_Member__c" 
+                                          aura:id="workgroupMemberHotlineForm" 
+                                          recordId="{!v.recordId}"
+                                          onsuccess="{!c.saveCompleted}"
+										  recordTypeId="{!v.recordTypeId}"
+                                          onsubmit="{!c.saveHotline}"
+										  onerror="{!c.handleError}" >
+                    <!-- NOKIASC-38811 -->
+                    <aura:if isTrue="{!v.isQueueError}">               
+						<lightning:messages />  
+                    </aura:if>   
+                    <label class="slds-form-element__label" for="name">
+    					<abbr class="slds-required" title="required">* </abbr>Hotline Name</label>
+                    <lightning:inputField aura:id="name" fieldName="Name" variant="label-hidden" />              
+                    <lightning:inputField aura:id="description" fieldName="CH_Description__c" />
+                    <label class="slds-form-element__label" for="phone">
+    					<abbr class="slds-required" title="required">* </abbr>Hotline Phone Number</label>
+                    <lightning:inputField aura:id="phone" fieldName="CH_HotlinePhone__c" variant="label-hidden" />
+                    <lightning:inputField aura:id="workgroup" fieldName="CH_Workgroup__c" disabled="{!v.recordId != null}"/>
+                     
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Save" 
+                                          aura:id="saveWorkgroupMemberButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          type="submit" />
+                        <lightning:button label="Cancel" 
+                                          aura:id="cancelButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          onclick="{!c.cancel}" />
+						<!-- Start Changes for 30651 -->
+                            <aura:if isTrue="{!v.showCloneButton}"> 
+                                <lightning:button label="Clone" 
+                                                  aura:id="cloneButton"
+                                                  class="slds-m-top--medium slds-m-bottom--medium"
+                                                  variant="brand"
+                                                  onclick="{!c.openSubtab}" />
+                            </aura:if>				  
+                    </lightning:layoutItem>                    
+                </lightning:recordEditForm>
+            </aura:if>
+            <!-- create edit a user -->
+            <aura:if isTrue="{!v.selectedType == 'User'}">
+            	<lightning:recordEditForm objectApiName="CH_Workgroup_Member__c" 
+                                          aura:id="workgroupMemberUserForm" 
+                                          recordId="{!v.recordId}"
+                                          onsuccess="{!c.saveCompleted}"
+										  recordTypeId="{!v.recordTypeId}"			
+                                          onload="{!c.loadUser}"
+                                          onsubmit="{!c.saveUser}"
+										  onerror="{!c.handleError}" >
+                    <!-- NOKIASC-38811 -->
+                    <aura:if isTrue="{!v.isQueueError}">               
+						<lightning:messages />  
+                    </aura:if>   
+                    <label class="slds-form-element__label" for="user">
+    					<abbr class="slds-required" title="required">* </abbr>User</label>
+                    <lightning:inputField aura:id="user" fieldName="CH_User__c" variant="label-hidden" />
+                    <label class="slds-form-element__label" for="role">
+    					<abbr class="slds-required" title="required">* </abbr>Role</label>
+                    <aura:if isTrue="{!v.refresh}">
+                    	<lightning:inputField aura:id="role" fieldName="CH_Role__c" variant="label-hidden"/>
+                    </aura:if>
+                    <label class="slds-form-element__label" for="offduty">
+    					Off Duty</label>
+                    <lightning:inputField aura:id="offduty" fieldName="CH_Off_Duty__c" variant="label-hidden"/>
+                    <lightning:inputField aura:id="workgroup" fieldName="CH_Workgroup__c" disabled="{!v.recordId != null}"/>
+         	                    
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Save" 
+                                          aura:id="saveWorkgroupMemberButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          type="submit" />
+                        <lightning:button label="Cancel" 
+                                          aura:id="cancelButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          onclick="{!c.cancel}" />
+						<!-- Start Changes for 30651 -->
+                            <aura:if isTrue="{!v.showCloneButton}"> 
+                                <lightning:button label="Clone" 
+                                                  aura:id="cloneButton"
+                                                  class="slds-m-top--medium slds-m-bottom--medium"
+                                                  variant="brand"
+                                                  onclick="{!c.openSubtab}" />
+                            </aura:if>
+                            <!-- End Changes for 30651 -->  				  
+                    </lightning:layoutItem>                    
+       				<lightning:inputField aura:id="type" fieldName="CH_Workgroup_Member_Type__c" class="slds-hidden"/>
+                </lightning:recordEditForm>
+                <force:recordData aura:id="userData"
+                                  recordId="{!v.userId}"
+                                  fields="Name"
+                                  targetFields="{!v.userName}" /> 
+            </aura:if>
+			<!-- create edit a queue -->
+            <aura:if isTrue="{!v.selectedType == 'Queue'}">               
+                <lightning:recordEditForm objectApiName="CH_Workgroup_Member__c" 
+                                      aura:id="workgroupMemberQueueForm" 
+                                      recordId="{!v.recordId}"
+                                      onsuccess="{!c.saveCompleted}"
+									  recordTypeId="{!v.recordTypeId}"
+                                      onload="{!c.loadQueue}"
+                                      onsubmit="{!c.saveQueue}" 
+									   onerror="{!c.handleError}" >
+                   <!-- NOKIASC-38811 -->
+                    <aura:if isTrue="{!v.isQueueError}">               
+						<lightning:messages />  
+                    </aura:if>   
+                    <label class="slds-form-element__label" for="name">
+    					<abbr class="slds-required" title="required">* </abbr>Queue Name</label>
+                    <lightning:inputField aura:id="name" fieldName="Name" variant="label-hidden" />              
+                    <lightning:inputField aura:id="description" fieldName="CH_Description__c" />
+                    <lightning:inputField aura:id="queueemail" fieldName="CH_Queue_Email__c" />
+                    <label class="slds-form-element__label" for="user">
+    					<abbr class="slds-required" title="required">* </abbr>User</label>
+                    <lightning:inputField aura:id="userqueue" fieldName="CH_User__c" variant="label-hidden" />
+                    <lightning:inputField aura:id="workgroup" fieldName="CH_Workgroup__c" disabled="{!v.recordId != null}"/>
+                     
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Save" 
+                                          aura:id="saveWorkgroupMemberButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          type="submit" />
+                        <lightning:button label="Cancel" 
+                                          aura:id="cancelButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          onclick="{!c.cancel}" />
+						<!-- Start Changes for 30651 -->
+                            <aura:if isTrue="{!v.showCloneButton}"> 
+                                <lightning:button label="Clone" 
+                                                  aura:id="cloneButton"
+                                                  class="slds-m-top--medium slds-m-bottom--medium"
+                                                  variant="brand"
+                                                  onclick="{!c.openSubtab}" />
+                            </aura:if>				  
+                    </lightning:layoutItem>                    
+            	</lightning:recordEditForm>                
+            </aura:if>
+        </div>
+	</lightning:card>
+	   </aura:if>
+   <aura:if isTrue="{! !v.edit}">
+        
+        <lightning:card>
+        <div class="slds-card__header">
+            <!-- create edit a user -->
+             <lightning:messages />
+            <div class="slds-col slds-size_8-of-12">
+                <lightning:select aura:id="selectType" label="Workgroup Member Type" required="true" onchange="{!c.typeChanged}" value="{!v.selectedType}" disabled="true" >
+                   <aura:iteration items="{!v.workgroupMemberTypes}" var="type">                    
+                        <option value="{!type}" text="{!type}"></option>
+                    </aura:iteration> 
+            	</lightning:select>	
+             </div>
+           <aura:if isTrue="{!v.selectedType == 'User'}"> 
+               <!--Afif-->
+               <div class="slds-grid slds-wrap">                
+                <div class="slds-col slds-size_8-of-12">
+                 <lightning:recordViewForm objectApiName="CH_Workgroup_Member__c" 
+                                                      aura:id="workgroupMemberUserFormView" 
+                                                      recordId="{!v.recordId}">
+                                <lightning:messages />
+                                
+                                <lightning:outputfield fieldName="CH_User__c" />
+                                <lightning:outputfield fieldName="CH_Role__c" />
+                                <lightning:outputfield  fieldName="CH_Off_Duty__c" />
+                                <lightning:outputfield  fieldName="CH_Workgroup__c"/>
+                                
+                                <!-- Display buttons -->
+                                <lightning:layoutItem >
+                                    <lightning:button label="Cancel" 
+                                                      aura:id="cancelButton"
+                                                      class="slds-m-top--medium slds-m-bottom--medium"
+                                                      variant="brand"
+                                                      onclick="{!c.cancel}" />
+                                    <lightning:button variant="brand"
+                                                      label="{!v.buttonValue}"
+                                                      title="{!v.buttonValue}"
+                                                      class="{!v.disableOffDutyButton}"
+                                                      onclick="{! c.submit }" /> 
+                                </lightning:layoutItem>                          				
+                            </lightning:recordViewForm>  
+                </div>
+                
+            </div>
+               <!--End-->
+         </aura:if> 
+          <aura:if isTrue="{!v.selectedType == 'Hotline'}">
+            	<div class="slds-grid slds-wrap">
+           			<lightning:recordViewForm objectApiName="CH_Workgroup_Member__c" 
+                                          aura:id="workgroupMemberHotlineFormView" 
+                                          recordId="{!v.recordId}">
+                    <lightning:messages />
+					
+                    <lightning:outputfield fieldName="Name" />
+                    <lightning:outputfield fieldName="CH_Description__c" />
+                    <lightning:outputfield  fieldName="CH_HotlinePhone__c" />
+                    <lightning:outputfield  fieldName="CH_Workgroup__c"/>
+         	                    
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Cancel" 
+                                          aura:id="cancelButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          onclick="{!c.cancel}" />
+                    </lightning:layoutItem>                          				
+                </lightning:recordViewForm>
+                
+            </div>
+         </aura:if> 
+          <aura:if isTrue="{!v.selectedType == 'Queue'}">
+            	<div class="slds-grid slds-wrap">
+                    <lightning:recordViewForm objectApiName="CH_Workgroup_Member__c" 
+                                          aura:id="workgroupMemberQueueFormView" 
+                                          recordId="{!v.recordId}">
+                    <lightning:messages />
+					
+                    <lightning:outputfield fieldName="Name" />
+                    <lightning:outputfield fieldName="CH_Description__c" />
+                    <lightning:outputfield  fieldName="CH_Queue_Email__c" />
+                    <lightning:outputfield  fieldName="CH_User__c"/>
+                    <lightning:outputfield  fieldName="CH_Workgroup__c"/>
+         	                    
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Cancel" 
+                                          aura:id="cancelButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          onclick="{!c.cancel}" />
+                    </lightning:layoutItem>                          				
+                </lightning:recordViewForm>
+                    
+                </div>
+         </aura:if>   
+        </div>   
+        </lightning:card>
+   </aura:if>
+</aura:component>
