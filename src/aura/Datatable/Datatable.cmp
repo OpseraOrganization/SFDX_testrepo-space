@@ -1,0 +1,300 @@
+<aura:component>
+    <!-- Public Events -->
+    <aura:registerEvent name="onrowselection" type="c:DatatableEvent"/>
+    <aura:registerEvent name="onrowaction" type="c:DatatableEvent"/>
+    <aura:registerEvent name="onglobalaction" type="c:DatatableEvent"/>
+    <!-- Initial Function -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.columns}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.data}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.filters}" action="{!c.filter}" />
+    <aura:handler name="change" value="{!v.filterText}" action="{!c.filter}" />
+    <aura:handler name="change" value="{!v.search}" action="{!c.search}" />
+    <aura:handler name="change" value="{!v.filteredData}" action="{!c.setTableHeight}" />
+    <aura:handler name="change" value="{!v.globalActions}" action="{!c.filterGlobalActions}" />
+    <!-- Public Attributes -->
+    <aura:attribute name="label" type="String" default="" />
+    <aura:attribute name="iconName" type="String" default="" />
+    <aura:attribute name="maxRows" type="Integer" default="8" description=""/>
+    <aura:attribute name="rowsToLoad" type="Integer" default="50"/>
+    <aura:attribute name="columns" type="List" description="Pass the columns you want throuth"/>
+    <aura:attribute name="data" type="List" description="Pass the data you want throuth"/>
+    <aura:attribute name="search" type="String" description="Pass a String that you want to filter data with" default=""/>
+    <aura:attribute name="globalActions" type="List" description="" />
+    <aura:attribute name="maxRowSelection" type="Integer" description=""/>
+    <aura:attribute name="keyField" type="String" default="Id" />
+    <aura:attribute name="disableSearch" type="Boolean" description="" default="false"/>
+    <aura:attribute name="countOnLabel" type="Boolean" description="" default="false"/>
+    <aura:attribute name="hideHeader" type="Boolean" description="" default="false"/>
+    <aura:attribute name="hideControls" type="Boolean" description="" default="false"/>
+    <aura:attribute name="hideSearch" type="Boolean" description="" default="false"/>
+    <aura:attribute name="disableFilter" type="Boolean" description="" default="false"/>
+    <aura:attribute name="resizeColumnDisabled" type="Boolean" default="false"/>
+    <aura:attribute name="caseSensitive" type="Boolean" default="false" />
+    <aura:attribute name="isLoading" type="Boolean" default="false"/>
+    <aura:attribute name="hideOnEmpty" type="Boolean" default="true"/>
+    <aura:attribute name="type" type="String" default="contained"/>
+    <aura:attribute name="disabled" type="Boolean" default="false"/>
+    <!-- Private Attributes -->
+    <aura:attribute name="rowsLoaded" type="Integer" default="{! v.rowsToLoad }"/>
+    <aura:attribute name="visibleColumns" type="List" description="" access="private"/>
+    <aura:attribute name="selectedRows" type="List" description="" access="private"/>
+    <aura:attribute name="filterText" type="String" description="" default=""/>
+    <aura:attribute name="filters" type="List" description="" access="private"/>
+    <aura:attribute name="filterVisible" type="Boolean" default="false" description="" access="private"/>
+    <aura:attribute name="filterLayout" type="Object" description="" access="private"/>
+    <aura:attribute name="filterConditions" type="List" description="" access="private"/>
+    <aura:attribute name="filteredData" type="List" description="" access="private"/>
+    <aura:attribute name="visibleData" type="List" description="" access="private"/>
+    <aura:attribute name="sortedBy" type="Object" description="" access="private"/>
+    <aura:attribute name="sortedDirection" type="String" description="" access="private"/>
+    <aura:attribute name="columnHeight" type="String" default="calc(var(--lwc-fontSize3,0.8125rem) + 1rem)" description="" access="private"/>
+    <aura:attribute name="tableHeight" type="String" default="33px" description="" access="private"/>
+    <aura:attribute name="overflowy" type="String" default="hidden" description="" access="public"/>
+    <aura:attribute name="infiniteLoading" type="Boolean" default="false" access="private"/>
+    <aura:attribute name="metaText" type="String" description="" default="" access="private"/>
+    <aura:attribute name="groupActions" type="List" description="" />
+    <aura:attribute name="menuActions" type="List" description="" />
+    <!-- Aura Methods -->
+    <aura:method name="getSelectedRows" action="{!c.getSelectedRows}" description="Get Selected Values"/>
+    <aura:method name="setSelectedRows" action="{!c.setSelectedRows}" description="Set Selected Values">
+        <aura:attribute name="selectedList" type="List" default=""/>
+	</aura:method>
+    <aura:method name="setFilter" action="{!c.setFilter}" description="Filters manualy the selection from the values">
+        <aura:attribute name="filter" type="object" default=""/>
+	</aura:method>
+    <!-- Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative slds-border_fix" style="{! (v.type == 'fullscreen' ? 'height: 100%;' : '') + (v.data.length == 0 ? 'overflow: visible !important;' : '')}">
+        <aura:if isTrue="{! v.isLoading }">
+            <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+        </aura:if>
+        <aura:if isTrue="{! !v.hideHeader }">
+            <article class="slds-card slds-size_12-of-12">
+                <div class="slds-page-header">
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-title">
+                            <div class="slds-media slds-p-top_xx-small">
+                                <aura:if isTrue="{! and(v.iconName != '', v.type != 'fullscreen')}">
+                                    <div class="slds-media__figure">
+                                        <lightning:icon iconName="{! v.iconName }" size="small"/>
+                                    </div>
+                                </aura:if>
+                                <div class="slds-media__body slds-p-top_xxx-small">
+                                    <h2 class="slds-card__header-title">
+                                        <aura:if isTrue="{! v.type == 'related' }">
+                                            <a class="slds-card__header-link baseCard__header-title-container" onclick="{! c.viewAll }">
+                                                {! v.label } <aura:if isTrue="{! v.countOnLabel }"> ({! v.filteredData.length })</aura:if>
+                                            </a>
+                                            <aura:set attribute="else">
+                                                {! v.label } <aura:if isTrue="{! v.countOnLabel }"> ({! v.filteredData.length })</aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-page-header__col-actions">
+                            <div class="slds-page-header__controls">
+                                <div class="slds-page-header__control">
+                                    <lightning:buttonGroup>
+                                        <aura:if isTrue="{! v.groupActions.length != 0 }">
+                                            <aura:iteration items="{! v.groupActions }" var="groupAction">
+                                                <lightning:button name="{! groupAction.name }" label="{! groupAction.label }" title="{! groupAction.label }" onclick="{! c.handleGlobalAction }" disabled="{! v.disabled }"/>
+                                            </aura:iteration>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{! v.maxRowSelection  }">
+                                                    <lightning:button label="Clear Selection" title="Clear Selection" onclick="{! c.clearSelection }" disabled="{! v.disabled }"/>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{! v.menuActions.length != 0 }">
+                                            <lightning:buttonMenu alternativeText="Show menu" class="slds-button_last" onselect="{! c.handleMenuGlobalAction }" disabled="{! v.disabled }" menuAlignment="right" variant="border-filled">
+                                                <aura:iteration items="{! v.menuActions }" var="menuAction">
+                                                    <lightning:menuItem value="{! menuAction.name }" label="{! menuAction.label }" title="{! menuAction.label }"/>
+                                                </aura:iteration>
+                                            </lightning:buttonMenu>
+                                        </aura:if>
+                                    </lightning:buttonGroup>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-meta">
+                            <aura:if isTrue="{! !v.countOnLabel }">
+                                <p class="slds-page-header__meta-text">{! v.metaText }</p>
+                            </aura:if>
+                        </div>
+                        <div class="slds-page-header__col-controls">
+                            <aura:if isTrue="{! !v.hideControls }">
+                                <div class="slds-page-header__controls" onkeyup="{! c.searchOnEnter }">
+                                    <aura:if isTrue="{! !v.hideSearch}">
+                                        <lightning:input aura:id="searchInput" type="search" variant="label-hidden" placeholder="Search this list..." value="{! v.search }" disabled="{! v.disabled }"/>
+                                    </aura:if>
+                                    <div class="slds-m-left_xx-small">
+                                        <lightning:buttonIcon class="slds-white_background" iconName="utility:refresh" alternativeText="Reset View" onclick="{! c.reset }" disabled="{! v.disabled }"/>
+                                        <aura:if isTrue="{! !v.disableFilter}">
+                                            <lightning:buttonIcon class="slds-white_background" iconName="utility:filterList" alternativeText="Filters" onclick="{! c.toggleFilter }" disabled="{! v.disabled }"/>
+                                        </aura:if>
+                                    </div>
+                                </div>
+                            </aura:if>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </aura:if>
+        <aura:if isTrue="{! v.data.length != 0 || v.hideOnEmpty == false || v.type == 'fullscreen' }">
+            <div style="{! (and(and(v.type != 'related', v.type != 'contained'), v.type != 'extended')  ? '' : 'overflow-y: '+v.overflowy+'; max-') + 'height: ' + v.tableHeight + '; width:'+(v.filterVisible?'calc(100% - 320px)':'100%')+';'}">
+                <aura:if isTrue="{! v.maxRowSelection }">
+                    <lightning:datatable aura:id="customTable"
+                                         columns="{! v.visibleColumns }"
+                                         data="{! v.visibleData }"
+                                         maxRowSelection="{! v.maxRowSelection }"
+                                         onrowselection="{! c.handleRowSelection }"
+                                         onrowaction="{! c.handleRowAction }"
+                                         onsort="{! c.sort }" 
+                                         sortedBy="{! v.sortedBy.fieldName }" 
+                                         sortedDirection="{! v.sortedDirection }"
+                                         enableInfiniteLoading="{! and(v.type != 'related', v.type != 'contained') ? v.infiniteLoading : false }"
+                                         onloadmore="{! c.loadMoreData }"
+                                         selectedRows="{! v.selectedRows }"
+                                         resizeColumnDisabled="{! v.resizeColumnDisabled }"
+                                         keyField="{! v.keyField }" />
+                    <aura:set attribute="else">
+                        <lightning:datatable aura:id="customTable"
+                                             columns="{! v.visibleColumns }"
+                                             data="{! v.visibleData }"
+                                             onrowaction="{! c.handleRowAction }"
+                                             onsort="{! c.sort }" 
+                                             sortedBy="{! v.sortedBy.fieldName }" 
+                                             sortedDirection="{! v.sortedDirection }"
+                                             enableInfiniteLoading="{! and(v.type != 'related', v.type != 'contained') ? v.infiniteLoading : false }"
+                                             onloadmore="{! c.loadMoreData }"
+                                             hideCheckboxColumn="true"
+                                         	 resizeColumnDisabled="{! v.resizeColumnDisabled }"
+                                             keyField="{! v.keyField }" />
+                    </aura:set>
+                </aura:if>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{! !v.disableFilter}">
+            <div class="{! 'slds-size_medium slds-border_left shadow_left '+(v.filterVisible?'':'slds-hide')}" style="{! 'height: ' + v.tableHeight + '; background-color: rgb(255, 255, 255);'}">
+                <div class="slds-panel__header">
+                    <h2 class="slds-panel__header-title slds-text-heading_small slds-truncate" title="Filter">Filter</h2>
+                    <lightning:buttonIcon iconName="utility:close" variant="container" size="small" alternativeText="Collapse Filter" onclick="{! c.toggleFilter }"/>
+                </div>
+                <div class="slds-panel__body slds-scrollable_y" style="max-height: calc(100% - 49px);">
+                    <div class="slds-filters">
+                        <h3 class="slds-text-body_small slds-m-vertical_x-small">Matching all these filters</h3>
+                        <ol class="slds-list_vertical slds-list_vertical-space">
+                            <aura:iteration items="{!v.filters}" var="filter" indexVar="index">
+                                <li class="slds-item slds-hint-parent">
+                                    <div class="slds-filters__item slds-grid slds-grid_vertical-align-center">
+                                        <button class="slds-button_reset slds-grow slds-has-blur-focus" name="{! index }" onclick="{! c.editFilter }">
+                                            <span name="{! index }" class="slds-assistive-text">Edit filter:</span>
+                                            <aura:if isTrue="{! filter.active }">
+                                                <span name="{! index }" class="slds-show slds-text-body_small">{! filter.label }</span>
+                                                <span name="{! index }" class="slds-show">{! filter.condition+' '+filter.value }</span>
+                                                <aura:set attribute="else">
+                                                    <span name="{! index }" class="slds-show slds-text-body_small">New Filter*</span>
+                                                </aura:set>
+                                            </aura:if>
+                                        </button>
+                                        <lightning:buttonIcon iconName="utility:delete" variant="container" size="small" alternativeText="Remove filter" name="{! index }" onclick="{! c.removeFilter }"/>
+                                    </div>
+                                </li>
+                            </aura:iteration>
+                            <aura:if isTrue="{!v.filters.length == 0}">
+                                <li class="slds-item">
+                                    <div class="slds-filters__item slds-grid slds-grid_vertical-align-center" style="background-color: rgb(255, 255, 255) !important;">
+                                        <span>No filter is applied</span>
+                                    </div>
+                                </li>
+                            </aura:if>
+                        </ol>
+                        <div class="slds-filters__footer slds-grid slds-shrink-none">
+                            <button class="slds-button_reset slds-text-link" onclick="{! c.addFilter }">Add Filter</button>
+                            <button class="slds-button_reset slds-text-link slds-col_bump-left" onclick="{! c.removeAllFilter }">Remove All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <!-- filter -->
+        <aura:if isTrue="{! and(v.filterLayout != null, !v.disableFilter) }">  
+            <section aria-label="Dialog title" class="slds-popover slds-nubbin_right popover" role="dialog">
+                <div class="slds-popover__body">
+                    <br></br>
+                    <lightning:select name="selectField" label="Field" value="{! v.filterLayout.column }">
+                        <aura:iteration items="{! v.columns }" var="column" indexVar="columnIndex">
+                            <aura:if isTrue="{! and(column.label != null, column.label != '')}">
+                                <option text="{! column.label }" value="{! columnIndex }"/>
+                            </aura:if>
+                        </aura:iteration>
+                    </lightning:select>
+                    <br></br>
+                    <lightning:select name="selectCondition" label="Operator" value="{! v.filterLayout.condition }">
+                        <aura:iteration items="{! v.columns }" var="column">
+                            <aura:if isTrue="{! ((and(column.typeAttributes != null, column.typeAttributes.label != null)?column.typeAttributes.label.fieldName:column.fieldName) == v.filterLayout.fieldName) }">
+                                <aura:if isTrue="{! (column.type == 'boolean') }">
+                                    <option text="equals" value="equals"/>
+                                    <option text="not equals" value="not equals"/>
+                                    <aura:set attribute="else">
+                                        <aura:iteration items="{! v.filterConditions }" var="condition">
+                                            <option text="{! condition }" value="{! condition }"/>
+                                        </aura:iteration>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:if>
+                        </aura:iteration>
+                    </lightning:select>
+                    <br></br>
+                    <aura:iteration items="{! v.columns }" var="column" indexVar="columnIndex">
+                        <aura:if isTrue="{! (columnIndex+'') == (v.filterLayout.column+'') }">
+                            <aura:if isTrue="{! column.values != null }">
+                                <lightning:select name="selectValue" label="Value" value="{! v.filterLayout.value }">
+                                    <option text="Select one..." style="display: none;"/>
+                                    <aura:iteration items="{! column.values }" var="columnValue">
+                                    	<option text="{! columnValue }" value="{! columnValue }"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                                <aura:set attribute="else">
+                                    <aura:if isTrue="{! column.type == 'boolean' }">
+                                        <lightning:select name="selectValue" label="Value" value="{! v.filterLayout.value }">
+                                            <option text="false" value="false"/>
+                                            <option text="true" value="true"/>
+                                        </lightning:select>
+                                    </aura:if>
+                                    <aura:if isTrue="{! or(column.type == 'currency', column.type == 'number', column.type == 'percent') }">
+                                        <lightning:input type="number" name="selectValue" label="Value" value="{! v.filterLayout.value }"/>
+                                    </aura:if>
+                                    <aura:if isTrue="{! or(column.type == 'date', column.type == 'date-local') }">
+                                        <lightning:input type="date" name="selectValue" label="Value" value="{! v.filterLayout.value }"/>
+                                    </aura:if>
+                                    <aura:if isTrue="{! column.type == 'email' }">
+                                        <lightning:input type="email" name="selectValue" label="Value" value="{! v.filterLayout.value }"/>
+                                    </aura:if>
+                                    <aura:if isTrue="{! (column.type == 'phone') }">
+                                        <lightning:input type="tel" name="selectValue" label="Value" value="{! v.filterLayout.value }"/>
+                                    </aura:if>
+                                    <aura:if isTrue="{! !(column.type == 'boolean' || column.type == 'currency' || column.type == 'number' || column.type == 'percent' || column.type == 'date' || column.type == 'date-local' || column.type == 'email' || column.type == 'phone') }">
+                                        <lightning:input name="selectValue" label="Value" value="{! v.filterLayout.value }"/>
+                                    </aura:if>
+                                </aura:set>
+                            </aura:if>
+                        </aura:if>
+                    </aura:iteration>
+                    <br></br><br></br>
+                    <lightning:button label="Cancel" title="Cancel" onclick="{! c.cancelFilter }"/>
+                    <lightning:button label="Save" title="Save" onclick="{! c.saveFilter }"/>
+                </div>
+            </section>
+        </aura:if>
+        <aura:if isTrue="{! and(v.type == 'related', v.visibleData.length != 0) }">
+            <div class="footer__overlay">
+            	<lightning:button variant="base" label="View All" onclick="{! c.viewAll }"/>
+            </div>
+        </aura:if>
+    </div>
+</aura:component>

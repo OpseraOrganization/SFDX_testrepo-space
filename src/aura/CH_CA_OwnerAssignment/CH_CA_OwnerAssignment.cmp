@@ -1,0 +1,77 @@
+<aura:component controller="CH_CA_OwnerAssignment_Controller" implements="force:appHostable,force:hasRecordId,force:lightningQuickAction,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes">
+
+	<lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <c:CH_CA_MS_ConfirmationMessagebox aura:id="messageBox" />
+    <lightning:notificationsLibrary aura:id="notifLib"/> 
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="workgroupName" type="String"/>
+    <aura:attribute name="workgroupMembers" type="List" />
+    <aura:attribute name="isActiveAssignment" type="Boolean" />
+    <aura:attribute name="isReassignment" type="Boolean" default="false" />
+    <aura:attribute name="scriptLoaded" type="boolean" default="false" />
+    <aura:attribute name="checked" type="Boolean" default="false"/>
+	
+	<aura:attribute name="captureWorkgroupId" type="String" />
+    <aura:attribute name="captureWorkgroupName" type="String" />
+     <aura:attribute name="showworkgroupInstructions" type="Boolean" default="false"/>
+	<!-- NOKIASC-34648 -->
+    <aura:attribute name="isHWSCase" type="Boolean" default="false"/>
+    <!-- Load the datatable classes -->
+    <ltng:require styles="{!join(',', 
+                          $Resource.datatable + '/DataTables-1.10.16/media/css/jquery.dataTables.min.css',
+                          $Resource.datatable + '/DataTables-1.10.16/extensions/Select/css/select.dataTables.min.css',
+                          $Resource.CH_multiLineToastMessage)}"
+                  scripts="{!join(',', 
+                           $Resource.CH_jquery224, 
+                           $Resource.datatable + '/DataTables-1.10.16/media/js/jquery.dataTables.min.js',
+                           $Resource.datatable + '/DataTables-1.10.16/extensions/Select/js/dataTables.select.min.js')}" 
+                  afterScriptsLoaded="{!c.scriptsLoaded}"/> 
+    
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+	
+	 <aura:if isTrue="{!v.showworkgroupInstructions}">
+    	<c:CH_CA_Workgroup_Instructions aura:id="workgroupInstructionsModal" />
+    </aura:if>
+    
+    <article class="slds-card">        
+        <div class="slds-card__body slds-card__body_inner">
+            <div class="slds-p-top_xx-small">
+                <aura:if isTrue= "{!not(v.isReassignment)}">
+                	<label class="slds-form-element__label" for="textarea-id-01" >{!v.workgroupName}</label>
+                </aura:if>
+                <aura:if isTrue= "{! and(v.isReassignment, !v.isHWSCase)}">
+                    <label class="slds-checkbox_toggle slds-grid">
+                        <span class="slds-form-element__label slds-m-bottom_none">All Workgroup Members</span>
+                        <input id="toggleID" type="checkbox" name="checkbox-toggle-13" value="checkbox-toggle-13" aria-describedby="checkbox-toggle-13" 
+                               checked="{!v.checked}" onchange="{!c.handleToggleChanged}" visible="{!this.CH_Reassignment__c}"/>
+                        <span id="checkbox-toggle-13" class="slds-checkbox_faux_container" aria-live="assertive">
+                            <span class="slds-checkbox_faux"></span>
+                            <span class="slds-checkbox_on">All</span>
+                            <span class="slds-checkbox_off">Filtered</span>
+                        </span>
+                    </label>
+                </aura:if>
+            </div>
+            <div class="slds-m-top_xx-small slds-m-bottom_xx-small slds-scrollable" style="height: 22rem;">
+                <table id="{!'assignment-' + v.recordId}" style="table-layout: fixed; 
+                                                                 width: 100%
+                                                                 overflow:hidden; text-overflow: ellipsis;
+                                                                 word-wrap:break-word;"
+                       class="hover row-border">
+                </table>
+            </div>          
+        </div>
+    </article>
+</aura:component>
