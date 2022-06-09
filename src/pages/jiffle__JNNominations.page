@@ -1,0 +1,942 @@
+<apex:page controller="jiffle.JNBookMeeting" standardStylesheets="false" showHeader="true" sidebar="false"
+  tabStyle="Jifflenow_Meetings__tab">
+  <link rel="stylesheet" href="{!URLFOR($Resource.JNResources, 'JNResources/application.css')}" />
+  <html lang="en">
+  <apex:include pageName="jiffle__JNConsent" />
+  <apex:include pageName="jiffle__JNGlobals" />
+  <div id="sf-jiffle-now" class="jiffle-book-meeting iris-bootstrap hide">
+
+    <div class="modal modal-jiffle blue modal-select-activity fade" id="select_activity" tabindex="1" role="dialog" aria-labelledby="select_activityLabel" aria-hidden="true" data-keyboard="false" data-backdrop="static">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <span class="modal-title" id="select_activityLabel" data-i18n="select_activity"></span>
+            <i class="jif-info jif-16 jif-blue select-activity-help-icon hide"></i>
+          </div>
+          <div class="modal-body">
+            <div class="activity-list">
+              <ul id="meeting-type-list"></ul>
+            </div>
+          </div>
+          <div class="modal-footer"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notification-modal modal fade green" style="z-index: 1051;">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close js-modal-close" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title"></h4>
+          </div>
+          <div class="modal-body"></div>
+          <div class="modal-footer">
+            <button type="button" data-dismiss="modal" class="btn btn-blue modal-done" data-i18n="YES"></button>
+            <button type="button" data-dismiss="modal" class="btn btn-blue modal-cancel" data-i18n="NO"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="iris-react">
+      <div class="notification-mount"></div>
+    </div>
+
+    <div id="cover">
+      <div class="loaders">
+        <div style="display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="54" height="54"><style>path{stroke:#fff;stroke-width:2.2}</style><defs><circle id="c" cy="-22.6" r="4.4" fill="#0d9cd7"/></defs><g transform="translate(27 27)"><circle r="15" fill="#11171f"/><g id="circles"><use xlink:href="#c"/><use xlink:href="#c" transform="rotate(45)"/><use xlink:href="#c" transform="rotate(90)"/><use xlink:href="#c" transform="rotate(135)"/><use xlink:href="#c" transform="rotate(180)"/><use xlink:href="#c" transform="rotate(225)"/><use xlink:href="#c" transform="rotate(270)"/><use xlink:href="#c" transform="rotate(315)"/><animateTransform attributeName="transform" dur="10s" type="rotate" from="0" to="360" repeatCount="indefinite"/></g><path id="long-hand" d="M0-13V0"><animateTransform attributeName="transform" dur="1.6667s" type="rotate" from="0" to="360" repeatCount="indefinite"/></path><path id="short-hand" d="M0-8.5V0"><animateTransform attributeName="transform" dur="20s" type="rotate" from="0" to="360" repeatCount="indefinite"/></path><path stroke-linecap="round" d="M0 0l0 0"/></g></svg>
+        </div>
+      </div>
+    </div>
+
+    <div id="meeting-request-container">
+      <div class="mapping-module bm-page">
+        <div class="mtgmkg-head precond-head">
+          <div class="row">
+            <div class="col-xs-6">
+              <div id='nominationInfo'>
+                <form class="jn-form-inline" id="details-form">
+                  <div class="row">
+                    <div class="col-xs-8">
+                      <div id="account-opportunity">
+                        <div class="row">
+                          <div class="col-xs-6">
+                            <div class="form-group account precond-requestor precond-topic">
+                              <label class="js_tooltip" data-placement="bottom"
+                                data-container='#sf-jiffle-now'>Account</label>
+                              <div class="jn-select2">
+                                <select name="select-boxes" id="select_account" class="form-control"
+                                  style="width: 100%;">
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-xs-6">
+                            <div class="form-group opportunity precond-requestor precond-topic">
+                              <label class="js_tooltip" data-placement="bottom"
+                                data-container='#sf-jiffle-now'>Opportunity</label>
+                              <div class="jn-select2">
+                                <select name="select-boxes" id="select_opportunity" class="form-control"
+                                  style="width: 100%;">
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-xs-4">
+                      <div class="row">
+                        <div class="col-xs-3 hide">
+                          <div class="form-group mtgmkg-meetingwith js-meeting-with" id="req-page-meeting-form">
+                            <label data-i18n='meeting_with' class="text-ellipsis">Meeting With</label>
+                            <div class="jn-select2">
+                              <input type="textfield" name="meeting_with" class="form-control form-element-ignorable"
+                                placeholder="Meeting with" id="req_page_meeting_with" />
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-xs-12">
+                          <div class="form-group mtgmkg-requestor" data-form-i18n="requestor_select">
+                            <label class="required">Requestor of this meeting</label>
+                            <div class="jn-select2">
+                              <select class="form-control" name="requestor_list" id='requestor-select-complement'
+                                required="required">
+                              </select>
+                            </div>
+                            <div id="requestor-label-div-complement" class="requestor-label-div hide"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="col-xs-3">
+              <div class="js-ask-user session-attend-radio form-group">
+                <label class="required" data-i18n='attending_this_meeting'></label>
+                <div class="radio">
+                  <input type="radio" autocomplete="off" id="attend-meeting-yes" name="attend-meeting"
+                    data-attending="yes" />
+                  <label for="attend-meeting-yes" data-i18n="YES">YES
+                  </label>
+                </div>
+                <div class="radio">
+                  <input type="radio" autocomplete="off" id="attend-meeting-no" name="attend-meeting"
+                    data-attending="no" />
+                  <label for="attend-meeting-no" data-i18n="NO">NO
+                  </label>
+                </div>
+              </div>
+              <div class="user-unavailable js-message form-group">
+              <label></label>
+              </div>
+            </div>
+            <div class="col-xs-3">
+              <div class="action-btns btn-section text-right">
+                <button class="btn blue-btn hide" id='quickSubmit' data-i18n='quick_book'></button>
+                <button class="btn blue-btn hide" id='selfNominationSubmit' data-i18n='submit'></button>
+                <button class="btn btn-tertiary delete-btn" id="cancel-btn"
+                  data-ol-has-click-handler="">Discard</button>
+                <button class="btn blue-btn" id='proceed-to-details-container'
+                  data-i18n='meeting_info_btn_label'></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="nomination-container">
+            <div class="nomination-session-col">
+              <div class="section session-section">
+                <div class="section-header">
+                  <span class="section-title" data-i18n='select_session'>SELECT SESSION</span>
+                  <div class="session-form session-list-header">
+                    <form class="form-inline">
+                      <div class="form-group">
+                        <label for="">Track</label>
+                        <div class="jn-select2">
+                          <select type="textfield" name="track" class="form-control form-element-ignorable"
+                            id="track_select" required="required">
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group" id="req-page-topic-management">
+                        <label for="" class="text-ellipsis"></label>
+                        <div class="jn-select2">
+                          <select type="textfield" name="mapping_topic" class="form-control form-element-ignorable"
+                            id="mapping_topic" required="required">
+                          </select>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                <div class="section-content scroll-y session-card-list" id="session-list-container">
+                  <div class="iris-card-container session-list jn-l-card-list-view" id="sessions-list">
+                  </div>
+                </div>
+                <div class="nomination-session-emptystate">
+                  <div class="section-session-emptystate">
+                    <div>There are no Sessions for the selected Track</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="nomination-attendee-col hide" id="users-list">
+              <div class="section attendees-section">
+                <div class="section-header">
+                  <span class="section-title pull-left" data-i18n="pick_participants">ATTENDEES</span>
+                  <div class="section-actions">
+                    <i class="jif-iris-add js_tooltip" title="Add Attendee" data-placement="top" id="attendee-addbtn"
+                      data-target="#add-attendee-modal" data-toggle="modal"></i>
+                  </div>
+                </div>
+                <div class="section-tabs">
+                  <ul class="nav nav-tabs tabs-attendees" role="tablist">
+                    <li role="presentation" class="active" data-search-name='internal'>
+                      <a href="#internal-attendees-tab" role="tab" data-toggle="tab" id='internal'>
+                        <span data-i18n="internal"></span>&nbsp;
+                        <span class="count attendeeCount" id="internalAttendeeCount">0</span>
+                      </a>
+                    </li>
+                    <li role="presentation" data-search-name='external'>
+                      <a href="#external-attendees-tab" role="tab" data-toggle="tab" id='external'>
+                        <span data-i18n="external"></span>&nbsp;
+                        <span class="count attendeeCount" id="externalAttendeeCount">0</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                <div class="pick-tool">
+                  <div class="search-field-icon-left search-field-container jif-dark2-grey">
+                    <i id='search-field-context-icon-internal'
+                      class='jif-12 jif-iris-search contextual-field-icon js_clear-search'></i>
+                    <i id='search-field-context-icon-external'
+                      class='jif-12 jif-iris-search contextual-field-icon js_clear-search'></i>
+                    <input type="text" class="form-control search-box user-search-box" placeholder="Search" />
+                  </div>
+                  <ul class="nav navbar-nav navbar-right navbar-icon hide" id='attendee-filter-panel'>
+                    <li class="dropdown filter-dropdown">
+                      <a href="javascript:void(0)" class="filter-dropdown-toggle" data-toggle="dropdown">
+                        <img src="/mwc2016/images/filter.png" alt="Filter" />
+                      </a>
+                      <div class="dropdown-menu">
+                        <form action="javascript:void(0)" class="form">
+                          <div class="form-group-search">
+                            <div class="row">
+                              <div class="col-sm-10">
+                                <input type="text" class="form-control" id='attendee-filter-search' />
+                              </div>
+                              <div class="col-sm-2">
+                              </div>
+                            </div>
+                          </div>
+                          <span data-i18n="filter_by"></span>
+                          <div class="form-group">
+                            <div class="row" id='attendee-filter'>
+                            </div>
+                          </div>
+                          <div class="text-left">
+                            <a href="javascript:void(0)" class="cancel pull-left" data-i18n="reset"></a>
+                            <button class="btn btn-blue pull-right apply" data-i18n="apply_filter"></button>
+                          </div>
+                        </form>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div class="section-content">
+                  <div class="tab-content tabs-attendees-content">
+                    <div role="tabpanel" class="tab-pane active" id="internal-attendees-tab">
+                      <div class="added-intetrnal-attendee"></div>
+                      <div class="attendees-list">
+                      </div>
+                      <div class="loading hide">
+                        <span><b data-i18n="loading"></b></span>
+                      </div>
+                    </div>
+                    <div role="tabpanel" class="tab-pane" id="external-attendees-tab">
+                      <div class="added-external-attendee"></div>
+                      <div class="attendees-list">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="nomination-attendee-emptystate">
+              <div class="section attendees-section">
+                <div class="section-header">
+                  <span class="section-title" data-i18n="pick_participants">ADD NOMINEES</span>
+                </div>
+                <div class="section-emptystate-container">
+                  <div class="section-attendee-emptystate">
+                    <div>You can view your Nomminee list by selecting Session</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id='proceed_page' class='hide sessions'>
+      <div class="book-meeting page-pad-bottom bottom-margin-50">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-4 col-sm-6">
+              <div class="section section-meeting-proceed">
+                <div class="section-content">
+                  <div class="selected-item selected-time"></div>
+                  <div class="selected-item selected-room"></div>
+                  <div class="selected-item selected-internal-attendee no-padding-left-right">
+                    <div class="selected-title" >
+                      <div class="selected-title-left">
+                        <i class="jif-user-circle-o jif-16"></i>
+                        <span data-i18n="internal_participants"></span>
+                        <span class="count selectedInternalAttendeeCount">0</span>
+                      </div>
+                      <div class="waitlist pull-right capitalize js-internal-waitlist-attendee-count"></div>
+                      <a href="javascript:void(0)" class='go-to-main-internal hide'>
+                        <i class="jif-plus-circle-o"></i><span data-i18n="Add"></span>
+                      </a>
+                    </div>
+                    <div class="selected-attendee-list scroll-y"></div>
+                  </div>
+                  <div class="selected-item selected-external-attendee">
+                    <div class="selected-title">
+                      <div class="selected-title-left">
+                        <i class="jif-user-circle-o jif-16"></i>
+                        <span data-i18n="external_participants"></span>
+                        <span class="count selectedExternalAttendeeCount">0</span>
+                      </div>
+                      <div class="waitlist pull-right capitalize js-external-waitlist-attendee-count"></div>
+                      <a href="javascript:void(0)" class='go-to-main-external hide'>
+                        <i class="jif-plus-circle-o"></i><span data-i18n="Add"></span>
+                      </a>
+                    </div>
+                    <div class="selected-attendee-list scroll-y"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-8 col-sm-6">
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="section section-meeting-proceed">
+                    <div class="section-header">
+                      <div>
+                        <div class="meeting-id" data-i18n="meeting_in_making"></div>
+                        <div id="js_activity_name" class="activity">Tracks &amp; sessions</div>
+                        <div class="hide" id="js_track_name"></div>
+                      </div>
+                      <div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="meet-details-custom">
+                <div id="change-nomination-form" class="custom-section hide">
+                  <form action="javascript:void(0)" class="jiffle-form">
+                    <div class="row">
+                      <div class="col-md-12">
+                        <label>
+                          <span>Select</span>&nbsp;<span class="js_change_meeting_with_label"></span>&nbsp;<span>to view details</span>
+                        </label>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label class="required">Requestor Name</label>
+                          <select class="form-control hide" name="change_requestor" id='change-requestor' required="required"></select>
+                          <div id="change-requestor-label" class="requestor-label-div form-control disabled hide"></div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label class="js_change_meeting_with_label"></label>
+                          <select class="form-control hide" name="change_meeting_with" id='change-meeting-with'></select>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                <div class="custom-section header-cont">
+                  <div class="section section-meeting-proceed">
+                    <div class="custom-form-header">
+                      <div>
+                        <div class="status-content js-single-meetings">
+                            <div class="meeting-status"></div>
+                            <span class='approved-text'></span>
+                        </div>
+                      </div>
+                      <div>
+                        <button class="btn btn-secondary accept-meeting hide" data-i18n="accept"></button>
+                        <button class="btn btn-blue btn-submit approve-meeting hide" data-i18n="approve">Approve</button>
+                        <button  class="btn btn-tertiary deny-meeting hide cancel text-center" data-i18n="deny">Deny</button>
+                        <button class="btn btn-tertiary cancel-meeting hide" data-i18n="cancel">Cancel</button>
+                        <div class="dropdown cursor-pointer">
+                          <a data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="icon-box js-secondary-action-dropdown hide">
+                            <i class="jif-more"></i>
+                          </a>
+                          <ul class="dropdown-menu js-secondary-action-list">
+                            <li class="decline-meeting hide">
+                              <a href="javascript:void(0)">
+                                <div class="font-12" data-i18n="decline"></div>
+                              </a>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <form action="javascript:void(0)" class="jiffle-form meeting-summary">
+                    <div class="form-group" data-form-i18n="requestor_select">
+                      <div class="row">
+                        <div class="col-md-6 col-xs-12">
+                          <div>
+                            <label class="required">Requestor Name</label>
+                            <select class="form-control" name="requestor_list" id='requestor-select' required="required"></select>
+                          </div>
+                          <div >
+                            <div id="requestor-label-div" class="requestor-label-div form-control hide"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                  <hr/>
+                  <form action="javascript:void(0)" class="jiffle-form custom-form" id='customer_form'>
+                    <div class="bottom-margin-15">
+                      <span class="font-semi-bold" data-i18n="meeting_info"></span>
+                      <span class="btn btn-secondary copy-customer-info js-copy-customer-info  point-cursor pull-right">
+                        <span class="jif-iris-copy font-blue"></span>
+                        <span data-i18n="copy_from"></span>
+                      </span>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 col-xs-12">
+                        <div id='dynamic_form'></div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal modal-jiffle blue fade" id="comments_modal">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content bg-white">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i class="jif-iris-cancel-thin"></i></span></button>
+              <h4 class="modal-title"></h4>
+            </div>
+            <div class="modal-body">
+              <form class="form js-comment-form">
+                <div class="row">
+                  <div class="col-xs-12">
+                    <select class="form-control js-comments" name="comments" required="required"></select>
+                  </div>
+                  <div class="col-xs-12">
+                    <textarea class="js-others-comments form-control margin-top-15 hide" name="others_comments" rows="1"></textarea>
+                  </div>
+                </div>
+              </form>
+              <div class="comment-error error-block" data-i18n="comments_error"></div>
+            </div>
+            <div class="modal-footer">
+              <div class='edit-btn'>
+                <a class="btn btn-tertiary cancel" data-dismiss="modal" data-i18n="comments_close"></a>
+                <button type="button" class="btn btn-blue modal-done js-action-btn"></button>
+              </div>
+            </div>
+            <div class="note-footer" data-i18n="comments_footer"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bulk-action button-bar">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-2 col-md-offset-5 col-xs-6">
+              <a href="javascript:void(0)" class="btn btn-tertiary btn-block cancel discard-meeting text-center" data-i18n="discard"></a>
+            </div>
+            <div class="col-md-2 col-xs-6">
+              <button type="submit" class="btn btn-blue btn-block btn-submit" id="submitButton" data-i18n="SUBMIT"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal select-time-modal fade" id="select-time">
+      <div class="modal-dialog">
+        <div class="select-time">
+          <h5 data-i18n="select_time"></h5>
+          <form action="javascript:void(0)" class="jiffle-form">
+            <div class="row">
+              <div class="col-xs-6">
+                <div class="form-group" data-form-i18n="start_time">
+                  <label>Start</label>
+                  <input type="text" class="form-control" placeholder="HH:MM" id="start-time" />
+                </div>
+              </div>
+              <div class="col-xs-6">
+                <div class="form-group" data-form-i18n="end_time">
+                  <label>End</label>
+                  <input type="text" class="form-control" placeholder="HH:MM" id="end-time" />
+                </div>
+              </div>
+              <div class="col-xs-12">
+                <div class="text-right">
+                  <a href="javascript:void(0)" class="cancel-" data-i18n="CANCEL"></a>
+                  <a href="javascript:void(0)" class="btn btn-blue" data-i18n="OK"></a>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade modal-user-info" id="attendee-information">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="myModalLabel" data-i18n="basic_info"></h4>
+          </div>
+          <div class="modal-body">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal select-time-modal" id="custom_meeting_popup" tabindex="-1" role="dialog"
+      aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-body">
+            <div class="select-time">
+              <div id='error_block' style="color:red">
+              </div>
+              <h5 data-i18n="select_time"></h5>
+              <form action="javascript:void(0)" class="jiffle-form">
+                <div class="form-group">
+                  <div class="row">
+                    <div class="col-xs-12"><span class="date" id="meeting_date"></span></div>
+                    <div class="col-xs-12">
+                      <label>Start Time</label>
+                      <div class="time-spinner" id="meeting_start_time"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="row">
+                    <div class="col-xs-12">
+                      <label>End Time</label>
+                      <div class="time-spinner" id="meeting_end_time"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-xs-12">
+                    <div class="text-right">
+                      <a href="javascript:void(0)" class="cancel" id="meeting_popup_close" data-i18n="CANCEL"></a>
+                      <a href="javascript:void(0)" class="btn btn-blue" id="meeting_popup_submit" data-i18n="OK"></a>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-jiffle modal fade yellow cal-info-help-gif" id="cal_info" data-backdrop="static"
+      style="z-index: 1051;">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close cal-help-close" data-dismiss="modal" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" data-i18n="select_slot_instruction"></h4>
+          </div>
+          <div class="modal-body cal-help-body">
+            <div class="cal-help-gif">
+            </div>
+          </div>
+          <div class="modal-footer">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal select-time-modal" id="custom_meeting_popup" tabindex="-1" role="dialog"
+      aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-body">
+            <div class="select-time">
+              <div id='error_block' style="color:red">
+              </div>
+              <h5 data-i18n="select_time"></h5>
+              <form action="javascript:void(0)" class="jiffle-form">
+                <div class="form-group">
+                  <div class="row">
+                    <div class="col-xs-12"><span class="date" id="meeting_date"></span></div>
+                    <div class="col-xs-12">
+                      <label>Start Time</label>
+                      <div class="time-spinner" id="meeting_start_time"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="row">
+                    <div class="col-xs-12">
+                      <label>End Time</label>
+                      <div class="time-spinner" id="meeting_end_time"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-xs-12">
+                    <div class="text-right">
+                      <a href="javascript:void(0)" class="cancel" id="meeting_popup_close" data-i18n="CANCEL"></a>
+                      <a href="javascript:void(0)" class="btn btn-blue" id="meeting_popup_submit" data-i18n="OK"></a>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-jiffle modal fade yellow cal-info-help-gif" id="cal_info" data-backdrop="static"
+      style="z-index: 1051;">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close cal-help-close" data-dismiss="modal" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" data-i18n="select_slot_instruction">Double Click / Drag and Drop at required slot
+            </h4>
+          </div>
+          <div class="modal-body cal-help-body">
+            <div class="cal-help-gif">
+            </div>
+          </div>
+          <div class="modal-footer">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal modal-jiffle modal-list event-list-modal blue fade js-attendee-survey-modal"
+      data-backdrop="static" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title">Select Survey(s)</h4>
+          </div>
+          <div class="modal-body">
+            <div class="container-fluid no-padding event-list-content card-container list-view">
+              <div class="row hide">
+                <div class="col-md-12">
+                  <div class="font-red"></div>
+                </div>
+              </div>
+              <div class="row" id="attendee-survey-container">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-blue" id="js-attendee-survey-mail">send email</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal modal-jiffle modal-list room-list-modal blue fade" id="roomSwapModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content bg-white">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" data-i18n="swap_room_title"></h4>
+            <div class="row">
+              <div class="col-md-12">
+                <div class="font-red" id="errorMsg"></div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-body">
+            <div id="swappable-room-list"
+              class="container-fluid no-padding meeting-rooms-list card-container list-view">
+
+            </div>
+          </div>
+          <div class="modal-footer">
+            <a href="javascript:void(0)" class="cancel" id="swap-room-btn-cancel" data-dismiss="modal"
+              data-i18n="cancel"></a>
+            <button type="button" class="btn btn-blue" id="swap-room-btn" data-i18n="swap"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade js-add-attendee-modal" type="internal" role="dialog" data-backdrop="static"
+      aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="content">
+          <div class="jiffle-panel">
+            <div class="jiffle-panel-head">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                  aria-hidden="true">&times;</span></button>
+              <h1 data-i18n="add_attendee"></h1>
+              <span class="hint" data-i18n="add_attendee_hint"></span>
+            </div>
+            <div class="jiffle-panel-body">
+              <form action="javascript:void(0)" class="jiffle-form js-add-attendee-form" role="form">
+                <div id="internalPrimaryFields"></div>
+                <div id="internalAdditionalFormFields"></div>
+                <div class="termsandcondition hide js-termsandcondition">
+                  <div class="checkbox">
+                    <input type="checkbox" name="consent" id="internal_consent" value="true" />
+                    <label for="internal_consent" class="add_user_consent_message"></label>
+                  </div>
+                </div>
+                <div class="form-group" data-form-i18n="add">
+                  <button type="button"
+                    class="btn btn-lg btn-block btn-blue add-attendee-btn js-add_attendee">Add</button>
+                </div>
+                <div class="foot-privacypolicy"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade js-add-attendee-modal" type="external" role="dialog" data-backdrop="static"
+      aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="content">
+          <div class="jiffle-panel">
+            <div class="jiffle-panel-head">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                  aria-hidden="true">&times;</span></button>
+              <h1 data-i18n="add_attendee"></h1>
+              <span class="hint" data-i18n="add_attendee_hint"></span>
+            </div>
+            <div class="jiffle-panel-body">
+              <form action="javascript:void(0)" class="jiffle-form js-add-attendee-form" role="form">
+                <div class="form-group toggle-switch-m hide js-sync-contact-sfdc" id="js-external-sync-contact-sfdc">
+                  <div class="row">
+                    <div class="col-xs-8">
+                      <label class="js-sync-sfdc">Sync contact to SFDC</label>
+                    </div>
+                    <div class="col-xs-4">
+                      <div class="toggle-switch">
+                        <input type="checkbox" name="sync_contact" id="external_sync_sfdc_contact" />
+                        <label for="external_sync_sfdc_contact"></label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div id="externalPrimaryFields"></div>
+                <div id="externalAdditionalFormFields"></div>
+                <div class="termsandcondition hide js-termsandcondition">
+                  <div class="checkbox">
+                    <input type="checkbox" name="consent" id="external_consent" value="true" />
+                    <label for="external_consent" class="add_user_consent_message"></label>
+                  </div>
+                </div>
+                <div class="form-group" data-form-i18n="add">
+                  <button type="button"
+                    class="btn btn-lg btn-block btn-blue add-attendee-btn js-add_attendee">Add</button>
+                </div>
+                <div class="foot-privacypolicy"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal select-time-modal fade" id="select-time">
+      <div class="modal-dialog">
+        <div class="select-time">
+          <h5 data-i18n="select_time"></h5>
+          <form action="javascript:void(0)" class="jiffle-form">
+            <div class="row">
+              <div class="col-xs-6">
+                <div class="form-group" data-form-i18n="start_time">
+                  <label>Start</label>
+                  <input type="text" class="form-control" placeholder="HH:MM" id="start-time" />
+                </div>
+              </div>
+              <div class="col-xs-6">
+                <div class="form-group" data-form-i18n="end_time">
+                  <label>End</label>
+                  <input type="text" class="form-control" placeholder="HH:MM" id="end-time" />
+                </div>
+              </div>
+              <div class="col-xs-12">
+                <div class="text-right">
+                  <a href="javascript:void(0)" class="cancel-" data-i18n="CANCEL"></a>
+                  <a href="javascript:void(0)" class="btn btn-blue" data-i18n="OK"></a>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade modal-user-info" id="attendee-information">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="myModalLabel" data-i18n="basic_info"></h4>
+          </div>
+          <div class="modal-body">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal jn-c-modal modal-copy-customer-info fade" id="copy_customer_info_modal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title js-copy-model-header" data-i18n="select_meeting_you_want_to_copy"></h4>
+          </div>
+          <div class="copy-settings modal-body">
+            <form>
+              <div class="form-group jn-c-form-control--search-icon">
+                <input type="text" class="jn-c-form-control--search form-control js-meeting-search" name=""
+                  placeholder="Search" />
+              </div>
+            </form>
+            <div class="">
+              <div id="copy_meeting_list" class="jn-l-card-list-view">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="jn-c-btn--blue btn import-customer-info" data-i18n="done"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal modal-jiffle blue fade" id="participation_modal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content bg-white">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i
+                  class="jif-iris-cancel-thin"></i></span></button>
+            <h4 class="modal-title" id="myModalLabel">Participation Details</h4>
+          </div>
+          <div class="modal-body">
+            <h5 class="js-partial-participation-label">{First name} participated for {duration} mins between</h5>
+            <br />
+            <form class="form js-participation-form">
+              <div class="row">
+                <div class="col-xs-6">
+                  <div class="form-group simple">
+                    <label class="font-12">Start Time</label>
+                    <input type="text" id='participation-start-time' name="participation-start-time"
+                      class="form-control js-time-input" placeholder="HH:MM AM/PM" />
+                  </div>
+                </div>
+                <div class="col-xs-6">
+                  <div class="form-group simple">
+                    <label class="font-12">End Time</label>
+                    <input type="text" id='participation-end-time' name="participation-end-time"
+                      class="form-control js-time-input" placeholder="HH:MM AM/PM" />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <span class="col-xs-12 general-error-class hide" id="general-error-message"></span>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer text-left">
+            <div class='edit-btn'>
+              <a class="cancel" data-dismiss="modal">CANCEL</a>
+              <button type="button" id="submit_partial_participation" class="btn btn-blue modal-done">SUBMIT</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal modal-jiffle blue fade" id="decline_comment_modal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content bg-white">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i
+                  class="jif-iris-cancel-thin"></i></span></button>
+            <h4 class="modal-title">Please mention reason for declining the meeting</h4>
+          </div>
+          <div class="modal-body">
+            <form class="form js-decline-comment-form">
+              <div class="row">
+                <div class="col-xs-12">
+                  <select class="form-control js-decline-comments" name="decline_comments" required="required"></select>
+                </div>
+                <div class="col-xs-12">
+                  <textarea class="js-others-comments form-control margin-top-15 hide" name="others_comments"
+                    rows="1"></textarea>
+                </div>
+              </div>
+            </form>
+            <div class="comment-error error-block">Please provide comment to proceed</div>
+          </div>
+          <div class="modal-footer">
+            <div class='edit-btn'>
+              <a class="cancel" data-dismiss="modal">CANCEL</a>
+              <button type="button" id="decline_invite_btn"
+                class="btn btn-blue modal-done js-decline-invite-btn">DECLINE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+  window.CKEDITOR_BASEPATH = "{!URLFOR($Resource.JNCKeditor, 'ckeditor/')}";
+</script>
+<script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNCKeditor, 'ckeditor/ckeditor.js')}"></script>
+  <script language="javascript" type="text/javascript"
+    src="{!URLFOR($Resource.JNResources, 'JNResources/application.js')}"></script>
+  <script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNBooksReact)}"></script>
+  <script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNMappingModule)}"></script>
+  <script language="javascript" type="text/javascript" src="{!URLFOR($Resource.JNJqueryMigrate)}"></script>
+  <script type="text/javascript">
+    Visualforce.remoting.timeout = 120000;
+  </script>
+
+  </html>
+</apex:page>
