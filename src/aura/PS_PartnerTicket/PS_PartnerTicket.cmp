@@ -1,0 +1,186 @@
+<aura:component implements="forceCommunity:availableForAllPageTypes" access="global" controller="PS_CreatePartnerTicket" >
+    <!--Boolean attribute to indicate if modal is open or not 
+       default value is false as modal is closed when page is loaded 
+    -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:registerEvent name="refreshListView" type="c:RefreshListViewEvent"/>
+    <aura:attribute name="recordTypeId" type="String" default=""/>
+    <aura:attribute name="isPartneruser" type="boolean" default="true"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="filetype" type="List" default="['.png', '.jpg', '.jpeg','.gif','.msg','.xls','.xlsx','.doc','.docx','.ppt','.pptx']"/>
+    <aura:attribute name="CaseObj" type="Case" default="{}"/>
+    <aura:attribute name="userName" type="String" default=""/>
+    <aura:attribute name="userCountry" type="String" default=""/>
+    <aura:attribute name="accountName" type="String" default=""/>
+    <aura:attribute name="typeOptions" type="Object[]" default="[{}]"/>
+    <aura:attribute name="langOptions" type="Object[]" default="[{}]"/>
+    <aura:attribute name="userDetailsMap" type="map"/>
+     
+    <!--<div class="slds-m-around_xx-large">-->
+        <lightning:button variant="brand"
+                          label="Create Ticket"
+                          title="Create Ticket"
+                          onclick="{! c.openModel }" />
+        <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+        <aura:if isTrue="{!v.isModalOpen}">
+             
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                 <aura:if isTrue="{!v.showSpinner }">
+                <div class="spinnerContainerDiv" aura:Id="spinner">
+                  <lightning:spinner class="spinnerDimension" variant="brand" alternativeText="Loading" size="medium" />
+                  </div>
+                 </aura:if>
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Support Ticket: Partner Support</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" aura:Id="modal-content-id-2" id="modal-content-id-2" >
+                    
+                    <div class="slds-section slds-is-open">
+                    <div aria-hidden="false" class="slds-section__content">
+                       <div class="slds-grid slds-wrap">
+                           <div class="slds-col slds-p-horizontal_xx-medium slds-size_1-of-1">
+                        <lightning:input name="subject" aura:Id="subject" label="Subject" required="true" value="{!v.CaseObj.Subject}"/>
+                           </div>
+                           <br/>
+                           <div class="slds-col slds-p-horizontal_xx-medium slds-size_1-of-1">
+                    <lightning:textarea name="Description" aura:Id="Description" label="Description" required="true" value="{!v.CaseObj.Description}"/>
+                           </div>
+                        </div>
+                     </div>
+                      <h3 class="slds-section__title slds-theme_shade" style="background-color:#f9f9fa">
+                     <span class="slds-truncate slds-p-horizontal_small" title="Section Title">Partner Information</span>
+                     </h3>
+                     <div aria-hidden="false" class="slds-section__content">
+                       <div class="slds-grid slds-wrap">
+                           <div class="slds-col slds-p-horizontal_xx-small slds-size_1-of-2">
+                            <lightning:input name="AccountName" aura:Id="AccountName" label="Account Name" value="{!v.accountName}" required="true" disabled="true"/>
+                           </div>
+                           <!--
+                           <div class="slds-col slds-p-horizontal_x-small slds-size_1-of-2">
+                            <lightning:input name="Country" aura:Id="Country" label="Country" value="{!v.CaseObj.Country__c}" disabled="true" />
+                           </div>-->
+                           <br/>
+                           <div class="slds-col slds-p-horizontal_x-small slds-size_1-of-2">
+                            <lightning:input name="IssueReportedBy" aura:Id="IssueReportedBy" label="Issue Reported By" value="{!v.userName}" required="true" disabled="true"/>
+                           </div>
+                          <div class="slds-col slds-p-horizontal_x-small slds-size_1-of-2">
+                            <lightning:combobox name="Type" label="Type" aura:Id="Type" placeholder="Select an Option" options="{! v.typeOptions }" value="{!v.CaseObj.Type}" required="true" dropdownAlignment="auto"/>
+                           </div>
+                           <br/>
+                           <div class="slds-col slds-p-horizontal_x-small slds-size_1-of-2" >
+                            <lightning:combobox name="CommunitcationLang" aura:Id="CommunitcationLang" label="Communication Language" placeholder="Select an Option" options="{! v.langOptions }" value="{!v.CaseObj.PS_Communication_Language__c}" required="true" dropdownAlignment="auto"/>
+                           </div>
+                       </div>
+                         <br/>
+                         <br/>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    
+                    </div>
+                    </div>
+                        <!-- -->
+                    <div class="slds-modal__content slds-p-around_medium slds-hide" aura:Id="modal-content-id-3"  id="modal-content-id-3">
+                      <div class="slds-section slds-is-open" >
+                          <lightning:recordEditForm aura:id="recordEditForm"      
+                              objectApiName="Case"
+                              recordTypeId="{!v.CaseObj.RecordTypeId}"
+                              onload="{!c.handleSpinner}"
+                              onsubmit="{!c.handleInternalSubmit}"
+                              onsuccess="{!c.handleSuccessOnInternalCase}"               
+                              onerror="{!c.handleError}">
+                         <lightning:messages aura:id="errMessage" />
+                        <div aria-hidden="false" class="slds-section__content">
+                       <div class="slds-grid slds-wrap">
+                           <div class="slds-col slds-p-horizontal_xx-medium slds-size_1-of-1">
+                        <lightning:inputField  fieldName="Subject" aura:Id="IntenralField" required="true"/>
+                           </div>
+                           <br/>
+                           <div class="slds-col slds-p-horizontal_xx-medium slds-size_1-of-1">
+                       <lightning:inputField  fieldName="Description" aura:Id="IntenralField" required="true"/>
+                           </div>
+                        </div>
+                     </div>
+                    <h3 class="slds-section__title slds-theme_shade">
+                     <span class="slds-truncate slds-p-horizontal_small" title="Section Title">Partner Information</span>
+                     </h3>
+                     <div aria-hidden="false" class="slds-section__content">
+                       <div class="slds-grid slds-wrap">
+                           <div class="slds-col slds-p-horizontal_xx-small slds-size_1-of-2">
+                             <lightning:inputField fieldName="AccountId" aura:Id="IntenralField" />
+                           </div>
+                            <!-- <div class="slds-col slds-p-horizontal_x-small slds-size_1-of-2">
+                            <lightning:inputField fieldName="Country__c" aura:Id="IntenralField"  required="true" />
+                           </div>-->
+                           <br/>
+                           <div class="slds-col slds-p-horizontal_xx-small slds-size_1-of-2">
+                            <lightning:inputField fieldName="Issue_Reported_By__c" aura:Id="IntenralField" required="true" />
+                           </div>
+                           <div class="slds-col slds-p-horizontal_xx-small slds-size_1-of-2">
+                                <lightning:inputField fieldName="Type" aura:Id="IntenralField" required="true" />
+                           </div>
+                           <div class="slds-col slds-p-horizontal_xx-small slds-size_1-of-2">
+                            <lightning:inputField fieldName="PS_Communication_Language__c" aura:Id="IntenralField" required="true" />
+                           </div>
+                       </div>
+                    </div>
+                              <br/>
+                              <br/>
+                     <footer class="slds-modal__footer" aura:Id="internalUserFooter">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{!c.closeModalForInternal }"/>
+                        <lightning:button variant="brand"
+                                          label="Submit"
+                                          type="Submit"
+                                          />
+                    </footer>	
+                    </lightning:recordEditForm>
+                    </div>
+                   </div>
+                    <footer class="slds-modal__footer" aura:Id="PartnerUserFooter">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{!c.closeModel}"/>
+                        <lightning:button variant="brand"
+                                          label="Submit"
+                                          title="Submit"
+                                          onclick="{!c.submitDetailsForExternal}"/>
+                    </footer>
+                     
+                    <div class="slds-modal__content slds-p-around_medium slds-hide" id="modal-content-id-1" aura:id="fileUpload" >
+                     <h3 class="slds-section__title slds-theme_shade">
+                     <span class="slds-truncate slds-p-horizontal_small" title="Section Title">Do you want to upload file</span>
+                     </h3>
+                     <br/>
+                     <lightning:fileUpload label="Upload Document"
+                    name="fileUploader"
+                    multiple="false"
+                    accept="{!v.filetype}"
+                    recordId="{!v.CaseObj.Id}"
+                    onuploadfinished="{!c.handleUploadFinished}" />
+                     <br/>
+                     <footer class="slds-modal__footer" aura:Id="uploadFileFooter">
+                      <lightning:button variant="neutral"
+                                        label="Close"
+                                        title="Close"
+                                        onclick="{! c.closeFileModal}"/>
+                    </footer>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    <!--</div>-->
+</aura:component>

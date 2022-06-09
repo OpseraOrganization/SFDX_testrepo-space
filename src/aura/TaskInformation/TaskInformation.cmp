@@ -1,0 +1,266 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" controller="TaskInformationController">
+    <force:outputField aura:id="taskAssignedId" value="{!v.task.OwnerId}" class="slds-hidden"/> 
+    <aura:attribute name="recordId" type="String" description="Opportunity Record Id" default="{!v.recordId}"/> 
+    <aura:attribute name="task" type="Task" default="{'sobjectType': 'Task','Subject':'', 'Description':'','ActivityDate':'','Owner':'','What':'','Created_At__c':'','OfferNumber__c':'','OfferId__c':''}"/>
+    <aura:attribute name="opportunity" type="Opportunity" 
+                    default="{ 'sobjectType': 'Opportunity' }" access="public"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="wrapper" type="TaskInformationWrapper"/>
+    <aura:attribute name="relatedTo" type="String"/>    
+    <aura:attribute name="assignVal" type="String"/>
+    <aura:attribute name="gateList" type="List"/>
+    <aura:attribute name="selectedGateVal" type="String"/>
+    <aura:attribute name="GateValue" type="String"/>
+    <aura:attribute name="myDate" type="Date"/>
+    <aura:attribute name="dateValidationError" type="boolean" default="false"/>
+    
+    
+    <aura:attribute name="mobileDevice" type="boolean" default="false" description="True if component is rendered in mobile"/>
+    <div class="slds-hide">
+        <ui:inputText aura:id="taskOffId" value="{!v.wrapper.offerRecordId}"/>
+    </div>   
+    <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open slds-show" aura:id="modaldiv">
+        <div class="slds-modal__container">
+            <div class="slds-modal__header">
+                <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="{!c.cancelFunction}">
+                    <c:svgIcon svgPath="{!$Resource.SldsNew+ '/assets/icons/utility-sprite/svg/symbols.svg#close'}"/>      
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="header43" class="slds-text-heading--large">Task Information</h2>
+            </div>
+            <ui:scrollerWrapper class="innerScroller">
+                <div class="slds-modal__content slds-p-around_large">
+                    <table class="slds-table">
+                        <tbody>    
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate">
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="text-input-id-1">Subject</label>
+                                            <div class="slds-form-element__control">                           
+                                                <ui:inputText class="slds-has-error" aura:id="taskSubId" value="{!v.task.Subject}"/>
+                                            </div>
+                                        </div>                                        
+                                    </div>     
+                                </th> 
+                            </tr>       
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate">
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="text-input-id-1">Description</label>
+                                            <div class="slds-form-element__control">
+                                                <ui:inputTextArea aura:id="taskDescrpId" value="{!v.task.Description}" rows="2"/>
+                                            </div>
+                                        </div>                                        
+                                    </div>     
+                                </th>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate">
+                                        <div class="slds-form-element">
+                                            <abbr class="slds-required slds-text-heading_medium" title="required">*</abbr>
+                                            <label class="slds-form-element__label" for="text-input-id-1">Identified At</label>
+                                            <div class="slds-form-element__control slds-has-error">
+                                                <ui:inputSelect class="slds-has-error" required="true" aura:id="taskCreatedAt" change="{!c.onChange}">
+                                                    <ui:inputSelectOption text="--none--" label="--none--" />
+                                                    <aura:iteration items="{!v.gateList}" var="gateVal">
+                                                        <ui:inputSelectOption text="{!gateVal}" label="{!gateVal}"/>
+                                                    </aura:iteration>
+                                                </ui:inputSelect>
+                                                <aura:if isTrue="{!v.dateValidationError}">
+                                                    <div class="slds-text-color_error slds-p-left_x-small">
+                                                        Identified At cannot be left blank.
+                                                    </div>
+                                                </aura:if> 
+                                            </div>
+                                        </div>                                        
+                                    </div>     
+                                </th>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate">
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="text-input-id-1">Offer Number</label>
+                                            <div class="slds-form-element__control">
+                                                <ui:inputText aura:id="taskOffNum" value="{!v.wrapper.offerNumber}" disabled="true"/>
+                                            </div>
+                                        </div>                                        
+                                    </div>     
+                                </th>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="slds-table">
+                        <tbody>   
+                            <tr>
+                                <th scope="row">
+                                    <div class="slds-truncate">                                             
+                                        <label class="slds-form-element__label" for="text-input-id-1">Due Date</label>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <ui:inputDate aura:id="taskAppointmentDate" class="slds-input" labelClass="slds-form-element__label" value="{!v.task.ActivityDate}" displayDatePicker="true" format="DD.MM.YYYY"/>
+                                        </div>                                    
+                                    </div>
+                                </th>                            
+                                <th scope="row">
+                                    <label class="slds-form-element__label" for="text-input-id-1">Assigned To</label>
+                                    <div class="slds-form-element__control slds-border_bottom">
+                                        <force:inputField aura:id="taskAssignedId" value="{!v.task.OwnerId}" />
+                                    </div> 
+                                </th> 
+                            </tr>
+                            <tr>
+                                <th scope="row">                          
+                                    <label class="slds-form-element__label" for="text-input-id-1">Related To</label>
+                                    <div class="slds-form-element__control slds-border_bottom">                            
+                                        <ui:inputText aura:id="taskRelatedId" value="{!v.wrapper.relatedOpptyName}" disabled="true"/>
+                                    </div> 
+                                </th>
+                            </tr>        
+                        </tbody>
+                    </table>  
+                </div>
+            </ui:scrollerWrapper>
+            <footer class="slds-modal__footer">
+                <lightning:button variant="brand" label="Save" onclick="{!c.saveFunction}" class="confirmButton"/>
+                <lightning:button variant="neutral" label="Cancel"  onclick="{!c.cancelFunction}"/>
+            </footer>
+        </div>
+    </div>
+    <div class="slds-backdrop slds-backdrop--open"></div>
+    <!-- *********************************SF1 UI******************************* -->
+    
+    <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open slds-hide" aura:id="mblModaldiv">
+        <div class="slds-modal__container">
+            <div class="slds-modal__header">
+                <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="{!c.cancelFunction}">
+                    <c:svgIcon svgPath="{!$Resource.SldsNew+ '/assets/icons/utility-sprite/svg/symbols.svg#close'}"/>      
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="header43" class="slds-text-heading--large">Task Information</h2>
+            </div>
+            <ui:scrollerWrapper class="outerScroller">
+                <ui:scrollerWrapper class="innerScroller">
+                    <div class="slds-modal__content slds-p-around_large">
+                        <table class="slds-table">
+                            <tbody>    
+                                <tr>
+                                    <th scope="row">
+                                        <div class="slds-truncate">
+                                            <div class="slds-form-element">
+                                                <label class="slds-form-element__label" for="text-input-id-1">Subject</label>
+                                                <div class="slds-form-element__control">                           
+                                                    <ui:inputText aura:id="taskSubId" value="{!v.task.Subject}" disabled="false"/>
+                                                </div>
+                                            </div>                                        
+                                        </div>     
+                                    </th> 
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        <div class="slds-truncate">
+                                            <div class="slds-form-element">
+                                                <label class="slds-form-element__label" for="text-input-id-1">Description</label>
+                                                <div class="slds-form-element__control">
+                                                    <ui:inputTextArea aura:id="taskDescrpId" value="{!v.task.Description}" rows="2"/>
+                                                </div>
+                                            </div>                                        
+                                        </div>     
+                                    </th>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="slds-table">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">
+                                        <div class="slds-truncate">
+                                            <div class="slds-form-element">
+                                                <abbr class="slds-required slds-text-heading_medium" title="required">*</abbr>
+                                                <label class="slds-form-element__label" for="text-input-id-1">Identified At</label>
+                                                
+                                                <div class="slds-form-element__control">
+                                                    <ui:inputSelect aura:id="taskCreatedAt_SF" class="slds-input" change="{!c.onChange}">
+                                                        <ui:inputSelectOption text="--None--" label="None"/>
+                                                        <aura:iteration items="{!v.gateList}" var="gateVal">
+                                                            <ui:inputSelectOption text="{!gateVal}" label="{!gateVal}"/>
+                                                        </aura:iteration>
+                                                    </ui:inputSelect>
+                                                    <aura:if isTrue="{!v.dateValidationError}">
+                                                    <div class="slds-text-color_error slds-p-left_x-small">
+                                                        Identified At cannot be left blank.
+                                                    </div>
+                                                </aura:if>
+                                                </div>
+                                            </div>                                        
+                                        </div>     
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        <div class="slds-truncate">
+                                            <div class="slds-form-element">
+                                                <label class="slds-form-element__label" for="text-input-id-1">Offer Number</label>
+                                                <div class="slds-form-element__control">
+                                                    <ui:inputText aura:id="taskOffNum" value="{!v.wrapper.offerNumber}" disabled="true"/>
+                                                </div>
+                                            </div>                                        
+                                        </div>     
+                                    </th>
+                                </tr>    
+                            </tbody>
+                        </table>    
+                        <table class="slds-table">
+                            <tbody>   
+                                <tr>
+                                    <th scope="row">
+                                        <div class="slds-truncate">                                             
+                                            <label class="slds-form-element__label" for="text-input-id-1">Due Date</label>
+                                            <div class="slds-form-element__control slds-border_bottom">
+                                                <ui:inputDate aura:id="taskAppointmentDate" class="slds-input" labelClass="slds-form-element__label" value="{!v.task.ActivityDate}" displayDatePicker="true" format="MM.DD.YYYY"/>
+                                            </div>                                    
+                                        </div>
+                                    </th>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="slds-table">
+                            <tbody> 
+                                <tr>
+                                    <th scope="row">
+                                        <label class="slds-form-element__label" for="text-input-id-1">Assigned To</label>
+                                        <div class="slds-form-element__control slds-border_bottom">
+                                            <force:inputField aura:id="taskAssignedId" value="{!v.task.OwnerId}" required="true"/>
+                                        </div> 
+                                    </th> 
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="slds-table">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">                          
+                                        <label class="slds-form-element__label" for="text-input-id-1">Related To</label>
+                                        <div class="slds-form-element__control slds-border_bottom">                            
+                                            <ui:inputText aura:id="taskRelatedId" value="{!v.wrapper.relatedOpptyName}" disabled="true"/>
+                                        </div> 
+                                    </th>
+                                </tr>        
+                            </tbody>
+                        </table>
+                    </div>
+                </ui:scrollerWrapper>
+            </ui:scrollerWrapper>    
+            <footer class="slds-modal__footer">
+                <lightning:button variant="brand" label="Save" onclick="{!c.saveFunction}" class="confirmButton"/>
+                <lightning:button variant="neutral" label="Cancel"  onclick="{!c.cancelFunction}"/>
+            </footer>
+        </div>
+    </div>
+    <div class="slds-backdrop slds-backdrop--open"></div>
+    <div class="slds-hide">
+        <ui:inputText aura:id="taskOffId" value="{!v.wrapper.offerRecordId}"/>
+    </div> 
+</aura:component>
