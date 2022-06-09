@@ -1,0 +1,227 @@
+<aura:component controller="CH_CaseField_SideHighlightApex" implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowActions,force:lightningQuickAction" access="global"> 
+    
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="outageStatusFinished" type="boolean" default="true"/>
+    <aura:attribute name="edit" type="boolean" />
+    <aura:attribute name="isButtonActive" type="Boolean" default="true" />
+    <aura:attribute name="runflow" type="Boolean" default="false" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    
+    <!--NOKIASC-23315-->
+    <aura:attribute name="errorlogo" type="boolean" default="false" />
+    <aura:attribute name="closePopupBtn" type="Boolean" default="false"/>
+    <aura:attribute name="ErrorBtn" type="Boolean" default="false"/>
+    <aura:attribute name="isFieldError" type="Boolean" default="false"/>    
+    <aura:attribute name="pageLevelErrors" type="List" default="[]" />
+    <aura:attribute name="fieldLevelErrors" type="List" default="[]" />
+    <!--NKIASC-23315-->
+    <aura:attribute name="distributeCommentFinish" type="boolean" default="false"/>
+    
+    <!-- <aura:if isTrue="{!v.outageStatusFinished}">
+        <div class="outageStatusFinished">
+            <lightning:flow aura:id="outageStatus" onstatuschange="{!c.handleOutageStatusChange}"/>
+        </div> 
+    </aura:if> -->
+    
+    
+    <!--31220 Us Start-->
+    
+    <aura:if isTrue="{!v.distributeCommentFinish}">
+        <div class="distributeCommentFinish">
+            <div class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.closeDistriCommentpopup}">
+                            <lightning:icon iconName="utility:close" variant="bare"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Distribute Comment Update</h2>
+                    </header>
+                    <div style="position:relative">
+                        <aura:if isTrue="{!v.showSpinner}">
+                            <lightning:spinner alternativeText="Loading" size="large" />
+                        </aura:if>
+                        <div class="slds-modal__content slds-p-around_medium slds-scrollable_y" style="height:13rem;">
+                            <lightning:flow aura:id="outageStatus" onstatuschange="{!c.handleOutageStatusChange}"/>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop_open"></div> 
+        </div> 
+    </aura:if>
+    <!-- 31220 US End-->
+   
+    <aura:if isTrue="{!v.edit}">
+        <lightning:layout horizontalAlign="Left">
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <Lightning:recordEditForm aura:id="recordEditForm" 
+                                          recordId="{!v.recordId}"
+                                          objectApiName="Case"
+                                          onsuccess="{!c.handleSuccess}" 
+                                          onerror="{!c.handleOnError}" >
+                    <!--<Lightning:messages />-->
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <Lightning:inputField label="Restore Action" fieldName="CH_RestoreAction__c" />
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <Lightning:inputField label="Restoration Method" fieldName="CH_RestorationMethod__c" />
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <Lightning:inputField label="Sequence of Events" fieldName="CH_SequenceOfEvents__c" />
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <Lightning:inputField label="Summary for Customer" fieldName="CH_Summary__c" /> 
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <Lightning:inputField aura:id="incomment" label="Comment" fieldName="Comment__c" onchange = "{!c.activeButton}" /> 
+                        </div>
+                    </div>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <Lightning:inputField disabled="true" fieldName="CH_Code_Red_Status__c" />  
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:button class="slds-m-top_small" variant="brand" type="button" name="update" label="Save" onclick="{!c.update}" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:button class="slds-m-top_small" variant="brand" type="button" name="update" label="Distribute Comment Update" onclick="{!c.launchOutageStatusUpdate}" disabled= "{!v.isButtonActive}" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Lightning:recordEditForm>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <aura:set attribute="else">
+            <lightning:layout horizontalAlign="Left">
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <Lightning:recordViewForm aura:id="recordViewForm" 
+                                              recordId="{!v.recordId}"
+                                              objectApiName="Case" >
+                        <!--<Lightning:messages />-->
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <Lightning:outputField label="Restore Action" fieldName="CH_RestoreAction__c" />
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <Lightning:outputField label="Restoration Method" fieldName="CH_RestorationMethod__c" />
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <Lightning:outputField label="Sequence of Events" fieldName="CH_SequenceOfEvents__c" />
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <Lightning:outputField label="Summary for Customer" fieldName="CH_Summary__c" /> 
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <Lightning:outputField label="Comment" fieldName="Comment__c" /> 
+                            </div>
+                        </div>
+                    </Lightning:recordViewForm>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:set>
+    </aura:if>
+    
+    <!--23315-->
+    <aura:if isTrue="{!v.edit}">
+        <div>
+            <!--<div class="slds-docked-form-footer">--> 
+            <div class="slds-col">
+                <div class="slds-form-element">
+                    <div class="slds-form-element__control">
+                        <aura:if isTrue="{!v.errorlogo}">
+                            <!--<div class="slds-docked-form-footer" id="footer" style="width: 626px; position: fixed; left: 367.5px; bottom: 40px; height: 40px; right: inherit;" >-->
+                            <lightning:icon iconName="utility:error" alternativeText="Error!" variant="error" title="Show Error" size="small" class="slds-p-right_x-small slds-align_absolute-center" onclick="{!c.openPopup}" style="" />
+                            
+                            <!--check popup -->
+                            <div class="{!v.closePopupBtn==false? 'slds-show' : 'slds-hide'}" >
+                                <section aria-describedby="dialog-body-id-5" aria-labelledby="dialog-heading-id-2" class="slds-popover slds-popover_error slds-nubbin_bottom-left" role="dialog" style="position:absolute;bottom:56px;left:65%;margin-left:38px;transform:translateX(-50%)">
+                                    <button class="slds-button slds-button_icon slds-button_icon-small slds-float_right slds-popover__close slds-button_icon-inverse" title="Close dialog" onclick="{!c.closePopup}">
+                                        <lightning:icon iconName="utility:close" aria-hidden="true" alternativeText="close!" size="x-small" title="close" variant="inverse" />
+                                        <span class="slds-assistive-text">Close dialog</span>
+                                    </button>
+                                    <header class="slds-popover__header">
+                                        <div class="slds-media slds-media_center slds-has-flexi-truncate ">
+                                            <div class="slds-media__figure">
+                                                <span class="slds-icon_container slds-icon-utility-error">
+                                                    <lightning:icon iconName="utility:error" aria-hidden="true" alternativeText="error"  size="x-small" title="error" variant="inverse" />
+                                                </span>
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <h2 class="slds-truncate slds-text-heading_medium" id="dialog-heading-id-2" title="Resolve error">We hit a snag.</h2>
+                                            </div>
+                                        </div>
+                                    </header>
+                                    
+                                    <div class="slds-popover__body slds-popover_warning__body" id="dialog-body-id-101">
+                                        <aura:if isTrue="{!not(empty(v.pageLevelErrors))}">
+                                            <div class="pageLevelErrors">
+                                                <div class="genericNotification"><strong>Review the errors on this page </strong></div>
+                                                <ul class="errorsList slds-list_dotted slds-m-left_medium">                                                    
+                                                    <aura:iteration items="{!v.pageLevelErrors }" var="pageLevelError" indexVar="index">
+                                                        <li>{!pageLevelError.message}</li>
+                                                    </aura:iteration>                                                   
+                                                </ul>
+                                            </div>
+                                        </aura:if>
+                                        <aura:if isTrue="{!not(empty(v.fieldLevelErrors))}">
+                                            <div class="genericNotification"><strong>Review the following fields</strong></div>                                                                                              
+                                            <ul class="errorsList slds-list_dotted slds-m-left_medium">
+                                                <aura:iteration items="{!v.fieldLevelErrors }" var="fieldLevelError" indexVar="index1">
+                                                    <li>{!fieldLevelError.fieldLabel}</li>
+                                                </aura:iteration>
+                                            </ul> 
+                                        </aura:if>
+                                    </div>
+                                </section>
+                            </div>
+                            <!--</div>-->
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <!--23315-->
+    
+</aura:component>

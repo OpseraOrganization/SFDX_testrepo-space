@@ -1,0 +1,180 @@
+<aura:component controller="CH_CA_Pickup_CaseController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithoutHeader" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:attribute type="List"     name="unassignedCases"/>
+    <aura:attribute type="List"     name="tableColumns"       default=""         description="Pass the columns you want through"/>
+    <aura:attribute type="String"   name="sortedBy"           default="Name"     description="" />
+    <aura:attribute type="String"   name="sortedDirection"    default="asc"      description="" />
+    <aura:attribute type="Integer"  name="maxRowSelection"    default="25"       description=""/>
+    <aura:attribute type="List"     name="selectedCases"      default=""/>
+    <aura:attribute type="Integer"  name="actionCounter"      default="0"        description="Used to update total count of counter to show spinner" access="private"/>
+    <aura:attribute type="Boolean"  name="showSpinner"        default="false"    description="To display spinner" access="private"/>
+    <aura:attribute type="Boolean"  name="showAll"        	  default="true"     description="To display the table" access="private"/>
+    <aura:attribute type="String"  	name="caseType" 		  default="Incident" description="Case Record Type to be Displayed"/>
+	<aura:attribute type="String"      name="serviceType"           default="Customer Support" description="Case Service Type - Customer Support / Internal Support"/>
+    <aura:attribute name="FilterText" type="String" description="Used to filter the records " />
+    
+	<aura:attribute name="allData" type="List"/>
+    <aura:attribute name="currentPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="pageSize" type="Integer" default="10"/>
+    <aura:attribute name="totalPages" type="Integer" default="0"/>
+    <aura:attribute name="countofRecords" type="Integer" default="0"/>
+    <aura:attribute name="totalRecords" type="Integer" default="0"/>
+	
+	<aura:attribute name="PreviousPageNumber" type="Integer" />
+    <aura:attribute name="NextPageNumber" type="Integer" />
+    <aura:attribute name="allFilterData" type="List"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute type="List"     name="selectedCase"/>
+    <aura:attribute type="List"     name="tableColumnsforUser"       default=""         description="Pass the columns you want through"/>
+    <aura:attribute type="List"     name="workgroupUser"/>
+    <aura:attribute type="String"     name="workgroupName"/>
+    <aura:attribute name="ModalSpinner" type="boolean" default="false"/>
+    <aura:attribute name="sortedByUser" type="String"/>
+    <aura:attribute name="sortedDirectionUser" type="String"/>
+    <aura:attribute name="defaultSortDirection" type="String"/>
+  <aura:attribute name="value1" type="boolean" default="false"/>
+    <lightning:card>
+        <aura:if isTrue="{! v.showSpinner }">
+            <div class="slds-align_absolute-center">
+                <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+            </div>
+        </aura:if>
+        <aura:set attribute="title">
+            <lightning:icon iconName="standard:case" class="slds-m-right_small"/>
+            <aura:if isTrue="{!v.caseType=='Incident'}">
+                <!--Csutomer Support Tickets Displayed below -->
+                <aura:if isTrue="{!v.serviceType=='Customer Support'}">
+                    Support Tickets (Customer Support {!v.caseType}s)               	
+                </aura:if>
+                <!--Internal Support Tickets Displayed below -->
+                <aura:if isTrue="{!v.serviceType=='Internal Support'}">
+                    Support Tickets (Internal Support {!v.caseType}s)               	
+                </aura:if>
+                 <aura:if isTrue="{!v.serviceType=='Hardware Services'}">
+                    Support Tickets (Hardware Support {!v.caseType}s)               	
+                </aura:if>
+                <!-- All Problems (Customer Support & Internal Support) being displayed below -->
+                <aura:set attribute="else" >
+                    Support Tickets ({!v.caseType}s)
+                </aura:set>
+                
+            </aura:if>
+            <div class="slds-grid slds-col slds-size_12-of-12 slds-p-vertical_small slds-p-horizontal_xx-large" >
+                <lightning:input aura:id="FilterText" 
+                                 type="text"
+                                 value="{! v.FilterText }" 
+                                 onchange="{! c.filterEntities }"
+                                 placeholder="Search"
+                                 />
+            </div>
+        </aura:set>
+        <aura:set attribute="actions">
+            <lightning:button label="Refresh" onclick="{!c.doInit}"/>
+            <lightning:button label="{!'Accept '+v.caseType}" disabled="{!v.selectedCases.length == 0}" onclick="{!c.acceptCases}"/>
+            <lightning:button label="{!'Dispatch '+v.caseType}" disabled="{!v.selectedCases.length == 0}" onclick="{!c.dispatchCases}"/>
+            <!--lightning:input type="search"></lightning:input-->
+        </aura:set>
+        <aura:if isTrue="{! v.unassignedCases.length != 0}">
+            <aura:if isTrue="{!v.showAll}">
+                <div>
+                    <lightning:datatable aura:id="caseTable" 
+                                         data="{! v.unassignedCases }" 
+                                         columns="{! v.tableColumns }" 
+                                         maxRowSelection="{! v.maxRowSelection }" 
+                                         onrowselection="{! c.selectCase }"
+                                         onsort="{! c.sortCases }" 
+                                         sortedBy="{! v.sortedBy }" 
+                                         sortedDirection="{! v.sortedDirection }"
+                                         keyField="Id" />
+										 <lightning:layout multipleRows="true" horizontalAlign="center">
+                        <lightning:layoutItem padding="around-small" flexibility="auto">
+                            <lightning:button label="First" iconName="utility:left" iconPosition="left"
+                                              onclick="{!c.onFirst}" disabled="{! v.PreviousPageNumber == 1}"/>
+                            
+                            <lightning:button label="Previous" iconPosition="left"
+                                              onclick="{!c.onPrev}" disabled="{! v.PreviousPageNumber == 1}"/>
+                            
+                            <lightning:button label="Next" iconPosition="right" 
+                                              disabled="{! v.NextPageNumber == 1}" onclick="{!c.onNext}"/>
+                            <lightning:button label="Last" iconName="utility:right" iconPosition="right" 
+                                              disabled="{! v.NextPageNumber == 1}" onclick="{!c.onLast}"/>
+                            <span class="slds-m-slds-p-horizontal_x-small" >
+                                <a> Total Records : {!v.countofRecords} of {!v.totalRecords}</a> 
+                            </span>  
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+            </aura:if>
+            <aura:set attribute="else">
+                <div class="slds-p-horizontal--small">
+                    No Unassigned {!v.caseType}s
+                </div>
+            </aura:set>
+        </aura:if>
+        <aura:set attribute="footer">
+            <aura:if isTrue="{! v.unassignedCases.length != 0}">
+                <a class="slds-card__footer-action" href="javascript:void(0);" onclick="{!c.toggleList}">{!v.showAll?'Hide All':'View All'}</a>
+            </aura:if>
+        </aura:set>
+    </lightning:card>
+    <div class="slds-m-around_xx-large">
+        
+        <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+        <aura:if isTrue="{!v.isModalOpen}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModal }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Dispatch Support Tickets ({!v.caseType})</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div style="height: 100px;margin-bottom: 30px">
+                            <lightning:datatable aura:id="caseTableDetails" 
+                                                 data="{! v.selectedCase }" 
+                                                 columns="{! v.tableColumns }"                                          
+                                                 keyField="Id"  
+                                                 hideCheckboxColumn="true" />  
+                        </div>
+                        <h4 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate slds-text-align_center">  Workgroup Members</h4>
+                        <lightning:datatable aura:id="userTable" 
+                                             data="{! v.workgroupUser }" 
+                                             columns="{! v.tableColumnsforUser }"                                              
+                                             sortedBy="{! v.sortedByUser }"
+                                             sortedDirection="{! v.sortedDirectionUser }"
+                                             defaultSortDirection="{! v.defaultSortDirection }"
+                                             keyField="Id"   
+                                             hideCheckboxColumn="true"
+                                             onrowaction="{! c.handleRowAction }"
+                                             onsort="{! c.updateColumnSorting }" />
+                        
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModal }"/>
+                        
+                    </footer>
+                </div>
+               
+            
+                <aura:if isTrue="{! v.ModalSpinner }">
+                    <lightning:spinner alternativeText="Loading"/>
+                </aura:if>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+    
+    
+</aura:component>
