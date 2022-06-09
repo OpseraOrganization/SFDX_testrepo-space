@@ -1,0 +1,127 @@
+<aura:component controller="CLM_AgrmntCustomActionsCtrl" implements="force:hasRecordId,force:appHostable,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="nameOfAgrmnt" type="string" />
+    <aura:attribute name="recordId" type="string" />
+    <aura:attribute name="wrapper" type="object" />
+    <aura:attribute name="reqWrapper" type="object" />
+    <aura:attribute name="newAgrmntId" type="string" />
+    <aura:attribute name="recordTypeVal" type="string" />
+    <aura:attribute name="recordTypeId" type="string" />
+    <aura:attribute name="newAgrmntRecTypeId" type="string" />
+    <aura:attribute name="showRecordId" type="boolean" default="false"/>
+    <aura:attribute name="nextEnable" type="boolean" default="true"/>
+    <aura:attribute name="spinner" type="boolean" default="false"/>
+    <aura:attribute name="cloneObject" type="string" />
+    <aura:attribute name="newAgreementRecordType" type="boolean" default="false"/>
+    <aura:attribute name="showRecordTable" type="boolean" default="false"/>
+    <aura:attribute name="showNext" type="boolean" default="false"/>
+    <aura:attribute name="RecordTypeOptions" type="List"/>
+    <aura:dependency resource="markup://force:navigateToSObject" type="EVENT"/>
+    <aura:html tag="style">
+        .slds-modal__container{
+        max-width: 60rem !important;
+        width:60% !important;
+        }
+    </aura:html>
+    
+    <div class="c-container">
+        <div class="slds-box slds-theme_default">
+            <div class="slds-m-around_xx-large">
+                <aura:if isTrue="{!v.showRecordTable}">
+                    <div class="slds-page-header">
+                        <aura:if isTrue="{!v.cloneObject == 'Opportunity'}">
+                            <p class="slds-text-heading--label"><b>NEW CONTRACT REQUEST</b></p>
+                            <h1><b> {!v.nameOfAgrmnt}</b></h1>
+                            <aura:set attribute="else">
+                                <p class="slds-text-heading--label"><b>AGREEMENT</b></p>
+                                <h1><b>Agreements Related to this Contract Request :  {!v.nameOfAgrmnt}</b>
+                                </h1>
+                            </aura:set>
+                        </aura:if>
+                        
+                    </div>
+                    <div class="slds-grid slds-wrap">
+                        <br/>
+                        <lightning:recordEditForm objectApiName="Apttus__APTS_Agreement__c"
+                                                  aura:id="agreementForm"
+                                                  onload="{!c.handleOnLoad}"
+                                                  onsubmit="{!c.handleOnSubmit}"
+                                                  onsuccess="{!c.handleOnSuccess}"
+                                                  onerror="{!c.handleOnError}">
+                            <div class="slds-grid slds-wrap">
+                                <div class="slds-col slds-size_1-of-4 ">
+                                    <p style="margin-left:2em">
+                                        <label for="RecordTypeField">Record Type</label>
+                                    </p>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4">
+                                    <lightning:inputField fieldName="RecordTypeId" disabled="true" value="{!v.recordTypeId}" aura:id="RecordTypeField" variant="label-hidden"/>
+                                    <br/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4 "></div>
+                                <div class="slds-col slds-size_1-of-4"></div>
+                                <aura:iteration items="{!v.wrapper}" var="wrap">
+                                    <div class="slds-col slds-size_1-of-4">
+                                        <p style="margin-left:2em">
+                                            <label for="{!wrap.fieldId}">{!wrap.fieldLabel}</label>
+                                        </p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-4">
+                                        <lightning:inputField fieldName="{!wrap.fieldAPI}" disabled="{!wrap.disable}" value="{!wrap.fieldValue}" aura:id="{!wrap.fieldId}" variant="label-hidden"/>
+                                        <br/>
+                                    </div>
+                                </aura:iteration>
+                            </div>
+                            <div class="slds-align_absolute-center">
+                                <br/><br/><br/><br/>
+                                <lightning:button variant="brand" type="submit" name="Continue" label="Continue" />
+                                <lightning:button variant="neutral"  name="cancel" label="Cancel" onclick="{!c.cancel}"/>
+                            </div>
+                        </lightning:recordEditForm>
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.isOpen}">
+                    <div class="slds-box slds-theme_default">
+                        <div class="slds-m-around_xx-large">
+                            <div class="slds-backdrop slds-backdrop_open">
+                                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                                    <div class="slds-modal__container slds-border">
+                                        <header class="slds-modal__header">
+                                            <lightning:buttonIcon iconName="utility:close"
+                                                                  onclick="{! c.cancel }"
+                                                                  alternativeText="close"
+                                                                  variant="bare-inverse"
+                                                                  class="slds-modal__close"/>
+                                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">The following entries are required to request a new Contract</h2>
+                                            
+                                        </header>
+                                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                            <aura:iteration items="{!v.reqWrapper}" var="wrap"  indexVar="index">
+                                                <ul>
+                                                    <li>{!index+1}. {!wrap.fieldLabel}</li>
+                                                </ul>
+                                            </aura:iteration>
+                                        </div>
+                                        <footer class="slds-modal__footer">
+                                            
+                                            <lightning:button variant="neutral" 
+                                                              label="Ok"
+                                                              title="Ok"
+                                                              onclick="{! c.cancel }"/>
+                                            
+                                        </footer>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.spinner}">
+                    <lightning:spinner alternativeText="Loading" size="large" />
+                    
+                </aura:if>
+            </div>
+        </div>
+    </div>
+</aura:component>
