@@ -1,0 +1,63 @@
+<aura:component controller="CH_CA_CaseTeam_Controller" implements="force:appHostable,force:hasRecordId,force:lightningQuickAction,flexipage:availableForAllPageTypes">
+    
+    <!-- Events -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <!-- Variables -->
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="teamName" type="String" default="Case"/>
+    <aura:attribute name="members" type="List" default="" access="private"/>
+    <aura:attribute name="columns" type="List" default="" access="private"/>
+    <aura:attribute name="isLoading" type="Boolean" default="true" access="private"/>
+    <aura:attribute name="viewToggle" type="Boolean" default="false" access="private"/>
+    <aura:attribute name="sortedBy" type="String" default="" access="private" />
+    <aura:attribute name="sortedDirection" type="String" default="asc" access="private" />
+	<aura:attribute name="viewButton" type="Boolean" default="true"/>
+    <aura:attribute name="timeRecording" type="Boolean" default="true"/>
+	<aura:attribute name="viewAddMemberButton" type="Boolean" default="false"/>	<!--32364-->
+    
+    
+    <lightning:workspaceAPI aura:id="workspace" />
+    <!-- ToolTip -->
+    <!-- Component -->
+    <lightning:card>
+        <aura:set attribute="title">
+            <div class="slds-p-around_medium slds-p-bottom_none">
+                <lightning:icon iconName="standard:case" size="small"/>
+                <span class="slds-p-left_medium custom-label">{!v.teamName} Team ({!v.members.length})</span>
+            </div>
+        </aura:set>
+        <aura:if isTrue="{! v.members.length != 0}">
+            <div id="customDatatable" class="{!v.members.length > 5?'max-height':'' + ' slds-p-around_medium'}">
+                <lightning:datatable keyField="id"
+                                     data="{! v.members }"
+                                     columns="{! v.columns }"
+                                     isLoading="{! v.isLoading }"
+                                     onrowaction="{! c.handleRowAction }"
+                                     hideCheckboxColumn="true"
+                                     onsort="{! c.sort }"
+                                     sortedBy="{! v.sortedBy }" 
+                                     sortedDirection="{! v.sortedDirection }" />
+            </div>
+        </aura:if>
+        <aura:set attribute="footer">
+            <aura:if isTrue="{! v.members.length != 0}">
+                <aura:if isTrue="{!v.members.length > 5}">
+                    <a class="slds-card__footer-action" href="javascript:void(0);" onclick="{!c.toggleView}">{!v.viewToggle?'Hide':'View All'}</a>
+                    <aura:set attribute="else">
+                        <a class="slds-card__footer-action"></a>
+                    </aura:set>
+                </aura:if>
+            </aura:if>
+        </aura:set>
+        <aura:if isTrue="{!v.viewButton}">
+            <div class="slds-m-left--large slds-p-left--xx-large">
+                <lightning:button  label="Add Member"  onclick="{!c.openAssignment}" disabled="{!v.viewAddMemberButton}"/>
+            </div>    
+        </aura:if>  
+        <!-- Call Time Recording page from Case team page -->
+        <aura:if isTrue="{!v.timeRecording}">
+            <c:CH_CA_Time_Recording recordTicketId="{!v.recordId}" />
+        </aura:if>
+    </lightning:card>
+</aura:component>
