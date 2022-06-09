@@ -1,0 +1,158 @@
+<aura:component controller="HWS_EntitlementCheck_Controller" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride,lightning:isUrlAddressable" access="global" >
+    <!-- This component has been created as part of NOKIASC-32636 -->
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <!--Declare Handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>   
+    <aura:handler event="force:refreshView" action="{!c.init}" />
+    <aura:attribute name="instructionMsg" type="string" description="To store Instruction message after Warranty and Quotation check"/>
+    <aura:attribute name="recordId" type="string" description="Id of Parent Case"/>
+    <aura:attribute name="ProcessResponse" type="Object"/>
+    <aura:attribute name="disableSplit" type="boolean"/>
+    <aura:attribute name="disableSubmit" type="boolean"/>
+	
+    <!--NOKIASC-34877-->
+    <aura:attribute name="disableQuoteButton" type="Boolean" default="false"/>
+    <!-- Attribute related to datatable -->
+    <aura:attribute name="sortedByValue" type="String" description="use for sort by action in data table"/>
+    <aura:attribute name="sortedDirectionUser" type="String" description="use for sort by action in data table"/>
+    <aura:attribute name="defaultSortDirection" type="String" description="use for sortdirection in data table ,value asc or desc"/>     
+    <aura:attribute name="selectionReferral"  type="List"        default="[]"/> 
+    <aura:attribute name="selection"  type="List"        default=""/>    
+    <aura:attribute name="childCasesList" type="List" default="[]" description="use for data table Referral List"/>  
+    <aura:attribute name="childCasesColumns" type="List" default="[]"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="data" type="List" default="[]" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="isLoading" type="Boolean" default="false"/>
+    <aura:attribute name="isErrorCase" type="Boolean" default="false"/>
+    <aura:attribute name="isEditable" type="Boolean" default="true"/>
+    <aura:attribute name="editExceptionStatus" type="Boolean" default="false"/>
+    <aura:attribute name="rowId" type="Id"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/> 
+    <aura:attribute name="childCaseMap" type="Map" />
+    <aura:attribute name="selectedRow" type="List" default="[]" />
+    <aura:attribute name="isMsgSectionVisible" Type="Boolean" default="true"/>
+    <!--NOKIASC-34261-->
+    <aura:attribute name="selectedRowDetails" type="List" />   
+    <aura:attribute name="casedata" type="Case" /> <!--NOKIASC-35984 | 13-May-2021 -->
+    <!--NOKIASC-36696:UAT3.3 QCRM3: Handle Warranty Manager/Quotation-->
+    <aura:method name="controllerFieldChange" action="{!c.onControllerFieldChange}">
+    </aura:method>
+    <aura:attribute name="listControllingValues" type="list" default="[]" description="to store controller field values"/>
+    <aura:attribute name="listDependingValues" type="list" default="['--None--']" description="to store dependent field values"/>
+    <aura:attribute name="depnedentFieldMap" type="map" description="map to store dependent values with controlling value"/>
+    <aura:attribute name="bDisabledDependentFld" type="boolean" default="true"/>    
+    <aura:attribute name="entitlementException" type="String" default="" />
+    <aura:attribute name="entitlementStatus" type="String" default="" />
+    <aura:attribute name="faultySerialNumber" type="String" default="" />
+    <aura:attribute name="objDetail" type="Account" default="{'sobjectType' : 'Case'}"/> 
+    <aura:attribute name="controllingFieldAPI" type="string" default="CH_EntitlementException__c" description="store field API name of Controller field"/>
+    <aura:attribute name="dependingFieldAPI" type="string" default="CH_EntitlementStatus__c" description="store field API name of dependent field"/>
+    
+    
+    <aura:if isTrue="{!v.isSpinner}">        
+        <lightning:spinner variant="brand" size="medium" />
+    </aura:if>
+    <article class="slds-card slds-p-around--small ">
+        <!--NOKIASC-34871:Accept/Reject Quote button- UI -Start -->
+        <div class="slds-box slds-box_xx-small slds-m-bottom_medium"> 
+         <aura:if isTrue="{!v.isMsgSectionVisible}">  
+            <lightning:layout multipleRows="true" class="slds-align--absolute-center slds-p-bottom--medium">
+                <lightning:layoutItem size="12" >  
+                    <lightning:buttonGroup class="slds-align_absolute-center slds-m-top--x-small">
+                        <aura:if isTrue="{!v.isErrorCase}">
+                            <lightning:button  label="Retry Bulk Warranty Check" title="Retry Bulk Warranty Check" onclick="{! c.retry}" />
+                        </aura:if>
+                        <lightning:button  label="Split" title="SPLIT" onclick="{! c.split }" disabled="{!v.disableSplit}"/>
+                        <lightning:button aura:id="acceptQuote"  label="Accept Quote" title="Accept Quote" onclick="{! c.clickAccetRejectQuoteDate }" disabled="{!v.disableQuoteButton}" />                              
+                        <lightning:button aura:id="rejectQuote"  label="Reject Quote" title="Reject Quote" onclick="{! c.clickAccetRejectQuoteDate }" disabled="{!v.disableQuoteButton}" />                                        
+                        <lightning:button  label="Validate &amp; Submit" title="Validate and Submit" onclick="{! c.validateandSubmit }" disabled="{!v.disableSubmit}"/>
+                    </lightning:buttonGroup>      
+                </lightning:layoutItem>
+            </lightning:layout>
+            <lightning:layout multipleRows="true" class="slds-align--absolute-center slds-m-bottom--medium">                
+                <lightning:layoutItem size="10">                                              
+                    <div class="container-box slds-page-header__meta-text slds-text-align--left" style="height:6rem">                        
+                        <lightning:formattedRichText  value="{!v.instructionMsg}" />
+                    </div> 
+                </lightning:layoutItem>            
+            </lightning:layout>
+            </aura:if>  
+        </div>
+        <!--NOKIASC-34871:Accept/Reject Quote button- UI -End -->
+        <div style="height: 300px" class="slds_button_p">
+            <lightning:datatable aura:id="childDatatable" 
+                                 class="slds-table_bordered"
+                                 data="{! v.childCasesList}" 
+                                 columns="{! v.childCasesColumns }" 
+                                 keyField="Id"
+                                 hideCheckboxColumn="false"
+                                 onrowaction="{!c.handleRowAction}"  
+                                 onrowselection="{!c.handleSelectedRow}"
+                                 sortedBy="{! v.sortedByValue }"
+                                 sortedDirection="{! v.sortedDirectionUser }"
+                                 defaultSortDirection="{! v.defaultSortDirection }"                                                                                          
+                                 onsort="{! c.updateColumnSorting }"
+                                 onsave="{!c.handleSave}"
+                                 draftValues="{!v.draftValues}"
+                                 />
+        </div>
+        <aura:if isTrue="{!v.editExceptionStatus}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container statusclass">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModel}" alternativeText="close" variant="bare-inverse" class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Exception/Entitlement Status Values</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    
+                    <div class="slds-modal__content slds-p-around_large statusclassModalcontent" id="modal-content-id-1">
+                        <lightning:messages />
+                        
+                        <aura:if isTrue="{!v.isSpinner}">                            
+                            <lightning:spinner variant="brand" size="medium" />
+                        </aura:if> 
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <!--Controller Field-->   
+                                <lightning:select name="controllerFld" aura:id="entitlementException"
+                                                  label="Entitlement Exception"                                                 
+                                                  onchange="{!c.onControllerFieldChange}" disabled="true"> 
+                                    <aura:iteration items="{!v.listControllingValues}" var="val">
+                                        <option value="{!val}"  selected="{!val==v.entitlementException}">{!val}</option>
+                                    </aura:iteration>
+                                </lightning:select>                                
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <!--Dependent Field-->
+                                <lightning:select name="dependentFld" aura:id = "status"
+                                                  label="Entitlement Status"
+                                                  disabled="{!v.bDisabledDependentFld}">
+                                    <aura:iteration items="{!v.listDependingValues}" var="val">
+                                        <option value="{!val}" selected="{!val==v.entitlementStatus}">{!val}</option>
+                                    </aura:iteration>
+                                </lightning:select>                              
+                            </div>                                                                                   
+                        </div>
+                        <div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:input aura:id = "serialNumber" 
+                                                 label="Faulty Unit Serial Number"/>                               
+                            </div> 
+                        </div>
+                    </div>
+                    
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand" label="Save" title="Submit" type="submit" onclick="{! c.handleSubmit }"/>                        
+                        <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeModel }"/>
+                    </footer>                    
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>   
+        </aura:if>
+    </article>
+    
+</aura:component>
