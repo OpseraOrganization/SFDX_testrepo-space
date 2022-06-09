@@ -1,0 +1,239 @@
+<apex:page showHeader="false" controller="DS_PowerBIController" action="{!redirectOnCallback}">
+
+<apex:slds />  
+<html>
+
+<head>
+
+</head>
+
+<apex:includeScript value="{!$Resource.PBIJS}"/>
+
+    <!-- <apex:outputPanel rendered="{!NOT(hasToken)}"><a href='{!authUrl}'>Login</a></apex:outputPanel>
+
+    <apex:outputPanel rendered="{!hasToken}">Already has token</apex:outputPanel> --> 
+
+<apex:form >
+
+    <apex:actionFunction name="refreshAccessToken" action="{!refreshAccessToken}"/>
+    
+    <apex:actionFunction name="loadReportData" action="{!getPBIReportURL}" oncomplete="loadReport()" reRender="reportpnl" />
+     <apex:actionFunction action="{!getAccessToken}" name="getAccessToken" reRender="technology" oncomplete="closeWindow();">
+         <apex:param name="accessTokenParam" assignTo="{!PBIAccessTokenCode}" value=""/>
+     </apex:actionFunction>   
+        <div class="slds-grid">
+            <div class="slds-col  slds-size_1-of-6 slds-p-top_xx-large"  >
+           
+                <div class="slds-form-element">
+                    <label class="slds-form-element__label" for="form-element-01">Technology</label>
+                    <div class="slds-form-element__control">
+                        <apex:selectList id="technology" value="{!selectedTechnology}" size="1" styleClass="slds-select">
+                            <apex:selectOptions value="{!technologySelectOption}" />
+                             <apex:actionSupport event="onchange" reRender="usecase" action="{!loadDependentUsecases}"/>
+                        </apex:selectList>
+                    </div>
+                </div>
+                
+                <div class="slds-form-element">
+                    <label class="slds-form-element__label" for="form-element-01">Usecase</label>
+                    <div class="slds-form-element__control" >
+                        <apex:selectList id="usecase" size="1" styleClass="slds-select" value="{!selectedUseCase}">
+                            <apex:selectoptions value="{!usecaseSelectOption}" />
+                           
+                        </apex:selectList>
+                    </div>
+                </div>
+                
+                <div class="slds-form-element">
+                  <br/>
+                    <!-- <apex:commandButton onclick="loadReportInfo();return false;" styleclass="slds-button slds-button_brand" value="load Report"    /> -->
+                 <apex:commandButton status="statusSaveTrip" styleClass="slds-button slds-button_brand" value="Load Report" action="{!getPBIReportURL}" reRender="reportpnl" oncomplete="loadReport()" />
+                 
+                 </div>
+                 
+            </div>
+            
+            <div class="slds-col">
+                <apex:outputPanel id="reportpnl">
+                    <apex:outputPanel rendered="{!isReportExist == 'false'}">
+                            <script >
+                                //toastLaunch();
+                                function toastLaunch(){
+                                    var element = document.getElementById("ToastMessage");
+                                    element.classList.toggle("slds-hidden");
+                                }
+                            
+                        
+                            </script>
+                            
+                          <!-- Below Block of code is used for adding the Toast message -->
+                          <div class="demo-only" style="height: 4rem;" id='ToastMessage'>
+                          
+                            <div class="slds-notify_container slds-is-relative">
+                            
+                                <div class="slds-notify slds-notify_toast slds-theme_error" role="status">
+                                  <span class="slds-assistive-text">error</span>
+                                  <span class="slds-icon_container slds-icon-utility-error slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+                                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                                      <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#error" />
+                                    </svg>
+                                  </span>
+                                    <div class="slds-notify__content">
+                                    <h2 style="padding-left: 95px;" class="slds-text-heading_small "></h2><span style="text-align:center;margin-left: 100px;">{!statusMessage} </span>
+                                   </div>
+                                    <div style="cursor: pointer;" class="slds-notify__close" onclick="toastLaunch();return false;">
+                                     
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                         
+                    </apex:outputPanel>
+                    
+                    <apex:outputPanel rendered="{!isReportExist == 'true'}">
+                    
+                        <div id="myReport" style="margin-top: 70px;margin-left: 20px;height: 550px;"  />
+                        
+                            <script>
+                                function loadReport() {
+
+                                    var PBIReportURL='{!ReportURL}';
+                                     console.log('*****ReportId**********{!reportId}');
+                                     console.log('*****Report URL**********{!ReportURL}');
+                                     //var token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Imk2bEdrM0ZaenhSY1ViMkMzbkVRN3N5SEpsWSIsImtpZCI6Imk2bEdrM0ZaenhSY1ViMkMzbkVRN3N5SEpsWSJ9.eyJhdWQiOiJodHRwczovL2FuYWx5c2lzLndpbmRvd3MubmV0L3Bvd2VyYmkvYXBpIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvNWQ0NzE3NTEtOTY3NS00MjhkLTkxN2ItNzBmNDRmOTYzMGIwLyIsImlhdCI6MTUzOTg2MzAxOCwibmJmIjoxNTM5ODYzMDE4LCJleHAiOjE1Mzk5NDk3MTcsImFjciI6IjEiLCJhaW8iOiI0MlJnWUxDYVdWcldkNGYvczRPZTE4VE9mOWQzMWl5eDcydU4zMUhsZVhqRGMyYXhHZXdBIiwiYWx0c2VjaWQiOiI1OjoxMDAzN0ZGRTk5QTdDQ0RFIiwiYW1yIjpbInB3ZCJdLCJhcHBpZCI6IjZmYzg3N2RlLThmMzAtNDU3ZS04ZDk3LWY5YzNjNzYyMjkwOCIsImFwcGlkYWNyIjoiMSIsImVtYWlsIjoia2VzaGF2YS5wcmF2ZWVuLmQubkBhY2NlbnR1cmUuY29tIiwiaG9tZV9vaWQiOiJjMjZhMjY1ZS01Y2FlLTQyNjYtYjlmMi1kODAxYmJkNTg4NTciLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9lMDc5M2QzOS0wOTM5LTQ5NmQtYjEyOS0xOThlZGQ5MTZmZWIvIiwiaXBhZGRyIjoiMTcwLjI1MS4xNTQuMTAxIiwibmFtZSI6Iktlc2hhdmEgUHJhdmVlbiBEIE4iLCJvaWQiOiJlN2IwMGNkNy0yZmU2LTRjNGEtYTc0My1iNDNjN2RiOGYwMTEiLCJwdWlkIjoiMTAwMzdGRkVBMjU2ODYwNCIsInNjcCI6IkRhc2hib2FyZC5SZWFkLkFsbCBEYXRhc2V0LlJlYWQuQWxsIEdyb3VwLlJlYWQgR3JvdXAuUmVhZC5BbGwgTWV0YWRhdGEuVmlld19BbnkgUmVwb3J0LlJlYWQuQWxsIiwic3ViIjoicGZqeW9rNFlIV1p4dTdrWTgtZ2NJVkxmcklBdWRKVlUwRXVKaVhMbUU3dyIsInRpZCI6IjVkNDcxNzUxLTk2NzUtNDI4ZC05MTdiLTcwZjQ0Zjk2MzBiMCIsInVuaXF1ZV9uYW1lIjoia2VzaGF2YS5wcmF2ZWVuLmQubkBhY2NlbnR1cmUuY29tIiwidXRpIjoiTUJEN0w2Z1k5VXlNcEgyRm54RVhBQSIsInZlciI6IjEuMCJ9.cwRY-r3pq_aOkkfgPOx2Mlu1WiAYG9h3aHf8eCUs-llpHklCM622nAjcfXb7I2EDdDyFTFGef2yXJjniqhpf5GIbwABFVT02mTIBMFdtntzvB5TJvTsk_jS46fkVVUEqCC749LySi89XgXnVXjoH1lPgjri_FDceuJ26_sIq0F01yY7pesREXxOJ1BEurvGBhjt63uLumPgb0_iT8-J7LLOGPEuSgIESzEtK3UJlBEOfSw5VxtOrKa0Izuyt-cphM-YaagLFoM4RxC7tJp_kK5ptB_cSrTf2jCkiDJRu9d2pZ027wOge0OBDEv1y5hOM9_GQxzTx9jZANoFx8iqVpA';
+                                    var filter = {
+                                        $schema: "http://powerbi.com/product/schema#basic"
+                                    };
+
+                                    var embedConfiguration = {
+
+                                        type: 'report',
+
+                                        id: '{!reportId}',
+                                        
+                                       
+
+                                        embedUrl: '{!ReportURL}',
+
+                                        settings: {
+
+                                            filterPaneEnabled: true,
+
+                                            navContentPaneEnabled: true
+
+                                        }
+                                    };
+
+                                    powerbi.accessToken = '{!PBIaccess_token}';
+                                    //powerbi.accessToken = token;
+                                    console.log('********powerbi.accessToken****************'+powerbi.accessToken);
+
+                                    var element = document.getElementById('myReport');
+
+                                    var report = powerbi.embed(element, embedConfiguration);
+
+                                }
+                            </script>
+                            
+                    </apex:outputPanel>
+               </apex:outputPanel>
+            
+               <!-- This section is used for showing the  Processing status --> 
+               
+               <apex:actionStatus id="statusSaveTrip" stopText="">
+                   
+                   <apex:facet name="start">
+                       <div class="demo-only" style="height: 6rem;height: 25rem;margin-top: -55px;z-index: 500px;position: relative;padding-top: 18px;">
+                                   <div role="status" style="z-index:-1px" class="slds-spinner slds-spinner_brand slds-spinner_large">
+                                        <span class="slds-assistive-text">Loading</span>
+                                        <div class="slds-spinner__dot-a"></div>
+                                        <div class="slds-spinner__dot-b"></div> 
+                                       
+                                    </div> 
+                                     
+                       </div>
+                   
+                    </apex:facet>
+               </apex:actionStatus>
+            </div>
+        </div>
+        
+        
+        
+</apex:form>
+<script>
+
+    
+    function loadReportInfo() {
+        
+        loadReportData();
+        
+    }
+    
+    function closeWindow() {
+      
+        window.parent.close();
+        
+    }
+    
+    
+
+    
+
+    var accessToken = '{!PBIaccess_token}';
+    var refreshToken = '{!PBIrefresh_token}';
+    var expires_on = '{!PBIexpires_on}';
+    var validateResult = '{!validateResult}';
+    var selectedReport = '{!reportId}'; 
+
+
+
+    window.onload = function() {
+        
+        if(window.parent.location.href.includes('code='))
+        {
+            var parentURL  = window.parent.location.href;
+           
+            var split = parentURL.split('code=');
+          
+            getAccessToken(split[1]);
+           
+           
+        }
+        else {
+        
+                let expiresOn = parseInt(expires_on);
+                let currentTime = Date.now()/1000;
+
+                if(expiresOn <= currentTime || !accessToken) { 
+
+                    var loginWindow = window.open('{!authUrl}','Login','width=250,height=900,0,status=0');
+
+                } 
+                else if((expiresOn - 2000) <= currentTime) {
+
+                    refreshAccessToken();
+                }
+        
+            //below code responsible for loading the report without clicking the load report button
+           
+           loadReportData();
+         
+        }
+        
+         
+     
+      
+    }
+    window.onbeforeclose = function(){
+               
+        window.opener.update(window.parent.location.href);
+    
+               
+    }
+
+</script>
+</html>
+
+</apex:page>
