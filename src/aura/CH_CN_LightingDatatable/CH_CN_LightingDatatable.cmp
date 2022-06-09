@@ -1,0 +1,125 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>  
+    <!-- attribute to check if the page has changed or not -->
+    <aura:attribute name="hasPageChanged" type="Boolean" default="true" />
+    <aura:attribute name="recordTypeId" type="String" />
+    <aura:attribute name="currentStageName" type="String" default=""  />
+    <!-- attribute to check if it is initialLoad -->
+    <aura:attribute name="recordId" type="String" description="Id of sObject" />
+    <aura:attribute name="initialLoad" type="Boolean" default="true"/>
+    <aura:attribute name="firstTimeLoad" type="Boolean" default="true"/>    
+    <!-- Attribute related to datatable -->
+    <aura:attribute name="allData" type="List" description="To store all data"/>
+    <aura:attribute name="sortedByValue" type="String" description="use for sort by action in data table"/>
+    <aura:attribute name="sortedDirectionUser" type="String" description="use for sort by action in data table"/>
+    <aura:attribute name="defaultSortDirection" type="String" description="use for sortdirection in data table ,value asc or desc"/>     
+    <aura:attribute name="data" type="List" description="use for data table data"/>    
+    <aura:attribute name="columns" type="List" description="use for data table column"/>
+    <aura:attribute name="currentPageNumber" type="Integer" default="1" description="use for current page number in data table"/>
+    <aura:attribute name="pageSize" type="Integer" default="10" description="use for number of rows will populate in current page"/>
+    <aura:attribute name="totalPages" type="Integer" default="0"/>
+    <aura:attribute name="countofRecords" type="Integer" default="0"/>
+    <aura:attribute name="totalRecords" type="Integer" default="0"/>    
+    <aura:attribute name="PreviousPageNumber" type="Integer" />
+    <aura:attribute name="NextPageNumber" type="Integer" />
+    <aura:attribute name="allFilterData" type="List" default="[]"/>
+    <aura:attribute name="FilterText" type="String" description="Used to filter the records " />
+    <aura:attribute name="selectedData"  type="List"      default="[]"/>
+    <aura:attribute name="tempSelectedData"  type="List"      default="[]"/>
+    <aura:attribute name="allSelectedData" type="List" default="[]"/>  
+    <aura:attribute name="selection"  type="List"        default=""/>    
+    <aura:attribute name="maxRows" type="Integer" default="1"/>
+    <aura:attribute name="maxRowsWorkgroup" type="Integer" default="1000"/>
+    <aura:attribute name="maxRowsCountry" type="Integer" default="1000"/>
+    <aura:attribute name="maxRowsProduct" type="Integer" default="10000"/>
+    <aura:attribute name="maxRowsAccount" type="Integer" default="10000"/>    
+    <aura:attribute name="tempSelection"  type="List"         default=""/>
+    <aura:attribute name="toggleSelectedItem" type="boolean" default="false"/>
+    <aura:attribute name="toggleClicked" type="boolean" default="false"/>
+    <aura:attribute name="filteringData" type="boolean" default="false"/>
+    <aura:attribute name="dummySelectedlist" type="list" default="[]"/> 
+    <aura:attribute name="isHeaderVisible" type="Boolean" default="true"/>
+    <aura:attribute name="hideCheckboxColumn" type="Boolean" default="false"/>
+    <aura:attribute name="accountType" type="String" default="Parent Account"/> 
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <!-- Modal Spinner declare -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner  alternativeText="Loading" size="medium"/>
+    </aura:if>  
+    
+    
+    <!-- Data Table  -->
+    <div class="c-container" > <!--style="border: 1px solid #E8E5E4" -->
+        <aura:if isTrue="{!v.isHeaderVisible}">
+            <div class="slds-grid slds-grid_vertical-align-start" >
+                <div class="slds-col">                    
+                    <span>
+                        <lightning:layout multipleRows="true">                                            
+                            <lightning:layoutItem padding="around-small"  size="5">
+                                <div class="slds-grid  slds-gutters">
+                                    <lightning:layoutItem padding="around-small" size="5" >
+                                        <lightning:input  aura:id="btnToggleSelectedItem" style="padding-top: 10px;"  type="toggle" label="Show My Selections" value="valueSelected" onchange="{!c.handleBtnChecked}" checked="{!v.toggleSelectedItem}"  name="btnSelectedItems"/>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem size="7">
+                                        <span>          
+                                            <lightning:input aura:id="FilterText" 
+                                                             type="text"
+                                                             value="{! v.FilterText}" 
+                                                             onchange="{! c.handleFilterOnDataTable}"
+                                                             placeholder="Filter Results from below Table" label="Type to Filter Results"
+                                                             />                    
+                                        </span>   
+                                    </lightning:layoutItem>                                    
+                                </div>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small"  size="5">
+                                <aura:if isTrue="{!v.maxRows!=1}">
+                                    <div class="slds-grid  slds-gutters">
+                                        <lightning:layoutItem padding="around-small" size="10" >
+                                            <lightning:buttonGroup class="slds-p-top--small">
+                                                <lightning:button aura:id="btnSelectAll"  label="Select All" onclick="{!c.handleSelectDeselect}"/>
+                                                <lightning:button aura:id="btnDeselectAll" class="slds-button--destructive"  label="Deselect All" onclick="{!c.handleSelectDeselect}"/>
+                                            </lightning:buttonGroup>
+                                        </lightning:layoutItem>
+                                    </div>
+                                </aura:if>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </span>
+                </div>
+            </div>
+        </aura:if>  
+        
+        <lightning:datatable aura:id="datatable" 
+                             class="slds-table_bordered"
+                             data="{! v.data}" 
+                             columns="{! v.columns }"                                              
+                             keyField="Id"
+                             hideCheckboxColumn="{! v.hideCheckboxColumn }"
+                             maxRowSelection="{!v.maxRows}" 
+                             onrowselection="{! c.handleRowAction }"
+                             selectedRows="{!v.selection}"
+                             sortedBy="{! v.sortedByValue }"
+                             sortedDirection="{! v.sortedDirectionUser }"
+                             defaultSortDirection="{! v.defaultSortDirection }"                                                                                          
+                             onsort="{! c.updateColumnSorting }"/>
+        <lightning:layout multipleRows="true" horizontalAlign="center">
+            <lightning:layoutItem padding="around-small" flexibility="auto">
+                <lightning:button label="First" iconName="utility:left" iconPosition="left"
+                                  onclick="{!c.onFirst}" disabled="{! v.PreviousPageNumber == 1}"/>
+                
+                <lightning:button label="Previous" iconPosition="left"
+                                  onclick="{!c.onPrev}" disabled="{! v.PreviousPageNumber == 1}"/>
+                
+                <lightning:button label="Next" iconPosition="right" 
+                                  disabled="{! v.NextPageNumber == 1}" onclick="{!c.onNext}"/>
+                <lightning:button label="Last" iconName="utility:right" iconPosition="right" 
+                                  disabled="{! v.NextPageNumber == 1}" onclick="{!c.onLast}"/>
+                <span class="slds-m-slds-p-horizontal_x-small" >
+                    <a> Total Records : {!v.countofRecords} of {!v.totalRecords}</a> 
+                </span>  
+            </lightning:layoutItem>
+        </lightning:layout>        
+    </div>
+</aura:component>

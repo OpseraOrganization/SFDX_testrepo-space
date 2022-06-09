@@ -1,0 +1,467 @@
+<!--
+  @description       : 
+  @author            : Lovel Panchal
+  @group             : 
+  @last modified on  : 09-16-2021
+  @last modified by  : Yashdeep Prajapati
+  Modifications Log 
+  Ver   Date         Author               Modification
+  1.0   05-11-2021   Lovel Panchal   Initial Version
+-->
+<template>
+    <!-- Header Section -->
+    <template if:true={showSpinner}>
+        <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+    </template>
+    <div>
+        <!-- Tost Component as in Lightning Toast dont work-->
+        <c-nokia-c-p-q_notification></c-nokia-c-p-q_notification>
+    </div>
+    <div class="slds-page-header">
+        <div class="slds-page-header__row">
+            <div class="slds-page-header__col-title">
+                <div class="slds-text-heading_small" style="float: left; width:50%; display:block">Select Site / Phase
+                  
+                </div>
+                <div class="alignRight" style="float: right;width:20%; display:block;">
+                    <lightning-button variant="base" label="Go To Cart" title="Go Back to Cart"
+                        onclick={handleGoBackClick} class="slds-m-left_x-small"></lightning-button>
+                </div>
+                <hr />
+                <div><h1>
+                    <template if:true={hasAggregation}>
+                        <div class="slds-media__body slds-page-header__name slds-page-header__name-title">
+                          <p class=" slds-text-color_destructive info">This quote contains Site  Aggregation. For any site/phase allocation change, use the 'Sites and  Phases' view of the Direct Pricing Tool.</p>
+                        </div>
+                    </template></h1></div>
+                <div class="slds-media">
+                    <!--Site Phase Button Section-->
+                    <div class="slds-media__body">
+                        <div class="slds-page-header__name">
+                            <div class="slds-page-header__name-title">
+                                <h1>
+                                    
+                                    <!--Surinder- 1098-->
+                                    <lightning-input type="checkbox" label="Quote Uses Phases?"
+                                        value={showPhaseFunctions} checked={showPhaseFunctions} name="input1"
+                                        onchange={handleCheckedQuotePhases} disabled={hasAggregation}></lightning-input>
+                                    <br />
+                                    <!---added by surinder-->
+                                    <div class="slds-grid" if:true={showPhaseFunctions}>
+                                        <lightning-input class="slds-col" type="checkbox" label="Show Phases"
+                                            name="input1" value={arePhasesVisible} checked={arePhasesVisible}
+                                            disabled={showPhasesDisabled} onclick={showSelectedPhases}>
+                                        </lightning-input>
+                                       <div if:true={arePhasesVisible}>
+                                            <lightning-input class="slds-col" type="checkbox"
+                                                label="Show Incomplete Allocations" name="input2"
+                                                 disabled={enableShowIncompleteAllocation} onclick={showOnlyDeltaLines} 
+                                                value={showDeltaOnlyFlagChecked} checked={showDeltaOnlyFlagChecked}>
+                                            </lightning-input>
+                                       </div>
+                                    </div>
+
+                                </h1>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-page-header__col-actions">
+                        <div class="slds-page-header__controls">
+                            <div class="slds-page-header__control">
+                                <ul class="slds-button-group-list">
+                                    <!--Surinder- 1098-->
+                                    <li>
+                                        <lightning-button variant="brand" label="Sites To Use" onclick={showSitesToUse}
+                                            disabled={hasAggregation}>
+                                        </lightning-button>
+                                    </li>
+                                    <template if:true={showPhaseFunctions}>
+                                        <!--Surinder- 1098-->
+                                        <li>
+                                            <lightning-button variant="brand" label="Phases To Use"
+                                                onclick={showPhasesToUse} disabled={hasAggregation}></lightning-button>
+                                        </li>
+                                    </template>
+                                    <!--Surinder- 1098-->
+                                    <li>
+                                        <lightning-button variant="brand" label="Save" onclick={onSave}
+                                            disabled={hasAggregation}>
+                                        </lightning-button>
+                                    </li>
+                                    <!--Surinder- 1098-->
+                                    <li>
+                                        <lightning-button variant="brand" label="Save &amp; Validate" onclick={onSave}
+                                            disabled={hasAggregation}>
+                                        </lightning-button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ITCCPQ-666 - November Release(Enable phases for Partners) - Siva - START
+                <template if:true={disablePhases}>
+                    <div class="slds-media">
+                        <p class="slds-text-color_destructive info">*Phases are not currently available. This feature is planned for a future release.</p>
+                    </div>
+                </template>
+                ITCCPQ-666 END -->
+            </div>
+        </div>
+    </div>
+    <!--Header Section Ends-->
+
+    <!--Site Modal-->
+    <template if:true={isSitesToUse}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeModal} style="z-index: 9999999;">
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Sites to Use</h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <!-- <div> -->
+                    <table>
+                        <tr>
+                            <td align="left" valign="top">
+                                <lightning-input type="text" name="input1" data-my-id="txtSiteName"
+                                    class="inputNum slds-text-align_left" value={siteName}
+                                    onchange={sitePhaseTxtChange}> </lightning-input>
+                            </td>
+                            <td width="22%" valign="bottom">
+                                <lightning-button variant="brand" label="Add New Site" name="addNewSite"
+                                    onclick={addSitePhase} disabled={addSitePhaseDisabled}></lightning-button>
+                            </td>
+                        </tr>
+                    </table>
+                    <hr />
+                    <lightning-icon icon-name="utility:info" alternative-text="info" size="x-small"></lightning-icon>
+                    <b> Select required sites from the "Available" box to "Selected". You can choose the order in which
+                        the sites will appear using the Up Down arrows.</b>
+                    <lightning-dual-listbox name="sites" source-label="Available" selected-label="Selected"
+                        options={sitesList} value={selectedSites} onchange={onselectSite}></lightning-dual-listbox>
+                </div>
+                <!-- Modal/Popup Box LWC footer starts here -->
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                    <button class="slds-button slds-button_brand" name="submitSites" onclick={submitDetails}
+                        title="OK">Update</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!--Site Modal Ends-->
+
+    <!--Phase Modal-->
+    <template if:true={isOpenPhasesModal}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate">Phases to Use</h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="site-phase-popup slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+                    <div>
+                        <table>
+                            <tr>
+                                <td align="left" valign="top">
+                                    <lightning-input type="text" name="input1" data-my-id="txtPhaseName"
+                                        class="inputNum slds-text-align_left" value={phasename}
+                                        onchange={sitePhaseTxtChange}>
+                                    </lightning-input>
+                                </td>
+                                <td width="24%" valign="bottom">
+                                    <lightning-button variant="brand" label="Add New Phase" name="addNewPhase"
+                                        onclick={addSitePhase} disabled={addSitePhaseDisabled}></lightning-button>
+                                </td>
+                            </tr>
+                        </table>
+                        <hr />
+                        <lightning-icon icon-name="utility:info" alternative-text="info" size="x-small">
+                        </lightning-icon> <b> Select required phases from the "Available" box to "Selected". You can
+                            choose the order in which the phases will appear using the Up Down arrows.</b>
+                        <lightning-dual-listbox name="phases" source-label="Available" selected-label="Selected"
+                            options={phasesList} value={selectedPhases} onchange={onselectPhase}>
+                        </lightning-dual-listbox>
+                    </div>
+                </div>
+                <!-- Modal/Popup Box LWC footer starts here -->
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                    <button class="slds-button slds-button_brand" name="submitPhases" onclick={submitDetails}
+                        title="OK">Update</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={showProdDetail}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-03" aria-modal="true"
+            aria-describedby="modal-content-id-3" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-03" class="slds-text-heading_medium slds-hyphenate">{prodName}</h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="site-phase-popup slds-modal__content slds-p-around_medium" id="modal-content-id-3">
+                    <div>
+                        <table>
+                            <tr>
+                                <td align="left" valign="bottom" class="prodPopupHeader">Product Description</td>
+                            </tr>
+                            <tr>
+                                <td align="left" valign="bottom" class="prodPopupData">{prodDesc}</td>
+                            </tr>
+                            <tr>
+                                <td align="left" valign="bottom" class="prodPopupHeader">Product Code</td>
+                            </tr>
+                            <tr>
+                                <td align="left" valign="bottom" class="prodPopupData">{prodCode}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <!-- Phase Modal Ends-->
+    <!-- Pagination Section -->
+    <table width="100%">
+        <tr>
+            <td width="30%">
+                <label class="slds-text-color_weak slds-p-horizontal_x-small" for="recordsPerPage">Records per
+                    page:</label>
+                <!-- <div class="slds-select_container"> -->
+                <select style="width:10%" class="slds-select" id="recordsPerPage" onchange={pageLengthChange}>
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                </select>
+                <!-- </div> -->
+            </td>
+            <!-- <td width="5%">
+                <div class="slds-select_container">
+                    <select class="slds-select" id="recordsPerPage" onchange={pageLengthChange}>
+                        <option value="10" >10</option>
+                        <option value="25" selected>25</option>
+                        <option  value="50" >50</option>
+                    </select>
+                </div>
+
+            </td> -->
+            <td align="right" width="50%">
+                <template if:false={hidePagination}>
+                    <lightning-layout multiple-rows class="slds-m-vertical_x-small slds-p-horizontal_small">
+                        <lightning-layout-item size="12">
+                            <div class="slds-float_right">
+                                Page {page} of {totalPages}
+                            </div>
+                            <div class="slds-float_right">
+                                <a onclick={prevpage}>
+                                    <lightning-button-icon icon-name="utility:chevronleft" size="small"
+                                        alternative-text="Previous">
+                                    </lightning-button-icon>
+                                </a>
+                                <a onclick={nextpage}>
+                                    <lightning-button-icon icon-name="utility:chevronright" size="small"
+                                        alternative-text="Next">
+                                    </lightning-button-icon>
+                                </a>
+                            </div>
+                        </lightning-layout-item>
+                    </lightning-layout>
+                </template>
+            </td>
+        </tr>
+    </table>
+    <!-- Pagination Ends and Table Starts-->
+    <div class="slds-grid slds-gutters dynamicheight" style="margin:-1px;width:100%; overflow:scroll">
+        <div class="slds-size_2-of-5" style="position: sticky;left:0;z-index:11">
+            <!-- <div style="float: left; width:25%; display:block"> -->
+            <table class="sticky mainTable slds-table slds-no-row-hover">
+                <tr>
+                    <th class="alignCenter mainTable" align="center" valign="top">
+                        <span class="slds-truncate" title="Product"><b>Product</b></span>
+                    </th>
+                    <!--below th added for alias-surinder-->
+                    <th class="alignCenter mainTable" align="center" valign="top">
+                        <span class="slds-truncate" title="Alias"><b>Alias</b></span>
+                    </th>
+                    <th class="alignCenter mainTable" align="center" valign="top">
+                        <!-- <span title="Code"><b>Code</b></span>
+                                    </th>
+                                    <th class="alignCenter mainTable" align="center" valign="bottom"> -->
+                        <span title="Spares"><b>Spares</b></span>
+                    </th>
+                    <th class="tHeading mainTable" scope="col" align="top" width="10%">
+                        <table>
+                            <tr>
+                                <th align="center" style="text-align:center;">
+                                    <div class="slds-truncate tooltip"><b>Total Qty</b></div>
+                                </th>
+                            </tr>
+                            <template if:true={arePhasesVisible}>
+                                <tr>
+                                    <th valign="bottom">
+                                        &nbsp;
+                                    </th>
+                                </tr>
+                            </template>
+                        </table>
+                    </th>
+                </tr>
+                <tbody style="list-style:none;padding:0;">
+                    <template for:each={productListWithPagination} for:item="pro">
+                        <tr key={pro.lineItemId}>
+                            <td class="mainTable">
+                                <div class="slds-truncate" style="width: 200px; display:block">
+                                    <a onclick={onProdClick} data-id={pro.prodId} title={pro.productName}
+                                        target="_blank">{pro.productName}</a>
+                                </div>
+                            </td>
+                            <!-- <td class="mainTable">{pro.productCode}</td> -->
+                            <!--below td added for alias-surinder-->
+                            <td class="mainTable">
+                                <div class="slds-truncate" title={pro.alias} style="width: 100px; display:block">
+                                    {pro.alias}</div>
+                            </td>
+                            <td class="mainTable">{pro.spares}</td>
+                            <td class="mainTable">
+                                <table>
+                                    <tr>
+                                        <td>
+                                            <div><b>
+                                                    <lightning-input type="number" disabled=true value={pro.quantity}
+                                                        variant='label-hidden'></lightning-input>
+                                                </b>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <!-- </div> -->
+        </div>
+        <div class="slds-size_3-of-5">
+            <!-- <div class="main"> -->
+            <table class="mainTable sticky2 slds-table slds-no-row-hover" width="100%">
+                <tr>
+                    <template for:each={tableSites} for:item="site" for:index="index">
+                        <th class="tHeading mainTable" scope="col" key={site} align="center">
+                            <table>
+                                <tr>
+                                    <template if:true={arePhasesVisible}>
+                                        <th colspan={colSpan} class="alignCenter" style="border-bottom:1px solid #ddd;">
+                                            <span title={site}><b class="slds-truncate"
+                                                    style="width: 200px; display:block; margin:0 auto; ">{site}</b></span>
+                                        </th>
+                                    </template>
+                                    <template if:false={arePhasesVisible}>
+                                        <th class="sites">
+                                            <div class="slds-truncate" title={site}><b>{site}</b></div>
+                                        </th>
+                                    </template>
+                                </tr>
+                                <template if:true={arePhasesVisible}>
+                                    <tr>
+                                        <th class="phases alignCenter">
+                                            <div title="Qty"><b>Qty</b></div>
+                                        </th>
+                                        <template for:each={tablePhases} for:item="phase">
+                                            <th key={phase} width={colWidth} class="phases alignCenter">
+                                                <div class="slds-truncate tooltip" title={phase}><b>{phase}</b></div>
+                                            </th>
+                                        </template>
+                                    </tr>
+                                </template>
+                            </table>
+                        </th>
+                    </template>
+                </tr>
+                <tbody>
+                    <template for:each={productListWithPagination} for:item="pro">
+                        <tr key={pro.lineItemId}>
+                            <template for:each={pro.sites} for:item="site">
+                                <td class="mainTable" key={site.id}>
+                                    <table>
+                                        <tr class={pro.lineItemId}>
+                                            <td>
+                                                <template if:false={arePhasesVisible}>
+                                                    <div class={site.class}>
+                                                        <lightning-input class="inputDecimal" type="number"
+                                                            disabled={site.disable} data-label={site.id} name={site.id}
+                                                            required value={site.quantity} variant='label-hidden'
+                                                            onchange={onChangeSiteQuantity} min="0"></lightning-input>
+                                                    </div>
+                                                </template>
+                                                <template if:true={arePhasesVisible}>
+                                                    <div class={site.class}><b>
+                                                            <lightning-input class="inputDecimal" type="number"
+                                                                disabled={site.disable} data-label={site.id}
+                                                                name={site.id} required value={site.quantity}
+                                                                variant='label-hidden' onchange={onChangeSiteQuantity}
+                                                                min="0"></lightning-input>
+                                                        </b>
+                                                    </div>
+                                                </template>
+                                            </td>
+                                            <template if:true={arePhasesVisible}>
+                                                <template for:each={site.phases} for:item="phase">
+                                                    <td key={phase.id} width={colWidth} class="alignRight">
+                                                        <div class={phase.class}>
+                                                            <lightning-input type="number" disabled={phase.disable}
+                                                                data-label={phase.id} name={phase.id} required
+                                                                value={phase.quantity} variant='label-hidden'
+                                                                onchange={onChangePhaseQuantity} min="0">
+                                                            </lightning-input>
+                                                        </div>
+                                                    </td>
+                                                </template>
+                                            </template>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </template>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <!-- </div> -->
+        </div>
+    </div>
+
+    <!-- Tost Component as in Lightning Toast dont work-->
+</template>

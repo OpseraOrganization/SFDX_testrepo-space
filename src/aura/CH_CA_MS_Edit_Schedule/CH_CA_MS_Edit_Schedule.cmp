@@ -1,0 +1,474 @@
+<aura:component controller="CH_CA_MS_Edit_Schedule_Controller" implements="lightning:availableForFlowScreens" access="global">
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <c:CH_CA_MS_ConfirmationMessagebox aura:id="messageBox" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />    
+    <aura:handler name="messageboxEvent" event="c:CH_CA_MS_ConfirmationMessagebox_Event" action="{!c.handleMessageboxEvent}"/>
+    <aura:handler name="selectedRecordEvent" event="c:CH_CA_GenericLookupComponentSelectEvent" action="{!c.selectRecord}"/>
+    
+	<aura:attribute name="userLocale"  type="String" />
+    <aura:attribute name="workgroupId" type="string" />
+    <aura:attribute name="scheduleId" type="string" />
+    <aura:handler name="change" value="{!v.timeslotId}" action="{!c.navigationClicked}"/>
+    <aura:attribute name="timeslotId" type="String" />
+    <aura:attribute name="schedule" type="CH_Workgroup_Schedule__c" />
+    <aura:attribute name="filter" type="CH_Workgroup_Filter__c" />
+    <aura:attribute name="filterProducts" type="CH_CA_MS_Edit_Schedule_Controller.RelatedFilterObject[]" />
+    <aura:attribute name="noFilterProducts" type="boolean" />
+    <aura:attribute name="filterCustomers" type="CH_CA_MS_Edit_Schedule_Controller.RelatedFilterObject[]" />
+    <aura:attribute name="noFilterCustomers" type="boolean" />
+    <aura:attribute name="refreshUI" type="boolean" default="true"/>        
+    <aura:attribute name="dataChanged" type="boolean" default="false"/>
+    <aura:attribute name="oldOutageValue" type="string" />
+	<aura:attribute name="oldLevelOfSupportValue" type="string" /> <!-- prod issue 28410 -->
+    <aura:attribute name="isEditEnabled" type="boolean" default="false" />
+	<aura:attribute name="startDateValue" type="Date" default=""/>
+    <aura:attribute name="endDateValue" type="Date" default=""/>
+    <aura:attribute name="startTimeValue" type="Time" default=""/>
+    <aura:attribute name="endTimeValue" type="Time" default=""/>
+	
+    <!-- Load dependencies needed for the DataTable -->
+    <ltng:require styles="{!join(',', 
+                          $Resource.datatable + '/DataTables-1.10.16/media/css/jquery.dataTables.min.css',
+                          $Resource.datatable + '/DataTables-1.10.16/extensions/Select/css/select.dataTables.min.css')}"
+                  scripts="{!join(',', 
+                           $Resource.CH_jquery224, 
+                           $Resource.datatable + '/DataTables-1.10.16/media/js/jquery.dataTables.min.js',
+                           $Resource.datatable + '/DataTables-1.10.16/extensions/Select/js/dataTables.select.min.js')}" /> 
+    
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <!-- Bread crumbs -->
+    <lightning:layoutItem >
+        <lightning:breadcrumbs>
+            <lightning:breadcrumb label="All Schedules" href="javascript:void(0)" name="scheduleHomeCrumb" onclick="{!c.breadCrumbClicked}"/>
+            <lightning:breadcrumb label="{!'Schedule ' + v.schedule.Name}" href="javascript:void(0)"/>
+        </lightning:breadcrumbs>
+    </lightning:layoutItem>
+    <!-- Validation errors -->    
+    <lightning:layoutItem >
+        <c:CH_CA_Validate_Schedule aura:id="validateSchedule" />
+    </lightning:layoutItem>
+    
+    <lightning:layoutItem >
+        <!-- Show hide the schedule details-->
+        <lightning:accordion aura:id="editSchedule" activeSectionName="Schedule Information" allowMultipleSectionsOpen="true">
+		    <lightning:accordionSection name="scheduleInfo" label="Schedule Information">
+			<aura:if isTrue="{!v.isEditEnabled}">
+                <lightning:recordEditForm objectApiName="CH_Workgroup_Schedule__c" 
+                                          aura:id="scheduleViewForm" 
+                                          recordId="{!v.schedule.Id}"
+                                          onsubmit="{!c.scheduleSubmit}" >
+                    <lightning:messages />
+                    <aura:if isTrue="{!v.refreshUI}">
+                        <lightning:inputField aura:id="name" fieldName="Name" onchange="{!c.handleChange}" />
+                        <lightning:inputField aura:id="description" fieldName="CH_Description__c" onchange="{!c.handleChange}" />
+                        <div class="slds-grid slds-gutters">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <div class="slds-grid slds-gutters">
+                                        <div class="slds-col">
+                                            <label class="slds-form-element__legend slds-form-element__label slds-form-element__label" for="Start Date">
+                                                <abbr class="slds-required" title="required">*</abbr>Start DateTime</label>
+                                            <lightning:input aura:id="startDateField" type="Date" name="CH_Start_Date__c" label="Date"   value="{!v.startDateValue}" onchange="{!c.handleChange}"/>
+                                        </div>
+                                        <div class="slds-col">       
+                                            <label class="slds-form-element__label" for="Start Time">
+                                                <abbr class="slds-required" ></abbr></label>
+                                            <lightning:input aura:id="CH_Start_Time__c" type="Time" name="CH_Start_Time__c" label="Time"   value="{!v.startTimeValue}" onchange="{!c.handleChange}"/>
+                                        </div> 
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <div class="slds-grid slds-gutters">
+                                        <div class="slds-col">
+                                            <label class=" slds-form-element__legend slds-form-element__label slds-form-element__label" for="End Date">
+                                                <abbr class="slds-required" title="required">*</abbr>End DateTime</label>
+                                            <lightning:input aura:id="enddatefield" type="Date" name="CH_End_Date__c" label="Date"   value="{!v.endDateValue}" onchange="{!c.handleChange}"/>
+                                        </div>
+                                        <div class="slds-col">     
+                                            <label class="slds-form-element__label" for="End Time">
+                                                <abbr class="slds-required" ></abbr></label>
+                                            <lightning:input aura:id="CH_End_Time__c" type="Time" name="CH_End_Time__c" label="Time"  value="{!v.endTimeValue}" onchange="{!c.handleChange}"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField aura:id="timezone" fieldName="CH_Time_Zone__c" onchange="{!c.handleChange}"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">                		
+                                <lightning:inputField aura:id="active" fieldName="CH_Active__c" onchange="{!c.handleChange}"/>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField aura:id="schedule_workgroupId" fieldName="CH_Workgroup__c" value="{!v.workgroupId}" disabled="true" />
+                            </div>
+                        </div>
+                    </aura:if>
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Save Schedule" 
+                                          aura:id="saveScheduleButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          type="submit" />
+                        
+                        <lightning:button label="Delete Schedule"
+                                          aura:id="deleteScheduleButton"  
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          onclick="{!c.confirmDelete}"
+                                          disabled="{!v.schedule.Id == null}" />
+                    </lightning:layoutItem>                    
+                </lightning:recordEditForm>
+				 <aura:set attribute="else">
+                        <lightning:recordviewForm objectApiName="CH_Workgroup_Schedule__c" 
+                                                  aura:id="scheduleViewFormedit" 
+                                                  recordId="{!v.schedule.Id}"
+                                                  >
+                            <lightning:messages />
+                            <aura:if isTrue="{!v.refreshUI}">
+                                <lightning:outputField aura:id="name" fieldName="Name"  />
+                                <lightning:outputField aura:id="description" fieldName="CH_Description__c"  />
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="slds-grid slds-gutters">
+                                            <div class="slds-col">
+                                                <lightning:outputField aura:id="outstartdate" fieldName="CH_Start_Date__c" />
+                                            </div>
+                                            <div class="slds-col">    
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <label class="slds-form-element__label" for="outStatTime">Start Time</label>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:formattedTime value="{!v.startTimeValue}" />
+                                                </div>
+                                            </div> 
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="slds-grid slds-gutters">
+                                            <div class="slds-col">
+                                                <lightning:outputField aura:id="outendStart" fieldName="CH_End_Date__c" />
+                                            </div>
+                                            <div class="slds-col">     
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <label class="slds-form-element__label" for="outETime">End Time</label>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:formattedTime value="{!v.endTimeValue}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField aura:id="timezone" fieldName="CH_Time_Zone__c" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">                		
+                                        <lightning:outputField aura:id="active" fieldName="CH_Active__c" />
+                                    </div>
+                                </div>
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField aura:id="schedule_workgroupId" fieldName="CH_Workgroup__c" value="{!v.workgroupId}" disabled="true" />
+                                    </div>
+                                </div>
+                            </aura:if>
+                            
+                        </lightning:recordviewForm>
+                    </aura:set>
+                </aura:if>
+            </lightning:accordionSection>
+            <lightning:accordionSection name="scheduleFilterInfo" label="Schedule Filter Information">   
+			<aura:if isTrue="{!v.isEditEnabled}">
+                <lightning:recordEditForm objectApiName="CH_Workgroup_Filter__c" 
+                                          aura:id="filterViewForm" 
+                                          recordId="{!v.filter.Id}"
+                                          onsuccess="{!c.savedFilter}"
+										  onload ="{!c.onLoad}"
+                                          onsubmit="{!c.filterSubmit}">
+                    <lightning:messages />
+                    <aura:if isTrue="{!v.refreshUI}">
+                        <lightning:inputField fieldName="Name" required="true" onchange="{!c.handleChange}"/>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_Severity__c" aura:id="severity" onchange="{!c.handleChange}"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">                		
+                                <lightning:inputField fieldName="CH_Outage__c" aura:id="outage" onchange="{!c.handleChange}"/>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_LevelOfSupport__c" aura:id="levelofsupport" onchange="{!c.handleChange}"/>
+                            </div>
+                        </div>                   
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_Region__c" aura:id="region" onchange="{!c.handleChange}"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">                		
+                                <lightning:inputField fieldName="CH_Country__c" aura:id="country" onchange="{!c.handleChange}"/>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_Workgroup_Type__c" aura:id="workgrouptype" onchange="{!c.handleChange}"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField aura:id="filter_scheduleId" fieldName="CH_Workgroup_Schedule__c" value="{!v.scheduleId}" disabled="true"/>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-gutters" >
+                            <div class="slds-col slds-size_1-of-2" >
+                                <div class="slds-p-top_x-small" >
+								<!--Changes added for NOKIASC-32921 -->
+                                    <c:CH_CA_GenericLookupComponent aura:id="productLookup" objectName="Product2" fieldName="Name" fieldName1="ProductCode" 
+                                                                    placeholder="search products..." clickEvent="true" label="Products"
+                                                                    extraFilter="{!$Label.c.CH_Product_Filter}" readonly="{!v.filter.Id == null}" /> 
+                                    <div class="slds-p-top_x-small" >
+                                        <div class="slds-border_top slds-border_bottom slds-border_left slds-border_right" style="overflow-wrap: break-word" >
+                                            <aura:if isTrue="{!v.noFilterProducts}">
+                                                No Filter Products
+                                            </aura:if>  
+                                            <aura:iteration items="{!v.filterProducts}" var="item" >
+                                                <aura:if isTrue="{!item.deleted == false}">
+                                                    <lightning:pill aura:id="productPillContainer" label="{!item.label}" name="{!item.relatedObjectId}" onremove="{!c.pillRemove}"  />
+                                                </aura:if>
+                                            </aura:iteration>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <div class="slds-p-top_x-small">
+								<!--Changes added for NOKIASC-32920 -->
+                                    <c:CH_CA_GenericLookupComponent aura:id="customerLookup" objectName="Account" fieldName="Name"  fieldName1="AccountNumber"
+                                                                    placeholder="search customers..." clickEvent="true" label="Customers"
+                                                                    extraFilter=" AND RecordType.Name='Legal Entity' " readonly="{!v.filter.Id == null}" /> 
+                                    <div class="slds-p-top_x-small">
+                                        <div class="slds-border_top slds-border_bottom slds-border_left slds-border_right" style="overflow-wrap:break-word;">
+                                            <aura:if isTrue="{!v.noFilterCustomers}">
+                                                No Filter Customers
+                                            </aura:if>
+                                            <aura:iteration items="{!v.filterCustomers}" var="item">
+                                                <aura:if isTrue="{!item.deleted == false}">
+                                                    <lightning:pill aura:id="customerPillContainer" label="{!item.label}" name="{!item.relatedObjectId}" onremove="{!c.pillRemove}"/>
+                                                </aura:if>
+                                            </aura:iteration>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+						<!-- Start : Added as part of US 26399 -->
+                         <div class="slds-grid slds-gutters">
+                            <!-- <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_Solution__c" aura:id="solution" onchange="{!c.handleChange}"/>
+                            </div>-->
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField  fieldName="CH_ProductModule__c"  aura:id="productModule" onchange="{!c.handleChange}"/>
+                            </div> 
+                             <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_ProductVariant__c" aura:id="productVariant" onchange="{!c.handleChange}"/>
+                            </div>
+                        </div>
+
+						<div class="slds-grid slds-gutters">
+                            <!-- <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_ProductVariant__c" aura:id="productVariant" onchange="{!c.handleChange}"/>
+                            </div> -->
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_Solution__c" aura:id="solution" onchange="{!c.handleChange}"/>
+                            </div>
+                            
+                        </div> 
+                        <!-- End -->
+                    </aura:if>
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Save Filter" 
+                                          aura:id="saveFilterButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          type="submit"
+                                          disabled="{!v.scheduleId == null}" />
+                        <lightning:button label="Delete Filter"
+                                          aura:id="deleteFilterButton"  
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          onclick="{!c.confirmDelete}"
+                                          disabled="{!v.schedule.CH_Workgroup_Filters__r[0].Id == null}" />
+                    </lightning:layoutItem>
+                </lightning:recordEditForm> 
+				 <aura:set attribute="else">
+                        <lightning:recordviewForm objectApiName="CH_Workgroup_Filter__c" 
+                                                  aura:id="filterViewReadForm" 
+                                                  recordId="{!v.filter.Id}"
+                                                  >
+                            <lightning:messages />
+                            <aura:if isTrue="{!v.refreshUI}">
+                                <lightning:outputField fieldName="Name" required="true" />
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField fieldName="CH_Severity__c" aura:id="severity" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">                		
+                                        <lightning:outputField fieldName="CH_Outage__c" aura:id="outage" />
+                                    </div>
+                                </div>
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField fieldName="CH_LevelOfSupport__c" aura:id="levelofsupport" />
+                                    </div>
+                                </div>                   
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField fieldName="CH_Region__c" aura:id="region" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">                		
+                                        <lightning:outputField fieldName="CH_Country__c" aura:id="country"/>
+                                    </div>
+                                </div>
+                                <div class="slds-grid slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField fieldName="CH_Workgroup_Type__c" aura:id="workgrouptype" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField aura:id="filter_scheduleId" fieldName="CH_Workgroup_Schedule__c" value="{!v.scheduleId}" disabled="true"/>
+                                    </div>
+                                </div>
+                                <div class="slds-grid slds-gutters" >
+                                     
+                                    <div class="slds-col slds-size_1-of-2" >
+                                        <div class="slds-p-top_x-small" >
+										<!--Changes added for NOKIASC-32921 -->
+                                            <c:CH_CA_GenericLookupComponent aura:id="productLookup" objectName="Product2" fieldName="Name"  fieldName1="ProductCode" 
+                                                                            placeholder="search products..." clickEvent="true" label="Products"
+                                                                            extraFilter="{!$Label.c.CH_Product_Filter}" readonly="true"/> 
+                                            <div class="slds-p-top_x-small" >
+                                                <div class="slds-border_top slds-border_bottom slds-border_left slds-border_right" style="overflow-wrap: break-word" >
+                                                    <aura:if isTrue="{!v.noFilterProducts}">
+                                                        No Filter Products
+                                                    </aura:if>  
+                                                    <aura:iteration items="{!v.filterProducts}" var="item" >
+                                                        <aura:if isTrue="{!item.deleted == false}">
+                                                            <lightning:pill aura:id="productPillContainer" label="{!item.label}" name="{!item.relatedObjectId}"   />
+                                                        </aura:if>
+                                                    </aura:iteration>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="slds-p-top_x-small">
+										<!--Changes added for NOKIASC-32920 -->
+                                            <c:CH_CA_GenericLookupComponent aura:id="customerLookup" objectName="Account" fieldName="Name"  fieldName1="AccountNumber"
+                                                                            placeholder="search customers..." clickEvent="true" label="Customers"
+                                                                            extraFilter=" AND RecordType.Name='Legal Entity' " readonly="true" /> 
+                                            <div class="slds-p-top_x-small">
+                                                <div class="slds-border_top slds-border_bottom slds-border_left slds-border_right" style="overflow-wrap:break-word;">
+                                                    <aura:if isTrue="{!v.noFilterCustomers}">
+                                                        No Filter Customers
+                                                    </aura:if>
+                                                    <aura:iteration items="{!v.filterCustomers}" var="item">
+                                                        <aura:if isTrue="{!item.deleted == false}">
+                                                            <lightning:pill aura:id="customerPillContainer" label="{!item.label}" name="{!item.relatedObjectId}" />
+                                                        </aura:if>
+                                                    </aura:iteration>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                   
+                                </div>
+                                <!-- Start : Added as part of US 26399 -->
+                                <div class="slds-grid slds-gutters">
+                                    <!-- <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_Solution__c" aura:id="solution" onchange="{!c.handleChange}"/>
+                            </div>-->
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField  fieldName="CH_ProductModule__c"  aura:id="productModule" />
+                                    </div> 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField fieldName="CH_ProductVariant__c" aura:id="productVariant" />
+                                    </div>
+                                </div>
+                                
+                                <div class="slds-grid slds-gutters">
+                                    <!-- <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_ProductVariant__c" aura:id="productVariant" onchange="{!c.handleChange}"/>
+                            </div> -->
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:outputField fieldName="CH_Solution__c" aura:id="solution" />
+                                    </div>
+                                    
+                                </div> 
+                                <!-- End -->
+                            </aura:if>
+                            <!-- Display buttons -->
+                            
+                        </lightning:recordviewForm> 
+                    </aura:set>
+                </aura:if>
+            </lightning:accordionSection>
+            <lightning:accordionSection name="timeSlots" label="Time Slots">
+                <div class="slds-m-top_xx-small slds-m-bottom_xx-small slds-scrollable" style="height: 22rem;">
+                    <table id="{!'timeslots-' + v.scheduleId}" style="table-layout: fixed; 
+                                                                      width: 100%
+                                                                      overflow:hidden; text-overflow: ellipsis;
+                                                                      word-wrap:break-word;">
+                    </table>
+                </div>
+                <!-- Display buttons -->
+                <lightning:layoutItem >
+				<aura:if isTrue="{!v.isEditEnabled}">
+                    <lightning:button label="New Timeslot" 
+                                      aura:id="newTimeslotButton"
+                                      class="slds-m-top--medium slds-m-bottom--medium"
+                                      variant="brand"
+                                      onclick="{!c.navigationClicked}" />
+                    <lightning:button label="Delete Timeslot"
+                                      aura:id="deleteTimeslotButton"  
+                                      class="slds-m-top--medium slds-m-bottom--medium"
+                                      onclick="{!c.confirmDelete}"
+                                      disabled="true" />
+				</aura:if>
+                </lightning:layoutItem>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </lightning:layoutItem> 
+    
+    <lightning:layout horizontalAlign="end">
+        <!-- Display the buttons -->
+        <lightning:layoutItem >
+            <lightning:button label="Back" 
+                              aura:id="scheduleBackButton"
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              variant="brand"
+                              onclick="{!c.navigationClicked}" />
+            <lightning:button label="Home"
+                              aura:id="scheduleHomeButton"  
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              onclick="{!c.navigationClicked}" />
+			<aura:if isTrue="{!v.isEditEnabled}">
+            <lightning:button label="Validate"
+                              aura:id="validateButton"  
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              onclick="{!c.validate}" />
+			 </aura:if> 
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+</aura:component>

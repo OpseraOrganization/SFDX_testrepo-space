@@ -1,0 +1,152 @@
+<aura:component implements="forceCommunity:availableForAllPageTypes,lightning:actionOverride,flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,force:hasSObjectName" access="global" controller="CoOpInvoiceManagerCtlr">
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <aura:attribute name="coopClaimId" type="Id" />
+    <aura:attribute name="hideDeleteButton" type="Boolean" />
+    <aura:attribute name="hideSaveButton" type="Boolean" />
+    <aura:attribute name="loaded" type="Boolean" default="true"/>
+    <aura:attribute name="InvoiceWrapperList" type="Object" />
+    <aura:attribute name="writeAccess" type="Boolean" />
+    <aura:attribute name="claimReimbursableAmount" type="Id" />
+    
+    <div class="spinner">
+        <aura:if isTrue="{! v.loaded }">
+            <div data-label="Line Item Amount"  class="slds-text-title--caps center-content">
+                TOTAL REIMBURSABLE AMOUNT OF INVOICES: <ui:outputText value="{!v.claimReimbursableAmount}"/>
+            </div>
+            <div data-label="Line Item Amount"  class="center-content alert-message">
+            	Note: The Total Reimbursable Amount of Invoices must be the same as the Claim Amount
+            </div>
+            <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table--striped">
+                <thead class="headerColor">
+                    <th class="slds-text-title--caps center-content">Invoices</th>
+                    <th class="slds-text-title--caps center-content">Related line items</th>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.InvoiceWrapperList}" var="invoice" indexVar="invoiceIndex">
+                        <aura:if isTrue="{!(invoice.visible)}">
+                            <tr>
+                                <td class="invoice-col">
+                                    <aura:if isTrue="{!v.writeAccess}">
+                                        <div data-label="Select">
+                                            <lightning:input type="checkbox" checked="{!(invoice.selected)}" onchange="{!c.handleInvoiceSelection}" name="select"/>
+                                        </div>
+                                        <div data-label="Invoice Number">
+                                            <lightning:input name="invoiceNumber" type="text" disabled="false" onchange="{!c.handleInputChange}" value="{!(invoice.invoiceNumber)}" label="Invoice Number" />
+                                        </div>
+                                        <div data-label="Reimbursable Amount">
+                                            <lightning:input name="totalAmount" type="number" disabled="true" value="{!(invoice.totalAmount)}" label="Reimbursable Amount" />
+                                        </div>
+                                        <div data-label="Invoice Amount">
+                                            <lightning:input name="invoiceAmount" type="number" disabled="false" onchange="{!c.handleInputChange}" value="{!(invoice.invoiceAmount)}" label="Invoice Amount" />
+                                        </div>
+                                        <div data-label="Vendor Name">
+                                            <lightning:input name="vendorName" type="text" disabled="false" onchange="{!c.handleInputChange}" value="{!(invoice.vendorName)}" label="Vendor Name" />
+                                        </div>
+                                        <div data-label="Description">
+                                            <lightning:input name="description" type="text" disabled="false" onchange="{!c.handleInputChange}" value="{!(invoice.description)}" label="Description" />
+                                        </div>
+                                        <aura:set attribute="else">
+                                            <div data-label="Select">
+                                            </div>
+                                            <div data-label="Invoice Number"><strong>Invoice Number</strong><br></br>
+                                                <ui:outputText value="{!invoice.invoiceNumber}"/>
+                                            </div>
+                                            <div data-label="Reimbursable Amount"><strong>Reimbursable Amount</strong><br></br>
+                                                <ui:outputText value="{!invoice.totalAmount}"/>
+                                            </div>
+                                            <div data-label="Invoice Amount"><strong>Invoice Amount</strong><br></br>
+                                                <ui:outputText value="{!invoice.invoiceAmount}"/>
+                                            </div>
+                                            <div data-label="Vendor Name"><strong>Vendor Name</strong><br></br>
+                                                <ui:outputText value="{!invoice.vendorName}"/>
+                                            </div>
+                                            <div data-label="Description"><strong>Description:</strong><br></br>
+                                                <ui:outputText value="{!invoice.description}"/>
+                                            </div>
+                                        </aura:set>
+                                	</aura:if>
+                                </td>
+                                <td data-label="Line Items" class="li-invoice-col">
+                                    <tr>
+                                        <td scope="col" class="center-content slds-truncate checkbox-col">
+                    						<aura:if isTrue="{!v.writeAccess}">
+                                            	Select
+                                            </aura:if>
+                                        </td>
+                                        <td scope="col" class="center-content slds-truncate slds-text-title--caps ">
+                                            Line Item Amount
+                                        </td>
+                                        <td scope="col" class="center-content slds-truncate slds-text-title--caps ">
+                                            Description
+                                        </td>
+                                    </tr>
+                                    <aura:iteration items="{!invoice.invoiceLIWrapperList}" var="lineItem"  indexVar="lineItemIndex">
+                                        <aura:if isTrue="{!v.writeAccess}">
+                                            <tr>
+                                                <td data-label="Selected" class="checkbox-col">
+                                                    <lightning:input type="checkbox" name="select" checked="{!(lineItem.selected)}" onchange="{!c.handleInvoiceSelection}" variant="label-hidden" class="label-hidden"/>
+                                                </td>
+                                                <td data-label="Line Item Amount"  class="amount-col">
+                                                    <lightning:input type="number"  onchange="{!c.handleAmountChange}" name="Amount" disabled="false" value="{!(lineItem.amount)}" variant="label-hidden"  class="label-hidden"/>
+                                                </td>
+                                                <td data-label="Description" class="description-col">
+                                                    <lightning:input type="text" name="description"  onchange="{!c.handleInputChange}" disabled="false" value="{!(lineItem.description)}" variant="label-hidden" class="label-hidden"/>
+                                                </td>
+                                            </tr>
+                                            <aura:set attribute="else">
+                                                <tr>
+                                                    <td data-label="Selected" class="checkbox-col">
+                                                    </td>
+                                                    <td data-label="Line Item Amount"  class="amount-col center-content">
+                                                        <ui:outputText value="{!lineItem.amount}"/>
+                                                    </td>
+                                                    <td data-label="Description" class="description-col center-content">
+                                                        <ui:outputText value="{!lineItem.description}"/>
+                                                    </td>
+                                                </tr>
+                                            </aura:set>
+                                        </aura:if> 
+                                    </aura:iteration>
+                    				<aura:if isTrue="{!v.writeAccess}">
+                                        <tr>
+                                            <td colspan="5" class="center-content">
+                                                <lightning:button class="slds-m-top_small custom-button" value="{!(invoiceIndex)}" variant ="brand-outline" disabled="false" label="Add new line item" onclick="{!c.addInvoiceLI}" />
+                                            </td>
+                                        </tr>
+                                    </aura:if>
+                                </td>
+                            </tr>
+                        </aura:if> 
+                    </aura:iteration>
+                    <br></br>
+                        <tr>
+                            <td colspan="2" class="center-content">
+                                <div data-label="Line Item Amount"  class="center-content alert-message" >
+                                    Note: The Total Reimbursable Amount of Invoices must be the same as the Claim Amount
+                                </div>                        
+                            </td>
+                        </tr>
+                    <br></br>
+                    <aura:if isTrue="{!v.writeAccess}">
+                        <tr>
+                            <td colspan="2" class="center-content">
+                                <lightning:button class="slds-m-top_small custom-button" onclick="{!c.createInvoice}" variant="brand-outline" disabled="false" label="Create invoice" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="invoice-col">
+                                <lightning:button class="slds-m-top_small" onclick="{!c.deleteRecords}" variant="destructive" disabled="{!v.hideDeleteButton}" label="Delete selected" />
+                            </td>
+                            <td class="li-invoice-col">
+                                <lightning:button class="slds-m-top_small" onclick="{!c.updateTable}" variant="brand" disabled="{!v.hideSaveButton}" label="Save" />
+                            </td>
+                        </tr>
+                    </aura:if>  
+                </tbody>
+            </table> 
+            <aura:set attribute="else">
+                <lightning:spinner alternativeText="Loading" />
+            </aura:set>
+        </aura:if>
+    </div>
+</aura:component>
