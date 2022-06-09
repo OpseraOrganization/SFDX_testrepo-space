@@ -1,0 +1,343 @@
+<aura:component
+  controller="CreateOfferApexCtlr"
+  implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable"
+>
+  <aura:attribute
+    name="newOffer"
+    type="Offer__c"
+    default="{ 'sobjectType': 'Offer__c' }"
+  />
+  <!-- default to empty record -->
+  <aura:attribute name="currentOppty" type="Opportunity" />
+  <!-- Current oppty -->
+  <aura:attribute name="pageReference" type="Object" />
+  <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+  <aura:attribute name="errors" type="List" />
+  <aura:attribute name="g3BypassFlag" type="boolean" default="false" />
+  <aura:attribute name="recordId" type="String" />
+  <aura:attribute name="loaLevels" type="List" />
+  <aura:attribute name="has_error" type="boolean" default="false" />
+  <aura:attribute name="saveClicked" type="boolean" default="false" />
+  <aura:attribute name="offerCreationFlag" type="boolean" default="false" />
+  <aura:attribute name="offerTeamCreationFlag" type="boolean" default="false" />
+  <aura:attribute name="opptyId" type="String" />
+  <aura:attribute name="offerId" type="String" />
+  <aura:attribute name="mylabel" type="String" />
+  <aura:attribute
+    name="Error"
+    type="String"
+    default="error : The Gate Planned Date entered is either blank, in the past, precedes the date entered for the previous gate or exceeds the date entered for the following gate"
+  />
+  <aura:attribute name="offerTeamList" type="Offer_Team__c[]" />
+  <aura:attribute
+    name="offerTeamVar"
+    type="Offer_Team__c"
+    default="{ 'sobjectType': 'Offer_Team__c' }"
+  />
+  <aura:attribute name="wrapper" type="OfferTeamWrapper" />
+  <aura:attribute name="wrapperListFinal" type="OfferTeamWrapper[]" />
+  <aura:attribute name="G4PlannedDate" type="Date" />
+  <aura:attribute name="G3PlannedDate" type="Date" />
+  <aura:attribute name="G5PlannedDate" type="Date" />
+  <aura:attribute name="G3PlannedDateOLD" type="Date" />
+  <aura:attribute name="G4PlannedDateOLD" type="Date" />
+  <aura:attribute name="G5PlannedDateOLD" type="Date" />/>
+  <aura:attribute name="IsSpinner" type="Boolean" default="false" />
+  <aura:attribute name="NSACompliance" type="boolean" default="false" />
+
+  <!--Event handler for Add and Delete Row Event which is fire from Child Component-->
+  <aura:handler
+    name="DeleteRowEvt"
+    event="c:DeleteRowEvt"
+    action="{!c.removeDeletedRow}"
+  />
+  <aura:handler
+    name="AddRowEvt"
+    event="c:AddNewRowEvt"
+    action="{!c.addNewRow}"
+  />
+
+  <aura:if isTrue="{!v.offerCreationFlag}">
+    <section
+      role="dialog"
+      tabindex="-1"
+      aria-labelledby="modal-heading-01"
+      aria-modal="true"
+      aria-describedby="modal-content-id-1"
+      class="slds-modal slds-align_absolute-center slds-fade-in-open"
+    >
+      <div class="main-container" id="main-container">
+        <header
+          class="slds-modal__header"
+          style="margin-right: -30px; align-self: center; width: 600px"
+        >
+          <lightning:buttonIcon
+            iconName="utility:close"
+            onclick="{! c.closeOfferCreation }"
+            alternativeText="close"
+            variant="bare-inverse"
+            class="slds-modal__close"
+          />
+          <h2
+            id="modal-heading-01"
+            class="slds-text-heading_medium slds-hyphenate"
+          >
+            Offer Creation
+          </h2>
+        </header>
+        <!-- Display a header with details about the Offer -->
+        <div
+          class="
+            modal-body
+            scrollable
+            slds-modal__content
+            slds-p-around--medium
+            inner-div
+          "
+          style="margin-right: -30px; align-self: center; width: 600px"
+          id="scrollable_div"
+        >
+          <div class="slds-form slds-form_compound">
+            <fieldset class="slds-form-element">
+              <div id="error-section">
+                <aura:if isTrue="{!v.has_error}">
+                  <aura:iteration items="{!v.errors}" var="error">
+                    <div class="slds-notify_error" id="slds-notify_error">
+                      <div
+                        class="
+                          slds-notify slds-notify--alert
+                          slds-theme--error slds-theme--alert-texture
+                        "
+                        role="alert"
+                      >
+                        <span class="slds-size_1-of-1">{!error}</span>
+                      </div>
+                    </div>
+                  </aura:iteration>
+                  <br />
+                </aura:if>
+              </div>
+              <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                  <div class="slds-form-element slds-size_1-of-2 pad">
+                    <lightning:input
+                      aura:id="offerName"
+                      label="Offer Name"
+                      value="{!v.newOffer.Name}"
+                      required="true"
+                    />
+                  </div>
+                  <div class="slds-form-element slds-size_1-of-2 pad">
+                    <lightning:input
+                      type="date"
+                      aura:id="G3Planned"
+                      label="G3 Planned Date"
+                      value="{!v.G3PlannedDate}"
+                      class="field"
+                      displayDatePicker="true"
+                      required="true"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                  <div class="slds-form-element slds-size_1-of-2 pad">
+                    <lightning:input
+                      aura:id="oppty"
+                      label="Opportunity"
+                      value="{!v.currentOppty.Name}"
+                      required="true"
+                      readonly="true"
+                    />
+                  </div>
+                  <div class="slds-form-element slds-size_1-of-2 pad">
+                    <lightning:input
+                      type="date"
+                      aura:id="G4Planned"
+                      label="G4 Planned Date"
+                      value="{!v.G4PlannedDate}"
+                      class="field"
+                      displayDatePicker="true"
+                      required="true"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="slds-form-element__group">
+                <div class="slds-form-element__row">
+                  <div class="slds-form-element slds-size_1-of-2 pad">
+                    <lightning:input
+                      type="date"
+                      aura:id="G5Planned"
+                      label="Win Declaration Planned Date"
+                      value="{!v.G5PlannedDate}"
+                      class="field"
+                      displayDatePicker="true"
+                      required="true"
+                    />
+                  </div>
+                  <div
+                    class="slds-form-element slds-size_1-of-2 pad"
+                    style="
+                      margin-right: -30px;
+                      align-self: center;
+                      width: 250px;
+                    "
+                  >
+                    <lightning:input
+                      type="checkbox"
+                      aura:id="BugdetaryNonBiding"
+                      label="Budgetary &amp; non-binding"
+                      checked="{!v.newOffer.Budgetary_non_binding__c}"
+                      class="field"
+                    />
+                  </div>
+                  <lightning:helptext
+                    content="Budgetary offers are defined as offers proposing an indicative price, based on Nokia ́s standard T&amp;Cs or contractually agreed T&amp;Cs, with no indication of any detailed item break-down and which cannot form the basis of a contractual agreement."
+                    class="customIcon"
+                  />
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+        <div
+          class="modal-footer slds-modal__footer"
+          style="margin-right: -30px; max-height: 330px; align-self: center"
+        >
+          <lightning:button
+            variant="neutral"
+            label="Cancel"
+            onclick="{!c.handleCancel}"
+          />
+          <!-- <lightning:button variant="brand" label="Save" onclick="{!c.handleSaveOffer}" /> -->
+          <lightning:button
+            variant="brand"
+            label="Next"
+            onclick="{!c.handleNext}"
+          />
+        </div>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+    <!--###### MODAL BOX Part END Here ######-->
+  </aura:if>
+  <aura:if isTrue="{!v.offerTeamCreationFlag}">
+    <aura:if isTrue="{!v.IsSpinner}">
+      <div class="exampleHolder">
+        <lightning:spinner variant="brand" />
+      </div>
+      <!-- <div class="mySpinner">
+                <div class="slds-hide slds-spinner_container"  aura:id="uploadSpinner">
+                    <div class="slds-spinner slds-spinnermedium" aria-hidden="false" role="alert">
+                        <lightning:spinner variant="brand" />
+                    </div>
+                </div>
+            </div> -->
+    </aura:if>
+    <!--###### MODAL BOX Start######-->
+    <section
+      role="dialog"
+      tabindex="-1"
+      aria-labelledby="modal-heading-01"
+      aria-modal="true"
+      aria-describedby="modal-content-id-1"
+      class="slds-modal slds-fade-in-open"
+    >
+      <div
+        class="slds-modal__container"
+        style="width: 90%; max-width: 90%; align-self: center; height: 650px"
+      >
+        <!-- ###### MODAL BOX HEADER Start ######-->
+        <header class="slds-modal__header">
+          <lightning:buttonIcon
+            iconName="utility:close"
+            onclick="{! c.closeOfferTeamCreation }"
+            alternativeText="close"
+            variant="bare-inverse"
+            class="slds-modal__close"
+          />
+          <h2
+            id="modal-heading-01"
+            class="slds-text-heading_medium slds-hyphenate"
+          >
+            Offer Team Creation
+          </h2>
+        </header>
+        <div class="slds-table_edit_container slds-modal__content">
+          <div class="slds-scrollable">
+            <!--###### MODAL BOX BODY Part Start######-->
+            <table
+              class="slds-table slds-table_cell-buffer slds-table_bordered"
+            >
+              <thead>
+                <tr class="slds-line-height_reset">
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Sr No">Sr.No</div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Team Role">Team Role</div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="User">User</div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Opportunity Access">
+                      Offer Access
+                    </div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Additional Team Role">
+                      Additional Team Role
+                    </div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="BG">BG</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <aura:iteration items="{!v.wrapper}" var="offr" indexVar="sNo">
+                  <!-- Child Lightning Component -->
+                  <c:OfferTeamCreation
+                    singleRec="{!offr}"
+                    sNo="{!sNo + 1}"
+                    rowIndex="{!sNo}"
+                    saveTeam="{!v.saveClicked}"
+                  />
+                </aura:iteration>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer slds-modal__footer" style="text-align: left">
+          <lightning:button
+            variant="neutral"
+            label="+ Add 1 more row"
+            onclick="{!c.addNewRow}"
+          />
+        </div>
+        <!--###### MODAL BOX FOOTER Part Start ######-->
+        <footer class="slds-modal__footer">
+          <lightning:button
+            variant="neutral"
+            label="Cancel"
+            title="Cancel"
+            disabled="{!v.saveClicked}"
+            onclick="{! c.closeOfferTeamCreation }"
+          />
+          <lightning:button
+            variant="brand"
+            label="Save"
+            title="Save"
+            disabled="{!v.saveClicked}"
+            onclick="{! c.handleSave }"
+          />
+        </footer>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+    <!--###### MODAL BOX Part END Here ######-->
+  </aura:if>
+</aura:component>
