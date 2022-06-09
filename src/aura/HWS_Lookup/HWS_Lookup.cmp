@@ -1,0 +1,333 @@
+<aura:component controller ="HWS_Lookup_Class" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+    <aura:attribute name="passingAccount" type="String" />
+    <aura:attribute name="initialShipToPartyAccount" type="object" />
+    <aura:attribute name="SelectedAccountleg" type="String" />
+    <aura:attribute name="objectName" type="String" />
+    <aura:attribute name="otherValues" type="String" />
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="createNew" type="boolean" default="false"/>
+    <aura:attribute name="projectsId" type="String"/>
+    <aura:attribute name="pickupAddr" type="String"/>
+    <aura:attribute name="createProj" type="String" />
+    <aura:attribute name="searchFields" type="String" />
+    <aura:attribute name="returnValue" type="String" />
+    <aura:attribute name="projectId" type="String" />
+    <aura:attribute name="projectName" type="String" />
+    <aura:attribute name="projectAddr1" type="String" />
+    <aura:attribute name="projectAddr2" type="String" />
+    <aura:attribute name="projectAddr3" type="String" />
+    <!--NOKIASC-35951:Display ad hoc address and translated address on the case creation screen-->
+    <aura:attribute name="projectAddrLocal1" type="String" />
+    <aura:attribute name="projectAddrLocal2" type="String" />
+    <aura:attribute name="projectAddrLocal3" type="String" />
+    <aura:attribute name="showtranslateValue" type="boolean" default="false" />
+    <aura:attribute name="ShippingCity" type="String" default="" />
+    <aura:attribute name="LocalShiptoPartyName" type="String" default="" />
+    <aura:attribute name="showRetroAccount" type="Boolean" /> <!-- NOKIASC-36305 -->
+    <aura:attribute name="country" type="string" default="" /> <!-- NOKIASC-36305 -->
+    <aura:attribute name="updatedRetroAccountId" type="string" />
+    <aura:attribute name="disableLink" type="string" default="cursor: not-allowed; color: gray;"/><!-- NOKIASC-36305 -->
+    <!--End-->
+    <aura:attribute name="projectCity" type="String" />
+    <aura:attribute name="SelectedAsset" type="object[]" />
+    <aura:attribute name="shippingCountry" type="String" />
+    <aura:attribute name="shipToPartyAccount" type="object" />
+    <!-- 25672 -->
+    <!--NOKIASC-35962 | Start-->
+    <aura:attribute name="isTranslationRequired" type="boolean" default="false"/> 
+    <aura:attribute name="languageCode" type="String" default=""/>
+    <aura:attribute name="isEditButtonClicked" type="boolean" default="false"/> 
+    <aura:attribute name="isEnglish" type="boolean" default="true"/>
+    <!--NOKIASC-35962 | End-->
+    <aura:attribute name="triggeredFrom" type="String" default="" description="this is used to know from where it is triggred like console or portal"/>
+    <aura:attribute name="strSearchProjectName" type="String" description="used as a input for the project search" />
+    <aura:attribute name="projectList" type="object[]" />
+    <!-- Nik -->
+      <aura:attribute name="CountryName" type="String" />
+    
+    <aura:attribute name="projectListResult" type="object[]" />
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
+    <aura:handler name="HWS_createNewRecordEvent" event="c:HWS_createNewRecordEvent" action="{!c.handleComponentEvent}"/>
+    <aura:registerEvent name="HWS_LookupReturnValueEvent" type="c:HWS_LookupReturnValueEvent"/>
+     
+    <aura:method name="shipToPartyError" action="{!c.shipToPartyError}" access="PUBLIC"/> 
+    <aura:method name="removeShiptoParty" action="{!c.removeShiptoPartyMethod}" access="PUBLIC"/>
+    <aura:method name="doInitFromPortal" action="{!c.doInit}" access="PUBLIC"/>
+	<aura:method name="clearLookeValues" action="{!c.removeProjectName}" access="PUBLIC"/>
+    <!--Deal Field Start-->
+    <!--HWS_createNewRecordEvent fired from HWS_CreateNewRecordController.js-->
+    <!--NOKIASC-35991 | HWS_createNewRecordEvent fired from HWS_CreateNewRecordController.js-->
+    <aura:attribute name="isEnableRight" type="boolean" default="false" />
+    <!-- Nk -->
+    <aura:attribute name="IsCountryDisabled" type="boolean"  />
+    
+    
+    <aura:attribute name="sldscls" type="String" default="slds-hide"/>
+    <aura:handler name="change" value="{!v.CountryName}" action="{!c.handleSelectedCountry}"/> <!-- NOKIASC-36305 -->
+    <aura:if isTrue="{!v.objectName=='Account'}">
+        <div >
+            <div class="slds-form-element slds-is-required">                        
+                <div aura:id="ImportFromSec">
+                    <div class="slds-form-element slds-is-required">
+                        <div class="customRequired"><label class="slds-form-element__label" for="lookup">Ship to Address</label>
+                            <lightning:helptext content="{!$Label.c.HWS_LBL_ShipToAddress}" class="customIcon"/>
+                        </div>
+                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                            
+                            <div class="slds-form-element">
+                                <div aura:id="idSearchboxPilotSeries">
+                                    
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                                        <c:svg aria-Hidden="true" class="slds-input__icon slds-icon-text-default"
+                                               xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                        <ui:inputText aura:id="strNamePilot" class="slds-input"
+                                                      labelClass="slds-form-element__label" required="false"
+                                                      value="{!v.strSearchProjectName}" updateOn="keyup" disabled="{!v.IsCountryDisabled}"
+                                                      keyup="{!c.dosearchShiptoParty}" placeholder="Search..." />
+                                       
+                                    </div>
+                                    <aura:if isTrue="{! v.strSearchProjectName.length>2}">
+                                        <div aura:id="lookuplistPilot"
+                                             class="slds-lookup__menu slds-hide" role="listbox">
+                                            <ul aura:id="lookuplist-items" class="slds-lookup__list recordListBox"
+                                                role="presentation">
+                                                <aura:iteration items="{!v.projectList}"
+                                                                var="projectMatched">
+                                                    <li class="slds-lookup__item"><a id="{!globalId + '_id_' + projectMatched.currentworkingTitleId}"
+                                                                                     role="option" onclick="{!c.selectProjectName}"
+                                                                                     data-id="{!projectMatched.currentworkingTitleId}"> <!--<c:svg class="slds-button__icon slds-button-has-icon-right" xlinkHref="/resource/SLDS092/assets/icons/utility-sprite/svg/symbols.svg#user" />-->
+                                                        <aura:if isTrue="{!v.isEnglish}">
+                                                            <div style="font-size:12px"><b>{!projectMatched.currentworkingTitleName}</b></div>
+                                                            <div style="font-size:12px">{!projectMatched.addressLine1}</div>
+                                                            <div style="font-size:12px">{!projectMatched.addressLine2}</div>
+                                                            <div style="font-size:12px">{!projectMatched.addressLine3}</div>
+                                                            <div style="font-size:12px">{!projectMatched.cityStateCountry}</div>
+                                                            <aura:set attribute="else">
+                                                                <div style="font-size:12px"><b>{!projectMatched.localShiptoPartyName}</b></div>
+                                                                <div style="font-size:12px">{!projectMatched.addressLineLocal1}</div>
+                                                                <div style="font-size:12px">{!projectMatched.addressLineLocal2}</div>
+                                                                <div style="font-size:12px">{!projectMatched.addressLineLocal3}</div>
+                                                                <div style="font-size:12px">{!projectMatched.shippingcityStateCountry}</div>
+                                                                
+                                                                
+                                                            </aura:set>
+                                                        </aura:if>
+                                                        </a></li>
+                                                </aura:iteration>
+                                            </ul>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                                
+                                <ul>
+                                    <aura:iteration items="{!v.projectListResult}" var="teamMember">
+                                        <!-- {!teamMember.contactId} - {!teamMember.contactName}-!teamMember.contactType}<br/> -->
+                                        <li class="slds-pill slds-show"><a class="slds-show"
+                                                                           id="{!globalId + '_id_' + teamMember.currentworkingTitleId}"
+                                                                           role="option" onclick="{!c.removeProjectName}"
+                                                                           data-id="{!teamMember.currentworkingTitleId}"> <c:svg class="slds-icon slds-icon-standard-contact slds-icon--small slds-m-right--xx-small"
+                                                                                                                                 xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#user" />
+                                            
+                                            {!teamMember.currentworkingTitleName}
+                                            <button
+                                                    class="slds-button slds-button--icon slds-float--right slds-m-top--xx-small slds-pill__remove">
+                                                <c:svg aria-Hidden="true" class="slds-button__icon"
+                                                       xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                            </button>
+                                            </a></li>
+                                        
+                                    </aura:iteration>
+                                </ul>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <lightning:layout multipleRows="true" horizontalAlign="spread"> 
+                <lightning:layoutItem padding="around-small" flexibility="auto" size="12" largeDeviceSize="6" mediumDeviceSize="6" smallDeviceSize="12">
+                    <aura:if isTrue="{!v.createNew &amp;&amp; v.pickupAddr == 'shipToParty'}">
+                        <!-- NOKIASC-36305 -->
+                        
+                        <div class="slds-text-heading--x-small slds-listTab"> 
+                            <div class="slds-text-heading--x-small slds-m-top--x-small">
+                                
+                                <aura:if isTrue="{!v.showRetroAccount}">
+                                    (or)  <a aura:id="showlink" style="{!v.disableLink}" id="createNewRecord"  onclick="{! c.openModelwithCoutry }">Create New Ship to Address</a>                                    
+                                    <aura:set attribute="else">
+                                       (or) <a id="createNewRecord" onclick="{! c.openModel }">Create New Ship to Address</a>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                            
+                        </div>
+                            <!-- NOKIASC-36305 -->
+                        
+                    </aura:if> 
+                </lightning:layoutItem>
+                <lightning:layoutItem class="{!v.sldscls}" padding="around-small" flexibility="auto" size="12" largeDeviceSize="6" mediumDeviceSize="6" smallDeviceSize="12">
+                    <!--NOKIASC-35962 | Start-->
+                    <aura:if isTrue="{!v.isTranslationRequired}">
+                        <div class="slds-text-heading--x-small slds-listTab"> 
+                            <div class="slds-text-heading--x-small slds-m-top--x-small">
+                                <a id="edittranslatedaddress" onclick="{! c.openEditModel }">Edit Translated Address</a>
+                            </div>
+                            
+                        </div>
+                    </aura:if> 
+                </lightning:layoutItem>
+            </lightning:layout>
+            <!--NOKIASC-35962 | End-->
+            <div aura:id="SelectionDisplayAddr">
+                <!--NOKIASC-35951:Display ad hoc address and translated address on the case creation screen-->
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col">
+                        <label class="slds-form-element__label">
+                            <div style="font-size:12px"><b>{!v.projectName}</b></div>
+                            <div style="font-size:12px">{!v.projectAddr1}</div>
+                            <div style="font-size:12px">{!v.projectAddr2}</div>
+                            <div style="font-size:12px">{!v.projectAddr3}</div>
+                            <div style="font-size:12px">{!v.projectCity}</div>
+                        </label>
+                    </div>
+                    <aura:if isTrue="{!v.showtranslateValue}">
+                        <div class="slds-col">
+                            <label class="slds-form-element__label">
+                                <div style="font-size:12px"><b>{!v.LocalShiptoPartyName}</b></div>
+                                <div style="font-size:12px">{!v.projectAddrLocal1}</div>
+                                <div style="font-size:12px">{!v.projectAddrLocal2}</div>
+                                <div style="font-size:12px">{!v.projectAddrLocal3}</div>
+                                <div style="font-size:12px">{!v.ShippingCity}</div>
+                            </label>
+                        </div>
+                    </aura:if>
+                </div>
+                
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.objectName=='Contact'}">
+        <div >
+            <div class="slds-form-element slds-is-required">                        
+                <div aura:id="ImportFromSec">
+                    <div class="slds-form-element slds-is-required">
+                        <label class="slds-form-element__label" for="lookup">Communication {!v.objectName}</label>
+                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                            <div class="slds-form-element">
+                                <div aura:id="idSearchboxPilotSeries">
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                                        <c:svg aria-Hidden="true" class="slds-input__icon slds-icon-text-default"
+                                               xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                        <ui:inputText aura:id="strNamePilot" class="slds-input"
+                                                      labelClass="slds-form-element__label" required="false"
+                                                      value="{!v.strSearchProjectName}" updateOn="keyup"
+                                                      keyup="{!c.dosearchProject}" placeholder="Search..." />
+                                    </div>
+                                    <aura:if isTrue="{! v.strSearchProjectName.length>2}">
+                                        <div aura:id="lookuplistPilot"
+                                             class="slds-lookup__menu slds-hide" role="listbox">
+                                            <ul aura:id="lookuplist-items" class="slds-lookup__list"
+                                                role="presentation">
+                                                <aura:iteration items="{!v.projectList}"
+                                                                var="projectMatched">
+                                                    <li class="slds-lookup__item"><a id="{!globalId + '_id_' + projectMatched.currentworkingTitleId}"
+                                                                                     role="option" onclick="{!c.selectProjectNameCC}"
+                                                                                     data-id="{!projectMatched.currentworkingTitleId}"> <!--<c:svg class="slds-button__icon slds-button-has-icon-right" xlinkHref="/resource/SLDS092/assets/icons/utility-sprite/svg/symbols.svg#user" />-->
+                                                        <c:svg class="slds-icon slds-icon-standard-contact slds-icon--small"
+                                                               xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#user" />
+                                                        {!projectMatched.currentworkingTitleName}
+                                                        </a></li>
+                                                </aura:iteration>
+                                            </ul>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                                
+                                <ul>
+                                    <aura:iteration items="{!v.projectListResult}" var="teamMember">
+                                        <!-- {!teamMember.contactId} - {!teamMember.contactName}-!teamMember.contactType}<br/> -->
+                                        <li class="slds-pill slds-show"><a class="slds-show"
+                                                                           id="{!globalId + '_id_' + teamMember.currentworkingTitleId}"
+                                                                           role="option" onclick="{!c.removeProjectName}"
+                                                                           data-id="{!teamMember.currentworkingTitleId}"> <c:svg class="slds-icon slds-icon-standard-contact slds-icon--small slds-m-right--xx-small"
+                                                                                                                                 xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#user" />
+                                            {!teamMember.currentworkingTitleName}
+                                            <button
+                                                    class="slds-button slds-button--icon slds-float--right slds-m-top--xx-small slds-pill__remove">
+                                                <c:svg aria-Hidden="true" class="slds-button__icon"
+                                                       xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                            </button>
+                                            </a></li>
+                                        
+                                    </aura:iteration>
+                                </ul>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <aura:if isTrue="{!v.createNew}">
+                <div class="slds-text-heading--x-small slds-listTab"> 
+                    <div class="slds-text-heading--x-small slds-m-top--x-small">
+                        (or) <a id="createNewRecord" onclick="{! c.openModel }" >Create New Communication {!v.objectName}</a>
+                    </div>
+                    
+                </div>
+            </aura:if> 
+        </div>
+    </aura:if>
+    <!-- Deal field End-->
+    
+    <aura:if isTrue="{!v.createProj}">
+        
+        
+        <!--Use "slds-m-around_xx-large" class to add standard X-Large padding to the component--> 
+        <div class="slds-m-around_xx-large">
+            
+            <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->  
+            <aura:if isTrue="{!v.objectName=='Contact'}">
+                <aura:if isTrue="{!v.isOpen}">
+                    <c:HWS_CreateNewRecord objectName='{!v.objectName}' otherValues = "{!v.otherValues}" shippingCountry="{!v.shippingCountry}"/>
+                </aura:if>   
+            </aura:if>
+            
+            <aura:if isTrue="{!v.objectName=='Account'}">
+                <aura:if isTrue="{!v.isOpen}">
+                    <c:HWS_CreateNewRecord updatedRetroAccountId="{!v.updatedRetroAccountId}" showRetroAccount="{!v.showRetroAccount}" objectName='{!v.objectName}' otherValues = "{!v.otherValues}" passingAccount = "{!v.passingAccount}" 
+                                           shippingCountry="{!v.shippingCountry}" SelectedAsset = "{!v.SelectedAsset}"/>
+                </aura:if>    
+            </aura:if>
+            
+        </div>
+    </aura:if> 
+    <!-- NOKIASC-35962 | Start-->
+    <aura:if isTrue="{!v.isEditButtonClicked}">
+        <div class="slds-m-around_xx-large">
+            <c:HWS_EditTranslatedAddress projectAddr1="{!v.projectAddr1}" 
+                                         projectAddr2="{!v.projectAddr2}" 
+                                         projectAddr3="{!v.projectAddr3}" 
+                                         showtranslateValue="{!v.showtranslateValue}"
+                                         projectAddrLocal1="{!v.projectAddrLocal1}" 
+                                         projectAddrLocal2="{!v.projectAddrLocal2}" 
+                                         projectAddrLocal3="{!v.projectAddrLocal3}" 
+                                         isEnableRight="{!v.isEnableRight}"
+                                         passingAccount="{!v.initialShipToPartyAccount}"
+                                         objectName='{!v.objectName}'
+                                         otherValues = "{!v.otherValues}"
+                                         shippingCountry="{!v.shippingCountry}" 
+                                         isEditButtonClicked="{!v.isEditButtonClicked}"
+                                         projectAccName="{!v.projectName}"
+                                         projectAccCity="{!v.projectCity}"
+                                         projectAccNameLocal="{!v.LocalShiptoPartyName}"
+                                         projectAccCityLocal="{!v.ShippingCity}"/>
+        </div>
+    </aura:if>   
+    <!-- NOKIASC-35962 | End-->
+    
+    
+    
+    <!-- end Model popup addNewTalent-->
+</aura:component>

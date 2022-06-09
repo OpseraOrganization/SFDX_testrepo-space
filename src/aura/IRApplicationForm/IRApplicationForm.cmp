@@ -1,0 +1,807 @@
+<aura:component implements="forceCommunity:availableForAllPageTypes" access="global" controller="IRApplicationCase">    
+    <aura:handler name="init" value="{!this}" action="{!c.myAction}" />
+    <aura:attribute name="isSaveReturn" type="Boolean" default="false"/>
+    <aura:attribute name="isAntiCorrErr" type="boolean" default="false"/>
+    <aura:attribute name="caseNum" type="String"/><!--SFPRM-510-->
+    <aura:attribute name="optctype" type="List"/>
+    <aura:attribute name="optAnnual" type="List"/>
+    <aura:attribute name="optRevServices" type="List"/>
+    <aura:attribute name="optnoofemp" type="List"/>
+    <aura:attribute name="optTechPro" type="List"/>
+    <aura:attribute name="optEmpinSales" type="List"/>
+    <aura:attribute name="optEmpinServices" type="List"/>
+    <aura:attribute name="optEmpinMarketing" type="List"/>
+    <aura:attribute name="optRepNokia" type="List"/>
+    <aura:attribute name="optverfocus" type="List"/>
+    <aura:attribute name="optManufacture" type="List"/>
+    <aura:attribute name="optPrimaryInterest" type="List"/>
+    <aura:attribute name="optMaintenance" type="List"/>
+    <aura:attribute name="optState" type="List" default="[]"/>
+    <aura:attribute name="optCountry" type="List"/>
+    <aura:attribute name="optDistributor" type="List" default=""/>
+    <aura:attribute name="optSellNokia" type="List"/>
+    <aura:attribute name="optSalesTerr" type="List"/>
+    <aura:attribute name="LanguageOption" type="List"/>
+    <aura:attribute name="optDepartureYear" type="List"/>
+    <!--
+added for multi language -->
+    <aura:attribute name="closeModal" type="Boolean"/>
+    <aura:attribute name="SelectedLanguage" type="String"/>
+    <aura:attribute name="conSelected" type="List"/>
+    <aura:attribute name="conEntered" type="List"/>
+    <aura:attribute name="sectionLabels" type="Map"/>
+    <aura:attribute name="showIRPage" type="Boolean" default="true"/>
+    <aura:attribute name="SaveAndReturn" type="Boolean" default="true"/>
+    <aura:attribute name="countryChecked" type="List"/>
+    <aura:attribute name="ShowPrimaryIntDependFields" type="Boolean" default="false"/>
+    <aura:attribute name="isDisabled" type="boolean" default="false"/>
+    
+    <aura:attribute name="isAgree" type="Boolean"/> <!--SFPRM-510-->
+    <aura:handler name="change" value="{#v.isAgree}" action="{!c.handleImmediateError}"/>
+    <aura:attribute name="filetype" type="List" default="['.png', '.jpg', '.jpeg', '.pdf', '.pptx','.docx','.doc','.ppt']" />
+    <aura:attribute name="busCapFiletype" type="List" default="['.png', '.jpg', '.jpeg', '.pdf', '.pptx','.docx','.doc','.ppt','.xls','.xlsx']" />
+    <aura:attribute name="selTab" type="String"/> <!--SFPRM-511-->
+    <aura:attribute name="choices" type="List" default="[{'label' : 'Yes', 'value':'Yes'},{'label':'No','value':'No'}]"/><!--SFPRM-514-->
+    <aura:attribute name="createdCaseId" type="String" default=""/><!--SFPRM-511 5006t0000017w6b-->
+    <aura:attribute name="cRetypeEmailAttr" type="String" default=""/><!--SFPRM-511-->
+    <aura:attribute name="primaryRetypeEmailAttr" type="String" default=""/><!--SFPRM-511-->
+    <aura:attribute name="isRetrieve" type="Boolean" default="false"/><!--SFPRM-511-->
+    <aura:attribute name="parentCase" type="Case"/><!--SFPRM-511-->
+    <aura:attribute name="AntiCorrFile" type="List" default="[]"/><!--SFPRM-511-->
+   
+    <!-- multi lang attributes end-->
+    <aura:attribute name="childCaseMap" type="Map" default="{}"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <aura:attribute name="showPrompt" type="boolean" default="true"/>
+    <aura:attribute name="MaintainanceMsg" type="String" default="error"/>
+    
+    <div aura:id="MaintainPage" class="{!v.MaintainanceMsg!='error'? 'slds-show':'slds-hide'}">
+        <section role="alertdialog" tabindex="0" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" class="slds-modal slds-fade-in-open slds-modal_prompt" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header slds-theme_error slds-theme_alert-texture">
+                    
+                    <h2 class="slds-text-heading_medium" id="prompt-heading-id">Under Maintenances</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="prompt-message-wrapper">
+                    <p><aura:unescapedHtml value="{!v.MaintainanceMsg}"/></p>
+                </div>
+                <footer class="slds-modal__footer slds-theme_default">
+                    
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" style="background-color:grey"></div>
+    </div>
+        <aura:if isTrue = "{!!v.showIRPage}">
+            <div class="headerInfo">
+                <div class="slds-text-color_inverse">In order to complete this application you will need to provide the following for the countries in which you are applying to resell Nokia products:<br/>
+                    &nbsp;&nbsp;-&nbsp;Company registration number(s) or other identification number as evidence of the legal existence of your business<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;->&nbsp;Examples: Local Country Registration, EIN etc.<br/>
+                    &nbsp;&nbsp;-&nbsp;Upload documents that provide proof of legal entity, authentic official document of registration/incorporation<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;->&nbsp;Examples: Incorporation Certificate, Certificate of Registration, TAX ID documents, Business License etc.<br/>
+                    &nbsp;&nbsp;-&nbsp;Upload document(s) that establish the relationship between the parent and affiliate/subsidiary(ies) if applicable<br/>
+                </div>
+            </div>
+            <br></br>
+            <div>
+                <div class=" slds-text-title_caps slds-size_1-of-1">ENTER THE NIRA APPLICATION NUMBER TO RETRIEVE YOUR DRAFT:</div>
+                <br/>
+                <lightning:layout >
+                    <lightning:layoutItem size="4">
+                        
+                        <lightning:input aura:id="ticketNumber" pattern="[0-9]*" label="NIRA Ticket Number:" variant="label-hidden" placeholder="Enter Ticket Number" messageWhenPatternMismatch="Please make sure to enter only Numbers" onchange="{!c.clearWhiteSpaces}"/>
+                        
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="2" padding="horizontal-medium">
+                        
+                        <lightning:button variant="brand-outline" label="Retrieve" title="Retrieve the NIRA Ticket" onclick="{! c.retrDraftCase}" /><!--RetriveForm -->
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <br/>
+                <div class=" slds-text-title_caps slds-size_1-of-1">Or</div>
+                <br/>
+                <div class=" slds-text-title_caps slds-size_1-of-1">
+                    <lightning:button variant="brand" label="Start a New NIRA Application" onclick="{! c.ShowIRPage }" />
+                </div>
+            </div>
+        </aura:if>  
+        <div aura:id="FormDiv" class="slds-hide">	
+            <div class="main" aura:id="firstPage">
+                <div class="slds-form--inline">
+                    <div class="slds-align_absolute-center"> 
+                        <lightning:select aura:id="LanguageSelection" name="LanguageSelection" label="Select language to download terms :">
+                            <option value="English" text="English"></option>
+                            <aura:iteration items="{!v.LanguageOption}" var="Lang">
+                                <option value="{!Lang}" text="{!Lang}"></option>
+                            </aura:iteration>
+                        </lightning:select>
+                        <lightning:button variant="brand" label="Download Terms and Conditions" onclick="{!c.downloadTC}"/>
+                    </div>
+                </div>
+                <br/>
+                <aura:if isTrue="{!v.selTab != 'COMPLIANCE AND ETHICS'}">
+                    <div aura:id="saveAndReturn" style="text-align:center">
+                        <br/>
+                        <lightning:button aura:id="SaveReturn" variant="brand" label="Save And Return" onclick="{!c.draftSaveForm}"/>
+                    </div>    
+                </aura:if>
+                <lightning:helptext class="tabNavHelp" iconName="utility:info" content="You are only allowed to switch tabs in sequence while moving forward...you are not allowed to skip any intermediate tab " />
+                <lightning:tabset class="tabs_div" aura:id="FormSections" onselect="{!c.tabFocus}" variant="scoped" selectedTabId="{!v.selTab}">
+                    
+                    <lightning:tab label="1.NOKIA PARTNER REGISTRATION" class="tab1Class" id="NOKIA PARTNER REGISTRATION" aura:id="NOKIA PARTNER REGISTRATION" >
+                        <h2 class="headercolor" >KEY COMPANY CONTACTS</h2>
+                        <br/>
+                        <h3>YOUR CONTACT DETAILS</h3>
+                        <br/>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input aura:id="cfname1" required="true" value="{!v.parentCase.First_Name__c}" maxlength="40" label="First Name"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input aura:id="clname1" required="true" value="{!v.parentCase.Last_Name__c}" maxlength="40" label="Last Name"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input aura:id="ctitle1" required="true" value="{!v.parentCase.Title__c}" maxlength="40" label="Title"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input aura:id="cemail1" type="email" required="true" value="{!v.parentCase.Email__c}" label="Email" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input aura:id="coffice1" required="true" type="tel" value="{!v.parentCase.Office_Phone__c}" label="Primary Phone" pattern="[+-]?[0-9]+" messageWhenPatternMismatch="Please enter only numeric values" />
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input aura:id="cRetypeEmail" name="retypecemail1" onblur="{!c.handleRetypeEmailBlur}" type="email" required="true" label="Retype Email" value="{!v.cRetypeEmailAttr}"/>
+                                    </div>	
+                                </div>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form--inline">
+                            <div class="slds-form-element">
+                                <label class="slds-form-element__label" for="input-04">
+                                    PRIMARY BUSINESS CONTACT FOR NOKIA (Will Be Notified of Application Acceptance or Rejection)
+                                </label>
+                            </div>
+                            <div class="slds-form-element">
+                                <div class="slds-form--inline">
+                                    <div class="slds-form-element">
+                                       <lightning:input type="checkbox" aura:id="checkbox" label="Same as above" onchange="{!c.onCheck}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                         <lightning:input value="{!v.parentCase.PB_First_Name__c}" aura:id="primaryfname" type="text" required="true" maxlength="40" label="First Name"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input value="{!v.parentCase.PB_Last_Name__c}" aura:id="primarylname" type="text" required="true" maxlength="40" label="Last Name"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input value="{!v.parentCase.PB_Title__c}" aura:id="primarytitle" maxlength="100" required="true" label="Title"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                       <lightning:input value="{!v.parentCase.PB_Email__c}" aura:id="primaryemail" label="Email" required="true" type="email"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                      <lightning:input value="{!v.parentCase.PB_Office_Phone__c}" type="tel" aura:id="primaryoffice" label="Primary Phone" required="true" pattern="[+-]?[0-9]+" messageWhenPatternMismatch="Please enter only numeric values"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                                 <lightning:input type="email" name="retypeprimaryemail" onblur="{!c.handleRetypeEmailBlur}" aura:id="primaryRetypeEmail" required="true" label="Retype Email" value="{!v.primaryRetypeEmailAttr}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <label class="slds-form-element__label" for="input-04">
+                                            HEAD OF COMPANY/PRESIDENT/CEO
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input value="{!v.parentCase.H_First_Name__c}" aura:id="HFirstName" maxlength="40" required="true" type="text" label="First Name"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input value="{!v.parentCase.H_Last_Name__c}" aura:id="HLastName" maxlength="40" type="text" required="true" label="Last Name"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    <lightning:input value="{!v.parentCase.PRM_H_Title__c}" aura:id="HTitle" maxlength="100" type="text" required="true" label="Title"/>
+                                </div>
+                            </div>
+                        </div>                
+                    </lightning:tab>
+                    <lightning:tab label="2.COMPANY HEADQUARTERS" id="COMPANY HEADQUARTERS" aura:id="COMPANY HEADQUARTERS" >
+                        <fieldset class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2 ">
+                                        <lightning:textarea aura:id="street1" maxlength="50" required="true" value="{!v.parentCase.STREET_ADDRESS_1_CHQ__c}" label="Street Address 1"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:textarea aura:id="street2" maxlength="50" value="{!v.parentCase.STREET_ADDRESS_2_CHQ__c}" label="Street Address 2"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:textarea aura:id="street3" maxlength="50" value="{!v.parentCase.STREET_ADDRESS_3_CHQ__c}" label="Street Address 3"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:input type="text" aura:id="city" maxlength="50" value="{!v.parentCase.City__c}" required="true" label="City"/>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:input type="text" aura:id="postal" maxlength="30" value="{!v.parentCase.POSTAL_CODE_CHQ__c}" required="true" label="Postal Code"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:combobox aura:id="country" disabled="{!v.isDisabled}" required="true" label="Country (Headquarters)" placeholder="Select Your Country" options="{! v.optCountry }" value="{!v.parentCase.Country__c}" onchange="{! c.changeState }"/>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:input type="tel" aura:id="phone" value="{!v.parentCase.PHONE_NO_CHQ__c}" required="true" label="Phone No." pattern="[+-]?[0-9]+"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:combobox aura:id="statep" label="State/Province(If Applicable)" disabled="{!(v.optState.length>0)?false:true}" placeholder="Select Your State/Province" options="{! v.optState }" value="{!v.parentCase.State__c}"/>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:input type="text" aura:id="compweb" maxlength="200" required="true" label="Company's Website" value="{!v.parentCase.Company_website_CHQ__c}"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input type="text" aura:id="emaild" maxlength="80" required="true" pattern="(@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5}){1,25}(($)|( *[;,]+ *$)|( *[;,]+ *(?=@[a-zA-Z0-9_\-\.]))))*" label="Company Email Domains (e.g. @xyz.com;@yxz.co)" messageWhenPatternMismatch="Please make sure multiple domains are seperated by either , or ; and they are of valid format" value="{!v.parentCase.EMAIL_DOMAINS_CHQ__c}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:tab>
+                    <lightning:tab label="3.COMPANY PROFILE" id="COMPANY PROFILE" aura:id="COMPANY PROFILE" >
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input value="{!v.parentCase.Full_Legal_Name_of_Your_Organization_CP__c}" aura:id="legalOrgName" maxlength="50" required="true" label="Full Legal Name of Your Organization"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <label id="input-05">
+                                            Tax Number
+                                            <label class="labelcol">
+                                                (VAT required for Europe; CNPJ required for Brazil)
+                                            </label>
+                                        </label>
+                                        <lightning:input label="Tax Number (VAT required for Europe; CNPJ required for Brazil)" variant="label-hidden"  class="taxn-inp" aura:id="vat" ariaLabelledBy="input-05" maxlength="50" value="{!v.parentCase.VAT_Number__c}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input aura:id="duns" maxlength="50" label="Please Provide Your D-U-N-S Number (If Applicable)" value="{!v.parentCase.Dun_Bradstreet_D_U_N_S_Number_CP__c}"/>
+                                    </div>
+                                    
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:combobox aura:id="companyType" required="true" label="Company Type" placeholder="Select Your Company Type" options="{! v.optctype }" value="{!v.parentCase.Company_type_CP__c}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:combobox aura:id="revenue" required="true" label="Annual Revenues" placeholder="Select Your Annual revenues" options="{! v.optAnnual }" value="{!v.parentCase.Annual_revenues_CP__c}"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:combobox aura:id="noOfEmployee" required="true" label="No. of Employees in the Company" placeholder="Select Total Number of Employees" options="{! v.optnoofemp }" value="{!v.parentCase.Total_Number_of_employees_CP__c}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2" >
+                                        <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message10"></div>
+                                        <label class="slds-form-element__label setWidth" for="input-04">
+                                            <label class="required">*</label>
+                                            In Which Sales Territory (Country) Are You Requesting to Sell Nokia Products and/or Services? (NOTE: Include Headquarters HQ if applicable.)
+                                        </label>
+                                        <lightning:dualListbox name="HQCountry" aura:id="SalesTerr"
+                                                               variant="label-hidden"
+                                                               sourceLabel="Available"
+                                                               selectedLabel="Chosen"
+                                                               options="{!v.optSalesTerr}"
+                                                               value="{!v.parentCase.Which_Sales_Territory_are_You__c}"
+                                                               onchange="{!c.salesTerrChangeHandler}"/>
+                                    </div>  
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <div class="slds-form-element slds-size--1-of-1">
+                                            <lightning:radioGroup
+                                                                  aura:id="USGovResell"
+                                                                  label="Do You Wish to Resell to USA Federal Government Sectors?"
+                                                                  options="{! v.choices }"
+                                                                  value="{!v.parentCase.Willing_to_resell_to_USA_Federal_CP__c}"
+                                                                  type="radio"
+                                                                  required="true"/>
+                                            <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message2"></div>
+                                        </div>
+                                        <div class="slds-form-element slds-size--1-of-1">
+                                            <label class="slds-form-element__label setWidth" for="input-04">
+                                                <label class="required">*</label>
+                                                Which Products or Solutions Do You Plan to Resell?
+                                            </label>
+                                            <lightning:dualListbox name="ProductsAndSolutions" aura:id="PrimaryInterest"
+                                                                   variant="label-hidden"
+                                                                   sourceLabel="Available"
+                                                                   selectedLabel="Chosen" 
+                                                                   onchange = "{!c.onChangePrimaryInterest}"          
+                                                                   options="{!v.optPrimaryInterest}" 
+                                                                   value="{!v.parentCase.Primary_Interest_CP__c}"/>
+                                            <div style="color:rgb(194, 57, 52);font-size:0.85rem;" class="slds-form-element__label" id="message11"></div>
+                                        </div>
+                                        
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br/>        
+                        <aura:if isTrue="{!v.ShowPrimaryIntDependFields}">
+                            
+                            <div class="slds-form--compound">
+                                <div class="slds-scoped-notification slds-media slds-media_center slds-theme_error slds-m-bottom_large" role="status">
+                                    
+                                    <lightning:icon iconName="utility:info" size="x-small" variant="inverse"/>
+                                    <p class="slds-text-color_inverse slds-text-title slds-p-left_x-small">Please do not provide any information about US Federal Government Contracts</p>
+                                    
+                                </div>
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size--1-of-2">
+                                            
+                                            <lightning:input value="{!v.parentCase.List_Ref_and_4G_5G_Experience__c}" required="{!v.ShowPrimaryIntDependFields}" aura:id="refand4G5GExp" maxlength="250" label="Please describe your expertise in deploying radio networks (indoor and outdoor Access Points), including the number and size of deployments.  Do you have the required industry/regulatory license to install and test radio equipment (where needed)."/>
+                                        </div>
+                                        <div class="slds-form-element slds-size--1-of-2">
+                                            
+                                            <lightning:input value="{!v.parentCase.Tier1_Tier2_Support_Level__c}" aura:id="tiersSupportLevel" maxlength="250" required="{!v.ShowPrimaryIntDependFields}" label="Please describe your capabilities to provide network technical support and related Certifications ITIL or other), i.e., Help Desk / Level 1 / Level 2 support, and SLA targets you are currently providing. Which ticketing system do you use for Incident Management and escalations."/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form--compound">
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size--1-of-2">
+                                            
+                                            <lightning:input value="{!v.parentCase.Radio_Networks_Installation_Experience__c}" aura:id="radioNetworksInstallationExp" maxlength="250" required="{!v.ShowPrimaryIntDependFields}" label="How many qualified engineers do you have on staff to perform RF planning and design and radio network deployments? Provide any details on any Certifications held by team members."/>
+                                        </div>
+                                        <div class="slds-form-element slds-size--1-of-2">
+                                            <lightning:input value="{!v.parentCase.Radio_Frequency_Expirience__c}" aura:id="radioFrequencyExp" maxlength="250" required="{!v.ShowPrimaryIntDependFields}" label="Please describe the depth of your RF Planning expertise, including site survey, RF design and RF tuning/optimization. Which tools do you utilize for such activities?"/>
+                                            
+                                        </div>
+                                        
+                                    </div>
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size--1-of-2">
+                                            <lightning:input value="{!v.parentCase.PRM_NoandScopeOfPotentialNDACDeploy__c}" aura:id="ScopeOfPotentialNDACDepl" maxlength="250" required="{!v.ShowPrimaryIntDependFields}" label="What is your expectation of the number and scope of potential NDAC deployment opportunities in your markets in the next 12 months? Please describe the typical use cases you expect to implement."/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </aura:if>   
+                    </lightning:tab>
+                    <lightning:tab label="4.AFFILIATES/SUBSIDIARY INFORMATION" id="AFFILIATES/SUBSIDIARY INFORMATION" aura:id="AFFILIATES/SUBSIDIARY INFORMATION" >
+                        <br/>
+                        <h3>Please click on country(ies) listed below to provide necessary information for each territory(ies) where you request to sell.</h3>
+                        
+                        <br/>
+                        <aura:iteration items="{!v.countryChecked}" var="item" indexVar="key">
+                            <lightning:formattedUrl label="{!item.key}" value="{!item.key}" aura:id="{!item.key}" onclick="{!c.openmodalA}" target="_blank"/>&nbsp;
+                            <aura:if isTrue="{!item.value}">
+                                <lightning:icon iconName="utility:success" alternativeText="Success!" variant="Success" title="Success" size="xx-small" />
+                            </aura:if>
+                            <br/>
+                        </aura:iteration>
+                        {!v.body}
+                   </lightning:tab>
+                    <lightning:tab label="5.BUSINESS CAPABILITIES" id="BUSINESS CAPABILITIES" aura:id="BUSINESS CAPABILITIES" >
+                        <div class="slds-scoped-notification slds-media slds-media_center slds-theme_error slds-m-bottom_large" role="status">
+                            
+                            <lightning:icon iconName="utility:info" size="x-small" variant="inverse"/>
+                            <p class="slds-text-color_inverse slds-text-title slds-p-left_x-small">Please do not provide any information about US Federal Government Contracts</p>
+                            
+                        </div>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:textarea required="true" class="busActivities-cls" aura:id="busActivities" maxlength="250" label="Please provide a brief description of the Company's own products, professional services and solutions portfolio" value="{!v.parentCase.Describe_your_current_business_activity__c}"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:textarea required="true" aura:id="ExpRelation" maxlength="250" label="Has your company ever acted as an agent or consultant or has a past relationship with Nokia, its affiliates or former Alcatel-Lucent company? If yes, please provide details" value="{!v.parentCase.Describe_the_expereince_or_relationships__c}"/>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:textarea required="true" aura:id="AddnInfoNokia" maxlength="250" label="Please provide any additional information that you think will help Nokia make a decision on your application" value="{!v.parentCase.PRM_NIRAAdditionalInfo__c}"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                         <lightning:helptext
+                                        content="{!'Allowed file extensions: '+v.busCapFiletype}"
+                                        />
+                                        <lightning:fileUpload label="Please feel free to attach (upload) any additional documentation supporting your application. Esp. if you can detail your sales and project/services delivery capabilities. E.g. Corporate business overview, industry expertise, sales and services delivery organization, industry certifications (e.g. ITIL), regulatory licenses, network planning and deployment expertise and tools utilized, etc."
+                                                              multiple="true"
+                                                              accept="{!v.busCapFiletype}"
+                                                              recordId="{!v.createdCaseId}"
+                                                              />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:tab>
+                    <lightning:tab label="6.COMPLIANCE AND ETHICS" id="COMPLIANCE AND ETHICS" aura:id="COMPLIANCE AND ETHICS" >
+                        <h2 class="headercolor">COMPLIANCE AND ETHICS</h2>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:radioGroup aura:id="BribeorCorrupt"
+                                                              label="To the best of your knowledge, has your company, any person listed above , any of your company affiliates , any officer, director or owner of your company's affiliates, or anyone working on behalf of your Company, ever been convicted, fined, indicted or charged in a criminal or regulatory proceeding including any related to bribery or corruption or money laundering?"
+                                                              options="{! v.choices }"
+                                                              value="{! v.parentCase.Bribery_or_corruption__c }"
+                                                              type="radio"
+                                                              name="Bribery_or_corruption__c"
+                                                              required="true"
+                                                              onblur="{!c.handleImmediateError}"/>
+                                        
+                                    </div>  
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:radioGroup aura:id="CriminalInvest"
+                                                              label="To the best of your knowledge, are there any current criminal or regulatory investigations pending against your Company or anyone working on its behalf?"
+                                                              options="{! v.choices }"
+                                                              name="Current_criminal_investigation_pending__c"
+                                                              value="{! v.parentCase.Current_criminal_investigation_pending__c}"
+                                                              type="radio"
+                                                              required="true"
+                                                              onblur="{!c.handleImmediateError}"/>
+                                        
+                                    </div> 
+                                </div>
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-1">
+                                        
+                                         <lightning:textarea name ="Provide_a_detailed_expelanation__c" value="{!v.parentCase.Provide_a_detailed_expelanation__c}" onblur="{!c.handleImmediateError}" required="{!v.parentCase.Bribery_or_corruption__c == 'Yes'|| v.parentCase.Current_criminal_investigation_pending__c == 'Yes'?true:false}" aura:id="DetailedExpl" maxlength="250" label="If you answered YES to either of these two questions, please provide a detailed explanation . Please  describe the seniority of these individuals, their decision-making capacity, whether they are still with the Company and any related corrective actions. Do NOT however, Identify the names of the individuals subject to these proceedings in line with data privacy regulations"/>
+                                   
+                                    </div>
+                                </div>
+                                  <div class="slds-form-element__row">
+                                
+                                </div>
+                                  <div class="slds-form-element__row">
+                                <div class="slds-form-element slds-size--1-of-2">
+                                    	<lightning:radioGroup aura:id="AntiCorruption"
+                                                              label="Do you provide anti-corruption training to employees within your Company?"
+                                                              options="{! v.choices }"
+                                                              name="Anti_corruption_training_to_employees__c"
+                                                              value="{! v.parentCase.Anti_corruption_training_to_employees__c }"
+                                                              type="radio"
+                                                              required="true"
+                                                              onblur="{!c.handleImmediateError}"/>
+                                    </div>
+                                      <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:radioGroup aura:id="CodeofConduct"
+                                                              label="Does your Company have a Company Code of Conduct / Compliance Program in place?"
+                                                              options="{! v.choices }"
+                                                              name="Code_of_Conduct_Compliance_program__c"
+                                                              value="{! v.parentCase.Code_of_Conduct_Compliance_program__c }"
+                                                              type="radio"
+                                                              required="true"
+                                                              onblur="{!c.handleImmediateError}"/>
+                                    </div>
+                                      
+                                </div>
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                         <lightning:helptext
+                                        content="{!'Allowed file extensions: '+v.filetype}"
+                                        />
+                                        <lightning:fileUpload label=" If so, please provide any document or policy addressing anti-corruption bribery guidelines, or provide a URL to such publicly available documents"
+                                                              multiple="false"
+                                                              accept="{!v.filetype}"
+                                                              recordId="{!v.createdCaseId}"
+                                                              onuploadfinished = '{!c.handleSaveOfAntiCorr}'
+                                                              />
+                                        <lightning:input placeholder="Guideline/Document URL" name="Guideline_URL__c" onblur="{!c.handleImmediateError}" value="{!v.parentCase.Guideline_URL__c}" size="40" aura:id="guideline" type="url" messageWhenBadInput="Please make sure the url format is correct"/>
+                                        
+                                    </div>
+                                </div>
+                                <br/>
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element">
+                                        <lightning:radioGroup aura:id="FormerNoki"
+                                                              label="Have you or any of the key principals, respective family members, or Ultimate Beneficial Owners of the Company and its affiliated entities been a former Nokia (or former Alcatel-Lucent) employee?"
+                                                              options="{! v.choices }"
+                                                              value="{! v.parentCase.PRM_Is_former_Nokia__c }"
+                                                              type="radio"
+                                                              required="true"
+                                                              name="PRM_Is_former_Nokia__c"
+                                                              onblur="{!c.handleImmediateError}"/>
+                                        
+                                    </div> 
+                                </div>
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:input aura:id="LastTitle" name="PRM_Last_Title__c" onchange="{!c.handleImmediateError}" maxlength="255" label="If you answered Yes to the last question, please provide your last title" required="{!v.parentCase.PRM_Is_former_Nokia__c =='Yes'?true:false}" value="{!v.parentCase.PRM_Last_Title__c}"/>
+                                    </div>
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        
+                                        <lightning:combobox aura:id="YearOfDep"
+                                                            required="{!v.parentCase.PRM_Is_former_Nokia__c =='Yes'?true:false}"
+                                                            label="If you answered Yes to the last question, please provide your year of departure"
+                                                            placeholder="Select Your Year Of Departure"
+                                                            options="{!v.optDepartureYear}"
+                                                            value="{!v.parentCase.PRM_Year_of_Departure__c}"
+                                                            onblur="{!c.handleImmediateError}"
+                                                            name="PRM_Year_of_Departure__c"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br/>
+                        <h2 class="headercolor">GOVERNMENT AFFILIATIONS</h2> 
+                        <br/>
+                        <div class="slds-form--compound">
+                            <div class="slds-form-element__group">
+                                <div class="slds-form-element__row">
+                                    <div class="slds-form-element slds-size--1-of-2">
+                                        <lightning:radioGroup aura:id="DirectIndirectownership"
+                                                              label="Does any government or international department, agency, government entity or any official or employee thereof have any ownership in the Company or its affiliates (either directly or indirectly)?"
+                                                              options="{! v.choices }"
+                                                              value="{! v.parentCase.Direct_Indirect_ownership_in_Company__c}"
+                                                              type="radio"
+                                                              required="true"
+                                                              onblur="{!c.handleImmediateError}"
+                                                              name="Direct_Indirect_ownership_in_Company__c"/>
+                                    </div> 
+                                    <div class="slds-form--compound slds-size--1-of-2">
+                                        <lightning:textarea name="Describe__c" onblur="{!c.handleImmediateError}" aura:id="PlsDescribe" maxlength="250" required="{!v.parentCase.Direct_Indirect_ownership_in_Company__c == 'Yes'?true:false}" label="If Yes, please describe" value="{!v.parentCase.Describe__c}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-align_absolute-center">
+                            <label class="slds-checkbox__label" >
+                                <span class="slds-checkbox--faux"></span>
+                                <span class="slds-form-element__label"><a style="color: red; border-bottom: 1px solid red;" onclick="{!c.Checked }">I have read and accept the Nokia Indirect Reseller Agreement and certify that all the information provided in this application is true and accurate</a>
+                                    <div style="color:rgb(194, 57, 52);font-size:0.875rem" id="message8"></div>
+                                </span>
+                            </label>
+                        </div>
+                    </lightning:tab>
+                </lightning:tabset>
+            </div>
+            <aura:if isTrue="{!v.selTab != 'COMPLIANCE AND ETHICS'}">
+                <br/>
+                <div class=".slds-text-title_bold slds-text-align_center">Scroll to the top of the page, and click on the next tab to continue filling out the form.</div>
+            </aura:if>
+            <aura:if isTrue="{!v.selTab == 'COMPLIANCE AND ETHICS'}">
+                    
+                <div aura:id="saveAndReturn" style="text-align:center">
+                    <br/>
+                    <lightning:button aura:id="SaveReturn" variant="brand" label="Save And Return" onclick="{!c.draftSaveForm}"/>
+                    <lightning:button aura:id="Submit" variant="brand" label="Submit" onclick="{!c.submitForm}"/>
+                </div>
+            </aura:if>
+        </div>
+        
+        
+        <!-- multi language component call-->
+        <aura:if isTrue="{!v.closeModal}">
+            <div role="dialog" aura:id="CLoseTab" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open">
+                <c:MultiLangTerm closeModal="{!v.closeModal}" isAgree="{!v.isAgree}" Language="{!v.LanguageOption}" SelectedLanguage="{!v.SelectedLanguage}"/>
+            </div>
+            <div aura:id="backdrop" class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+        <!-- multi lang end-->
+        <div aura:id="successMessage" class="Hide" style="text-align:center; position: relative;
+                                             height:400px;color:#7998d2">
+            <aura:if isTrue="{!v.isSaveReturn}">
+                <div class="slds-form--inline">
+                    <div class="slds-form-element__control">
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="Thank you for your interest in the Nokia Partner Program. "/>
+                    </div> 
+                    <br/>
+                    <br/>
+                    <div class="slds-form-element__control">             
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value= " Your Application has been " />
+                        <u><ui:outputtext aura:id="creationsuccessmsg" class="Success" value=" saved as draft " /></u> 
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value=" under application number " />
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="{!v.caseNum}"/>
+                    </div>
+                    <br/> 
+                    <div class="slds-form-element__control"> 
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value=" Please retain this 8 digit application number;  You will need it to resume your application. "/>
+                    </div>
+                    <br/>
+                    <br/>
+                    <div class="slds-form-element__control">
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="To download your application in its current draft state, "/>
+                        <br/>
+                        <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="or to download the Nokia Indirect Reseller Terms and Conditions, please use the buttons below. "/>
+                        
+                    </div>
+                    <br/>
+                    <br/>
+                    <div class="slds-form-element__control">
+                        <b><ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" Attention! In order for Nokia to process your application "/></b>
+                        <br/>
+                        <b><ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" you must return to continue and "/></b>
+                        <b><u><ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" submit "/></u></b>
+                        <b><ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" the completed application. "/></b>
+                        <br/>
+                        <br/>
+                        <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="To continue and submit your application:" />&nbsp;
+                        <br/>
+                        <br/>
+                        <div class="slds-m-left_xx-large">
+                            <div class="slds-float_left">
+                                <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 1)  navigate to this " />
+                                <ui:outputURL value="{!$Label.c.NIRA_Link}" label="NIRA LINK"/>
+                            </div>
+                        </div>    
+                        <br/>
+                        <div class="slds-p-left_xx-large">
+                            <div class="slds-float_left">
+                                <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 2)  retrieve your draft application using your 8 digit application number" />
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-p-left_xx-large">
+                            <div class="slds-float_left">
+                                <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 3)  complete the application " />
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-p-left_xx-large">
+                            <div class="slds-float_left">
+                                <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 4)  read and accept the Nokia Indirect Reseller Agreement " />
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-p-left_xx-large">
+                            <div class="slds-float_left">
+                                <ui:outputtext class="Success" aura:id="creationsuccessmsg" value=" 5)	click on “submit”. " />   
+                            </div>
+                        </div>
+                        <br/>
+                        <br/>
+                        <lightning:select aura:id="LanguageSelection" name="LanguageSelection" label="Select language to download terms :">
+                            <option value="English" text="English"></option>
+                            <aura:iteration items="{!v.LanguageOption}" var="Lang">
+                                <option value="{!Lang}" text="{!Lang}"></option>
+                            </aura:iteration>
+                        </lightning:select>
+                        <lightning:button variant="brand" label="Download Terms and Conditions" onclick="{!c.downloadTC2}"/>
+                        <lightning:button variant="brand" label="Download Application" onclick="{!c.downloadForm}"/>
+                    </div>
+                    <div class="slds-form-element__control">
+                    </div>
+                </div>
+                <aura:set attribute="else">
+                    <div class="slds-form--inline">
+                        <div class="slds-form-element__control">
+                            <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="Thank you for your interest in the Nokia Partner Program. We have received your application and we are reviewing it now. If we need further information we will contact you via email."/>
+                        </div>
+                        <br/>
+                        <div class="slds-form-element__control">
+                            <ui:outputtext aura:id="creationsuccessmsg" class="Success" value="Within the next Twenty (20) business days you can expect to hear back from us via email."/>
+                        </div>
+                        <br/>
+                        <div class="slds-form-element__control">
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="If you have any questions or comments about your application, please contact us at partner.registration@nokia.com and reference your Nokia application number #"/> 
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="{!v.caseNum}"/>
+                            <br/>
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="Thank you again for your interest." />&nbsp;
+                            <br/>
+                            <ui:outputtext class="Success" aura:id="creationsuccessmsg" value="You may now close this browser window." />
+                            <br/>
+                            <br/>
+                            <lightning:select aura:id="LanguageSelection1" name="LanguageSelection" label="Select language to download terms :">
+                                <option value="English" text="English"></option>
+                                <aura:iteration items="{!v.LanguageOption}" var="Lang">
+                                    <option value="{!Lang}" text="{!Lang}"></option>
+                                </aura:iteration>
+                            </lightning:select>
+                            <lightning:button variant="brand" label="Download Terms and Conditions" onclick="{!c.downloadTC1}"/>
+                            <lightning:button variant="brand" label="Download Application" onclick="{!c.downloadForm}"/>
+                        </div>
+                        <div class="slds-form-element__control">
+                        </div>
+                    </div>
+                </aura:set>
+            </aura:if> 
+        </div>
+        <div aura:id="waitingCase" class="Hide">
+            <center >
+                <lightning:spinner variant="brand" aura:id="spinner" size="large"/>
+            </center>
+        </div>
+    
+</aura:component>
