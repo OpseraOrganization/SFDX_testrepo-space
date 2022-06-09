@@ -1,0 +1,128 @@
+<aura:component controller="CH_LightningController">
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!-- Attributes -->
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="logRequestWindow" type="Boolean" default="false"/>
+    <aura:attribute name="actionCounter" type="Integer" default="0" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <aura:attribute name="tableColumns" type="List"/>
+    <aura:attribute name="selectedLogRequest" type="CH_ProductLogType__c[]" description="List of Logs to be sent to Digimop"/>
+    <aura:attribute name="logTypes" type="Object"/>
+    <aura:attribute name="authorized" type="Boolean" default="false"/>
+    <aura:attribute name="selectNEAScreen" type="Boolean" default="false"/>
+    <aura:attribute name="selectedNEA" type="Object" description="To store default NEA from Case"/>
+    <aura:attribute name="temporaryNEA" type="Object" description="To store default NEA from Case"/>
+    <aura:attribute name="manualNEA" type="String" description="To store NEA Id in case of nothing valid in System" default=""/>
+    <aura:attribute name="caseSite" type="String" description="To store Case Site Name"/>
+    <aura:attribute name="noNEAsAvailable" type="Boolean" default="false"/>
+    <aura:attribute name="legalEntity" type="Object"/>
+    <aura:attribute name="product" type="Object"/>
+    
+	<!-- Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative slds-box slds-p-vertical_small">
+        <!-- Loading Spinner -->
+        <aura:if isTrue="{! v.showSpinner }">
+            <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+        </aura:if>
+        <!-- Dispay -->
+        <div class="slds-col slds-grid slds-wrap slds-size_12-of-12 slds-grid_align-center">
+        	<lightning:icon class="slds-col" iconName="action:share_poll" alternativeText="Log Collection" size="large"/>
+        </div>
+        <div class="slds-col slds-grid slds-wrap slds-size_12-of-12 slds-grid_align-center">
+            <h1 class="slds-text-heading_small slds-m-vertical_medium">One Touch Log Collection</h1>
+        </div>
+        <div class="slds-col slds-grid slds-wrap slds-size_12-of-12 slds-grid_align-center" style="padding: .2rem 0;">
+            <lightning:button class="slds-col" label="Select NEA and Logs" title="Select NEA and Logs" disabled="{! !v.authorized || v.logTypes == null || v.logTypes.length == 0 }" onclick="{! c.requestLog }" />
+        </div>
+    </div>
+    <!-- Popup -->
+    <aura:if isTrue="{! v.logRequestWindow }">
+        <section class="slds-modal slds-fade-in-open">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <div class="slds-align_absolute-center">
+                    <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+                </div>
+            </aura:if>
+            <div class="slds-modal__container">
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.cancelRequest }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 class="slds-text-heading_medium slds-hyphenate">Request Logs</h2>
+                </header>
+                <aura:if isTrue="{! !v.selectNEAScreen }">
+                    <div class="slds-p-around_small slds-theme_shade slds-grid slds-wrap">
+                        <div class="slds-col slds-size_6-of-12">
+                            <div class="slds-m-vertical_x-small slds-text-title" style="font-weight: bold;">{! v.selectedNEA ? ('Network Element Asset: ' + v.selectedNEA.Name) : ( v.manualNEA != '' ? ('Network Element Asset: ' + v.manualNEA) : 'No Network Element Asset Selected') }</div>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12">
+                            <lightning:button class="slds-float_right" name="{! v.selectedNEA ? 'Change NEA' : 'Select NEA'}" label="{! v.selectedNEA ? 'Change NEA' : 'Select NEA'}" onclick="{! c.selectNEA }"/>
+                        </div>
+                        <div class="slds-col slds-size_12-of-12 slds-m-top_x-small">
+                        	<aura:if isTrue="{! and(v.logTypes, v.logTypes.length != 0) }">
+                                <div class="slds-text-title slds-text-color_weak">{! v.selectedLogRequest.length } Item(s) Selected</div>
+                            </aura:if>
+                        </div>
+                    </div>
+                    <!-- Content -->
+                    <div class="slds-modal__content">
+                        <aura:if isTrue="{! and(v.logTypes, v.logTypes.length != 0) }">
+                            <c:Datatable aura:id="logTypes"
+                                                 label="Available Log Requests"
+                                                 columns="{! v.tableColumns }"
+                                                 data="{! v.logTypes }" 
+                                                 globalActions=""
+                                                 hideHeader="true"
+                                                 resizeColumnDisabled="false"
+                                        		 onrowaction="{! c.handleRowAction }"
+                                                 type="scroll"/>
+                            <aura:set attribute="else">
+                                <div class="slds-p-around_small slds-text-color_error slds-theme_shade">0 Records Found.</div>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                    <!-- Footer -->
+                    <footer class="slds-modal__footer">
+                        <lightning:button name="Cancel" label="Cancel" onclick="{! c.cancelRequest }"/>
+                        <lightning:button name="Start Collection" label="Start Collection" variant="brand" onclick="{! c.submitRequest }" disabled="{! v.selectedLogRequest == null || v.selectedLogRequest.length == 0 || and(v.selectedNEA == null, v.manualNEA == '') }"/>
+                    </footer>
+                </aura:if>
+                <aura:if isTrue="{! v.selectNEAScreen }">
+                    <!-- Content -->
+                    <div class="slds-modal__content">
+                        <aura:if isTrue="{! !v.noNEAsAvailable }">
+                            <c:CH_NEASelection aura:id="neaSelection"
+                                               account="{! v.legalEntity }"
+                                               selectionType="Network Element Asset"
+                                               onEvent="{! c.eventHandlerNEA }"
+                                               product="{! v.product }"
+                                               globalActions=""
+                                               withoutSharing="true"/>
+                        </aura:if>
+                        <aura:if isTrue="{! v.noNEAsAvailable }">
+                            <div class="slds-p-around_small slds-theme_shade slds-grid slds-wrap">
+                                <div class="slds-col slds-size_12-of-12">
+                                    <div class="slds-m-vertical_x-small slds-text-title" style="font-weight: bold;">{! v.caseSite ? ('Site: ' + v.caseSite) : 'Site: No Site information is available from the ticket.' }</div>
+                                </div>
+                                <div class="slds-col slds-size_12-of-12 slds-m-top_x-small">
+                                    <lightning:input label="No valid Network Element Asset found on the system, please provide Network Element Asset ID" value="{! v.manualNEA }" placeholder="Network Element Asset Id"/>
+                                </div>
+                            </div>
+                        </aura:if>
+                    </div>
+                    <!-- Footer -->
+                    <footer class="slds-modal__footer">
+                        <lightning:button name="Cancel" label="Cancel" onclick="{! c.cancelNEASelection }"/>
+                        <lightning:button name="Confirm" label="Confirm" variant="brand" onclick="{! c.confirmNEASelection }" disabled="{! and(v.temporaryNEA == null, v.manualNEA == '') }"/>
+                    </footer>
+                </aura:if>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

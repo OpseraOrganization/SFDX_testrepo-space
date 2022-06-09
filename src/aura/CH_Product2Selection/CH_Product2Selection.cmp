@@ -1,0 +1,91 @@
+<aura:component controller="CH_LightningController" access="global">
+    <!-- Aura Events -->
+    <aura:registerEvent name="onEvent" type="c:CH_CaseFlow_Event"/>
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.predefinedFields}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.lockedFields}" action="{!c.doInit}" />
+    <!-- Global Attributes -->
+    <aura:attribute name="object" type="String" default="Case"/>
+    <aura:attribute name="type" type="String" description="Type of Product Selection" default="Minimal"/>
+    <aura:attribute name="tableColumns" type="List" description="Pass the columns you want throuth" default=""/>
+    <aura:attribute name="predefinedFields" type="Object" description="Pre-Set a lisf of Fields" default=""/>
+    <aura:attribute name="lockedFields" type="Object" description="Locked lisf of Fields" default=""/>
+    <aura:attribute name="automaticSearch" type="Boolean" default="false" description="Defines if this component search will start automaticly or will wait for the user to press enter."/>
+    <aura:attribute name="showDescription" type="Boolean" default="true"/>
+    <!-- Private Attributes -->
+    <aura:attribute name="country" type="Object" description="" default="" access="private"/>
+    <aura:attribute name="product" type="Object" description="" default="" access="private"/>
+    <aura:attribute name="productModule" type="Object" description="" default="" access="private"/>
+    <aura:attribute name="productRelease" type = "Object" description="" access="private"/>
+    <aura:attribute name="productVariant" type = "Object" description="" access="private"/>
+    <aura:attribute name="solution" type = "Object" description="" access="private"/>
+    <aura:attribute name="swComponent" type="Object" description="" access="private"/>
+    <aura:attribute name="swRelease" type="Object" description="" access="private"/>
+    <aura:attribute name="swModule" type="Object" description="" access="private"/>
+    <aura:attribute name="swBuild" type="Object" description="" access="private"/>
+    <aura:attribute name="hwComponent" type="Object" description="" access="private"/>
+    <aura:attribute name="productData" type="List" description="" access="private"/>
+    <aura:attribute name="inFocus" type="Object" default="" description="" access="private"/>
+    <aura:attribute name="focusData" type="List" description="" access="private"/>
+    <aura:attribute name="searchText" type="String" description="" access="private"/>
+    <aura:attribute name="productDescription" type="String" default="" description="" access="private"/>
+    <aura:attribute name="productIsSolution" type="Boolean" default="false" access="private"/>
+    <!-- Product Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12">
+        <div class="slds-grid slds-wrap slds-col slds-size_4-of-12" onkeyup="{! c.handleSearch }">
+            <div class="slds-p-top_medium slds-size_12-of-12"></div>
+            <aura:if isTrue="{! and((v.type == 'Minimal' || v.type == 'CompleteAndCountry'), v.object == 'Case')}">
+                <lightning:recordEditForm objectApiName="{!v.object}" class="slds-size_12-of-12 slds-m-bottom_xx-small">
+                    <lightning:inputField aura:id="country" class="slds-required" fieldName="Country__c" value="{! !v.predefinedFields.country?'':v.predefinedFields.country}" variant="label-inline" onchange="{! c.handleCountrySelection }" onload="{! c.handleAfterRender }"/>
+                </lightning:recordEditForm>
+            </aura:if>
+            
+            <aura:if isTrue="{! v.type != 'ExtendedOnly' }"> 
+                <lightning:input aura:id="product" class="slds-required" name="product" label="Product" variant="label-inline" onfocus="{! c.changeTable }" value="{! !v.predefinedFields.product?'':v.predefinedFields.product.Name}" disabled="{! (v.lockedFields == 'All' || v.type == 'CompleteMinimalLocked')}" placeholder="{! (v.lockedFields == 'All' || v.type == 'CompleteMinimalLocked')?'':'Select a Product...' }"/>
+                <lightning:input aura:id="productRelease" name="productRelease" label="Product Release" variant="label-inline" onfocus="{! c.changeTable }" value="{! !v.predefinedFields.productRelease?'':v.predefinedFields.productRelease.Name}" disabled="{! (v.lockedFields == 'All' || v.type == 'CompleteMinimalLocked' || v.product == null || v.product == '')}" placeholder="{! (v.lockedFields == 'All' || v.type == 'CompleteMinimalLocked' || v.product == null || v.product == '')?'':'Select a Product Release...' }" />
+            </aura:if>
+            
+            <aura:if isTrue="{! and((v.type == 'Complete' || v.type == 'CompleteMinimalLocked' || v.type == 'CompleteAndCountry' || v.type == 'ExtendedOnly'), v.object == 'Case')}"> 
+            	<lightning:input aura:id="productModule" name="productModule" label="Product Module" variant="label-inline" onfocus="{! c.changeTable }" value="{! !v.predefinedFields.productModule?'':v.predefinedFields.productModule.Name}" disabled="{! (v.lockedFields == 'All' || v.product == null || v.product == '') }" placeholder="{! (v.lockedFields == 'All' || v.product == null || v.product == '')?'':'Select a Product Module...' }" />
+            </aura:if>
+            
+            <aura:if isTrue="{! v.type != 'ExtendedOnly' }"> 
+                <lightning:input aura:id="productVariant" name="productVariant" label="Product Variant" variant="label-inline" onfocus="{! c.changeTable }" value="{! !v.predefinedFields.productVariant?'':v.predefinedFields.productVariant.Name}" disabled="{! (v.lockedFields == 'All' || v.type == 'CompleteMinimalLocked' || v.product == null || v.product == '')}" placeholder="{! (v.lockedFields == 'All' || v.type == 'CompleteMinimalLocked' || v.product == null || v.product == '')?'':'Select a Product Variant...' }" />
+                <lightning:input aura:id="solution" name="solution" label="Solution" variant="label-inline" onfocus="{! c.changeTable }" value="{! !v.predefinedFields.solution?'':v.predefinedFields.solution.Name}" disabled="{! (v.lockedFields == 'All' || v.type == 'CompleteMinimalLocked' || v.product == null || v.product == '')}" placeholder="{! (v.lockedFields == 'All' || v.type == 'CompleteMinimalLocked' || v.product == null || v.product == '')?'':'Select a Solution...' }" />
+            </aura:if>
+            
+            <aura:if isTrue="{!v.type == 'Complete' || v.type == 'CompleteMinimalLocked' || v.type == 'CompleteAndCountry' || v.type == 'ExtendedOnly' }">
+                <lightning:input aura:id="swComponent" name="swComponent" label="SW Component" variant="label-inline" onfocus="{!c.changeTable}" value="{! !v.predefinedFields.swComponent?'':v.predefinedFields.swComponent.Name}" disabled="{! (v.lockedFields == 'All' || v.product == null || v.product == '' || v.productIsSolution)}" placeholder="{! (v.lockedFields == 'All' || v.product == null || v.product == '' || v.productIsSolution)?'':'Select a SW Component...' }"/>
+                <lightning:input aura:id="swRelease" name="swRelease" label="SW Release" variant="label-inline" onfocus="{!c.changeTable}" value="{! !v.predefinedFields.swRelease?'':v.predefinedFields.swRelease.Name}" disabled="{! (v.lockedFields == 'All' || v.productIsSolution || v.productRelease == null || v.productRelease == '')}" placeholder="{! (v.lockedFields == 'All' || v.productIsSolution || v.productRelease == null || v.productRelease == '')?'':'Select a SW Release...' }"/>
+                <lightning:input aura:id="swModule" name="swModule" label="SW Module" variant="label-inline" onfocus="{!c.changeTable}" value="{! !v.predefinedFields.swModule?'':v.predefinedFields.swModule.Name}" disabled="{! (v.lockedFields == 'All' || v.product == null || v.product == '')}" placeholder="{! (v.lockedFields == 'All' || v.product == null || v.product == '')?'':'Select a SW Module...' }"/>
+                <lightning:input aura:id="swBuild" name="swBuild" label="SW Build" variant="label-inline" onfocus="{!c.changeTable}" value="{! !v.predefinedFields.swBuild?'':v.predefinedFields.swBuild.Name}" disabled="{! (v.lockedFields == 'All' || v.swRelease == null || v.swRelease == '')}" placeholder="{! (v.lockedFields == 'All' || v.swRelease == null || v.swRelease == '')?'':'Select a SW Build...' }"/>
+                 <aura:if isTrue="{!v.object == 'Case'}">
+				<lightning:input aura:id="hwComponent" name="hwComponent" label="HW Component" variant="label-inline" onfocus="{!c.changeTable}" value="{! !v.predefinedFields.hwComponent?'':v.predefinedFields.hwComponent.Name}" disabled="{! (v.lockedFields == 'All' || v.product == null || v.product == '')}" placeholder="{! (v.lockedFields == 'All' || v.product == null || v.product == '')?'':'Select an HW Component...' }"/>
+				</aura:if>
+			</aura:if>
+        </div>
+        <div class="{!'slds-wrap slds-col slds-size_8-of-12 slds-p-left_small'+((v.inFocus=='' || v.lockedFields == 'All')?' slds-hidden':'')}">
+            <c:Datatable aura:id="productTable"
+                         label="{! 'Select a '+v.inFocus.Name }"
+                         columns="{! v.tableColumns }"
+                         data="{! v.focusData }"
+                         search="{! v.searchText }"
+                         disableSearch="{! v.inFocus=='product' }"
+                         hideSearch="true"
+                         maxRowSelection="1" 
+                         onrowselection="{! c.handleSelection }"
+                         type="selection"/>
+        </div>
+        <aura:if isTrue="{! and(v.showDescription, !empty(v.productDescription), !empty(v.inFocus))}">
+            <div class="slds-grid slds-col slds-size_12-of-12 slds-p-vertical_small">
+                <div class="slds-col slds-box slds-scrollable description_height slds-wrap">
+                    <div class="slds-align_absolute-center"><b>Product Description</b></div>
+                    <div class="slds-text-longform" style="width: flexable;">
+                        <pre style="white-space: pre-wrap;"><lightning:formattedRichText value="{! v.productDescription }" /></pre>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+    </div>
+</aura:component>
