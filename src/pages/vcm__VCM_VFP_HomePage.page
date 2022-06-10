@@ -1,0 +1,954 @@
+<apex:page controller="vcm.VCM_VFC_HomePage" sidebar="false"  >
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        
+    <apex:stylesheet value="{!URLFOR($Resource.vcm__LightningCSS)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.vcm__FeedbackCSS)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.vcm__VCMResource,'/VCMStyle.css')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.vcm__jquerytipsy,'/tipsy.css')}" />
+    <apex:includeScript value="{!URLFOR($Resource.vcm__jquerytipsy,'/jquery-1.6.2.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.vcm__jquerytipsy,'/jquery.tipsy.js')}"/>
+    <script>
+            function removeCheckpoint()
+            {
+               event.preventDefault();
+               $('#checkEndpoint').css('display','none');
+               $('#background-shadow').css('display','none');
+            
+            }           
+            function hideFeedback()
+            {
+              var checkpoint1 = {!checkEndPoint1};
+              var checkpoint2 = {!checkEndPoint2};
+              var  checkpoint = (checkpoint1 || checkpoint2);
+              
+              if(checkpoint==true)
+              {
+               $('#checkEndpoint').css('display','inline');
+               $('#background-shadow').css('display','inline');
+               $('#MyRateModal').css('display','none');
+               
+              }
+              if(checkpoint==false)
+              {
+              $('#checkEndpoint').css('display','none');
+              $('#background-shadow').css('display','none');
+              $('#MyRateModal').css('display','inline');
+              }
+              
+             
+            }           
+    
+    
+    </script>    
+    
+    <style>
+        svg:not(:root) {
+            overflow: visible;
+        }
+        svg:not(:root) {
+            max-height:100%
+        }
+        .My-div{width:190px;height:auto ! important;}
+        .My-div p{
+        width:190px;
+        height: auto ! important;
+        /*white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;*/
+        padding: 3px;
+        }
+        .tipsy{left:50!important;top:400!important;}
+         svg{position: relative;}
+         @-moz-document url-prefix() { 
+          svg{position: relative;top: 0px;}
+        }
+        .slds-checkbox--toggle{position: relative;z-index:100;}
+        .Break-Line{
+            line-height: 11px;
+            padding-top: 2px !important;
+            padding-bottom: 2px !important;
+        }
+        .breakLine{display:block;}
+        .FeedbackText{
+    	color:rgb(6,147,214);
+        width:200px;
+    	font-weight:200;
+		}
+    </style>
+    <div class="header-bottom">
+        <div class="column" style="left: 5px;top: 5px;"  >{!$Label.BO}</div>
+<div class="column" style="left: 275px;top: 5px;" >{!$Label.BVL}</div>
+<div class="column" style="left: 512px;top: 5px;" >{!$Label.BI}</div>
+<div class="column" style="left: 790px;top: 5px;" >{!$Label.BVD}</div>
+<div class="column" style="left: 1030px;top: 5px;" >{!$Label.KPI}</div><!--983p-->
+        <div class="column" style="left: 1290px;top: 5px;" >{!$Label.Cloud}<br/>
+            <div id="FeedbackText" class="FeedbackText" onclick="event.preventDefault();removeAllErrors();resetRateModal();document.getElementById('MyRateModal').style.display='inline';hideFeedback();return false;">
+                Let us know if you want more detail
+            </div>
+        </div><!--1247-->
+<!--<div class="column" style="left: 1635px;top: 5px;">{!$Label.Capability}</div>-->
+<!--<div class="column" style="left: 1915px;top: 5px;">{!$Label.Feature}</div>-->
+    <div id="focus" style="float:left;margin-top: 41px;margin-left: 25px;">
+      <!--  <div>
+            <img  id="visibilityToggle" src="{!URLFOR($Resource.VCMResource,'/eye.png')}" onclick="toggleUnselectedNodeVisibility()" style="opacity: 1;height: 38px;" />
+        </div>
+        <div>
+            View Selected
+        </div>-->
+        <div class="slds-form-element">
+          <label class="slds-checkbox--toggle slds-grid">
+            <span class="slds-form-element__label slds-m-middle--none" style="margin-top: 3px;">View Selected</span>
+            <input name="checkbox" type="checkbox" aria-describedby="toggle-desc" onchange="toggleUnselectedNodeVisibility()"/>
+            <span id="toggle-desc" class="slds-checkbox--faux_container" aria-live="assertive">
+              <span class="slds-checkbox--faux"></span>
+              <!--<span class="slds-checkbox--on">Enabled</span>
+              <span class="slds-checkbox--off">Disabled</span>-->
+            </span>
+          </label>
+        </div>
+    </div>
+</div>
+    
+    <div class="treeContainer" style="margin-left:150px;width:1000px"></div>
+    <div class="header-bottom">
+        <div class="column" style="left: 5px;top:2px;" >{!$Label.BO}</div>
+        <div class="column" style="left: 275px;top:2px;" >{!$Label.BVL}</div>
+        <div class="column" style="left: 512px;top:2px;" >{!$Label.BI}</div>
+        <div class="column" style="left: 790px;top:2px;" >{!$Label.BVD}</div>
+        <div class="column" style="left: 1030px;top:2px;" >{!$Label.KPI}</div>
+        <div class="column" style="left: 1290px;top:2px;" >{!$Label.Cloud}<br/>
+        	
+        </div><!---->
+        <!--div class="column" style="left: 1635px;top:2px;">{!$Label.Capability}</div-->
+        <!--div class="column" style="left: 1915px;top:2px;">{!$Label.Feature}</div-->
+    </div><br/><br/>
+    <script type="text/javascript"  src="{!URLFOR($Resource.VCMResource,'/d3.v3.min.js')}" />
+    <script type="text/javascript">
+         var winheight;
+    $(window).resize(function() {
+        //$('.treeContainer').css('margin-left','110px');
+        winheight=$(window).height()-110;
+        });
+        if('{!$User.UIThemeDisplayed}'!='Theme4d'){
+       winheight=$(window).height()-220;
+            }
+        else {
+       winheight=$(window).height()-110;     
+        }
+    var root,link,links;  
+    var unselectedVisible = true;
+    var rootOriginal = {};
+    // updated by AES to get dynamic data from the Apex controller   
+    var margin = {top: 20, right: 20, bottom: 20, left: 200},
+        width = 1000  - margin.right - margin.left,
+        height = winheight- margin.top - margin.bottom;
+    var boxWidth = 130,
+        boxHeight = 25;        
+    var i = 0,
+        duration = 550,//MB: Changed this from 750 to 550 because i want the animation to be quick
+        root;
+    var duration2=150;//MB: Added this new attribute because i wan't the opening animation slower than the exiting one
+    var tree = d3.layout.tree()
+    .size([height, width]);
+    
+    
+    
+    var flare = '{!JSONString}';
+    
+     var svg = d3.select(".treeContainer").append("svg")  
+    .attr("width", width + margin.right + margin.left)
+    .attr("height", height+ margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + (-60)+ "," + (20) + ")"); 
+    
+    root = JSON.parse(flare);
+    root.x0 = (height-300) / 2;    
+    root.y0 = -winheight;
+    
+    function collapse(d) {
+        
+        
+        if (d.children) {
+            d._children = d.children;
+            d._children.forEach(collapse);
+            d.children = null;
+        }
+    }
+    
+    root.children.forEach(collapse);
+    
+    update(root);
+    updateTree();
+    update(root);
+   
+
+    function update(source) {
+        // Compute the new tree layout.
+        console.log('here is it again'+source);
+        var nodes = tree.nodes(root).reverse(),
+            links = tree.links(nodes);
+        
+        // Normalize for fixed-depth.
+        nodes.forEach(function(d) { 
+            d.y = d.depth * 255;
+        });
+        
+        
+        
+        // Update the nodes…
+        var node = svg.selectAll("g.node")
+        .data(nodes, function(d) { 
+            
+            
+            return d.id || (d.id = ++i); });
+        
+        // Enter any new nodes at the parents previous position.
+        var nodeEnter = node.enter().append("g")
+        .attr("class", "node")
+        .attr("transform", function(d) {console.log('sooouurce'+source); return "translate(" + d.y + "," + d.x + ")"; })
+        .on("click", click);
+        
+        nodeEnter.append("foreignObject")
+        .attr("transform","translate(-95,-15)")
+        .attr("width", 190)
+        .attr("height", 25)
+      
+        .append('xhtml:div')
+        .on({"click":  function() { setTimeout(function(){updateHeight();}, 1000);},})
+        .style('text-align','center')
+        .style('vertical-align','middle')
+        .style('font-size','10px')
+        .style('border','1px solid #cdcdcd' )
+        .style('color',function(d) { return d._children  ? "white" : "black"; })
+        .style("background-color", function(d) { return d._children ? "#2a94d6" : "#fff"; })
+        .append('xhtml:p')
+        .on({"click":  function(d) { setTimeout(function(){updateTree(); update(d);}, winheight);},})
+        .html(function(d) { 
+            return d.name; 
+        });
+        
+        
+    
+        
+        
+        // Transition nodes to their new position.
+        var nodeUpdate = node.transition()
+        .duration(duration)
+        .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+        
+        nodeUpdate.select("foreignObject")
+        .select("div")
+        .attr("transform","translate(-95,-15)")
+        .attr("width", 130)
+        .attr("height", 800) 
+        //.attr( "class" , "My-div")
+        .attr('class',function(d) {
+                if(d.selected==true)
+                {
+                    return  "My-div off depth"+d.depth;
+                } 
+                else
+                {
+                    return "My-div on depth"+d.depth;
+                }
+        
+        })
+        .attr("min-height", 25)
+        .style('color',function(d) {
+        
+            if(d.depth==5){
+                console.log("depth 1: " +d.depth);
+                if(d.selected==true)
+                {
+                    return  "white";
+                } 
+                else
+                {
+                    return "black";
+                }
+            }
+            
+            
+            
+            return d._children ? "black" : "white"; })
+            .style('border','1px solid #cdcdcd' )
+            .style("background-color", function(d) { if(d.depth==5){
+            if(d.selected==true)
+            {
+                return  "#2a94d6";
+                
+            } 
+            else
+            {
+                return "#fff";
+            }
+        };
+                                                return d._children ? "#fff" : "#2a94d6"; });
+        
+        // Transition exiting nodes to the parents new position.
+        
+        var nodeExit = node.exit().transition()
+        .duration(duration2)
+        .attr("transform", function(d) {return "translate(" + d.y + "," + d.x + ")"; })//MB: Changed root by Y to remove thant undesired animation from the root
+        .remove();
+        
+        nodeExit.select("foreignObject")
+        .select("div")
+        .attr("transform","translate(-150,-30)")
+        .style('border','1px solid #cdcdcd' )
+        .style("background-color", function(d) {  return d._children ? "#fff" : "#2a94d6"; })
+        .style('color',function(d) { return d._children ? "black" : "white"; });
+        
+        // Update the links…
+         link = svg.selectAll("path.link")
+        .data(links, function(d) { return d.target.id;});
+        
+        
+        
+        
+        // Enter any new links at the parent's previous position.
+        // Add new links    
+        link.enter().append("path")
+        .attr("class", "link");
+        
+        // Remove any links we don't need anymore
+        // if part of the tree was collapsed
+        link.exit().remove();
+        
+        // Update the links positions (old and new)
+        
+        link.transition().duration(duration).attr("d", elbow);
+        svg.selectAll("path.link")
+        .attr("transform", "translate(0,0)");
+        
+        //edit -35 to -20
+        
+        // Stash the old positions for transition.
+        nodes.forEach(function(d) {
+            d.x0 = d.x;
+            d.y0 = d.y;
+        });
+    }
+    
+
+    
+    // Toggle children on click.
+    function click(d) {      
+        if (d.children) {
+             d._children = d.children;
+             d.children = null;
+        } else {
+            d.children = d._children;
+            d._children = null;
+        }
+        console.log("depth 2: " +d.depth);
+        
+        if(d.depth==5)
+        
+        {
+            if(d.selected)
+            {
+                d.selected=false;
+            }
+            else
+            {
+                d.selected = true;
+            }
+            
+        }    
+        update(d);
+        
+        
+    }
+    
+    function elbow(d) {
+        
+        var sourceX = d.source.x,
+            sourceY = d.source.y + (boxWidth / 2),
+            targetX = d.target.x,
+            targetY = d.target.y - (boxWidth / 2);
+        
+       
+       var targY = (d.target.y - (boxWidth / 2)) - 30;
+       
+       
+        return "M" + sourceY + "," + sourceX
+        + "H" + (sourceY  + (targetY-sourceY)/2) 
+        + "V" + targetX 
+        + "H" + targY;
+ 
+    }
+    
+    function removeParentProp(elem) {
+        delete elem.parent;
+        
+        if(elem.children)
+            elem.children.forEach(removeParentProp);
+        if(elem._children)
+            elem._children.forEach(removeParentProp);
+    }
+    
+    function hideUnselected(elem) {
+        delete elem.parent;
+        if(elem.children!=null)
+        {
+            
+            for(var i = 0; i < elem.children.length; i++) {
+                if(elem.children[i].depth)
+                {
+                    if(elem.children[i].depth==5)
+                    {
+                        if(elem.children[i].selected==true)
+                        {
+                            hideUnselected(elem.children[i]);
+                            
+                            
+                        }
+                        else
+                        {
+                            elem.children.splice(i, 1);
+                            i--; 
+                                      
+                        }
+                    }
+                    
+                    else
+                    {   
+                        if(elem.children[i]._children) {
+                            elem.children.splice(i, 1);
+                            i--;
+                        } else {
+                            hideUnselected(elem.children[i]);
+                            
+                        }
+                    }
+                }
+            }
+        }
+        d3.selectAll('foreignObject div P').on("click")();
+   
+   
+        
+    }
+    
+   function toggleUnselectedNodeVisibility() {
+    if(unselectedVisible) {
+        removeParentProp(root);
+        rootOriginal = JSON.stringify(root);
+        hideUnselected(root);
+    } else {
+        root = JSON.parse(rootOriginal);
+    }
+  
+    update(root);
+    unselectedVisible = !unselectedVisible;
+    //document.getElementById("visibilityToggle").style.opacity = unselectedVisible ? 1 : 0.2;
+    d3.selectAll('foreignObject div P').on("click")();
+   }
+    
+  
+    window.onload = function() {
+        updateHeight();
+    }
+    var updateHeight = function(){
+        d3.selectAll('svg .My-div').each(function() {
+            var offest = this.getBoundingClientRect();
+            var parent = d3.select(this.parentNode);
+            parent.attr("height", +offest.height);
+            
+            /*$('.My-div').tipsy({ 
+                    gravity: 'w', 
+                    html: true, 
+                    title: function() {
+                        return '<span >'+$(this).html()+'</span>'; 
+                    }
+                });*/
+            });
+    }
+
+        function  updateTree(){
+           //$("svg").hide();
+           var _dh = 0,_gm = 0,supHeight = 0,supH = 0;
+            margin = {top: 20, right: 20, bottom: 20, left: 200},
+            wd = 1490 - margin.right - margin.left ;
+            
+                var branchHeight = {};
+                
+                branchHeight.depth0 = 0;
+                branchHeight.depth1 = 0;
+                branchHeight.depth2 = 0;
+                branchHeight.depth3 = 0;
+                branchHeight.depth4 = 0;
+                
+
+            d3.selectAll('svg .on p').each(function() {
+            
+                var BreakLine =  d3.select(this).selectAll('span').size();
+            
+               $("p").click(function( event ) {
+             
+        
+                   var t = $(this).offset().top;
+                   $(window).scrollTop(t);
+              
+              
+                });
+                
+                console.log("BreakLine : " +BreakLine);
+                var offest = this.getBoundingClientRect();
+                var _outerH = $(this).outerHeight();
+                var _cH =  offest.height;
+                var _ht = parseFloat((_cH/100)*5);
+                
+                /*if (BreakLine == 0) {
+                     _cH =_cH  - 8;
+                }else{
+                     _cH = _cH  +(_ht*BreakLine);
+                     console.log('_cH supper height '+_cH );
+                }*/
+                
+                console.log("toffest : " +_cH);
+                supHeight = BreakLine * 5;
+                console.log("supHeight : " +supHeight );
+                _dh = parseFloat(_dh) + parseFloat(_cH);
+                
+       
+                //var _temp = parseFloat(_cH) + parseFloat(supHeight);
+                
+                //_dh = parseFloat(_dh) + parseFloat(_cH) - parseFloat((_cH/100)*10);
+                
+                _dh = parseFloat(_dh) + parseFloat(_cH) + parseFloat((_dh/100)*1); 
+                if (BreakLine > 0) {
+                    d3.select(this).attr("class","Break-Line");
+                }
+                d3.select(this).attr("data",+_gm);
+                
+                if (BreakLine > 0) {
+                   supH = parseFloat(supH) + parseFloat((BreakLine * 10)) + parseFloat(_outerH);
+                   
+                }
+               /*@Title	 			Code Change By Maryem Bourhi
+                *@Desc		 		Added a condition to when the view is selected to adjust the width so the user doest have to scroll
+                *@Concerned Lines	from the next if to the end of code comment	
+                */
+                
+                
+                if(!unselectedVisible){
+                  console.log("branchHeight view selected inside : " +branchHeight.depth0);
+                   branchHeight.depth0 = 50;
+    
+                }//end of code Maryem
+                else if(d3.select(this.parentNode).classed("depth0")){
+                  console.log("branchHeight 0 inside : " +branchHeight.depth0);
+                   branchHeight.depth0 = parseFloat(_outerH) + parseFloat(branchHeight.depth0) +  parseFloat((_outerH/100)*80);
+    
+                }else if(d3.select(this.parentNode).classed("depth1") === true){
+                 console.log("branchHeight 1 inside : " +branchHeight.depth1);
+                  branchHeight.depth1 = parseFloat(_outerH) + parseFloat(branchHeight.depth1) +  parseFloat((_outerH/100)*80);  
+                }else if(d3.select(this.parentNode).classed("depth2")){
+                   console.log("branchHeight 2 inside : " +branchHeight.depth2);
+                   branchHeight.depth2 = parseFloat(_outerH) + parseFloat(branchHeight.depth2) +  parseFloat((_outerH/100)*80);
+                   
+                }else if(d3.select(this.parentNode).classed("depth3") === true){
+                console.log("branchHeight 3 inside : " +branchHeight.depth3);
+                    branchHeight.depth3 = parseFloat(_outerH) + parseFloat(branchHeight.depth3) +  parseFloat((_outerH/100)*80)+40;// MB: +40 Added to avoid text overlaping with footer titles
+                    
+                }else if(d3.select(this.parentNode).classed("depth4") === true ){
+                console.log("branchHeight 4 inside : " +branchHeight.depth4);
+                  branchHeight.depth4 = parseFloat(_outerH) + parseFloat(branchHeight.depth4) +  parseFloat((_outerH/100)*80);
+                    
+                }        
+                _gm++;
+            });
+            var _oldh = winheight;
+
+            if(_dh < winheight) {
+                $("svg").attr("height",winheight);
+                _dh = winheight;
+            }
+            
+            var max = Math.max(branchHeight.depth0, branchHeight.depth1, branchHeight.depth2, branchHeight.depth3, branchHeight.depth4);
+            
+            
+            max = parseFloat(max) + parseFloat(supH*3);
+            console.log("branchMax : " +max);
+            
+            if(max < winheight) {
+                $("svg").attr("height",winheight);
+                max = winheight;
+            }
+            
+            if(max > 0){
+            
+                $("svg").attr("height",max);
+                tree = d3.layout.tree().size([max, wd]);
+            }
+            
+              
+                
+        }
+        
+        
+       
+              $("p").click(function( event ) {
+                   var t = $(this).offset().top;
+                   $(window).scrollTop(t);
+              
+                });
+                
+function EnableDisableContactInfo(){
+                //Disable
+                if($('#checkbox-No').prop("checked")){
+                    $("#ContactInfo").css("color","lightgray");
+                    $("#NameAndCompany").css("color","lightgray");
+                    $("#myAvatar").addClass("grayedOut");
+                    }
+                //Enable
+                else{
+                    $("#ContactInfo").css("color","#54698d"); 
+                    $("#NameAndCompany").css("color","#0070d2");
+                    $("#myAvatar").removeClass("grayedOut");   
+                    }
+                }
+             function resetRateModal(){
+                 $("#star1").prop("checked",false);
+                 $("#star2").prop("checked",false);
+                 $("#star3").prop("checked",false);
+                 $("#star4").prop("checked",false);
+                 $("#star5").prop("checked",false);
+                 $("#star6").prop("checked",false);
+                 $("#star7").prop("checked",false);
+                 $("#star8").prop("checked",false);
+                 $("#star9").prop("checked",false);
+                 $("#star10").prop("checked",false);
+                 $("#star11").prop("checked",false);
+                 $("#star12").prop("checked",false);
+                 $("#star13").prop("checked",false);
+                 $("#star14").prop("checked",false);
+                 $("#star15").prop("checked",false);
+                 $('#checkbox-yes').prop("checked",true)
+                 $("#ContactInfo").css("color","#54698d"); 
+                 $("#NameAndCompany").css("color","#0070d2");
+                 $("#myAvatar").removeClass("grayedOut");
+                 $('#textarea-comments').val('');
+                 
+                 }
+             function CheckForm(){
+                 var result=true;
+                 //Checking fot value
+                 if(!$("#star1").prop("checked") && !$("#star2").prop("checked") && !$("#star3").prop("checked") && !$("#star4").prop("checked") && !$("#star5").prop("checked")){
+                     $("#GeneralError").html("<div id='GeneralError' style='font-weight:normal;color:#c23934'>Feedback could not be submitted. <br/> Please complete the feedback below.</div>");
+                     $("#ValueError").text("Rate the value this app provides");
+                     result=false;
+                     }
+                 if(!$("#star6").prop("checked") && !$("#star7").prop("checked") && !$("#star8").prop("checked") && !$("#star9").prop("checked") && !$("#star10").prop("checked")){
+                     $("#GeneralError").html("<div id='GeneralError' style='font-weight:normal;color:#c23934'>Feedback could not be submitted. <br/> Please complete the feedback below.</div>");
+                     $("#InstallationError").text("Rate the ease of installation");
+                     result=false;
+                     }
+                 if(!$("#star11").prop("checked") && !$("#star12").prop("checked") && !$("#star13").prop("checked") && !$("#star15").prop("checked") && !$("#star14").prop("checked")){
+                     $("#GeneralError").html("<div id='GeneralError' style='font-weight:normal;color:#c23934'>Feedback could not be submitted. <br/> Please complete the feedback below.</div>");
+                     $("#DocumentationError").text("Rate the documentation");
+                     $("#FeedbackCom").css("margin-top","10px");
+                     result=false;
+                     }
+                 return result;
+                 }
+            function removeAllErrors(){
+              $("#FeedbackCom").css("margin-top","49px");
+              $("#GeneralError").text("");
+              $("#DocumentationError").text(""); 
+              $("#InstallationError").text("");
+              $("#ValueError").text("");
+                }
+            function SubmitForm(){
+                var Value="0"; 
+                var Installation="0";
+                var Documentation="0";
+                if(CheckForm()){
+                    //Get Value
+                    if($("#star5").prop("checked")){
+                        Value="5";
+                        }
+                    else if($("#star4").prop("checked")){
+                        Value="4";
+                        }
+                    else if($("#star3").prop("checked")){
+                        Value="3";
+                        }
+                    else if($("#star2").prop("checked")){
+                        Value="2";
+                        }
+                   else  if($("#star1").prop("checked")){
+                        Value="1";
+                        }
+                    //Installation
+                    if($("#star10").prop("checked")){
+                        Installation="5";
+                        }
+                    else if($("#star9").prop("checked")){
+                        Installation="4";
+                        }
+                    else if($("#star8").prop("checked")){
+                        Installation="3";
+                        }
+                    else if($("#star7").prop("checked")){
+                        Installation="2";
+                        }
+                   else  if($("#star6").prop("checked")){
+                        Installation="1";
+                        }
+                    //Documentation
+                    if($("#star15").prop("checked")){
+                        Documentation="5";
+                        }
+                    else if($("#star14").prop("checked")){
+                        Documentation="4";
+                        }
+                    else if($("#star13").prop("checked")){
+                        Documentation="3";
+                        }
+                    else if($("#star12").prop("checked")){
+                        Documentation="2";
+                        }
+                   else  if($("#star11").prop("checked")){
+                        Documentation="1";
+                        }
+                    SubmitTheForm(Value,Documentation,Installation,$('#textarea-comments').val(),$('#checkbox-No').prop("checked"));
+                    }
+                }
+    
+    </script>
+    <apex:form >
+     <apex:actionFunction name="SubmitTheForm" action="{!submitFeedback}" rerender="" Oncomplete="if('{!FeedbackResult}'){document.getElementById('SuccessToast').style.display='inline';document.getElementById('MyRateModal').style.display='none';return false;}else {document.getElementById('FailToast').style.display='inline'}" status="Feedbackstatus"> 
+                <apex:param name="Value" id="Value"  value="" />  
+                <apex:param name="Documentation" id="documentation"  value="" />
+                <apex:param name="installation" id="installation"  value="" />  
+                <apex:param name="comments" id="comments"  value="" /> 
+                <apex:param name="ContactMe" id="ContactMe"  value="" />
+            </apex:actionFunction>
+            
+            
+            
+            
+        <apex:outputPanel id="RatePanel">
+                <!--Toast -->
+
+<!-- Check Endpoint -->
+<div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" id="checkEndpoint" style="display:none;">
+  <div class="slds-modal__container">
+    <div class="slds-modal__header" style="border-bottom:0px;padding:0.5%;">
+      <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="removeCheckpoint();">
+        <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+<use xlink:href="{!URLFOR($Resource.lightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>        </svg>
+        <span class="slds-assistive-text">Close</span>
+      </button>
+      <h2 id="header43" class="slds-text-heading--medium"></h2>
+    </div>
+    <div class="slds-modal__content slds-p-around--medium">
+      <div style="font-family:'Salesforce Sans'">
+
+Hi there. It looks like you haven't set up {!IF((checkEndPoint1 && checkEndPoint2),'two','the')}  remote site{!IF((checkEndPoint1 && checkEndPoint2),'s','')} settings. Before you can submit any feedback, you'll need to set up them. You can learn more about remote site settings <a href="{!helpLink}" target="blank">  here</a>.
+<br/><br/>
+To create your remote site setting, please complete the following steps.  
+<br/><br/>
+
+1 - From Setup, enter Remote Site Settings in the Quick Find box and then select Remote Site Settings.<br/>
+2 - Click New Remote Site.<br/>
+3 - Enter the following value :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site Name : ValueMapperRemoteSite1<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site URL :<a href="{!IF((checkEndPoint1 && checkEndPoint2),Enpoint1,IF(checkEndPoint1,Enpoint1,Enpoint2))}" target="blank">{!IF((checkEndPoint1 && checkEndPoint2),Enpoint1,IF(checkEndPoint1,Enpoint1,Enpoint2))}</a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+4 - Click Save.<br/>
+<span style="display:{!IF((checkEndPoint1 && checkEndPoint2),'','none')};">
+5 - Click New Remote Site again.<br/>
+6 - Enter the following value :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site Name : ValueMapperRemoteSite2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site URL : <a href="{!IF((checkEndPoint1 && checkEndPoint2),Enpoint2,IF(checkEndPoint1,Enpoint1,Enpoint2))}" target="blank">{!IF((checkEndPoint1 && checkEndPoint2),Enpoint2,IF(checkEndPoint1,Enpoint1,Enpoint2))}</a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+7 - Click Save.<br/>
+</span>
+
+<br/>
+
+
+
+Once you're done, go back to the Value Mapper tab and click the Feedback button. You will no longer see this message.  
+
+
+      </div>
+    </div>
+  </div>
+  
+</div>
+      
+   
+<div id="background-shadow" class="slds-backdrop slds-backdrop--open" style="display:none;"></div>     
+
+
+<!-- -->
+                     <div class="slds-notify_container" id="SuccessToast" style="display:none">
+                      <div class="slds-notify slds-notify--toast" role="alert">
+                        <span class="slds-assistive-text">Error</span>
+                        <button class="slds-button slds-notify__close slds-button--icon-inverse" onClick="document.getElementById('SuccessToast').style.display='none';return false" >
+                          <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large" style="margin-bottom: -20px;">
+                            <use xlink:href="{!URLFOR($Resource.LightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                          </svg>
+                          <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <div class="slds-notify__content slds-grid">
+                          <div aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                            <img src="{!URLFOR($Resource.LightningRes, '/assets/icons/utility/check_120.png')}" />
+                          </div>
+                          <div class="slds-col slds-align-middle">
+                            <h2 class="slds-text-heading--small" style="color:white;font-family: 'Salesforce Sans',Arial,sans-serif !important;">Your feedback has been submitted. Thank you!</h2>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                <!--Success Toast -->
+                <!--FailToast-->
+                    <div class="slds-notify_container" id="FailToast" style="display:none">
+                      <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+                        <span class="slds-assistive-text">Error</span>
+                        <button class="slds-button slds-notify__close slds-button--icon-inverse" onClick="document.getElementById('FailToast').style.display='none';return false" >
+                          <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                            <use xlink:href="{!URLFOR($Resource.LightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                          </svg>
+                          <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <div class="slds-notify__content slds-grid">
+                          <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                            <use xlink:href="{!URLFOR($Resource.LightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                          </svg>
+                          <div class="slds-col slds-align-middle">
+                            <h2 class="slds-text-heading--small">You encountered some errors when trying to save your feedback.</h2>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                <!--End toasts-->
+                
+        <!--FeedBack Mechanism-->
+         <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open RateModal" id="MyRateModal" style="display:none">
+          <div class="slds-modal__container">
+            <div class="slds-modal__header rate-modal__header" >
+              
+              <h2 id="header43" class="slds-text-heading--x-small" style="font-family: 'Salesforce Sans',Arial,sans-serif !important;font-weight:500;margin-left:15px;margin-right:28px;font-size: 1em;">We appreciate your feedback!</h2>
+            </div>
+            <div class="slds-modal__content slds-p-around--medium" style="box-shadow: 0px -3px 10px -1px rgba(0,0,0,.16)">
+              <div style="margin-left:15px;margin-right:-16px">
+                  <div id="GeneralError" style="color:rgb(198,71,66);font-size: 13px;"></div><br/>
+                  <label class="slds-form-element__label On-the-scale-of-15 ">On the scale of 1-5, please rate these aspects of the app:</label><br/><br/>
+                  <label class="slds-form-element__label" style="font-weight:normal" for="Easestar5">The value this app provides:</label>  <br/>                                          
+                  
+                  <fieldset class="rating" name="value">
+                        <input type="radio" id="star5" name="rating" value="5" /><label class = "full" for="star5" title="Awesome - 5 stars"></label>
+                        <input type="radio" id="star4" name="rating" value="4" /><label class = "full" for="star4" title="Pretty good - 4 stars"></label>
+                        <input type="radio" id="star3" name="rating" value="3" /><label class = "full" for="star3" title="Meh - 3 stars"></label>
+                        <input type="radio" id="star2" name="rating" value="2" /><label class = "full" for="star2" title="Kinda bad - 2 stars"></label>
+                        <input type="radio" id="star1" name="rating" value="1" /><label class = "full" for="star1" title="Sucks big time - 1 star"></label>
+                    </fieldset>
+                  <label class="slds-form-element__label" id="ValueError" style="font-weight:normal;color:rgb(198,71,66);font-size: 13px;margin-top: -13px;margin-bottom: 6px;"></label>
+
+                       <label class="slds-form-element__label" for="Easestar5" style="font-weight:normal">The ease of installation:</label>                      
+                  <fieldset class="rating2" name="Ease">
+                        <input type="radio" id="star10" name="rating2" value="5" /><label class = "full" for="star10" title="Awesome - 5 stars"></label>
+                        <input type="radio" id="star9" name="rating2" value="4" /><label class = "full" for="star9" title="Pretty good - 4 stars"></label>
+                        <input type="radio" id="star8" name="rating2" value="3" /><label class = "full" for="star8" title="Meh - 3 stars"></label>
+                        <input type="radio" id="star7" name="rating2" value="2" /><label class = "full" for="star7" title="Kinda bad - 2 stars"></label>
+                        <input type="radio" id="star6" name="rating2" value="1" /><label class = "full" for="star6" title="Sucks big time - 1 star"></label>
+                  </fieldset>
+                  <label class="slds-form-element__label" id="InstallationError" style="font-weight:normal;color:rgb(198,71,66);font-size: 13px;margin-top: -13px;margin-bottom: 6px;"></label>
+
+                       <label class="slds-form-element__label" for="Docstar5" style="font-weight:normal">The usefulness of the documentation:</label>
+                  
+                  <fieldset class="rating3" name="documentation">
+                        <input type="radio" id="star15" name="rating3" value="5" /><label class = "full" for="star15" title="Awesome - 5 stars"></label>
+                        <input type="radio" id="star14" name="rating3" value="4" /><label class = "full" for="star14" title="Pretty good - 4 stars"></label>
+                        <input type="radio" id="star13" name="rating3" value="3" /><label class = "full" for="star13" title="Meh - 3 stars"></label>
+                        <input type="radio" id="star12" name="rating3" value="2" /><label class = "full" for="star12" title="Kinda bad - 2 stars"></label>
+                        <input type="radio" id="star11" name="rating3" value="1" /><label class = "full" for="star11" title="Sucks big time - 1 star"></label>
+                    </fieldset>
+                  <label class="slds-form-element__label" id="DocumentationError" style="font-weight:normal;color:rgb(198,71,66);font-size: 13px;margin-top: -13px;"></label>
+                    <div class="slds-form-element" style="margin-top: 49px;" id="FeedbackCom">
+                      <label class="slds-form-element__label" for="textarea-comments" style="font-weight:normal;">Additional feedback:</label>
+                      <div class="slds-form-element__control" >
+                        <textarea id="textarea-comments" class="slds-textarea" style=" width: 250px; height: 108px;" placeholder="Comments"></textarea>
+                      </div>
+                    </div>
+                  <br/>
+                  <label class="slds-form-element__label On-the-scale-of-15 ">Let us know who you are so we can follow up with questions.</label><br/><br/>
+                  <label class="slds-form-element__label" style="margin-right: -1.25rem;font-weight:normal" >We won't use your name or contact information for any purpose other than learning more about your feedback.</label>
+                  <br/>
+                  <div>
+                      <!--Contact Informations-->
+                      
+                      <div class="slds-tile slds-media" >
+                          <div class="slds-media__figure"><br/>
+                        <span class="slds-avatar slds-avatar--circle slds-avatar--medium">
+                          <img id="myAvatar" style="max-width: 106%;" src="{!CurrentUser.FullPhotoUrl}" alt="Person&#x27;s name" />
+                        </span>
+                      </div>
+                          <div class="slds-media__body"><br/>
+                        <h3 class="slds-truncate" title="Katie Nealan - Tesla Motors" style="margin-left:15px;color:#0070d2;font-size: 1em;" id="NameAndCompany">{!CurrentUser.FirstName} {!CurrentUser.LastName} - {!CurrentUser.CompanyName}</h3>
+                        <div class="slds-tile__detail slds-text-body--small">
+                          <ul class="slds-list--horizontal slds-has-dividers--right">
+                              <li id="ContactInfo" class="slds-item" >{!CurrentUser.Email}  <br/>{!CurrentUser.MobilePhone}</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                      <br/>
+                       <div class="slds-form-element__control">  
+                        <label class="slds-radio">
+                          <input type="radio" name="options" id="checkbox-yes" checked="true" Onchange="EnableDisableContactInfo();" />
+                          <span class="slds-radio--faux"></span>
+                           <span class="slds-form-element__label" style="font-weight:normal">Yes, you can contact me</span>
+                        </label>
+                        </div>
+                    <div class="slds-form-element__control">  
+                        <label class="slds-radio">
+                          <input type="radio" name="options" id="checkbox-No" Onchange="EnableDisableContactInfo();" />
+                          <span class="slds-radio--faux"></span>
+                           <span class="slds-form-element__label" style="font-weight:normal">No, I prefer to be anonymous</span>
+                        </label>
+                        </div>
+                  </div>
+                  <br/>
+                   <apex:actionStatus id="Feedbackstatus">
+                    <apex:facet name="start">
+                    <div style="position: fixed; left: 0; top: 30%; bottom: 0; right: 0; z-index: 1001; margin: 15% 50%">
+                      <div style="display: inline-block; padding: 2px;  width: 180px;">
+                        <div class="slds-spinner--medium">
+                          <img src="{!URLFOR($Resource.LightningRes, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                        </div>
+                      </div>
+                    </div>
+                  </apex:facet>
+                </apex:actionStatus>
+                 </div>
+            </div>
+            <div class="slds-modal__footer">
+              <button class="slds-button slds-button--neutral"  onclick="resetRateModal();removeAllErrors();document.getElementById('MyRateModal').style.display='none';return false;">Cancel</button>
+              <button class="slds-button slds-button--brand" Onclick="SubmitForm();return false;">Submit
+                
+                </button>
+                
+            </div>
+          </div>
+    </div>
+      
+        
+        </apex:outputPanel>
+        
+        <button class="slds-button slds-button--neutral RateButton" onclick="event.preventDefault();removeAllErrors();resetRateModal();document.getElementById('MyRateModal').style.display='inline';hideFeedback();return false;">
+            Feedback ★
+        </button>
+        <!--FeedBack Mechanism-->
+    </apex:form>
+   
+    </html> 
+</apex:page>
