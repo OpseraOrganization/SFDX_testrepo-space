@@ -1,0 +1,291 @@
+<aura:component controller="NCP_UpgradeMyServices_COM" implements="forceCommunity:availableForAllPageTypes"
+                access="global">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- Internal attributes -->
+    <aura:attribute name="isAuth" type="boolean" default="false"/>
+    <aura:attribute name="hasEntitlementRelationship" type="boolean" default="false"/>
+    <aura:attribute name="isInitialised" type="boolean" default="false"/>
+    <aura:attribute name="approvedServices" type="List" default="" description=""/>
+    <aura:attribute name="availableServices" type="List[]" default="" description=""/>
+    <aura:attribute name="availableServicesComment" type="String" default="" description=""/>
+    <aura:attribute name="otherServices" type="Object[]"/>
+    <aura:attribute name="otherServicesComment" type="String" default="" description=""/>
+    <aura:attribute name="availableServicesOther" type="Object" default="{}" description=""/>
+    <aura:attribute name="availableOtherSelectedProducts" type="List" default="[]" description=""/>
+
+    <!-- <aura:attribute name="products" type="sObject[]"/> -->
+    <aura:attribute name="contractName" type="String" default="" description=""/>
+    <aura:attribute name="productName" type="String" default="" description=""/>
+    <aura:attribute name="allDataLoaded" type="boolean" default="false"/>
+    <aura:attribute name="showOther" type="boolean" default="false"/>
+    <aura:attribute name="careSupportServicesOpen" type="boolean" default="true"/>
+    <aura:attribute name="otherServicesOpen" type="boolean" default="true"/>
+    <aura:attribute name="showSubmissionRequirements" default="false" type="boolean"/>
+    <aura:attribute name="isInternal" default="false" type="Boolean"/>
+    <aura:attribute name="isSubmittable" default="false" type="boolean"/>
+    <aura:attribute name="isSubmitted" type="boolean" default="false" description=""/>
+    <aura:attribute name="isSubmitting" type="boolean" default="false" description=""/>
+    <aura:attribute name="isOtherServicesSubmittable" default="false" type="boolean"/>
+    <aura:attribute name="isOtherServicesSubmitted" type="boolean" default="false" description=""/>
+    <aura:attribute name="isOtherServicesSubmitting" type="boolean" default="false" description=""/>
+
+    <aura:if isTrue="{!v.isInitialised}">
+
+        <aura:if isTrue="{!v.isAuth}">
+
+            <aura:if isTrue="{!v.hasEntitlementRelationship}">
+
+                <div class="ncp-text-headline_one ncp-text-color-main">{#$Label.c.NCP_upgrade_services_title}</div>
+                <span>{#$Label.c.NCP_RequestAccessInfo}</span>
+                <div class="slds-section slds-is-open">
+                    <h3 class="slds-section__title">
+                        <button id="careSupportServices" onclick="{!c.toggleSection}"
+                                aria-controls="expando-care-support-services" aria-expanded="true"
+                                class="slds-button slds-section__title-action">
+                            <lightning:icon
+                                    iconName="{!v.careSupportServicesOpen ? 'utility:chevrondown' : 'utility:chevronright'}"
+                                    size="x-small" class="slds-p-right_x-small"
+                                    alternativeText="{!v.careSupportServicesOpen ? 'Is open' : 'Is closed'}"/>
+                            <span class="slds-truncate" title="Section Title">{#$Label.c.NCP_upgrade_services_subtitle_care}</span>
+                        </button>
+                    </h3>
+                    <div aria-hidden="false"
+                         class="{!v.careSupportServicesOpen ? 'slds-is-relative slds-section__content slds-show' : 'slds-is-relative slds-section__content slds-hide'}"
+                         id="expando-care-support-services">
+                        <div class="{!(v.isSubmitting) ? 'slds-is-absolute slds-size_1-of-1 ncp-spinner-container slds-show' : 'slds-is-absolute slds-size_1-of-1 ncp-spinner-container slds-hide'}">
+                            <lightning:spinner size="large" alternativeText="Submitting..."/>
+                        </div>
+                        <div class="{!(v.isSubmitting) ? 'slds-hidden' : 'slds-visible'}">
+                            <aura:if isTrue="{!v.isSubmitted}">
+                                <c:NCP_LoginPrompt myType="login" myHeadline="{#$Label.c.NCP_upgrade_request_service}"
+                                                   myExplanation="{#$Label.c.NCP_upgrade_Request_Service_Description}"/>
+                            </aura:if>
+                            <!-- <aura:set attribute="else"> -->
+                            <p class="ncp-text-subheader slds-p-vertical_small slds-size_1-of-1 slds-medium-size_1-of-2">
+                                {#$Label.c.NCP_upgrade_description}
+                            </p>
+                            <aura:if isTrue="{!v.approvedServices.length != 0}">
+                                <h1 class="ncp-text-headline_three slds-p-top_medium slds-p-bottom_x-small">
+                                    {#$Label.c.NCP_upgrade_services_care_approved}</h1>
+                            </aura:if>
+                            <aura:if isTrue="{!v.allDataLoaded}">
+                                <ul class="slds-grid slds-wrap slds-p-left_small">
+                                    <aura:iteration items="{#v.approvedServices}" var="selServices">
+                                        <li class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-vertical_xx-small">
+                                            <lightning:icon class="slds-m-right_small" iconName="utility:check"
+                                                            size="x-small"/>
+                                            {#selServices}
+                                        </li>
+                                    </aura:iteration>
+                                </ul>
+                                <h1 class="ncp-text-headline_three slds-p-top_medium slds-p-bottom_x-small">
+                                    {#$Label.c.NCP_upgrade_services_care_available}</h1>
+                                <ul class="slds-grid slds-wrap">
+                                    <aura:iteration items="{!v.availableServices}" var="availableService">
+                                        <li class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-vertical_xx-small">
+                                            <lightning:input type="checkbox" class="slds-float_left"
+                                                             onchange="{!c.servicesHandler}"
+                                                             label="{#availableService.service.NCP_Title__c}"
+                                                             value="{#availableService.service.NCP_Title__c}"
+                                                             checked="{!availableService.isChecked}"/>
+                                            <lightning:helptext class="slds-float_left"
+                                                                content="{#availableService.service.NCP_Description__c}"/>
+                                        </li>
+                                    </aura:iteration>
+                                    <li class="slds-col slds-size_1-of-1 slds-p-vertical_xx-small">
+                                        <lightning:input type="checkbox" class="slds-float_left" label="Other" name=""
+                                                         checked="{!v.showOther}" onchange="{!c.servicesHandler}"/>
+                                        <lightning:helptext class="slds-float_left"
+                                                            content="{!v.isInternal ? $Label.c.NCP_upgrade_available_other_info_internal : '...'}"/>
+                                    </li>
+                                </ul>
+                                <aura:if isTrue="{!v.isInternal == true}">
+                                    <aura:if isTrue="{!v.showOther == true}">
+                                        <div class="slds-p-vertical_small">
+                                            {#$Label.c.NCP_upgrade_available_other_info_internal_primary}
+                                        </div>
+                                        <div>
+                                            <span class="slds-m-right_xx-small">{#$Label.c.NCP_upgrade_available_other_info_internal_stem}</span>
+                                            <lightning:formattedUrl value="http://idr1.web.alcatel-lucent.com/"
+                                                                    tooltip="Go to IDR"
+                                                                    label="{#$Label.c.NCP_upgrade_available_other_info_internal_leaf}"
+                                                                    target="_blank"/>
+                                        </div>
+                                    </aura:if>
+                                </aura:if>
+                            </aura:if>
+                            <!-- Display the form if other is checked -->
+                            <form class="slds-form--stacked slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-bottom_large">
+                                <div class="{!v.showOther ? 'slds-show' : 'slds-hide'}" aura:Id="ncp-otherDetail">
+                                    <aura:if isTrue="{!v.isInternal == false}">
+                                        <div class="slds-p-bottom_medium">{#$Label.c.NCP_upgrade_description2}</div>
+                                        <div class="slds-p-bottom_medium">{#$Label.c.NCP_upgrade_description3}</div>
+
+                                        <lightning:input label="Contract Number" aura:id="availableServiceOtherField"
+                                                         name="Contract Number"
+                                                         value="{!v.availableServicesOther.contractId}"
+                                                         class="slds-p-bottom_medium"
+                                                         placeholder="Please enter the contract number"
+                                                         messageWhenValueMissing="Please enter a contract number"/>
+                                        <c:NCP_ProductSearch aura:id="productSearch"
+                                                             selectedItems="{!v.availableOtherSelectedProducts}"/>
+                                    </aura:if>
+                                </div>
+                                <aura:if isTrue="{!v.isInternal == true}">
+
+                                    <div class="slds-p-top_large ">
+                                        {#$Label.c.NCP_upgrade_comment_name_internal}
+                                        <span>
+                                                <lightning:helptext content="{#$Label.c.NCP_Free_Text_Hint}"/>
+                                            </span>
+                                        <div style="margin-top: -20px;">
+                                            <lightning:textarea label=""
+                                                                aura:id="commentId"
+                                                                name="" maxlength="300"
+                                                                class="slds-p-top_large ncp-label_multiline"
+                                                                value="{!v.availableServicesComment}"
+                                                                placeholder="{#$Label.c.NCP_upgrade_comment_placeholder_internal}"
+                                                                messageWhenValueMissing="{#$Label.c.NCP_upgrade_comment_error_internal}"
+                                                                required="{!v.showOther}"/>
+                                        </div>
+                                    </div>
+                                    <aura:set attribute="else">
+                                        <!-- Standard comments box -->
+                                        <div class="slds-p-top_large ">
+                                            {#$Label.c.NCP_upgrade_comment_name}
+                                            <span>
+                                                <lightning:helptext content="{#$Label.c.NCP_Free_Text_Hint}"/>
+                                            </span>
+                                            <div style="margin-top: -20px;">
+                                                <lightning:textarea label=""
+                                                                    aura:id="commentId"
+                                                                    name="" maxlength="300"
+                                                                    class="ncp-label_multiline"
+                                                                    value="{!v.availableServicesComment}"
+                                                                    placeholder="{#$Label.c.NCP_upgrade_comment_placeholder}"
+                                                                    messageWhenValueMissing="Please provide additional comments"/>
+                                            </div>
+                                        </div>
+                                    </aura:set>
+                                </aura:if>
+                                <aura:if isTrue="{!v.showSubmissionRequirements}">
+                                    <div class="slds-has-error">
+                                        <div class="slds-form-element__help"
+                                             role="alert">{!v.isInternal ? $Label.c.NCP_upgrade_comment_error_internal : $Label.c.NCP_upgrade_error}</div>
+                                    </div>
+                                </aura:if>
+                                <div class="slds-size_1-of-1 slds-m-top_small">
+                                    <lightning:button variant="neutral" label="Cancel" onclick="{!c.handleCancel}"/>
+                                    <lightning:button aura:id="available" variant="brand" label="Submit"
+                                                      onclick="{!c.handleSubmit}" disabled="{!!v.isSubmittable}"/>
+                                </div>
+                            </form>
+                            <!-- </aura:set> -->
+
+                        </div>
+                    </div>
+                </div>
+                <!-- isExternal = {!!v.isInternal} -->
+                <aura:if isTrue="{!and(v.isInternal == false,not(empty(v.otherServices))) }">
+                    <!-- then must be external -->
+                    <div class="slds-section slds-is-open">
+                        <h3 class="slds-section__title">
+                            <button id="otherServices" onclick="{!c.toggleSection}"
+                                    aria-controls="expando-other-services" aria-expanded="true"
+                                    class="slds-button slds-section__title-action">
+                                <lightning:icon
+                                        iconName="{!v.otherServicesOpen ? 'utility:chevrondown' : 'utility:chevronright'}"
+                                        size="x-small" class="slds-p-right_x-small"
+                                        alternativeText="{!v.otherServicesOpen ? 'Is open' : 'Is closed'}"/>
+                                <span class="slds-truncate" title="Section Title">{#$Label.c.NCP_upgrade_services_subtitle_other}</span>
+                            </button>
+                        </h3>
+                        <p class="ncp-text-subheader slds-p-vertical_small slds-size_1-of-1 slds-medium-size_1-of-2">
+                            {#$Label.c.NCP_OtherServicesLine}
+                        </p>
+                        <div aria-hidden="false"
+                             class="{!v.otherServicesOpen ? 'slds-is-relative slds-section__content slds-show' : 'slds-is-relative slds-section__content slds-hide'}"
+                             id="expando-other-services">
+                            <div class="{!(v.isOtherServicesSubmitting) ? 'slds-is-absolute slds-size_1-of-1 ncp-spinner-container slds-show' : 'slds-is-absolute slds-size_1-of-1 ncp-spinner-container slds-hide'}">
+                                <lightning:spinner size="large" alternativeText="Submitting..."/>
+                            </div>
+                            <div class="{!(v.isOtherServicesSubmitting) ? 'slds-hidden' : 'slds-visible'}">
+                                <aura:if isTrue="{!v.isOtherServicesSubmitted}">
+                                    <c:NCP_LoginPrompt myType="login"
+                                                       myHeadline="{#$Label.c.NCP_upgrade_request_service}"
+                                                       myExplanation="{#$Label.c.NCP_upgrade_Request_Service_Description}"/>
+                                </aura:if>
+                                <!-- <aura:set attribute="else"> -->
+                                <!-- <p class="ncp-text-subheader slds-p-top_small slds-p-bottom_medium slds-size_1-of-1 slds-medium-size_1-of-2">
+                                    {#$Label.c.NCP_upgrade_Other_Services}
+                                </p> -->
+                                <div class="slds-grid slds-wrap slds-p-bottom_medium slds-size_1-of-1">
+                                    <aura:iteration items="{!v.otherServices}" var="otherService">
+                                        <div class="slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <div class="slds-p-vertical_xx-small">
+                                                <aura:if isTrue="{!otherService.disabled}">
+                                                    <lightning:input class="slds-float_left" checked="true"
+                                                                     disabled="true" type="checkbox"
+                                                                     label="{!otherService.title}" name=""/>
+                                                    <aura:set attribute="else">
+                                                        <lightning:input class="slds-float_left"
+                                                                         onchange="{!c.otherServicesHandler}"
+                                                                         type="checkbox"
+                                                                         checked="{!otherService.isChecked}"
+                                                                         value="{!otherService.title}"
+                                                                         label="{!otherService.title}" name=""/>
+                                                    </aura:set>
+                                                </aura:if>
+                                                <lightning:helptext class="slds-float_left"
+                                                                    content="{!otherService.title}"/>
+                                            </div>
+                                        </div>
+                                    </aura:iteration>
+                                </div>
+                                <div class="slds-p-vertical_xx-small slds-size_1-of-1 slds-medium-size_1-of-2">
+                                    <div class="slds-p-top_large ">
+                                        {#$Label.c.NCP_upgrade_comment_name}
+                                        <span>
+                                            <lightning:helptext content="{#$Label.c.NCP_Free_Text_Hint}"/>
+                                        </span>
+                                        <div style="margin-top: -20px;">
+                                            <lightning:textarea label=""
+                                                                aura:Id="comment2Id"
+                                                                name="" maxlength="300"
+                                                                value="{!v.otherServicesComment}"
+                                                                placeholder="{#$Label.c.NCP_upgrade_comment_placeholder}"
+                                                                class="ncp-label_multiline"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-size_1-of-1 slds-m-top_small">
+                                    <lightning:button variant="neutral" label="Cancel" onclick="{!c.handleCancel}"/>
+                                    <lightning:button aura:id="other" variant="brand" label="Submit"
+                                                      onclick="{!c.handleSubmit}"
+                                                      disabled="{!!v.isOtherServicesSubmittable}"/>
+                                </div>
+                                <!-- </aura:set> -->
+                            </div>
+                        </div>
+                    </div>
+                </aura:if>
+
+                <aura:set attribute="else">
+                    <!-- <c:NCP_PageNotFound /> -->
+                    <div class="ncp-text-headline_hero slds-p-bottom_medium">{!$Label.c.NCP_page_awaiting_approval_error}</div>
+                    <c:NCP_LoginPrompt hasClose="false" isNotifier="true" myIcon="utility:dislike"
+                                       myType="awaitingApproval"/>
+                </aura:set>
+
+            </aura:if>
+            <aura:set attribute="else">
+                <c:NCP_LoginPrompt myType="generic"/>
+            </aura:set>
+
+        </aura:if>
+
+    </aura:if>
+
+</aura:component>

@@ -1,0 +1,121 @@
+<aura:component implements="flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes,force:hasRecordId" access="global" controller="NIA_SurveyController" >
+    <!--					  Requirements   				   -->
+	<ltng:require scripts="{!$Resource.CoE+ '/jquery.js'}"/>
+    <!--					Initial Function   				   -->
+	<aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <!--					Design Variables   				   -->
+    <aura:attribute name="componentTitle" type="String" default="Survey"/>
+    <aura:attribute name="componentDescription" type="String" default=""/>
+    <aura:attribute name="displayType" type="String" default="Tab and Page Navigation"/>
+    <aura:attribute name="surveysSelected" type="String"/>
+    <aura:attribute name="submitLabel" type="String" default="Submit Survey"/>
+    <aura:attribute name="submitText" type="String" default="Thank you for answering this survey!"/>
+    <aura:attribute name="rateIcon" type="String" default="Star"/>
+    <aura:attribute name="minScaleLabel" type="String" default="totally unsatisfied"/>
+    <aura:attribute name="maxScaleLabel" type="String" default="totally satisfied"/>
+    <aura:attribute name="automaticIndex" type="String" default="Yes"/>
+    <!--					Global Variables   				   -->
+    <aura:attribute name="curPage" type="Integer"/>
+    <aura:attribute name="canSubmitSurvey" type="Boolean"/>
+    <aura:attribute name="surveyList" type="Array"/>
+    <aura:attribute name="questionList" type="Array"/>
+    <aura:attribute name="imagePath" type="string" default="{!$Resource.CoE+'/ready.png'}"/>
+    <!--					  Component   				       -->
+    <div class="surveyBox">
+        <!--					  Component Header   				       -->
+        <h1>{!v.componentTitle}</h1>
+        <!--					Component Description  				       -->
+        <div class="description">
+        	{!v.componentDescription}
+        </div>
+        <!--					   Survey Selector   				       -->
+        <aura:if isTrue ="{!v.surveyList.length > 0}">
+            <lightning:select aura:id="selectSurvey" label="Select a survey to answer" onchange="{!c.selectSurvey}" >
+                <option value="" style="display: none;">None</option>
+                <aura:iteration items="{!v.surveyList}" var="survey">
+                    <option value="{!survey.Id}">{!survey.Name}</option>
+                </aura:iteration>
+            </lightning:select>
+        </aura:if>
+        <aura:if isTrue ="{!v.surveyList.length == 0}">
+            No Surveys to select.
+        </aura:if>
+        <!--					   Survey Display   				       -->
+        <br></br><br></br><br></br>
+        <aura:if isTrue ="{!v.displayType == 'Tab Navigation' || v.displayType == 'Tab and Page Navigation'}">
+            <aura:iteration items="{!v.questionList}" var="questions" indexVar="tabIndex">
+                <lightning:button label="{!questions.name}" title="{!questions.name}" class="{!tabIndex == v.curPage?'activeTab':'tab'}" onclick="{!c.changePage}" value="{!tabIndex}"/>
+            </aura:iteration>
+        </aura:if>
+        <aura:iteration items="{!v.questionList}" var="questions" indexVar="pIndex">
+            <section id="{!'Page'+pIndex}" style="{!pIndex == v.curPage || v.displayType == 'Single Page'?'':'display: none;'}">
+                <aura:if isTrue ="{!v.displayType == 'Single Page'}"><br></br><br></br>{!questions.name}</aura:if>
+                <aura:iteration items="{!questions.questions}" var="question" indexVar="qIndex">
+                	<h2 class="question"><aura:if isTrue="{!v.automaticIndex == 'Yes'}">{!qIndex+1}. </aura:if>{!question.Name}</h2>
+                    <!--					   Text Area   				       -->
+                    <aura:if isTrue ="{!question.QuestionType == 'FreeText'}">
+                        <textarea class='freetext' id="{!question.Id}" val="" placeholder="Your answer..." onchange="{!c.checkComplete}"></textarea>
+                    </aura:if>
+                    <!--					      Rating   				       -->
+                    <aura:if isTrue ="{!question.QuestionType == 'Rating'}">
+                        <div class="rating" id="{!question.Id}">
+                            <aura:iteration items="{!question.QuestionChoices}" var="rate" indexVar="rIndex">
+                                <button class="{!v.rateIcon}" onclick="{!c.selectRate}" value="{!rate.Id+'|'+rate.Name}" style="{!'width: '+100/question.QuestionChoices.length+'%;'}">
+                                </button>
+                            </aura:iteration>
+                        </div>
+                        <div class="underRateLabel left">{!v.minScaleLabel}</div><div class="underRateLabel right">{!v.maxScaleLabel}</div>
+                    </aura:if>
+                    <!--					      CSAT   				       -->
+                    <aura:if isTrue ="{!question.QuestionType == 'CSAT'}">
+                        <div class="csat" id="{!question.Id}">
+                            <aura:iteration items="{!question.QuestionChoices}" var="rate" indexVar="rIndex">
+                                <button onclick="{!c.selectRate}" value="{!rIndex}" style="{!'width: '+100/question.QuestionChoices.length+'%;'}">
+                                    {!rIndex}
+                                </button>
+                            </aura:iteration>
+                        </div>
+                        <div class="underRateLabel left">{!v.minScaleLabel}</div><div class="underRateLabel right">{!v.maxScaleLabel}</div>
+                    </aura:if>
+                    <!--					      Date   				       -->
+                    <aura:if isTrue ="{!question.QuestionType == 'Date'}">
+                        <input class="date" type="date" id="{!question.Id}"/>
+                    </aura:if>
+                    <!--					    Picklist   				       -->
+                    <aura:if isTrue ="{!question.QuestionType == 'Picklist'}">
+                        <select class="picklist" id="{!question.Id}">
+                            <aura:iteration items="{!question.QuestionChoices}" var="rate" indexVar="rIndex">
+                                <option value="{!rate.Id+'|'+rate.Name}">{!rate.Name}</option>
+                            </aura:iteration>
+                        </select>
+                    </aura:if>
+                    <!--					   MultiChoice   			        -->
+                    <aura:if isTrue ="{!question.QuestionType == 'MultiChoice'}">
+                        <div class="multichoice" id="{!question.Id}">
+                            <aura:iteration items="{!question.QuestionChoices}" var="rate" indexVar="rIndex">
+                                <button onclick="{!c.selectMultiChoice}" value="{!rate.Id+'|'+rate.Name}">
+                                    {!rate.Name}
+                                </button>
+                            </aura:iteration>
+                        </div>
+                    </aura:if>
+                    <!--					     Slider   		     			-->
+                    <aura:if isTrue ="{!question.QuestionType == 'Slider'}">
+                        <div class="slider" id="{!question.Id}">
+                        	<lightning:slider label="" value="5" min="0" max="10" onchange="{!c.selectSlider}"/>
+                        </div>
+                        <div class="underRateLabel left">{!v.minScaleLabel}</div><div class="underRateLabel right">{!v.maxScaleLabel}</div>
+                    </aura:if>
+                </aura:iteration>
+                <aura:if isTrue ="{!v.displayType != 'Single Page'}">
+                    <lightning:button label="Go back" title="Go back" onclick="{!c.changePage}" value="{!pIndex-1}" class="{!pIndex != 0?'textBtn':'textBtn hidden'}"/>
+                    <lightning:button label="Next" title="Next" onclick="{!c.changePage}" value="{!pIndex+1}" class="{!pIndex != v.questionList.length-1?'':'hidden'}"/>
+                </aura:if>
+                <lightning:button aura:id="submitBtn" label="{!v.submitLabel}" title="{!v.submitLabel}" onclick="{!c.submitSurvey}" class="{!pIndex == v.questionList.length-1?'':'hidden'}"/>
+            </section>
+        </aura:iteration>
+    </div>
+    <div class="endSurveyBox">
+        <div style="text-align: center; width: 100%;"><img src="{!$Resource.CoE+'/loading.gif'}" class="surveyEndImage"/></div>
+    </div>
+</aura:component>
