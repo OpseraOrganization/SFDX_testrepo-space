@@ -1,0 +1,95 @@
+<aura:component controller="DS_NewCDAssocBtnController" implements="flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickActionWithoutHeader" access="global">
+
+	<lightning:notificationsLibrary aura:id="notifLib"/>
+	<aura:attribute name="record" type="Customer_Document__c"/>
+	<aura:attribute name="recordError" type="String"/>
+	<aura:attribute name="showConfirmDialog" type="boolean" default="false"/>
+	<aura:attribute name="quoteProposalRecord" type="Object"/>
+	<aura:attribute name="isSpinnerVisible" type="Boolean" default="false"/>
+
+	<force:recordData aura:id="record"
+		fields="Name,Customer_Document_ID__c"
+		recordId="{!v.recordId}"
+		targetError="{!v.recordError}"
+		targetFields ="{!v.record}"
+		mode="VIEW"/>
+
+	<!-- spinner -->
+	<aura:if isTrue="{!v.isSpinnerVisible}">
+		<div class="slds-spinner_container">
+			<div class="slds-spinner--brand slds-spinner slds-spinner--large slds-is-relative" role="alert">
+				<span class="slds-assistive-text">Loading</span>
+				<div class="slds-spinner__dot-a"></div>
+				<div class="slds-spinner__dot-b"></div>
+			</div>
+		</div>
+	</aura:if>
+
+	<div class="modal-header slds-modal__header slds-size_1-of-1">
+		<h2 class="slds-text-heading--medium">Associate a Quote/Proposal to {!v.record.Name}</h2>
+	</div>
+
+	<lightning:recordEditForm aura:id="createCustomerDocumentJunctionForm"
+		objectApiName="Customer_Document_Junction__c"
+		onsubmit="{!c.handleAssociateButton}">
+
+		<div class="slds-p-around--x-small slds-size_1-of-1 slds-is-relative">
+			<p class="slds-p-vertical_medium">Please select a Quote/Proposal record to be associated.</p>
+			<lightning:messages />
+			<lightning:inputField fieldName="Customer_Document__c" value="{!v.recordId}" disabled="true"/>
+			<lightning:inputField fieldName="Quote_Proposal__c" required="true" aura:id="quoteProposalId"/>
+		</div>
+		<div class="modal-footer slds-modal__footer slds-size_1-of-1">
+			<lightning:button variant="neutral" label="Cancel" onclick="{!c.handleCloseButton}"/>
+			<lightning:button aura:id="associateButton" type="submit" variant="brand" label="Associate" value="Associate"/>
+		</div>
+	</lightning:recordEditForm>
+
+	<!-- Extra modal window for Confirmation dialog -->
+	<aura:if isTrue="{!v.showConfirmDialog}">
+		<div aura:id="confirmDialog" role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" class="slds-modal slds-slide-up-open addModal">
+			<div class="slds-modal__container">
+				<header class="slds-modal__header">
+					<lightning:buttonIcon iconName="utility:close" variant="bare-inverse" onclick="{!c.handleCloseConfirmButton}" alternativeText="Close" size="large" class="slds-modal__close"/>
+					<h2 id="modal-heading-01" class="slds-text-heading--medium">Confirm association replacement</h2>
+				</header>
+				<div class="slds-modal__content slds-p-horizontal_medium slds-p-vertical_x-large">
+					<p>This Quote/Proposal already has an association with Customer Document {!v.quoteProposalRecord.Nokia_Customer_Document_ID__r.Name}.</p>
+					<p class="slds-p-vertical_medium">Are you sure you want to replace the existing association?</p>
+				</div>
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Cancel" onclick="{!c.handleCloseConfirmButton}"/>
+					<lightning:button aura:id="confirmButton" variant="brand" label="Confirm" onclick="{!c.handleConfirmButton}" value="Confirm"/>
+				</footer>
+			</div>
+		</div>
+		<div aura:id="overlay" class="slds-backdrop slds-backdrop--open"></div>
+	</aura:if>
+
+	<aura:html tag="style">
+		.cuf-content {
+			padding: 0 0rem !important;
+		}
+		.slds-p-around--medium {
+			padding: 0rem !important;
+		}
+		.slds-modal__content {
+			overflow-y: hidden !important;
+			height: unset !important;
+			max-height: unset !important;
+
+			/*width: 40% !important;
+			max-width: 40% !important;
+			margin: 0 auto !important;*/
+		}
+		/*.slds-modal__container {
+			width: 100% !important;
+			max-width: 100% !important;
+
+		}*/
+		.addModal {
+			width: 100% !important;
+			max-width: 100% !important;
+		}
+	</aura:html>
+</aura:component>
