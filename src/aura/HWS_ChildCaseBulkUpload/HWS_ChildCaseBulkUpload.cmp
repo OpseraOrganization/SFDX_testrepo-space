@@ -1,0 +1,490 @@
+<aura:component controller ="HWS_CreateSupportTicketportal" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <lightning:navigation aura:id="navService"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    <aura:attribute name="TargetFileName" type="String"  description="Name of the file"/>
+    <aura:attribute name="tableheaders" type="Object[]" />
+    <aura:attribute name="fileContentData" type="String"/>
+    <aura:attribute name="filename" type="String"/>
+    <!--NOKIASC-29185 Attributes to show totalRecordsCount-->
+	<aura:attribute name="showSubmitButton" type="Boolean" default="false" /><!-- NOKIASC-37921-->
+    <aura:attribute name="totalRecordsCount" type="Integer"/>
+    <aura:attribute name="outOfCount" type="Integer"/>
+    <aura:attribute name="NumOfRecords" type="Integer" default="1200"/> 
+    <aura:attribute name="showMain" type="Boolean" default="true"/>
+    <aura:attribute name="showLoad" type="Boolean" default="true"/>
+    <aura:attribute name="showFileName" type="Boolean" default="true"/>
+    <aura:attribute name="showButtons" type="Boolean" default="true"/>
+    <aura:attribute name="enableSubmit" type="Boolean" default="true"/>
+    <aura:attribute name ="inProgressCase" type="Boolean" default="true"/>
+    <aura:attribute name="enableSaveAndReview" type="Boolean" default="true"/>
+    <aura:attribute name="saveAndReview" type="Boolean" default="false"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+    <aura:attribute name="bulkRMAData" type="Object[]"/>
+    <aura:attribute name="bulkRMAColumns" type="List"/>
+    <aura:attribute name="bulkRMAIds" type="List" default=""/>
+    <aura:attribute name="selectedAccount" type="String" />
+    <aura:attribute name="selectedServiceType" type="String" default=''/>
+    <aura:attribute name="serviceType" type="String" default=''/>
+    <aura:attribute name="parentBulkUploadCase" type="Case"/>
+    <aura:attribute name="selectedLegalAccNum" type="String" />
+    <!--Attribute to hold selected rows -->
+    <aura:attribute name="selection" type="List" />
+    <aura:attribute name="selectedRowIndex" type="List" />
+    <aura:attribute name="selectContractLineItem" type="Boolean" default="false"/>
+    <aura:attribute name="Assets" type="List" />
+    <aura:attribute name="assetColumns" type="List" />
+    <aura:attribute name="selectedPartCode" type="String"/>
+    <aura:attribute name="selectedAsset" type="SObject" />
+    <aura:attribute name="rowId" type="Id"/>
+    <aura:attribute name="requiredFieldValidationCheck" type="Boolean" default="true"/>
+    <aura:attribute name="fieldUpdateValidationCheck" type="Boolean" default="false"/>
+    <aura:attribute name="selectFailureDescription" type="Boolean" default="false"/>
+    <aura:attribute name="mandatoryCheck" type="Boolean" default="false"/>
+    <aura:attribute name="statuscheck" type="Boolean" default="false"/>
+    <aura:attribute name="statusforMandatoryCheck" type="Boolean" default="false"/>
+    <aura:attribute name="isLoading" type="Boolean" default="false"/>
+    <aura:attribute name="selectedServiceContract" type="List" default="[]"/> 
+	<aura:attribute name="submitCounter" type="Integer" default="0"/> <!--NOKIASC-39638-->
+    <!-- Below attributes are created for BulkRMA Case Creation
+  Sprint 1926 HWST-3681
+  Start
+  -->
+    <!-- Add spinner for submit button -->
+    <aura:attribute name="spinner" type="boolean" default="false"/>
+    <aura:attribute name="accountId" type="Id"/>
+    <aura:attribute name="RetroAccountId" type="Id"/> <!-- NOKIASC-36822 -->
+    <aura:attribute name="contactId" type="Id"/>
+    <aura:attribute name="caseNumber" type="List"/>
+    <aura:attribute name="bulkParentCaseNumber" type="List"/>
+    <aura:attribute name="parentCase" type="SObject"/>
+    <aura:attribute name="shipToAddrCheck" type="Boolean" default="false"/>
+    <aura:attribute name="strSearchShipToAddrName" type="String"/>
+    <aura:attribute name="shipToAddrList" type="Object[]"/>
+    <aura:attribute name="shipToAddrListResult" type="object[]" />
+    <aura:attribute name="shipToAddrAccId" type="String" />
+    <aura:attribute name="shipToAddrAccName" type="String" />
+    <aura:attribute name="shipToAddrId" type="String"/>
+    <aura:attribute name="erpSystem" type="String"/>
+    <aura:attribute name="disableLoad" type="Boolean" default="false"/>
+    <aura:attribute name="disableValidateDelete" type="Boolean" default="false"/>
+    <aura:attribute name="countryName" type="String" default=""/>
+    <!--NOKIASC-36821 Start-->
+    <aura:attribute name="retrofitAccountName" type="String" default=""/>    
+    <aura:attribute name="isGlobal" type="Boolean" default="false"/> 
+    <aura:attribute name="retrofitAccountId" type="String" default=""/> 
+    <aura:attribute name="retrofitRequired" type="Boolean" default="false"/> 
+    <aura:attribute name="isNotSucces" type="boolean" default="false"/>
+    <!--NOKIASC-36821 End-->
+    
+    <aura:attribute name="isEnglish" type="boolean" default="true"/><!--added for NOKIASC-38438-->
+    <!-- TimeZone -->
+    <aura:attribute name="contactTimeZone" type="String"/>
+    <aura:method name="init" action="{!c.doInit}" access="PUBLIC"/>
+    <!-- End -->
+    <!--Start of Attributes for 25679 -->
+    <aura:attribute name="neaColumns" type="List" default=""/>
+    <aura:attribute name="netElemAssets" type="Object[]"/>
+    <aura:attribute name="selectNEAItem" type="Boolean" default="false" description="Used to display the Modelbox for the Network Element Asset"/>
+    <aura:attribute name="selectedNEAAsset" type="SObject"/>
+    <aura:attribute name="showAllNEA" type="Object[]"/>
+    <aura:attribute name="NEAFilterText" type="String" description="Used to filter NEA from table" />
+    <!--End of Attributes for 25679 -->
+    <!-- Start NOKIASC-32957-->
+    <aura:attribute name="initialRows" type="Integer" default="200"/>
+    <aura:attribute name="rowNumberOffset" type="Integer" default="0"/>
+    <aura:attribute name="enableInfiniteLoading" type="Boolean" default="true"/>
+    <aura:attribute name="currentCount" type="Integer" default="200"/>
+    <aura:attribute name="loading" type="boolean" default="false"/>
+    <aura:attribute name="showtooltip" type="boolean" default="false" />
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="statusPending" type="boolean" default="false"/>    
+    <!--End NOKIASC-32957-->   
+    <!-- NOKIASC-37118:Store parentId of child case|Start -->
+    <aura:attribute name="consoleContactId" type="Id" default=""/>
+    <lightning:workspaceAPI aura:id="CreateCaseWorkspace" />
+    <aura:attribute name="parentCaseId" type="Id" default=""/>
+    <!-- NOKIASC-37118:Store parentId of child case|End -->
+    <aura:if isTrue="{!v.showMain}">
+        <div>
+            <lightning:input aura:id="fileId" onchange="{!c.uploadbutton}" type="file" name="file" label="Upload Attachment" accept=".csv" multiple="false"/>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.showFileName == false}"> 
+        <ui:outputRichText class="uiOutputRichText slds-m-around--large" value="{!v.TargetFileName}"/>         
+    </aura:if>
+    <aura:if isTrue="{!v.showLoad == false}">            
+        <div class="slds-align_absolute-left" style="height:5rem">
+            <lightning:button variant="brand" label="Next" onclick="{!c.setColumnsValues}" disabled="{!v.disableLoad}"/></div>
+    </aura:if>
+    <aura:if isTrue="{!v.showButtons == false}">
+        <!-- Below Grid are created for BulkRMA Case Creation
+  Sprint 3.1 US No-NOKIASC-29191
+  Start
+      -->
+        <div class="slds-grid slds-wrap slds-size_1-of-10 slds-is-relative">
+            <article class="slds-card slds-size_12-of-12">
+                <div class="slds-page-header slds-border_fix">
+                    <div class="slds-grid slds-wrap">
+                        <div class="slds-page-header__row">
+                            <div class="slds-page-header__col-title">
+                                <div class="slds-media">
+                                    <div class="slds-media__body">
+                                        <div class="slds-page-header__name">
+                                            <div class="slds-page-header__name-title">
+                                                <h1>
+                                                    <!--    <aura:if isTrue="{!v.enableSubmit}">
+                                                         <span class="slds-page-header__title slds-truncate" >
+                                                   Success will Submitted.<br></br><br></br></span>
+                                                    </aura:if>   -->
+                                                    <aura:if isTrue="{!v.enableSaveAndReview}">
+                                                        <span class="slds-page-header__title slds-truncate" title="Validate data and select Ship to Address  before submitting. ">
+                                                            Validate data and select Ship to Address  before submitting.<br></br><br></br></span>
+                                                        <aura:set attribute="else">
+                                                            <aura:if isTrue="{!v.statusPending}">
+                                                                <span class="slds-page-header__title slds-vertical">
+                                                                    
+                                                                    Warranty check will be performed for remaining items below . Please ensure all data is correct prior to Save and Review as incorrectly reported serial numbers may be cancelled. <br></br><br></br></span>
+                                                            </aura:if>           
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </h1>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- NOKIASC-29185 Code to display totalRecordsCount -->
+                                <div class="slds-page-header__row">
+                                    <p class="slds-page-header__meta-text">
+                                        <aura:if isTrue="{!v.showButtons == false}">	
+                                            <span>
+                                                <p class="slds-page-header__meta-text">
+                                                    The total no of records uploaded {!v.totalRecordsCount} out of {!v.outOfCount}
+                                                </p>
+                                            </span> 
+                                            
+                                        </aura:if>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>  
+                <!-- End -->   
+                <lightning:layoutItem size="12">
+                    <div style="height: 300px">
+                        <lightning:datatable aura:id="bulkRMATable" data="{!v.bulkRMAData}" columns="{!v.bulkRMAColumns}" keyField="Id" onsave="{!c.handleSave}" oncancel ="{!c.validateGrid}" draftValues="{!v.draftValues}"  onrowselection="{! c.onRowSelection}" onrowaction="{!c.editRowAction}"/>
+                    </div>
+                    
+                </lightning:layoutItem>
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-align_absolute-center">  
+                        <span id="validateRequiredFields" style="color: rgb(194, 57, 52);"></span>
+                    </div>
+                </div>
+            </article>      
+        </div>
+        <div class="slds-grid slds-gutters">                
+            <div class="slds-align_absolute-center" style="height:5rem">  
+                <lightning:button variant="brand" label="Validate" onclick="{!c.validateGrid}" disabled="{!v.disableValidateDelete}"/>
+                <lightning:button variant="brand" label="Delete" onclick="{!c.deleteCaseController}" disabled="{!v.disableValidateDelete}"/>
+               
+				<!--NOKIASC-37438 | Start-->
+                 <aura:if isTrue ="{!v.showSubmitButton}">
+                    <lightning:button variant="brand" label="Submit" onclick="{!c.saveHWSCase}" disabled="{!v.enableSubmit}"/>
+					<aura:if isTrue="{!or(v.retrofitRequired =='false', v.retrofitRequired == false) }"><!--NOKIASC-37158| added  retrofitRequired check -->
+                	    <lightning:button variant="brand" label="Save and Review" onclick ="{!c.saveandReviewCase}" disabled="{!v.enableSaveAndReview}"/>
+                    </aura:if>
+
+                </aura:if>
+                <aura:if isTrue ="{!!v.showSubmitButton}">
+                    <lightning:button variant="brand" label="Submit" onclick="{!c.saveHWSCase}" disabled="{!v.enableSubmit}"/>
+                    <aura:if isTrue="{!or(v.retrofitRequired =='false', v.retrofitRequired == false) }"><!--NOKIASC-37158| added  retrofitRequired check -->
+                        <lightning:button variant="brand" label="Save and Review" onclick ="{!c.saveandReviewCase}" disabled="{!v.enableSaveAndReview}"/>
+                    </aura:if>
+                </aura:if>
+                 <!--NOKIASC-37438 | End-->	
+                
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.selectContractLineItem}">
+        
+        <!-- Modal/Popup Box starts here-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container ContractLineItemModal">
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModel }" alternativeText="close" variant="bare-inverse" class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Contract Selection</h2>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium ContractLineItemModalcontent" id="modal-content-id-1">
+                    <div class="slds-size_1-of-2">
+                        <span id="validateContract" style="color: rgb(194, 57, 52);"></span><br />
+                        Part Code : <b> {!v.selectedPartCode} </b> </div>
+                    Please select Contract line Item to Process Service Contract:<br/><br/>
+                    <div class="slds-scrollable_y">
+                        <div style="height: 200px">
+                            <lightning:datatable aura:id="cliTable" data="{!v.Assets}" columns="{!v.assetColumns}" keyField="Id"  maxRowSelection="1" onrowselection="{!c.processSelectedContract}"/>
+                        </div>
+                    </div>
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeModel }"/>
+                    <lightning:button variant="brand" label="OK" title="OK" onclick="{!c.submitDetails}" disabled="{!v.selectedAsset == null}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <!--Start Changes for 25679-->
+    <aura:if isTrue="{!v.selectNEAItem}">
+        <!-- Modal/Popup Box starts here-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container ContractLineItemModal">
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModel }" alternativeText="close" variant="bare-inverse" class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Network Element Asset Selection</h2>
+                </header>
+                <article class="slds-card slds-size_12-of-12">
+                    <!--  <div class="slds-page-header slds-border_fix">-->
+                    <div class="slds-modal__content slds-p-around_medium ContractLineItemModalcontent" id="modal-content-id-1">
+                        <div class="slds-page-header__row">
+                            <div class="slds-page-header__col-title">
+                                <div class="slds-media">
+                                    <div class="slds-media__body">
+                                        <div class="slds-page-header__name">
+                                            <div class="slds-page-header__name-title">
+                                                <h1><span class="slds-page-header__title slds-truncate" title="Select a Network Element Asset">Select a Network Element Asset</span></h1>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-page-header__col-actions">
+                                <div class="slds-page-header__controls">
+                                    <div class="slds-page-header__control">
+                                        <lightning:button label="Clear Selection" title="Clear Selection" onclick="{! c.clearSelection }"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-page-header__row">
+                            <div class="slds-page-header__col-meta">
+                                <p class="slds-page-header__meta-text">
+                                    <aura:if isTrue="{!v.netElemAssets.length > 0}">
+                                        <p class="has-results">
+                                            <aura:if isTrue="{!v.netElemAssets.length==1}">
+                                                {!v.netElemAssets.length} record 
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.netElemAssets.length>1}">
+                                                {!v.netElemAssets.length} records
+                                            </aura:if>
+                                        </p>
+                                        <aura:set attribute="else">
+                                            <p class="no-results"> 0 records</p>
+                                        </aura:set>
+                                    </aura:if>
+                                </p>
+                            </div>
+                            <!-- Start Changes for 27358 -->
+                            <div class="slds-page-header__col-controls">
+                                <div class="slds-page-header__controls" onkeyup="{!c.filterNEA}">
+                                    <lightning:input aura:id="NEAFilterText" onfocusin="{!c.showToolTip}" onfocusout="{!c.hideToolTip}" aria-describedby="help" aria-disabled="true"
+                                                     type="search" variant="label-hidden"
+                                                     placeholder="Search this list..."                                                    
+                                                     value="{! v.NEAFilterText }"
+                                                     label="Filter Accounts" />	
+                                    <aura:if isTrue="{!v.showtooltip}" >
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left" role="tooltip" id="help" style="position:absolute;top:-4px;right:35px">
+                                            <div class="slds-popover__body">Please press enter for search.</div>
+                                        </div>
+                                    </aura:if>													 
+                                </div>
+                            </div>
+                            <!-- End Changes for 27358 -->
+                        </div>
+                    </div>
+                </article>   
+                <div class="slds-size_2-of-2">
+                    <div class="slds-scrollable_y">
+                        <!-- NOKIASC-32957-->
+                        <div style="height: 300px">
+                            <aura:if isTrue="{!v.isSpinner}">
+                                <lightning:spinner title="Processing..." alternativeText="Loading..." variant="brand"                            
+                                                   size="medium" style="position: absolute; height: fit-content; margin: auto;"/>        
+                            </aura:if>
+                            <lightning:datatable aura:id="neaTable" data="{!v.netElemAssets}" columns="{!v.neaColumns}" keyField="Id"  maxRowSelection="1" onrowselection="{!c.processSelectedNEA}" enableInfiniteLoading="{!v.enableInfiniteLoading}" onloadmore="{! c.loadMoreData }"/>   
+                        </div>
+                    </div>
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeModel }"/>
+                    <lightning:button variant="brand" label="OK" title="OK" onclick="{!c.submitNEADetails}" disabled="{!v.selectedNEAAsset == null}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <!-- End Changes for 25679 -->
+    
+    <aura:if isTrue="{!v.shipToAddrCheck}"> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container shipToAddressModal">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Select Ship to Address</h2>
+                    <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.closeModel}">
+                        <lightning:icon iconName="utility:close" size="small" variant="bare"/>
+                        <span class="slds-assistive-text">Close</span>
+                    </button> 
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-form-element slds-is-required">                        
+                        <div aura:id="ImportFromSec">
+                            <div class="slds-form-element slds-is-required">
+                                <div class="customRequired"><label class="slds-form-element__label" for="lookup">Ship to Address</label>
+                                    <lightning:helptext content="Select address for delivery of replacement Unit" class="customIcon"/>
+                                </div>
+                                <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                                    <div class="slds-form-element">
+                                        <div aura:id="idSearchboxPilotSeries">
+                                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                                                <c:svg aria-Hidden="true" class="slds-input__icon slds-icon-text-default"
+                                                       xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#search" />
+                                                <ui:inputText aura:id="strNamePilot" class="slds-input"
+                                                              labelClass="slds-form-element__label" required="false"
+                                                              value="{!v.strSearchShipToAddrName}" updateOn="keyup"
+                                                              keyup="{!c.setShipToAddress}" placeholder="Search..." />
+                                            </div>
+                                            <aura:if isTrue="{! v.strSearchShipToAddrName.length>2}">
+                                                <div aura:id="lookuplistPilot"
+                                                     class="slds-lookup__list slds-hide" role="listbox">
+                                                    <ul aura:id="lookuplist-items" class="slds-lookup__list"
+                                                        role="presentation">
+                                                        <aura:iteration items="{!v.shipToAddrList}" var="shipToAddr">
+                                                            <!-- {!teamMember.contactId} - {!teamMember.contactName}-!teamMember.contactType}<br/> -->
+                                                            <li class="slds-lookup__item">
+                                                                <a id="{!globalId + '_id_' + shipToAddr.currentworkingTitleId}"
+                                                                   role="option" onclick="{!c.selectShipToAddrName}"
+                                                                   data-id="{!shipToAddr.currentworkingTitleId}">
+                                                                    <!--<a class="slds-show"
+                                                               id="{!globalId + '_id_' + shipToAddr.currentworkingTitleId}"
+                                                               role="option" onclick="{!c.selectProjectName}"
+                                                               data-id="{!shipToAddr.currentworkingTitleId}">
+                                                                    <div style="font-size:12px"><b>{!shipToAddr.currentworkingTitleName}</b></div>
+                                                                    <div style="font-size:12px">{!shipToAddr.addressLine1}</div>
+                                                                    <div style="font-size:12px">{!shipToAddr.addressLine2}</div>
+                                                                    <div style="font-size:12px">{!shipToAddr.addressLine3}</div>
+                                                                    <div style="font-size:12px">{!shipToAddr.cityStateCountry}</div-->
+                                                                    <!--added for NOKIASC-38438-->
+                                                                     <aura:if isTrue="{!v.isEnglish}">
+                                                            <div style="font-size:12px"><b>{!shipToAddr.currentworkingTitleName}</b></div>
+                                                            <div style="font-size:12px">{!shipToAddr.addressLine1}</div>
+                                                            <div style="font-size:12px">{!shipToAddr.addressLine2}</div>
+                                                            <div style="font-size:12px">{!shipToAddr.addressLine3}</div>
+                                                            <div style="font-size:12px">{!shipToAddr.cityStateCountry}</div>
+                                                            <aura:set attribute="else">
+                                                                <div style="font-size:12px"><b>{!shipToAddr.localShiptoPartyName}</b></div>
+                                                                <div style="font-size:12px">{!shipToAddr.addressLineLocal1}</div>
+                                                                <div style="font-size:12px">{!shipToAddr.addressLineLocal2}</div>
+                                                                <div style="font-size:12px">{!shipToAddr.addressLineLocal3}</div>
+                                                                <div style="font-size:12px">{!shipToAddr.shippingcityStateCountry}</div>
+                                                                
+                                                                
+                                                            </aura:set>
+                                                        </aura:if>
+                                                                
+                                                                </a></li>
+                                                        </aura:iteration>
+                                                    </ul>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                        <ul>
+                                            <aura:iteration items="{!v.shipToAddrListResult}" var="shipToAddr">
+                                                <!-- {!teamMember.contactId} - {!teamMember.contactName}-!teamMember.contactType}<br/> -->
+                                                <li class="slds-pill slds-show">
+                                                    <a class="slds-show"
+                                                       id="{!globalId + '_id_' + shipToAddr.currentworkingTitleId}"
+                                                       role="option" onclick="{!c.removeShipToAddrName}"
+                                                       data-id="{!shipToAddr.currentworkingTitleId}">
+                                                        <c:svg class="slds-icon slds-icon-standard-contact slds-icon--small slds-m-right--xx-small"
+                                                               xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#user" />
+                                                        {!shipToAddr.currentworkingTitleName}
+                                                        <button
+                                                                class="slds-button slds-button--icon slds-float--right slds-m-top--xx-small slds-pill__remove">
+                                                            <c:svg aria-Hidden="true" class="slds-button__icon"
+                                                                   xlinkHref="/resource/SldsNew/assets/icons/utility-sprite/svg/symbols.svg#close" />
+                                                        </button>
+                                                    </a></li>
+                                            </aura:iteration>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>                
+                    </div>      
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="brand" 
+                                      label="Select"
+                                      title="Select"
+                                      onclick="{! c.saveShipToAddress }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.selectFailureDescription}">
+        <lightning:recordEditForm aura:id="failureDescription" recordId="{!v.rowId}" objectApiName="HWS_BulkUpload__c" onsuccess="{!c.handleSuccess}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container Faultyclass">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModel}" alternativeText="close" variant="bare-inverse" class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Failure Description Values</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    
+                    <div class="slds-modal__content slds-p-around_large FaultyclassModalcontent" id="modal-content-id-1">
+                        <lightning:messages />
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="Fault_Description__c" />
+                                <lightning:inputField fieldName="Fault_Detection__c" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="Fault_Occurrence__c" /> <br/><br/>
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand" label="Submit" title="Submit" type="submit"/>
+                        <!--<lightning:button variant="brand" label="Cancel" title="Cancel" type="Cancel"/>-->
+                        <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeModel }"/>
+                    </footer>
+                    
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </lightning:recordEditForm>                                   
+        
+    </aura:if>
+    <!--loading spinner start-->
+    <aura:if isTrue="{!v.spinner}">
+        <div class="exampleHolder">            
+            <lightning:spinner title="Processing..." alternativeText="Loading..." variant="brand"  size="medium" />
+        </div>
+    </aura:if>
+    <!-- Loading spinner end-->
+</aura:component>

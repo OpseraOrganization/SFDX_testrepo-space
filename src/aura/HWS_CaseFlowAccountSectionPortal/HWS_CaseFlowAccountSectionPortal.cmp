@@ -1,0 +1,120 @@
+<aura:component controller ="HWS_CreateSupportTicketportal" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="recordId" type="Id"/>    
+    <aura:handler name="init" value="{!this}" action="{!c.myAction}"/>
+   	<aura:registerEvent name="HWS_CaseFlowEventPortal" type="c:HWS_CaseFlowEventPortal"/>
+    <aura:attribute name="contactName" type="String"/>
+    <aura:attribute name="AccountName" type="String"/>
+    <aura:attribute name="StageNumber" type="integer" default="1"/>
+	<aura:attribute name="isCommunicationContact" type="Boolean"/>
+	<aura:attribute name="communicationContactMessage" type="Boolean"/>
+    <aura:attribute name="isActive" type="Boolean"/>
+    <aura:attribute name="cntInactiveMessage" type="string"/>
+    <aura:attribute name="defaultAccount" type="string"/>
+    <aura:attribute name="FailureOccurance" type="List" access="PRIVATE"/>
+    <aura:attribute name="FailureDetection" type="List" access="PRIVATE"/>
+    <aura:attribute name="FailureDescription" type="List" access="PRIVATE"/>
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="showStep6" type="Boolean" default="false"/>
+    <!-- data lists and selection lists-->
+    <aura:attribute name="AllAccounts" type="Object[]" />
+    <aura:attribute name="conAccounts" type="Object[]" />
+    <aura:attribute name="selectedAccount" type="Object[]" />
+     <!-- coloumns Lists-->
+    <aura:attribute name="AccountColumns" type="List"/>    
+    <aura:attribute name="maxRowSelection" type="Integer" default="1"/>
+    <aura:attribute name="AccountFilterText" type="String" description="Used to filter Accounts from table" />
+	<!--4125 start-->
+    <aura:attribute name="accountNameAlias" type="String" default="" description="" />
+    <aura:attribute name="showAccountNameAlias" type="Boolean" default="false" description="" />
+     <!--4125 end-->
+    <aura:handler event="force:refreshView" action="{!c.myAction}" />
+    <lightning:workspaceAPI aura:id="CreateCaseWorkspace" />
+    <lightning:inputField aura:id="titleField" fieldName="Title" class="slds-hidden" />
+    <aura:if isTrue="{!v.StageNumber==1}">
+        <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative">
+            <article class="slds-card slds-size_12-of-12">
+                <div class="slds-page-header slds-border_fix">
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-title">
+                            <div class="slds-media">
+                                <div class="slds-media__body">
+                                    <div class="slds-page-header__name">
+                                        <div class="slds-page-header__name-title">
+                                            <h1><span class="slds-page-header__title slds-truncate" title="Select a Legal Entity">Select a Legal Entity</span></h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-page-header__col-actions">
+                            <div class="slds-page-header__controls">
+                                <div class="slds-page-header__control">
+                                    <lightning:button label="Clear Selection" title="Clear Selection" onclick="{! c.clearSelection }"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-meta">
+                            <p class="slds-page-header__meta-text"> 
+                                <aura:if isTrue="{!v.conAccounts.length > 0}">
+                                    <p class="has-results">
+                                        <aura:if isTrue="{!v.conAccounts.length==1}">
+                                            {!v.conAccounts.length} record 
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.conAccounts.length > 1}">
+                                            {!v.conAccounts.length} records
+                                        </aura:if>
+                                    </p>
+                                    <aura:set attribute="else">
+                                        <p class="no-results"> 0 records</p>
+                                    </aura:set>
+                                </aura:if>
+                            </p>
+                        </div>
+                        <div class="slds-page-header__col-controls">
+                            <div class="slds-page-header__controls">
+                                <lightning:input aura:id="AccountFilterText" 
+                                                 type="search" 
+                                                 variant="label-hidden" 
+                                                 placeholder="Search this list..."
+                                                 onchange="{! c.filterAccounts }"
+                                                 value="{! v.AccountFilterText }"
+                                                 label="Select a Legal Entity" />
+                                <div class="slds-m-left_xx-small">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            <div style="{! 'height: '+v.height+'; width:'+(v.filterVisible?'calc(100% - 320px)':'100%')+';'}">
+                <lightning:datatable aura:id="inputFieldsToCheck" data="{!v.conAccounts}" columns="{!v.AccountColumns}" keyField="Id" maxRowSelection="{!v.maxRowSelection}" onrowselection="{!c.processSelectedAccount}"/>                    
+                
+            </div>
+            
+        </div>    
+        
+        <!--4125 -->
+        <div class="{!(v.showAccountNameAlias == true)?'':'slds-hide'}"> 
+            <!--<aura:if isTrue="{!v.showAccountNameAlias}">-->
+            <div class="{! !empty(v.accountNameAlias) ? 'slds-grid slds-col slds-size_12-of-12 slds-p-vertical_small': 'slds-hide'}">
+                <div class="slds-col slds-box slds-scrollable description_height">
+                    <div class="slds-align_absolute-center"><b>Account Name Alias</b></div>
+                    <div class="slds-text-longform" style="width: flexable;">
+                        <pre style="white-space: pre-wrap;"><lightning:formattedRichText value="{! v.accountNameAlias }" /></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="{! empty(v.accountNameAlias) ? 'slds-grid slds-col slds-size_12-of-12 slds-p-vertical_small': 'slds-hide'}">
+                <div class="slds-col slds-box slds-scrollable description_height">
+                    <div class="slds-align_absolute-center"><b>Account Name Alias</b></div>
+                    
+                </div>
+            </div>
+            <!--</aura:if>-->
+        </div>
+        <!--4125 end-->
+        
+    </aura:if>
+</aura:component>
