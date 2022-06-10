@@ -1,0 +1,117 @@
+<aura:component controller="CH_CN_SubscriptionsController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride,lightning:isUrlAddressable" access="global" >
+    
+    <!--handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    <aura:method name="resetMethod" action="{!c.init}" description="reset method"> 
+        <aura:attribute name="reset" type="String" default=""/> 
+    </aura:method>
+    <aura:attribute name="isReset" type="Boolean" default="false"/>
+    <aura:attribute name ="notificationSubscriptionDetails" type="list"/>
+    <aura:attribute name="savedCountryIdsLst" type="list"/>
+    
+    
+    <!--Geographic Domain -->
+    <aura:attribute name="maxRowsCountry" type="Integer" default="1000"/>
+    <aura:attribute name="recordId" type="string" description="NotificationId"/>
+    <aura:attribute name="listOptions" type="List" default="[]"/>
+    <aura:attribute name="defaultOptions" type="List" default="[]"/>
+    <aura:attribute name="requiredOptions" type="List" default="[]"/>
+    <aura:attribute name="selectedRegion" type="List" default="[]"/>
+    <aura:attribute name="disabledRegion" type="boolean" default="false"/>
+    <aura:attribute name="disabledCountry" type="boolean" default="false"/>
+    <aura:attribute name="country" type="string"/>
+    <aura:attribute name = "showTable" type="boolean" default ="false"/>
+    <!-- attribute to check if the page has changed or not -->
+    <aura:attribute name="hasPageChanged" type="Boolean" default="true" />
+    <!-- attribute to check if it is initialLoad -->
+    <aura:attribute name="initialLoad" type="Boolean" default="true"/>
+    <aura:attribute name="firstTimeLoad" type="Boolean" default="true"/>
+    <aura:attribute name ="isRegion" type="Boolean" default="false"/>
+    <aura:attribute name ="isCountry" type="Boolean" default="false"/>
+    <aura:attribute name ="disabledAll" type="Boolean" default="false"/>
+    <aura:attribute name ="disabledAllCountry" type="Boolean" default="true"/>
+    <aura:attribute name="searchKeyword" type="string" default="" />
+    <aura:attribute name="showSearch" type="boolean" default="true"/> 
+    <aura:attribute name="searchCountry" type="boolean" default="true"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="storedRegion" type="list" default="[]"/>
+    <aura:attribute name="filteringData" type="boolean" default="false"/>
+    <aura:attribute name="CountryList" type="List"/>
+    <!-- Datatable -->
+    <aura:attribute name="maxRows" type="Integer" default="10000"/>
+    <!--aura:attribute name="allData" type="List"/-->
+    <aura:attribute name="allData" type="CH_CN_SubscriptionsController.regionCountryWrapper[]"/>
+    <aura:attribute name ="countryColumns" type="List"/>
+    
+    <aura:attribute type="List"     name="selectedCountry"      default=""/>
+    <aura:attribute type="List"     name="selection"      default=""/>
+    <aura:attribute type="List"     name="tempSelection"      default=""/>
+    <aura:attribute name="isAllDataSelectedFromTable" type="Boolean" default="false"/>
+    <aura:attribute name="allSelectedCountry" type="List"/>
+    <aura:attribute name="toggleSelectedItem" type="boolean" default="false"/>
+    <!-- Datatable -->
+    <aura:attribute name="data" type="List" description="Pass the data you want throuth"/>
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="true"/>
+    <aura:attribute name="dummySelectedlist" type="list" default="[]"/>
+    <aura:attribute name="toggleClicked" type="boolean" default="false"/>
+    <aura:attribute name="selectedRowsCount" type="Boolean" default="false"/>
+    
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Loading" size="medium" />
+    </aura:if>  
+    
+    
+    <div class="c-container">  
+        <h1 class="slds-text-heading_small">Region</h1>
+        <lightning:layout>
+            <lightning:layoutItem padding="around-small">
+                <Lightning:input type="checkbox" id="regionRadio" checked="{!v.isRegion}" label="All" onchange="{!c.handleRegion}" disabled="{!v.disabledAll}" style="padding-top:15px"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="10" class="customPadCls" >
+                <lightning:dualListbox aura:id="selectOptions"  
+                                       sourceLabel="Available Regions" 
+                                       selectedLabel="Selected Regions" 
+                                       options="{!v.listOptions}"
+                                       value="{!v.selectedRegion}"
+                                       requiredOptions="{!v.requiredOptions}"
+                                       onchange="{!c.handleChange }" disabled="{!v.disabledRegion}" />
+            </lightning:layoutItem>
+        </lightning:layout></div><br/>
+    
+    <div class="c-container" > <!-- style="border:1px solid #E8E5E4;" -->
+        <h1 class="slds-text-heading_small">Country</h1>
+        <div class="slds-grid slds-grid_vertical-align-start" >
+            <div class="slds-col">
+                <span>
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="10">
+                            <div class="slds-grid  slds-gutters"> 
+                                <Lightning:input type="checkbox" id="countryRadio" label="All" onchange="{!c.handleCountry}" checked="{!v.isCountry}" disabled="{!v.disabledAllCountry}" style="padding-top:21px;padding-left:7px"/>
+                                <div class="slds-col" onkeyup="{!c.searchCountries}" style="width:86px;">
+                                    <span>
+                                        <lightning:input value="{!v.searchKeyword}"
+                                                         placeholder="Search with Country Name"
+                                                         aura:id="searchField" label="Enter Country Name" disabled="{!v.searchCountry}" />
+                                    </span>
+                                </div>
+                                <div class="slds-col" style="padding-top:5px;padding-left:0px">
+                                    <span>
+                                        <p class="title">Click on Search </p>
+                                        <lightning:button onclick="{!c.search}" aura:id="accSearchBtn"
+                                                          variant="brand"
+                                                          label="Search"
+                                                          iconName="utility:search" disabled="{!v.showSearch}"/> </span>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        
+                    </lightning:layout></span>
+            </div></div>
+        <aura:if isTrue="{!v.showTable}">
+            <c:CH_CN_LightingDatatable aura:id="geographicDataTable" allData="{!v.allData}" initialLoad="{!v.initialLoad}" currentStageName="Geographic Dimension" columns="{! v.countryColumns }"  maxRowsCountry="{!v.maxRowsCountry}" selectedData="{!v.selectedCountry}" maxRows="{!v.maxRows}" isHeaderVisible="true" hideCheckboxColumn="false" recordId="{!v.recordId}" firstTimeLoad="{!v.firstTimeLoad}"/>
+        </aura:if>
+    </div>
+    <!-- Table to display Search Schedule per User -->
+    
+</aura:component>
