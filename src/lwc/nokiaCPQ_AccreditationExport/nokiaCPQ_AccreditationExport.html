@@ -1,0 +1,166 @@
+<!--
+  @description       : 
+  @author            : Yashdeep Prajapati
+  @group             : 
+  @last modified on  : 03-10-2022
+  @last modified by  : Yashdeep Prajapati
+-->
+<template>
+    <template if:true={showSpinner}>
+        <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+    </template>
+    <div>
+        <!-- Tost Component as in Lightning Toast dont work-->
+        <c-nokia-c-p-q_notification></c-nokia-c-p-q_notification>
+    </div>
+    <div align="center">
+        <div align="center" class="slds-align_absolute-center" style="width: 65%">
+            <lightning-tabset
+                class="slds-tabs_default slds-tabs_large slds-m-left_small slds-m-right_small slds-align_absolute-center"
+                variant="scoped" active-tab-value="export">
+                <lightning-tab label="Export" title="Export PPC and OEP" value="export" onactive={handleTabChange}
+                    icon-name="utility:file">
+                    <!-- <div class="slds-page-header">
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-title">
+                            <div class="slds-text-heading_small" style="float: left; width:50%; display:block">Export
+                            </div>
+                        </div>
+                    </div>
+                </div> -->
+                    <div if:true={hasData}>
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered"
+                            style="width: 95%;">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th class="" scope="col" align="left" valign="top">
+                                        <div class="slds-truncate" title="Portfolio">Portfolio</div>
+                                    </th>
+                                    <th class="" scope="col" align="left" valign="top">
+                                        <div class="slds-truncate" title="PPC">Partner Price Catalog</div>
+                                    </th>
+                                    <th class="" scope="col" align="left" valign="top">
+                                        <div class="slds-truncate" title="OEP">OEP File</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={portfolioList} for:item="t">
+                                    <tr key={t.portfolio} class="slds-hint-parent">
+                                        <td>
+                                            <div class="slds-truncate" title={t.portfolio}
+                                                style="width: 200px; display:block">
+                                                {t.portfolio}</div>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate" style="width: 200px; display:block">
+                                                <a onclick={onExportClick} data-accrids={t.accrIds}
+                                                    data-portfolio={t.portfolio} data-attparentid={t.attParentId}
+                                                    data-url={t.ppcExport} target="_blank">Export</a>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div if:true={t.canExportOEP}>
+                                                <div if:true={isOEPUser} class="slds-truncate"
+                                                    style="width: 200px; display:block">
+                                                    <a onclick={onExportClick} data-accrids={t.accrIds}
+                                                        data-portfolio={t.portfolio} data-attparentid={t.attParentId}
+                                                        data-url={t.oepExport} target="_blank">Export</a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div if:false={hasData}>
+                        <p class="slds-text-color_destructive info">There is no data to Export.</p>
+                    </div>
+                </lightning-tab>
+                <lightning-tab label="View/Download" title="View/Download PPC and OEP" onactive={handleTabChange}
+                    value="view" icon-name="utility:download">
+                    <!-- <div class="slds-page-header">
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-title">
+                            <div class="slds-text-heading_small" style="float: left; width:50%; display:block">View/Download
+                            </div>
+                        </div>
+                    </div> 
+                </div>-->
+                    <div if:true={hasAttData}>
+                        <table class="slds-table slds-table_cell-buffer" style="width: 100%;margin-right:auto;">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <!-- <th class="" scope="col" align="left" valign="top">
+                                    <div class="slds-truncate" title="Portfolio">Portfolio</div>
+                                </th> -->
+                                    <th class="slds-border_top slds-border_bottom" scope="col" align="left"
+                                        valign="top">
+                                        <div class="slds-truncate" title="Attachments">Attachments</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- <template for:each={attList} for:item="att"> -->
+                                <tr class="slds-hint-parent">
+                                    <!-- <td>
+                                        <div class="slds-truncate" title={t.portfolio} style="width: 200px; display:block">
+                                            {t.portfolio}</div>
+                                    </td> -->
+                                    <td>
+                                        <div class="slds-truncate" title="Attachments" style="display:block">
+                                            <div class="c-container">
+                                                <lightning-layout multiple-rows>
+                                                    <template for:each={attList} for:item="att">
+                                                        <lightning-layout-item size="2" flexibility="auto" key={att.id}
+                                                            padding="around-small"
+                                                            class="slds-p-around_small slds-size_6-of-12">
+                                                            <div class="slds-grid slds-nowrap slds-truncate">
+                                                                <div
+                                                                    class="slds-show_inline-block slds-float_left slds-align-middle slds-p-right_xx-small">
+                                                                    <lightning-icon icon-name="doctype:attachment"
+                                                                        size="medium"></lightning-icon>
+                                                                </div>
+                                                                <div
+                                                                    class="slds-show_inline-block slds-float_left slds-align-middle slds-truncate">
+                                                                    <!-- <a href={att.url} title={att.name}
+                                                                        target="_blank">{att.name}</a> -->
+                                                                        <a onclick={onDownloadClick} data-href={att.url}
+                                                                        title={att.name}
+                                                                        target="_blank">{att.name}</a>
+                                                                    <div>
+                                                                        <span class="dateText" title="Created Date">
+                                                                            <lightning-formatted-date-time
+                                                                                value={att.createdDate}>
+                                                                            </lightning-formatted-date-time>
+                                                                        </span>
+                                                                        <span title="Attachment">Attachment</span>
+
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </lightning-layout-item>
+                                                    </template>
+                                                </lightning-layout>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- </template> -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div if:false={hasAttData}>
+                        <p class="slds-text-color_destructive info">There is no Attachment to Download.</p>
+                    </div>
+                </lightning-tab>
+            </lightning-tabset>
+        </div>
+        <br />
+        <div align="center" class="slds-align_absolute-center" style="width: 65%">
+            <lightning-button class="slds-float_right slds-button slds-button_brand" variant="base" label="Back To Account"
+                onclick={close}></lightning-button>
+        </div>
+    </div>
+</template>
