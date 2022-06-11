@@ -1,0 +1,156 @@
+<aura:component controller="csvDownloadCtrl" implements="force:appHostable">          
+    <aura:handler name="init" value="{!this}" action="{!c.loadParseResult}"/> 
+    <aura:attribute name="ResultID" type="string"/> 
+    <aura:attribute name="NumberOfRecords" type="integer"/> 
+    <aura:attribute name="showResult" type="boolean" default="true"/> 
+    <aura:attribute name="isDownloadResult" type="boolean" default="false"/> 
+    <aura:attribute name="isComplete" type="boolean" default="false"/> 
+    <aura:attribute name="isShowError" type="boolean" default="false"/> 
+    <aura:attribute name="Message" type="string"/> 
+    <aura:attribute name="FailCount" type="string"/> 
+    <aura:attribute name="SuccessCount" type="string"/> 
+    <aura:attribute name="ListOfParseResult" type="Parse_Result__c[]"/> 
+    <aura:attribute name="ListOfBatchResult" type="AsyncApexJob"/> 
+    
+    
+    <aura:if isTrue="{!v.showResult}"> 
+        <div role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal--large" aria-labelledby="header43">
+            <div class="slds-modal__container">
+                <div class="slds-modal__header slds-modal__header--empty">
+                    <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close">
+                        
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </div>
+                <div class="slds-modal__content slds-p-around--medium">
+                    <table class="slds-table slds-table--bordered slds-table--cell-buffer slds-table--col-bordered ">
+                        <thead>
+                            <tr class="slds-text-title--caps">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Status">Status</div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate" title="{!v.ListOfBatchResult.Status}">{!v.ListOfBatchResult.Status}</div>
+                                </td>
+                                <aura:if isTrue="{!v.ListOfBatchResult.ExtendedStatus}">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Status Details">Status Details</div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate slds-cell-wrap" title="{!v.ListOfBatchResult.ExtendedStatus}">{!v.ListOfBatchResult.ExtendedStatus}</div>
+                                </td>
+                                </aura:if>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="slds-text-title--caps">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Total Batches">Total Batches</div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate" title="{!v.ListOfBatchResult.TotalJobItems}">{!v.ListOfBatchResult.TotalJobItems}</div>
+                                </td>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Batch Proccessed">Batch Proccessed</div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate" title="{!v.ListOfBatchResult.JobItemsProcessed}">{!v.ListOfBatchResult.JobItemsProcessed}</div>
+                                </td>
+                            </tr>
+                            <tr class="slds-text-title--caps">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Failures">Failures</div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate" title="{!v.ListOfBatchResult.NumberOfErrors}">{!v.ListOfBatchResult.NumberOfErrors}</div>
+                                </td>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Batch Started Date">Batch Started Date</div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate" title="{!v.ListOfBatchResult.CreatedDate}">{!v.ListOfBatchResult.CreatedDate}</div>
+                                </td>
+                            </tr>
+                            <tr class="slds-text-title--caps">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Batch Completed Date">Batch Completed Date</div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate" title="{!v.ListOfBatchResult.CompletedDate}">{!v.ListOfBatchResult.CompletedDate}</div>
+                                </td>
+                                <th scope="col">
+                                    <div class="slds-truncate" title=""></div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate" title=""></div>
+                                </td>
+                            </tr> 
+                            <tr class="slds-text-title--caps">
+                                <th scope="col">
+                                        <div class="slds-truncate ">Records Failed</div>
+                                </th>
+                                 <td data-label="Contact">
+                                    <div class="slds-truncate" title="{!v.ListOfBatchResult.CompletedDate}">{!v.FailCount}</div>
+                                </td>
+                                 <th scope="col">
+                                        <div class="slds-truncate">Records Success</div>
+                                </th>
+                                <td data-label="Contact">
+                                    <div class="slds-truncate" title="{!v.ListOfBatchResult.CompletedDate}">{!v.SuccessCount}</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <br/>
+                    <aura:if isTrue="{!v.isDownloadResult}">
+                    <table class="slds-table slds-table--bordered slds-table--cell-buffer slds-table--fixed-layout">
+                        <thead>
+                            <tr class="">
+                                <th scope="col">
+                                        <div class="slds-text-color_error">{!v.Message}</div>
+                                </th>
+                            </tr>
+                             
+                            <tr class="slds-text-title--caps">
+                                <th scope="col">
+                                    
+                                        <lightning:button label="Download" iconName="utility:download" iconPosition="left"  variant="brand" class="slds-button slds-button--brand"  onclick="{!c.downloadResultCsv}"  />
+                                   
+                                </th>
+                            </tr>
+                        </thead>
+                    </table>
+                         </aura:if>
+                </div>
+                <aura:if isTrue="{!v.isDownloadResult}">
+                    <div class="slds-modal__footer">
+                        <button onclick="{!c.closeModel}" class="slds-button slds-button--brand" variant="brand" >Close</button>
+                    </div>
+                </aura:if>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </aura:if>
+    
+    
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                
+                <span class="slds-assistive-text">Loading</span>
+                
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+            <div class="slds-container--fluid slds-m-top--large">
+                <div class="slds-grid slds-grid--align-center slds-text-heading--small">
+                    Please wait ...
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    
+</aura:component>
