@@ -1,0 +1,137 @@
+<!--
+    @name       NF_FacilitatorNotification
+    @author     Jamal Rida
+    @since      Dec 21, 2016
+    @desc       This Page is used to send when submitting for approval on opportunity
+    @history    Jul 2020 - adding new fields validation at G2 and G3
+-->
+<apex:page controller="NF_FacilitatorNotificationCtrl" lightningStylesheets="true" action="{!init}"  showHeader="false" sidebar="false" >
+    <style>
+        .slds-scope img {
+        	height: fit-content;
+        	height: -moz-fit-content;
+        }
+        body .helpText, .slds-vf-scope .helpText {
+        	z-index: 999999;
+        }
+		.bPageBlock .detailList .labelCol {
+        	width: 10% !important;
+        }
+        textarea {
+        	width: 100% !important;
+        }
+        body .messageText {
+        	font-weight: normal !important;
+        }
+        .slds-scope .slds-modal__footer {
+        	border-top-color: white;
+        }
+        .slds-modal__content {
+            border-top-right-radius: .25rem;
+    		border-top-left-radius: .25rem;
+        	padding-bottom:0 !important;
+        }
+        .requiredBlock {
+        	position: relative;
+    		left: -5px;
+        }
+    </style>
+    <apex:variable var="mandParamsG2String" value="{!''}{!mandParamsG2}" />
+
+    <apex:includeScript value="{!URLFOR($Resource.ValueDeliveryApproachV1, 'plugins/jquery/jquery-2.1.0.min.js')}"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script>
+    $(document).ready(function(){
+        //add rows to text areas
+        var textareas = $("textarea") ;
+        for (let i = 0; i <  textareas.length; i++) {
+            textareas[i].setAttribute("rows", 3);
+        }
+        //add asterisk to mandatory parameters
+        var mandParam = '{!mandParamsG2String}'.replaceAll('[','').replaceAll(']','').replaceAll(' ','');
+        mandParam.split(',').forEach(function(field){
+            var element =  $("[data-id='"+field+"']");
+            if(element.length > 0  && element.closest('tr').find('label').length > 0){
+	            element = element.closest('tr').find('label')[0];
+                $(element).prepend( "<span style='padding-right: 5px;color: red;'>*</span>");
+            } else {
+                element =  $("[for*='"+field+"']");
+                if(element.length > 0){
+                    $(element[0]).prepend("<span style='padding-right: 5px;color: red;'>*</span>");
+                }
+            }
+
+        });
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                    // element added to DOM
+                    var helpTextElement = null;
+                    for (let i = 0; i <  mutation.addedNodes.length; i++) {
+                        if(mutation.addedNodes[i].classList.contains('helpText')){
+                            helpTextElement = mutation.addedNodes[i];
+                            var position = $("span.helpButtonOn")[0].getBoundingClientRect();
+                        	helpTextElement.style.top = position.top + position.height + 3 + "px";
+                        }
+                        if(mutation.addedNodes[i].id.includes('textAreaDelegate')){
+                        	$('.cke_contents')[0].style.height = "120px";
+                        }
+                    }
+                }
+            });
+        });
+
+        var config = {
+            attributes: true,
+            childList: true,
+            characterData: true,
+            subtree: true
+        };
+
+        observer.observe(document.body, config);
+    });
+    function showSpinner(){
+        $("#spinner").css("visibility", "visible");
+    }
+    </script>
+    <apex:slds />
+    <div class="slds-scope">
+        <div id="spinner" style="visibility:hidden">
+            <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 9999999; background-color: black;">
+                &nbsp;
+            </div>
+            <div style="position: absolute; left: 50%; top: 50%; bottom: 0; right: 0; z-index: 9999999; margin: -23px 0 0 -65px;">
+                <div style="display: inline-block; padding: 2px; background-color: #fff; width: 130px; height:45px; text-align: center;">
+                    <img src="/img/loading.gif" style="margin: 8px;" />
+                    <span style="display: inline-block; padding: 10px 0px;">Please Wait...</span>
+                </div>
+            </div>
+        </div>
+        <apex:form >
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container" style="max-width: 60rem;">
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <apex:pageMessages escape="true" />
+                        <apex:outputPanel rendered="{!showMandatoryInfo}" style="border-color:white;">
+                            <apex:pageBlock mode="edit"   >
+                                <apex:pageBlockSection columns="1" showHeader="false"  >
+                                        <apex:repeat value="{!paramsG2}" var="opptyField" >
+                                            <apex:inputField value="{!currentOpp[opptyField]}" html-data-id="{!opptyField}"  />
+                                        </apex:repeat>
+                                </apex:pageBlockSection>
+                            </apex:pageBlock>
+                        </apex:outputPanel>
+                    </div>
+                    <footer class="slds-modal__footer " style="background-color:white;text-align:center;">
+                        <apex:commandButton value="Back to Opportunity" action="{!cancel}" styleClass="slds-button slds-button--brand" rendered="{!if(NOT(showMandatoryInfo),true,false)}"  />
+                        <apex:commandButton value="Proceed" onclick="showSpinner();"  action="{!proceed}" styleClass="slds-button slds-button--brand" rendered="{!showMandatoryInfo}" style="margin-bottom: 3px;"   />
+                        <apex:commandButton value="Save and Back to Opportunity"  onclick="showSpinner();" action="{!saveAndReturn}" styleClass="slds-button slds-button--brand" rendered="{!showMandatoryInfo}"  />
+                        <apex:commandButton value="Cancel and Back to Opportunity"  onclick="showSpinner();" action="{!cancel}" styleClass="slds-button slds-button--brand" rendered="{!showMandatoryInfo}" immediate="true"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </apex:form>
+    </div>
+
+</apex:page>

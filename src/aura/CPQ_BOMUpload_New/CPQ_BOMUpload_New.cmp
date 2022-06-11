@@ -1,0 +1,90 @@
+<aura:component controller="CPQ_BOMUploadController" implements="lightning:isUrlAddressable">
+    <aura:attribute name="quoteId" type="String"/>
+    <aura:attribute name="confgId_CPQTempObj" type="String"/>
+    <aura:attribute name="cartId" type="String"/>
+    <aura:attribute name="flow" type="String"/>
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="false" />
+    <aura:attribute name="fileName" type="String" default="No File Selected.." />
+    <aura:attribute name="csvData" type="List"/>
+    <aura:attribute name="csvCol" type="List"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="cartVisible" type="Boolean" default="false"/>
+    <aura:attribute name="errMsg" type="String" default="" />
+    
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    
+    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal_large slds-modal slds-fade-in-open">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModel }" alternativeText="close" variant="bare-inverse" class="slds-modal__close"/>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Upload BOM</h2>
+            </header>
+            
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="overflow-x: auto;">
+                <aura:if isTrue="{!v.errMsg != ''}">
+                	<div class="slds-text-heading_medium slds-align_absolute-center slds-text-color_error">{!v.errMsg} </div>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.showLoadingSpinner}">
+                    <lightning:spinner alternativeText="Loading" size="medium" />
+                    <aura:set attribute="else">
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <span>
+                                    <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file" name="file" label="Select BOM CSV File" multiple="false"/>
+                                    <div class="slds-text-body_small slds-text-color_success">{!v.fileName} </div>
+                                </span>
+                            </div>
+                            <div class="slds-col">
+                                <span>
+                                    <br/>
+                                    <button class="slds-button slds-button_brand" onclick="{!c.doUpload}">Upload &amp; Validate</button>
+                                    <aura:if isTrue="{!v.cartVisible}">
+                                        <button class="slds-button slds-button_brand"  onclick="{!c.goToCart}">Add To Cart</button>
+                                    </aura:if>
+                                </span>
+                            </div>
+                            <div class="slds-col">
+                                <span></span>
+                            </div>
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.csvData != null}">
+                    <br/>
+                    <table class="slds-table slds-table--bordered slds-table--striped">
+                        <thead>
+                            <tr>
+                                <aura:iteration items="{!v.csvCol}" var="col">
+                                    <td><b>{!col}</b></td>
+                                </aura:iteration>
+                                <td><b>Status</b></td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.csvData}" var="row">
+                                <tr>
+                                    <td>{!row.bomLineNumber}</td>
+                                    <td>{!row.productCode}</td>
+                                    <td>{!row.parentLineNumber}</td>
+                                    <td>{!row.quantity}</td>
+                                    <td>{!row.proposedPrice}</td>
+                                    <td>{!row.productDescription}</td>
+                                    <td>{!row.subHeading}</td>
+                                    <td>{!row.flexibleGroup}</td>
+                                    <!--
+                                    <td>{!row.rollupGrpNo}</td>
+                                    <td>{!row.rollupGrpParent}</td>
+                                    -->
+                                    <td class="{!row.status == 'Success' ? 'slds-text-color_success': 'slds-text-color_error'}"><aura:unescapedHtml value="{!row.status}" /></td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </aura:if>
+            </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</aura:component>

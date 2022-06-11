@@ -1,0 +1,248 @@
+<aura:component controller="CH_LightningController">
+    <ltng:require scripts="{!join(',',  
+                           $Resource.Sha256Hash + '/sjcl/sjcl2.js',
+                           $Resource.Md5hashDigest + '/SparkMD5/SparkMD5.js')}" />
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <!-- Attributes -->
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="actionCounter" type="Integer" default="0" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <aura:attribute name="uploadStatus" type="String" default=""/>
+    <aura:attribute name="authorized" type="Boolean" default="false"/>
+    <aura:attribute name="sizeWarning" type="Boolean" default="false"/>
+    <aura:attribute name="isMoreThan5MB" type="Boolean" default="false"/>
+    <aura:attribute name="isCommunity" type="Boolean" default="false"/>
+    <aura:attribute name="link" type="Boolean" default="false"/>
+    <aura:attribute name="inputFiles" type="List"/>
+    <aura:attribute name="classifications" type="List"/>
+    <aura:attribute name="uploadInfo" type="Object"/>
+    <!-- Community VisualForce Page Toast -->
+    <aura:attribute name="portalToast" type="Object" description=""/>
+    <aura:if isTrue="{! v.portalToast }">
+    	<div style="position: fixed; top: 1rem; left: 1rem; right: 1rem;">
+            <div class="slds-notify_container slds-is-relative">
+                <div class="{! 'slds-notify slds-notify_toast slds-theme_' + v.portalToast.type }">
+                    <lightning:icon class="slds-icon_container slds-m-right_small slds-no-flex slds-align-top" iconName="{! 'utility:' + v.portalToast.type }" variant="inverse" alternativeText="{! v.portalToast.type }" size="small"/>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small">{! v.portalToast.title }</h2>
+                        <p>{! v.portalToast.message }</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative slds-box slds-p-vertical_small">
+        <!-- Loading Spinner -->
+        <aura:if isTrue="{! v.showSpinner }">
+            <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+        </aura:if>
+        <!-- Dispay -->
+        <div class="slds-col slds-grid slds-wrap slds-size_12-of-12 slds-grid_align-center">
+            <lightning:icon class="slds-col" iconName="action:upload" alternativeText="Upload Attachments" size="large"/>
+        </div>
+        <div class="slds-col slds-grid slds-wrap slds-size_12-of-12 slds-grid_align-center">
+            <h1 class="slds-text-heading_small slds-m-vertical_medium">Browse Or Drag and Drop</h1>
+        </div>
+        <div class="slds-col slds-grid slds-wrap slds-size_12-of-12 slds-grid_align-center">
+            <lightning:input aura:id="filesInput" 
+                             disabled="{! (v.uploadStatus != '' || !v.authorized) }"
+                             onchange="{! c.startUpload }" 
+                             type="file" 
+                             name="file" 
+                             variant="label-hidden" 
+                             multiple="true"/>
+        </div>
+    </div>
+    <!-- Upload Popup -->
+    <aura:if isTrue="{! v.uploadStatus != '' }">
+        <section class="{! (v.isMoreThan5MB ? 'slds-hide' : '') + 'slds-modal slds-fade-in-open' }">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <div class="slds-align_absolute-center">
+                    <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+                </div>
+            </aura:if>
+            <div class="{! 'slds-modal__container' + (v.uploadStatus != 'Completed' ? ' large' : '') }">
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.cancelUpload }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 class="slds-text-heading_medium slds-hyphenate">Upload Files</h2>
+                </header>
+                <!-- Content -->
+                <div class="slds-modal__content">
+                    <aura:if isTrue="{! v.uploadStatus != 'Completed' }">
+                        <div class="slds-scrollable slds-p-bottom_medium" style="height: 300px">
+                            <table class="slds-table slds-table_bordered slds-table_striped"> 
+                                <thead>
+                                    <tr class="slds-text-heading_label">
+                                        <th scope="col">
+                                            <div class="slds-form-element">
+                                                <label class="slds-form-element__label">Filename</label>
+                                            </div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-form-element">
+                                                <label class="slds-form-element__label"><abbr class="slds-required" title="required">*</abbr>Description</label>
+                                            </div>
+                                        </th>
+                                        <th scope="col" style="width: 250px;">
+                                            <div class="slds-form-element">
+                                                <label class="slds-form-element__label"><abbr class="slds-required" title="required">*</abbr>Classification</label>
+                                            </div>
+                                        </th>
+                                        <aura:if isTrue="{! !v.isCommunity }">
+                                            <th scope="col" style="width: 135px;">
+                                                <div class="slds-form-element">
+                                                    <label class="slds-form-element__label">Customer Visible</label>
+                                                </div>
+                                            </th>
+                                            <aura:if isTrue="{! v.link }">
+                                                <th scope="col" style="width: 135px;"> 
+                                                    <div class="slds-form-element">
+                                                        <label class="slds-form-element__label">Problem Visible</label>
+                                                    </div>
+                                                </th> 
+                                            </aura:if>
+                                        </aura:if>
+                                        
+                                        <th style="width: 120px;">
+                                            <div class="slds-form-element">
+                                                <label class="slds-form-element__label">Progress Info</label>
+                                            </div>
+                                        </th>                        
+                                        <th scope="col" style="width: 65px;">
+                                            <div class="slds-form-element">
+                                                <label class="slds-form-element__label">Remove</label>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>   
+                                <tbody>
+                                    <aura:iteration items="{!v.inputFiles}" var="item" indexVar="index">
+                                        <tr>
+                                            <td>
+                                                <lightning:input title ="{!item.Filename}" 
+                                                                 readonly="true" 
+                                                                 type="text"
+                                                                 variant="label-hidden"
+                                                                 value="{!item.Filename}"/>
+                                            </td> 
+                                            <td>
+                                                <lightning:input type="text" 
+                                                                 placeholder="Enter description" 
+                                                                 title ="{!item.Description}"
+                                                                 readonly="{!v.uploadStatus == 'In Progress'}"
+                                                                 variant="label-hidden"
+                                                                 value="{!item.Description}" />
+                                            </td>
+                                            <td>
+                                                <lightning:select class="{! (v.uploadStatus == 'In Progress' ? 'readonly ': '') + 'slds-fix'}" title ="{! item.Classification }" value="{! item.Classification }">
+                                                    <option class="slds-hide">Select an Option</option>
+                                                    <aura:iteration items="{! v.classifications }" var="classification">
+                                                        <option text="{! classification }"></option>
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </td>
+                                            <aura:if isTrue="{! !v.isCommunity }">
+                                                <td data-index="{!index}" data-target="Customer" class="slds-p-horizontal_medium slds-text-align_center">
+                                                    <lightning:buttonIcon iconName="{! item.CustomerVisible ? 'utility:preview' : 'utility:hide'}"
+                                                                          disabled ="{! v.uploadStatus == 'In Progress' || v.isCommunity}"
+                                                                          alternativeText="{! item.CustomerVisible ? 'Visible' : 'Not Visible'}"
+                                                                          title="{! item.CustomerVisible ? 'Visible' : 'Not Visible'}"
+                                                                          onclick="{!c.toggleItemVisibility}"/>
+                                                </td>
+                                            	<aura:if isTrue="{! v.link }">
+                                                    <td data-index="{!index}" data-target="Problem" class="slds-p-horizontal_medium slds-text-align_center">
+                                                        <lightning:buttonIcon iconName="{! item.ProblemVisible ? 'utility:preview' : 'utility:hide'}"
+                                                                              disabled ="{! v.uploadStatus == 'In Progress' || v.isCommunity}"
+                                                                              alternativeText="{! item.ProblemVisible ? 'Visible' : 'Not Visible'}"
+                                                                              title="{! item.ProblemVisible ? 'Visible' : 'Not Visible'}"
+                                                                              onclick="{!c.toggleItemVisibility}"/>
+                                                    </td>
+                                                </aura:if>
+                                            </aura:if>
+                                            <td class="slds-p-horizontal_medium">
+                                                <lightning:progressBar value="{! item.Progress }" />
+                                                <p align="center">{! (item.Status ? item.Status + ' ' : '') + item.Progress }%</p>
+                                            </td>
+                                            <td data-index="{!index}" class="slds-p-horizontal_medium slds-text-align_center">
+                                                <lightning:buttonIcon iconName="utility:delete"
+                                                                      alternativeText="Remove"
+                                                                      title="Remove"
+                                                                      disabled="{! item.Progress == 100 }"
+                                                                      onclick="{!c.removeItem}"/>
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{! v.uploadStatus == 'Completed' }">
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <p align="center">Upload is Completed</p>
+                        </div>
+                    </aura:if>
+                </div>
+                <!-- Footer -->
+                <footer class="slds-modal__footer">
+                    <aura:if isTrue="{! v.uploadStatus != 'Completed' }">
+                    	<lightning:button name="Cancel" label="Cancel" onclick="{! c.cancelUpload }"/>
+                    </aura:if>
+                    <aura:if isTrue="{! and(v.uploadStatus != 'Completed', v.uploadStatus != 'In Progress') }">
+                    	<lightning:button name="Upload" label="Upload" variant="brand" onclick="{! c.uploadFiles }"/>
+                    </aura:if>
+                    <aura:if isTrue="{! v.uploadStatus == 'In Progress' }">
+						<button class="slds-button slds-button_brand" disabled="true">Uploading <div class="spinner-container"><lightning:spinner alternativeText="Loading" size="small"/></div></button>
+                    </aura:if>
+                    <aura:if isTrue="{! v.uploadStatus == 'Completed' }">
+                    	<lightning:button name="Close" label="Close" variant="brand" onclick="{! c.cancelUpload }"/>
+                    </aura:if>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <!-- 5MB Warning Popup -->
+    <aura:if isTrue="{! v.isMoreThan5MB }">
+        <section class="slds-modal slds-fade-in-open">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <div class="slds-align_absolute-center">
+                    <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+                </div>
+            </aura:if>
+            <div class="slds-modal__container">
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.cancelConfirm }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 class="slds-text-heading_medium slds-hyphenate">File Size Warning</h2>
+                </header>
+                <!-- Content -->
+                <div class="slds-modal__content">
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <p align="center">Though you have customer visible file, still cannot be sent to T-mobile as Size is more than 5 MB</p>
+                        <p align="center">Please click "Confirm" to upload or "Cancel" to modify</p>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <footer class="slds-modal__footer">
+                    <lightning:button name="Cancel" label="Cancel" onclick="{! c.cancelConfirm }"/>
+                    <lightning:button name="Confirm" label="Confirm" variant="brand" onclick="{! c.confirmUploadFiles }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

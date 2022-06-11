@@ -1,0 +1,115 @@
+<aura:component controller="CPQ_ApplyDiscountsController" implements="lightning:isUrlAddressable">
+    <aura:attribute name="quoteId" type="String"/>
+    <aura:attribute name="confgId_CPQTempObj" type="String"/>
+    <aura:attribute name="cartId" type="String"/>
+    <aura:attribute name="flow" type="String"/>
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="true" />
+    <aura:attribute name="errMsg" type="String" default="" />
+    
+    <aura:attribute name="lineItemHeader" type="List" />
+    <aura:attribute name="lineItemData" type="List"/>
+    <aura:attribute name="lineItemDataUpdated" type="List"/>
+    <aura:attribute name="contractualDiscounts" type="List"/>
+    <aura:attribute name="contractualDiscountsWithId" type="List"/>
+    <aura:attribute name="eligibleConditions" type="List"/>
+    <aura:attribute name="masterCondition" type="Object"/>
+    
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+
+    <aura:handler name="handleDiscountChangesEvent" event="c:HandleDiscountChangesEvent" action="{!c.handleDiscountChanges}"/>
+    
+    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal_large slds-modal slds-fade-in-open">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModel}" alternativeText="close" variant="bare-inverse" class="slds-modal__close"/>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Apply Discounts</h2>
+            </header>
+            
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                <aura:if isTrue="{!v.errMsg != ''}">
+                	<div class="slds-text-heading_medium slds-align_absolute-center slds-text-color_error">{!v.errMsg} </div>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.showLoadingSpinner}">
+                    <lightning:spinner alternativeText="Loading" size="medium" />
+                    <aura:set attribute="else">
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                            <thead>
+                              <tr class="slds-line-height_reset">
+                                  
+                                <aura:iteration items="{!v.lineItemHeader}" var="column">
+                                    <th class="" scope="col">
+                                        <div class="slds-truncate" title="{!column}">{!column}</div>
+                                    </th>
+                                </aura:iteration>
+                              </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration var="lineItem" items="{!v.lineItemData}">
+                                    <tr class="slds-hint-parent">
+                                        <td>
+                                            <div class="slds-truncate" title="{!lineItem.serialNumber}">{!lineItem.serialNumber}</div>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate" title="{!lineItem.productCode}">{!lineItem.productCode}</div>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate" title="{!lineItem.product}">{!lineItem.product}</div>
+                                        </td>
+                                        <td>
+                                            <!-- todo: add onchange handler -->
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-select_container">
+                                                    <select class="slds-select" id="{!lineItem.id}" data-id="{!lineItem.id}" onchange="{!c.handleConditionChange}" value="">
+                                                        <option value="">None</option>
+                                                        <aura:iteration var="condition" items="{!v.eligibleConditions}">
+                                                            <!-- set conditions in the wrapper object based on the logic for first or subsequent times using the checkbox flag -->
+                                                            <option value="{!condition.key}" selected="{!if((lineItem.conditionCode == condition.key), true, false)}">{!condition.value}</option>
+                                                        </aura:iteration>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-checkbox_button-group">
+                                                    <aura:iteration var="discount" items="{!v.contractualDiscountsWithId}">
+                                                        <!-- todo: add onclick handler -->
+                                                        <span class="slds-button slds-checkbox_button">
+                                                            <!-- <span class="slds-button slds-checkbox_button" data-id="{!lineItem.id}" data-discounts="{!lineItem.discounts}" data-val="{!discount}" onclick="{!c.handleDiscountChanges}"> -->
+                                                            <c:CPQ_AuraIfContains sequence="{!discount.key}" lineItemId="{!lineItem.id}" lineItemDiscounts="{!lineItem.discounts}" masterDiscount="{!discount.value}"></c:CPQ_AuraIfContains>
+                                                            <!--
+                                                            <label class="slds-checkbox_button__label" for="{!lineItem.id + '_' + discount}"  data-id="{!lineItem.id}" data-discounts="{!lineItem.discounts}" data-val="{!discount}" onclick="{!c.handleDiscountChanges}">  
+                                                                <span class="slds-checkbox_faux">{!discount}</span>
+                                                            </label>
+                                                            -->
+                                                            
+                                                        </span>
+                                                    </aura:iteration>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <span>
+                                    <br/>
+                                    <button class="slds-button slds-button_brand" onclick="{!c.applyDiscount}">Apply Discount</button>
+                                </span>
+                            </div>
+                            <div class="slds-col">
+                                <span></span>
+                            </div>
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                
+            </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</aura:component>

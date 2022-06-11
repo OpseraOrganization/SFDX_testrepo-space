@@ -1,0 +1,181 @@
+<aura:component controller="FileParse" implements="force:appHostable">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="isDependentDisable" type="boolean" default="true" />
+    <aura:attribute name="isDownloadTemplate" type="boolean" default="true" />
+    <aura:attribute name="BatchJobID" type="string"/>
+    <aura:attribute name="ListOfField" type="string[]"/> 
+    <aura:attribute name="NumberOfRecords" type="integer"/> 
+    <aura:attribute name="showResult" type="boolean" default="false" />
+    <aura:attribute name="isUploadFile" type="boolean" default="true"/>
+    <aura:attribute name="isDMLDependable" type="boolean" default="true"/>
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:attribute name="fileName" type="String" default="No File Selected.." />
+    <aura:attribute name="isFileSelected" type="Boolean" default="true" />
+    <aura:attribute name="isShowError" type="Boolean" default="false" />
+    <aura:attribute name="ShowMessage" type="Boolean" default="false" />
+    <aura:attribute name="options" type="list"/>
+    <aura:attribute name="bOperation" type="String" default="" />
+    
+    <div class="slds-m-vertical_x-large slds-size--1-of-1 slds-card slds-has-bottom-magnet">  
+        <aura:if isTrue="{!v.isShowError}"> 
+            <div role="alertdialog" tabindex="-1" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" class="slds-modal slds-fade-in-open slds-modal--prompt">
+                <div class="slds-modal__container">
+                    <div class="slds-modal__header slds-theme--error slds-theme--alert-texture">
+                        <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close">
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 class="slds-text-heading--medium" id="prompt-heading-id">Error</h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around--medium">
+                        <div>
+                            <p>{!v.ShowMessage}</p>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer slds-theme--default">
+                        <button onclick="{!c.ClosePrompt}" class="slds-button slds-button--neutral" >Close</button>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.Spinner}">
+            <div aura:id="spinnerId" class="slds-spinner_container">
+                <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                    <span class="slds-assistive-text">Loading</span>
+                    <div class="slds-spinner__dot-a"></div>
+                    <div class="slds-spinner__dot-b"></div>
+                </div>
+                <div class="slds-container--fluid slds-m-top--large">
+                    <div class="slds-grid slds-grid--align-center slds-text-heading--small">
+                        Please wait ...
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        
+        <div class=" slds-m-vertical_x-large slds-align_absolute-center slds-clearfix slds-form slds-form_horizontal slds-size--3-of-4 slds-card slds-has-bottom-magnet">
+            <table class="slds-table slds-table_bordered slds-table_cell-buffer ">
+                <thead>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                            <div class="slds-truncate" title="Select object type">Select object type</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="object type">
+                                <div class="slds-size_small slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                        <ui:inputSelect aura:id="idObjectType" class="slds-select"  change="{!c.onPicklistChange}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                        </th>
+                        <th scope="col">
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                            <div class="slds-truncate" title="Select object">Select object</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="object">
+                                <div class=" slds-size_small slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                        <ui:inputSelect aura:id="idObject" class="slds-select" disabled="{!v.isDependentDisable}" change="{!c.APIFieldvalues}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                        </th>
+                        <th scope="col">
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                            <div class="slds-truncate" title="Select operation">Select operation you want to Perform</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="operation">
+                                <div class="slds-form-element__control">
+                                    <div class="slds-size_small  slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                                        <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                            <ui:inputSelect aura:id="idDML" class="slds-select" disabled="{!v.isDMLDependable}" change="{!c.DMLValues}" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                        </th>
+                        <th scope="col">
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                            <div class="slds-truncate" title="Download">Download sample CSV</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Download Button">
+                                <lightning:button label="Download sample CSV" iconName="utility:download" iconPosition="left"  variant="brand" class="slds-size_small slds-button slds-button--brand"  onclick="{!c.downloadCsv}"  disabled="{!v.isDownloadTemplate}" />                            
+                            </div>
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                        </th>
+                        <th scope="col">
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                            <div class="slds-truncate" title="Download">Upload File</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate " title="Download Button">
+                                <lightning:input disabled="{!v.isUploadFile}" aura:id="fileId" 
+                                                 onchange="{!c.handleFilesChange}"  type="file" name="file" 
+                                                 multiple="false" accept=".csv" >
+                                </lightning:input>
+                                <div class="slds-text-body_Large slds-text-color_error">{!v.fileName}</div>
+                            </div>
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                        </th>
+                        <th scope="col">
+                        </th>
+                    </tr>
+                    <tr class="slds-m-vertical_x-large">
+                        <th scope="col">
+                            <div class="slds-truncate" title=""></div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="">
+                                <button class="slds-size_small slds-button slds-button_brand" disabled="{!v.isFileSelected}" onclick="{!c.Insert}">{!v.bOperation}</button>
+                            </div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Download Button">
+                            </div>
+                        </th>
+                    </tr>
+                    
+                </tbody>
+            </table>
+        </div>
+        
+        <c:FileDownload_CSV ResultID="{!v.BatchJobID}" NumberOfRecords="{!v.NumberOfRecords}" showResult="{!v.showResult}"/>  
+    </div>
+</aura:component>

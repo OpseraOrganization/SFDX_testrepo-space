@@ -1,0 +1,214 @@
+<aura:component controller="CreateOfferApexCtlr"> 
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordEventt" action="{!c.handleComponentEvent}"/>
+	<!-- declaring attributes -->  
+    <aura:attribute name="leadBGs" type="string[]" description="store picklist values"/> 
+    <aura:attribute name="leadBGEditMode" type="boolean" default="false" />
+    <aura:attribute name="teamMemberRoles" type="string[]" description="store picklist values"/> 
+    <aura:attribute name="additionalTeamMemberRoles" type="string[]" description="store picklist values"/>
+    <aura:attribute name="selectedAdditionalTeamMemberRoles" type="string[]" default="[]" description="Selected Additional Role"/>
+    <aura:attribute name="accessLevels" type="string[]" description="store picklist values"/>
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="singleRec" type="OfferTeamWrapper" />
+    <aura:attribute name="teamRoleEditMode" type="boolean" default="false" />
+    <aura:attribute name="additionalTeamRoleEditMode" type="boolean" default="false" />
+    <aura:attribute name="accessEditMode" type="boolean" default="false" />
+    <aura:attribute name="Message" type="String" default="Search Result.."/>
+    <aura:attribute name="selectedRecord" type="sObject" default="{}" description="Use,for store SELECTED sObject Record"/>
+    <aura:attribute name="listOfSearchRecords" type="List" description="Use,for store the list of search records which returns from apex class"/>
+    <aura:attribute name="SearchKeyWord" type="string"/>
+    <aura:attribute name="IconName" type="string" default="standard:user"/>
+    <aura:attribute name="label" type="string" default=""/>
+    <aura:attribute name="rowIndex" type="String"/>
+    <aura:attribute name="userRecord" type="sObject" />
+    <aura:attribute name="disableButton" type="boolean" default="false" />
+    <aura:attribute name="showAddTeam" type="boolean" default="false" />
+    <aura:attribute name="saveTeam" type="boolean" default="false" />
+	<aura:attribute name="teamRoleMap" type="Map"  />
+    <!-- Register 2 Lightning Event for handle add or Delete rows on Parent Component  --> 
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/> 
+    <aura:registerEvent name="AddRowEvt" type="c:AddNewRowEvt"/> 
+
+    <!--Table Row Start-->  
+    <tr>
+        <td ><div class="slds-truncate">{!v.sNo}</div></td>
+        
+        <td ondblclick="{!c.inlineEditTeamRole}" class="slds-cell-edit">
+            <span class="slds-grid slds-grid_align-spread">
+                <!-- show input and output section based on boolean flag --> 
+                <aura:if isTrue="{!v.teamRoleEditMode == false}">
+                    <span class="slds-truncate" title="Team Role">{!v.singleRec.teamRoleLabel}</span>
+                    <button onclick="{!c.inlineEditTeamRole}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0" title="Edit Rating">
+                        <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit"/>
+                    </button>
+                    
+                    <!-- Inline Edit Section in else case-->  
+                    <aura:set attribute="else">
+                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: relative; ">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <label class="slds-form-element__label"></label>
+                                        <ui:inputSelect aura:id="teamRole"
+                                                        class="slds-select inputFieldWidth"
+                                                        blur="{!c.closeTeamRoleBox}"
+                                                        change="{!c.onTeamRoleChange}"
+                                                        value="{!v.singleRec.teamRole}"
+                                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>  
+                    </aura:set>  
+                </aura:if> 
+            </span>
+        </td> 
+                        
+        <td class="slds-cell-edit">
+            <div onmouseleave="{!c.onblur}" aura:id="searchRes" class="slds-form-element slds-lookup slds-is-close" data-select="single"> 
+                <aura:if isTrue="{!!empty(v.label)}">
+                    <!-- <label class="slds-form-element__label" for="lookup-348">{!v.label}</label> -->
+                </aura:if>
+                <div class="slds-form-element__control">                    
+                    <div class="slds-input-has-icon slds-input-has-icon--right">
+                        <aura:if isTrue="{!empty(v.selectedRecord)}">
+                            <lightning:icon class="slds-input__icon slds-show" iconName="utility:search" size="x-small" alternativeText="search"/>
+                        </aura:if>
+                        <div aura:id="lookup-pill" class="slds-pill-container slds-hide">
+                            <lightning:pill class="pill-size" label="{!v.selectedRecord.Name}" name="{!v.selectedRecord.Name}" onremove="{! c.clear }">
+                                <aura:set attribute="media">
+                                    <lightning:icon iconName="{!v.IconName}" size="x-small" alternativeText="{!v.IconName}"/>
+                                </aura:set>
+                            </lightning:pill>
+                        </div>
+                        <div aura:id="lookupField"  class="slds-show">
+                            <span class="slds-icon_container  slds-combobox__input-entity-icon" title="record">
+                                <lightning:icon class="slds-icon slds-icon slds-icon_small slds-icon-text-default" iconName="{!v.IconName}" size="x-small" alternativeText="icon"/>
+                                <span class="slds-assistive-text"></span>
+                            </span>
+                            <ui:inputText click="{!c.onfocus}"   aura:id="lookupinputtext"  updateOn="keyup" disabled="{!v.disableButton}" size="40" required="true" keyup="{!c.keyPressController}" class="slds-lookup__search-input slds-input left-padding-class" value="{!v.SearchKeyWord}" placeholder="Search user here.."/>
+                        </div>   
+                    </div>
+                </div>
+                
+                <div style="margin-top:0px !important" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                    <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                    <!-- <center> {!v.Message}</center> -->
+                    <aura:iteration items="{!v.listOfSearchRecords}" var="singleRec">
+                        <c:customLookupResult oRecord="{!singleRec}" IconName="{!v.IconName}" />
+                    </aura:iteration>
+                </div>
+            </div>
+        </td> 
+
+        <td ondblclick="{!c.inlineEditAccess}" class="slds-cell-edit">
+            <span class="slds-grid slds-grid_align-spread">
+                <!-- show input and output section based on boolean flag --> 
+                <aura:if isTrue="{!v.accessEditMode == false}">
+                    <span class="slds-truncate" title="Rating">{!v.singleRec.offerAccess}</span>
+                    <button onclick="{!c.inlineEditAccess}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0" title="Edit Rating">
+                        <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit"/>
+                    </button>
+                    
+                    <!-- Inline Edit Section in else case-->  
+                    <aura:set attribute="else">
+                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: relative; ">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <label class="slds-form-element__label"></label>
+                                        <ui:inputSelect aura:id="accessOnTeam"
+                                                        class="slds-select inputFieldWidth"
+                                                        blur="{!c.closeAccessBox}"
+                                                        change="{!c.onAccessChange}"
+                                                        value="{!v.singleRec.offerAccess}"
+                                                        
+                                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>  
+                    </aura:set>  
+                </aura:if> 
+            </span>
+        </td>
+
+        <td >
+            <lightning:button variant="neutral" 
+                              label="Additional Team Role"
+                              title="show"
+                              aura:id="showButton"
+                              onclick="{! c.showAdditionalRole }"/>
+            
+            
+            <aura:if isTrue="{!v.showAddTeam}">
+                <div class="slds-dueling-list  slds-p-around--medium" aura:id="additionalRole">
+                    <div class="slds-dueling-list__column">
+                        <div class="slds-dueling-list__options" style="height:10rem;width:30rem; padding-left: 10px;">
+                            <lightning:dualListbox aura:id="selectOptions" 
+                                                   name="Additional"
+                                                   sourceLabel="  Available"
+                                                   selectedLabel="Selected" 
+                                                   options="{! v.additionalTeamMemberRoles }"
+                                                   value="{! v.selectedAdditionalTeamMemberRoles }"
+                                                   onchange="{! c.handleAdditionTeamRoleChange }"/>
+                        </div>
+                    </div>
+                </div>
+            </aura:if>
+        </td>          
+        <td ondblclick="{!c.inlineEditLeadBG}" class="slds-cell-edit">
+            <span class="slds-grid slds-grid_align-spread">
+                <!-- show input and output section based on boolean flag --> 
+                <aura:if isTrue="{!v.leadBGEditMode == false}">
+                    <span class="slds-truncate" title="Lead BG">{!v.singleRec.leadBG}</span>
+                    <button onclick="{!c.inlineEditLeadBG}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0" title="Edit Rating">
+                        <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit"/>
+                    </button>
+                    
+                    <!-- Inline Edit Section in else case-->  
+                    <aura:set attribute="else">
+                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: relative; ">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <label class="slds-form-element__label"></label>
+                                        <ui:inputSelect aura:id="leadBG"
+                                                        class="slds-select inputFieldWidth"
+                                                        blur="{!c.closeLeadBGBox}"
+                                                        change="{!c.onLeadBGChange}"
+                                                        value="{!v.singleRec.leadBG}"
+                                                        
+                                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>  
+                    </aura:set>  
+                </aura:if> 
+            </span>
+        </td>
+        <td>
+            <a onclick="{!c.removeRow}">
+                <lightning:icon variant="error" iconName="utility:delete" class="slds-icon slds-icon_small" size="small" alternativeText="icon"/>
+                <span class="slds-assistive-text">Delete Icon</span>
+            </a>
+        </td>
+    </tr>
+    <aura:if isTrue="{!v.singleRec.isActiveUser == false}">
+        <tr>
+            <td></td>
+            <td></td>
+            <td>
+                <div class = 'error-text'>User is not active, cannot be copied to offer team</div>
+            </td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+	</aura:if>
+</aura:component>
