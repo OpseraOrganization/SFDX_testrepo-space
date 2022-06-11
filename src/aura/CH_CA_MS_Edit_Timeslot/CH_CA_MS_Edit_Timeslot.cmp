@@ -1,0 +1,170 @@
+<aura:component controller="CH_CA_MS_Edit_Timeslot_Controller" implements="flexipage:availableForRecordHome,lightning:availableForFlowScreens" access="global">
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <c:CH_CA_MS_ConfirmationMessagebox aura:id="messageBox" />
+    <c:CH_CA_MS_Time_Members aura:id="addMembersModal" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />    
+    <aura:handler name="messageboxEvent" event="c:CH_CA_MS_ConfirmationMessagebox_Event" action="{!c.handleMessageboxEvent}"/>
+    <aura:handler name="addMemberEvent" event="c:CH_CA_MS_Time_Members_Event" action="{!c.handleAddMemberEvent}"/>
+
+    <aura:attribute name="schedule" type="CH_Workgroup_Schedule__c" />
+    <aura:attribute name="scheduleId" type="string" />
+    <aura:attribute name="timeslotId" type="string" />
+    <aura:attribute name="timeslot" type="CH_Workgroup_Schedule_Timeslot__c" />
+    <aura:attribute name="refreshUI" type="boolean" default="true"/>        
+	<aura:attribute name="dataChanged" type="boolean" default="false"/>
+	 <aura:attribute name="isEditEnabled" type="Boolean" default="false" />
+
+    <!-- Load dependencies needed for the DataTable -->
+    <ltng:require styles="{!join(',', 
+                          $Resource.datatable + '/DataTables-1.10.16/media/css/jquery.dataTables.min.css',
+                          $Resource.datatable + '/DataTables-1.10.16/extensions/Select/css/select.dataTables.min.css')}"
+                  scripts="{!join(',', 
+                           $Resource.CH_jquery224, 
+                           $Resource.datatable + '/DataTables-1.10.16/media/js/jquery.dataTables.min.js',
+                           $Resource.datatable + '/DataTables-1.10.16/extensions/Select/js/dataTables.select.min.js')}" /> 
+    
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>    
+
+    <!-- Bread crumbs -->
+    <lightning:layoutItem >      
+    	<lightning:breadcrumbs>
+            <lightning:breadcrumb label="All Schedules" href="javascript:void(0)" name="homeCrumb" onclick="{!c.breadCrumbClicked}"/>
+            <lightning:breadcrumb label="{!'Schedule ' + v.schedule.Name}" href="javascript:void(0)" name="scheduleCrumb" onclick="{!c.breadCrumbClicked}"/>
+            <lightning:breadcrumb label="{!'Timeslot ' + v.timeslot.Name}" href="javascript:void(0)"/>
+        </lightning:breadcrumbs>
+    </lightning:layoutItem>
+    <!-- Validation errors -->    
+    <lightning:layoutItem >
+        <c:CH_CA_Validate_Schedule aura:id="validateSchedule" />
+    </lightning:layoutItem>
+
+	<lightning:layoutItem >
+        <!-- Show hide the timeslot details-->
+        <lightning:accordion aura:id="editTimeslot" activeSectionName="Schedule Information" allowMultipleSectionsOpen="true">
+            <lightning:accordionSection name="timeSlotInfo" label="Timeslot Information">
+			<aura:if isTrue="{!v.isEditEnabled}"> 
+                <lightning:recordEditForm objectApiName="CH_Workgroup_Schedule_Timeslot__c" 
+                                          aura:id="timeslotViewForm" 
+                                          recordId="{!v.timeslot.Id}"
+                                          onsubmit="{!c.timeslotSubmit}" >
+                    <lightning:messages />
+                    <aura:if isTrue="{!v.refreshUI}">
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField fieldName="CH_Day__c" aura:id="CH_Day__c" onchange="{!c.handleChange}"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <lightning:inputField aura:id="timeslot_scheduleId" fieldName="CH_Workgroup_Schedule__c" value="{!v.scheduleId}" disabled="true" />
+                            </div>
+                        </div>
+                    </aura:if>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:input aura:id="CH_Start_Time__c" type="time" name="CH_Start_Time__c" label="Start time" required="true" messageWhenValueMissing="Start Time is required" onchange="{!c.handleChange}"/>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:input aura:id="CH_End_Time__c" type="time" name="CH_End_Time__c" label="End time" required="true" messageWhenValueMissing="End Time is required" onchange="{!c.handleChange}"/>
+                        </div>
+                    </div>
+                    
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Save Timeslot" 
+                                          aura:id="saveTimeslotButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          type="submit" />
+                        <lightning:button label="Delete Timeslot"
+                                          aura:id="deleteTimeslotButton"  
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          onclick="{!c.confirmDelete}"
+                                          disabled="{!v.timeslot.Id == null}" />
+                    </lightning:layoutItem>                    
+                </lightning:recordEditForm>              
+				<!-- NOKIASC-30639 -->
+                    <aura:set attribute="else">
+                        <lightning:recordViewForm objectApiName="CH_Workgroup_Schedule_Timeslot__c" 
+                                                  aura:id="timeSlotRecordViewForm" 
+                                                  recordId="{!v.timeslot.Id}">
+                            <lightning:messages />
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:outputField fieldName="CH_Day__c"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:outputField fieldName="CH_Workgroup_Schedule__c"  />
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col slds-size_1-of-2">
+                                    
+                                    <lightning:input aura:id="CH_Start_Time__c" type="time" name="CH_Start_Time__c" label="Start time" required="true" disabled="true"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:input aura:id="CH_End_Time__c" type="time" name="CH_End_Time__c" label="End time" required="true" disabled="true"/>
+                                </div>
+                            </div>
+                        </lightning:recordViewForm>
+                    </aura:set>
+                    <!-- End   -->
+                </aura:if>				
+            </lightning:accordionSection>
+            <lightning:accordionSection name="workgroupMembers" label="Workgroup Members">
+                <div class="slds-m-top_xx-small slds-m-bottom_xx-small slds-scrollable" style="height: 22rem;">
+                    <table id="{!'associations-' + v.timeslotId}" style="table-layout: fixed; 
+                                                                         width: 100%
+                                                                         overflow:hidden; text-overflow: ellipsis;
+                                                                         word-wrap:break-word;">
+                    </table>
+                </div>
+                <!-- Display buttons -->
+                <lightning:layoutItem >
+				 <aura:if isTrue="{!v.isEditEnabled}"> 
+                    <lightning:button label="Add Timeslot Workgroup Members" 
+                                      aura:id="addTimeslotWorkgroupMembers"
+                                      class="slds-m-top--medium slds-m-bottom--medium"
+                                      variant="brand"
+                                      onclick="{!c.addWorkgroupMembersToTimeSlot}" />
+                    <lightning:button label="Delete Timeslot Workgroup Members"
+                                      aura:id="deleteTimeslotWorkgroupMembers"  
+                                      class="slds-m-top--medium slds-m-bottom--medium"
+                                      onclick="{!c.confirmDelete}"
+                                      disabled="true" />
+					</aura:if>				  
+                </lightning:layoutItem>                    
+            </lightning:accordionSection>            
+        </lightning:accordion>
+	</lightning:layoutItem>
+    
+    <lightning:layout horizontalAlign="end">   
+        <!-- Display the buttons -->
+        <lightning:layoutItem >
+            <lightning:button label="Back" 
+                              aura:id="timeslotBackButton"
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              variant="brand"
+                              onclick="{!c.navigationClicked}" />
+            <lightning:button label="Home"
+                              aura:id="timeslotHomeButton"  
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              onclick="{!c.navigationClicked}" />
+			<aura:if isTrue="{! v.isEditEnabled}"> 				  
+            <lightning:button label="Validate"
+                              aura:id="validateButton"  
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              onclick="{!c.validate}" />
+			</aura:if>				  
+        </lightning:layoutItem>
+    </lightning:layout>
+
+</aura:component>
