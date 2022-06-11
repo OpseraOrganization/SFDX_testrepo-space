@@ -1,0 +1,114 @@
+<aura:component controller="HWS_SupplierInstructions_Controller" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride,lightning:isUrlAddressable" access="global" >
+    
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <!--Declare Handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>   
+    <aura:handler event="force:refreshView" action="{!c.init}" />
+      
+    <!-- Attribute related to datatable -->
+    <aura:attribute name="sortedByValue" type="String" description="use for sort by action in data table"/>
+    <aura:attribute name="sortedDirectionUser" type="String" description="use for sort by action in data table"/>
+    <aura:attribute name="defaultSortDirection" type="String" description="use for sortdirection in data table ,value asc or desc"/>     
+    <aura:attribute name="selectionReferral"  type="List"        default="[]"/> 
+    <aura:attribute name="selection"  type="List"        default=""/>    
+    <aura:attribute name="referralList" type="List" default="[]" description="use for data table Referral List"/>  
+    <aura:attribute name="escalationList" type="List" default="[]" description="use for data table Escalation List"/>  
+    <aura:attribute name="referralColumns" type="List" default="[]"/>
+    <aura:attribute name="escalationsColumns" type="List" default="[]"/>
+    <!-- attributes -->    
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="showDocked" type="boolean" default="false"/>
+    <aura:attribute name="isInsideButtonClicked" type="Boolean" default="false"/>
+    <aura:attribute name="isModal" type="Boolean" default="false"/>
+    <aura:attribute name="dockedSectionClass" type="String" default=""/>    
+    <aura:attribute name="referralInstructionsList" type="List" default="[]"/>    
+    <aura:attribute name="dockedSectionBody" type="Long" default=""/> 
+    <aura:attribute name="dockedSectionHeader" type="String" default="Default Header"/> 
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand"  size="medium" />
+    </aura:if>                
+    <div class="slds-box ">
+        <lightning:tabset selectedTabId="one">
+            <lightning:tab label="Referral instructions" id="one">
+                <div class="slds-col slds-clearfix">
+                    <lightning:button variant="brand" label="Complete Selected" class=" slds-m-around--x-small slds-float_right slds-m-around_xxx-small"  title="Complete Selected" onclick="{! c.handleCompleteSelected }" ></lightning:button>
+                </div>                
+                <div style="height: 250px">
+                    <lightning:datatable aura:id="referralDatatable" 
+                                         class="slds-table_bordered"
+                                         data="{! v.referralList }" 
+                                         columns="{! v.referralColumns }" 
+                                         keyField="Id"
+                                         hideCheckboxColumn="false"
+                                         onrowaction="{!c.handleRowAction}"
+                                         onrowselection="{! c.handleRowSelectionOnReferral }"
+                                         selectedRows="{!v.selection}"
+                                         sortedBy="{! v.sortedByValue }"
+                                         sortedDirection="{! v.sortedDirectionUser }"
+                                         defaultSortDirection="{! v.defaultSortDirection }"                                                                                          
+                                         onsort="{! c.updateColumnSorting }"/>
+                </div>
+            </lightning:tab>
+            <lightning:tab label="Escalation Instructions" id="two" >               
+                <div style="height: 250px">
+                    <lightning:datatable aura:id="escalationDatatable" 
+                                         class="slds-table_bordered"
+                                         data="{! v.escalationList }" 
+                                         columns="{! v.escalationsColumns }" 
+                                         keyField="id"
+                                         hideCheckboxColumn="true"
+                                         onrowaction="{!c.handleRowAction}"        
+                                         sortedBy="{! v.sortedByValue }"
+                                         sortedDirection="{! v.sortedDirectionUser }"
+                                         defaultSortDirection="{! v.defaultSortDirection }"                                                                                          
+                                         onsort="{! c.updateColumnSorting }"/>
+                </div>
+            </lightning:tab>
+        </lightning:tabset>
+    </div>    
+    <aura:if isTrue="{!v.showDocked}">
+        <div class="slds-docked_container " style="z-index: 99; right: 0px; bottom: 40px; height: 30px;">
+            <section aura:id="dockedSection" class="{!v.dockedSectionClass}" role="dialog" aria-labelledby="dialog-heading-id-1" aria-describedby="dialog-content-id-1" >                
+                <div class="{!v.isModal?'slds-modal__container':''}">
+                    <div class="{!v.isModal?'slds-modal__content':''}" id="modal-content-id">
+                        <a class="headerLink slds-text-link_reset" tabindex="-1" onclick="{!c.maximizeMinimizeDocker}">
+                            <div class="slds-docked-composer__header slds-grid slds-shrink-none" aria-live="assertive">                        
+                                <div class="slds-media slds-media_center slds-no-space">
+                                    <div class="slds-media__figure slds-m-right_x-small">
+                                        <span class="slds-icon_container">  
+                                            <lightning:button variant="base" iconName="utility:note" title="Minimize window" >                           
+                                                <span class="slds-assistive-text">Note</span>
+                                            </lightning:button>
+                                        </span>                                        
+                                    </div>
+                                    <div class="slds-media__body ">
+                                        <h2 class="slds-truncate " id="dialog-heading-id-1" title="Header">{!v.dockedSectionHeader}</h2>
+                                    </div>
+                                </div>                        
+                                <div class="slds-col_bump-left slds-shrink-none">
+                                    <lightning:button aura:id="maximize" variant="base" iconName="utility:minimize_window" title="Minimize window" onclick="{!c.minimizeDocker}">                           
+                                        <span class="slds-assistive-text">Minimize Composer Panel</span>
+                                    </lightning:button>
+                                    <lightning:button aura:id="expand" variant="base" iconName="{!v.isModal?'utility:contract_alt':'utility:expand_alt'}" title="Expand Composer" onclick="{!c.maximizeDocker}">
+                                        <span class="slds-assistive-text">Expand Composer Panel</span>
+                                    </lightning:button>
+                                    <lightning:button aura:id="close" variant="base" iconName="utility:close" title="Close"  onclick="{!c.closeDocker}">
+                                        <span class="slds-assistive-text">Close Composer Panel</span>
+                                    </lightning:button>
+                                </div>
+                            </div>
+                        </a>
+                        <div class="slds-docked-composer__body"  id="dialog-content-id-1" style="{!v.isModal?'height:300px':'height:400px'}">
+                            <div aura:id="output"  class="slds-m-top_medium" >
+                                
+                                <lightning:formattedRichText  value="{!v.dockedSectionBody}" />
+                                
+                            </div>                            
+                        </div>                                          
+                    </div>
+                </div>                
+            </section>
+            <div class="{!v.isModal?'slds-backdrop slds-backdrop_open':''}" ></div>
+        </div>
+    </aura:if>        
+</aura:component>
