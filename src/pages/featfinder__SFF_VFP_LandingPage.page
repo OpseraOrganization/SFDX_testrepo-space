@@ -1,0 +1,2340 @@
+<apex:page controller="featfinder.SFF_VFC_LandingPage" standardStylesheets="false" sidebar="false">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="background-color: #F4F6F9" >
+    <apex:stylesheet value="{!URLFOR($Resource.featfinder__Dynamic_DataTable,'/css/datatables.min.css')}" />
+    <script type="text/javascript" src="{!URLFOR($Resource.Dynamic_DataTable,'/js/datatables.min.js')}">
+    </script>
+    <apex:stylesheet value="{!URLFOR($Resource.featfinder__lightningRes, 'assets/styles/salesforce-lightning-design-system.min.css')}" />
+    <script type="text/javascript" src="{!URLFOR($Resource.highlight)}">
+    </script>
+    <script type="text/javascript" src="{!URLFOR($Resource.searchHighlight)}">
+    </script>
+    <apex:stylesheet value="{!URLFOR($Resource.featfinder__fontawesome)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.featfinder__SFF_Styles)}" />
+        <style>
+        .slds-table--bordered:not(.slds-no-row-hover) tbody tr:hover>td:not(.slds-is-selected), .slds-table--bordered:not(.slds-no-row-hover) tbody tr:hover>th:not(.slds-is-selected) {
+            box-shadow: none;
+        }
+             .slds-type-focus:hover {
+    border-bottom: 1px solid transparent;
+    }
+            ul li, ol li {
+    margin-left: 0;
+    padding-left: 0;
+}
+        </style>
+    <apex:form id="jsForm">
+        
+    <script type="text/javascript" charset="utf-8">
+        var isFirefox = typeof InstallTrigger !== 'undefined';
+
+    var titleRel="{!JSENCODE(LatestRelease)}"; 
+    var mapAPIName = new Object(); // or var map = {};
+    mapAPIName['Product'] = 'Product__c';
+    mapAPIName['Sub product'] = 'sub_product__c';
+    mapAPIName['UI impact'] = 'ui_impact__c';
+    mapAPIName['Not equals'] = '!=';
+    mapAPIName['Equals'] = '=';
+    var formulaStatic;
+    function OpeninNewWindow(link){
+        window.open(link, "_blank");
+    }
+     function showOppmodal(idFeature,featureName,link,releaseName){
+        featureName=featureName.replace('<','&lt;');
+        featureName=featureName.replace('>','&gt;');
+        document.getElementById('sf-modaldialog').style.display='block'; 
+        document.getElementById('header43').innerHTML=featureName;
+        document.getElementById('ModalDescription').innerHTML=idFeature;
+        document.getElementById('sf-ResLinkDiv').innerHTML='<a href="#" Onclick="OpeninNewWindow(\''+link+'\');return false;">'+releaseName+'_ReleasePreview.Pdf</a>';
+          $('.sf-validationErrorMessage').html('{!JSENCODE(errors)}');
+        return false;
+    }
+    function hideModal(){
+         document.getElementById('sf-modaldialog').style.display='None';       
+    }
+    function selectRelease(a, b) {
+        $('.sf-filterPanel').addClass('invisible');
+        $('.sf-releaseMenu').find('.slds-dropdown__item').each(function () {
+            $(this).css("background-color", "white");
+            $(this).removeClass('slds-is-selected');
+        });
+        $(a).css("background-color", "#F4F6F9");
+        $(a).addClass('slds-is-selected');
+        release = b;
+          $(".slds-popover__body input[type=checkbox]").each(function () {
+                $(this).prop("checked", false);
+            });
+        
+        if(b == 'All releases'){
+        
+             ChangeRelease('Multiple releases');
+             $('.divReleases').html('Multiple releases');
+             $(".slds-popover__body input[type=checkbox]").each(function () {
+                $(this).prop("checked", true);
+            });
+        }else{
+            ChangeRelease(b);
+        }
+        $(".slds-popover__body input[type=checkbox]").each(function () {
+               if($(this).val() == b){
+                    $(this).prop("checked", true);
+               }
+        });
+        $('.divReleases').html(b);
+        $('.sf-releaseTitle').html(b);   
+        titleRel = b;
+    }
+    function filterClick(){
+        $('.sf-filterPanel').removeClass('invisible');
+        $('.sf-filterButton').addClass('slds-is-selected');
+        if($('.sf-showHideContainer').find('#textarea-input-01').val().trim()!='')
+        {
+          $('.sf-showHideContainer').show();
+          $('.sf-showHideContainer').find('#textarea-input-01').removeClass('has-error');
+        }
+        
+        return false;
+    }
+    function filterCancel(){
+        $('.sf-filterPanel').addClass('invisible');
+        $('.sf-filterButton').removeClass('slds-is-selected');
+        $('.sf-showHideContainer').hide();
+        $('.sf-filtermissed').hide();
+        $('.sf-addFilterLogic').show();
+        $('.sf-validationErrorMessage').hide();
+        $('.filterLogicError').empty();
+        $('.pillNumber').each(function () {
+            $(this).empty();
+        });
+        return false;
+    }
+    function removeAllButton(){
+        $('.pillContainer').empty();
+    }
+    function addFilter(){
+         var spanDiv ='<div class="pillElement"><span class="pillNumber" style="width:10%"></span><span class="slds-pill wrapper hasBeenEdited" style="width:100%">'+
+         '<div class="slds-pill__label" onClick="onClickFilters($(this).parent().parent());">'+
+         '<label class="fieldLabel" for="text-input-01">New Filter</label><span class="etoile">*</span><br/><br/>'+ 
+         '<span class="operatorLabel"></span>'+' '+'<span class="valueLabel"></span>'+
+         '</div>'+
+         '<button class="slds-button slds-button--icon slds-pill__remove" style="float:right" onclick="$(this).parent().parent().remove();">'+
+         ' <svg aria-hidden="true" class="slds-button__icon">'+
+         '   <use xlink:href="{!JSENCODE(URLFOR($Resource.lightningRes,'assets/icons/utility-sprite/svg/symbols.svg#close'))}"></use>'+
+         ' </svg>'+
+         ' <span class="slds-assistive-text">Remove</span>'+
+         '</button>'+
+         '</span>'+
+         '<div class="filterPopover">'+
+         '</div>'+
+         '</div>';
+         $('.pillContainer').append(spanDiv);
+         $('.sf-ShowMePopover').removeClass('invisible');
+         $('.sf-ShowMePopover').addClass('invisible');
+         return false;
+    }
+    function onClickFilters(thisClass){
+         $('.pillElement').each(function () {
+            $(this).removeClass('selectedBox');
+         });
+         $(thisClass).addClass('selectedBox');
+         $('.filterPopover').each(function () {
+             $(this).empty();
+         });
+         $(thisClass).find('.filterPopover').html($('.sf-AddFilterPopover').html());
+         var top = $('.selectedBox').position().top;
+         $('.sf-popoverNewFilter').css({
+                 top: top - 115,
+         });
+         if($('.selectedBox').find('.fieldLabel').text() != 'New Filter'){
+            $('.selectedBox').find('#selectedField').val($('.selectedBox').find('.fieldLabel').text());
+            $('.selectedBox').find('#selectedOperator').val($('.selectedBox').find('.operatorLabel').text());
+            $('.selectedBox').find('#selectedValue').val($('.selectedBox').find('.valueLabel').text());
+         }
+         $('.sf-ShowMePopover').removeClass('invisible');
+         $('.sf-ShowMePopover').addClass('invisible');
+         return false;
+    }
+    function doneFilterButton(field,operator,value){ 
+             $('.selectedBox').find('.fieldLabel').html(field);
+             $('.selectedBox').find('.operatorLabel').html(operator);
+             $('.selectedBox').find('.valueLabel').html(value);    
+             $('.selectedBox').find('.sf-popoverNewFilter').addClass('invisible');
+    }
+        
+    function addFilterLogic(){
+        $('.sf-showHideContainer').show();
+        $('.sf-addFilterLogic').hide();
+        $('.sf-validationErrorMessage').hide();
+        $('.sf-panelFooter').find('textarea').removeClass('has-error');
+        $('.filterLogicError').empty();
+        var i = 0;
+        var filterLogic = '';
+        if($('.sf-panelFooter').find('textarea').text()=='')
+        {
+            $('.slds-pill').each(function () {
+                i++;
+                $(this).css('width' , '94%');
+                $(this).parent().find('.pillNumber').html(i+'. ');
+                filterLogic += i+' AND ';
+            });
+            
+            
+            if(filterLogic != ''){
+           $('.sf-panelFooter').find('textarea').text(filterLogic.substring(0,filterLogic.length-4)); 
+            }
+        }
+        return false;
+    }
+        
+    function viewReleasePanel(){
+         $('.selectedBox').find('.filterPopover').empty();
+         $('.sf-ShowMePopover').removeClass('invisible');
+        $('.forceFilterPanelScope').css('background-color', 'rgb(247,249,251)');
+         return false;
+    }
+    function doneShowMeButton(){
+                $('.forceFilterPanelScope').css('background-color', 'white');
+
+         $('.divReleases').empty();
+         var val ='';
+         $(".slds-popover__body input[type=checkbox]").each(function () {
+         if($("#sf-allRelCheckbox").prop('checked') == true){         
+             val = ';Multiple Releases';
+         }else{
+             if($(this).prop('checked') == true){
+                 val = val+'-'+$(this).val();
+             }
+         }
+         });
+         $('.divReleases').html(val.substring(1, val.length));
+         $('.sf-ShowMePopover').addClass('invisible');
+        // AdjustNumberofResults();
+    }
+    function searchwithSavedFilter(){
+    
+         var formula = '';
+         var filter = '';
+         var logic = '';
+         var Operator = '';
+         var textArea = $('.sf-panelFooter').find('textarea').val().toUpperCase();
+         var oper = '';
+         logic = Operator = textArea;
+         logic = logic.split(' ');
+         
+         logic = $.grep(logic, function(n){ return (n); });
+        
+         Operator = Operator.replace(/[0-9]/g, '');
+         Operator = Operator.replace(' (', '(');
+         Operator = Operator.replace(') ', ')');
+         var realses = $('.divReleases').text();
+         if(Operator == ''){
+             oper = 'AND';
+         }else
+         {
+             Operator = Operator.split(' ');
+             Operator = $.grep(Operator, function(n){ return (n); });
+  
+             if($.inArray('OR',logic) != -1 & $.inArray('AND',logic)!= -1){
+                 if($.inArray('(',logic) == -1 & $.inArray(')',logic) == -1){
+                     $('.sf-addFilterLogic').show();
+                     $('.sf-validationErrorMessage').show();
+                     $('.sf-panelFooter').find('textarea').addClass('has-error');
+                     $('.filterLogicError').html("Your filter must use parentheses around successive AND and OR expressions.");
+                      return false;
+                 }
+             }
+             
+             var i = 0;
+             if(Operator[0] == '('){
+                formula = Operator[0];
+                filter =  Operator[0];
+                Operator.shift(); 
+             }
+         }
+    
+         $('.pillContainer > .pillElement').each(function(){
+              if($(this).find('.fieldLabel').text() != 'New Filter'){
+                  if(Operator != ''){
+                      oper = Operator[i];
+                  }
+                  formula += mapAPIName[$(this).find('.fieldLabel').text()] +mapAPIName[$(this).find('.operatorLabel').text()]+'\''  +$(this).find('.valueLabel').text() + '\' '+oper+' ';
+                  filter += $(this).find('.fieldLabel').text()+' '+$(this).find('.valueLabel').text()+ ' '+oper+' ';
+                  $(this).find('.slds-pill').removeClass('hasBeenEdited');
+                  $(this).find('.pillNumber').empty();
+                  $(this).find('.etoile').empty();
+                  $(this).find('.wrapper').css('width' , '100% !important');
+                  i++;
+              }
+         });
+        
+         if(oper == 'AND'){
+            formula = formula.substring(0,formula.length-4);
+            filter = filter.substring(0,filter.length-4);
+        }
+         if(formula != ''){
+            formula = formula.replace('undefined','');
+            formula = '('+formula+')';
+        }
+        
+        if(filter != ''){
+            filter = filter.replace('undefined','');
+            $('.sf-filterTable').html('Show me '+realses+' • Sorted by <span class="sf-sorted">FEATURES</span> • Filtred by '+filter);
+        }else{
+             $('.sf-filterTable').html('Show me '+realses+' • Sorted by <span class="sf-sorted">FEATURES</span>');
+        }
+       
+        Search(formula,realses.trim());
+        formulaStatic = formula;
+ //       $('.sf-allreleases').removeClass('slds-is-selected');
+         $('.sf-releases-parents').removeClass('slds-is-selected');
+        if(realses.split('-').length>1){
+             var rel=realses.split('-');
+             var i;
+             for(i=0;i<rel.length;i++){
+                  document.getElementById(rel[i]).className='slds-dropdown__item sf-releases-parents slds-is-selected';
+             }
+         $('.sf-releaseTitle').text('Multiple Releases');
+            }
+        else {
+           if(document.getElementById(realses)!=null)
+           {
+              document.getElementById(realses).className='slds-dropdown__item sf-releases-parents slds-is-selected';
+           }
+         $('.sf-releaseTitle').text(realses);   
+            }
+        
+    }
+    function addErrors(){
+        $('.sf-showHideContainer').show();
+        $('.sf-addFilterLogic').hide();
+        $('.sf-panelFooter').find('textarea').removeClass('has-error');
+        $('.sf-panelFooter').find('textarea').addClass('has-error');
+        if('{!JSENCODE(errors)}' != ''){
+            $('.sf-validationErrorMessage').show();
+            $('.filterLogicError').html('{!JSENCODE(errors)}');
+            return false;
+        }else{
+            filterCancel();
+        }
+    }
+    function AdjustNumberofResults(){
+    
+       var myFilteredRows = $('#example').DataTable().$('tr', {"filter":"applied"});
+          var totalrecs = $('.sf-totalrecs').text();
+              var notice = $('.sf-filterTable').text();
+      
+          if(totalrecs<=500){
+                $('#sf-toomanyrows').text('{!JSENCODE($Label.SFF_UseFilter)}');
+                $('#sf-toomanyrows').css('color','#54698d'); 
+              }
+          else {
+             
+                $('#sf-toomanyrows').text('{!JSENCODE($Label.SFF_TooManyRows)}');
+                $('#sf-toomanyrows').css('color','red');
+              }
+              $('.sf-sizeTable').text(totalrecs); 
+              
+        }
+     $(document).one('ready', function() {
+        var lastRelease = $('.sf-releases').first().text();
+        $('.sf-releaseTitle').text(lastRelease);
+        titleRel = lastRelease;
+        $('.sf-releases-parents').first().addClass('slds-is-selected');
+         
+        $(".slds-popover__body input[type=checkbox]").eq(1).prop("checked", true); 
+         
+        });
+    
+    $(document).ready(function() {
+    
+        $('#phHeaderLogoImage').css('width','55px');
+       
+        $('.sf-showHideContainer').hide();
+       
+        
+        hideModal();  
+       
+        $('.sf-addFilterLogic').show();
+        $('.sf-validationErrorMessage').hide();
+        $('#tooltip').hide();
+
+        var table = $('#example').DataTable({
+            "searchHighlight": true,
+            "lengthMenu": [[10, 25, 50, 75, 100,250], [10, 25,50,75, 100,250]],
+            "iDisplayLength": 50,
+            "sDom": '<"top"flip>rt<"bottom"><"clear">',
+            "pagingType": "full",
+            "initComplete": function(settings, json){ 
+                 var info = this.api().page.info();
+            },
+            "language": {
+                "info":           " _START_ - _END_ out of _TOTAL_",
+                "lengthMenu": "Rows per page : _MENU_   ",
+                "zeroRecords": "No items to display.",
+                searchPlaceholder: "Search "+($('.sf-releaseTitle').text()!='' ? $('.sf-releaseTitle').text().trim() : titleRel) ,
+                search: "<i class='icon-search' id='sf-search'></i>",
+                "infoEmpty": "",
+                "infoFiltered": "",
+                "oPaginate": { "sFirst": false , "sLast": false, "sNext": ">", "sPrevious": "<" }
+            }
+             
+      }); 
+         
+        $('#example').DataTable().on( 'search.dt', function () {
+          var myFilteredRows = table.$('tr', {"filter":"applied"});
+          });
+      $("#sf-allRelCheckbox").click(function() {
+        if($(this).prop('checked') == true){
+            $(".slds-popover__body input[type=checkbox]").each(function () {
+                $(this).prop("checked", true);
+            });
+        }else{
+             $(".slds-popover__body input[type=checkbox]").each(function () {
+                $(this).prop("checked", false);
+            });
+        }
+    });
+    $('#sf-modalWarning').click(function()
+    {
+    $('#sf-filterMissed').hide();
+    
+    }
+    );
+    
+     $("#sf-newSearchPlace").empty();
+     $("#sf-newSearchPlace").html($(".dataTables_filter"));
+     
+     table.on( 'draw', function () {
+        var body = $( table.table().body() );
+        body.unhighlight();
+        body.highlight( table.search() );  
+        } );
+        /* $('#example >tbody > tr').on('click', function(){
+           showOppmodal($(this).find('.sf-idFeature').text(),$(this).find('.sf-iddescription').text(),$(this).find('.sf-ResLink').text(),$(this).find('.sf-idRelease').text());
+           return false;
+        });*/
+     
+         $( '.sf-releaseTitle' ).hover(
+            function(){
+                $('.sf-releaseMenu').slideDown(200);
+            }
+    );
+           $('.sf-export').click(function(){
+           
+           var value = $('.dataTables_filter input').val();
+           var release ='';
+           $('.slds-is-selected').find('.sf-releases').each(function(){
+           release = release+$(this).text()+';';
+           }
+           );
+           
+
+           var redirect = encodeURI("/apex/SFF_VFP_LandingPageExport?filterGlobalSearch="+value+"&filter="+formulaStatic+"&ReleasesSet="+release+"&LatestRelease={!JSENCODE(LatestRelease)}");
+           window.open(redirect);
+         
+         event.preventdefault();
+        }); 
+        
+        $('.sf-showSavedFilter').click(function(){
+             $('.sf-savedFilters').removeClass('slds-notify slds-notify--toast slds-theme--confirm');
+             $('.sf-savedFilters').html('Saved filters');
+             $('.sf-savedFilters').show();
+        
+        });
+        $('.sf-header-datatable').click(function(){
+        
+        $('.sf-sorted').text($(this).text().trim());//sf-sorted
+          
+          if($(this).find('.sf-up').is(':visible')==false && $(this).find('.sf-down').is(':visible')==false )
+          {
+           $(this).find('.sf-up').show();
+          }
+          else
+          {
+            if($(this).find('.sf-up').is(':visible')==false && $(this).find('.sf-down').is(':visible')==true )
+            {
+              $(this).find('.sf-down').hide();
+              $(this).find('.sf-up').show();
+            }
+            else
+            {
+             $(this).find('.sf-up').hide();
+             $(this).find('.sf-down').show();
+            
+            }         
+          }
+       
+          $('.sf-header-datatable').not(this).find('.sf-up').hide();
+          $('.sf-header-datatable').not(this).find('.sf-down').hide();
+           
+          }
+        );
+        
+       function checkfilterLogic()
+       {
+          var firstCheck = false;
+        
+          $('.fieldLabel').each(function(){
+          
+         if($(this).text().toUpperCase()=='NEW FILTER' || $(this).text().trim()=='' )
+         {
+            firstCheck = true;
+            
+         }
+          } );
+         
+          if(firstCheck==false && $('.fieldLabel').length>0)
+          {
+               
+             var LenghtOfFilter = $('.fieldLabel').length;
+             var verf='';
+             verf = $('.sf-panelFooter').find('textarea').val().toUpperCase();
+             
+             if($.trim(verf)!='')
+             {
+              
+               verf  =$.trim(verf);
+               verf = verf.split(' ');
+               
+               if(verf.length==1 )
+               {
+                 
+                 if(verf[0]!='1' &&  LenghtOfFilter!=1)
+                 {
+                        $('.sf-filtermissed').text('Your filter logic is not valid').show();
+                        return false;
+                 }
+                
+               }
+                
+                
+               if(verf.length>1)
+                {
+                  
+                   if($.inArray('OR',verf)<0 && $.inArray('AND',verf) <0)
+                   {
+               
+                       console.log('no');
+                      $('.sf-filtermissed').text('Your filter logic is not valid').show();
+                      return false;
+                   }
+                   else
+                   {
+                        
+                        for(i = 0; i < verf.length; ++i)
+                        {
+                                    var checkNumbers = false;
+                                   
+                                    if($.isNumeric(verf[i])==true)
+                                    {
+                                       for(j=1;j<=LenghtOfFilter;j++)
+                                       {
+                                          
+                                           if(j==parseInt((verf[i])))
+                                           {
+                                             checkNumbers=true;
+                                           }                                                                                      
+                                       }
+                                       if(checkNumbers==false)
+                                       {
+                                           $('.sf-filtermissed').text('Your filter logic is not valid').show();
+                                          return false;
+                                       }                                    }}}} }
+              else
+              { 
+                  if(verf.length==0){
+                      return true;
+                      }
+                  else{
+                   $('.sf-filtermissed').text('Your filter logic is not valid').show();
+                   return false;
+                      }
+               }}
+          else
+          { 
+              $('.sf-filtermissed').text('Your filter logic is not valid').show();
+              return false;
+          }
+        
+            return true;
+        }
+       
+        ;
+      $('.sf-save').unbind().on('click', function()
+      {
+        var resultcheck = checkfilterLogic();
+        
+        if(resultcheck==true)
+        {
+          checkLogicFilter($('.sf-panelFooter').find('textarea').val().toUpperCase()); 
+        }
+      }
+      );
+          $('.sf-apply').unbind().on('click', function()
+         {
+          
+            
+            if({!checkEndPoint2}!=true)
+            {
+            if($('.pillElement').length>0)
+            {
+             
+              var resultcheck = checkfilterLogic();
+              
+              if(resultcheck==true)
+              {
+                 console.log('we are here');
+                  checkLogicFilterApply($('.sf-panelFooter').find('textarea').val().toUpperCase()); 
+              } 
+            }
+            else
+            {
+              searchwithSavedFilter();
+               
+            }
+         }
+          else
+          {
+            $('#checkEndpointfirstcheck').show();
+            $('#background-shadow-firstcheck').show();
+          
+          }
+         }
+         );
+    });
+         function SelectThisFilter(){
+       
+            $('#sf-chosenFilter').text($('#select-Filter').val().split(';;')[3]);
+            $('#sf-chosenRelease').text($('#select-Filter').val().split(';;')[2]);
+            $('.sf-savedFilters').removeClass('slds-notify slds-notify--toast slds-theme--confirm');
+             $('.sf-savedFilters').html('Saved filters');
+            }
+        
+        function ShowPopDescription( a){
+           showOppmodal(a.find('.sf-idFeature').text(),a.find('.sf-iddescription').text(),a.find('.sf-ResLink').text(),a.find('.sf-idRelease').text());
+           return false;
+        }
+        function DeleteSavedFilter(){
+           
+            DeleteFilter( $('#select-Filter').val().split(';;')[0]);
+            }
+         function DeleteSuccess()
+         {
+             $('.sf-savedFilters').addClass('slds-notify slds-notify--toast slds-theme--confirm');
+             $('.sf-savedFilters').html('<span><img src="{!JSENCODE(URLFOR($Resource.lightningRes, "assets/icons/action/approval_60.png"))}" style="background-color:transaprent;margin-right:10%" width="25px" />Your filter has been deleted successfully');
+         }   
+                function ApplySavedFilter(){
+                
+          formulaStatic = $('#select-Filter').val().split(';;')[1];
+          Search($('#select-Filter').val().split(';;')[1],$('#select-Filter').val().split(';;')[2]);  
+          
+          var filterDetail= $('#select-Filter').val().split(';;')[4].split('&');
+          
+          $('.divReleases').text($('#sf-chosenRelease').text());
+          $('#sf-SavedFiltersModal').hide();
+          $('.pillContainer').empty();
+         for(i=0;i< filterDetail.length; i++){
+        
+         var var1 = filterDetail[i].split('/')[1];
+         var var2 = filterDetail[i].split('/')[2];
+         var var3 = filterDetail[i].split('/')[3];
+         
+         if(var1!=null && var1.trim()!='')
+         {
+         var var1 = filterDetail[i].split('/')[1];
+         var var2 = filterDetail[i].split('/')[2];
+         var var3 = filterDetail[i].split('/')[3];
+        
+         var path='assets/icons/utility-sprite/svg/symbols.svg#close';
+         var spanDiv ='<div class="pillElement"><span class="pillNumber" style="width:10%"></span><span class="slds-pill wrapper hasBeenEdited" style="width:100%">'+
+         '<div class="slds-pill__label" onClick="onClickFilters($(this).parent().parent());">'+
+         '<label class="fieldLabel" for="text-input-01">'+var1+'</label><span class="etoile">*</span><br/><br/>'+ 
+         '<span class="operatorLabel">'+var2+'</span><span class="valueLabel">'+var3+'</span>'+
+         '</div>'+
+         '<button class="slds-button slds-button--icon slds-pill__remove" style="float:right" onclick="$(this).parent().parent().remove();">'+
+         ' <svg aria-hidden="true" class="slds-button__icon">'+
+         '   <use xlink:href="{!JSENCODE(URLFOR($Resource.lightningRes,"'+path+'"))}"></use>'+
+         ' </svg>'+
+         ' <span class="slds-assistive-text">Remove</span>'+
+         '</button>'+
+         '</span>'+
+         '<div class="filterPopover">'+
+         '</div>'+
+         '</div>';
+      
+         $('.pillContainer').append(spanDiv); 
+        
+           }; 
+         } 
+        
+         var lengthX = $('#select-Filter').val().split(';;')[5];
+         
+         $('.sf-showHideContainer').find('#textarea-input-01').val(lengthX);
+         $('.sf-filterTable').html('Show me '+  $('#select-Filter').val().split(';;')[2]+' Sorted by <span class="sf-sorted">FEATURES</span> . Filtred by'+$('#select-Filter').val().split(';;')[3].replace('Equal',' '));
+
+          $(".slds-popover__body input[type=checkbox]").each(function () {
+                $(this).prop("checked", false);
+                
+            });
+         var lengthReleases = $('.divReleases').text().split('-').length;
+         
+       $('.sf-allreleases').removeClass('slds-is-selected');  
+       $('.sf-releaseMenu').find('.slds-dropdown__item').each(function () {
+            $(this).removeClass('slds-is-selected');
+        });
+        
+         if(lengthReleases==1 && $('.divReleases').text().split('-')[0]!='Multiple Releases')
+         {
+           $('.sf-releaseTitle').text($('.divReleases').text().split('-')[0]);
+          
+         }
+         
+         else if (lengthReleases>1)
+         {
+            $('.sf-releaseTitle').text('Multiple Releases');
+            
+         }
+         
+         for(i=0;i<lengthReleases;i++)
+         {
+          $(".slds-popover__body input[type=checkbox]").each(function () {
+               if($(this).val()==$('.divReleases').text().split('-')[i])
+               {
+                 $(this).prop("checked", true);
+               }
+            });
+            
+            
+          $('.sf-releaseMenu').find('.slds-dropdown__item').each(function () {
+              if(($(this).find('.sf-releases').text())==$('.divReleases').text().split('-')[i])
+              {
+                $(this).addClass('slds-is-selected');
+              }
+             });
+             if($('.divReleases').text().split('-')[i]=='Multiple Releases')
+             {
+            
+               $('.sf-releaseTitle').text('All releases');
+          //      $('.sf-allreleases').addClass('slds-is-selected');
+          $(".slds-popover__body input[type=checkbox]").each(function () {
+              
+                 $(this).prop("checked", true);
+                 
+            });
+             }
+         }
+         }
+        var TheArray='';
+        
+        function getSelectedFeatures(){
+            TheArray='';
+              var data = $('#example').DataTable().$('tr', {"filter":"applied"});
+            var array=[];
+             data.each(function () {
+                 if($(this).find('.SelectedFeatures').prop("checked")){
+                   array.push($(this).find('.SelectedFeatures').attr('id'));
+                     }
+             });
+            TheArray=array.toString();
+            if(TheArray!=''){
+                
+                document.getElementById('ToastError').style.display='none';
+                SaveSelectedDiscussion();
+                }
+            else {
+                document.getElementById('ToastError').style.display='inline';
+                }
+            } 
+        function SaveSelectedDiscussion(){
+             $('#SelectedItems').html('');
+          SendSelectedFeatures(TheArray);  
+            }
+        function ActivateDesactivateFeed(){
+             var Flag='';
+              var data = $('#example').DataTable().$('tr', {"filter":"applied"});
+            var array=[];
+             data.each(function () {
+                 if($(this).find('.SelectedFeatures').prop("checked")){
+                   array.push($(this).find('.SelectedFeatures').attr('id'));  
+                     }
+             });
+            Flag=array.toString();
+            if(Flag==''){
+            $('.FeedButton').prop('disabled',true);
+                }
+            else {
+            $('.FeedButton').prop('disabled',false);
+                }
+            } 
+        var LatestFilter; 
+         function SaveFilter(){
+         
+         if($('#sf-ChosenFilterName').val().trim()!='')
+         {
+         
+          $('#sf-saveNewFilter').removeClass('slds-notify slds-notify--toast slds-theme--error');
+          $('.sf-messageSave-filter').text('Save New filter');
+         var formula = '';
+         var filter = '';
+         var logic = '';
+         var Operator = '';
+         var textArea = $('.sf-panelFooter').find('textarea').val().toUpperCase();
+         var oper = '';
+         logic = Operator = textArea;
+         //logic = logic.replace(/s+/g, ' ');
+         logic = logic.split(' ');
+         logic = $.grep(logic, function(n){ return (n); });
+         Operator = Operator.replace(/[0-9]/g, '');
+         Operator = Operator.replace(' (', '(');
+         Operator = Operator.replace(') ', ')');
+         var realses = $('.divReleases').text();
+         if(Operator == ''){
+             oper = 'AND';
+         }else{
+             Operator = Operator.split(' ');
+             Operator = $.grep(Operator, function(n){ return (n); });
+  
+             if($.inArray('OR',logic) != -1 & $.inArray('AND',logic)!= -1){
+                 if($.inArray('(',logic) == -1 & $.inArray(')',logic) == -1){
+                     $('.sf-addFilterLogic').show();
+                     $('.sf-validationErrorMessage').show();
+                     $('.sf-panelFooter').find('textarea').addClass('has-error');
+                     $('.filterLogicError').html("Your filter must use parentheses around successive AND and OR expressions.");
+                      return false;
+                 }
+             }
+             
+             var i = 0;
+             if(Operator[0] == '('){
+                formula = Operator[0];
+                filter =  Operator[0];
+                Operator.shift(); 
+             }
+         }
+         $('.pillContainer > .pillElement').each(function(){
+              if($(this).find('.fieldLabel').text() != 'New Filter'){
+                  if(Operator != ''){
+                      oper = Operator[i];
+                  }
+                  formula += mapAPIName[$(this).find('.fieldLabel').text()] +mapAPIName[$(this).find('.operatorLabel').text()]+'\''  +$(this).find('.valueLabel').text() + '\' '+oper+' ';
+                  filter += $(this).find('.fieldLabel').text()+' '+$(this).find('.valueLabel').text()+ ' '+oper+' ';
+                  $(this).find('.slds-pill').removeClass('hasBeenEdited');
+                  $(this).find('.pillNumber').empty();
+                  $(this).find('.etoile').empty();
+                  $(this).find('.wrapper').css('width' , '100% !important');
+                  i++;
+              }
+         });
+         if(oper == 'AND'){
+            formula = formula.substring(0,formula.length-4);
+            filter = filter.substring(0,filter.length-4);
+        }
+         if(formula != ''){
+
+            formula = formula.replace('undefined','');
+             formula = '( '+formula+' )  ';
+        }
+        
+        if(filter != ''){
+            filter = filter.replace('undefined','');
+            $('.sf-filterTable').html('Show me '+realses+' • Sorted by <span class="sf-sorted">FEATURES</span> • Filtred by '+filter);
+        }else{
+             $('.sf-filterTable').html('Show me '+realses+' • Sorted by <span class="sf-sorted">FEATURES</span>');
+        }
+            var formulaDetail='';
+
+            $('.pillElement').each(function()
+            {
+           
+              formulaDetail = formulaDetail +'/'+ $(this).find('.fieldLabel').text()+'/'+$(this).find('.operatorLabel').text()+'/'+$(this).find('.valueLabel').text()+'&';
+              
+            }
+            
+            );
+            
+            
+            LatestFilter=$('#sf-ChosenFilterName').val();
+             console.log('here we fo'+LatestFilter);
+            SearchSave(formula,realses.trim(),$('#sf-ChosenFilterName').val(),formulaDetail,$('#textarea-input-01').val());
+            
+        $('.sf-releases-parents').removeClass('slds-is-selected');
+        ('.sf-releaseTitle')
+         if(realses.split('-').length>1){
+             var rel=realses.split('-');
+             var i;
+             for(i=0;i<rel.length;i++){
+     
+                  document.getElementById(rel[i]).className='slds-dropdown__item sf-releases-parents slds-is-selected';
+             }
+         $('.sf-releaseTitle').text('Multiple Releases');
+            }
+        else {
+            document.getElementById(realses).className='slds-dropdown__item sf-releases-parents slds-is-selected';
+         $('.sf-releaseTitle').text(realses);   
+            }
+           }
+           else
+           {
+             $('#sf-saveNewFilter').addClass('slds-notify slds-notify--toast slds-theme--error');
+             $('.sf-messageSave-filter').text('You must fill a name of the filter');
+           }
+            }
+        
+            function showSavedFilter(){
+                console.log('Test is'+LatestFilter);
+            $("#select-Filter option").each(function()
+            { 
+                console.log($(this).text()==LatestFilter);
+                if($(this).text()==LatestFilter){
+                    $(this).attr('selected','selected');
+                    }
+                
+            }); 
+                SelectThisFilter();
+            }
+            function displayerrorFilter(){
+        
+            if($('.filterlogicCheck').text()=='true'|| $('.sf-panelFooter').find('textarea').val().toUpperCase()==''  )
+            {             $('#sf-SaveFilterModal').css('display','inline');
+                         $('.sf-filtermissed').hide();
+            }
+            else
+            {
+                $('.sf-filtermissed').text('You filter logic is not valid').show();
+                $('#sf-SaveFilterModal').css('display','none');
+            }
+            
+            }
+            
+            function ApplyFilter()
+            {
+              
+              if($('.filterlogicCheck').text()=='true' || $('.sf-panelFooter').find('textarea').val().toUpperCase()=='')
+              {
+                searchwithSavedFilter();
+              }
+              else
+              {
+                $('.sf-filtermissed').text('You filter is not valid').show();
+              
+              }
+             
+             
+            }
+        
+        function getSelectedFeatures2(){
+            TheArray='';
+              var data = $('#example').DataTable().$('tr', {"filter":"applied"});
+            var array=[];
+             data.each(function () {
+                 if($(this).find('.SelectedFeatures').prop("checked")){
+                   array.push($(this).find('.SelectedFeatures').attr('id'));  
+                     }
+             });
+            TheArray=array.toString();
+            if(TheArray!=''){
+                
+                document.getElementById('ToastError').style.display='none';
+            SaveSelectedDiscussion2();
+                }
+            else {
+                document.getElementById('ToastError').style.display='inline';
+                }
+            } 
+        function SaveSelectedDiscussion2(){
+             $('#SelectedItems').html('');
+          SendSelectedFeatures2(TheArray,document.getElementById('FDNameInput2').value);  
+            }
+        function showFeed(){
+                document.getElementById('SavingButton').style.display='none';
+                document.getElementById('NamingDiscussion').style.display='none';
+                document.getElementById('FullFeed').style.display='inline';
+                document.getElementById('ViewMoreButton').style.display='';
+                document.getElementById('ViewMoreButton').style.display='';
+            
+            }
+        var oldId='';
+        function ShowDiscussionFeed(a,b,c){
+            $('#ModalTitle').text(b);
+            $('#NumberOfFeatures').text(' ('+c+')');
+            if(oldId!=''){
+             document.getElementById(oldId).style.display='none';
+                }
+            oldId=a;
+            document.getElementById('ViewMoreButton2').style.display='';            
+            document.getElementById(a).style.display='inline';
+            document.getElementById('ListOfRelatedFeatures').style.display='inline';
+            var li=document.getElementsByName('Row'+a);
+            var i;
+             for(i=0;i<li.length;i++){
+                 li[i].style.display='inline';
+                 }
+            document.getElementById('ListOfDiscussions').style.display='none'; 
+            document.getElementById('DiscussionFeeds').style.display='inline';
+            }
+        function OpenThisDiscussion(){
+            var link='/'+oldId;
+            window.location=link;
+            return false;
+            }
+        function getNumberOfselectedItems(){
+            var numberOfselectedItems=0;
+            var data = $('#example').DataTable().$('tr', {"filter":"applied"});
+             data.each(function () {
+                 if($(this).find('.SelectedFeatures').prop("checked")){
+                   numberOfselectedItems++;  
+                     }
+             });
+            if(numberOfselectedItems==1){
+            $('#SelectedItems').html(numberOfselectedItems+' Feature item Selected');
+                }
+            else if(numberOfselectedItems<99){
+              $('#SelectedItems').html(numberOfselectedItems+' Features items Selected');   
+                }
+            else {
+              $('#SelectedItems').html(numberOfselectedItems+' Feature item Selected');   
+                }
+            }
+        function NewDiscussion(){
+           TheArray='';
+              var data = $('#example').DataTable().$('tr', {"filter":"applied"});
+            var array=[];
+             data.each(function () {
+                 if($(this).find('.SelectedFeatures').prop("checked")){
+                   array.push($(this).find('.SelectedFeatures').attr('id'));  
+                     }
+             });
+            TheArray=array.toString();
+            if(TheArray!=''){
+                document.getElementById('DsicussionNamingModal').style.display='inline';
+                document.getElementById('ToastError').style.display='none';
+                
+                }
+            else {
+                document.getElementById('ToastError').style.display='inline';
+                } 
+            }
+        
+        function NewDiscussion2(){
+           TheArray='';
+              var data = $('#example').DataTable().$('tr', {"filter":"applied"});
+            var array=[];
+             data.each(function () {
+                 if($(this).find('.SelectedFeatures').prop("checked")){
+                   array.push($(this).find('.SelectedFeatures').attr('id'));  
+                     }
+             });
+            TheArray=array.toString();
+            if(TheArray!=''){
+                document.getElementById('DiscussionModal2').style.display='inline';
+                document.getElementById('ToastError').style.display='none';
+                
+                }
+            else {
+                document.getElementById('ToastError').style.display='inline';
+                } 
+            }
+        
+        function InsertFeatureDiscussion(){
+            TheArray='';
+              var data = $('#example').DataTable().$('tr', {"filter":"applied"});
+            var array=[];
+             data.each(function () {
+                 if($(this).find('.SelectedFeatures').prop("checked")){
+                   array.push($(this).find('.SelectedFeatures').attr('id'));  
+                     }
+             });
+            TheArray=array.toString();
+            if(TheArray!=''){
+                //Save this feature discussion with its related features                
+                document.getElementById('DsicussionNamingModal').style.display='none';
+                SendSelectedFeatures(TheArray,document.getElementById('FDNameInput').value);
+                }
+            else {
+                document.getElementById('ToastError').style.display='inline';
+                }
+             $('#SelectedItems').html('');
+            }
+        function InsertFeatureDiscussion2(){
+            TheArray='';
+              var data = $('#example').DataTable().$('tr', {"filter":"applied"});
+            var array=[];
+             data.each(function () {
+                 if($(this).find('.SelectedFeatures').prop("checked")){
+                   array.push($(this).find('.SelectedFeatures').attr('id'));  
+                     }
+             });
+            TheArray=array.toString();
+            if(TheArray!=''){
+                //Save this feature discussion with its related features                
+                document.getElementById('DiscussionModal2').style.display='none';
+                SendSelectedFeatures2(TheArray,document.getElementById('FDNameInput2').value);
+                }
+            else {
+                document.getElementById('ToastError').style.display='inline';
+                }
+             $('#SelectedItems').html('');
+            }
+        
+            function delay(ms) {
+               ms += new Date().getTime();
+               while (new Date() < ms){}
+            }
+            function EnableDisableContactInfo(){
+                //Disable
+                if($('#checkbox-No').prop("checked")){
+                    $("#ContactInfo").css("color","lightgray");
+                    $("#NameAndCompany").css("color","lightgray");
+                    $("#myAvatar").addClass("grayedOut");
+                    }
+                //Enable
+                else{
+                    $("#ContactInfo").css("color","#54698d"); 
+                    $("#NameAndCompany").css("color","#0070d2");
+                    $("#myAvatar").removeClass("grayedOut");   
+                    }
+                }
+             function resetRateModal(){
+                 $("#star1").prop("checked",false);
+                 $("#star2").prop("checked",false);
+                 $("#star3").prop("checked",false);
+                 $("#star4").prop("checked",false);
+                 $("#star5").prop("checked",false);
+                 $("#star6").prop("checked",false);
+                 $("#star7").prop("checked",false);
+                 $("#star8").prop("checked",false);
+                 $("#star9").prop("checked",false);
+                 $("#star10").prop("checked",false);
+                 $("#star11").prop("checked",false);
+                 $("#star12").prop("checked",false);
+                 $("#star13").prop("checked",false);
+                 $("#star14").prop("checked",false);
+                 $("#star15").prop("checked",false);
+                 $('#checkbox-yes').prop("checked",true)
+                 $("#ContactInfo").css("color","#54698d"); 
+                 $("#NameAndCompany").css("color","#0070d2");
+                 $("#myAvatar").removeClass("grayedOut");
+                 $('#textarea-comments').val('');
+                 
+                 }
+            function removeCheckpoint()
+            {
+               event.preventDefault();
+               $('#checkEndpoint').css('display','none');
+               $('#background-shadow').css('display','none');
+            
+            }
+            function removeCheckpointfirst()
+            {
+               event.preventDefault();
+               $('#checkEndpointfirstcheck').css('display','none');
+               $('#background-shadow-firstcheck').css('display','none');
+              
+            }           
+            function hideFeedback()
+            {
+              var checkpoint1 = {!checkEndPoint1};
+              var checkpoint2 = {!checkEndPoint2};
+              var  checkpoint = (checkpoint1 || checkpoint2);
+              console.log('### checkpoint1 '+checkpoint1);
+              console.log('### checkpoint2 '+checkpoint2);
+              console.log('### checkpoint '+checkpoint);
+              if(checkpoint==true)
+              {
+               $('#checkEndpoint').css('display','inline');
+               $('#background-shadow').css('display','inline');
+               $('#MyRateModal').css('display','none');
+               
+              }
+              if(checkpoint==false)
+              {
+              $('#checkEndpoint').css('display','none');
+              $('#background-shadow').css('display','none');
+              $('#MyRateModal').css('display','inline');
+              }
+              
+             
+            }           
+                 
+                 
+                 
+             function CheckForm(){
+                 var result=true;
+                 //Checking fot value
+                 if(!$("#star1").prop("checked") && !$("#star2").prop("checked") && !$("#star3").prop("checked") && !$("#star4").prop("checked") && !$("#star5").prop("checked")){
+                     $("#GeneralError").html("<div id='GeneralError' style='font-weight:normal;color:#c23934'>Feedback could not be submitted. <br/> Please complete the feedback below.</div>");
+                     $("#ValueError").text("Rate the value this app provides");
+                     result=false;
+                     }
+                 if(!$("#star6").prop("checked") && !$("#star7").prop("checked") && !$("#star8").prop("checked") && !$("#star9").prop("checked") && !$("#star10").prop("checked")){
+                     $("#GeneralError").html("<div id='GeneralError' style='font-weight:normal;color:#c23934'>Feedback could not be submitted. <br/> Please complete the feedback below.</div>");
+                     $("#InstallationError").text("Rate the ease of installation");
+                     result=false;
+                     }
+                 if(!$("#star11").prop("checked") && !$("#star12").prop("checked") && !$("#star13").prop("checked") && !$("#star15").prop("checked") && !$("#star14").prop("checked")){
+                     $("#GeneralError").html("<div id='GeneralError' style='font-weight:normal;color:#c23934'>Feedback could not be submitted. <br/> Please complete the feedback below.</div>");
+                     $("#DocumentationError").text("Rate the documentation");
+                     $("#FeedbackCom").css("margin-top","10px");
+                     result=false;
+                     }
+                 return result;
+                 }
+            function removeAllErrors(){
+              $("#FeedbackCom").css("margin-top","49px");
+              $("#GeneralError").text("");
+              $("#DocumentationError").text(""); 
+              $("#InstallationError").text("");
+              $("#ValueError").text("");
+                }
+            function SubmitForm(){
+                var Value="0"; 
+                var Installation="0";
+                var Documentation="0";
+                if(CheckForm()){
+                    //Get Value
+                    if($("#star5").prop("checked")){
+                        Value="5";
+                        }
+                    else if($("#star4").prop("checked")){
+                        Value="4";
+                        }
+                    else if($("#star3").prop("checked")){
+                        Value="3";
+                        }
+                    else if($("#star2").prop("checked")){
+                        Value="2";
+                        }
+                   else  if($("#star1").prop("checked")){
+                        Value="1";
+                        }
+                    //Installation
+                    if($("#star10").prop("checked")){
+                        Installation="5";
+                        }
+                    else if($("#star9").prop("checked")){
+                        Installation="4";
+                        }
+                    else if($("#star8").prop("checked")){
+                        Installation="3";
+                        }
+                    else if($("#star7").prop("checked")){
+                        Installation="2";
+                        }
+                   else  if($("#star6").prop("checked")){
+                        Installation="1";
+                        }
+                    //Documentation
+                    if($("#star15").prop("checked")){
+                        Documentation="5";
+                        }
+                    else if($("#star14").prop("checked")){
+                        Documentation="4";
+                        }
+                    else if($("#star13").prop("checked")){
+                        Documentation="3";
+                        }
+                    else if($("#star12").prop("checked")){
+                        Documentation="2";
+                        }
+                   else  if($("#star11").prop("checked")){
+                        Documentation="1";
+                        }
+                    SubmitTheForm(Value,Documentation,Installation,$('#textarea-comments').val(),$('#checkbox-No').prop("checked"));
+                    }
+                }
+</script>    
+   <apex:actionFunction name="SubmitTheForm" action="{!submitFeedback}" rerender="" Oncomplete="if('{!FeedbackResult}'){document.getElementById('SuccessToast').style.display='inline';document.getElementById('MyRateModal').style.display='none';return false;}else {document.getElementById('FailToast').style.display='inline'}" status="Feedbackstatus"> 
+                <apex:param name="Value" id="Value"  value="" />  
+                <apex:param name="Documentation" id="documentation"  value="" />
+                <apex:param name="installation" id="installation"  value="" />  
+                <apex:param name="comments" id="comments"  value="" /> 
+                <apex:param name="ContactMe" id="ContactMe"  value="" />
+   </apex:actionFunction>
+   <apex:actionFunction name="checkLogicFilter" action="{!checkLogicFilter}" reRender="checkfilter" oncomplete="displayerrorFilter();" >
+   <apex:param name="logicFilter" id="logicFilter1" value="" />
+   </apex:actionFunction>
+   <apex:actionFunction name="FeatureMentions" action="{!FeatureMentions}" reRender="MentionPanel" oncomplete="document.getElementById('MentionModal').style.display='inline'" status="status">
+   <apex:param name="FeaturesName" id="FeaturesName" value="" />
+   </apex:actionFunction>
+   <apex:actionFunction name="SendSelectedFeatures" action="{!InsertFeatureDiscussion}" reRender="DiscussionPanel,details,jsForm,DiscussionModalButtons" oncomplete="document.getElementById('DiscussionModal').style.display='inline'; " status="status">
+   <apex:param name="FeaturesList" id="FeaturesList" value="" />
+       <apex:param name="DiscussionName" id="DiscussionName" value="" />
+   </apex:actionFunction> 
+   <apex:actionFunction name="SendSelectedFeatures2" action="{!InsertFeatureDiscussion2}" reRender="DiscussionPanel2,details,jsForm" oncomplete="window.open('/{!CurrentFD}','_self');" status="status">
+   <apex:param name="FeaturesList2" id="FeaturesList2" value="" />
+   <apex:param name="DiscussionName2" id="DiscussionName2" value="" />
+   </apex:actionFunction>
+   <apex:actionFunction name="checkLogicFilterApply" action="{!checkLogicFilter}" reRender="checkfilter" oncomplete="ApplyFilter();" >
+   <apex:param name="logicFilter" id="logicFilter2" value="" />
+   </apex:actionFunction>
+    <apex:actionFunction name="UpdateFeatureDis" action="{!UpdateFeatureDiscussion}" OnComplete="showFeed();" reRender="" status="status" >
+    <apex:param name="FDName" id="FDName" value="" />
+    </apex:actionFunction>
+
+   
+   <apex:actionFunction name="SearchSave" action="{!SearchAndSaveFilter}" reRender="details,jsForm,SavedFiltersPanel" onComplete="addErrors();document.getElementById('sf-SaveFilterModal').style.display='none';AdjustNumberofResults();" status="status">
+        <apex:param name="Filter" id="filter1"  value="" />
+        <apex:param name="ReleaseString" id="releaseString1"  value="" />
+        <apex:param name="filterName" id="filterName"  value="" />
+        <apex:param name="formulaDetail" id="formulaDetail" value="" />
+        <apex:param name="formulaLogic" id="formulaLogic" value="" />
+     </apex:actionFunction>
+       <apex:actionFunction name="DeleteFilter" action="{!deleteFilter}" reRender="details,jsForm,SavedFiltersPanel" oncomplete="DeleteSuccess();" status="status">
+        <apex:param name="filterId" id="filterId"  value="" />
+    </apex:actionFunction>
+    <apex:actionFunction name="Search" action="{!SearchAndFilter}" reRender="details,jsForm,sf-totalrecs"  oncomplete="addErrors();AdjustNumberofResults();" status="status">
+        <apex:param name="Filter" id="filter"  value="" />
+        <apex:param name="ReleaseString" id="releaseString"  value="" />
+    </apex:actionFunction>
+    <apex:actionFunction name="showMorDetail" action="{!showMorDetail}" reRender="sf-modaldialogPanel" >
+        <apex:param name="Feature" id="featureName"  value="" assignTo="{!featureName}" />
+    </apex:actionFunction>
+    <apex:actionFunction name="ChangeRelease" action="{!SearchByRelease}" reRender="details,jsForm,sf-totalrecs" oncomplete="AdjustNumberofResults();" status="status">
+        <apex:param name="Release" id="release"  value="" />
+    </apex:actionFunction>
+     <apex:actionFunction name="getSelectedField" action="{!getSelectedField}" reRender="sf-valueFilter">
+      <apex:param name="filterValue" assignTo="{!filterValue}" value="{!filterValue}"/>
+    </apex:actionFunction>
+    
+<div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" id="checkEndpoint" style="display:none;">
+  <div class="slds-modal__container">
+    <div class="slds-modal__header" style="border-bottom:0px;padding:0.5%;">
+      <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="removeCheckpoint();">
+        <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+<use xlink:href="{!URLFOR($Resource.lightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>        </svg>
+        <span class="slds-assistive-text">Close</span>
+      </button>
+      <h2 id="header43" class="slds-text-heading--medium"></h2>
+    </div>
+    <div class="slds-modal__content slds-p-around--medium">
+      <div style="font-family:'Salesforce Sans'">
+
+Hi there. It looks like you haven't set up remote site settings. Before you can submit any feedback, you'll need to set up them. You can learn more about remote site settings <a href="{!helpLink}" target="blank">  here</a>.
+<br/><br/>
+To create your remote site setting, please complete the following steps.  
+<br/><br/>
+<span style="display:{!IF(installInfo=='0' && checkEndPoint2,'','none')}" id="part1">
+1 - From Setup, enter Remote Site Settings in the Quick Find box and then select Remote Site Settings.<br/>
+2 - Click New Remote Site.<br/>
+3 - Enter the following value :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site Name : SFFRemoteSite2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site URL :<a href="{!Enpoint2}" target="blank">{!Enpoint2}</a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+4 - Click Save.<br/>
+<span style="display:{!IF(checkEndPoint1,'','none')};">
+5 - Click New Remote Site again.<br/>
+6 - Enter the following value :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site Name : SFFRemoteSite1<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site URL : <a href="{!Enpoint1}" target="blank">{!Enpoint1}</a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+7 - Click Save.<br/>
+</span>
+</span>
+
+<span style="display:{!IF(installInfo=='2' && checkEndPoint2,'','none')};" id="part2">
+1 - From Setup, enter Remote Site Settings in the Quick Find box and then select Remote Site Settings.<br/>
+2 - Search for Remote Site URL <a href="{!Enpoint2}" target="blank">{!Enpoint2}</a><br/>
+3 - Click Edit <br/>
+4 - Confirm the following :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+5 - Click Save.<br/>
+<span style="display:{!IF(checkEndPoint1,'','none')};">
+6 - Click New Remote Site.<br/>
+7 - Enter the following value :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site Name : SFFeSite1<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site URL : <a href="Enpoint1" target="blank">{!Enpoint1}</a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+8 - Click Save.<br/>
+</span>
+</span>
+
+
+<span style="display:{!IF((checkEndPoint2==false && checkEndPoint1),'','none')}" id="part3">
+1 - From Setup, enter Remote Site Settings in the Quick Find box and then select Remote Site Settings.<br/>
+2 - Click New Remote Site.<br/>
+3 - Enter the following value :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site Name : SFFRemoteSite1<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site URL :<a href="{!Enpoint1}" target="blank">{!Enpoint1}</a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+4 - Click Save.<br/>
+</span>
+
+<br/>
+
+
+Once you're done, go back to the Standard Feature Finder tab and click the Feedback button. You will no longer see this message.  
+
+
+      </div>
+    </div>
+  </div>
+</div>
+<div id="background-shadow" class="slds-backdrop slds-backdrop--open" style="display:none;"></div>     
+
+<div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" id="checkEndpointfirstcheck" style="display:{!IF(checkEndPoint2==false,'none','')}">
+  <div class="slds-modal__container">
+    <div class="slds-modal__header" style="border-bottom:0px;padding:0.5%;">
+      <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="removeCheckpointfirst();">
+        <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+<use xlink:href="{!URLFOR($Resource.lightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>        </svg>
+        <span class="slds-assistive-text">Close</span>
+      </button>
+      <h2 id="header43" class="slds-text-heading--medium"></h2>
+    </div>
+    <div class="slds-modal__content slds-p-around--medium">
+      <div style="font-family:'Salesforce Sans'">
+
+Hi there. It looks like you haven't set up remote site settings. Before you can submit any feedback, you'll need to set up them. You can learn more about remote site settings <a href="{!helpLink}" target="blank">  here</a>.
+<br/><br/>
+To create your remote site setting, please complete the following steps.  
+<br/><br/>
+<span style="display:{!IF(installInfo=='0' && checkEndPoint2,'','none')}" id="part3">
+1 - From Setup, enter Remote Site Settings in the Quick Find box and then select Remote Site Settings.<br/>
+2 - Click New Remote Site.<br/>
+3 - Enter the following value :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site Name : SFFRemoteSite2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Remote Site URL :<a href="{!Enpoint2}" target="blank">{!Enpoint2}</a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+4 - Click Save.<br/>
+</span>
+<span style="display:{!IF(installInfo=='2' && checkEndPoint2,'','none')};" id="part4">
+1 - From Setup, enter Remote Site Settings in the Quick Find box and then select Remote Site Settings.<br/>
+2 - Search for Remote Site URL <a href="{!Enpoint2}" target="blank">{!Enpoint2}</a><br/>
+3 - Click Edit <br/>
+4 - Confirm the following :<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Active checkbox should be checked<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       - Keep the Disable Protocol Security unchecked<br/>
+5 - Click Save.<br/>
+</span>
+<br/>
+Once you're done, go back to the Standard Feature Finder tab and click the Feedback button. You will no longer see this message.  
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="background-shadow-firstcheck" class="slds-backdrop slds-backdrop--open" style="display:{!IF(checkEndPoint2==false,'none','')}"></div>     
+        <!--Toast Discussion Saved-->
+        <div class="slds-notify_container" id="SaveSuccess" style="display:none">
+          <div class="slds-notify slds-notify--toast slds-theme--success" role="alert">
+            <span class="slds-assistive-text">Success</span>
+            <button class="slds-button slds-notify__close slds-button--icon-inverse" Onclick="document.getElementById('SaveSuccess').style.display='none';return false;">
+              <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                <use xlink:href="{!URLFOR($Resource.lightningRes,'assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+              </svg>
+              <span class="slds-assistive-text">Close</span>
+            </button>
+            <div class="slds-notify__content slds-grid">
+              <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                <use xlink:href="{!URLFOR($Resource.lightningRes,'/assets/icons/utility-sprite/svg/symbols.svg#notification')}"></use>
+              </svg>
+              <div class="slds-col slds-align-middle">
+                <h2 class="slds-text-heading--small ">Your new Feature Discussion was successfully created.</h2>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!--End toast discussion saved-->
+         <!--Toast Error-->
+        <div class="slds-notify_container" id="ToastError" style="display:none">
+          <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+            <span class="slds-assistive-text">Error</span>
+            <button class="slds-button slds-notify__close slds-button--icon-inverse" Onclick="document.getElementById('ToastError').style.display='none';return false;">
+                 <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                          <use xlink:href="{!URLFOR($Resource.lightningRes,'assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+              <span class="slds-assistive-text">Close</span>
+            </button>
+            <div class="slds-notify__content slds-grid">
+              <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                <use xlink:href="{!URLFOR($Resource.lightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+              </svg>
+              <div class="slds-col slds-align-middle">
+                <h2 class="slds-text-heading--small">No features selected. To start a discussion, you should at least select one feature.</h2>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--End of toast Error-->
+        <apex:outputPanel id="RatePanel">
+                <!--Toast -->
+                
+                     <div class="slds-notify_container" id="SuccessToast" style="display:none">
+                      <div class="slds-notify slds-notify--toast" role="alert">
+                        <span class="slds-assistive-text">Error</span>
+                        <button class="slds-button slds-notify__close slds-button--icon-inverse" onClick="document.getElementById('SuccessToast').style.display='none';return false" >
+                          <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                            <use xlink:href="{!URLFOR($Resource.lightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                          </svg>
+                          <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <div class="slds-notify__content slds-grid">
+                          <div aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                            <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/check_120.png')}" />
+                          </div>
+                          <div class="slds-col slds-align-middle">
+                            <h2 class="slds-text-heading--small" style="color:white;font-family: 'Salesforce Sans',Arial,sans-serif !important;">Your feedback has been submitted. Thank you!</h2>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                <!--Success Toast -->
+                <!--FailToast-->
+                    <div class="slds-notify_container" id="FailToast" style="display:none">
+                      <div class="slds-notify slds-notify--toast slds-theme--error" role="alert">
+                        <span class="slds-assistive-text">Error</span>
+                        <button class="slds-button slds-notify__close slds-button--icon-inverse" onClick="document.getElementById('FailToast').style.display='none';return false" >
+                          <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                            <use xlink:href="{!URLFOR($Resource.lightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                          </svg>
+                          <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <div class="slds-notify__content slds-grid">
+                          <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                            <use xlink:href="{!URLFOR($Resource.lightningRes, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                          </svg>
+                          <div class="slds-col slds-align-middle">
+                            <h2 class="slds-text-heading--small">You encountered some errors when trying to save your feedback.</h2>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                <!--End toasts-->
+                
+        <!--FeedBack Mechanism-->
+         <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open RateModal" id="MyRateModal" style="display:none">
+          <div class="slds-modal__container">
+            <div class="slds-modal__header rate-modal__header" >
+              
+              <h2 id="header43" class="slds-text-heading--x-small" style="font-family: 'Salesforce Sans',Arial,sans-serif !important;font-weight:500;margin-left:15px;margin-right:28px;font-size: 1em;">We appreciate your feedback!</h2>
+            </div>
+            <div class="slds-modal__content slds-p-around--medium" style="box-shadow: 0px -3px 10px -1px rgba(0,0,0,.16)">
+              <div style="margin-left:15px;margin-right:-16px">
+                  <div id="GeneralError" style="color:rgb(198,71,66);font-size: 13px;"></div><br/>
+                  <label class="slds-form-element__label On-the-scale-of-15 ">On the scale of 1-5, please rate these aspects of the app:</label><br/><br/>
+                  <label class="slds-form-element__label" style="font-weight:normal" for="Easestar5">The value this app provides:</label>  <br/>                                          
+                  
+                  <fieldset class="rating" name="value">
+                        <input type="radio" id="star5" name="rating" value="5" /><label class = "full" for="star5" title="Awesome - 5 stars"></label>
+                        <input type="radio" id="star4" name="rating" value="4" /><label class = "full" for="star4" title="Pretty good - 4 stars"></label>
+                        <input type="radio" id="star3" name="rating" value="3" /><label class = "full" for="star3" title="Meh - 3 stars"></label>
+                        <input type="radio" id="star2" name="rating" value="2" /><label class = "full" for="star2" title="Kinda bad - 2 stars"></label>
+                        <input type="radio" id="star1" name="rating" value="1" /><label class = "full" for="star1" title="Sucks big time - 1 star"></label>
+                    </fieldset>
+                  <label class="slds-form-element__label" id="ValueError" style="font-weight:normal;color:rgb(198,71,66);font-size: 13px;margin-top: -13px;margin-bottom: 6px;"></label>
+
+                       <label class="slds-form-element__label" for="Easestar5" style="font-weight:normal">The ease of installation:</label>                      
+                  <fieldset class="rating2" name="Ease">
+                        <input type="radio" id="star10" name="rating2" value="5" /><label class = "full" for="star10" title="Awesome - 5 stars"></label>
+                        <input type="radio" id="star9" name="rating2" value="4" /><label class = "full" for="star9" title="Pretty good - 4 stars"></label>
+                        <input type="radio" id="star8" name="rating2" value="3" /><label class = "full" for="star8" title="Meh - 3 stars"></label>
+                        <input type="radio" id="star7" name="rating2" value="2" /><label class = "full" for="star7" title="Kinda bad - 2 stars"></label>
+                        <input type="radio" id="star6" name="rating2" value="1" /><label class = "full" for="star6" title="Sucks big time - 1 star"></label>
+                  </fieldset>
+                  <label class="slds-form-element__label" id="InstallationError" style="font-weight:normal;color:rgb(198,71,66);font-size: 13px;margin-top: -13px;margin-bottom: 6px;"></label>
+
+                       <label class="slds-form-element__label" for="Docstar5" style="font-weight:normal">The usefulness of the documentation:</label>
+                  
+                  <fieldset class="rating3" name="documentation">
+                        <input type="radio" id="star15" name="rating3" value="5" /><label class = "full" for="star15" title="Awesome - 5 stars"></label>
+                        <input type="radio" id="star14" name="rating3" value="4" /><label class = "full" for="star14" title="Pretty good - 4 stars"></label>
+                        <input type="radio" id="star13" name="rating3" value="3" /><label class = "full" for="star13" title="Meh - 3 stars"></label>
+                        <input type="radio" id="star12" name="rating3" value="2" /><label class = "full" for="star12" title="Kinda bad - 2 stars"></label>
+                        <input type="radio" id="star11" name="rating3" value="1" /><label class = "full" for="star11" title="Sucks big time - 1 star"></label>
+                    </fieldset>
+                  <label class="slds-form-element__label" id="DocumentationError" style="font-weight:normal;color:rgb(198,71,66);font-size: 13px;margin-top: -13px;"></label>
+                    <div class="slds-form-element" style="margin-top: 49px;" id="FeedbackCom">
+                      <label class="slds-form-element__label" for="textarea-comments" style="font-weight:normal;margin-top: -20px;">Additional feedback:</label>
+                      <div class="slds-form-element__control" >
+                        <textarea id="textarea-comments" class="slds-textarea" style=" width: 250px; height: 108px;" placeholder="Comments"></textarea>
+                      </div>
+                    </div>
+                  <br/>
+                  <label class="slds-form-element__label On-the-scale-of-15 ">Let us know who you are so we can follow up with questions.</label><br/><br/>
+                  <label class="slds-form-element__label" style="margin-right: -1.25rem;font-weight:normal" >We won't use your name or contact information for any purpose other than learning more about your feedback.</label>
+                  <br/>
+                  <div>
+                      <!--Contact Informations-->
+                      
+                      <div class="slds-tile slds-media" >
+                          <div class="slds-media__figure"><br/>
+                        <span class="slds-avatar slds-avatar--circle slds-avatar--medium">
+                          <img id="myAvatar" src="{!CurrentUser.FullPhotoUrl}" alt="" />
+                        </span>
+                      </div>
+                          <div class="slds-media__body"><br/>
+                        <h3 class="slds-truncate" title="{!CurrentUser.FirstName} {!CurrentUser.LastName} - {!CurrentUser.CompanyName}" style="margin-left:15px;color:#0070d2;font-size: 1em;" id="NameAndCompany">{!CurrentUser.FirstName} {!CurrentUser.LastName} - {!CurrentUser.CompanyName}</h3>
+                        <div class="slds-tile__detail slds-text-body--small">
+                          <ul class="slds-list--horizontal slds-has-dividers--right">
+                              <li id="ContactInfo" class="slds-item" >{!CurrentUser.Email}  <br/>{!CurrentUser.MobilePhone}</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                      <br/>
+                       <div class="slds-form-element__control">  
+                        <label class="slds-radio">
+                          <input type="radio" name="options" id="checkbox-yes" checked="true" Onchange="EnableDisableContactInfo();" />
+                          <span class="slds-radio--faux"></span>
+                           <span class="slds-form-element__label" style="font-weight:normal">Yes, you can contact me</span>
+                        </label>
+                        </div>
+                    <div class="slds-form-element__control">  
+                        <label class="slds-radio">
+                          <input type="radio" name="options" id="checkbox-No" Onchange="EnableDisableContactInfo();" />
+                          <span class="slds-radio--faux"></span>
+                           <span class="slds-form-element__label" style="font-weight:normal">No, I prefer to be anonymous</span>
+                        </label>
+                        </div>
+                  </div>
+                  <br/>
+                   <apex:actionStatus id="Feedbackstatus">
+                    <apex:facet name="start">
+                    <div style="position: fixed; left: 0; top: 30%; bottom: 0; right: 0; z-index: 1001; margin: 15% 50%">
+                      <div style="display: inline-block; padding: 2px;  width: 180px;">
+                        <div class="slds-spinner--medium">
+                          <img src="{!URLFOR($Resource.lightningRes, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                        </div>
+                      </div>
+                    </div>
+                  </apex:facet>
+                </apex:actionStatus>
+                 </div>
+            </div>
+            <div class="slds-modal__footer">
+              <button class="slds-button slds-button--neutral"  onclick="resetRateModal();removeAllErrors();document.getElementById('MyRateModal').style.display='none';return false;">Cancel</button>
+              <button class="slds-button slds-button--brand" Onclick="SubmitForm();return false;">Submit
+                
+                </button>
+                
+            </div>
+          </div>
+    </div>
+      
+        
+        </apex:outputPanel>
+        <!--FeedBack Mechanism-->
+     <apex:actionStatus id="status">
+        <apex:facet name="start">
+           <div class="slds-spinner_container">
+              <div class="slds-spinner--brand slds-spinner slds-spinner--medium" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+              </div>
+            </div>    
+        </apex:facet>
+    </apex:actionStatus>
+  <apex:outputpanel style="display:none" id="checkfilter">
+  <span class="filterlogicCheck">{!logicFilterValidation}</span>
+  </apex:outputpanel>
+    </apex:form>    
+  
+              
+   <div class="slds" id="PageContent"> 
+    
+    <div class="sf-headerRegion" >
+      <div class="slds-grid" style="margin-top:-10px ;">
+        <div class="slds-col slds-has-flexi-truncate">
+          <p class="slds-text-heading--label" style="margin-left:45px">{!$label.SFF_Title}</p>
+          <div class="slds-grid">
+            <div class="slds-media__figure">
+                <div aria-hidden="true" class="slds-icon slds-icon-standard-contact slds-icon--medium" style="background-color:#a094ed;margin-top:-15px">
+                    <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/custom/custom10_120.png')}" />
+                </div>
+              </div>
+             <div class="slds-dropdown-trigger slds-dropdown-trigger--click ">
+               <div class="slds-grid slds-type-focus slds-no-space sf-titleContainer">
+                  <p class="tile__title slds-truncate slds-text-heading--small sf-releaseTitle" ></p>
+                  <button class="slds-button slds-shrink-none slds-align-middle slds-m-left--x-small">
+                    <svg aria-hidden="true" class="slds-button__icon sf-titleIcon">
+                      <use xlink:href="{!URLFOR($Resource.lightningRes, 'assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                    </svg>
+                    <span class="slds-assistive-text">{!$label.SFF_ViewMore}</span>
+                  </button>
+                </div>
+                  <div class="sf-releaseMenu slds-dropdown slds-dropdown--left slds-dropdown--small">
+                    <ul role="menu" >
+                      <li class="slds-dropdown__item sf-allreleases" Onclick="selectRelease(this,'All releases');" name="releasesIcons">
+                        <a href="javascript:void(0);" role="menuitem">
+                          <p class="slds-truncate">
+                            <svg aria-hidden="true" class="slds-icon slds-icon--selected slds-icon--x-small slds-icon-text-default slds-m-right--x-small">
+                                <use xlink:href="{!URLFOR($Resource.lightningRes, 'assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+                            </svg>{!$label.SFF_AllReleases}</p>
+                        </a>
+                      </li>
+                      <apex:repeat var="release" value="{!releases}">
+                      <li class="slds-dropdown__item sf-releases-parents" id="{!JSENCODE(release.name)}" Onclick="selectRelease(this,'{!JSENCODE(release.name)}');" name="releasesIcons">
+                        <a href="javascript:void(0);" role="menuitem">
+                          <p class="slds-truncate">
+                            <svg aria-hidden="true" class="slds-icon slds-icon--selected slds-icon--x-small slds-icon-text-default slds-m-right--x-small">
+                                <use xlink:href="{!URLFOR($Resource.lightningRes, 'assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+                            </svg><span class="sf-releases">{!JSENCODE(release.name)}</span></p>
+                        </a>
+                      </li>
+                      </apex:repeat>
+                      
+                    </ul>
+                  </div>
+            </div>
+          </div>
+        </div>       
+      </div>
+     <div class="slds-grid">
+        <div class="slds-col slds-align-bottom">
+         <p class="slds-text-body--small sf-page-header__info" > <span class="sf-sizeTable">{!totalRecs}</span> items • <span id="sf-toomanyrows" >{!$Label.SFF_UseFilter} </span> <span class="sf-filterTable"></span></p>
+         <span class="slds-text-body--small sf-page-header__info" id="SelectedItems"></span>
+         <span style="display:none" class="sf-totalrecs"><apex:outputpanel id="sf-totalrecs" >{!totalRecs}</apex:outputpanel></span>
+         </div> 
+         <div class="slds-col slds-no-flex slds-grid slds-align-bottom">
+             <div id="sf-newSearchPlace"></div>
+             <button class="slds-button slds-button--icon-border sf-export">
+              <svg aria-hidden="true" class="slds-button__icon">
+                <use xlink:href="{!URLFOR($Resource.lightningRes, 'assets/icons/utility-sprite/svg/symbols.svg#download')}"></use>
+              </svg>
+              <span class="slds-assistive-text">{!$label.SFF_Export}</span>
+             </button>
+             <button class="slds-button slds-button--icon-border sf-filterButton" onClick="filterClick()" style="height: 30px;">
+              <svg aria-hidden="true" class="slds-button__icon">
+                <use xlink:href="{!URLFOR($Resource.lightningRes, 'assets/icons/utility-sprite/svg/symbols.svg#filterList')}"></use>
+              </svg>
+              <span class="slds-assistive-text">{!$label.SFF_FilterList}</span>
+            </button>
+            <!-- <button class="slds-button slds-button--icon-border FeedButton" style="height: 30px;" Onclick="NewDiscussion()" >
+                 <img width="20px" src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/feed_60.png')}" />
+              <span class="slds-assistive-text">Start a new Feature discussion</span>
+            </button>-->
+              <button class="slds-button slds-button--icon-border FeedButton" style="height: 30px;" Onclick="NewDiscussion2()" >
+                 <img width="20px" src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/feed_60.png')}" />
+              <span class="slds-assistive-text">Start a new Feature discussion</span>
+            </button>
+           </div>
+        </div>
+    </div>
+    
+    <div class ="sf-filterPanel invisible">
+    <div class="slds-dropdown dropdownDiv slds-dropdown--right">
+     <div class="slds-panel slds-grid slds-grid--vertical slds-nowrap">
+          <div class="sf-panelHeader">
+            <button class="slds-button slds-button--neutral sf-headerButton test-cancelButton uiButton" type="button" onClick="filterCancel()">
+                {!$label.SFF_Cancel}
+            </button>
+            <button class="slds-button slds-button--brand sf-headerButton uiButton--default uiButton--brand uiButton sf-apply" type="button" oncomplete="AdjustNumberofResults();"  >
+                {!$label.SFF_Apply}
+            </button>
+           </div>
+           
+            <div class="sf-panelBody">
+              <div class="sf-validationErrorMessage slds-p-bottom--x-small" >{!$label.SFF_Error02}</div>
+                 <div class="sf-filtermissed slds-p-bottom--x-small" style="display:none;">{!$label.SF_FilterMissed} </div>
+              <div class="forceFilterPanelScope" onclick="viewReleasePanel();" style="cursor:pointer">
+                <label class="sf-showMeTitle" for="text-input-01">{!$label.SFF_ShowMe}</label>
+                <div class="slds-form-element__control divReleases" >
+                  {!LatestRelease}
+                </div>
+              </div>
+              <div class="slds-form-element">
+                <label class="sf-bodyTitle" for="date-input-01">{!$label.SFF_Matching}</label>
+                <div class="pillContainer">
+                    
+                </div>
+             </div>
+              
+              <div class="slds-form-element">
+                  <section class="slds-clearfix">
+                  <div class="slds-float--left">
+                     <label class="slds-form-element__label" for="text-input-01"><a onclick="addFilter();">{!$label.SFF_AddFilter}</a></label>
+                  </div>
+                  <div class="slds-float--right">
+                    <label class="slds-form-element__label" for="text-input-01"><a onclick="removeAllButton();">{!$label.SFF_RemoveAll}</a></label>
+                  </div>
+                </section>
+              </div>
+                <div class="sf-ShowMePopover slds-dropdown slds-popover slds-nubbin--right invisible slds-p-around--medium" role="dialog">
+                  <div class="slds-popover__body">        
+                            <label class="slds-form-element__label" for="text-input-01">{!$label.SFF_ShowMe}</label>
+                              <div class="slds-form-element">
+                              <div class="slds-form-element__control">
+                               <label class="slds-checkbox">
+                                 <input type="checkbox" name="options" id="sf-allRelCheckbox" value="All releases"/>
+                                 <span class="slds-checkbox--faux"></span>
+                                 <span class="slds-form-element__label">{!$label.SFF_AllReleases}</span>
+                               </label>
+                             </div>
+                            </div>
+                            <div style="margin-left:20%">
+                            <div class="slds-form-element">
+                             <apex:repeat var="release" value="{!releases}">                 
+                              <div class="slds-form-element__control">
+                               <label  class="slds-checkbox">
+                                 <input type="checkbox" name="releasesOptions" id="{!release.id}"  value="{!release.name}"/>
+                                 <span class="slds-checkbox--faux"></span>
+                                 <span class="slds-form-element__label">{!release.name}</span>
+                               </label>
+                             </div>
+                             </apex:repeat>               
+                            </div>
+                         </div>
+                       <button class="slds-button slds-button--neutral slds-float--right" Onclick="doneShowMeButton()">{!$label.SFF_Done}</button>
+                       <p name="ErrorField" id="sf-errorMessagelookup"></p>
+                  </div>
+                </div>
+            </div>
+            
+            <div class="sf-panelFooter slds-p-around--small">
+              <label class="slds-form-element__label slds-m-around--x-small sf-addFilterLogic" for="text-input-01"><a onClick="addFilterLogic();">{!$label.SFF_ADDFilterLogic}</a></label>
+              <div class="sf-showHideContainer slds-p-bottom--x-small">
+              <div class="slds-form-element">
+                  <section class="slds-clearfix">
+                  <div class="slds-float--left">
+                      <span class="sf-bodyTitle">
+                      
+                         <div class="slds-form-element" id="filterLogicSection"> 
+                              <div class="slds-popover slds-popover--tooltip slds-nubbin--bottom" id="tooltip" role="tooltip" style="bottom: 115%;left: -51px;position: absolute;width: 250px;"> 
+                              <div class="slds-popover__body"> 
+                              <p>{!$label.SFF_Error03}</p>
+                              </div> 
+                              </div> 
+                              <label class="slds-form-element__label" style="margin-right: 0px" for="FilterLogicTextArea">{!$label.SFF_FilterLogic}</label> 
+                              <span class="infoicon slds-icon_container" onmouseover=" $('#tooltip').show(); " onmouseout=" $('#tooltip').hide();"> 
+                              <svg aria-hidden="true" class="slds-icon slds-icon--x-small slds-icon-text-default"> 
+                              <use xlink:href="{!URLFOR($Resource.lightningRes, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use> 
+                              </svg> 
+                              </span>
+                         </div> 
+                 </span>    
+                  </div>
+                  <div class="slds-float--right">
+                    <a  onClick="$('.sf-showHideContainer').hide();$('.sf-addFilterLogic').show();$('.slds-textarea').val('');return false">{!$label.SFF_Remove}</a>
+                  </div>
+                </section>
+              </div>
+              <div class="slds-form-element">
+                  <div class="slds-form-element__control">
+                    <textarea id="textarea-input-01" class="slds-textarea" value=""></textarea>
+                    <div class="slds-form-element__help filterLogicError" style="color: rgb(194, 57, 52);font-size: .75rem;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+           <div class="slds-form-element" style="margin-left:10px;margin-right:10px">
+                  <section class="slds-clearfix">
+                  <div class="slds-float--left">
+                    <button class="slds-button slds-button--brand sf-save" >{!$label.SFF_Save}</button>
+                      </div>
+                      <div class="slds-float--right">
+                      <button class="slds-button slds-button--brand sf-showSavedFilter" onClick="document.getElementById('sf-SavedFiltersModal').style.display='inline';showSavedFilter();">{!$label.SFF_ShowMeSavedFilters}</button>
+                      </div>
+                     </section>
+                </div>
+        </div>
+     
+      </div>
+    
+    </div>
+    <!-- End -->
+    
+   <!-- Table of features -->
+   <apex:outputPanel id="details">  
+
+    <table id="example" class="slds-table slds-table--bordered slds-table--cell-buffer" width="100%">
+      <thead>
+        <tr class="slds-text-heading--label">
+          <th scope="col" class="sf-header-datatable">
+          </th>
+          <th scope="col" class="sf-header-datatable">
+          </th>
+          <th scope="col" class="sf-header-datatable">
+            <div class="slds-truncate " title="Opportunity Name" style="position:relative" id="sf-feature-header">{!$label.SFF_Feature}
+            <span style="padding-left: 2%;">
+            <img src="{!$Resource.SfUp}" class="sf-up" style="height:10px;display:none;margin-top: -1%;"/>
+             <img src="{!$Resource.SfDown}" class="sf-down" style="height:10px;display:none;margin-top: -1%;"/>
+            </span>
+            </div>
+          </th>
+          <th scope="col" class="sf-header-datatable">
+            <div class="slds-truncate " title="Account Name" style="position:relative" id="sf-feature-product-header">{!$label.SFF_ProductUpper}
+             <span style="padding-left: 2%;">
+             <img src="{!$Resource.SfUp}" style="height:10px;display:none;margin-top: -1%;" class="sf-up"/>
+             <img src="{!$Resource.SfDown}" style="height:10px;display:none;margin-top: -1%;" class="sf-down"/>
+            </span>
+            </div>
+          </th>
+          <th scope="col" class="sf-header-datatable">
+            <div class="slds-truncate " title="Close Date" style="position:relative" id="sf-feature-subproduct-header">{!$label.SFF_SubProductUpper}
+          <span style="padding-left: 2%;">
+            <img src="{!$Resource.SfUp}" style="height:10px;display:none;margin-top: -1%;" class="sf-up"/>
+            <img src="{!$Resource.SfDown}" style="height:10px;display:none;margin-top: -1%;" class="sf-down"/>
+          </span>  
+            </div>
+          </th>
+          <th scope="col" class="sf-header-datatable">
+            <div class="slds-truncate " title="Stage" style="position:relative" id="sf-feature-uiImpact-header">{!$label.SFF_UIImpactUpper}
+            <span style="padding-left: 2%;">
+            <img src="{!$Resource.SfUp}" style="height:10px;display:none;margin-top: -1%;" class="sf-up"/>
+            <img src="{!$Resource.SfDown}" style="height:10px;display:none;margin-top: -1%;" class="sf-down"/>
+            </span>
+            </div>
+          </th>
+          <th scope="col" class="sf-header-datatable">
+            <div class="slds-truncate " title="Confidence" style="position:relative" id="sf-release-header">{!$label.SFF_ReleaseUpper}
+           <span style="padding-left: 2%;">
+            <img src="{!$Resource.SfUp}" style="height:10px;display:none;margin-top: -1%;" class="sf-up"/>
+            <img src="{!$Resource.SfDown}" style="height:10px;display:none;margin-top: -1%;" class="sf-down"/>
+            </span>
+            </div>
+          </th>
+          
+          <th scope="col" class="sf-header-datatable">
+           <div class="slds-truncate " title="Confidence" style="position:relative" id="sf-description-header">{!$label.SFF_Description}
+            <span style="padding-left: 2%;">
+             <img src="{!$Resource.SfUp}" style="height:10px;display:none;margin-top: -1%;" class="sf-up"/>
+             <img src="{!$Resource.SfDown}" style="height:10px;display:none;margin-top: -1%;" class="sf-down"/>
+           </span>
+           </div>
+          </th>         
+        </tr>
+      </thead>
+      <tbody>
+        <apex:repeat value="{!features}" var="acc">
+        <tr>
+            <td>
+                <label class="slds-checkbox">
+                  <input type="checkbox" name="SelectedFeatures" Onclick="ActivateDesactivateFeed();getNumberOfselectedItems();" id="{!acc.Name}" class="pp-checkbox SelectedFeatures" />
+                  <span class="slds-checkbox--faux"></span>
+                  <span class="slds-form-element__label"></span>
+                </label> 
+            </td>
+          <td id="Icon{!acc.Name}">
+            <apex:outputPanel rendered="{!acc.isInDiscussion}" onclick="FeatureMentions('{!acc.Name}')"><img  width="20px" src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/blueFeed.png')}" /></apex:outputPanel>                  
+          </td> 
+          <th OnClick="ShowPopDescription($(this))">
+              <div class="slds-truncate" title="{!acc.Feature}">
+                <a href="javascript:void(0);">
+                {!acc.Feature}
+                </a>
+              </div>
+              <span class="sf-iddescription" style="display:none">{!acc.Feature}</span><span class="sf-idFeature" style="display:none">{!acc.Description_Notes}</span>
+              <span class="sf-ResLink" style="display:none">{!acc.release.Release_Notes_URL_PDF}</span><span class="sf-idRelease" style="display:none">{!acc.release.Name}</span> 
+          </th>      
+          <td>
+            <div class="slds-truncate" title="{!acc.Product}">{!acc.Product}</div>
+          </td>
+           <td>
+            <div title="{!acc.sub_product}">{!acc.sub_product}</div>
+          </td>
+          <td>
+            <div title="{!acc.UI_Impact}">{!acc.UI_Impact}</div>
+          </td>
+          <td>
+            <div title="{!acc.release.Name}">{!acc.release.Name}</div>
+          </td> 
+           <td>
+           <div class="slds-truncate" title="{!acc.release.Name}"> {!acc.Description_Notes}</div>
+               
+               
+          </td>          
+        </tr>
+        </apex:repeat>
+      </tbody>
+    </table>
+    </apex:outputPanel>
+   <!-- End -->
+   
+    <!-- Detail PDF -->
+     <div id="sf-modaldialog" style="display:none">
+     <apex:outputPanel id="sf-modaldialogPanel">
+     <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: black;"></div>
+     <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" >    
+      <div class="slds-modal__container">
+        <div class="slds-modal__header">
+        <button class="slds-button slds-button--icon slds-modal__close" onClick="hideModal();return false;">
+            <img src="{!URLFOR($Resource.lightningRes, 'assets/icons/utility/close_60.png')}" width="25px" />
+           <span class="slds-assistive-text">{!$label.SFF_Close}</span>
+         </button>
+           <h4 id="header43" class="slds-text-heading--small"></h4>
+        </div>
+        <div class="slds-modal__content slds-p-around--x-large">
+          <div>
+               <div class="slds-form-element"> 
+                   <label class="slds-form-element__label" for="Operator">{!$label.SFF_Description} </label> 
+                   <div class="slds-form-element__control" id="ModalDescription"> 
+                   </div> 
+               </div> 
+              
+                <div class="slds-form-element"> 
+                <label class="slds-form-element__label" for="Operator">{!$label.SFF_Resources} </label>
+                 <section class="slds-clearfix" style="width: 223px;">
+                  <div class="slds-float--left">
+                      <svg aria-hidden="true" class="slds-icon">
+                        <use xlink:href="{!URLFOR($Resource.lightningRes, 'assets/icons/doctype-sprite/svg/symbols.svg#pdf')}"></use>
+                      </svg>
+                  </div>
+                  <div class="slds-float--right">
+                    <span class="slds-icon_container" title="Release documents">
+                      <span class="slds-assistive-text">{!$label.SFF_ReleaseDocument} </span>
+                      <div class="slds-form--inline">
+                          <div class="slds-form-element">
+                           <p class="slds-form-element__control" id="sf-ResLinkDiv"> 
+                         </p> 
+                        </div>
+                        </div>
+                    </span>
+                  </div>
+                </section>
+                </div>
+            
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    <div class="slds-backdrop slds-backdrop--open"></div>   
+     </apex:outputPanel>
+    </div>
+    <!-- End -->   
+       <!-- Saving new Filter -->
+        <div id="sf-SaveFilterModal" style="display:none" >
+            
+                    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: rgb(22, 50, 92);"></div>
+        <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" >
+
+  <div class="slds-modal__container">
+    <div class="slds-modal__header">
+         <button class="slds-button slds-button--icon slds-modal__close" onClick="document.getElementById('sf-SaveFilterModal').style.display='none'">
+                <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/close_60.png')}" width="25px" />
+                <span class="slds-assistive-text">{!$label.SFF_Close}</span>
+              </button>
+         
+         <div class="" id="sf-saveNewFilter">
+             
+             <h2 id="header43" class="slds-text-heading--medium sf-messageSave-filter">{!$label.SFF_SaveNewFilter}</h2><br/>
+             </div>
+    </div>
+    <div class="slds-modal__content slds-p-around--medium">
+        <center>
+        <div class="slds-text-body--medium slds-form--inline">
+        <div class="slds-form-element">
+          <label class="slds-form-element__label" for="select-01">{!$label.SFF_FilterName}</label>
+          <div class="slds-form-element__control">
+               <input type="text" class="slds-input" id="sf-ChosenFilterName"  />
+          </div>
+        </div>
+        </div>
+        
+        </center>
+    </div>
+                <div class="slds-modal__footer " style="align:right">
+                    <Button Class="slds-button slds-button--neutral" type="button" onClick="document.getElementById('sf-SaveFilterModal').style.display='none'">{!$label.SFF_Cancel}</Button>
+                    <Button Class="slds-button slds-button--brand" type="button" Onclick="SaveFilter();">{!$label.SFF_Save}</Button>
+                 </div>
+  </div>
+     </div>
+       
+        </div> 
+        <!-- End-->
+        
+       <!--Saved filters-->
+       
+       <div id="sf-SavedFiltersModal" style="display:none" >
+            
+                    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: rgb(22, 50, 92);"></div>
+        <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" >
+
+  <div class="slds-modal__container">
+    <div class="slds-modal__header">
+         <button class="slds-button slds-button--icon slds-modal__close" onClick="document.getElementById('sf-SavedFiltersModal').style.display='none'">
+                <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/close_60.png')}" width="25px" />
+                <span class="slds-assistive-text">{!$label.SFF_Close}</span>
+              </button>
+         
+         <div >
+             
+             <h2 id="header43" class="slds-text-heading--medium sf-savedFilters">{!$label.SFF_SavedFilter}</h2><br/>
+             </div>
+    </div>
+    <div class="slds-modal__content slds-p-around--medium">
+        <center>
+        <div class="slds-text-body--medium slds-form--inline">
+        <div class="slds-form-element">
+          <label class="slds-form-element__label" for="select-01">{!$label.SFF_FilterName}</label>
+          <div class="slds-form-element__control">
+            <div class="slds-select_container">
+                <apex:outputPanel id="SavedFiltersPanel">
+              <select id="select-Filter" class="slds-select" onchange="SelectThisFilter()">
+             <apex:repeat value="{!filters}" var="field">
+               <option value="{!field.id};;{!field.featfinder__query__c};;{!field.featfinder__Releases__c};;{!field.featfinder__Formula__c};;{!field.featfinder__FilterDetail__c};;{!field.featfinder__FormulaLogic__c}">{!field.featfinder__Filter_Name__c}</option>
+             </apex:repeat>
+              </select>
+                </apex:outputPanel>
+            </div>
+          </div>
+        </div>
+        </div>
+        
+        <fieldset class="slds-form-element">
+          <div class="slds-form-element__control">
+            <div class="forceFilterPanelScope" style="cursor:pointer">
+                  <label id="sf-chosenFilter" >{!formulaFilter}</label>  
+              </div>
+          </div>
+        </fieldset>
+            <fieldset class="slds-form-element">
+          <div class="slds-form-element__control">
+            <div class="forceFilterPanelScope" style="cursor:pointer">
+                 <label id="sf-chosenRelease" >{!releaseFilter}</label>  
+              </div>
+          </div>
+ 
+        </fieldset>
+        
+        </center>
+    </div>
+                <div class="slds-modal__footer " style="align:right">
+                    <Button Class="slds-button slds-button--neutral" type="button" Onclick="$('#sf-SavedFiltersModal').hide();">{!$label.SFF_Cancel}</Button>
+                    <Button Class="slds-button slds-button--brand" type="button" Onclick="ApplySavedFilter();">{!$label.SFF_Apply}</Button>
+                    <Button Class="slds-button slds-button--brand sf-deleteFilter" type="button" Onclick="DeleteSavedFilter();">{!$label.SFF_Delete}</Button>
+                 </div>
+  </div>
+     </div>
+       
+        </div>
+       <!--end of saved filters-->
+       
+       <!--  Filter Product & Sub Product & UI Impact -->
+    <div class="sf-AddFilterPopover invisible">  
+     <div class="sf-popoverNewFilter slds-dropdown slds-popover slds-nubbin--right slds-p-around--medium" role="dialog">
+     <div class="slds-popover__body">
+           <div class="slds-form-element"> 
+               <label class="slds-form-element__label" for="Operator">{!$label.SFF_Field} </label> 
+               <div class="slds-form-element__control"> 
+               <select name="column" class="slds-input slds-show" id="selectedField" onchange="getSelectedField($('#selectedField').val());return false;" > 
+               <option value="Product">{!$label.SFF_Product}</option> 
+               <option value="Sub product">{!$label.SFF_SubProduct}</option> 
+               <option value="UI impact">{!$label.SFF_UIImpact}</option> 
+               </select> 
+               </div> 
+           </div> 
+           <div class="slds-form-element"> 
+               <label class="slds-form-element__label" for="Operator">{!$label.SFF_Operator}</label> 
+               <div class="slds-form-element__control"> 
+               <select name="column" class="slds-input slds-show" id="selectedOperator"> 
+               <option value="Equals">{!$label.SFF_Equals}</option> 
+               <option value="Not equals">{!$label.SFF_NotEquals}</option> 
+               </select> 
+               </div>
+           </div>              
+           <apex:outputPanel id="sf-valueFilter">
+               <div class="slds-form-element"> 
+               <label class="slds-form-element__label" for="Operator">{!$label.SFF_Value}</label> 
+               <div class="slds-form-element__control"> 
+               <select name="column" class="slds-input slds-show" id="selectedValue"> 
+                   <apex:repeat value="{!filterValuelst}" var="val">
+                     <option value="{!val}">{!val}</option> 
+                   </apex:repeat>
+               </select> 
+               </div> 
+                </div>
+            </apex:outputPanel>
+           <br/>
+           <button class="slds-button slds-button--neutral slds-float--right" Onclick="doneFilterButton($(this).parent().find('#selectedField').val(),$(this).parent().find('#selectedOperator').val(),$(this).parent().find('#selectedValue').val())">{!$label.SFF_Done}</button>
+           <p name="ErrorField" id="sf-errorMessagelookup  room  "></p>
+    </div>
+    </div>
+    </div>
+</div>
+        
+        <!--Discussion Naming Modal-->
+        
+       
+        
+        <div id="DsicussionNamingModal" style="display:none">
+         <div role="dialog" tabindex="-3" aria-labelledby="header43" class="slds-modal slds-fade-in-open">
+                  <div class="slds-modal__container">
+                    <div class="slds-modal__header">
+                      <button class="slds-button slds-modal__close slds-button--icon-inverse" >
+                        <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/close_60.png')}" onClick="document.getElementById('DsicussionNamingModal').style.display='none'"/>
+                        <span class="slds-assistive-text">Close</span>
+                      </button>
+                      <h2 id="header43" class="slds-text-heading--medium">Collaboration</h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around--medium">
+                         <label class="slds-form-element__label" for="text-input-01">Discussion Name</label>
+                          <div class="slds-form-element__control">
+                            <input id="FDNameInput" class="slds-input" type="text" placeholder="Discussion Name" />
+                          </div>
+                        
+                      </div>
+                    <div class="slds-modal__footer">
+                             <a id="SavingButton" class="slds-button slds-button--brand" Onclick="InsertFeatureDiscussion();">Save</a>
+                    </div>  
+                 </div>
+            </div>
+            
+<div class="slds-backdrop slds-backdrop--open"></div>
+        </div>
+        
+              <!--End of discussion Naming Modal-->
+ 
+                  <!-- Discussion starting Modal 2-->
+        
+<div id="DiscussionModal2" style="display:none">
+    <apex:outputPanel id="DiscussionPanel2">
+        <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open">
+  <div class="slds-modal__container">
+    <div class="slds-modal__header"> 
+      <button class="slds-button slds-modal__close" onclick="document.getElementById('DiscussionModal2').style.display='none';">
+        <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/close_60.png')}" />
+        <span class="slds-assistive-text">Close</span>
+      </button>
+      <h2 id="header43" class="slds-text-heading--medium">Collaboration</h2>
+    </div>
+    <div class="slds-modal__content slds-p-around--medium">
+                <div class="slds-form-element">
+                  <label class="slds-form-element__label" for="text-input-01">Discussion Name</label>
+                  <div class="slds-form-element__control">
+                    <input id="FDNameInput2" class="slds-input" type="text" placeholder="Discussion Name" />
+                  </div>
+                </div>
+ 
+        <!--Features Related List Table-->
+        <br/>
+        <div class="slds-card" style="display:none">
+  <div class="slds-card__header slds-grid">
+    <header class="slds-media slds-media--center slds-has-flexi-truncate">
+      <div class="slds-media__figure">
+        <div aria-hidden="true" class="slds-icon slds-icon-standard-contact slds-icon--small" style="background-color:#a094ed">
+            <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/custom/custom10_60.png')}" />
+            </div>
+      </div>
+      <div class="slds-media__body slds-truncate">
+        <h2>
+          <a href="javascript:void(0);" class="slds-text-link--reset">
+            <span class="slds-text-heading--small">Features ({!FeaturesTobeInserted.size})</span>
+          </a>
+        </h2>
+      </div>
+    </header>
+    <div class="slds-no-flex">
+        <!--PlaceHolder for something on the right-->
+    </div>
+  </div>
+  <div class="slds-card__body" >
+    <table class="slds-table slds-table--bordered slds-no-row-hover slds-table--cell-buffer">
+      <thead>
+        <tr class="slds-text-title--caps">
+          <th scope="col">
+            <div class="slds-truncate" title="Name">Feature Name</div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+          <apex:repeat value="{!FeaturesTobeInserted}" var="Feature">
+            <tr class="slds-hint-parent">
+              <th scope="row">
+                  <div class="slds-truncate" title="Adam Choi"><a Onclick="window.open('/{!Feature.id}','_blank')">{!Feature.featfinder__Feature__c}</a></div>
+              </th>
+            </tr>
+         </apex:repeat>
+      </tbody>
+    </table>
+  </div>
+  <div class="slds-card__footer"><a href="javascript:void(0);"> <span class="slds-assistive-text"></span></a></div>
+</div>
+        <!--End of Features Related List Table-->
+      <div>
+      </div>
+    </div>
+    <div class="slds-modal__footer">
+      <button class="slds-button slds-button--neutral" onclick="document.getElementById('DiscussionModal2').style.display='none';">Cancel</button>
+        <a class="slds-button slds-button--brand" Onclick="InsertFeatureDiscussion2()">Save</a>
+    </div>
+  </div>
+</div>
+<div class="slds-backdrop slds-backdrop--open"></div>
+   </apex:outputPanel> 
+        </div>
+            
+             <!--End of Discussion starting Modal 2--> 
+        
+        
+        <!--Mentionned in discussion Modal--> 
+        <div id="MentionModal" style="display:none">
+           <apex:outputPanel id="MentionPanel">
+             <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open">
+                  <div class="slds-modal__container">
+                    <div class="slds-modal__header">
+                      <button class="slds-button slds-modal__close slds-button--icon-inverse" onClick="document.getElementById('MentionModal').style.display='none'" >
+                        <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/utility/close_60.png')}" onClick="document.getElementById('MentionModal').style.display='none'" />
+                        <span class="slds-assistive-text" onClick="document.getElementById('MentionModal').style.display='none'" >Close</span>
+                      </button>
+                      <h2 id="header43" class="slds-text-heading--medium"><span id="ModalTitle">Collaboration </span></h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around--medium">
+                      <div id="ListOfDiscussions">
+                          <div class="slds-card">
+                              <div class="slds-card__header slds-grid">
+                                <header class="slds-media slds-media--center slds-has-flexi-truncate">
+                                  <div class="slds-media__figure">
+                                    <div aria-hidden="true" class="slds-icon slds-icon-standard-contact slds-icon--small" style="background-color:#a094ed">
+                                        <img src="{!URLFOR($Resource.lightningRes, '/assets/icons/standard/feedback_60.png')}" />
+                                        </div>
+                                  </div>
+                                  <div class="slds-media__body slds-truncate">
+                                    <h2>
+                                      <a href="javascript:void(0);" class="slds-text-link--reset">
+                                        <span class="slds-text-heading--small">Feature Discussions ({!MentionDiscussions.size})</span>
+                                      </a>
+                                    </h2>
+                                  </div>
+                                </header>
+                                <div class="slds-no-flex">
+                                    <!--PlaceHolder for something on the right-->
+                                </div>
+                              </div>
+                          <div class="slds-card__body">
+                            <table class="slds-table slds-table--bordered slds-no-row-hover slds-table--cell-buffer">
+                              <thead>
+                                <tr class="slds-text-title--caps">
+                                  <th scope="col">
+                                    <div class="slds-truncate" title="Name">Discussion Name</div>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                  <apex:repeat value="{!MentionDiscussions}" var="Discussion">
+                                    <tr class="slds-hint-parent">
+                                      <th scope="row">
+                                          <div class="slds-truncate" title="{!Discussion.Name}"><a href="/{!Discussion.id}">{!Discussion.Name} ({!Discussion.featfinder__Number_of_features__c} Features)</a></div>
+                                      </th>
+                                    </tr>
+                                 </apex:repeat>
+                              </tbody> 
+                            </table>
+                          </div>
+                          <div class="slds-card__footer"><a href="javascript:void(0);"><span class="slds-assistive-text"></span></a></div>
+                          </div>
+                        </div>
+                    </div>
+                    <div class="slds-modal__footer">
+                       <a class="slds-button slds-button--brand" id="ViewMoreButton2" style="display:none" Onclick="OpenThisDiscussion();return false;">View More</a>  
+                    </div>
+                  </div>
+                </div>
+                <div class="slds-backdrop slds-backdrop--open"></div>  
+            </apex:outputPanel> 
+        </div>
+        
+        <!--End of Mentionned in discussion Modal--> 
+        <button class="slds-button slds-button--neutral RateButton" onclick="removeAllErrors();resetRateModal();document.getElementById('MyRateModal').style.display='inline';hideFeedback();return false;">Feedback ★</button>  
+
+</html>
+</apex:page>
