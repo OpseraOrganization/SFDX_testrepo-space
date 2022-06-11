@@ -1,0 +1,270 @@
+<aura:component controller='DS_CustomCommercialEntitlementController' implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+    
+    <aura:handler name="init" value="{!this}" action="{!c.getRelatedproducts}" />
+    <aura:attribute name="MyProductfeatureList" type="Object[]"/>
+    <aura:attribute name="recordId" type="Id"/><!--default="a8h210000008QADAA2"-->
+    <aura:attribute name="IsSpinner" type="Boolean"/>
+    <aura:attribute name="DPData" type="Object"/>
+    <aura:attribute name="startPage" type="Integer" />
+    <aura:attribute name="endPage" type="Integer"/>
+    <aura:attribute name="PAgenumber" type="Integer"/>
+    <aura:attribute name="maxpagenumber" type="Integer"/>
+    <aura:attribute name="totalRecords" type="Integer"/>
+    <aura:attribute name="pageSize" type="Integer" default="10"/>
+    <aura:attribute name="showbutton" type="boolean" default="false"/>
+    <aura:attribute name="showmessage" type="boolean" default="false"/>
+    <aura:attribute name="showConfirmmessage" type="boolean" default="false"/>
+    <aura:attribute name="showConfirmbutton" type="boolean" default="true"/>
+    <aura:attribute name="showConfirmbuttonSection" type="boolean" default="true"/>
+    <aura:attribute name="showThankyou" type="boolean" default="true"/>
+    <aura:attribute name="showProducts" type="boolean" default="false"/>
+    <aura:attribute name="showpagination" type="boolean" default="false"/>
+    <!-- -->
+    <!-- Event for breadcrums -->
+    
+    
+    <lightning:layout horizontalAlign="spread" multipleRows="true">
+        <aura:if isTrue="{!v.Spinner}">
+            <lightning:layoutItem class="" flexibility="grow" size="12">
+                <div aura:id="spinnerId" class="slds-spinner_container">
+                    <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+            </lightning:layoutItem>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.showThankyou}">
+            
+            <lightning:layoutItem size="12" class="confirmationMessagePanel">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem class="" flexibility="grow" size="12">
+                        <h2> Thank you for confirming activation(s). </h2>
+                        <h2> We're ready to go!</h2>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem class="" flexibility="grow" size="12">
+                        <p>We hope you will review other recommendations and activate them successfully.</p> 
+                    </lightning:layoutItem>
+                    <lightning:layoutItem class="" flexibility="grow" size="12">
+                        <p></p>
+                        <lightning:button class="slds-theme_brand" variant="brand" onclick="{!c.addfeedback}" label="Go to feedback form">
+                        </lightning:button>
+                        <p></p>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem class="" flexibility="grow" size="12">
+                        <lightning:button variant="base"  
+                                          label="go back to activation list" 
+                                          onclick="{!c.getRelatedproducts}" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutItem>
+            
+            
+            <aura:set attribute="else">
+                <lightning:layoutItem class="" flexibility="grow" size="12" padding="around-small">
+                    <div class="slds-grid">
+                        <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th scope="col">
+                                        <lightning:input type="checkbox" aura:id="selectall"  onchange="{!c.onSelectAllChange}" label='All'  checked="false" />
+                                    </th>
+                                    <th scope="col">
+                                        <span class="slds-truncate" title=""></span> 
+                                    </th>
+                                    <th class="slds-text-title--caps" scope="col" >
+                                        <span class="slds-truncate slds-cell-wrap " title="PO line ID">PO line ID</span> 
+                                    </th>
+                                    <th class="slds-text-title--caps" scope="col">
+                                        <span class="slds-truncate slds-cell-wrap" title="Technical Recommendation">Technical Recommendation</span>  
+                                    </th>
+                                    <th class="slds-text-title--caps" scope="col" >
+                                        <span class="slds-truncate slds-cell-wrap" title="Technical recommendation PO Line">Technical recommendation PO Line</span> 
+                                    </th>
+                                    <th class="slds-text-title--caps" scope="col" >
+                                        <span class="slds-truncate slds-cell-wrap" title="Technical recommendation Date">Technical recommendation Date</span> 
+                                    </th>
+                                    <th class="slds-text-title--caps" scope="col" >
+                                        <span class="slds-truncate slds-cell-wrap " title="Technical recommendation quantity">Technical recommendation quantity</span> 
+                                    </th>
+                                    <th class="slds-text-title--caps" scope="col" >
+                                        <span class="slds-truncate slds-cell-wrap " title="Acceptance initiation">Acceptance initiation</span> 
+                                    </th>
+                                    <th class="slds-text-title--caps" scope="col" >
+                                        <span class="slds-truncate slds-cell-wrap " title="Delivery completed">Delivery completed</span> 
+                                    </th>
+                                    <th class="slds-text-title--caps" scope="col" >
+                                        <span class="slds-truncate slds-cell-wrap " title="Active in Network">Active in Network</span> 
+                                    </th>
+                                </tr>
+                            </thead>
+                            <aura:iteration items="{!v.MyProductfeatureList}" var="ProdWrap">
+                                <tbody class="slds-table_bordered">
+                                    <tr >
+                                        <td data-label="Name" scope="row">
+                                            <aura:if isTrue="{!ProdWrap.isactivated}">
+                                                <ui:outputCheckbox value="{!ProdWrap.isactivated}"/>                                                
+                                                <aura:set attribute = "else">
+                                                    <aura:if isTrue="{!ProdWrap.isdeliverycompleted}">
+                                                        <lightning:input type="checkbox" aura:id="singleselect" value="{!ProdWrap.selectedRow}" name="{!ProdWrap.upsellitems.id}" label="" onchange="{!c.openconfirmbutton}" checked="{!ProdWrap.upsellitems.Status_In_Network__c}" />
+                                                        <aura:set attribute = "else">
+                                                            <ui:outputCheckbox value="{!ProdWrap.isdeliverycompleted}"/>                                                            
+                                                        </aura:set>
+                                                    </aura:if>                                                    
+                                                </aura:set>                                                
+                                            </aura:if>
+                                        </td>
+                                        <td data-label="Features" scope="row">
+                                            <aura:if isTrue="{!ProdWrap.isFeatureAvailable}">
+                                                <aura:if isTrue="{!ProdWrap.featureboxopen}">
+                                                    <lightning:buttonIcon title="View Less" name="{!ProdWrap.selectedRow}" value="{!ProdWrap.featureboxopen}"  onclick="{!c.Expandcollapse}" aura:id="remove" iconName="utility:dash" variant="bare" alternativeText="{!rowIndex}" iconClass="dark"/>
+                                                    <aura:set attribute="else">
+                                                        <lightning:buttonIcon title="View More" name="{!ProdWrap.selectedRow}" value="{!ProdWrap.featureboxopen}"  onclick="{!c.Expandcollapse}" aura:id="add" iconName="utility:add" variant="bare" alternativeText="{!rowIndex}" iconClass="dark"/>
+                                                    </aura:set>
+                                                </aura:if>
+                                                <aura:set attribute="else">
+                                                    <span class="slds-hide_medium slds-hide_large slds-hide_x-large">no features do display</span>
+                                                </aura:set>
+                                            </aura:if>
+                                        </td>
+                                        <td data-label="PO line ID">
+                                            <div class="slds-truncate" title="{!ProdWrap.upsellitems.Customer_PO_Item__r.Name}">{!ProdWrap.upsellitems.Customer_PO_Item__r.Name}</div>
+                                        </td>
+                                        <td data-label="Technical Recommendation">
+                                            <div class="slds-truncate" title="{!ProdWrap.upsellitems.SWx_Upsell_Proposal__r.Name}">{!ProdWrap.upsellitems.SWx_Upsell_Proposal__r.Name}</div>
+                                        </td>
+                                        <td data-label="Technical recommendation PO Line">
+                                            <div class="slds-truncate" title="{!ProdWrap.upsellitems.Name}">{!ProdWrap.upsellitems.Name}</div>
+                                        </td>
+                                        <td data-label="Technical recommendation Date">
+                                            <div class="slds-truncate" title="{!ProdWrap.upsellitems.SWx_Upsell_Proposal__r.Creation_Date__c}">
+                                                <!--{!ProdWrap.upsellitems.SWx_Upsell_Proposal__r.Creation_Date__c}-->
+                                                <lightning:formattedDateTime value="{!ProdWrap.upsellitems.SWx_Upsell_Proposal__r.Creation_Date__c}" timeZone="{! $Locale.timezone}" year="numeric" month="numeric" day="numeric"/>
+                                            </div>
+                                        </td>
+                                        <td data-label="Technical recommendation quantity">
+                                            <div class="slds-truncate" title="{!ProdWrap.upsellitems.Quantity__c}">{!ProdWrap.upsellitems.Quantity__c}</div>
+                                        </td>
+                                        <td data-label="Acceptance initiation">
+                                            <div class="slds-truncate" title="{!ProdWrap.acceptanceinitiationdate}">
+                                                <lightning:icon  class="{! ProdWrap.upsellitems.Acceptance_Initiation__c == true ? 'icn' : 'icn1'}" iconName="utility:record" size="small"/>
+                                            </div>
+                                        </td>
+                                        <td data-label="Delivery Completed">
+                                            <div class="slds-truncate" title="{!ProdWrap.deliverycompleteddate}">
+                                                <lightning:icon  class="{! ProdWrap.upsellitems.Delivery_Completed__c == true ? 'icn' : 'icn1'}" iconName="utility:record" size="small"/>
+                                            </div>
+                                        </td>
+                                        <td data-label="Active in Network">
+                                            <div class="slds-truncate" title="{!ProdWrap.activenetworkdate}">
+                                                <lightning:icon  class="{! ProdWrap.isactivated == true ? 'icn' : 'icn1'}" iconName="utility:record" size="small"/>
+                                            </div> 
+                                        </td>
+                                    </tr>
+                                    
+                                    <aura:if isTrue="{!ProdWrap.isFeatureAvailable}">
+                                        <aura:if isTrue="{!ProdWrap.featureboxopen}">
+                                            
+                                            <tr class="{!ProdWrap.selectedRow}" >
+                                                <th class="hide-th"></th>
+                                                <th class="hide-th"></th>
+                                                <th class="hide-th tableheadercolor">Feature Name</th>
+                                                <th class="hide-th tableheadercolor">Feature Code</th>
+                                                <th class="hide-th tableheadercolor">Release Package</th>
+                                                <th class="hide-th tableheadercolor">New Feature</th>
+                                                <th class="hide-th"></th>
+                                                <th class="hide-th"></th>
+                                                <th class="hide-th"></th>
+                                                <th class="hide-th"></th>
+                                                
+                                            </tr>
+                                            
+                                            <aura:iteration items="{!ProdWrap.featurejunction}" var="ProdWrap1" indexVar="rowIndex1">
+                                                <tr class="selectedRow" aura:id="productRows" >
+                                                    <td class='hide-th'></td>
+                                                    <td class='hide-th'></td>
+                                                    <td data-label="Feature Name">{!ProdWrap1.Product_Feature__r.Description__c}</td>
+                                                    <td data-label="Feature Code">{!ProdWrap1.Feature_Commercial_Number__c}</td>
+                                                    <td data-label="Release Package">{!ProdWrap1.Release_NSN_Code__c}</td>
+                                                    <aura:if isTrue="{!ProdWrap1.Is_New__c}">
+                                                        <td data-label="New Feature">Yes</td>
+                                                        <aura:set attribute="else">
+                                                            <td data-label="New Feature">No</td>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                    <td class='hide-th'></td>
+                                                    <td class='hide-th'></td>
+                                                    <td class='hide-th'></td>
+                                                    <td class='hide-th'></td>
+                                                </tr>
+                                            </aura:iteration>                                                                                        
+                                        </aura:if>
+                                    </aura:if>
+                                </tbody>                           
+                            </aura:iteration>
+                            
+                        </table>
+                    </div>
+                </lightning:layoutItem>
+                <br />
+                <lightning:layoutItem class="" flexibility="grow" size="12" padding="around-small">
+                    <lightning:layout multipleRows="true">
+                        
+                        <lightning:layoutItem class="confirmButton" flexibility="grow" size="12" mediumDeviceSize="3" largeDeviceSize="3">
+                            <aura:if isTrue="{!v.showConfirmbuttonSection}">
+                                <button class="slds-button slds-button_brand" disabled="{!v.showConfirmbutton}" onclick="{!c.openconfirmmessage}">Confirm activation</button>
+                            </aura:if>
+                        </lightning:layoutItem>
+                        
+                        <aura:if isTrue="{!v.showConfirmmessage}">
+                            
+                            <lightning:layoutItem class="confirmMessagePanel" flexibility="grow" size="12" mediumDeviceSize="12" largeDeviceSize="12" padding="around-small">
+                                <div class="slds-box">
+                                    <lightning:card>
+                                        <aura:set attribute="title">
+                                            <!--<lightning:icon iconName="utility:info_alt" size="x-small"/>-->
+                                            <lightning:icon iconName="utility:info" />  
+                                            Please notice
+                                        </aura:set>
+                                        <aura:set attribute="actions">
+                                            <!--button class="slds-button slds-button_brand" onclick="{!c.updatestatus}" >Confirm</button-->
+                                            <lightning:button label="Confirm" class="slds-button slds-button_brand" onclick="{!c.updatestatus}"/>
+                                        </aura:set>
+                                        <p class="slds-p-horizontal_small">This action indicates that you are interested in activating the chosen software in your network according to the normal governance process between the responsible parties.</p>
+                                    </lightning:card>
+                                </div>
+                            </lightning:layoutItem>
+                            
+                        </aura:if>
+                    </lightning:layout>
+                    
+                    <aura:if isTrue="{!v.showmessage}">
+                        <div class="slds-align_absolute-center">No Products found.</div>
+                        <hr />
+                    </aura:if>
+                    
+                </lightning:layoutItem>
+                
+                <aura:if isTrue="{!v.showbutton}">
+                    <lightning:layoutItem class="" flexibility="grow" size="12">
+                        <hr />
+                        <div class="table-pagination">
+                            <lightning:buttonGroup >
+                                <lightning:button disabled="{!v.startPage == 0}"  
+                                                  onclick="{!c.previous}" variant="brand"
+                                                  iconName='utility:left'/>
+                                <small><span>Page {!v.PAgenumber} of {!v.maxpagenumber}</span></small>
+                                <lightning:button disabled="{!v.endPage >= v.totalRecords}" 
+                                                  onclick="{!c.next}" variant="brand"
+                                                  iconName='utility:right' />
+                            </lightning:buttonGroup>
+                        </div>	
+                    </lightning:layoutItem>
+                </aura:if>
+                
+            </aura:set>
+        </aura:if>
+    </lightning:layout>   
+</aura:component>
