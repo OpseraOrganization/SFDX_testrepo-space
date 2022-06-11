@@ -1,0 +1,177 @@
+<aura:component controller="CreateOpportunityApexCtlr"
+   implements="force:lightningQuickActionWithoutHeader,force:hasRecordId" >
+   <aura:html tag="style">
+      .slds-modal__content:last-child {height: auto!important; max-height: none !important;}
+      .slds-modal__footer{margin-bottom:20px}
+   </aura:html>
+   <aura:attribute name="con" type="Contact" />
+   <aura:attribute name="currencyValues" type="List" />
+   <aura:attribute name="oppTypes" type="List" />
+   <aura:attribute name="contractSigningValues" type="List" />
+   <aura:attribute name="accountRoleValues" type="List" />
+   <aura:attribute name="accountRoleMap" type="Map" />
+   <aura:attribute name="cmpg" type="Campaign" />
+   <aura:attribute name="newOpporunity" type="Opportunity"
+      default="{ 'sobjectType': 'Opportunity','CurrencyIsoCode':'' }" />
+   <!-- default to empty record -->
+   <aura:attribute name="accountId" type="String"/>
+   <aura:attribute name="errors" type="List"/>
+   <aura:attribute name="has_error" type="boolean" default="false"/>
+   <aura:attribute name="has_camp" type="boolean" default="false"/>
+   <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+   <!--<aura:handler name="initialize" value="{!this}" action="{!c.doInitOpp}" />-->
+   <aura:attribute name="selectedLookUpRecordAccount" type="sObject" default="{}"/>
+   <div class="main-container">
+      <!-- Display a header with details about the account -->
+      <div class="modal-header slds-modal__header" role="banner">
+         <h2 class="title slds-text-heading--medium">Indirect Opportunity</h2>
+      </div>
+      <div class="modal-body scrollable slds-modal__content slds-p-around--medium inner-div" style="margin-right:-30px;/*max-height:330px*/" id="scrollable_div">
+         <div class="slds-form slds-form_compound">
+            <fieldset class="slds-form-element">
+               <div id="error-section">
+                  <aura:if isTrue="{!v.has_error}">
+                     <aura:iteration items="{!v.errors}" var="error">
+                        <div class="slds-notify_error" id="slds-notify_error">
+                           <div class="slds-notify slds-notify--alert slds-theme--error slds-theme--alert-texture" role="alert">
+                              <span class="slds-size_1-of-1">{!error}</span>
+                           </div>
+                        </div>
+                     </aura:iteration>
+                     <br></br>
+                  </aura:if>
+               </div>
+               <div class="slds-form-element__group">
+                  <div class="slds-form-element__row">
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputText aura:id="oppName" label="Opportunity Name"
+                           value="{!v.newOpporunity.Name}" required="true"/>
+                     </div>
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputSelect required="true" aura:id="opportunity_type" label="Opportunity Type" value="{!v.newOpporunity.Business_Type__c}" class="heightSelect">
+                           <aura:iteration items="{!v.oppTypes}" var="opptype" indexVar="key">
+                              <ui:inputSelectOption text="{!opptype.value}" label="{!opptype.key}"/>
+                           </aura:iteration>
+                        </ui:inputSelect>
+                     </div>
+                     <!--Commented below for Feature 1786-->
+                     <!--<div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputText aura:id="stagename" label="Sales Phase"
+                                         value="Identify Opportunity"
+                                      required="true" disabled="true"/>
+                        </div>-->
+                  </div>
+               </div>
+                <div class="slds-form-element__group">
+                        <div class="slds-form-element__row">
+                            <div class="slds-form-element slds-size_2-of-2 pad">
+                                <ui:inputText aura:id="description" label="Description"
+                                              value="{!v.newOpporunity.Description}" required="false"/>
+                            </div>
+                        </div>
+                    </div>
+               <div class="slds-form-element__group">
+                  <div class="slds-form-element__row">
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputText aura:id="account_name" label="Account Name"
+                           value="{!v.con.Account.Name}" required="true" disabled="true"/>
+                     </div>
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputSelect required="true" aura:id="account_role" label="Account Role" value="{!v.newOpporunity.Account_Role__c}" class="heightSelect">
+                           <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                           <aura:iteration items="{!v.accountRoleValues}" var="accountRole" indexVar="key">
+                              <ui:inputSelectOption text="{!accountRole.value}" label="{!accountRole.key}"/>
+                           </aura:iteration>
+                        </ui:inputSelect>
+                     </div>
+                     <!--Commented below for Feature 1786-->
+                     <!--<div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputText aura:id="phase_status" label="Phase Status"
+                                         value="Planned" required="true" disabled="true"/>
+                        </div>-->
+                  </div>
+               </div>
+               <div class="slds-form-element__group">
+                  <div class="slds-form-element__row">
+                     <div class="slds-form-element slds-size_1-of-2 pad" >
+                        <span class="required">*</span>
+                        <c:reusableCustomLookup aura:id="account" objectAPIName="account" IconName="standard:account" selectedRecord="{!v.selectedLookUpRecordAccount}" label="End Customer Legal Entity" />
+                     </div>
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputSelect required="true" aura:id="contract_signing_entity" label="Contract Signing Entity" value="{!v.newOpporunity.Contract_Signing_Entity__c}" class="heightSelect" >
+                           <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                           <aura:iteration items="{!v.contractSigningValues}" var="contractSigning" indexVar="key">
+                              <ui:inputSelectOption text="{!contractSigning.value}" label="{!contractSigning.key}"/>
+                           </aura:iteration>
+                        </ui:inputSelect>
+                     </div>
+                  </div>
+               </div>
+               <div class="slds-form-element__group">
+                  <div class="slds-form-element__row">
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputCurrency aura:id="opp_amount" label="Unweighted Value"
+                           value="{!v.newOpporunity.Amount}" required="true" format=".00"/>
+                     </div>
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputSelect required="true" aura:id="opportunity_currency" label="Opportunity Currency" class="heightSelect" value="{!v.newOpporunity.CurrencyIsoCode}">
+                           <ui:inputSelectOption text="--None--" label="--None--" value="false"/>
+                           <aura:iteration items="{!v.currencyValues}" var="currency" indexVar="key">
+                              <ui:inputSelectOption text="{!currency.value}" label="{!currency.key}"/>
+                           </aura:iteration>
+                        </ui:inputSelect>
+                     </div>
+                  </div>
+               </div>
+               <div class="slds-form-element__group">
+                  <div class="slds-form-element__row">
+                  </div>
+               </div>
+               <div class="slds-form-element__group">
+                  <div class="slds-form-element__row">
+                     <!-- <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputDate aura:id="G2PlannedDate" label="G2 Planned Date"
+                                     value="{!v.newOpporunity.G2_Planned_Date__c}" class="field"
+                                     displayDatePicker="true" required="true" />
+                        </div>-->
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputDate aura:id="G3PlannedDate" label="G3 Planned Date"
+                           value="{!v.newOpporunity.G3_Planned_Date__c}" class="field"
+                           displayDatePicker="true" required="true" />
+                     </div>
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputDate aura:id="G4PlannedDate" label="G4 Planned Date"
+                           value="{!v.newOpporunity.G4_Planned_Date__c}" class="field"
+                           displayDatePicker="true" />
+                     </div>
+                  </div>
+               </div>
+               <div class="slds-form-element__group">
+                  <div class="slds-form-element__row">
+                     <div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputDate aura:id="G5PlannedDate" label="Win Declaration Planned Date"
+                           value="{!v.newOpporunity.G5_Planned_Date__c}" class="field"
+                           displayDatePicker="true" required="true" />
+                     </div>
+                     <aura:if isTrue="{!v.has_camp}">
+                        <div class="slds-form-element slds-size_1-of-2 pad">
+                           <ui:inputText aura:id="campaign_name" label="Marketing Campaign"
+                              value="{!v.cmpg.Name}"  disabled="true" required="true"/>
+                        </div>
+                     </aura:if>
+                     <!--<div class="slds-form-element slds-size_1-of-2 pad">
+                        <ui:inputDate aura:id="G6PlannedDate" label="G6 Planned Date"
+                                     value="{!v.newOpporunity.G6_Planned_Date__c}" class="field"
+                                     displayDatePicker="true" required="true" />
+                        </div>-->
+                  </div>
+               </div>
+            </fieldset>
+         </div>
+      </div>
+      <div class="modal-footer slds-modal__footer">
+         <ui:button class="slds-button slds-button--neutral" press="{!c.handleCancel}" label="Cancel" />
+         <ui:button class="slds-button slds-button--brand" press="{!c.saveIndirectOpportunity}" label="Save" />
+      </div>
+   </div>
+</aura:component>

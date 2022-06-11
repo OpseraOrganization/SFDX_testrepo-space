@@ -1,0 +1,189 @@
+<!--
+  @description       : 
+  @author            : Yashdeep Prajapati
+  @group             :
+  @ modified on  : 11-03-2021
+  @ modified by  : Yashdeep Prajapati
+  @ modified on  : 03-15-2022
+  @ modified by  : Christie JJ
+-->
+<apex:page StandardController="Opportunity" sidebar="false" showHeader="false" showQuickActionVfHeader="false" lightningStyleSheets="true">
+    <style type="text/css">
+        .slds-scope .slds-modal__header {
+            background-color: rgb(18 65 145);
+        }
+
+        .slds-modal__content.slds-p-around--medium {
+            padding: 0px 0px 0px 0px;
+        }
+        .cuf-content{
+            padding: 0px 0px 0px 0px;
+        }
+    </style>
+    <apex:slds />
+    <div class="backgrounding" >
+    <div id="LoadingvfDIV" class="slds-spinner_container" style="display:block;">
+        <div class="slds-spinner slds-spinner--large" aria-hidden="false" role="alert">
+            <div class="slds-spinner__dot-a"></div>
+            <div class="slds-spinner__dot-b"></div>
+        </div>
+    </div>
+
+    <!--<div class="modal-header slds-modal__header slds-size_1-of-1">-->
+    <!--<div class="title slds-text-headingmedium">-->
+    <!--<div>New Quote/Proposal</div>-->
+    <!--</div>-->
+    <!--</div>-->
+    <div class="slds-scope">
+        <div id="lightning" />
+        <apex:includeLightning />
+        <!-- Added by Christie JJ for ITCCPQ-3030 -->
+        <script type='text/javascript' src='/canvas/sdk/js/publisher.js'></script>
+        <script>
+        	//Added by tiago.almeida@nokia.com for PRM Project
+            const isPortal = "{!$CurrentPage.parameters.isPortal}" === "true";
+    		const sendMessageToLWC = (object) => (isPortal?parent.postMessage(JSON.stringify(object)):null);
+            //
+            var oppId = "{!Opportunity.ID}";
+            var recordType = "{!Opportunity.RecordType.Name}";
+            //console.log(recordType);
+            var myUserContext = "{!$User.UITheme}";
+            //console.log("{!$CurrentPage.parameters.id}");
+
+
+            var auraComponent = 'c:NokiaCPQ_CreateQuote_ExistingContract';
+            recordType = auraComponent;
+            //console.log("auraComponent-->" + auraComponent);
+            $Lightning.use("c:NokiaCPQ_createQuoteApp", function () {
+        	    //Added by tiago.almeida@nokia.com for PRM Project
+                if(isPortal) {
+                    const oldGet = $A.get;
+                    $A.get = function(event) {
+                        if(typeof event === 'string' && event.startsWith('e.force:')) {
+                            const action = { name : event.slice("e.force:".length), params : {}};
+                            return {
+                                setParams : function (p) { action.params = p; },
+                                fire : function() { sendMessageToLWC(action); }
+                            };
+                        }
+                        else return oldGet(event);
+                    };
+                }
+                //
+                $Lightning.createComponent(auraComponent,
+                    {
+                        "recordId": oppId
+                    },
+                    "lightning",
+                    function (cmp) {
+        	            //Added by tiago.almeida@nokia.com for PRM Project
+                        if(isPortal) { setTimeout(() => sendMessageToLWC({name : 'setHeight', value : document.documentElement.offsetHeight || 500 }), 50); }
+                        //console.log("AURA created " + auraComponent);
+
+                        // do some stuff
+                        /*$A.eventService.addHandler({
+                            event: 'force:showToast',
+                            handler: function (event) {
+                                var lexPath = window.location.origin;
+                                var messageParams = { type: event.getParams().type, message: event.getParams().message, mode: event.getParams().mode };
+                                parent.postMessage(messageParams, lexPath);
+                            }
+                        });*/
+                        $A.eventService.addHandler({ "event": "c:ToastEvent", "handler": getMessage });
+
+                    });
+            });
+            var getMessage = function (event) {
+                //console.log("{+} Inside Event Toast");
+                var msg = event.getParam("msg");
+                //console.log(msg);
+
+
+                //Success Case
+                if (msg.includes("|")) {
+                    var loadingDivElt = document.getElementById("LoadingvfDIV");
+                        loadingDivElt.style.display = 'none';
+                    var orgUrl = msg.split("|")[0];
+                    var quoteRecordId = msg.split("|")[1];
+                    var quoteNumber = msg.split("|")[2];
+                    //Modified by tiago.almeida@nokia.com for PRM Project
+                    if(isPortal) {
+                        sendMessageToLWC({
+                            name : 'showToast',
+                            params : {
+                                title: "Success",
+                                message: "Quote Record Created Successfully",
+                                duration: "6000",
+                                key: "info_alt",
+                                type: "success",
+                                mode: "pester",
+                                messageTemplate: "Quote {0} created!",
+                                messageTemplateData: [{
+                                    url: orgUrl + "/" + quoteRecordId,
+                                    label: quoteNumber,
+                                }]
+                        	}
+                        });
+                        sendMessageToLWC({ name : 'closeQuickAction', params : {}});
+                    }
+                    else {
+                        sforce.one.showToast({
+                            title: "Success",
+                            message: "Quote Record Created Successfully",
+                            duration: "6000",
+                            key: "info_alt",
+                            type: "success",
+                            mode: "pester",
+                            messageTemplate: "Quote {0} created!",
+                            messageTemplateData: [{
+                                url: orgUrl + "/" + quoteRecordId,
+                                label: quoteNumber,
+                            }]
+                        });
+                        //window.location.href=orgUrl+"/"+oppId;
+                        //window.history.back();
+                        
+                        //Modified by Christie JJ for defect fix ITCCPQ-3030
+                        Sfdc.canvas.publisher.publish({ name: "publisher.close", payload:{ refresh: "true" }});
+                    }
+                }
+                //Cancel Case
+                else if (msg === "CANCEL") {
+                    //Modified by tiago.almeida@nokia.com for PRM Project
+                    if(isPortal) { sendMessageToLWC({ name : 'closeQuickAction', params : {}}); }
+                    else {
+                        //window.history.back();
+                        
+                        //Modified by Christie JJ for defect fix ITCCPQ-3030
+                        Sfdc.canvas.publisher.publish({ name: "publisher.close", payload:{ refresh: "true" }});
+                    }
+                    //window.location.href=orgUrl+"/"+oppId;
+                }
+                else if (msg === "INIT") {
+                    //console.log("Inside init");
+
+                    setTimeout(function () {
+                        var loadingDivElt = document.getElementById("LoadingvfDIV");
+                        loadingDivElt.style.display = 'none';
+                    }, 3000); // Busy loop for 3000 ms
+                }
+                else if (msg === "loader") {
+                    //console.log("Inside loader");
+
+                    
+                        var loadingDivElt = document.getElementById("LoadingvfDIV");
+                        loadingDivElt.style.display = 'block';
+                   
+                }
+                else if (msg==="ERROR"){
+                        var loadingDivElt = document.getElementById("LoadingvfDIV");
+                        loadingDivElt.style.display = 'none';
+
+                }
+
+            };
+            
+        </script>
+    </div>
+</div>
+</apex:page>

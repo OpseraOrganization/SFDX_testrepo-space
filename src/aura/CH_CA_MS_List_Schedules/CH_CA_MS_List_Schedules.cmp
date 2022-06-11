@@ -1,0 +1,221 @@
+<aura:component controller="CH_CA_MS_List_Schedules_Controller" implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowScreens" access="global">
+	<aura:registerEvent name="appEvent" type="c:CH_CA_MS_Child_Event"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="messageboxEvent" event="c:CH_CA_MS_ConfirmationMessagebox_Event" action="{!c.handleMessageboxEvent}"/>
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+	<c:CH_CA_MS_ConfirmationMessagebox aura:id="messageBox" />
+    
+    <aura:attribute name="workgroupId" type="String" />
+    <aura:attribute name="userLocale" type="String" />
+	<aura:handler name="change" value="{!v.scheduleId}" action="{!c.navigationClicked}"/>
+    <aura:attribute name="scheduleId" type="String" />
+	<!--Changes added for US-28635 -->
+    <aura:attribute name="isEditEnabled" type="boolean"  />
+    <!--Start Changes for US-32554 -->
+    <aura:attribute name="openClone" type="boolean"  /> 
+    <aura:attribute name="isScheduleFilterName" type="boolean"  />
+    <aura:attribute name="isScheduleName" type="boolean" />
+    <!--End Changes for US-32554 -->
+	<!--Start Changes for US-32736 -->
+    <aura:attribute name="openExport" type="boolean"  />
+    <aura:attribute name="listOfTimeSlotMembers" type="CH_Workgroup_Member_Timeslot_Association__c[]"/> 
+    <aura:attribute name="listOfTimeSlot" type="CH_Workgroup_Schedule_Timeslot__c[]"/> 
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'TimeSlot', 'value': 'TimeSlot'},
+                                                        {'label': 'TimeSlot Members', 'value': 'TimeSlot Members'}
+                                                        ]"/>
+    <aura:attribute name="value" type="String" default="timeslotExport"/>
+    <aura:attribute name="radioValue" type="String" default=''/>
+	<aura:attribute name="isRecordsExist" type="boolean" default="false"/>
+    <!--End Changes for US-32736 -->
+	<!--Start Changes for US-32737 -->
+    <aura:attribute name="openImport" type="boolean" default="false"/>
+    <aura:attribute name="isColumnError" type="boolean" />
+    <aura:attribute name="isActiveSchedule" type="boolean" />
+    <!-- End Changes for US-32737 -->
+    <!-- Load dependencies needed for the DataTable -->
+    <ltng:require styles="{!join(',', 
+                          $Resource.datatable + '/DataTables-1.10.16/media/css/jquery.dataTables.min.css',
+                          $Resource.datatable + '/DataTables-1.10.16/extensions/Select/css/select.dataTables.min.css')}"
+                  scripts="{!join(',', 
+                           $Resource.CH_jquery224, 
+                           $Resource.datatable + '/DataTables-1.10.16/media/js/jquery.dataTables.min.js',
+                           $Resource.datatable + '/DataTables-1.10.16/extensions/Select/js/dataTables.select.min.js')}" /> 
+    
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <!-- Bread crumbs -->
+    <lightning:layoutItem >
+    	<lightning:breadcrumbs>
+            <lightning:breadcrumb label="All Schedules" href="javascript:void(0)" />
+        </lightning:breadcrumbs>
+    </lightning:layoutItem>
+    <!-- Validation errors -->
+    <lightning:layoutItem >
+        <c:CH_CA_Validate_Schedule aura:id="validateSchedule" />
+    </lightning:layoutItem>
+    <!-- List of schedules -->
+    <lightning:layoutItem >
+        <div class="slds-m-top_xx-small slds-m-bottom_xx-small slds-scrollable" style="height: 22rem;">
+            <table id="{!'schedules-' + v.workgroupId}" style="table-layout: fixed; 
+                                                               width: 100%
+                                                               overflow:hidden; text-overflow: ellipsis;
+                                                               word-wrap:break-word;">
+            </table>
+        </div>
+    </lightning:layoutItem>
+    <lightning:layout horizontalAlign="end">
+        <!-- Display the buttons -->
+        <lightning:layoutItem >
+			<aura:if isTrue="{!v.isEditEnabled}">
+            <lightning:button label="New Schedule" 
+                              aura:id="newScheduleButton"
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              variant="brand"
+                              onclick="{!c.navigationClicked}" />
+            <lightning:button label="Delete Schedule"
+                              aura:id="deleteScheduleButton"  
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              onclick="{!c.confirmDelete}"
+                              disabled="true" />
+            <lightning:button label="Validate"
+                              aura:id="validateButton"  
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              onclick="{!c.validate}"
+                              disabled="true"/>
+			<lightning:button label="Clone" 
+                              aura:id="cloneButton" 
+                              class="slds-m-top--medium slds-m-bottom--medium"
+                              onclick="{!c.clone}"
+                              disabled="true"/>
+			<lightning:button label="Export"
+                                  aura:id="exportButton"  
+                                  class="slds-m-top--medium slds-m-bottom--medium"
+                                  onclick="{!c.export}"
+                                  disabled="true"/>			
+			<lightning:button label="Import"
+                                  aura:id="importButton"  
+                                  class="slds-m-top--medium slds-m-bottom--medium"
+                                  onclick="{!c.import}"
+                                  disabled="false"/>						
+			</aura:if>
+        </lightning:layoutItem>
+    </lightning:layout>
+    <aura:if isTrue="{!v.openClone}">
+        <div class="openClone">
+            <div class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.closeClone}">
+                            <lightning:icon iconName="utility:close" variant="bare"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Clone Schedule</h2>
+                    </header>
+                    <div style="position:relative">
+                        <div class="slds-modal__content slds-p-around_medium slds-scrollable_y" style="height:12rem;">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:input type="text" aura:id="name" label="Workgroup Schedule Name"/>
+                                    <aura:if isTrue="{!v.isScheduleName}">
+                                        <div class="slds-form-element slds-has-error">
+                                            <div class="slds-form-element__help" id="form-error-01">Enter Workgroup Schedule Name</div>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                                <div class="slds-form-element__control">
+                                    <lightning:input type="text" aura:id="filtername" label="Workgroup Filter Name"/>
+                                    <aura:if isTrue="{!v.isScheduleFilterName}">
+                                        <div class="slds-form-element slds-has-error">
+                                            <div class="slds-form-element__help" id="form-error-01">Enter Workgroup Filter Name</div>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.cloneSchedule}"/>
+                        <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.closeClone}"/>
+                    </footer>
+                    
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop_open"></div> 
+        </div> 
+    </aura:if>   
+	<aura:if isTrue="{!v.openExport}">
+        <div class="openExport">
+            <div class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.closeExport}">
+                            <lightning:icon iconName="utility:close" variant="bare"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Export File</h2>
+                    </header>
+                    <div style="position:relative">
+                        <div class="slds-modal__content slds-p-around_medium slds-scrollable_y" style="height:8rem;">
+                            <lightning:radioGroup name="radioGroupRequired"
+                                                  aura:id="exportSelection"
+                                                  label="Select Export"
+                                                  options="{! v.options }"
+                                                  value="{! v.value }"
+                                                  type="radio"
+                                                  required="false"/>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.exportSchedule}"/>
+                        <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.closeExport }"/>
+                    </footer>
+                    
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop_open"></div> 
+        </div> 
+    </aura:if>
+	 <aura:if isTrue="{!v.openImport}">
+        <div class="openImport">
+            <div class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button--icon-inverse slds-modal__close" onclick="{!c.closeImport}">
+                            <lightning:icon iconName="utility:close" variant="bare"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Upload File</h2>
+                    </header>
+                    <div style="position:relative">
+                        <div class="slds-modal__content slds-p-around_medium slds-scrollable_y" style="height:12rem;">
+                            <lightning:radioGroup name="radioGroupRequired"
+                                                  aura:id="importSelection"
+                                                  label="Select Import"
+                                                  options="{!v.options}"
+                                                  value="{!v.value}"
+                                                  type="radio"
+                                                  required="false"/>
+                            <lightning:input aura:id="fileId" onchange="{!c.uploadbutton}" type="file" name="file" label="Upload Attachment" accept=".csv" multiple="false"/>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.closeImport }"/>
+                    </footer>
+                    
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop_open"></div> 
+        </div> 
+    </aura:if>
+</aura:component>

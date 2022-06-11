@@ -1,0 +1,117 @@
+<aura:component description="CH_InterfaceMappingDetailPanel" controller="CH_InterfaceMappingDetailPanelController">
+    <aura:attribute name="mappingRecord"        type="Object"   default="{}"    access="public"/>
+    <aura:attribute name="editMode"             type="Boolean"  default="false" access="public"/>
+
+    <aura:attribute name="loading"              type="Boolean"  default="false" access="private"/>
+    <aura:attribute name="success"              type="Boolean"  default="false" access="private"/>
+    <aura:attribute name="error"                type="Boolean"  default="false" access="private"/>
+    <aura:attribute name="errorMessage"         type="String"   default=""      access="private"/>
+    <aura:attribute name="hasRanges"            type="Boolean"  default="false" access="private"/>
+
+    <aura:attribute name="origins"              type="List"     default="{}"    access="private"/>
+
+    <aura:registerEvent name="CH_InterfaceMappingSavedEvent" type="c:CH_InterfaceMappingSavedEvent"/>
+
+    <aura:handler event="c:CH_InterfaceMappingSelectEvent"  action="{!c.openIMDetail}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:if isTrue="{! v.mappingRecord != null}">
+        <lightning:card>
+            <!-- header actions section -->
+            <aura:set attribute="actions">
+                <aura:if isTrue="{!!v.editMode}">
+                    <lightning:button label="Edit" variant="neutral" onclick="{!c.switchEditMode}" disabled="{! v.mappingRecord.Id == null}"/>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.mappingRecord.Id != null}">
+                            <lightning:button label="Cancel" variant="neutral" onclick="{!c.cancelEditHandler}"/>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </aura:set>
+
+            <!-- header mapping name section -->
+            <aura:set attribute="title">
+                <aura:if isTrue="{!!v.editMode}">
+                    <div class="ch-output-table">
+                        <label>
+                            <ui:outputText value="Name"/>
+                        </label>
+                        <ui:outputText value="{!v.mappingRecord.Name}" class="slds-input"/>
+                    </div>
+                    <aura:set attribute="else">
+                        <ui:inputText label="Name" value="{!v.mappingRecord.Name}" class="slds-input header-name-input" disabled="{!!v.editMode}" updateOn="change"/>
+                    </aura:set>
+                </aura:if>
+            </aura:set>
+
+            <!--Case Origin System -->
+            <div class="section slds-col--padded">
+                <ui:inputSelect label="Case Origin System" class="dynamic slds-input" aura:id="InputSelectDynamic" change="{!c.onChange}" disabled="{!!v.editMode}"/>
+            </div>
+
+            <!-- Inbound values -->
+            <div class="section slds-col--padded">
+                <ui:inputText label="Account In" value="{!v.mappingRecord.AccountIn__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+
+                <aura:if isTrue="{!v.hasRanges}">
+                    <ui:inputText label="Range Prefix" value="{!v.mappingRecord.RangePrefix__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                    <ui:inputText label="Range Start" value="{!v.mappingRecord.RangeStart__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                    <ui:inputText label="Range End" value="{!v.mappingRecord.RangeEnd__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                </aura:if>
+
+                <ui:inputText label="Solution In" value="{!v.mappingRecord.SolutionIn__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                <ui:inputText label="Product In" value="{!v.mappingRecord.ProductIn__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                <ui:inputText label="Variant In" value="{!v.mappingRecord.VariantIn__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                <ui:inputText label="Product Release In" value="{!v.mappingRecord.ProductReleaseIn__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+            </div>
+
+            <!-- Outbound values -->
+            <div class="section slds-col--padded">
+                <ui:inputText label="Account Out" value="{!v.mappingRecord.AccountOut__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                <ui:inputText label="Solution Out" value="{!v.mappingRecord.SolutionOut__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                <ui:inputText label="Product Out" value="{!v.mappingRecord.ProductOut__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                <ui:inputText label="Variant Out" value="{!v.mappingRecord.VariantOut__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+                <ui:inputText label="Product Release Out" value="{!v.mappingRecord.ProductReleaseOut__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+            	<ui:inputText label="Entitlement Out" value="{!v.mappingRecord.EntitlementOut__c}" class="slds-input" disabled="{!!v.editMode}" updateOn="change"/>
+            </div>
+
+            <div class="slds-align_absolute-center">
+                <aura:if isTrue="{!v.editMode}">
+                    <aura:if isTrue="{!v.mappingRecord.Id != null}">
+                        <lightning:button label="Update" variant="brand" onclick="{!c.doUpdate}" class="slds-m-top_medium"/>
+                        <lightning:button label="Cancel" variant="neutral" onclick="{!c.cancelEditHandler}" class="slds-m-top_medium"/>
+                        <aura:set attribute="else">
+                            <lightning:button label="Save" variant="brand" onclick="{!c.doUpdate}" class="slds-m-top_medium"/>
+                        </aura:set>
+                    </aura:if>
+                </aura:if>
+            </div>
+
+            <!-- spinner (loading) -->
+            <aura:if isTrue="{!v.loading}">
+                <lightning:spinner alternativeText="Loading" size="medium" />
+            </aura:if>
+
+            <!-- messages -->
+            <aura:if isTrue="{!v.success}">
+                <ui:message title="Success" severity="confirm">
+                    Mapping saved.
+                </ui:message>
+            </aura:if>
+            <aura:if isTrue="{!v.error}">
+                <ui:message title="Error" severity="error">
+                    {!v.errorMessage}
+                </ui:message>
+            </aura:if>
+        </lightning:card>
+
+        <!-- spinner (loading) -->
+        <aura:set attribute="else">
+            <lightning:card>
+                <aura:set attribute="title">Nothing to show...</aura:set>
+                <lightning:spinner alternativeText="Loading" size="medium" />
+            </lightning:card>
+        </aura:set>
+    </aura:if>
+
+</aura:component>
