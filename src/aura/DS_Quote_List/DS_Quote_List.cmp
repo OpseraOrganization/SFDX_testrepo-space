@@ -1,0 +1,371 @@
+<aura:component controller="DS_ProposalController" implements="force:appHostable,flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes" access="global">
+	<aura:attribute name="proposalRecords" type="Object[]"/>
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:attribute name="isSpinnerVisible" type="Boolean" default="false"/>
+	<lightning:notificationsLibrary aura:id="notifLib"/>
+
+	<aura:attribute name="accounts" type="List"/>
+	<aura:attribute name="searchText" type="String"/>
+	<aura:attribute name="matchAll" type="Boolean" default="false"/>
+	<aura:attribute name="searchFromDate" type="Date"/>
+	<aura:attribute name="searchStage" type="List"/>
+
+	<aura:attribute name="rawData" type="Object"/>
+	<aura:attribute name="filteredData" type="Object"/>
+	<aura:attribute name="data" type="Object"/>
+	<aura:attribute name="columns" type="List"/>
+	<aura:attribute name="sortedBy" type="String" default="name"/>
+	<aura:attribute name="sortedDirection" type="String" default="desc"/>
+	<aura:attribute name="validStages" type="List"/>
+
+	<aura:attribute name="selectedRowsCount" type="Integer" default="0"/>
+	<aura:attribute name="selectButtonState" type="Boolean" default="false"/>
+
+	<aura:attribute name="currentPageNumber" type="Integer" default="1"/>
+	<aura:attribute name="totalPageNumber" type="Integer" default="1"/>
+	<aura:attribute name="pageSize" type="Integer" default="10"/>
+	<aura:attribute name="recordCount" type="Integer"/>
+	<aura:attribute name="pageSizeList" type="List" default="[
+		{label: '10', value: 10},
+		{label: '100', value: 100},
+		{label: '500', value: 500},
+		{label: 'All', value: 0}
+	]"/>
+
+	<aura:attribute name="exportColumnDefaults" type="List" default="[]"/>
+	<aura:attribute name="exportColumnOptions" type="List" default="[]"/>
+	<aura:attribute name="exportColumnValues" type="List" default="[]"/>
+	<aura:attribute name="toggleOptionValue" type="Boolean" default="false"/>
+	<aura:attribute name="selectedHelpButton" type="Boolean" default="false"/>
+	<aura:attribute name="exportFilePostfix" type="String" default=""/>
+
+	<aura:attribute name="columnSeparatorOptions" type="List" default="[
+		{'label': ',', 'value': ','},
+		{'label': ';', 'value': ';'}
+	]"/>
+	<aura:attribute name="columnSeparatorValue" type="String" default=","/>
+
+	<div class="quoteListLayout">
+		<!-- spinner -->
+		<aura:if isTrue="{!v.isSpinnerVisible}">
+			<div class="slds-spinner_container">
+				<div class="slds-spinner--brand slds-spinner slds-spinner--large slds-is-relative" role="alert">
+					<span class="slds-assistive-text">Loading</span>
+					<div class="slds-spinner__dot-a"></div>
+					<div class="slds-spinner__dot-b"></div>
+					<div class="custom-loading-text">
+						Please wait while loading...
+					</div>
+				</div>
+			</div>
+		</aura:if>
+
+		<!-- page header -->
+		<div class="slds-page-header slds-page-header_record-home internalHeader">
+			<div class="slds-page-header__row">
+				<div class="slds-page-header__col-title">
+					<div class="slds-media">
+						<div class="slds-media__figure">
+							<lightning:icon iconName="standard:work_type_group" size="medium"/>
+						</div>
+						<div class="slds-media__body slds-align-middle">
+							<h2 class="slds-page-header__title slds-m-right_small slds-align-left slds-truncate">Quote to Order</h2>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<lightning:layout horizontalAlign="spread" multipleRows="true">
+			<!-- filtering area -->
+			<lightning:layoutItem size="12" class="table-filter" padding="horizontal-large">
+				<lightning:layout horizontalAlign="spread" class="filtering">
+					<lightning:layoutItem padding="around-small" flexibility="grow" size="2">
+						<lightning:combobox aura:id="searchByAccount" name="account" label="Account" placeholder="---None---" options="{!v.accounts}" value="All"/>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" flexibility="grow">
+						<div id="helpOnFilterText">
+							<label>Search <lightning:helptext content="Search on Quote content."/></label>
+						</div>
+						<div onkeyup="{!c.filterText}">
+							<lightning:input type="search" label="" value="{!v.searchText}" placeholder="Search this list..." variant="label-hidden"/>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem>
+						<div id="helpOnFilterText" style="margin-top: 15px;">
+							<label>&nbsp;</label>
+						</div>
+						<div>
+							<lightning:input type="checkbox" label="Match All" checked="{!v.matchAll}"/>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" flexibility="grow" size="2">
+						<lightning:input type="date" label="From Date" value="{!v.searchFromDate}"/>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" flexibility="grow" size="2">
+						<lightning:combobox aura:id="searchByStage" name="stage" label="Stage" placeholder="---None---" options="{!v.searchStage}" value="All"/>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" flexibility="no-grow" class="slds-align_absolute-center">
+						<lightning:button label="Search" type="submit" iconName="utility:search" iconPosition="left" onclick="{!c.doFilter}" class="searchButton"/>
+						<lightning:buttonIcon type="reset" alternativeText="Reset Filtering" iconName="utility:clear" variant="bare" onclick="{!c.clearFilter}" class="searchButton"/>
+					</lightning:layoutItem>
+				</lightning:layout>
+			</lightning:layoutItem>
+
+			<lightning:layoutItem size="12" flexibility="auto" padding="horizontal-large">
+				<div class="slds-text-align_right" style="margin-top:20px;">
+					<lightning:buttonGroup>
+						<lightning:button
+							label = "Set as Approved"
+							title = "Update the stage of the selected Quotes to 'Approved'"
+							type = "submit"
+							variant = "neutral"
+							iconName = "utility:chevronleft"
+							iconPosition = "left"
+							onclick = "{!c.handleIntermediateStageChange}"
+							value = "Approved"
+							disabled = "{!v.selectedRowsCount == 0}"/>
+						<lightning:button
+							label = "Set as In Progress"
+							title = "Update the stage of the selected Quotes to 'Published - In Progress'"
+							type = "submit"
+							variant = "neutral"
+							iconName = "utility:clock"
+							iconPosition = "left"
+							onclick = "{!c.handleIntermediateStageChange}"
+							value = "Published - In Progress"
+							disabled = "{!v.selectedRowsCount == 0}"/>
+						<lightning:button
+							label = "Set as Ready"
+							title = "Update the stage of the selected Quotes to 'Published - Ready'"
+							type = "submit"
+							variant = "neutral"
+							iconName = "utility:check"
+							iconPosition = "left"
+							onclick = "{!c.handleIntermediateStageChange}"
+							value = "Published - Ready"
+							disabled = "{!v.selectedRowsCount == 0}"/>
+						<lightning:button
+							label = "Set as Call-off Ready"
+							title = "Update the stage of the selected Quotes to 'Call-off Ready'"
+							type = "submit"
+							variant = "neutral"
+							iconName = "utility:fulfillment_order"
+							iconPosition = "left"
+							onclick = "{!c.handleIntermediateStageChange}"
+							value = "Call-off Ready"
+							disabled = "{!v.selectedRowsCount == 0}"/>
+						<!--
+						<lightning:button
+							label = "Set as Accepted"
+							title = "Update the stage of the selected Quotes to 'Accepted'"
+							type = "submit"
+							variant = "neutral"
+							iconName = "utility:like"
+							iconPosition = "left"
+							onclick = "{!c.handleIntermediateStageChange}"
+							value = "Accepted"
+							disabled = "{!v.selectedRowsCount == 0}"/>
+						-->
+					</lightning:buttonGroup>
+				</div>
+			</lightning:layoutItem>
+
+			<!-- table of quotes -->
+			<lightning:layoutItem flexibility="auto" size="12" padding="horizontal-large">
+				<!-- table header - buttons, records count and records per page -->
+				<div class="slds-text-body_regular slds-text-align_right tableHeader">
+					<div id="buttonsBox">
+						<span class="slds-p-horizontal_xxx-small">
+							<lightning:buttonStateful
+								labelWhenOff = "Select All"
+								labelWhenOn = "Select None"
+								iconNameWhenOff = "utility:multi_select_checkbox"
+								iconNameWhenOn = "utility:clear"
+								state = "{!v.selectButtonState}"
+								onclick = "{!c.selectAllOrNone}"
+								variant = "base"
+								class = "selectAllButton"
+							/>
+						</span>
+						<span class="slds-p-horizontal_large">
+							<lightning:button
+								label = "Export selected"
+								title = "Generate an export document with the selected rows and save it onto the local drive"
+								type = "submit"
+								variant = "base"
+								iconName = "utility:download"
+								iconPosition = "left"
+								onclick = "{!c.exportDialog}"
+								disabled = "{!v.selectedRowsCount == 0}"
+							/>
+						</span>
+					</div>
+					<div>
+						<span class="slds-p-horizontal_large">Records found: {!v.recordCount}</span>
+						<span class="slds-p-horizontal_xx-small">Records per page:</span>
+						<aura:iteration items="{!v.pageSizeList}" var="pageSizeElement" indexVar="i">
+							<lightning:button onclick="{!c.updatePageSize}" variant="base" label="{!pageSizeElement.label}" value="{!pageSizeElement.value}" disabled="{!v.pageSize == pageSizeElement.value}"/>
+							<aura:if isTrue="{!i != v.pageSizeList.length-1}">
+								&nbsp;&nbsp;|
+							</aura:if>
+						</aura:iteration>
+					</div>
+				</div>
+				<lightning:datatable
+					aura:id = "proposalTable"
+					columns = "{!v.columns}"
+					data = "{!v.data}"
+					keyField = "id"
+					hideCheckboxColumn = "true"
+					sortedBy = "{!v.sortedBy}"
+					sortedDirection = "{!v.sortedDirection}"
+					onrowaction = "{!c.handleActions}"
+					onsort = "{!c.updateColumnSorting}"
+					class = "quoteTable"
+				/>
+				<aura:if isTrue="{!v.data.length == 0}">
+					<lightning:layoutItem class="" flexibility="no-grow" size="12" padding="horizontal-large">
+						<div class="slds-align_absolute-center slds-p-around_medium">
+							No record found.
+						</div>
+					</lightning:layoutItem>
+				</aura:if>
+				<!-- pagination -->
+				<div class="table-pagination">
+					<lightning:buttonGroup>
+						<lightning:button disabled="{!v.currentPageNumber == 1}" onclick="{!c.previous}" variant="brand" iconName='utility:left'/>
+						<span>Page {!v.currentPageNumber} of {!v.totalPageNumber}</span>
+						<lightning:button disabled="{!v.currentPageNumber == v.totalPageNumber}" onclick="{!c.next}" variant="brand" iconName='utility:right' />
+					</lightning:buttonGroup>
+				</div>
+			</lightning:layoutItem>
+
+			<!-- modal window for Export selected Quotes -->
+			<lightning:layoutItem size="12" padding="horizontal-large">
+				<div aura:id="exportDialog" role="dialog" tabindex="-1" aria-labelledby="modal-heading-02" class="slds-modal slds-fade-in-open slds-modal_small slds-hide">
+					<div class="slds-modal__container">
+						<header class="slds-modal__header">
+							<lightning:buttonIcon iconName="utility:close" variant="bare-inverse" onclick="{!c.handleCloseExportDialog}" alternativeText="Close" size="large" class="slds-modal__close"/>
+							<h2 id="modal-heading-02" class="slds-text-heading--medium">Export Selected Quotes</h2>
+						</header>
+						<div class="slds-modal__content slds-p-horizontal_medium slds-p-bottom_x-large">
+							<lightning:layout horizontalAlign="spread" multipleRows="true">
+								<!-- Dual List Box of Columns -->
+								<lightning:layoutItem size="11" padding="around-medium">
+									<lightning:dualListbox
+										name = "exportColumns"
+										label = "Select Export Columns"
+										sourceLabel = "Available"
+										selectedLabel = "Selected"
+										options = "{!v.exportColumnOptions}"
+										value = "{!v.exportColumnValues}"
+										min = "3"
+										size = "6"
+										fieldLevelHelp = "Select the columns for the header of the generated export. At least 3 columns shall be selected."
+									/>
+								</lightning:layoutItem>
+
+								<!-- Help button -->
+								<lightning:layoutItem size="1" padding="around-medium">
+									<lightning:buttonIconStateful iconName="utility:question" selected="{!v.selectedHelpButton}" alternativeText="Help" onclick="{!c.handleClickHelp}"/>
+									<div aura:id="helpCard" class="slds-card slds-card_boundary slds-hide helpCard">
+										<div class="slds-card__header slds-grid">
+											<h2 class="slds-card__header-title">Select Export Columns</h2>
+										</div>
+										<div class="slds-card__body slds-card__body_inner helpCardBody">
+											<p class="slds-p-bottom_small slds-p-top_medium">
+												The selected columns will appear in the generated export header in the given order.
+											</p>
+											<p class="slds-p-bottom_small">
+												<b>Note: </b>The following table describes the basic properties related to a Quote or Quote Line Item. Customer Facing Attributes (displayed in the Extra Information column) are optional therefore not part of the list.
+											</p>
+											<table>
+												<aura:iteration items="{!v.exportColumnDefaults}" var="item">
+													<tr>
+														<th class="slds-p-top_medium slds-p-right_medium">{!item.label}</th>
+														<td class="slds-p-top_medium">{!item.description}</td>
+													</tr>
+												</aura:iteration>
+											</table>
+										</div>
+										<footer class="slds-card__footer">
+											<lightning:button variant="base" label="Close" onclick="{!c.handleClickHelp}"/>
+										</footer>
+									</div>
+								</lightning:layoutItem>
+
+								<!-- Additional Settings -->
+								<lightning:layoutItem size="12" padding="around-medium">
+									<legend class="slds-form-element__legend">Additional Settings</legend>
+								</lightning:layoutItem>
+								<lightning:layoutItem size="12">
+									<table class="slds-table optionsTable">
+										<tr>
+											<th>
+												<div class="slds-form-element__label">Add Bundle Options</div>
+												<lightning:helptext content="Turn on to include Bundle Options in the export"/>
+											</th>
+											<td>
+												<lightning:input
+													type = "toggle"
+													label = "Add Bundle Options"
+													name = "togglevalue"
+													checked = "{!v.toggleOptionValue}"
+													messageToggleActive = "On"
+													messageToggleInactive = "Off"
+													variant = "label-hidden"
+												/>
+											</td>
+										</tr>
+										<tr>
+											<th>
+												<div class="slds-form-element__label">Column Separator</div>
+												<lightning:helptext content="Select the separator character used to divide each column in the generated export file"/>
+											</th>
+											<td>
+												<lightning:radioGroup
+													name = "columnSeparatorOptionsGroup"
+													label = "Column Separator"
+													options = "{!v.columnSeparatorOptions}"
+													value = "{!v.columnSeparatorValue}"
+													type = "button"
+													variant = "label-hidden"
+												/>
+											</td>
+											<th>
+												<div class="slds-form-element__label">Postfix for file name</div>
+												<lightning:helptext content="An optional text appended at the end of the file name. (Example: MassExportProposal_&lt;current date&gt;_&lt;POSTFIX&gt;.CSV). Allowed characters are a-z, A-Z, 0-9, - and _."/>
+											</th>
+											<td class="optionsTableInputFileName">
+												<lightning:input
+													name = "exportFilePostfix"
+													type = "text"
+													placeholder = "Type a postfix for the file name..."
+													value = "{!v.exportFilePostfix}"
+													variant = "label-hidden"
+												/>
+											</td>
+										</tr>
+									</table>
+								</lightning:layoutItem>
+							</lightning:layout>
+						</div>
+						<footer class="slds-modal__footer">
+							<lightning:button variant="neutral" label="Cancel" onclick="{!c.handleCloseExportDialog}"/>
+							<lightning:button aura:id="exportButton" type="submit" variant="brand" label="Export" onclick="{!c.exportQuoteList}" value="Export"/>
+						</footer>
+					</div>
+				</div>
+				<div aura:id="overlay" class="slds-backdrop slds-backdrop--open slds-hide"></div>
+			</lightning:layoutItem>
+		</lightning:layout>
+	</div>
+	<!--
+	<aura:html tag="style">
+		.toastMessage.forceActionsText {
+			white-space : pre-line !important;
+		}
+	</aura:html>
+	-->
+</aura:component>

@@ -1,0 +1,112 @@
+<aura:component implements="lightning:actionOverride,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" controller="DS_ProposalController">
+    <aura:attribute name="proposalRecords" type="Object[]"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="isSpinnerVisible" type="Boolean" default="false"/>
+
+    <aura:attribute name="searchFromDate" type="Date"/>
+    <aura:attribute name="searchText" type="String"/>
+    <aura:attribute name="searchStage" type="List"/>
+
+    <aura:attribute name="rawData" type="Object"/>
+    <aura:attribute name="filteredData" type="Object"/>
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="sortedBy" type="String" default="name"/>
+    <aura:attribute name="sortedDirection" type="String" default="desc"/>
+
+    <aura:attribute name="currentPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="totalPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="pageSize" type="Integer" default="10"/>
+    <aura:attribute name="recordCount" type="Integer"/>
+    <aura:attribute name="pageSizeList" type="List" default="[{label: '10', value: 10},
+                                                              {label: '100', value: 100},
+                                                              {label: '500', value: 500},
+                                                              {label: 'All', value: 0}]"/>
+
+    <!-- spinner -->
+    <aura:if isTrue="{!v.isSpinnerVisible}">
+        <div class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+
+    <lightning:layout horizontalAlign="spread" multipleRows="true">
+        <!-- filtering area -->
+        <lightning:layoutItem size="12" class="table-filter" padding="horizontal-large">
+            <lightning:layout horizontalAlign="spread" class="filtering">
+                <lightning:layoutItem padding="around-small" flexibility="grow">
+                    <div style="padding-top: 2px; margin-bottom: 2px; color: rgb(105, 105, 105);">
+                        <label>Search <lightning:helptext content="Search on Quote content."/></label>
+                    </div>
+                    <div onkeyup="{!c.filterText}">
+                        <lightning:input type="search" label="" value="{!v.searchText}" placeholder="Search this list..." variant="label-hidden"/>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" flexibility="grow" size="2">
+                    <lightning:input type="date" label="From Date" value="{!v.searchFromDate}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" flexibility="grow" size="2">
+                    <lightning:combobox aura:id="searchByStage" name="stage" label="Stage" placeholder="---None---" options="{!v.searchStage}" value="All"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" flexibility="no-grow" class="slds-align_absolute-center">
+                    <lightning:button label="Search" type="submit" iconName="utility:search" iconPosition="left" onclick="{!c.filterData}" class="searchButton"/>
+                    <lightning:buttonIcon type="reset" alternativeText="Reset Filtering" iconName="utility:clear" variant="bare" onclick="{!c.clearFilter}" class="searchButton"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:layoutItem>
+
+        <!-- records count and records per page -->
+        <lightning:layoutItem class="" flexibility="no-grow" size="12" padding="horizontal-large">
+            <div class="slds-text-body_regular slds-text-align_right tableHeader">
+                <div>
+                    <span style="padding-right: 25px;">Records found: {!v.recordCount}</span>
+                    <span style="padding-right: 5px;">Records per page:</span>
+                    <aura:iteration items="{!v.pageSizeList}" var="pageSizeElement" indexVar="i">
+                        <lightning:button onclick="{!c.updatePageSize}" variant="base" label="{!pageSizeElement.label}" value="{!pageSizeElement.value}" disabled="{!v.pageSize == pageSizeElement.value}"/>
+                        <aura:if isTrue="{!i != v.pageSizeList.length-1}">
+                            &nbsp;&nbsp;|
+                        </aura:if>
+                    </aura:iteration>
+                </div>
+            </div>
+        </lightning:layoutItem>
+
+        <!-- table of commercial proposals -->
+        <lightning:layoutItem class="" flexibility="no-grow" size="12" padding="horizontal-large">
+            <lightning:datatable
+                aura:id = "proposalTable"
+                columns = "{!v.columns}"
+                data = "{!v.data}"
+                keyField = "id"
+                hideCheckboxColumn = "true"
+                sortedBy = "{!v.sortedBy}"
+                sortedDirection = "{!v.sortedDirection}"
+                onrowaction = "{!c.handleActions}"
+                onsort = "{!c.updateColumnSorting}"/>
+        </lightning:layoutItem>
+
+        <aura:if isTrue="{!v.data.length == 0}">
+            <lightning:layoutItem class="" flexibility="no-grow" size="12" padding="horizontal-large">
+                <div style="padding: 20px; text-align: center;">
+                    No record found.
+                </div>
+            </lightning:layoutItem>
+        </aura:if>
+
+        <!-- pagination -->
+        <lightning:layoutItem class="" flexibility="grow" size="12" padding="horizontal-large">
+            <div class="table-pagination">
+                <lightning:buttonGroup>
+                    <lightning:button disabled="{!v.currentPageNumber == 1}" onclick="{!c.previous}" variant="brand" iconName='utility:left'/>
+                    <span>Page {!v.currentPageNumber} of {!v.totalPageNumber}</span>
+                    <lightning:button disabled="{!v.currentPageNumber == v.totalPageNumber}" onclick="{!c.next}" variant="brand" iconName='utility:right' />
+                </lightning:buttonGroup>
+            </div>
+        </lightning:layoutItem>
+
+    </lightning:layout>
+</aura:component>
