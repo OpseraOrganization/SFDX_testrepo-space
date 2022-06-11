@@ -1,0 +1,137 @@
+<aura:component controller="CH_LightningController" implements="force:appHostable,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:hasRecordId" access="global">
+	<lightning:workspaceAPI aura:id="Workspace" />
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <!-- Attributes -->
+    <aura:attribute name="attachments" type="List" description=""/>
+    <aura:attribute name="logs" type="List" description=""/>
+    <aura:attribute name="aTableColumns" type="List"/>
+    <aura:attribute name="lTableColumns" type="List"/>
+    <aura:attribute name="aGlobalActions" type="List" description="" default=""/>
+    <aura:attribute name="lGlobalActions" type="List" description="" default=""/>
+    <aura:attribute name="type" type="String" default="Attachments"/>
+    <aura:attribute name="logCollection" type="Boolean" default="false"/>
+    <aura:attribute name="popup" type="Object"/>
+    <aura:attribute name="selectedForDelete" type="List" description=""/>
+    <aura:attribute name="selectedForLinkage" type="List" description=""/>
+    <aura:attribute name="fileInfo" type="List" description=""/>
+    <aura:attribute name="shareRND" type="Object" description=""/>
+    <aura:attribute name="viewAll" type="Boolean" default="false"/>
+    <aura:attribute name="isCommunity" type="Boolean" default="false"/>
+    <aura:attribute name="capsInstance" type="String" description=""/>
+    <aura:attribute name="baseUrl" type="String" description=""/>
+    <aura:attribute name="rndInterface" type="String" description=""/>
+    <aura:attribute name="actionCounter" type="Integer" default="0" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <!-- Community VisualForce Page Toast -->
+    <aura:attribute name="portalToast" type="Object" description=""/>
+    <aura:if isTrue="{! v.portalToast }">
+    	<div style="position: fixed; top: 1rem; left: 1rem; right: 1rem;">
+            <div class="slds-notify_container slds-is-relative">
+                <div class="{! 'slds-notify slds-notify_toast slds-theme_' + v.portalToast.type }">
+                    <lightning:icon class="slds-icon_container slds-m-right_small slds-no-flex slds-align-top" iconName="{! 'utility:' + v.portalToast.type }" variant="inverse" alternativeText="{! v.portalToast.type }" size="small"/>
+                    <div class="slds-notify__content">
+                        <h2 class="slds-text-heading_small">{! v.portalToast.title }</h2>
+                        <p>{! v.portalToast.message }</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+	<!-- Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative" style="{! v.viewAll || and(v.isCommunity, v.attachments.length != 0) ? 'height: 100%;' : ''}">
+        <!-- Loading Spinner -->
+        <aura:if isTrue="{! v.showSpinner }">
+            <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+        </aura:if>
+        <!-- Table -->
+        <c:Datatable aura:id="cAttachmentsTable"
+                     label="{! v.type }"
+                     iconName="custom:custom22"
+                     countOnLabel="{! !v.viewAll }"
+                     hideControls="{! !v.viewAll }"
+                     maxRowSelection="1000"
+                     data="{! v.type == 'Attachments' ? v.attachments : v.logs }" 
+                     columns="{! v.type == 'Attachments' ? v.aTableColumns : v.lTableColumns }"
+                     globalActions="{! v.type == 'Attachments' ? v.aGlobalActions : v.lGlobalActions }"
+                     onglobalaction="{! c.handleGlobalAction }"
+                     onrowaction="{! c.handleRowAction }"
+                     hideOnEmpty="true"
+                     type="{! v.viewAll || and(v.isCommunity, v.attachments.length != 0) ? 'fullscreen' : 'related'}"/>
+    </div>
+    <!-- Popup -->
+    <aura:if isTrue="{! v.popup }">
+        <section class="slds-modal slds-fade-in-open">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <div class="slds-align_absolute-center">
+                    <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+                </div>
+            </aura:if>
+            <div class="slds-modal__container">
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closePopup }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <aura:if isTrue="{! v.popup == 'delete' }">
+                        <h2 class="slds-text-heading_medium slds-hyphenate">Delete Attachments</h2>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'download' }">
+                        <h2 class="slds-text-heading_medium slds-hyphenate">Attachments Information</h2>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'share' }">
+                        <h2 class="slds-text-heading_medium slds-hyphenate">Share attachments with R&amp;D</h2>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'link' }">
+                        <h2 class="slds-text-heading_medium slds-hyphenate">Link to Problem</h2>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'unlink' }">
+                        <h2 class="slds-text-heading_medium slds-hyphenate">Unlink from Problem</h2>
+                    </aura:if>
+                </header>
+                <!-- Content -->
+                <div class="slds-modal__content slds-p-around_medium slds-grid slds-wrap">
+                    <aura:if isTrue="{! v.popup == 'delete' }">
+                        <p class="slds-size_12-of-12" align="center">All files in selected attachments will get deleted. Are you sure?</p>
+                        <p class="slds-size_12-of-12" align="center">Please click "Confirm" to proceed or "Cancel"</p>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'download' }">
+                        <aura:iteration items="{!v.fileInfo}" var="item">
+                            <lightning:input class="slds-size_11-of-12" readonly="true" value="{!item.password}" label="{!item.fileName}" variant="label-inline"/>
+                            <lightning:buttonIcon class="slds-size_1-of-12" iconName="utility:copy_to_clipboard" alternativeText="Copy" title="Copy" value="{!item.password}" onclick="{!c.copyToClipboard}"/>
+                        </aura:iteration>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'share' }">
+                        <lightning:input class="slds-size_12-of-12" label="Subject" name="subject" value="{! v.shareRND.subject }" readonly="true"/> 
+                        <lightning:textarea class="slds-size_12-of-12" label="Description" name="description" value="{! v.shareRND.description }" readonly="true"/>
+                        <lightning:textarea class="slds-size_12-of-12" label="Additional Description (for R&amp;D)" name="additionalDescription" value="{! v.shareRND.additionalDescription }"/>
+                        <lightning:textarea class="slds-size_12-of-12" label="Comments (not shared with R&amp;D)" name="comments" value="{! v.shareRND.comments }"/>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'link' }">
+                        <p class="slds-size_12-of-12" align="center">All files in selected attachments will get shared with the linked Problem. Are you sure?</p>
+                        <p class="slds-size_12-of-12" align="center">Please click "Confirm" to proceed or "Cancel"</p>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'unlink' }">
+                        <p class="slds-size_12-of-12" align="center">All files in selected attachments will get unshared with the linked Problem. Are you sure?</p>
+                        <p class="slds-size_12-of-12" align="center">Please click "Confirm" to proceed or "Cancel"</p>
+                    </aura:if>
+                </div>
+                <!-- Footer -->
+                <footer class="slds-modal__footer">
+                    <aura:if isTrue="{! v.popup == 'delete' || v.popup == 'share' || v.popup == 'link' || v.popup == 'unlink' }">
+                    	<lightning:button name="Cancel" label="Cancel" onclick="{! c.closePopup }"/>
+                        <lightning:button name="Confirm" label="Confirm" variant="brand" onclick="{! c.confirmPopUp }"/>
+                    </aura:if>
+                    <aura:if isTrue="{! v.popup == 'download' }">
+                        <lightning:button name="Close" label="Close" variant="brand" onclick="{! c.closePopup }"/>
+                    </aura:if>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

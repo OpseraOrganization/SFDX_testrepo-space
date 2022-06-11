@@ -1,0 +1,92 @@
+<aura:component controller="HWS_WarrantyQuotation_Controller" implements="forceCommunity:availableForAllPageTypes,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:isUrlAddressable" access="global" >
+    <!--Declare Handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.doInit }"/> 
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+	 <aura:handler name="cmpEventReview" event="c:HWS_ReviewTabEscalateEvent" action="{!c.setMessage}"/>  <!--NOKIASC-37508-->
+    <!--Calling Server-Side Action-->
+    <c:CH_Shared_Javascript aura:id="sharedJavaScript"/>
+    <!-- attributes -->
+    <aura:attribute name="isUnknowWarranty" Type="Boolean"/>
+    <aura:attribute name="isSubmittedDone" Type="Boolean"/>
+    <aura:attribute name="isDisableOkButton" Type="Boolean"/>
+	<aura:attribute name="isDisableValidateButton" Type="Boolean" default="false"/>
+    <aura:attribute name="isMessageButtonVisible" Type="Boolean" default="false"/>
+    <aura:attribute name="isButtonSectionVisible" Type="Boolean" default="true"/>
+    <aura:attribute name="recordId" type="string" description="Id of Parent Case"/>
+    <aura:attribute name="existingCaseNumber" type="string" description="Case Number of Parent Case"/>
+    <aura:attribute name="instructionMsg" type="string" description="To store Instruction message after Warranty and Quotation check"/>
+    <aura:attribute name="LabelList" type="List" default="[]" description="To store Label set from Apex"/>
+    <aura:attribute name="afterLabelName" type="string" description="To store after click Label from Apex"/>
+    <aura:attribute name="CaseList" type="List" default="[]" description="To store Parent with Child cases from Apex"/>
+    <aura:attribute name="selectedCaseList" type="List" default="[]" description="To store Parent with Child cases from Apex"/>
+    <aura:attribute name="ProcessResponse" type="Object"/>    
+    <aura:attribute name="refreshChildOnly" Type="Boolean" default="false"/>
+	<!-- 34093 -->
+    <aura:attribute name="fewWUorQRTrue" Type="Boolean" default="false"/> 
+    <!-- Attribute for Spinner -->
+    <aura:attribute name="isSpinner" type="boolean" default="false"/>
+    <!-- Modal Spinner declare -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner  alternativeText="Loading" size="medium"/>
+    </aura:if> 
+    
+    
+    <article class="slds-card slds-p-around--medium slds-m-bottom--x-small"> 
+        <aura:if isTrue="{!v.CaseList.length>0}">
+            <aura:if isTrue="{!v.isMessageButtonVisible}">        
+                <lightning:layout multipleRows="true" class="slds-m-bottom--medium slds-align--absolute-center">
+                    <!-- Start- this container used to show display message -->
+                    <lightning:layoutItem size="9" >                              
+                        <div class="container-box slds-page-header__meta-text slds-text-align--left" style="height:6rem">                        
+                            <lightning:formattedRichText  value="{!v.instructionMsg}" />
+                        </div>                                           
+                    </lightning:layoutItem>
+                    <!-- End -->
+                    <!-- Start- this container used to show validate button -->
+                    <aura:if isTrue="{!v.isButtonSectionVisible}">  
+                        <lightning:layoutItem size="3" >
+                            
+                            <div class="vertical-center slds-align_absolute-center" >
+                                <aura:if isTrue="{!v.isUnknowWarranty}">
+                                    <lightning:button variant="brand" 
+                                                      class="slds-float_right slds-m-around--small slds-button_small" 
+                                                      label="OK" 
+                                                      title="Ok" 
+                                                      onclick="{!c.okButtonClick}" disabled="{!v.isDisableOkButton}"/>  
+                                    
+                                    <aura:set attribute="else">
+                                        <lightning:button variant="brand" 
+                                                          class="slds-float_right slds-m-around--small slds-button_small" 
+                                                          label="Validate &amp; Submit" 
+                                                          title="Validate and Submit" 
+                                                          onclick="{! c.validateandSubmit }" disabled="{!v.isDisableValidateButton}" />  
+                                    </aura:set>
+                                </aura:if>
+                                <!-- End -->
+                            </div>    
+                            
+                        </lightning:layoutItem>
+                    </aura:if>
+                </lightning:layout>
+            </aura:if>
+ 
+            <!-- Start - Calling child component for child records table functionility-->
+            <aura:if isTrue="{!v.CaseList.length>0}">
+                <c:HWS_WarrantyChildCaseLoad_Review aura:id="cComp" recordId="{!v.recordId}"
+                                                          actionsVisible="{!v.isButtonSectionVisible}" 
+                                                          childCasesList="{!v.CaseList}"
+                                                          refreshParentEvent="{!c.refresh}" />
+            </aura:if>
+            <!-- End -->            
+            <aura:set attribute="else">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12" padding="horizontal-medium">                              
+                        <div class="container-box slds-text-font_monospace slds-text-heading_small"><div class="slds-text-color_error fontbold">{!$Label.c.HWS_Review_Message}</div></div>                                           
+                    </lightning:layoutItem>                
+                </lightning:layout>
+            </aura:set>
+        </aura:if>
+    </article>
+    
+    
+</aura:component>

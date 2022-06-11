@@ -1,0 +1,124 @@
+<aura:component implements="forceCommunity:availableForAllPageTypes" controller="NCP_EmergencySupport_COM" description="NCP_EmergencySupportCmp"
+                access="GLOBAL">
+    <aura:attribute name="countryOptions" type="List[]"/>
+    <aura:attribute name="countrySupportData" type="List"/>
+    <aura:attribute name="countrySupportGlobalData" type="List"/>
+    <aura:attribute name="contactSupportData" type="NCP_EmergencyContact_Wrapper"/>
+    <aura:attribute name="user" type="User"/>
+    <!-- Note that country is now using a country code -->
+    <aura:attribute name="country" type="String"/>
+    <aura:attribute name="disabledValue" type="Boolean" default="true"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <c:NCP_LoginPrompt myType="generalSupportFAQ" isNotifier="true" hasLink="true" hasClose="false"/>
+
+    <lightning:layout class="slds-wrap slds-grid_pull-padded-x-small slds-m-bottom_medium">
+        <lightning:layoutItem class="slds-p-around_x-small" size="12" mediumDeviceSize="6" largeDeviceSize="4">
+            <div class="ncp-text-headline_one slds-p-vertical_medium ncp-text-color-primary-brand">
+                {#$Label.c.NCP_emergency_support_heading}
+            </div>
+            <div>
+                <lightning:combobox aura:id="selectItem" class="slds-col"
+                                    name="country"
+                                    label="{#$Label.c.NCP_emergency_support_picklist_label}"
+                                    placeholder="{#$Label.c.NCP_emergency_support_picklist_label}"
+                                    value="{!v.country}"
+                                    options="{!v.countryOptions}"
+                                    onchange="{!c.handleChangeCountry}"/>
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+
+    <aura:if isTrue="{!or(v.contactSupportData.CARES_TelephoneContact.length > 0, v.contactSupportData.CARES_EmailSupport.length > 0)}">
+        <lightning:layout class="slds-wrap slds-grid_pull-padded-x-small slds-m-bottom_medium">
+
+            <lightning:layoutItem class="slds-p-around_x-small" size="12" mediumDeviceSize="12" largeDeviceSize="12">
+                <div class="slds-page-header nok-variant slds-p-top_none slds-p-bottom_none slds-m-right_x-small">
+                    <div class="slds-grid slds-grid_vertical-align-center">
+                        <lightning:icon class="slds-m-right_x-small ncp-text-color-primary-brand" iconName="utility:info" size="small"/>
+                        <div class="slds-p-around-x-small">
+                            <!-- <h1 class="ncp-text-body_regular-bold slds-p-around-x-small">{#$Label.c.NCP_emergency_support_information_nokia_contracts}</h1> -->
+                            <h1 class="slds-p-around-x-small"><b>For all Critical or Outage incidents</b>, the Nokia helpdesk needs to be called; these incidents <b>cannot</b> be raised via Support Portal nor via email support.</h1>
+                        </div>
+                    </div>
+                </div>
+            </lightning:layoutItem>
+        </lightning:layout>
+
+
+        <lightning:layout class="slds-wrap slds-grid_pull-padded-x-small slds-m-bottom_medium">
+
+            <aura:if isTrue="{!v.contactSupportData.CARES_TelephoneContact.length > 0}">
+                <lightning:layoutItem class="slds-p-around_x-small" size="12" mediumDeviceSize="6" largeDeviceSize="4">
+                    <article class="slds-tile">
+                        <div class="slds-page-header nok-variant">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <div class="slds-m-right_small">
+                                    <lightning:icon class="slds-icon-background-brand" iconName="standard:call"
+                                                    size="medium"/>
+                                </div>
+                                <div>
+                                    <h1 class="ncp-text-headline_three ncp-text-color-primary-brand ">{#$Label.c.NCP_emergency_support_contact_method_telephone}</h1>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-tile__detail slds-p-horizontal_medium slds-p-vertical_x-small">
+
+                            <aura:iteration items="{!v.contactSupportData.CARES_TelephoneContact}" var="data">
+                                <div class="slds-media slds-p-vertical_x-small">
+                                    <div class="slds-media__figure slds-p-vertical_xx-small">
+                                        <lightning:icon class="slds-icon-background-inverse" iconName="standard:call"
+                                                        size="medium"/>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <p>{!data.contact_Label}</p>
+                                        <a href="{!'Tel:' + data.contact_email_telephone}">
+                                            <p class="ncp-text-body_regular-bold ncp-text-color-primary-brand">{!data.contact_email_telephone}</p>
+                                        </a>
+                                    </div>
+                                </div>
+                            </aura:iteration>
+                        </div>
+                    </article>
+                </lightning:layoutItem>
+            </aura:if>
+
+            <aura:if isTrue="{!v.contactSupportData.CARES_EmailSupport.length > 0}">
+                <lightning:layoutItem class="slds-p-around_x-small" size="12" mediumDeviceSize="6" largeDeviceSize="4">
+                    <article class="slds-tile">
+                        <div class="slds-page-header nok-variant">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <div class="slds-m-right_small">
+                                    <lightning:icon class="slds-icon-background-brand" iconName="standard:email"
+                                                    size="medium"/>
+                                </div>
+                                <div>
+                                    <h1 class="ncp-text-headline_three ncp-text-color-primary-brand">{#$Label.c.NCP_emergency_support_contact_method_email}</h1>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="slds-tile__detail slds-p-horizontal_medium slds-p-vertical_x-small">
+                            <aura:iteration items="{!v.contactSupportData.CARES_EmailSupport}" var="globalData">
+                                <div class="slds-media slds-p-vertical_x-small">
+                                    <div class="slds-media__figure slds-p-vertical_xx-small">
+                                        <lightning:icon class="slds-icon-background-inverse" iconName="standard:email"
+                                                        size="medium"/>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <p>{!globalData.contact_Label}</p>
+                                        <a href="{!'mailto:' + globalData.contact_email_telephone}">
+                                            <p class="ncp-text-body_regular-bold ncp-text-color-primary-brand">{!globalData.contact_email_telephone}</p>
+                                        </a>
+                                    </div>
+                                </div>
+                            </aura:iteration>
+                        </div>
+                    </article>
+                </lightning:layoutItem>
+            </aura:if>
+
+        </lightning:layout>
+    </aura:if>
+</aura:component>

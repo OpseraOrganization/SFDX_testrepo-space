@@ -1,0 +1,100 @@
+<aura:component controller="CH_LightningController" implements="force:appHostable,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName" access="global">
+	<lightning:workspaceAPI aura:id="Workspace" />
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doRefresh}" />
+    <!-- Attributes -->
+    <aura:attribute name="authorizedContacts" type="List" description=""/>
+    <aura:attribute name="tableColumns" type="List" description="Pass the columns you want throuth" default=""/>
+    <aura:attribute name="globalActions" type="List" description="" default="[{name:'refresh', label:'Refresh'}]"/>
+    <aura:attribute name="newPopUpVisible" type="Boolean" default="false" description="" />
+    <aura:attribute name="type" type="String" default="Complete" description="" />
+    <aura:attribute name="actionCounter" type="Integer" default="0" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <aura:attribute name="newContacts" type="List" description=""/>
+    <aura:attribute name="newContactsColumns" type="List" description="Pass the columns you want throuth" default=""/>
+    <aura:attribute name="searched" type="Boolean" default="false"/>
+    <aura:attribute name="contractNumber" type="String" description=""/>
+    <aura:attribute name="reportId" type="String" description=""/>
+    <aura:attribute name="viewAll" type="Boolean" default="false"/>
+	<!-- Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative" style="{! v.viewAll ? 'height: 100%;' : ''}">
+        <!-- Loading Spinner -->
+        <aura:if isTrue="{! v.showSpinner }">
+            <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+        </aura:if>
+        <!-- Table -->
+        <c:Datatable aura:id="authContactTable"
+                     label="{! 'Authorized ' + (v.sObjectName == 'Contact'?'Contracts':'Contacts')}"
+                     iconName="standard:contact"
+                     countOnLabel="{! !v.viewAll }"
+                     hideControls="{! !v.viewAll }"
+                     data="{! v.authorizedContacts }" 
+                     columns="{! v.tableColumns }"
+                     globalActions="{! v.globalActions }"
+                     onglobalaction="{! c.handleGlobalAction }"
+                     onrowaction="{! c.handleRowAction }"
+                     hideOnEmpty="true"
+                     type="{! v.viewAll ? 'fullscreen' : 'related'}"/>
+    </div>
+    <!-- New Authorized Contact Component -->
+    <aura:if isTrue="{! v.newPopUpVisible }">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <div class="slds-align_absolute-center">
+                    <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+                </div>
+            </aura:if>
+            <div class="slds-modal__container">
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closePopUp }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Authorized Contact</h2>
+                </header>
+                <!-- Content -->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <h3 class="slds-section__title slds-theme--shade primaryPaletteBorder">
+                        <span class="test-id__section-header-title section-header-title slds-p-horizontal--small slds-truncate">Information</span>
+                    </h3>
+                    <div class="slds-p-around_medium"><!--onkeyup="{! c.searchNewContacts }"-->
+                        <lightning:layout horizontalAlign="center">
+                            <lightning:layoutItem size="5">
+                                <lightning:input aura:id="cGlobalSearch" name="cGlobalSearch" placeholder="" label="Contact Global Search" />
+                                <lightning:input aura:id="cEmail" name="cEmail" placeholder="" label="Contact Email" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="2">
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="5">
+                                <lightning:input aura:id="cContactId" name="cContactId" placeholder="" label="Contact ID" />
+                                <lightning:input aura:id="cAccountName" name="cAccountName" placeholder="" label="Account (Legal Entity)" />
+                                <lightning:button class="slds-float_left slds-m-top_large" label="Search" onclick="{! c.searchNewContacts }" />   
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        <aura:if isTrue="{! v.searched }">
+                        	<br></br>
+                            <aura:if isTrue="{! v.newContacts.length != 0 }">
+                                <c:Datatable aura:id="authContactTable"
+                                             label="Contacts"
+                                             data="{! v.newContacts }" 
+                                             columns="{! v.newContactsColumns }"
+                                             onrowaction="{! c.handleRowAction }"
+                                         	 type="scroll"/>                            
+                                <aura:set attribute="else"><h3 style="color: red; font-weight: bold;">No Results found.</h3></aura:set>
+                            </aura:if>
+                        </aura:if>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <footer class="slds-modal__footer">
+                    <lightning:button name="Close" variant="brand" label="Close" onclick="{! c.closePopUp }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>
