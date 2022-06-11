@@ -1,0 +1,69 @@
+<apex:page standardController="Opportunity" extensions="NokiaCPQ_QuoteCreationCtrlExtn" lightningStyleSheets="true" > <!-- lightningStyleSheets="true"-->
+    <apex:form >
+        <apex:variable var="q" value="{!quote}" />
+        
+        <!-- 1st Page Block for dynamically display of record type -->
+        <apex:outputPanel id="displayRecordTypeSelectionPB">
+        <apex:pageBlock title="New Quote/Proposal" rendered="{! displayRecordTypeSelectionPB}">
+        <apex:pageBlockSection columns="1">
+        <apex:selectRadio layout="pageDirection" label="Select a Record Type" value="{! recordTypeSelection}">
+            <apex:selectOptions value="{!rTOptionsItems}"/>
+            <!--<apex:selectOption itemLabel="New Quote" itemValue="Direct Quote"></apex:selectOption>
+            <apex:selectOption itemLabel="New QTC Quote - CPQ" itemValue="QTC NCQ Quote"></apex:selectOption>
+            <apex:selectOption itemLabel="New QTC Quote - Surround/PT" itemValue="CQ Editable Record Type"></apex:selectOption>
+            -->
+            <apex:actionSupport event="onchange" reRender="displayRecordTypeSelectionPB, displayNewQuotePB" action="{! recordTypeChange}"/>
+        </apex:selectRadio>
+        </apex:pageBlockSection>
+    </apex:pageBlock>
+    </apex:outputPanel>
+        
+    <!-- 2st Page Block for dynamically display the quote fields -->
+    <apex:outputPanel id="displayNewQuotePB">
+    <apex:pageBlock title="New Quote/Proposal" rendered="{! displayNewQuotePB}">
+        <apex:pageMessages />
+        <apex:pageBlockButtons location="bottom">   
+            <apex:commandButton action="{! save}" value="Save and Open Quote"/>
+            <apex:commandButton action="{! saveAndSuccessMessage}"  value="Save Quote and Open Opportunity"/>
+            <apex:commandButton action="{! cancel}" value="Cancel"/>
+        </apex:pageBlockButtons>
+        
+        <apex:pageBlockSection columns="2">
+            <apex:outputField value="{! q.Apttus_Proposal__Opportunity__c }" rendered="{! if(displayOnQTCQuotePT, true, false)}" />
+            
+            <!--- Dynamically laod the fields from the mapped FieldSet -->
+            <apex:repeat value="{!fields}" var="f">
+            <apex:inputField value="{!q[f.fieldPath]}" 
+                      required="{!OR(f.required, f.dbrequired)}"
+                             />
+            </apex:repeat>
+            <apex:inputField value="{! q.NokiaCPQ_Portfolio__c }" rendered="{! if(displayOnQuote, true, false)}" required="true" >
+                <apex:actionSupport event="onchange" rerender="displayNewQuotePB" action="{! portfolioChanged}" />
+            </apex:inputField>
+            
+            <apex:inputCheckbox value="{! q.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c }" rendered="{! if((displayOnQuote && !fixedNetworkSelected), true, false)}" >
+            	<apex:actionSupport event="onchange" rerender="displayNewQuotePB" />
+            </apex:inputCheckbox>
+            <apex:inputField value="{! q.NokiaCPQ_Maintenance_Type__c }"
+                rendered="{! if((displayOnQuote && q.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c), true, false)}" />
+            <apex:inputField value="{! q.NokiaCPQ_Existing_IONMaint_Contract__c }"
+                rendered="{! if((displayOnQuote && q.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c), true, false)}" />
+            <apex:inputField value="{! q.NokiaCPQ_No_of_Years__c }"
+                rendered="{! if((displayOnQuote && q.NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c), true, false)}" />
+            <apex:inputHidden value="{! q.NokiaCPQ_Proposal_Id__c }"/>
+        </apex:pageBlockSection>
+        
+    </apex:pageBlock>
+    </apex:outputPanel>
+    
+        <!-- 3rd Page Block for Success message and redirect... -->
+        <apex:pageBlock title="Message" id="displaySuccessMessagePB" mode="maindetail" rendered="{! displaySuccessMessagePB}" >    
+            <apex:pageMessage escape="false" title="Success:" summary="{! quoteSuccessURL}" strength="3" severity="CONFIRM" />
+            <apex:outputText value=" Redirecting to opportunity page in 10 seconds..." />
+            <apex:actionPoller action="{! goToOpportunity}" interval="10"/>
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandButton action="{! goToOpportunity}" value="Go to Opportunity"/>
+           </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
