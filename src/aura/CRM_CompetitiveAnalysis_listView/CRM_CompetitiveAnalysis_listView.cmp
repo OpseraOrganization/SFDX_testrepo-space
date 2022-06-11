@@ -1,0 +1,173 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" access="global" controller="CRM_CompetitiveAnalysis_listViewCtrl">
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <aura:attribute name="oppId" type="Id" />
+    <aura:attribute name="loaded" type="Boolean" default="true"/>
+    <aura:attribute name="deleteConfirmation" type="Boolean" default="false"/>
+    <aura:attribute name="competitorWeaknessPLV" type="List"/>
+    <aura:attribute name="competitorStrengthPLV" type="List"/>
+    <aura:attribute name="competitorPLV" type="Map"/>
+    <aura:attribute name="competitorWrapperList" type="Object" />
+    <aura:attribute name="competitorWrapperListBackup" type="Object" />
+    <aura:attribute name="readOnlyNotesComp" type="Boolean" default="true"/>
+    <aura:attribute name="comments" type="String"/>
+    <aura:attribute name="compIndexToDelete" type="Integer" default="-1"/>
+    <aura:attribute name="g3FacilitatorScreen" type="Boolean" default="false"/>
+    
+    <div class="slds-is-relative">
+        <div class="slds-form--compound">
+            <div>
+                <div class="slds-section__title slds-float_left slds-m-vertical_x-small"></div>
+                <div class="slds-m-vertical_x-small slds-float_right">
+                    <lightning:button variant="brand" label="New Competitor" title="New Competitor" onclick="{!c.handleCreateCompetitor }" />
+                    <lightning:button variant="neutral" label="Edit Notes/Comments" title="Edit comp" onclick="{! c.handleEditReadNotes }"  class="{!v.g3FacilitatorScreen  ? 'hideButton' : ''}"/>
+                    <lightning:button variant="neutral" label="Refresh" title="Refresh table" onclick="{!c.init }" />
+                    
+                </div>
+                <table class="slds-table slds-table_cell-buffer  slds-table_bordered" >
+                    <thead>
+                        <tr class="slds-line-height_reset slds-text-title_caps">
+                            <th class="" scope="col" style="width:22.5%;">
+                                <div class="slds-truncate" ></div>
+                            </th>
+                            <th class="" scope="col" style="width:35%;" >
+                                <div class="slds-truncate" >Strength</div>
+                            </th>
+                            <th class="" scope="col" style="width:35%;">
+                                <div class="slds-truncate" >Weakness</div>
+                            </th>
+                            <th class="" scope="col" style="width:5%;">
+                                <div class="slds-truncate" >Primary</div>
+                            </th>
+                            <th class="" scope="col" style="width:2.5%;">
+                                <div class="slds-truncate slds-assistive-text" >Actions</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.competitorWrapperList}" var="comp" indexVar="compIndex">
+                            <tr class="slds-hint-parent" >
+                                <aura:if isTrue="{!comp.readMode}">
+                                    <td >
+                                        <a class="slds-truncate " href="{!'/one/one.app?#/sObject/'+ comp.Id + '/view'}" target="_blank">{!comp.name}</a>
+                                    </td>
+                                    <td >
+                                        <div class="slds-truncate break-word" title="">{!comp.strengthString}</div>
+                                    </td>
+                                    <td >
+                                        <div class="slds-truncate break-word" title="">{!comp.weaknessString}</div>
+                                    </td>
+                                    <td >
+                                        <lightning:input type="checkbox" name="primaryRead" disabled="true" checked="{!comp.primary}" />
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <td >
+                                            <lightning:select value="{!comp.name}" name="competitorPicklist" class="slds-form-element_stacked" disabled="{! comp.nokiaCompetitor}" required="false">
+                                                <option value=""></option>
+                                                <aura:iteration items="{!v.competitorPLV}" var="plv" indexVar="key">
+                                                    <option text="{!plv.value}" value="{!plv.key}" selected="{!plv.key==comp.name}" />
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </td>
+                                        <td >
+                                            <lightning:dualListbox name="strength"
+                                                                   label="Strength" 
+                                                                   variant="label-hidden"
+                                                                   value="{!comp.strength}"
+                                                                   min="0"
+                                                                   size="3"
+                                                                   disabled="false"
+                                                                   sourceLabel="Available"
+                                                                   selectedLabel="Selected"
+                                                                   disableReordering="true"
+                                                                   options="{!v.competitorStrengthPLV}"/>
+                                        </td>
+                                        <td >
+                                            <lightning:dualListbox name="weakness"
+                                                                   label="Weakness" 
+                                                                   variant="label-hidden"
+                                                                   value="{!comp.weakness}"
+                                                                   min="0"
+                                                                   size="3"
+                                                                   disabled="false"
+                                                                   sourceLabel="Available"
+                                                                   selectedLabel="Selected"
+                                                                   disableReordering="true"
+                                                                   options="{!v.competitorWeaknessPLV}"/>
+                                        </td>
+                                        <td >
+                                            <lightning:input type="checkbox" name="primaryRead" disabled="{! comp.nokiaCompetitor }" checked="{!comp.primary}" />
+                                        </td>
+                                    </aura:set>	
+                                </aura:if> 
+                                
+                                <td role="gridcell">
+                                    <aura:if isTrue="{!(comp.readMode)}">
+                                        <lightning:buttonMenu variant="border-filled" iconSize="x-small" menuAlignment="right" onselect="{! c.handleCompMenu }" >
+                                            <lightning:menuItem value="{!join(',', 'edit', compIndex)}" label="Edit" iconName="utility:edit" />
+                                            <lightning:menuItem value="{!join(',', 'delete', compIndex)}" label="Delete" iconName="utility:delete" disabled="{! comp.nokiaCompetitor}"/>
+                                        </lightning:buttonMenu>
+                                        <aura:set attribute="else">
+                                            <lightning:buttonIcon iconName="utility:undo"  onclick="{! c.handleCompMenu }" value="{!join(',', 'cancel', compIndex)}"  title="Cancel/Undo"></lightning:buttonIcon>
+                                            <lightning:buttonIcon iconName="utility:save"  onclick="{! c.handleCompMenu }" value="{!join(',', 'save', compIndex)}"  title="Save"></lightning:buttonIcon>
+                                        </aura:set>
+                                    </aura:if>
+                                </td>
+                            </tr>   
+                        </aura:iteration>
+                        <aura:if isTrue="{!v.competitorWrapperList.length == 0}">
+                            <tr class="slds-hint-parent">
+                                <td colspan="4">
+                                    <div class="slds-truncate slds-align_absolute-center" >There are no competitors associated with this Opportunity.</div>
+                                </td>
+                            </tr>
+                        </aura:if>
+                    </tbody>
+                </table>
+                
+                <div class="slds-grid slds-wrap slds-m-top_large"  >
+                    <div class="slds-col slds-size_1-of-1">
+                        <aura:if isTrue="{!v.readOnlyNotesComp}">
+                            <div class="slds-truncate break-word slds-form-element__label">Comments on Competitive Analysis</div><br></br>
+                            <div class="slds-truncate break-word slds-form-element__static">{!v.comments}</div>
+                            <aura:set attribute="else">
+                                <lightning:textarea value="{!v.comments}" label="Comments on Competitive Analysis" name="comments-in" aura:id="Comments_Competitive_Analysis__c" />
+                                <lightning:button variant="neutral" aura:id="cancelNotesComp_button" label="Cancel" title="Cancel" onclick="{!c.handleEditReadNotes}" class="{!v.g3FacilitatorScreen  ? 'hideButton' : 'slds-m-top_small'}"/>
+                                <lightning:button variant="brand" aura:id="saveNotesComp_button" label="Save" title="Save" onclick="{!c.handleNotesSubmit}" class="{!v.g3FacilitatorScreen  ? 'hideButton' : 'slds-m-top_small'}" />
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                </div>
+                
+                <aura:if isTrue="{!v.deleteConfirmation == true}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Delete Opportunity Competitor</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>Are you sure you want to delete this Competitor from the Opportunity?</p>
+                            </div>                            
+                            <footer class="slds-modal__footer">
+                                <lightning:button label="No" variant="Neutral" onclick="{!c.handleCancelDeletion}" class="slds-m-top_small" />
+                                <lightning:button label="Yes" variant="Destructive" onclick="{!c.handleConfirmDeletion}" class="slds-m-top_small"/>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                
+            </div>
+            <aura:if isTrue="{! v.loaded }">
+                <aura:set attribute="else">
+                    <div class="slds-spinner_container">
+                        <div class="slds-spinner slds-spinner--medium" aria-hidden="false" role="alert">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </aura:set>
+            </aura:if>
+        </div>
+    </div>
+    <br></br>
+</aura:component>
