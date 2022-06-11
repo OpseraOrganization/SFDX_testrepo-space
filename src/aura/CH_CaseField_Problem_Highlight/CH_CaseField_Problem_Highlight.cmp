@@ -1,0 +1,261 @@
+<aura:component controller="CH_CaseField_SideHighlightApex" implements="flexipage:availableForRecordHome,force:hasRecordId" > 
+    
+    <aura:attribute name="record" type="Object" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <!-- Attributes to show EDIT or READ access-->
+    <aura:attribute name="edit" type="boolean" />
+    <aura:attribute name="knownErrorTitle" type="String" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+	<!-- Changes added as a part of NOKIASC-35322 -->
+    <aura:attribute name="isPausedDate" type="boolean" default="false"/>
+	<!--NOKIASC-36708-->
+    <aura:attribute name="isSaveEnabled" type="boolean" default="false"/>
+    
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <aura:attribute name="headerTitle" type="Aura.Component[]">
+        <h1>
+            <b>Problem Info</b>
+        </h1>
+    </aura:attribute>
+    
+	<aura:if isTrue="{!v.edit}">
+    <lightning:card class="slds-text-heading_small" title="{!v.headerTitle}">
+        <lightning:layout horizontalAlign="left">
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <lightning:recordEditForm aura:id="recordEditForm" 
+                                          recordId="{!v.recordId}"
+                                          objectApiName="Case"
+										  onsuccess="{!c.handleSuccess}">
+                    <Lightning:messages />
+                    <div class="slds-col">
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:outputField fieldName="Subject"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-col">
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:outputfield fieldName="CH_ProblemStatement__c" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-col">
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:outputfield fieldName="CH_Problem_Category__c" />
+                            </div>
+                        </div>
+                    </div>
+					<!--NOKIASC-36708-->
+                    <aura:if isTrue="{!v.edit}">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:inputfield  aura:id="closureReason"  fieldName="CH_Closure_Reason__c" onchange="{!c.reasonChanged}" />
+                                </div>
+                            </div>
+                        </div> 
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <div class="slds-hide">
+                                    <lightning:outputfield  fieldName="Status" />
+                                </div>
+                            </div>
+                        </div>
+                    </aura:if>     
+					<aura:if isTrue="{! !v.edit }">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield  aura:id="cloreReason"  fieldName="CH_Closure_Reason__c"  />
+                                </div>
+                            </div>
+                        </div> 
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <div class="slds-hide">
+                                    <lightning:outputfield  fieldName="Status" />
+                                </div>
+                            </div>
+                        </div>
+                    </aura:if>					
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield fieldName="CH_OwnerName__c" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:buttonIcon iconName="utility:change_owner" variant="bare" onclick="{! c.handleReaasign }" alternativeText="Re-assign" disabled="{!not(v.edit)}" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>                
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield fieldName="CH_Workgroup__c" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:buttonIcon iconName="utility:edit" variant="bare" onclick="{! c.openWorkGroupInstruction }" alternativeText="Show WG Instructions" disabled="{!not(v.edit)}" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-col">
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:outputfield fieldName="CH_Originating_Incident_Number__c" />
+                            </div>
+                        </div>
+                    </div>
+					<!-- Changes added as a part of NOKIASC-35322 -->
+					<div class="slds-grid slds-gutters">
+                    <div class="slds-col">
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control">
+                                <lightning:outputfield fieldName="CH_SolutionTargetDate__c" />
+                            </div>
+                        </div>
+                    </div>
+                    <aura:if isTrue="{!v.isPausedDate}">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:outputfield fieldName="CH_PausedSinceDate__c" />
+                                </div>
+                            </div>
+                        </div>
+                    </aura:if>
+					</div>
+					<!--NOKIASC-36708-->
+                    <aura:if isTrue="{!v.isSaveEnabled}">
+                        <div class="slds-col">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:button class="slds-m-top_small" variant="brand" type="button" name="update" label="Save" onclick="{!c.saveUpdate}" />
+                                </div>
+                            </div>
+                        </div>
+                    </aura:if>
+                </lightning:recordEditForm>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </lightning:card>
+	<aura:set attribute="else">
+            <lightning:card class="slds-text-heading_small" title="{!v.headerTitle}">
+                <lightning:layout horizontalAlign="left">
+                    <lightning:layoutItem flexibility="auto" padding="around-small">
+                        <lightning:recordViewForm aura:id="recordViewForm" 
+                                                  recordId="{!v.recordId}"
+                                                  objectApiName="Case">
+                            <Lightning:messages />
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputField fieldName="Subject"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputfield fieldName="CH_ProblemStatement__c" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputfield fieldName="CH_Problem_Category__c" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col">
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <lightning:outputfield  fieldName="CH_Closure_Reason__c" />
+                                        </div>
+                                    </div>
+                                </div> 
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <div class="slds-hide">
+                                            <lightning:outputfield  fieldName="Status" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col">
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <lightning:outputfield fieldName="CH_OwnerName__c" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>                
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col">
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <lightning:outputfield fieldName="CH_Workgroup__c" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <lightning:outputfield fieldName="CH_Originating_Incident_Number__c" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-col">
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <lightning:outputfield fieldName="CH_SolutionTargetDate__c" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <aura:if isTrue="{!v.isPausedDate}">
+                                    <div class="slds-col">
+                                        <div class="slds-form-element">
+                                            <div class="slds-form-element__control">
+                                                <lightning:outputfield fieldName="CH_PausedSinceDate__c" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </aura:if>
+                            </div>
+                        </lightning:recordViewForm>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:card>
+        </aura:set>
+    </aura:if>
+</aura:component>
