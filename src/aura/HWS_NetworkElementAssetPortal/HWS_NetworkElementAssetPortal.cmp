@@ -1,0 +1,118 @@
+<aura:component controller ="HWS_CreateSupportTicketportal" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" >
+    <aura:attribute name="assetRec" type="Object[]"/>
+    <aura:attribute name="searchCriteria" type="String" default="Part Code"/> 
+    <aura:attribute name="selectedAccount" type="String" />
+    <aura:attribute name="neaColumns" type="List"/>
+    <aura:attribute name="allAssets" type="Object[]" />
+    <aura:attribute name="netElemAssets" type="Object[]"/>
+    <aura:attribute name="maxRowSelection" type="String" default="1"/>
+    <aura:attribute name="selectedContractLineItem" type="Object[]"/>
+    <aura:attribute name="selectedNEA" type="Object[]" /> 
+    <aura:attribute name="NEAFilterText" type="String" default="" description="Used to filter NEA from table" />
+    <aura:attribute name="showAllNEA" type="Object[]"/>
+    <aura:attribute name="allCLIS" type="Object[]"/>
+    <aura:attribute name="clearNEACheck" type="Boolean" default="false"/>
+    <aura:method name="init" action="{!c.doInit}" access="PUBLIC" />
+    <aura:method name="componentRefresh" action="{!c.componentRefresh}" access="PUBLIC"/>
+    <aura:registerEvent name="HWS_CaseFlowEventPortal" type="c:HWS_CaseFlowEventPortal"/> 
+    
+    <!--Start NOKIASC-32950:NEA Performance issue-->
+    <aura:attribute name="height" type="String" default="20rem"/>
+    <aura:attribute name="enableInfiniteLoading" type="Boolean" default="true"/>
+    <aura:attribute name="initialRows" type="Integer" default="100"/>
+    <aura:attribute name="rowsToLoad" type="Integer" default="50"/>
+    <aura:attribute name="totalNumberOfRows" type="Integer" default="10"/>
+    <aura:attribute name="loadMoreStatus" type="String" default="Please scroll down to load more data"/>
+    <aura:attribute name="rowNumberOffset" type="Integer" default="0"/>    
+    <aura:attribute name="currentCount" type="Integer" default="10"/>
+    <aura:attribute name="loadMoreOffset" type="Integer" default="20"/>     
+    <aura:attribute name="showtooltip" type="boolean" default="false" />
+    <aura:attribute name="allNetElemAssets" type="Object"/>    
+    <!--End-->
+    
+    <!--Spinnner start-->	
+    <aura:attribute name="IsSpinner" type="Boolean"/>	
+    <aura:if isTrue="{!v.IsSpinner}">	
+        <lightning:spinner variant="brand"  size="medium" />	
+    </aura:if>
+    <article class="slds-card slds-is-relative">
+        <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative">
+            <article class="slds-card slds-size_12-of-12">
+                <div class="slds-page-header slds-border_fix">
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-title">
+                            <div class="slds-media">
+                                <div class="slds-media__body">
+                                    <div class="slds-page-header__name">
+                                        <div class="slds-page-header__name-title">
+                                            <h1><span class="slds-page-header__title slds-truncate" title="Select a Network Element Asset">Select a Network Element Asset</span></h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-page-header__col-actions">
+                            <div class="slds-page-header__controls">
+                                <div class="slds-page-header__control">
+                                    <lightning:button label="Clear Selection" title="Clear Selection" onclick="{! c.clearSelection }"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-meta">
+                            <p class="slds-page-header__meta-text">
+                                <aura:if isTrue="{!v.netElemAssets.length > 0}">
+                                    <p class="has-results">
+                                        <aura:if isTrue="{!v.netElemAssets.length==1}">
+                                            Showing {!v.netElemAssets.length} record from Total records {!v.allNetElemAssets.networkEleAssests.length}.
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.netElemAssets.length>1}">
+                                            Showing {!v.netElemAssets.length} records from Total records {!v.allNetElemAssets.networkEleAssests.length}.
+                                        </aura:if>
+                                    </p>
+                                    <aura:set attribute="else">
+                                        <p class="no-results"> 0 records</p>
+                                    </aura:set>
+                                </aura:if>
+                            </p>
+                        </div>
+                        <div class="slds-page-header__col-controls">
+                            
+                            <div class="slds-page-header__controls" onkeyup="{!c.filterNEA}">
+                                <div style="padding-left:2rem;padding-top:3rem;position:relative">
+                                    <lightning:input aura:id="NEAFilterText" onfocusin="{!c.showToolTip}" onfocusout="{!c.hideToolTip}" aria-describedby="help" aria-disabled="true" 
+                                                     type="search" variant="label-hidden"
+                                                     placeholder="Search this list..."                                                 
+                                                     value="{! v.NEAFilterText }"
+                                                     label="Filter NEA" />	
+                                    <aura:if isTrue="{!v.showtooltip}" >
+                                        <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left" role="tooltip" id="help" style="position:absolute;top:-4px;left:35px">
+                                            <div class="slds-popover__body">Please press enter for search.</div>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>                    
+            <div style="{! 'height: '+v.height+'; width:'+(v.filterVisible?'calc(100% - 320px)':'100%')+';'}">                                 
+                <!-- NOKIASC-32950:Datatable with infinite loading-->
+                <lightning:datatable aura:id="neaTable"
+                                     columns="{!v.neaColumns}"
+                                     data="{!v.netElemAssets}"
+                                     keyField="Id"
+                                     rowNumberOffset="0"                                    
+                                     maxRowSelection="{!v.maxRowSelection}"
+                                     onrowselection="{!c.processSelectedNEA}"
+                                     enableInfiniteLoading="{!v.enableInfiniteLoading}"
+                                     loadMoreOffset="{!v.loadMoreOffset}"      
+                                     onloadmore="{!c.handleLoadMoreNEA}"/>
+                <div class="slds-float_right">
+                    <strong>{!v.loadMoreStatus}</strong>
+                </div>
+            </div>
+        </div>
+    </article>
+</aura:component>
