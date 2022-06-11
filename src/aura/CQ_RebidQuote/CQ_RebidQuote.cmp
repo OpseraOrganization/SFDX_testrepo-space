@@ -1,0 +1,168 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction,flexipage:availableForAllPageTypes" access="global"
+                controller="CQ_RebidQuoteController" >
+    <!-- Attribute Declaration -->
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="quote" type="Apttus_Proposal__Proposal__c"
+                    default="{ 'sobjectType': 'Apttus_Proposal__Proposal__c' }"/>
+    <aura:attribute name= "coslist" type="List"/>
+    <aura:attribute name= "serlist" type="List"/>
+    <aura:attribute name= "selectedserlist" type="List"/>
+    <aura:attribute name="quotecreationflag" type="Boolean" default="false"/>
+    <aura:attribute name="errors" type="List"/>
+    <aura:attribute name="has_error" type="boolean" default="false"/>
+    <aura:attribute name="IsSpinner" type="boolean" default="false"/>
+    <aura:attribute name="disbutton" type="boolean" default="false"/>
+    <aura:attribute name="Error" type="String" default="Error : CQ Due date cannot be in the past"/>
+    <aura:attribute name="cosvalue" type="String" default=""/>
+    <aura:attribute name="servalue" type="String" default=""/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:if isTrue="{!v.quotecreationflag}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-align_absolute-center slds-modal_medium slds-fade-in-open">
+            <div class="main-container" id="main-container" style="width:600px;">
+                <lightning:card> 
+                    <header class="slds-modal__header" style="margin-right:-30px;align-self:center;width:600px;">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Rebid</h2>
+                    </header>
+                    
+                    <div class="slds-scrollable_y modal-body scrollable slds-modal__content slds-p-around--medium inner-div" style="margin-right:-30px;align-self:center;width:600px;height:25rem;" id="scrollable_div">
+                        
+                        <div class="slds-form slds-form_compound">
+                            <aura:if isTrue="{!v.IsSpinner}">
+                                <lightning:spinner variant="brand"  size="large"/>
+                            </aura:if>
+                            <fieldset class="slds-form-element">
+                                <div id="error-section">
+                                    <aura:if isTrue="{!v.has_error}">
+                                        <aura:iteration items="{!v.errors}" var="error">
+                                            <div class="slds-notify_error" id="slds-notify_error">
+                                                <div class="slds-notify slds-notify--alert slds-theme--error slds-theme--alert-texture" role="alert">
+                                                    <span class="slds-size_1-of-1">{!error}</span>
+                                                </div>
+                                            </div>
+                                        </aura:iteration>
+                                        <br></br>
+                                    </aura:if>                                    
+                                </div>
+                                
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="quoteName" label="Quote Name"
+                                                             value="{!v.quote.Apttus_Proposal__Proposal_Name__c}" required="true"/>
+                                        </div>
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input type="date" aura:id="cqduedate" label="CQ Due Date" 
+                                                             value="{!v.quote.CQ_Due_Date__c}" class="field" 
+                                                             displayDatePicker="true" required="true" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:textarea aura:id="desc" label="Description"
+                                                             value="{!v.quote.Apttus_Proposal__Description__c}"/>
+                                        </div>
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:textarea aura:id="notes" label="Notes"
+                                                             value="{!v.quote.CQ_Notes__c}"/>
+                                        </div>                                        
+                                    </div>
+                                </div>
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input type="Checkbox" class="slds-p-top_large" aura:id="mq" label="Master Quote" 
+                                                             checked="{!v.quote.CQ_Master_Quote__c}" />
+                                        </div>
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="mqquantity" label="Master Quote Quantity" 
+                                                             value="{!v.quote.CQ_Master_Quote_Quantity__c}" />
+                                        </div>
+                                    </div>
+                                </div>                                
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="Account" label="Account Legal Entity"
+                                                             value="{!v.quote.Account_Legal_Entity__r.Name}" readonly="true"/>
+                                        </div>
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="procode" label="Customer Project Code" 
+                                                             value="{!v.quote.CQ_Customer_Project_Code__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:select aura:id="cos" label="Customer Organization Segment"
+                                                              value="{!v.quote.CQ_Customer_Organization_Segment__c}" 
+                                                              class="optionClass">
+                                                <aura:iteration items="{!v.coslist}" var="cs" indexVar="key">
+                                                    <ui:inputSelectOption text="{!cs.value}" label="{!cs.key}"/>
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </div>
+                                        
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="reqnum" label="Customer Request Number"
+                                                             value="{!v.quote.CQ_Customer_Request_Number__c}"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="cqlead" label="CQ Lead"
+                                                             value="{!v.quote.CQ_Lead__r.Name}" readonly="true"/>
+                                        </div>
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="reqnum" label="Customer Project Site City"
+                                                             value="{!v.quote.CQ_Customer_Project_Site_City__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row">
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="sales" label="CQ Sales Lead" 
+                                                             value="{!v.quote.CQ_Sales_Lead__r.Name}" readonly="true" />
+                                        </div>
+                                        <div class="slds-form-element slds-size_1-of-2 pad">
+                                            <lightning:input aura:id="procode" label="Customer Project Site State" 
+                                                             value="{!v.quote.CQ_Customer_Project_Site_State__c}" />
+                                        </div>
+                                    </div>
+                                </div>  
+								<aura:if isTrue="{!v.proposal.CPQ_NCQ_Check__c == false}">
+                                <div class="slds-form-element__group">
+                                    <div class="slds-form-element__row" style="width:600px;">
+                                        <div class="slds-form-element slds-size_2-of-2 pad">
+                                            <lightning:dualListbox aura:id="service"
+                                                                   name="Services Components"
+                                                                   label="Services Components"
+                                                                   sourceLabel="Available"
+                                                                   selectedLabel="Chosen"
+                                                                   options="{!v.serlist}"
+                                                                   value="{!v.selectedserlist}"
+                                                                   onchange="{!c.handleSerChange}"
+                                                                   size = "3"/>
+                                        </div>
+                                    </div>
+                                </div>
+								</aura:if>
+                            </fieldset>
+                        </div> 
+                    </div>
+                    <div class="modal-footer slds-modal__footer" style="margin-right:-30px;max-height:330px;align-self:center;width:600px;" >
+                        <lightning:button variant="destructive" label="Cancel" onclick="{!c.handleCancel}" disabled="{!v.disbutton}"/>
+                        <lightning:button variant="brand" label="Save" onclick="{!c.handleRebidSave}" disabled="{!v.disbutton}"/>
+                    </div>
+                </lightning:card>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>
