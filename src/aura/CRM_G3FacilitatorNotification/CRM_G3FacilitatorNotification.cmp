@@ -1,0 +1,240 @@
+<aura:component controller="CRM_G3FacilitatorNotificationCtrl" implements="lightning:isUrlAddressable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" access="global" >
+
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+ 	<aura:handler name="change" value="{!v.pageReference}"
+                  action="{!c.onPageReferenceChanged}" />
+    <aura:attribute name="bigCase" type="Boolean" default="false" />
+    <aura:attribute name="showError" type="Boolean" default="false" />
+    <aura:attribute name="requiredComments" type="Boolean" default="false" />
+    <aura:attribute name="facilitatorInfo" type="Object"  />
+	<aura:attribute name="opptyRecord" type="Object"/>
+    <aura:attribute name="recordError" type="String"/>
+    <aura:attribute name="competitorList" type="Object" />
+    <aura:attribute name="competitorComments" type="String"/>
+    <aura:attribute name="offerId" type="ID"/>
+
+    <force:recordData aura:id="recordLoader"
+                      fields="G3_Prepared__c,Risk_Assessment__c,Unweighted_Amount_EUR__c,Org_L4__c"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.opptyRecord}"
+                      targetError="{!v.recordError}"
+                      recordUpdated="{!c.handleRecordUpdated}"
+                      />
+
+    <div aura:id="form" class="slds-box slds-theme_default hidden_element" style="position:relative; overflow-x: hidden;">
+        <lightning:spinner aura:id="spinner" alternativeText="Loading" size="medium" class="hidden_element"/>
+        <aura:if isTrue="{!v.showError}">
+            <div class="demo-only" style="height:4rem">
+                <div class="slds-notify_container slds-is-relative">
+                    <div class="slds-notify slds-notify_toast slds-theme_error" role="status">
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading_small">Please complete the mandatory parameters highlighted below</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+
+        <lightning:recordEditForm aura:id="recordEditForm" objectApiName="Opportunity" recordId="{!v.recordId}"
+                                  onsubmit="{!c.handleRecordEditSubmit}"
+                                  onload="{!c.handleRecordEditLoad}"
+                                  onerror="{!c.handleRecordEditError}"
+                                  onsuccess="{!c.handleRecordEditSuccess}">
+            <lightning:messages aura:id="messages"/>
+
+            <lightning:badge aura:id="infoBadge" label="Following parameters and completion of G3 Risk Assessment are mandatory for G3 Facilitator notification:" class="slds-m-vertical_small"/>
+
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_2-of-3">
+                    <span class="asterix">*</span>
+                    <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="Probability"></lightning:inputField>
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                    <lightning:inputField  fieldName="Likelyhood_to_Win__c"></lightning:inputField>
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                     <span class="asterix">*</span>
+                    <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="G3_Planned_Date__c" ></lightning:inputField>
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                     <span class="asterix">*</span>
+                    <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="G4_Planned_Date__c" ></lightning:inputField>
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                     <span class="asterix">*</span>
+                    <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="G5_Planned_Date__c" ></lightning:inputField>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-m-vertical_medium element_stacked">
+                    <div  class="slds-grid slds-grid_vertical-align-center">
+                        <lightning:recordEditForm aura:id="recordEditFormOffer" objectApiName="Offer__c" recordId="{!v.offerId}"
+                                      onsubmit="{!c.handleRecordEditSubmit}"
+                                      onload="{!c.handleRecordEditLoad}"
+                                      onerror="{!c.handleRecordEditError}"
+                                      onsuccess="{!c.handleRecordEditSuccess}">
+                        <div class="slds-col">
+                            <lightning:inputField fieldName="Budgetary_non_binding__c" ></lightning:inputField>
+                        </div>
+                        </lightning:recordEditForm>
+                        <abbr title="required" class="slds-required">*</abbr>
+                        <div aura:id="riskAssessField" class="slds-text-title slds-m-right_large ">Risk Assessment Completed</div>
+                        <lightning:icon aura:id="riskAssessIcon" size="small" class="slds-m-right_xx-large"/>
+                        <lightning:button aura:id="riskAssessButton"  variant="neutral" label="Go to G3 Risk Assessment" title="Go to G3 Risk Assessment" onclick="{! c.openRiskAssessment }"/>
+                    </div>
+                </div>
+                <aura:if isTrue="{!v.bigCase}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="asterix">*</span>
+                        <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="Customer_Request__c" ></lightning:inputField>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="asterix">*</span>
+                        <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="StrategicContextCompetitiveSituation__c" ></lightning:inputField>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 ">
+                        <span class="asterix">*</span>
+                        <lightning:inputField aura:id="requiredField" class="requiredField"  fieldName="Customer_pain_points_challenges__c"  onchange="{!c.checkCommentsRequired}"></lightning:inputField>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="asterix">*</span>
+                        <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="Selection_Criteria__c"  onchange="{!c.checkCommentsRequired}"></lightning:inputField>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-1">
+                                <span class="asterix">*</span>
+                                <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="Pursue_Strategy__c" ></lightning:inputField>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1">
+                                <span class="asterix">*</span>
+                                <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="Solution_Scope_Installed_base__c" ></lightning:inputField>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1">
+                                <span class="asterix">*</span>
+                                <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="Type_of_Request__c" onchange="{!c.onChangeTypeRequest}"></lightning:inputField>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1">
+                                <lightning:inputField aura:id="Target_Price_Budget__c" fieldName="Target_Price_Budget__c" ></lightning:inputField>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="asterix">*</span>
+                        <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="High_level_Solution_Installed_base__c" ></lightning:inputField>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField  fieldName="Pres_sales_Cost_And_Resources__c" ></lightning:inputField>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="asterix">*</span>
+                        <lightning:inputField aura:id="requiredField" class="requiredField" fieldName="Commercial_strategy__c" ></lightning:inputField>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1">
+                        <aura:if isTrue="{!v.requiredComments}">
+                            <span class="asterix">*</span>
+                        </aura:if>
+                        <lightning:inputField aura:id="Comments_Cust_Req_Nokia_Prop__c" fieldName="Comments_Cust_Req_Nokia_Prop__c" ></lightning:inputField>
+                    </div>
+                     <lightning:inputField  fieldName="Comments_Competitive_Analysis__c" value="{!v.competitorComments}" class="hidden_element" ></lightning:inputField>
+                </aura:if>
+            </div>
+            <div class="slds-text-align_center slds-m-vertical_medium footer_div">
+                <lightning:button aura:id="notify_button"  class=" slds-m-top_small " type="submit" label="Notify" variant="brand"/>
+                <lightning:button aura:id="save_button" class="slds-m-top_small" label="Save and Back to Opportunity" variant="brand" onclick="{!c.saveOpportunity}"/>
+                <lightning:button class="slds-m-top_small" label="Cancel and Back to Opportunity" onclick="{!c.dismiss}"/>
+            </div>
+        </lightning:recordEditForm>
+        <aura:if isTrue="{!v.bigCase}">
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_1-of-1 slds-m-vertical_medium element_stacked">
+                    <div class="slds-section slds-is-open">
+                        <h3 class="slds-section__title slds-theme_shade slds-m-bottom_medium">
+                            <span class="slds-truncate slds-p-horizontal_small" >Competitive Analysis</span>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content slds-p-around_medium">
+                            <div aura:id="competitorError" class="competitorErrorMsg hidden_element error" >Please complete Nokia Strength and Weakness information</div>
+                            <c:CRM_CompetitiveAnalysis_listView recordId="{!v.recordId}" competitorWrapperList="{!v.competitorList}" readOnlyNotesComp="false" comments="{!v.competitorComments}"
+                                                                g3FacilitatorScreen="true" aura:id="competitorListView"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+
+        <lightning:card  class="card_narrow slds-m-vertical_medium">
+            <aura:set attribute="title">
+                <span class="slds-page-header__title slds-truncate" title="">G3 Facilitator Information</span>
+            </aura:set>
+            <lightning:spinner aura:id="spinnerCard" alternativeText="Loading" size="medium" class="hidden_element"/>
+            <div class="slds-grid slds-wrap slds-m-horizontal_small">
+                <aura:if isTrue="{!v.facilitatorInfo.notFound}">
+                    <div class="slds-row slds-size_1-of-1 slds-m-vertical_xx-small" style="font-weight:bold;">
+                        <lightning:formattedText value="{!v.facilitatorInfo.errorMessage}" class="slds-form-element__label not-found_error"/>
+                    </div>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{! !empty(v.facilitatorInfo.queueName)}">
+                            <div class="slds-row slds-size_1-of-2 slds-m-vertical_xx-small" style="font-weight:bold;">
+                                <lightning:formattedText value="Queue Name" class="slds-form-element__label"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-m-vertical_xx-small">
+                                <lightning:formattedText value="{!v.facilitatorInfo.queueName}" />
+                            </div>
+
+                            <aura:set attribute="else">
+                                <div class="slds-row slds-size_1-of-2 slds-m-vertical_xx-small" style="font-weight:bold;">
+                                    <lightning:formattedText value="G3 Facilitator" class="slds-form-element__label"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-m-vertical_xx-small">
+                                    <lightning:formattedText value="{!v.facilitatorInfo.facilitator.name}" />
+                                </div>
+                                <div class="slds-row slds-size_1-of-2 slds-m-vertical_xx-small" style="font-weight:bold;" >
+                                    <lightning:formattedText value="Role Code" class="slds-form-element__label" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-m-vertical_xx-small">
+                                    <lightning:formattedText value="{!v.facilitatorInfo.roleCode}" />
+                                </div>
+                                <div class="slds-row slds-size_1-of-2 slds-m-vertical_xx-small" style="font-weight:bold;">
+                                    <lightning:formattedText value="Organisation"  class="slds-form-element__label"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-m-vertical_xx-small">
+                                    <lightning:formattedText value="{!v.facilitatorInfo.organization}" />
+                                </div>
+                                <div class="slds-row slds-size_1-of-2 slds-m-vertical_xx-small" style="font-weight:bold;">
+                                    <lightning:formattedText value="Delegate 1" class="slds-form-element__label"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-m-vertical_xx-small">
+                                    <lightning:formattedText value="{!v.facilitatorInfo.delegate1.name}" />
+                                </div>
+                                <div class="slds-row slds-size_1-of-2 slds-m-vertical_xx-small" style="font-weight:bold;">
+                                    <lightning:formattedText value="Delegate 2" class="slds-form-element__label"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-m-vertical_xx-small">
+                                    <lightning:formattedText value="{!v.facilitatorInfo.delegate2.name}" />
+                                </div>
+                                <div class="slds-row slds-size_1-of-2 slds-m-vertical_xx-small" style="font-weight:bold;">
+                                    <lightning:formattedText value="Delegate 3" class="slds-form-element__label"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-m-vertical_xx-small">
+                                    <lightning:formattedText value="{!v.facilitatorInfo.delegate3.name}" />
+                                </div>
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </div>
+
+        </lightning:card>
+
+
+    </div>
+
+    <div class="slds-m-vertical_medium" style="height:1px;"></div>
+    <aura:html tag="style">
+        .slds-brand-band {
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        height: 100%;
+        width: 100%;
+        }
+    </aura:html>
+</aura:component>
