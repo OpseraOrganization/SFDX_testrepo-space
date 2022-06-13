@@ -1,6 +1,6 @@
 /***************************************************************
  Class Name:ALCRInboundInterface
- Author: Accenture
+ Author: Rajeswar
  Purpose: WSDL class for create/Update accounts from ALCR interface.
 
 ****************************************************************/
