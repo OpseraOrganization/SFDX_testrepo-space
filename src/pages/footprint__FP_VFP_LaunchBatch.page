@@ -1,0 +1,304 @@
+<!--
+Visualforce Page    : FP_VFP_LaunchBatch
+Standard Controller : Footprint__c
+Controller          : FP_VFC_LaunchBatch
+Author              : Maryem BOURHI (mbourhi@salesforce.com)
+Created Date        : 11/07/2016
+Last Modified Date  : 30/08/2016
+Descritpion         : his Page is used to launch the batch analysing field usage informations
+-->
+<apex:page standardController="footprint__FootPrint__c"  extensions="footprint.FP_VFC_LaunchBatch" >
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >
+        <apex:stylesheet value="{!URLFOR($Resource.footprint__footprintAll, '/FootprintZip/Footprint/SLDS202/assets/styles/salesforce-lightning-design-system.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.footprint__footprintAll, '/FootprintZip/Footprint/SLDS202/assets/styles/salesforce-lightning-design-system-vf.css')}" />
+            <apex:stylesheet value="{!URLFOR($Resource.footprint__SLDS203, '/assets/styles/salesforce-lightning-design-system.min.css')}" />
+        <apex:stylesheet value="{!URLFOR($Resource.footprint__footprintAll, '/FootprintZip/Footprint/jquery/font-awesome.min.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.footprint__SLDS203, '/assets/styles/salesforce-lightning-design-system.min.css')}" />
+        
+            <script src="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/jquery/jquery-1.11.1.min.js')}">
+            </script>
+<script>
+                var j$ = jQuery.noConflict();
+
+</script>      
+<script>
+j$(document).one('ready',function(){
+   if({!numberFPDetExc}==false)
+   {
+      launch();
+   }
+});
+
+        function checkDisplayWaiting(){
+   if({!numberFPDetExc}==false)
+   {
+        
+        var check= true;
+     
+     
+        
+        j$('.fp-status').each(
+        function(){
+        console.log('###### (this).text()'+j$(this).text());
+        console.log('####### compare ' +(j$(this).text()!='100%'));
+        if(j$(this).text()!='100%')
+        {
+        console.log('40');
+        check=false;
+        }
+        }
+        );
+       
+      
+/*        if(!check)
+        {
+        j$('#fp-checkStatus').show();
+        }
+        if(check)
+        {
+         j$('#fp-checkStatus').hide();
+        }
+ */
+ 
+ }       
+        }
+
+
+
+</script>  
+   <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: black;"></div>
+<div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" id="modaldialog2" style="{!IF(numberFPDetExc==false,'display:none','')}">
+  <div class="slds-modal__container">
+    <div class="slds-modal__header" style="border-bottom:0px;padding:0.5%;">
+      <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="window.location.replace('{!homePage}');">
+        <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+<use xlink:href="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/SLDS202/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>        </svg>
+        <span class="slds-assistive-text">Close</span>
+      </button>
+      <h2 id="header43" class="slds-text-heading--medium"></h2>
+    </div>
+    <div class="slds-modal__content slds-p-around--medium">
+      <div style="font-family:'Salesforce Sans'">
+
+The data volume of this FootPrint record is to high to be relaunched. Please create a new FootPrint record.
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+        <apex:outputPanel >
+          <div id="AnalysisModal" style="{!IF(numberFPDetExc==true,'display:none','')}">
+            <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: black;"></div>
+            <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open" >
+              <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                  <div id="LoadingModalHeader" >
+                    <h2 id="header43" class="slds-text-heading--small">
+                      <b>{!$Label.FP_generatingfootprint}</b>
+                    </h2>
+                    <br/><apex:outputPanel id="fp-messageWaiting"><span id="fp-checkStatus" style="display:{!IF(AND(ProgressNow==Totalis,Totalis>0,analysefinish==true),'none','')}" >{!$Label.footprint__fp_waitmessage}</span></apex:outputPanel>
+                     
+                  </div>
+                </div>
+                   <apex:form id="form2">
+                <div class="slds-modal__content slds-p-around--medium">
+                  <div id="LoadingArea" >
+                   
+                      <apex:actionFunction name="launch" action="{!StartAnalysis}" reRender="form2">
+                        <apex:param id="Aobject" name="Aobjects" value=""/>
+                        <apex:param id="ANames" name="ANames" value=""/>
+                        <apex:param id="AFormulas" name="AFormulas" value=""/>
+                        <apex:param name="EmailMe" value="" id="EmailMe"/>
+                        <apex:param name="WR" value="" id="WR"/>
+                        <apex:param name="VR" value="" id="VR"/>
+                        <apex:param name="Reports" value="" id="Reports"/>
+                        
+                      </apex:actionFunction>
+                      <apex:actionPoller action="{!CheckBatchstatus}" interval="5" rendered="{!Not(jobs.size==0)}" reRender="form2,fp-messageWaiting" oncomplete="checkDisplayWaiting();"/>
+       <!-- Updated from Patch Org -->
+                      <apex:outputPanel id="Table">
+                        <center>
+                          <br/>
+                          <table style="width:90%;margin-left:6% ;font-family: 'Salesforce Sans',Arial,sans-serif;">
+                           <tr>
+                                <td>
+                                  <apex:image width="50" URL="{!if(ANd(ProgressNow==Totalis,OR(NOT(ProgressNow==0),analyseFinish==true)),URLFOR($Resource.footprint__loadingCheck),IF(NOT(logData==0),'/img/msg_icons/error32.png',URLFOR($Resource.footprint__lightningRes,'/LightningResources/SLDS202/assets/images/spinners/slds_spinner_brand.gif')))}" />
+                                </td>
+                                <td colspan="3">
+                                    <h2 class="slds-text-heading--medium slds-truncate" style="font-family: 'Salesforce Sans','Arial',sans-serif;">
+                                    Data Analysis
+                                    </h2>
+                                </td>
+                              </tr>
+                                 <tr>
+                              <th></th>
+                              <th class="slds-text-body--small">Processed Fields</th>
+                              <th class="slds-text-body--small">{!$Label.footprint__fp_errornumber}</th>
+                              <th class="slds-text-body--small">{!$Label.footprint__fp_progress}</th>
+                            </tr>
+                              <tr>
+                                <td></td>
+                                <td>
+                                {!ProgressNow }<!-- {!IF(Datajobssize*columnsScope>fieldsNumber,fieldsNumber,Datajobssize*columnsScope)}-->
+                                </td>
+                                <td>{!logData}</td>
+                                <td ><apex:outputText value="{0, number, 0%}">
+                                  <apex:param value="{!IF(Totalis==0,0,IF(ProgressNow==0,0.01,ProgressNow/Totalis))}" />
+                                  </apex:outputText>
+                                </td>
+                              </tr>
+                            <apex:repeat value="{!jobs}" var="job">
+                              <apex:variable var="percentage" value="{!IF(job.TotalJobItems!=0,job.JobItemsProcessed*100/job.TotalJobItems,1)}" />
+                              <tr>
+                                <td><apex:outputPanel rendered="{!IF(Contains(job.ApexClass.Name,'BA001'),false,true)}">
+                                  <apex:image width="50" URL="{!IF(job.Status=='Completed' && 
+                                  ((Contains(job.ApexClass.Name,'BA002') && logVR==0 )
+                                   || (Contains(job.ApexClass.Name,'BA004') && logWFR==0 )
+                                   || (Contains(job.ApexClass.Name,'BA005') && logWFFU==0 )
+                                   || (Contains(job.ApexClass.Name,'BA006') && logRepPre==0 )
+                                   || (Contains(job.ApexClass.Name,'BA007') && logRepRes==0 )
+                                  )
+                                  ,URLFOR($Resource.loadingCheck),IF(OR(job.status="Failed",job.status="Failed",
+                                  ((Contains(job.ApexClass.Name,'BA002') && logVR>0 )
+                                   || (Contains(job.ApexClass.Name,'BA004') && logWFR>0 )
+                                   || (Contains(job.ApexClass.Name,'BA005') && logWFFU>0 )
+                                   || (Contains(job.ApexClass.Name,'BA006') && logRepPre>0 )
+                                   || (Contains(job.ApexClass.Name,'BA007') && logRepRes>0 )
+                                  )
+                                  ),'/img/msg_icons/error32.png',URLFOR($Resource.lightningRes,'/LightningResources/SLDS202/assets/images/spinners/slds_spinner_brand.gif')))}" />
+                                </apex:outputPanel></td>
+                                <td colspan="3">
+                                    <h2 class="slds-text-heading--medium slds-truncate" style="font-family: 'Salesforce Sans','Arial',sans-serif;">
+                                    {!IF(Contains(job.ApexClass.Name,'BA001'),'','')}
+                                    {!IF(Contains(job.ApexClass.Name,'BA002'),'Validation Rules Analysis','')}
+                                    {!IF(Contains(job.ApexClass.Name,'BA004'),'Workflow Rules Analysis','')}
+                                    {!IF(Contains(job.ApexClass.Name,'BA005'),'Workflow Field Updates Analysis','')}
+                                    {!IF(Contains(job.ApexClass.Name,'BA006'),'Preparing Report Analysis','')}
+                                    {!IF(Contains(job.ApexClass.Name,'BA007'),'Report Analysis','')}
+                                    </h2>
+                                </td>
+                              </tr>
+                                 <tr>
+                              <th></th>
+                              <th class="slds-text-body--small"><apex:outputPanel rendered="{!IF(Contains(job.ApexClass.Name,'BA001'),false,true)}">{!$Label.footprint__fp_processeditems}</apex:outputPanel></th>
+                              <th class="slds-text-body--small"><apex:outputPanel rendered="{!IF(Contains(job.ApexClass.Name,'BA001'),false,true)}">{!$Label.footprint__fp_errornumber}</apex:outputPanel></th>
+                              <th class="slds-text-body--small"><apex:outputPanel rendered="{!IF(Contains(job.ApexClass.Name,'BA001'),false,true)}">{!$Label.footprint__fp_progress}</apex:outputPanel></th>
+                            </tr>
+                              <tr>
+                                <td></td>
+                                <td>
+                                <apex:outputText rendered="{!IF(Contains(job.ApexClass.Name,'BA001'),false,true)}" value="{!job.JobItemsProcessed}">
+                                </apex:outputText>
+                                
+                                </td>
+                                <td>
+                               <apex:outputPanel rendered="{!IF(Contains(job.ApexClass.Name,'BA001'),false,true)}"><!--{!job.NumberOfErrors}-->
+                                  {!IF(Contains(job.ApexClass.Name,'BA001'),'','')}
+                                  {!IF(Contains(job.ApexClass.Name,'BA002'),logVR,'')}
+                                  {!IF(Contains(job.ApexClass.Name,'BA004'),logWFR,'')}
+                                  {!IF(Contains(job.ApexClass.Name,'BA005'),logWFFU,'')}
+                                  {!IF(Contains(job.ApexClass.Name,'BA006'),logRepPre,'')}
+                                  {!IF(Contains(job.ApexClass.Name,'BA007'),logRepRes,'')}
+                                </apex:outputPanel>                             </td>
+                                <td class="fp-status">
+                                  <apex:outputText value="{0, number, 0%}" rendered="{!IF(Contains(job.ApexClass.Name,'BA001'),false,true)}">
+                                    <apex:param value="{!IF(job.TotalJobItems!=0,job.JobItemsProcessed/job.TotalJobItems,0)}" />
+                                  </apex:outputText>
+                                </td>
+                              </tr>
+                            </apex:repeat>
+                          </table>
+                        </center>
+                        <br/>
+                          
+                      </apex:outputPanel>
+                    
+                  </div>
+                </div>
+                <div class="slds-modal__footer">
+                        <center>
+                          <apex:outputPanel id="fpbutton" rendered="{!AND(startingCheck,OR(ProgressNow==Totalis,logData>0))}">
+                            <a Class="slds-button slds-button--brand" type="button" style="margin-left:80%" href="/{!currentObject.id}">{!$Label.FP_ViewFootprint}</a>
+                          </apex:outputPanel>
+                        </center>
+                 </div>
+               </apex:form>   
+              </div>
+                  
+            </div>
+          </div>
+        </apex:outputPanel>
+
+        <!-- End of the update -->
+        <apex:outputPanel style="display:none">
+          <div id="BlackBack" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: black;">
+                                                                        &nbsp;
+                                                                    </div>
+          <div id="Modal" role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+              <div class="slds-modal__header">
+                <div id="WarningPanel" style="display:none">
+                  <div class="slds-notify_container">
+                    <div class="slds-notify slds-notify--toast" role="alert">
+                      <span class="slds-assistive-text">Error</span>
+                      <button class="slds-button slds-button--icon-inverse slds-notify__close" >
+                        <svg aria-hidden="true" class="slds-button__icon slds-button__icon--large">
+                          <use xlink:href="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/SLDS202/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                        </svg>
+                        <span class="slds-assistive-text">Close</span>
+                      </button>
+                      <div class="slds-notify__content slds-grid">
+                        <svg aria-hidden="true" class="slds-icon slds-icon--small slds-m-right--small slds-col slds-no-flex">
+                          <use xlink:href="{!URLFOR($Resource.footprintAll, '/FootprintZip/Footprint/SLDS202/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                        </svg>
+                        <div class="slds-col slds-align-middle">
+                          <p id="WarningMessage" style="color: white;"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="slds-modal__content slds-p-around--medium">
+                <div>
+                  <div class="slds-form-element" >
+                    <div class="slds-form-element__control">
+                      <span class="slds-form-element__label">{!$Label.FP_selectMetadata} </span>
+                      <br/>
+                      <label class="slds-checkbox">
+                        <input type="checkbox" name="options" id="checkbox-WR" Onchange="selectOption(this,'Workflow rules');return false;" />
+                        <span class="slds-checkbox--faux"></span>
+                      </label>
+                      <span class="slds-form-element__label">{!$Label.FP_wf}</span>
+                    </div>
+                    <div class="slds-form-element__control">
+                      <label class="slds-checkbox">
+                        <input type="checkbox" name="options" id="checkbox-VR"  Onchange="selectOption(this,'Validation rules');return false;"/>
+                        <span class="slds-checkbox--faux"></span>
+                      </label>
+                      <span class="slds-form-element__label">{!$Label.FP_VR}</span>
+                    </div>
+                    <br/>
+                  </div>
+                  <div class="slds-form-element" id="checkboxPanel" style="display:none">
+                    <div class="slds-form-element__control">
+                      <label class="slds-checkbox">
+                        <input type="checkbox" name="options" id="checkbox-Email" />
+                        <span class="slds-checkbox--faux"></span>
+                      </label>
+                      <span class="slds-form-element__label">{!$Label.FP_EmailMe}</span>
+                    </div>
+                    <br/>
+                  </div>
+                  <center>
+                    <button class="slds-button slds-button--brand" Onclick="document.getElementById('BatchResult').style.display='inline';document.getElementById('BlackBack').style.display='none';document.getElementById('Modal').style.display='none';launch(document.getElementById('checkbox-Email').checked,document.getElementById('checkbox-VR').checked,document.getElementById('checkbox-WR').checked,document.getElementById('checkbox-Reports').checked);return false;">Start analysis</button>
+                  </center>
+                </div>
+              </div>
+            </div>
+          </div>
+        </apex:outputPanel>
+    </html>
+</apex:page>
