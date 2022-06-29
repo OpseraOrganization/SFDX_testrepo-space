@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>PSR_Restrict_Entering_Wrong_Information</fullName>
+    <active>true</active>
+    <description>Req: 3740, Pre-Sales Sprint 12. Restrict users to enter data in fields that are not relevant for the type (e.g. entering a Trial Start Date for a Risk Order) to avoid issues when sending data downstream</description>
+    <errorConditionFormula>AND( 
+AND( 
+OR(ISNEW(), NOT(ISNEW())), 
+$Profile.Name &lt;&gt; $Label.Data_Loader_Profile_Name,
+OR( 
+RecordType.DeveloperName = &apos;Pre_Sales_Risk_Opportunity&apos;,
+RecordType.DeveloperName = &apos;Pre_Sales_Risk_Opportunity_read_only&apos;),
+NOT(ISPICKVAL(StageName, &apos;Submitted For Approval&apos;))
+), 
+OR( 
+IF( 
+ISPICKVAL(PSR_Pre_Sales_Risk_Opportunity_Type__c, &apos;Risk Order&apos;), 
+OR( 
+NOT(ISPICKVAL(PSR_Is_Cost_Approved_In_Related_LOA_Opty__c,&apos;&apos;)), 
+NOT(ISPICKVAL(PSR_Trial_Duration__c,&apos;&apos;)),  
+NOT(ISBLANK(PSR_Trial_Start_Date__c)), 
+NOT(ISPICKVAL(PSR_Trial_Agreement_Status__c,&apos;&apos;)), 
+NOT(ISPICKVAL(PSR_Pre_C5_NPI__c,&apos;&apos;)), 
+NOT(PSR_SW_R_D_Justification_Explanation__c = &apos;&apos;)), 
+False), 
+IF( 
+ISPICKVAL(PSR_Pre_Sales_Risk_Opportunity_Type__c, &apos;Free of Charge&apos;), 
+OR(
+NOT(ISPICKVAL(PSR_Is_Rv_Reflected_In_Latest_Estimate__c,&apos;&apos;)), 
+NOT(ISPICKVAL(PSR_Trial_Duration__c,&apos;&apos;)), 
+NOT(ISBLANK(PSR_Trial_Start_Date__c)), 
+NOT(ISPICKVAL(PSR_Trial_Agreement_Status__c,&apos;&apos;)), 
+NOT(ISBLANK(PSR_Date_PO_Expected__c)), 
+NOT(ISPICKVAL(PSR_Pre_C5_NPI__c,&apos;&apos;)), 
+NOT(PSR_SW_R_D_Justification_Explanation__c = &apos;&apos;), 
+NOT(ISBLANK(PSR_Date_PO_Received_Or_Cost_Written_off__c))), 
+False), 
+IF( 
+ISPICKVAL(PSR_Pre_Sales_Risk_Opportunity_Type__c, &apos;Demo&apos;), 
+OR(
+NOT(ISPICKVAL(PSR_Is_Cost_Approved_In_Related_LOA_Opty__c,&apos;&apos;)), 
+NOT(ISPICKVAL(PSR_Is_Rv_Reflected_In_Latest_Estimate__c,&apos;&apos;)), 
+NOT(ISBLANK(PSR_Date_PO_Expected__c)), 
+NOT(ISBLANK(PSR_Date_PO_Received_Or_Cost_Written_off__c)), 
+NOT(PSR_SW_R_D_Justification_Explanation__c = &apos;&apos;),
+NOT(ISPICKVAL(PSR_Trial_Agreement_Status__c,&apos;&apos;))), 
+False) 
+) 
+)</errorConditionFormula>
+    <errorMessage>Some fields being/having been completed do not match the selected Pre-Sales Risk Opportunity Type and need to be removed.
+Please refer to embedded guidance (little arrow in top left corner, Sales Phase panel) to identify the relevant fields by PSRO type.</errorMessage>
+</ValidationRule>
