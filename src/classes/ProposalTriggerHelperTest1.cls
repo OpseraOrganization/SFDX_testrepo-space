@@ -1,5 +1,5 @@
 @istest 
-public class ProposalTriggerHelperTest1 {
+public class ProposalTriggerHelperTest1  {
    static testmethod void directInitTest1(){
 	List<OpportunityTeamMember> opportunityTeamMemberList = new List<OpportunityTeamMember>();
 	List<User> userList = new List<User>();  
@@ -12,8 +12,7 @@ public class ProposalTriggerHelperTest1 {
 		Database.insert(userList);	
 		//create a Account
 		List<Account> accounts = NOKIA_CPQ_TestDataFactory.getAccounts(1);
-		 insert accounts;
-	  
+		 insert accounts;	  
 			Account acc = new Account();
 			acc.Name='Legal Entity Account For Test';
 			acc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();

@@ -1,6 +1,5 @@
 @isTest
 private class NCP_ProductDetail_COM_Test{
-	
 	@testSetup static void setup() {
 		Product2 pr = NCP_TestFactory.createProduct();
 		Account acc = NCP_TestFactory.createAccount();
@@ -11,7 +10,6 @@ private class NCP_ProductDetail_COM_Test{
 		NCP_TestFactory.createProductService(pr.Id,'Discovery Center (Skylab)');
 		NCP_TestFactory.createContractLineItem(pr,scCDB); 
 	}
-	
 	
 	@isTest
 	static void TestGetRecord() {
@@ -54,5 +52,4 @@ private class NCP_ProductDetail_COM_Test{
 			Test.stopTest();
 		}
 	}
-	
 }

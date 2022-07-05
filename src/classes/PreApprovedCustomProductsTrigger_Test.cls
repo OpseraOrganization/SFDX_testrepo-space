@@ -1,8 +1,13 @@
 @isTest
 public class PreApprovedCustomProductsTrigger_Test{
 
+
+
 	@TestSetup
+	
 	static void makeData(){
+		
+		
 		User userRecord =  [Select id from User where Id = :UserInfo.getUserId()];
 		CPQ_Approver__c cpqApproverRecord = new CPQ_Approver__c(User__c=userRecord.Id,BG__c='ION',Seq__c='1',P__c='IP Routing',O__c='Japan');
 		insert cpqApproverRecord;

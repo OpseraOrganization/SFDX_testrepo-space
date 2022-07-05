@@ -1,6 +1,5 @@
 @isTest
 public class NCP_SupportStaticsLK_COM_Test {
-
 	@isTest
 	static void testgetArticle() {
 
@@ -28,43 +27,42 @@ public class NCP_SupportStaticsLK_COM_Test {
 			runAsUSer[0].UserPermissionsKnowledgeUser = true;
 			database.insert(runAsUSer);
 			system.runAs(runAsUSer[0]) {
-				String articleTitle = 'Test Article';
+	String articleTitle = 'Test Article';
 
-				knowledge__kav announce = new knowledge__kav(
-						Title = articleTitle,
-						Summary = articleTitle,
-						Details__c = 'test',
-						Display_Start_Date__c = System.today(),
-						Display_End_Date__c = System.today(),
-						Priority__c = 'Important',
-						URLName = 'Test-Article-URL',
-						language = 'en_US',
-						Article_Category__c = 'Security'
-				);
-				Test.startTest();
-				knowledge__kav resultKnoledge;
-				try {
-					resultKnoledge = NCP_SupportStaticsLK_COM.getArticle(articleTitle);
-				} catch (Exception ex) {
-					System.assertNotEquals(ex.getMessage(), null);
-				}
-				insert announce;
+	knowledge__kav announce = new knowledge__kav(
+			Title = articleTitle,
+			Summary = articleTitle,
+			Details__c = 'test',
+			Display_Start_Date__c = System.today(),
+			Display_End_Date__c = System.today(),
+			Priority__c = 'Important',
+			URLName = 'Test-Article-URL',
+			language = 'en_US',
+			Article_Category__c = 'Security'
+	);
+	Test.startTest();
+	knowledge__kav resultKnoledge;
+	try {
+		resultKnoledge = NCP_SupportStaticsLK_COM.getArticle(articleTitle);
+	} catch (Exception ex) {
+		System.assertNotEquals(ex.getMessage(), null);
+	}
+	insert announce;
 
-				knowledge__kav announcement = [
-						SELECT Id, Title,KnowledgeArticleId
-						FROM knowledge__kav
-						WHERE Id = :announce.Id
-						LIMIT 1
-				];
-				String articleId = announcement.KnowledgeArticleId;
-				//publish articles
-				KbManagement.PublishingService.publishArticle(articleId, true);
+	knowledge__kav announcement = [
+			SELECT Id, Title,KnowledgeArticleId
+			FROM knowledge__kav
+			WHERE Id = :announce.Id
+			LIMIT 1
+	];
+	String articleId = announcement.KnowledgeArticleId;
+	//publish articles
+	KbManagement.PublishingService.publishArticle(articleId, true);
 
-				//publish articles
-				resultKnoledge = NCP_SupportStaticsLK_COM.getArticle(articleTitle);
-				Test.stopTest();
+	//publish articles
+	resultKnoledge = NCP_SupportStaticsLK_COM.getArticle(articleTitle);
+	Test.stopTest();
 			}
 		}
 	}
-
 }

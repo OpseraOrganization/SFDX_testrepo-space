@@ -9,7 +9,8 @@
  * 1.0   06-10-2021   Yashdeep Prajapati   Initial Version
 **/
 @isTest /*(SeeAllData = true) */
-public class NokiaCPQ_DisplayActionCallbackTest  {
+public class NokiaCPQ_DisplayActionCallbackTest 
+{
 
 static testMethod void testvalidationCallBackFORMNINDIRECT() {
 		
@@ -362,7 +363,7 @@ static testMethod void testvalidationCallBackFORMNINDIRECT() {
 		proposals.NokiaCPQ_Existing_IONMaint_Contract__c = 'No';
 		proposals.Apttus_Proposal__Account__c = accounts[0].Id;
 		proposals.Apttus_Proposal__Opportunity__c = opportunities1[0].Id;
-		proposals.NokiaCPQ_LEO_Discount__c=true;
+		proposals.NokiaCPQ_LEO_Discount__c=true;	   
 		proposals.NokiaCPQ_Portfolio__c = 'Modular Private Wireless Solution'; 
 		//proposals[0].RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Indirect Quote').getRecordTypeId();
 		insert proposals;	  
@@ -382,6 +383,10 @@ static testMethod void testvalidationCallBackFORMNINDIRECT() {
 			
 		);
 		insert ProdConfig;
+		NokiaCPQ_Site_Phase_Configuration__c spObj= new NokiaCPQ_Site_Phase_Configuration__c();
+		spObj.NokiaCPQ_Configuration__c=ProdConfig.id;
+		spObj.NokiaCPQ_Aggregator__c=1;
+		insert spObj;
 		
 		 List<Apttus_Config2.DisplayActionInfo> displayActions = New List<Apttus_Config2.DisplayActionInfo>();
 		
@@ -422,6 +427,7 @@ static testMethod void testvalidationCallBackFORMNINDIRECT() {
 		NokiaCPQ_DisplayActionCallback.disableActionsForIndirectQuote(ProdConfig,displayActions);
 		Apttus_Config2.CustomClass.ActionParams params1=new Apttus_Config2.CustomClass.ActionParams();
 		NokiaCPQ_DisplayActionCallback.setActionProperties(null);
+		NokiaCPQ_DisplayActionCallback.disableActionsOnAggregation(ProdConfig,displayActions);
 		
 		Test.stopTest();
 		

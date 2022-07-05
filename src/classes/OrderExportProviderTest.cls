@@ -24,8 +24,8 @@ public class OrderExportProviderTest {
 		//create opportunity
 		GlobalConstants.SKIP_TRIGGER_OPPORTUNITY_ON_PRESALES = true;
 		List<opportunity> opportunities = NOKIA_CPQ_TestDataFactory.getOpportunities(1,accounts);
-		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Direct Sales Opportunity').getRecordTypeId();		
-		insert opportunities;			 
+		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Direct_Record_Type').getRecordTypeId();	 
+		insert opportunities;			
 		
 		//create a quote
 		Apttus_Proposal__Proposal__c  proposals = new Apttus_Proposal__Proposal__c();
@@ -33,12 +33,12 @@ public class OrderExportProviderTest {
 		proposals.Apttus_Proposal__Opportunity__c = opportunities[0].Id;
 		proposals.NokiaCPQ_Needs_Reprice__c = false;
 		proposals.Reprice_In_Progress__c = false;
-		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Direct Quote').getRecordTypeId(); 
+		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId(); 
 	   // proposals.NokiaCPQ_Maintenance_Type__c = 'MN GS TSS Enhanced Emergency';
 		proposals.NokiaCPQ_No_of_Years__c = '1';
 		proposals.NokiaCPQ_Portfolio__c = 'Nokia Software';
 		proposals.NokiaCPQ_SSP_Level__c = '';
-		insert proposals;		
+		insert proposals;	   
 		system.debug('>>>Quote Record Type::>>'+proposals.recordtypeID);
 		
 		//get a Product Apttus_Config2__ConfigurationType__c  
@@ -578,8 +578,8 @@ public class OrderExportProviderTest {
 		//create opportunity
 		GlobalConstants.SKIP_TRIGGER_OPPORTUNITY_ON_PRESALES = true;
 		List<opportunity> opportunities = NOKIA_CPQ_TestDataFactory.getOpportunities(1,accounts);
-		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Direct Sales Opportunity').getRecordTypeId();		
-		insert opportunities;			 
+		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Direct_Record_Type').getRecordTypeId();	 
+		insert opportunities;			
 		
 		//create a quote
 		Apttus_Proposal__Proposal__c  proposals = new Apttus_Proposal__Proposal__c();
@@ -587,12 +587,12 @@ public class OrderExportProviderTest {
 		proposals.Apttus_Proposal__Opportunity__c = opportunities[0].Id;
 		proposals.NokiaCPQ_Needs_Reprice__c = false;
 		proposals.Reprice_In_Progress__c = false;
-		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Direct Quote').getRecordTypeId(); 
+		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId(); 
 		//proposals.NokiaCPQ_Maintenance_Type__c = 'MN GS TSS Basic';
 		proposals.NokiaCPQ_No_of_Years__c = '1';
 		proposals.NokiaCPQ_Portfolio__c = 'Nokia Software';
 		proposals.NokiaCPQ_SSP_Level__c = '';
-		insert proposals;		
+		insert proposals;	   
 		system.debug('>>>Quote Record Type::>>'+proposals.recordtypeID);
 		
 		//get a Product Apttus_Config2__ConfigurationType__c  
@@ -1029,8 +1029,8 @@ public class OrderExportProviderTest {
 		//create opportunity
 		GlobalConstants.SKIP_TRIGGER_OPPORTUNITY_ON_PRESALES = true;
 		List<opportunity> opportunities = NOKIA_CPQ_TestDataFactory.getOpportunities(1,accounts);
-		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Direct Sales Opportunity').getRecordTypeId();		
-		insert opportunities;			 
+		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Direct_Record_Type').getRecordTypeId();	 
+		insert opportunities;			
 		
 		//create a quote
 		Apttus_Proposal__Proposal__c  proposals = new Apttus_Proposal__Proposal__c();
@@ -1038,12 +1038,12 @@ public class OrderExportProviderTest {
 		proposals.Apttus_Proposal__Opportunity__c = opportunities[0].Id;
 		proposals.NokiaCPQ_Needs_Reprice__c = false;
 		proposals.Reprice_In_Progress__c = false;
-		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Direct Quote').getRecordTypeId(); 
+		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId(); 
 		//proposals.NokiaCPQ_Maintenance_Type__c = 'MN GS TSS Basic';
 		proposals.NokiaCPQ_No_of_Years__c = '1';
 		proposals.NokiaCPQ_Portfolio__c = 'Nokia Software';
 		proposals.NokiaCPQ_SSP_Level__c = '';
-		insert proposals;		
+		insert proposals;	   
 		system.debug('>>>Quote Record Type::>>'+proposals.recordtypeID);
 		
 		//get a Product Apttus_Config2__ConfigurationType__c  
@@ -1235,8 +1235,8 @@ public class OrderExportProviderTest {
 		//create opportunity
 		GlobalConstants.SKIP_TRIGGER_OPPORTUNITY_ON_PRESALES = true;
 		List<opportunity> opportunities = NOKIA_CPQ_TestDataFactory.getOpportunities(1,accounts);
-		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Direct Sales Opportunity').getRecordTypeId();		
-		insert opportunities;			 
+		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Direct_Record_Type').getRecordTypeId();	 
+		insert opportunities;			
 		
 		//create a quote
 		Apttus_Proposal__Proposal__c  proposals = new Apttus_Proposal__Proposal__c();
@@ -1244,12 +1244,12 @@ public class OrderExportProviderTest {
 		proposals.Apttus_Proposal__Opportunity__c = opportunities[0].Id;
 		proposals.NokiaCPQ_Needs_Reprice__c = false;
 		proposals.Reprice_In_Progress__c = false;
-		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Direct Quote').getRecordTypeId(); 
+		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId(); 
 	   // proposals.NokiaCPQ_Maintenance_Type__c = 'MN GS TSS Enhanced Emergency';
 		proposals.NokiaCPQ_No_of_Years__c = '1';
 		proposals.NokiaCPQ_Portfolio__c = 'Nokia Software';
 		proposals.NokiaCPQ_SSP_Level__c = '';
-		insert proposals;		
+		insert proposals;	   
 		system.debug('>>>Quote Record Type::>>'+proposals.recordtypeID);
 		
 		//get a Product Apttus_Config2__ConfigurationType__c  
@@ -1788,8 +1788,8 @@ public class OrderExportProviderTest {
 		//create opportunity
 		GlobalConstants.SKIP_TRIGGER_OPPORTUNITY_ON_PRESALES = true;
 		List<opportunity> opportunities = NOKIA_CPQ_TestDataFactory.getOpportunities(1,accounts);
-		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Direct Sales Opportunity').getRecordTypeId();		
-		insert opportunities;			 
+		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Direct_Record_Type').getRecordTypeId();	 
+		insert opportunities;			
 		
 		//create a quote
 		Apttus_Proposal__Proposal__c  proposals = new Apttus_Proposal__Proposal__c();
@@ -1797,12 +1797,12 @@ public class OrderExportProviderTest {
 		proposals.Apttus_Proposal__Opportunity__c = opportunities[0].Id;
 		proposals.NokiaCPQ_Needs_Reprice__c = false;
 		proposals.Reprice_In_Progress__c = false;
-		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Direct Quote').getRecordTypeId(); 
+		proposals.RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId(); 
 	   // proposals.NokiaCPQ_Maintenance_Type__c = 'MN GS TSS Enhanced Emergency';
 		proposals.NokiaCPQ_No_of_Years__c = '1';
 		proposals.NokiaCPQ_Portfolio__c = 'Nokia Software';
 		proposals.NokiaCPQ_SSP_Level__c = '';
-		insert proposals;		
+		insert proposals;	   
 		system.debug('>>>Quote Record Type::>>'+proposals.recordtypeID);
 		
 		//get a Product Apttus_Config2__ConfigurationType__c  

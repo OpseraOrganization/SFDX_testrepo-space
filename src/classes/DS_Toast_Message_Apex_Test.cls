@@ -21,8 +21,8 @@ public class DS_Toast_Message_Apex_Test {
 			Profile prof=[Select Id,Name from Profile where Name='Nokia Sales Profile'];
 			
 			User userAM = new User(alias = 'abc', email = uniqueName + '@nokia.com', emailencodingkey = 'UTF-8', firstName = 'test',lastname = 'Testing',
-								   languagelocalekey = 'en_US', localesidkey = 'en_US',  profileid = prof.id ,  Country__c= 'Canada',Market__c='MARKET NORTH AMERICA',
-								   timezonesidkey = 'America/Los_Angeles', Username = uniqueName + '@nokia.com' + orgId + '.org',Restriction_Level__c = 'Confidential',Nokia_ID__c = randomInt + '00');
+		   languagelocalekey = 'en_US', localesidkey = 'en_US',  profileid = prof.id ,  Country__c= 'Canada',Market__c='MARKET NORTH AMERICA',
+		   timezonesidkey = 'America/Los_Angeles', Username = uniqueName + '@nokia.com' + orgId + '.org',Restriction_Level__c = 'Confidential',Nokia_ID__c = randomInt + '00');
 			
 			database.insert(userAM);
 			System.debug('UserAM>>'+userAM);
@@ -62,7 +62,7 @@ public class DS_Toast_Message_Apex_Test {
 			Apttus_Proposal__Proposal__c quoteProposal= TestDataFactory.createProposal(1)[0];
 			quoteProposal.NokiaCPQ_Portfolio__c = 'IP Routing';
 			quoteProposal.Apttus_Proposal__Approval_Stage__c='Draft';
-	   quoteProposal.Changed_Approval_Stage__c=True;
+	quoteProposal.Changed_Approval_Stage__c=True;
 			quoteProposal.Apttus_Proposal__Opportunity__c=oppty.id;
 			quoteProposal.SWx_Upsell_Proposal__c=DigitalProposal.id;
 			quoteProposal.Prices_Aligned__c = true;
@@ -85,20 +85,20 @@ public class DS_Toast_Message_Apex_Test {
 			quoteProposal.Changed_Approval_Stage__c =True;
 			// To fix the SeeAllData=True to false */
 			
-			 //Throwing Process Builder error,Update Approval Stage from Quote to CFE
+	//Throwing Process Builder error,Update Approval Stage from Quote to CFE
 			//database.update(quoteProposal); 
 			system.debug('FinalQuoTEpROPOSAL>>'+quoteProposal);
 			//edited
 			Apttus_Proposal__Proposal__Share objPropShare = new Apttus_Proposal__Proposal__Share();
-								objPropShare.ParentId = quoteProposal.Id;
-								objPropShare.UserOrGroupId = userAM.Id;
-								objPropShare.AccessLevel = 'Edit';
-								insert objPropShare;
-								
+		objPropShare.ParentId = quoteProposal.Id;
+		objPropShare.UserOrGroupId = userAM.Id;
+		objPropShare.AccessLevel = 'Edit';
+		insert objPropShare;
+		
 			
 			Test.startTest();  
 			System.runAs(userAM){   
-				DS_Toast_Message_Apex.checkApprovalStage(quoteProposal.id);  
+	DS_Toast_Message_Apex.checkApprovalStage(quoteProposal.id);  
 			}
 			Test.stopTest();
 			

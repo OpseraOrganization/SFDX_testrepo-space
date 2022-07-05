@@ -40,7 +40,7 @@ public without sharing class NCP_ProductDetail_COM {
 * @description   Entitlement V2 : get List of Entitlement product for the connected user
 * @param		 userId: the connected user
 * @param		 objectId: the object that needs access, it can be product or service
-* @return	   list of access type
+* @return	list of access type
 */
 	@AuraEnabled
 	public static List<NCP_ProductAccess_Wrapper> getProductAccess2(Id prId) {
@@ -60,11 +60,11 @@ public without sharing class NCP_ProductDetail_COM {
 			Boolean isSWSCaseLinkEnabled = NCP_CaseCreationOnSP.isSWSEntitledOnProduct(prId);
 			entitledCntCHList = NCP_CaseCreationOnSP.checkforCHTileDisplay(connectedUser);
 			if(isSWSCaseLinkEnabled){
-				accessList.add(NCP_chACCESS_TYPE);
+	accessList.add(NCP_chACCESS_TYPE);
 			} 
 			
 			if(entitledCntCHList[1].size()>0){
-				accessList.add(NCP_chhwsACCESS_TYPE);
+	accessList.add(NCP_chhwsACCESS_TYPE);
 			}
 			
 			
@@ -78,13 +78,13 @@ public without sharing class NCP_ProductDetail_COM {
 			//Marks 'NCT' Service type as 'Help Desk' - Shrish
 			//Start
 			if(prSr.NCP_Service__c == NCP_Constants.PRODUCT_CONTENT_NCT) {
-				productAccess.add(NCP_Constants.PRODUCT_ACCESS_MDT_HELP_DESK);
+	productAccess.add(NCP_Constants.PRODUCT_ACCESS_MDT_HELP_DESK);
 			}
 			else if(prSr.NCP_Service__c == 'Discovery Center (Skylab)') {
-				productAccess.add('Discovery Center');
+	productAccess.add('Discovery Center');
 			}
 			else {
-				productAccess.add(prSr.NCP_Service__c);
+	productAccess.add(prSr.NCP_Service__c);
 			}
 			//End
 		}
@@ -102,30 +102,38 @@ public without sharing class NCP_ProductDetail_COM {
 		
 		if (NCP_Utils.isSandbox()) {
 			for (NCP_Product_Access_Type__mdt pa : productAccessList) {
-				pa.NCP_Link__c = pa.NCP_QA_Link__c;
+	pa.NCP_Link__c = pa.NCP_QA_Link__c;
 			}
 		}
-		
+		List<String> horizontalUserServices = new List<String>();
+		for(NCP_Service_Tile__mdt serviceTile : [SELECT NCP_Public_Access__c, NCP_Default_Access__c, NCP_Horizontal_User__c, NCP_Title__c, NCP_Description__c,
+		NCP_Entitlement_Access_Type__c, NCP_URL__c, NCP_QA_URL__c, NCP_Image_Name__c, NCP_Image_URL__c, NCP_Priority__c
+	 FROM NCP_Service_Tile__mdt
+	 WHERE NCP_Horizontal_User__c = TRUE]){
+			horizontalUserServices.add(serviceTile.NCP_Entitlement_Access_Type__c);
+		}
+		Boolean horizontalUserFlag = [SELECT NCP_IsHorizontal__c FROM User WHERE Id = :UserInfo.getUserId()].NCP_IsHorizontal__c;
 		System.debug('### AES productAccessList ' + productAccessList);
 		Map<String, List<NCP_AccessType_Wrapper>> mapProductAccess = new Map<String, List<NCP_AccessType_Wrapper>>();
 		System.debug('### AES accessList final is' +accessList);
 		for (NCP_Product_Access_Type__mdt ar : productAccessList) {
 			if (String.isNotBlank(ar.NCP_Title__c)) {
-				Boolean hasAccess = false;
-				if ((accessList != null && accessList.contains(ar.NCP_Type__c))
-					|| ar.NCP_Always_Unlocked__c == true) {
-						hasAccess = true;
-					}
-				else if (accessList != null && (accessList.contains(NCP_chACCESS_TYPE) || accessList.contains(NCP_chhwsACCESS_TYPE)) && ar.DeveloperName == NCP_Constants.MANAGESUPPORTTICKETS_LINK_QUALIFIEDAPINAME){
-					hasAccess = true;
-				}
-				
-				NCP_AccessType_Wrapper accessType = new NCP_AccessType_Wrapper(hasAccess, ar);
-				
-				if (!mapProductAccess.containsKey(ar.MasterLabel)) {
-					mapProductAccess.put(ar.MasterLabel, new List<NCP_AccessType_Wrapper>());
-				}
-				mapProductAccess.get(ar.MasterLabel).add(accessType);
+	Boolean hasAccess = false;
+	if(!(horizontalUserFlag && horizontalUserServices.contains(ar.NCP_Type__c))){
+		if ((accessList != null && accessList.contains(ar.NCP_Type__c))
+			|| ar.NCP_Always_Unlocked__c == true) {
+	hasAccess = true;
+			}
+		else if (accessList != null && (accessList.contains(NCP_chACCESS_TYPE) || accessList.contains(NCP_chhwsACCESS_TYPE)) && ar.DeveloperName == NCP_Constants.MANAGESUPPORTTICKETS_LINK_QUALIFIEDAPINAME){
+			hasAccess = true;
+		}
+	}
+	NCP_AccessType_Wrapper accessType = new NCP_AccessType_Wrapper(hasAccess, ar);
+	
+	if (!mapProductAccess.containsKey(ar.MasterLabel)) {
+		mapProductAccess.put(ar.MasterLabel, new List<NCP_AccessType_Wrapper>());
+	}
+	mapProductAccess.get(ar.MasterLabel).add(accessType);
 			}
 		}
 		
@@ -143,7 +151,7 @@ public without sharing class NCP_ProductDetail_COM {
 	/*
 * @description   Check the product status to enable add/remove favourite functionality
 * @param		 Id: the product id
-* @return	   Map detailing entitled product and favourite status
+* @return	Map detailing entitled product and favourite status
 */
 	@AuraEnabled
 	public static Map<String, Boolean> checkProductStatus(Id prId) {
@@ -157,11 +165,11 @@ public without sharing class NCP_ProductDetail_COM {
 		} else {
 			entitledProducts = NCP_Entitlements.searchMyEntitledProducts(1000, 1);
 			for (Integer i = 0; i < entitledProducts.products.size(); i++) {
-				NCP_MyEntitledProducts_Wrapper aProduct = entitledProducts.products[i];
-				if (aProduct.product.Id == prId) {
-					isEntitledProduct = true;
-					break;
-				}
+	NCP_MyEntitledProducts_Wrapper aProduct = entitledProducts.products[i];
+	if (aProduct.product.Id == prId) {
+		isEntitledProduct = true;
+		break;
+	}
 			}
 		}
 		// need to test entitledProducts.products (List) for the presence of the product in question

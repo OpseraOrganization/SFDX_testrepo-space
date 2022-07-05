@@ -1,7 +1,7 @@
 @isTest
 private class NCP_MyEntitlements_COM_Test {
-
 	@testSetup static void setup() {
+	
 		Product2 simplePr = NCP_TestFactory.createProduct();
 		NCP_Product_Access_Type__mdt pacc = NCP_TestFactory.loadProductAccess();
 
@@ -17,8 +17,14 @@ private class NCP_MyEntitlements_COM_Test {
 
 		system.debug('### AES test getMyEntitlements');
 		ServiceContract scCDB = NCP_TestFactory.createServiceContract(acc2, NCP_Constants.TYPE_CDB);
+		scCDB.StartDate = scCDB.StartDate - 3;
+		update scCDB;
 		ServiceContract scCARES = NCP_TestFactory.createServiceContract(acc2, NCP_Constants.TYPE_CARES);
+		scCARES.StartDate = scCARES.StartDate - 3;
+		update scCARES;
 		ServiceContract scOTHER = NCP_TestFactory.createServiceContract(acc2, NCP_Constants.TYPE_OTHER);
+		scOTHER.StartDate = scOTHER.StartDate - 3;
+		update scOTHER;
 		ServiceContract sccCDB = NCP_TestFactory.createChildServiceContract(acc2, scCDB, 'ClicS', NCP_Constants.RELATIONSHIP_P, true, false);
 		ServiceContract sccCDB2 = NCP_TestFactory.createChildServiceContract(acc2, scCDB, 'PIC', NCP_Constants.RELATIONSHIP_PS, true, false);
 		List<ServiceContract> cscList = new List<ServiceContract>();

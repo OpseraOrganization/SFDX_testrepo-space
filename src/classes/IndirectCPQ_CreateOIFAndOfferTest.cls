@@ -3,10 +3,10 @@ public class IndirectCPQ_CreateOIFAndOfferTest {
 
 	 private static Id oppINDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_Record_Type).getRecordTypeId();
 	
-	 /******************************
-	*Method Name: createOIFandOfferTest
-	*Description: Test Method to cover OpportunityTriggerHelper class
-	********************************/
+/******************************
+*Method Name: createOIFandOfferTest
+*Description: Test Method to cover OpportunityTriggerHelper class
+********************************/
 	public testmethod static void createOIFandOfferTest(){
 		Set<Id> accId = new Set<Id>();
 			Map<Id,Opportunity> upsellProposalToOppty = new Map<Id,Opportunity>();
@@ -43,7 +43,7 @@ public class IndirectCPQ_CreateOIFAndOfferTest {
 			optyCreation[0].Account_Role__c = 'Alliance Partner';	
 			optyCreation[0].StageName = GlobalConstants.DEVELOP_OPPORTUNITY;
 			optyCreation[0].Phase_Status__c ='Submitted for G3 Approval';
-	optyCreation[0].End_Customer_LE__c = accLegalEntity.Id;  
+			optyCreation[0].End_Customer_LE__c = accLegalEntity.Id;  
 	 
 	  
 			optyCreation[1].Apttus_Approval__Approval_Status__c = CSWXGlobalConstant.Approval_stage_approved;

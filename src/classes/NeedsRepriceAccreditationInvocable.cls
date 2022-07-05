@@ -1,111 +1,93 @@
 /*************************************************************
-@Name: NeedsRepriceAccreditationInvocable
-@Author: Accenture
-@Description: This class contains Logic for calling batch for quotes in case of accreditation changes 
-******************************************************************/
+   @Name: NeedsRepriceAccreditationInvocable
+   @Author: Accenture
+   @Description: This class contains Logic for calling batch for quotes in case of accreditation changes
+ ******************************************************************/
 public without sharing class NeedsRepriceAccreditationInvocable {
-	/***************************************************
-	* Description : method used to call batch for quotes affected by accreditation changes
-	* @param accredtationId
-	* @return NA
-	* @throws NA
-	***************************************************/  
-	@InvocableMethod(label='Needs Reprice Accreditation' description='Returns the list of account names corresponding to the specified account IDs.')
-	public static void updateQuotes(List<String> accredtationId) 
+/***************************************************
+* Description : method used to call batch for quotes affected by accreditation changes
+* @param accredtationId
+* @return NA
+* @throws NA
+***************************************************/
+@InvocableMethod(label='Needs Reprice Accreditation' description='Returns the list of account names corresponding to the specified account IDs.')
+public static void updateQuotes(List<String> accredtationId)
+{
+	try{
+		List<Apttus_Proposal__Proposal__c> quotesToUpdate = new List<Apttus_Proposal__Proposal__c>();
+		List<Accreditation__c> accreditation = [Select Account_ID__c,Portfolio__c from Accreditation__c where id in  :accredtationId Limit :(Limits.getLimitQueryRows() - Limits.getQueryRows())];
+		Accreditation__c acc = accreditation.get(0);
+		if(acc.Account_ID__c != null && acc.Portfolio__c != null)
+		{
+			String accountId = acc.Account_ID__c;
+			String portfolio = acc.Portfolio__c;
+
+			//Modified for FN restructuring by Christie JJ
+			//Start
+			//String query = 'SELECT Id,NokiaCPQ_Needs_Reprice__c FROM Apttus_Proposal__Proposal__c WHERE Apttus_Proposal__Account__c = \'' +String.escapeSingleQuotes(accountId) + '\' AND NokiaCPQ_Portfolio__c = \'' +String.escapeSingleQuotes(portfolio) + '\'';
+			String query = 'SELECT Id,NokiaCPQ_Needs_Reprice__c FROM Apttus_Proposal__Proposal__c WHERE Apttus_Proposal__Account__c = \'' +String.escapeSingleQuotes(accountId) + '\' AND (NokiaCPQ_Portfolio__c = \'' +String.escapeSingleQuotes(portfolio) + '\' OR CPQ_SubPortfolio__c INCLUDES (\''+String.escapeSingleQuotes(portfolio)+'\'))';
+			//End
+
+			NeedsRepriceBatch repriceBatch = new NeedsRepriceBatch(query);
+			Database.executeBatch(repriceBatch, 1);
+		}
+	}
+
+	catch(Exception e)
 	{
-		try{
-			List<Apttus_Proposal__Proposal__c> quotesToUpdate = new List<Apttus_Proposal__Proposal__c>();
-			List<Accreditation__c> accreditation = [Select  Account_ID__c,Portfolio__c from Accreditation__c where id in  :accredtationId Limit :(Limits.getLimitQueryRows() - Limits.getQueryRows())];
-			Accreditation__c acc = accreditation.get(0); 
-			if(acc.Account_ID__c != null && acc.Portfolio__c != null)
-			{	
-				String accountId = acc.Account_ID__c;
-				String portfolio = acc.Portfolio__c;
-				
-				String query = 'SELECT Id,NokiaCPQ_Needs_Reprice__c FROM Apttus_Proposal__Proposal__c WHERE Apttus_Proposal__Account__c = \'' +String.escapeSingleQuotes(accountId) + '\' AND NokiaCPQ_Portfolio__c = \'' +String.escapeSingleQuotes(portfolio) + '\'';
-				NeedsRepriceBatch repriceBatch = new NeedsRepriceBatch(query);
-				Database.executeBatch(repriceBatch, 1); 
-			}   
-		}
-		
-		catch(Exception e)
-		{
-			ExceptionHandler.addException(e,NeedsRepriceAccreditationInvocable.class.getName(),Nokia_CPQ_Constants.ERROR_MSD);
-		}
+		ExceptionHandler.addException(e,NeedsRepriceAccreditationInvocable.class.getName(),Nokia_CPQ_Constants.ERROR_MSD);
 	}
-	/***************************************************
-	* Description : method used to call batch for quotes affected by accreditation changes
-	* @param List<Accreditation__c> accredForRepricing
-	* @return NA
-	* @throws NA
-	****************************************************/
-	public static void updateQuotesInBulk(List<Accreditation__c> accredForRepricing){
-		try{
-			//system.debug('accredForRepricing---->'+accredForRepricing);
-			set<id> quoteAccID = new set<id>();
-			list<id> quotesToUpdate = new list<id>();
-			map<id, map<string, list<id>>> quoteMap =  new map<id, map<string, list<id>>>();
-			list<id> quotelist;
-			map<string, list<id>> porttoQuote;
-			
-			
-			for(Accreditation__c accred : accredForRepricing){
-				quoteAccID.add(accred.partner__C);
+}
+/***************************************************
+ * Description : method used to call batch for quotes affected by accreditation changes
+ * @param List<Accreditation__c> accredForRepricing
+ * @return NA
+ * @throws NA
+ ****************************************************/
+public static void updateQuotesInBulk(List<Accreditation__c> accredForRepricing){
+	try{
+		set<id> quoteAccID = new set<id>();
+		set<string> portfolioSet = new Set<string>();
+		Map<string, set<string> > accPortfolioMap = new Map<string, set<string> >();
+		for(Accreditation__c accr : accredForRepricing) {
+			quoteAccID.add(accr.Partner__c);
+			portfolioSet.add(accr.Portfolio__c);
+			if(!accPortfolioMap.containsKey(accr.Partner__c)) {
+	accPortfolioMap.put(accr.Partner__c, new set<string>());
 			}
-			
-			for(Apttus_Proposal__Proposal__c quote : [SELECT Id, NokiaCPQ_Needs_Reprice__c, Apttus_Proposal__Account__c, NokiaCPQ_Portfolio__c FROM Apttus_Proposal__Proposal__c where Apttus_Proposal__Account__c in: quoteAccID Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())] ){
-				quotelist = new list<id>();
-				porttoQuote = new map<string, list<id>>();
-				if(quoteMap.containsKey(quote.Apttus_Proposal__Account__c)){
-					porttoQuote = quoteMap.get(quote.Apttus_Proposal__Account__c);
-					if(quoteMap.get(quote.Apttus_Proposal__Account__c).containsKey(quote.NokiaCPQ_Portfolio__c)){
-						quotelist = quoteMap.get(quote.Apttus_Proposal__Account__c).get(quote.NokiaCPQ_Portfolio__c);
-					}
-				}
-				quotelist.add(quote.Id);
-				porttoQuote.put(quote.NokiaCPQ_Portfolio__c, quotelist);
-				quoteMap.put(quote.Apttus_Proposal__Account__c, porttoQuote);
-				
-			}
-			
-			for(Accreditation__c accr : accredForRepricing){
-					quotesToUpdate.addall(quoteMap.get(accr.partner__C).get(accr.Portfolio__c));	
-			} 
-			
-			//system.debug('quotesToUpdate--->'+quotesToUpdate);
-			
-			if (!quotesToUpdate.isEmpty() ){
-			
-				String query = 'SELECT Id,NokiaCPQ_Needs_Reprice__c FROM Apttus_Proposal__Proposal__c WHERE Id in (\'';
-				Integer count = 0;
-				//add quote Ids in IN query
-				for(Id idStr: quotesToUpdate)
-				{	
-					if(count != quotesToUpdate.size()-1){
-						query+= idStr+Nokia_CPQ_Constants.QUERY1;
-					}
-					else{
-						query+= idStr+Nokia_CPQ_Constants.QUERY2;   
-					}
-	
-					count++;
-					
-				}
-				//system.debug('query ---->'+query);
-				
-				
-				NeedsRepriceBatch repriceBatch = new NeedsRepriceBatch(query);
-				//system.debug('repriceBatch ---->'+repriceBatch);
-				Database.executeBatch(repriceBatch, 10); 
-			}
-			//system.debug('repriceBatch end ---->');
-			
+			accPortfolioMap.get(accr.Partner__c).add(accr.Portfolio__c);
 		}
-		catch(Exception e)
-		{
-			ExceptionHandler.addException(e,NeedsRepriceAccreditationInvocable.class.getName(),Nokia_CPQ_Constants.ERROR_MSD);
+
+		Set<string> quoteApprovalStages = new Set<string> {Nokia_CPQ_Constants.QUOTEAPPROVED,Nokia_CPQ_Constants.QUOTEEXPIRED,Nokia_CPQ_Constants.ACCEPTED_STRING, Nokia_CPQ_Constants.Closed_Not_Won};
+		String queryString = 'SELECT Id,Quote_Type__c, NokiaCPQ_Needs_Reprice__c, Apttus_Proposal__Account__c, NokiaCPQ_Portfolio__c,CPQ_SubPortfolio__c FROM Apttus_Proposal__Proposal__c WHERE NokiaCPQ_Needs_Reprice__c = false AND Quote_Type__c = \'Indirect CPQ\' AND Apttus_Proposal__Account__c IN : quoteAccID AND Apttus_Proposal__Approval_Stage__c NOT IN :quoteApprovalStages AND (NokiaCPQ_Portfolio__c IN :portfolioSet OR CPQ_SubPortfolio__c INCLUDES (';
+		for(string port : portfolioSet) {
+			queryString += '\'' + port + '\',';
 		}
-		
+		Integer remainingRows = (Limits.getLimitQueryRows() - Limits.getQueryRows());
+		queryString = queryString.removeEnd(',') +')) Limit :remainingRows';
+		system.debug('updateQuotesInBulk>>>' + queryString);
+		String query = '';
+		for(Apttus_Proposal__Proposal__c quote : (List<Apttus_Proposal__Proposal__c>)Database.query(queryString) ) {
+			for (string portfolio : Nokia_CPQ_Utility.getPortfolio(quote)) {
+	if(accPortfolioMap.get(quote.Apttus_Proposal__Account__c).contains(portfolio)) {
+		query+= quote.Id + Nokia_CPQ_Constants.QUERY1;
+		break;
 	}
-	
+			}
+		}
+		if(string.isNotBlank(query)) {
+			query+= Nokia_CPQ_Constants.QUERY2;
+			NeedsRepriceBatch repriceBatch = new NeedsRepriceBatch('SELECT Id,NokiaCPQ_Needs_Reprice__c FROM Apttus_Proposal__Proposal__c WHERE Id in (\'' + query);
+			system.debug('updateQuotesInBulk>>> SELECT Id,NokiaCPQ_Needs_Reprice__c FROM Apttus_Proposal__Proposal__c WHERE Id in (\'' + query);
+			Database.executeBatch(repriceBatch, 10);
+		}
+
+	}
+	catch(Exception e)
+	{
+		ExceptionHandler.addException(e,NeedsRepriceAccreditationInvocable.class.getName(),Nokia_CPQ_Constants.ERROR_MSD);
+	}
+
+}
+
 }

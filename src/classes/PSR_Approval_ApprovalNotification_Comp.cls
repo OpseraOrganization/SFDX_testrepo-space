@@ -39,14 +39,14 @@ public with sharing class PSR_Approval_ApprovalNotification_Comp{
 			return null;
 		
 		List<Offer__c >	offerList = [Select Id, Offer_ID__c, Offer_Number__c, Name, Offer_Description__c, Price__c, CurrencyIsoCode,
-			 LoA_Approval_Level__c, LoA_Level_Before_Trigger_Approval__c, Total_Price_At_Approval_Net_Sale__c,
-			 LoA_Approval_Level_G4__c, Top_5_trigger_1_Name__c, Top_5_trigger_1_Level__c, Top_5_trigger_1_Category__c,
-			 Top_5_trigger_2_Category__c,  Top_5_trigger_2_Level__c, Top_5_trigger_2_Name__c, Top_5_trigger_3_Category__c,
-			 Top_5_trigger_3_Level__c, Top_5_trigger_3_Name__c, Top_5_trigger_4_Category__c, Top_5_trigger_4_Level__c,
-			 Top_5_trigger_4_Name__c, Top_5_trigger_5_Category__c, Top_5_trigger_5_Level__c, Top_5_trigger_5_Name__c,		
-			 Approval_Scope__c,	  Risk_Assessment_Position_Statement__c, Pricing_Strategy__c,  Customer_and_Competitive_Situation__c,
-			 Customer_Offer_Due_Date__c,  LoA_Currency__c, Net_Sales_LoA_Base_Case__c	 
-			 From Offer__c	Where Opportunity__c =: oppList[0].PSR_Reference_Opportunity__c  And ActiveOffer__c = true ];
+	LoA_Approval_Level__c, LoA_Level_Before_Trigger_Approval__c, Total_Price_At_Approval_Net_Sale__c,
+	LoA_Approval_Level_G4__c, Top_5_trigger_1_Name__c, Top_5_trigger_1_Level__c, Top_5_trigger_1_Category__c,
+	Top_5_trigger_2_Category__c,  Top_5_trigger_2_Level__c, Top_5_trigger_2_Name__c, Top_5_trigger_3_Category__c,
+	Top_5_trigger_3_Level__c, Top_5_trigger_3_Name__c, Top_5_trigger_4_Category__c, Top_5_trigger_4_Level__c,
+	Top_5_trigger_4_Name__c, Top_5_trigger_5_Category__c, Top_5_trigger_5_Level__c, Top_5_trigger_5_Name__c,		
+	Approval_Scope__c,  Customer_and_Competitive_Situation__c,
+	Customer_Offer_Due_Date__c,  LoA_Currency__c, Net_Sales_LoA_Base_Case__c	 
+	From Offer__c	Where Opportunity__c =: oppList[0].PSR_Reference_Opportunity__c  And ActiveOffer__c = true ];
 		
 		if( offerList.isEmpty()){
 			return null ;
@@ -59,10 +59,10 @@ public with sharing class PSR_Approval_ApprovalNotification_Comp{
 		get{
 			if(String.isNotBlank(oppId)){
 	oppApprovalRequests =[ SELECT Apttus_Approval__Step_Name__c, Apttus_Approval__Approval_Status__c, Validator_Status__c,
-				Apttus_Approval__Date__c, Apttus_Approval__Assigned_To_Name__c, NF_Assignee_Type__c,
-				Apttus_Approval__Actual_Approver__c, Apttus_Approval__Approver_Comments__c, NF_Role_Name__c,
-				NF_Organization_Level__c, Apttus_Approval__ActualApproverName__c, Apttus_Approval__DelegateApprover__c, NF_BG_Attribute__c
-				FROM Apttus_Approval__Approval_Request__c 
+	Apttus_Approval__Date__c, Apttus_Approval__Assigned_To_Name__c, NF_Assignee_Type__c,
+	Apttus_Approval__Actual_Approver__c, Apttus_Approval__Approver_Comments__c, NF_Role_Name__c,
+	NF_Organization_Level__c, Apttus_Approval__ActualApproverName__c, Apttus_Approval__DelegateApprover__c, NF_BG_Attribute__c
+	FROM Apttus_Approval__Approval_Request__c 
 			WHERE Apttus_Approval__Related_Opportunity__c = :oppId AND Apttus_Approval__Approval_Status__c != 'Not Submitted' ];		 
 			}
 			return oppApprovalRequests;

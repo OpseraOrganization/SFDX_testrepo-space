@@ -1,25 +1,25 @@
 /*****************************************************************
 Description:	Service request to Submit the Json created by HWS_CreateSRRequest class to SOO 
-History									
-DATE		AUTHOR	CHANGE
-11/11/2018  Shiv Maila	  Created
+History								 
+DATE		AUTHOR  CHANGE
+11/11/2018  Shiv Maila	Created
 12/18/2018  Vinod Ch		Updated 
-1/24/2018   Nikita Jain	 Updated
+1/24/2018   Nikita Jain  Updated
 *****************************************************************/
 Public without sharing class HWS_SendServiceRequesttoSOO_SVC {
 	//Public  HWS_SendServiceRequesttoSOO_SVC(){}
 	//@AuraEnabled
 	//Public Boolean isSenttoSOO; 
 	/*****************************************************************
-Description: Future method callout to submit parent case to SOO
-Parameters: ParentCaseId
-Returns: NA
-Throws [Exceptions]: [optional]				
-History						
-DATE		AUTHOR	CHANGE
-11/11/2018  Shiv Maila	  Created
-12/18/2018  Vinod Ch		Updated 
-*****************************************************************/
+	Description: Future method callout to submit parent case to SOO
+	Parameters: ParentCaseId
+	Returns: NA
+	Throws [Exceptions]: [optional]			 
+	History					 
+	DATE		AUTHOR  CHANGE
+	11/11/2018  Shiv Maila	Created
+	12/18/2018  Vinod Ch		Updated 
+	*****************************************************************/
 
 	//34122 
 	@AuraEnabled
@@ -27,7 +27,7 @@ DATE		AUTHOR	CHANGE
 	{ 
 		ProcessResponse pr=new ProcessResponse();
 		HWS_CreateSRRequest objSR = new HWS_CreateSRRequest();
-		HWS_CreateSRRequest.SOORequestBody createSRJSON =objSR.createSRRequest(parentCaseId,condition);	
+		HWS_CreateSRRequest.SOORequestBody createSRJSON =objSR.createSRRequest(parentCaseId,condition); 
 		HTTP http; 
 		HTTPResponse response; 
 		HTTPRequest request ;
@@ -82,7 +82,7 @@ DATE		AUTHOR	CHANGE
 	{ 
 		ProcessResponse pr = new ProcessResponse();
 		HWS_CreateSRRequest objSR = new HWS_CreateSRRequest();
-		HWS_CreateSRRequest.SOORequestBody createSRJSON = objSR.createBulkSRRequest(parentCaseId);	
+		HWS_CreateSRRequest.SOORequestBody createSRJSON = objSR.createBulkSRRequest(parentCaseId);  
 		HTTP http; 
 		HTTPResponse response; 
 		HTTPRequest request;
@@ -183,7 +183,7 @@ DATE		AUTHOR	CHANGE
 	Public Static void createCalloutErrorLog(String failureInfo){
 		InterfaceComms__c logCalloutFailure = new InterfaceComms__c();
 		logCalloutFailure.Failure_Details__c=failureInfo;
-		Database.insert(logCalloutFailure,false);		
+		Database.insert(logCalloutFailure,false);	   
 	}
 	
 	public static void updateIsErrorFlagonSuccess (Id parentCaseId) {
@@ -192,7 +192,7 @@ DATE		AUTHOR	CHANGE
 			case sucesscase = new case();
 			sucesscase.Id = cas.Id;
 			sucesscase.HWS_ErrorReason__c = 'false';
-		
+			//sucesscase.HWS_Sent_To_SOO__c=true;
 			caseList.add(sucesscase);
 		}
 		if (!caseList.isEmpty()) {

@@ -1,5 +1,8 @@
 @isTest
 public class HWS_DataFactory_TEST{
+	Public Static User runAsUser = new User(Id = UserInfo.getUserId());
+	public static final string testemail = 'test001@test.com';
+	public static integer NokiaId = 100;
 	// Method  is used to insert Account record @Govardhan
 	public static Account insertAccount ( )
 	{
@@ -354,4 +357,195 @@ return PrdSerRel;
 		newWorkgroupRules.add(rule);
 		insert newWorkgroupRules;
 	}
+	//method to create Suspension records
+	public static List<HWS_Suspension__c> createSuspensionRecord(Integer n,Boolean isInsert,Id ServiceContractId,Id contactId){
+		List<HWS_Suspension__c> suspensionRecList = new List<HWS_Suspension__c>();
+		for(Integer i=0;i<n;i++){
+			HWS_Suspension__c sq = new HWS_Suspension__c();
+			sq.HWS_Contact_Name__c = contactId;
+			sq.HWS_Service_Contract_Name__c = ServiceContractId;
+			sq.HWS_Suspension_Status__c ='Pending Review';
+			suspensionRecList.add(sq);
+		}
+		if(isInsert && !suspensionRecList.isEmpty()){
+			insert suspensionRecList;
+		}
+		return suspensionRecList;
+	}
+	//method to create Service Quote Records
+	public static List<HWS_Service_Quote__c> createServiceQuote(Integer n,Id recordtypeId,Boolean isInsert,Id caseId){
+		List<HWS_Service_Quote__c> serviceQuoteRecList = new List<HWS_Service_Quote__c>();
+		for(Integer i=0;i<n;i++){
+			HWS_Service_Quote__c sq = new HWS_Service_Quote__c();
+			sq.HWS_Quote_Status__c = 'Draft';
+			sq.RecordtypeId = recordtypeId;
+			sq.HWS_Support_Ticket__c = caseId;
+			sq.HWS_OPT_OnProcess_Status__c='C4';
+			sq.HWS_Is_Quotable__c='Yes';
+			serviceQuoteRecList.add(sq);
+		}
+		if(isInsert && !serviceQuoteRecList.isEmpty()){
+			insert serviceQuoteRecList;
+		}
+		return serviceQuoteRecList;
+	}
+	//method to setup workgroup setup for Service Quote Records
+	public static void createWGSetupServiceQuote(){
+		//create Workgroups
+		Id workgroupRecordTypeId = Schema.SObjectType.CH_Workgroup__c.getRecordTypeInfosByDeveloperName().get('CH_CA_Workgroup').getRecordTypeId();
+		List<CH_Workgroup__c> wgList = new List<CH_Workgroup__c>();
+		CH_Workgroup__c cdmWG = new CH_Workgroup__c();
+		cdmWG.name = 'HWS_EQS-CDM_CDM_NAM_US';
+		cdmWG.RecordTypeId = workgroupRecordTypeId;
+		cdmWG.CH_Workgroup_Instructions__c = 'This is a workgroup instruction';
+		cdmWG.CH_Type__c = 'Exclusions Quotation Support-CDM';
+		wgList.add(cdmWG);
+		CH_Workgroup__c ocWG = new CH_Workgroup__c();
+		ocWG.name = 'HWS_EQS-OC_OC_NAM_US';
+		ocWG.RecordTypeId = workgroupRecordTypeId;
+		ocWG.CH_Workgroup_Instructions__c = 'This is a workgroup instruction';
+		ocWG.CH_Type__c = 'Exclusions Quotation Support-OC';
+		wgList.add(ocWG);
+		insert wgList;
+		// Create workgroup Member
+		Id CH_CA_Workgroup_Member = Schema.SObjectType.CH_Workgroup_Member__c.getRecordTypeInfosByDeveloperName().get('CH_CA_WorkgroupMember').getRecordTypeId();
+		List<CH_Workgroup_Member__c> newWorkgroupMembers = new List<CH_Workgroup_Member__c>();
+		CH_Workgroup_Member__c member = new CH_Workgroup_Member__c ();
+		member.Name = 'HWS_Queue';
+		member.CH_User__c = UserInfo.getUserId();
+		member.CH_Role__c = 'Queue';
+		member.CH_Workgroup_Member_Type__c = 'Queue';
+		member.CH_Workgroup__c = wgList[0].Id;
+		member.RecordTypeId = CH_CA_Workgroup_Member;
+		newWorkgroupMembers.add(member);
+		member = new CH_Workgroup_Member__c ();
+		member.CH_User__c = UserInfo.getUserId();
+		member.CH_Role__c = 'Queue';
+		member.CH_Workgroup_Member_Type__c = 'Queue';
+		member.CH_Workgroup__c = wgList[1].Id;
+		member.RecordTypeId = CH_CA_Workgroup_Member;
+		newWorkgroupMembers.add(member);
+		insert newWorkgroupMembers;
+		//create Rules
+		Id ruleRecordTypeId = Schema.SObjectType.CH_Workgroup_Rule__c.getRecordTypeInfosByDeveloperName().get('CH_CA_WorkgroupRule').getRecordTypeId();
+		List<CH_Workgroup_Rule__c> newWorkgroupRules = new List<CH_Workgroup_Rule__c>();
+		CH_Workgroup_Rule__c rule = new CH_Workgroup_Rule__c ();
+		rule.name = 'HWS_CDM_Rule';
+		rule.CH_Workgroup__c = wgList[0].Id;
+		rule.CH_Workgroup_Type__c='Exclusions Quotation Support-CDM';
+		rule.CH_ServiceType__c='Hardware Support';
+		rule.CH_OrderNumber__c = 10;
+		rule.CH_Region1__c = 'Market North America';
+		rule.CH_Country1__c = 'United States of America';
+		rule.RecordTypeId = ruleRecordTypeId;
+		newWorkgroupRules.add(rule);
+		rule = new CH_Workgroup_Rule__c ();
+		rule.name = 'HWS_OC_Rule';
+		rule.CH_Workgroup__c = wgList[1].Id;
+		rule.CH_Workgroup_Type__c='Exclusions Quotation Support-OC';
+		rule.CH_ServiceType__c='Hardware Support';
+		rule.CH_OrderNumber__c = 10;
+		rule.CH_Region1__c = 'Market North America';
+		rule.CH_Country1__c = 'United States of America';
+		rule.RecordTypeId = ruleRecordTypeId;
+		newWorkgroupRules.add(rule);
+		insert newWorkgroupRules;
+	}
+	  public static void createServiceFeeDetails(){
+		Product2 prod = insertproduct2();  
+		prod.HWS_NSNPartCode__c='C112019.A1A';
+		prod.HWS_Source__c='test';		
+		insert prod;	   
+		HWS_ServiceFeeDetails__c sFee = new HWS_ServiceFeeDetails__c();
+		sFee.HWS_Product__c =  prod.id ;
+		sFee.HWS_Status__c = 'Active';
+		sFee.HWS_SupportedQuoteTypes__c ='Damaged Part';
+		sFee.HWS_DamagedHWRepairFee__c=10;
+		sFee.HWS_DamagedHWReplacementFee__c=10;
+		sFee.HWS_RepackingHWPackingFee__c=10;
+		sFee.HWS_HWAssessmentFee__c=10;
+		sFee.HWS_DocumentationFee__c=10;
+		sFee.HWS_HWUnreturnedPartFee__c=10;
+		sFee.HWS_OrderCode__c='SF00001';
+		insert sFee;		
+	}
+	 public static void createServiceFeeDiscount(){
+	   
+		Account sAccount= insertAccount();
+		insert sAccount;
+		Product2 prod = insertproduct2();
+		insert prod;
+		ServiceContract sContract= createServiceContract(sAccount.Id); 
+		sContract.Pricebook2Id = Test.getStandardPricebookId();
+		Id ContractRecordTypeId = Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_ServiceContract').getRecordTypeId();
+		sContract.RecordTypeId = ContractRecordTypeId;
+		insert sContract;
+		PriceBookEntry pBook = new PriceBookEntry( 
+			Pricebook2Id = Test.getStandardPricebookId(),
+			Product2Id = prod.id,
+			UnitPrice = 0,			
+			IsActive = true
+		);
+		insert pBook;
+		ContractLineItem cli=createContractLineItems(sContract.Id,pBook.Id);
+		insert cli;		 
+		User qUser = createUser();		
+		HWS_ServiceFee_Discount__c sDiscount = new HWS_ServiceFee_Discount__c();
+		sDiscount.HWS_Service_Contract__c=sContract.Id;
+		sDiscount.HWS_Service_Contract_Line_Item__c=cli.Id;		
+		sDiscount.HWS_Service_Assurance_Manager__c=qUser.Id;
+		sDiscount.HWS_SupportedQuoteTypes__c = 'Unreturned Part';
+		sDiscount.HWS_Quote_Eligilibilty_Days__c  = 9;
+		sDiscount.HWS_Unreturned_Part_Discount__c = 10;
+		sDiscount.HWS_Scope_of_work_Unreturned_Parts_id__c = '000';
+		sDiscount.HWS_Email_Template__c = 'Hello';
+		sDiscount.HWS_UnSuspension_Email_Text__c = 'Hi';
+		sDiscount.HWS_Suspension_Email_Text__c = 'hi';
+		insert sDiscount;	   
+	}
+	public static User createUser(){  	
+		Profile profile = [Select Id from Profile where name = 'Data Loader Profile' LIMIT 1];
+		String orgId = UserInfo.getOrganizationId();
+		String dateString = String.valueof(Datetime.now()).replace(' ','').replace(':','').replace('-','');
+		Integer randomInt = Integer.valueOf(math.rint(math.random()*1000000));
+		String uniqueName = orgId + dateString + randomInt+'@mail.com';
+		User dLUser = new User();
+		dLUser.alias = 'DLoader';
+		dLUser.email = 'testmail01@mail.com';
+		dLUser.emailencodingkey = 'UTF-8';
+		dLUser.lastname = 'DataLoaderr';
+		dLUser.languagelocalekey = 'en_US';
+		dLUser.localesidkey = 'en_US';
+		dLUser.profileid = profile.Id; // Don't Modify the profile
+		dLUser.Country__c = 'Canada';
+		dLUser.timezonesidkey = 'America/Los_Angeles';
+		dLUser.Username = uniqueName;
+		insert dLUser;		
+		return dLUser;
+	}
+	
+	 Static Public Void createPortalUsers(){
+		System.runAs(runAsUser){
+			// Create the portal user
+			Contact portalContact = [SELECT Id FROM Contact WHERE AssistantName ='Portal Contact' LIMIT 1];
+			Profile portalProfile = [SELECT Id FROM Profile WHERE Name LIKE :'Customers'+'%' LIMIT 1];
+			User newUser = new User(
+				LastName = 'PORTL2',
+				FirstName='PORTAL2',
+				Alias = 'TSTP1',
+				Email = System.now().millisecond() + testemail,
+				Username = math.random() + 'P1@test.com',
+				ProfileId = portalProfile.id,
+				TimeZoneSidKey = 'GMT',
+				LanguageLocaleKey = 'en_US',
+				EmailEncodingKey = 'UTF-8',
+				LocaleSidKey = 'en_US',
+				ContactId = portalContact.Id,
+				IsActive = true,
+				Nokia_ID__c = 'CHTEST' + String.valueOf(NokiaId++)
+			);
+			insert newUser; 
+		}
+	}
+
 }

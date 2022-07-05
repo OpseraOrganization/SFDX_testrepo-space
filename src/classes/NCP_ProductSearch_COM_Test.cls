@@ -1,7 +1,6 @@
 /**
  * Created by bkandov on 15/05/2018.
  */
-
 @isTest
 private class NCP_ProductSearch_COM_Test {
 
@@ -21,7 +20,6 @@ private class NCP_ProductSearch_COM_Test {
 
 		String result = NCP_ProductSearch_COM.searchProductsJson();
 		Test.stopTest();
-
 	}
-
+	
 }

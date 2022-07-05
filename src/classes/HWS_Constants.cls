@@ -1,3 +1,13 @@
+/****************************************************************
+* Class Name : HWS_Constants 
+* Created Date: 
+* Created By: 
+* Description : Stores constant values to avoid Sonar Check Errors
+* Modification Log:
+---------------------------------------------------------
+Modified By	 Modified For US#	Modified Date
+
+******************************************************************/
 public without sharing class HWS_Constants {
 	
 	public static final String LEGAL_ENTITY = 'Legal_Entity'; 
@@ -78,17 +88,17 @@ public without sharing class HWS_Constants {
 	public static final String IR = 'Identical Repair';
 	public static final String RFR = 'Return for Repair or Replacement';
 	public static final String SPS = 'Spare Part Sales';
-	public static final String	REQUESTED_BY_CUSTOMER = 'Requested by customer';
-	public static final String	On_Hold = 'On Hold';
-	public static final String	USATT = 'US_AT&T';
-	public static final String	Test123 = 'Test data123';
-	public static final String	Permanent_Address = 'Permanent Address';
+	public static final String  REQUESTED_BY_CUSTOMER = 'Requested by customer';
+	public static final String  On_Hold = 'On Hold';
+	public static final String  USATT = 'US_AT&T';
+	public static final String  Test123 = 'Test data123';
+	public static final String  Permanent_Address = 'Permanent Address';
 	public static final String PARTIALLY_SHIPPED ='Partially Shipped';
 	public static final String REQUEST_TO_CANCEL ='Request to Cancel';
 	public static final String RETRIED_TO_CANCEL ='Retried To Cancel';
-	public static final String	EDP_Login = 'callout:EDP_Login';
-	public static final String	content = 'Content-Type';
-	public static final String	json = 'application/json'; 
+	public static final String  EDP_Login = 'callout:EDP_Login';
+	public static final String  content = 'Content-Type';
+	public static final String  json = 'application/json'; 
 	public static final String CodeNumber = '833-049122_00';
 	public static final String PENDING_REFERRAL_INSTRUCTION = 'Pending Referral Instruction';
 	public static final string NoTXPOWER='No TX Power';
@@ -108,8 +118,57 @@ public without sharing class HWS_Constants {
 	public static final string OWPOMissing ='Out of Warranty PO Missing';
 	public static final string UWStatus ='Warranty Unknown';
 	public static final string WStatusCheckFailed ='Warranty Status Check Failed';
+	//NOKIASC-37150-start
+	public static final String LE_APPROVAL_PICKLIST_VALUE1 = 'Not applicable';
+	public static final String LE_APPROVAL_PICKLIST_VALUE2 = 'Active';
+	public static final String LE_APPROVAL_PICKLIST_VALUE3 = 'LE approval in progress';
+	//NOKIASC-37150-end
 	//testmethod for code coverage
 	public static void hwsConstantsmethod(){
 		
 	}
+	//Damaged and UnReturned Part Qoute Related Constants
+	public static final string SQ_STATUS_ON_HOLD = 'On Hold';
+	public static final string SQ_STATUS_OC_REVIEW = 'OC Review';
+	public static final string SQ_STATUS_CDM_REVIEW = 'CDM Review';
+	public static final string SQ_STATUS_CANCELLED = 'Cancelled';
+	public static final string SQ_STATUS_DRAFT = 'Draft';
+	public static final string SQ_STATUS_IN_PROGRESS = 'In Progress';
+	public static final string SQ_STATUS_ACCEPTED_CDM = 'Accepted by CDM';
+	public static final string SQ_STATUS_REJECTED_CDM = 'Rejected by CDM';
+	public static final string SQ_STATUS_COMPLETED = 'Completed';
+	public static final string SQ_STATUS_ACCEPTED_CUSTOMER = 'Accepted by Customer';
+	public static final string SQ_STATUS_REJECTED_CUSTOMER = 'Rejected by Customer';
+	public static final string SQ_STATUS_PENDING_REVIEW = 'Pending Customer Review';
+	public static final string SQ_SERVICE_TYPE = 'Hardware Support';
+
+	public static final string SUSPENSION_STATUS_REJECTED = 'Rejected';
+	public static final string SUSPENSION_STATUS_UNSUSPENDED = 'UnSuspended';
+	public static final string SUSPENSION_STATUS_PENDING_REVIEW = 'Pending Review';
+	
+	public static final string WORKGROUP_TYPE_CDM = 'Exclusions Quotation Support-CDM';
+	public static final string WORKGROUP_TYPE_OC = 'Exclusions Quotation Support-OC';
+	//HWS Damaged Part Service Reqest 
+	public static final string DataHub_Log='DataHub Log';
+	public static final string InvalidMsg1='Invalid Request,Check whether RMANumber,Type,Action,TransactionId is valid and not blank or Action is Invalid';
+	public static final string rmaExists='RMA Exists already';
+	public static final string invalidRMA='RMA is Invalid';
+	public static final string qliDoesNotExists='Atleast one Quote Line Item should Exist';
+	public static final string SRM402='SRM-402';
+	public static final string SRM200='200';
+	public static final string SRM201='201';
+	public static final string updateSuccess='Quote is updated with new Quote Status';
+	public static final string MissingData='Invalid Request Missing Required Data';
+	public static final string QuoteInserted='Quote and QuoteLineItem Inserted';
+	public static final string Failure='Failure';
+	public static final string Success='Success';
+	public static final string UpdateNotAllowed='Update not allowed on DamagedPartQuote';
+	public static final string LSPNotBlank='Invalid Request Missing some Data or LSPComments should be blank';
+	public static final string FUNA='No Further udpates allowed';
+	public static final string YES='Yes';
+	public static final string NO='No';
+	public static final string HUPQRType='HWS_UnReturned_Part_Quote';
+	public static final string HDPQRType='HWS_Damaged_Part_Quote';
+	public static final string UPQ='UnReturned Part Quote';
+	public static final string DPQ='Damaged Part Quote';
 }
