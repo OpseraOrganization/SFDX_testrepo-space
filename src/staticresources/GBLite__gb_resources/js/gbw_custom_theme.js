@@ -123,9 +123,16 @@ var GBCustomThemeConfig = (function(window, document, jq) {
 			_toggleHexBox(jq(this));
 		});
 		
-		jq('.closeX').click(function() {
-			_hideWarningMessage();
-		});
+		jq('.closeX')
+			.click(function() {
+				_hideWarningMessage();
+			})
+			// For keyboard accessibility, 13 = Enter
+			.keyup(function(e) {
+				if (e.keyCode==13) {
+					jq(this).trigger('click');
+				}
+			});
 		
 		jq(document).keyup(function(e) {
 		  	// hide message or widget if escape key
@@ -148,7 +155,14 @@ var GBCustomThemeConfig = (function(window, document, jq) {
 			}
 		});
 		
-		jq('#themeDetails .tooltip').tooltipster();
+		jq('#themeDetails .tooltip').tooltipster()
+			// For keyboard accessibility
+			.focus(function() {
+		    jq(this).tooltipster('show');
+			})
+			.blur(function() {
+		    jq(this).tooltipster('hide');
+			});
 		
 		/* TODO: JA, implement resizable for #themeBody 
 		jq('#themeBody').resizable({
@@ -718,7 +732,9 @@ var GBMixpanel = (function(window, document, jq) {
 			return;
 		}
 		
-		mixpanel.init(token);
+		mixpanel.init(token, {
+			cross_site_cookie: true
+		});
 	}
 	
 	function track(eventName, props) {

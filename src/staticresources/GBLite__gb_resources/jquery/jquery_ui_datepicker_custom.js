@@ -75,8 +75,11 @@ function parse12HourTime(timeString){
 	timeString = timeString.trim();
 	
 	timeStringArray = timeString.split(':');
-	if(amPm == 'PM'){
+	if(amPm == 'PM' && timeStringArray[0]<12){  // fix for: 12:10PM returns 00:10:00 but the retun value should be 12:10:00 since this is afternoon 12.10
 		timeStringArray[0] = (timeStringArray[0] * 1) + 12;
+		timeStringArray[0] = timeStringArray[0].toString();
+	} else if((amPm == 'AM' && timeStringArray[0]==12)){  // fix for : 12.10AM returns 24:10:00 but the return value should be 00:10:00 since this is morning 12.10
+		timeStringArray[0] = (timeStringArray[0] * 1) - 12;
 		timeStringArray[0] = timeStringArray[0].toString();
 	}
 	timeStringArray[0] = ("0" + timeStringArray[0]).slice(-2); // we prepend a 0 and then use the .slice() function to get the last 2 digits

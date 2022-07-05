@@ -8,34 +8,22 @@
 
 
 trigger AccountMemberTrigger on Account_Member__c (before insert , before update, After insert , before delete,  after update, after delete) {
-
- if(Trigger.isDelete){  
-	AccountMemberHelperPRM.unshareCertificationOnDelete(Trigger.old);
-   // AccountMemberHelperPRM.unshareLeadOnDelete(Trigger.old);
-		 if(Trigger.isAfter){
-				
-		 }
+	
+	if(Trigger.isDelete){  
+		AccountMemberHelperPRM.unshareCertificationOnDelete(Trigger.old);
 	}
 	
 	if(Trigger.isInsert){
-   // AccountMemberHanlderPRM.sharePRM(Trigger.new);
-	//AccountMemberHanlderPRM.sharePRM.shareCertificationOnInsertPRM(Trigger.new);
-	AccountMemberHanlderPRM.sharePSM(Trigger.new);
-	
-		 if(Trigger.isBefore){
-				
-			}
-		  if(Trigger.isAfter){
-				
-			}
+		AccountMemberHanlderPRM.sharePSM(Trigger.new);
+		if(Trigger.isBefore){
+			AccountMemberHanlderPRM.beforeInsertOperation(Trigger.New);
+		}
 	}
 	if(Trigger.isUpdate){
-		//AccountMemberHanlderPRM.shareUpdatePRM(Trigger.new,Trigger.new[0],Trigger.Old[0]);
-		//AccountMemberHanlderPRM.shareUpdatePRM.shareCertificationOnUpdatePRM(Trigger.new,Trigger.new[0],Trigger.Old[0]);
 		AccountMemberHanlderPRM.shareUpdatePSM(Trigger.new,Trigger.new[0],Trigger.Old[0]);
-		//AccountMemberHanlderPRM.shareUpdatePRM.shareLeadOnUpdateAccountRole(Trigger.new,Trigger.new[0],Trigger.Old[0]);
-		//AccountMemberHanlderPRM.shareUpdatePRM.shareCertificationOnUpdateAccountRolePRM(Trigger.new,Trigger.new[0],Trigger.Old[0]);
-		//AccountMemberHanlderPRM.shareUpdatePSM.shareCertificationOnUpdateAccountRolePSM(Trigger.new,Trigger.new[0],Trigger.Old[0]);
+		if(Trigger.isBefore){
+			AccountMemberHanlderPRM.beforeUpdateOperation(Trigger.New);
+		}
 	}
-
+	
 }

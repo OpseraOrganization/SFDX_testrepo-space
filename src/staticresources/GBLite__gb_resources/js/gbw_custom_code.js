@@ -109,9 +109,16 @@ var GBCustomCodeConfig = (function(window, document, jq) {
         	_updateEditedCustomCodeMap();            	
         });
 		
-		jq('.closeX').click(function() {
-			_hideWarningMessage();
-		});
+		jq('.closeX')
+			.click(function() {
+				_hideWarningMessage();
+			})
+			// For keyboard accessibility, 13 = Enter
+			.keyup(function(e) {
+				if (e.keyCode==13) {
+					jq(this).trigger('click');
+				}
+			});
 		
 		jq(document).keyup(function(e) {
 		  	// hide message or widget if escape key
@@ -134,7 +141,14 @@ var GBCustomCodeConfig = (function(window, document, jq) {
 			}
 		});
 		
-		jq('#codeDetails .tooltip').tooltipster();
+		jq('#codeDetails .tooltip').tooltipster()
+			// For keyboard accessibility
+			.focus(function() {
+		    jq(this).tooltipster('show');
+			})
+			.blur(function() {
+		    jq(this).tooltipster('hide');
+			});
 		
 		/* TODO: APM, implement resizable for #codeBody 
 		jq('#codeBody').resizable({
@@ -532,7 +546,9 @@ var GBMixpanel = (function(window, document, jq) {
 			return;
 		}
 		
-		mixpanel.init(token);
+		mixpanel.init(token, {
+			cross_site_cookie: true
+		});
 	}
 	
 	function track(eventName, props) {
