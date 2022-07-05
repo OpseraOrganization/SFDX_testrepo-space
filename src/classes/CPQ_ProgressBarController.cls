@@ -17,7 +17,8 @@ public without sharing class CPQ_ProgressBarController {
 		try {
 			Apttus_Proposal__Proposal__c proposal = [select id, Apttus_Proposal__Approval_Stage__c from Apttus_Proposal__Proposal__c where id = :proposalId];
 			if(proposal != null && (String.isBlank(proposal.Apttus_Proposal__Approval_Stage__c) || proposal.Apttus_Proposal__Approval_Stage__c.equalsIgnoreCase('Approved') || proposal.Apttus_Proposal__Approval_Stage__c.equalsIgnoreCase('Draft'))) {
-				AsyncApexJob cartFinalizeJob = [select id, CreatedDate from AsyncApexJob where (CreatedById = :UserInfo.getUserId() and ApexClass.Name = 'ActionInvokerWebService') order by CreatedDate desc limit 1];
+				//check for the existence of apttus async calls on finaize. ActionInvokerWebService or SyncCartQJob apex jo will be fired on cart finalize.
+				AsyncApexJob cartFinalizeJob = [select id, CreatedDate from AsyncApexJob where (CreatedById = :UserInfo.getUserId() and (ApexClass.Name = 'ActionInvokerWebService' or ApexClass.Name = 'SyncCartQJob')) order by CreatedDate desc limit 1];
 				if(cartFinalizeJob != null && cartFinalizeJob.CreatedDate > DateTime.now().addMinutes(-5)) {
 					isValidTransaction = true;
 				}
@@ -34,11 +35,11 @@ public without sharing class CPQ_ProgressBarController {
 	* return : Boolean
 	***************************/ 
 	@AuraEnabled
-	public static Boolean checkJobStatus() {
+	public static Boolean checkJobStatus(String proposalId) {
 		Boolean isJobPending = true;
 		Datetime cartFinalizeTime = System.now();
 		try {
-			List<AsyncApexJob> cartFinalizeJobs = [select id, CreatedDate from AsyncApexJob where (CreatedById = :UserInfo.getUserId() and ApexClass.Name = 'ActionInvokerWebService') order by CreatedDate desc limit 1];
+			List<AsyncApexJob> cartFinalizeJobs = [select id, CreatedDate from AsyncApexJob where (CreatedById = :UserInfo.getUserId() and (ApexClass.Name = 'ActionInvokerWebService' or ApexClass.Name = 'SyncCartQJob')) order by CreatedDate desc limit 1];
 			if(Test.isRunningTest() || (cartFinalizeJobs != null && !cartFinalizeJobs.isEmpty())) {
 				if(!Test.isRunningTest()) {
 					cartFinalizeTime = cartFinalizeJobs[0].CreatedDate;
@@ -56,6 +57,16 @@ public without sharing class CPQ_ProgressBarController {
 						if(String.isNotBlank(job.Status) && pendingStatuses.contains(job.Status)) {
 							isJobPending = true;
 							break;
+						}
+					}
+					if(!isJobPending) {
+						//get the current status of proposals generation
+						List<Apttus_Proposal__Proposal__c> proposalList = [select id,CPQ_Templates_Auto_Generated__c from Apttus_Proposal__Proposal__c where Id = :proposalId];
+						//if not auto generated get the PLIs and call auto generation
+						if(!proposalList.isEmpty() && !proposalList[0].CPQ_Templates_Auto_Generated__c) {
+							ProposalLineItemTriggerHelper.autoGenerateQuoteReports([select id,Apttus_Proposal__Proposal__c from Apttus_Proposal__Proposal_Line_Item__c where Apttus_Proposal__Proposal__c = :proposalId]);
+							//update the flag to true
+							update new Apttus_Proposal__Proposal__c(id = proposalId, CPQ_Templates_Auto_Generated__c = true);
 						}
 					}
 				}

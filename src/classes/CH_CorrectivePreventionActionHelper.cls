@@ -73,7 +73,8 @@ public without sharing class CH_CorrectivePreventionActionHelper {
 				upsert objCPAshareList;
 			}catch(Exception Ex){
 				for(CH_Corrective_Preventive_Action__c objCPA : newCPAList){
-					objCPA.addError('Please Select Valid User');
+					//Ref: NOKIASC-36332 Replaced Error Message With Custom Label
+					objCPA.addError(System.Label.CH_Select_Valid_User);
 				}
 			}
 			

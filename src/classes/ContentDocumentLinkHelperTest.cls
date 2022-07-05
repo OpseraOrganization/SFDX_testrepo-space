@@ -1,5 +1,5 @@
 /****************************************
- * Name : ContentDocumentLinkHelperTest
+ * Name : ContentDocumentLinkHelperTest 
  * Author : Accenture
  * Description : Test class for ContentDocumentLinkHelper
  *****************************************/
@@ -11,7 +11,7 @@ public class ContentDocumentLinkHelperTest {
 	public static String g4Material = 'G4 Material';
 	
 	static testMethod void checkUncheckOpportunityPTAFlagOnInsertTest()
-	{	   
+	{	
 		List<Account> accountList = new List<Account>();
 		List<Opportunity> opportunityList = new List<Opportunity>();
 		List<Offer__c> offerList = new List<Offer__c>();
@@ -55,7 +55,7 @@ public class ContentDocumentLinkHelperTest {
 		}
 	}
 	static testMethod void checkUncheckOfferSSOFlagOnInsertTest()
-	{	   
+	{	
 		List<Account> accountList = new List<Account>();
 		List<Opportunity> opportunityList = new List<Opportunity>();
 		List<Offer__c> offerList = new List<Offer__c>();
@@ -90,7 +90,7 @@ public class ContentDocumentLinkHelperTest {
 			offerList[0].ActiveOffer__c = true;
 			database.insert(offerList);
 			id offerId = offerList[0].id;
-			system.assert(offerId!=null);		   
+			system.assert(offerId!=null);	 
 			
 			//creating content version
 			ContentVersion  conVersionVar = TestDataFactory.createContentVersion_New(1,GlobalConstants.SSOFLAG)[0];
@@ -107,7 +107,7 @@ public class ContentDocumentLinkHelperTest {
 	}
 	
 	static testMethod void checkUncheckOpportunityBOMFlagOnInsertTest()
-	{	   
+	{	
 		List<Account> accountList = new List<Account>();
 		List<Opportunity> opportunityList = new List<Opportunity>();
 		List<Offer__c> offerList = new List<Offer__c>();
@@ -145,7 +145,7 @@ public class ContentDocumentLinkHelperTest {
 			system.debug('optyCreationoptyCreationoptyCreation>>>>>>>>>>>>>>>>>>>>>>>>>'+ opportunityList[0]);
 			
 			//Creating Presales Oppty
-			Opportunity preSalesTest = TestDataFactory.preSalesOpportunityCreation(1, accountList[0], opportunityList[0])[0];		   
+			Opportunity preSalesTest = TestDataFactory.preSalesOpportunityCreation(1, accountList[0], opportunityList[0])[0];	 
 			preSalesTest.PSR_Pre_Sales_Risk_Opportunity_Type__c = 'Risk Order';
 			preSalesTest.PSR_Pre_Sales_Risk_Opportunity_Sub_Type__c = 'Risk Order Only';
 			preSalesTest.CurrencyIsoCode = 'USD';
@@ -422,7 +422,7 @@ public class ContentDocumentLinkHelperTest {
 	  // Test.starttest();
 			List<Opportunity> oppty= TestDataFactory.OpportunityCreation(1, accountCreation);
 			String OpptyName='TestOppty';
-	 String concatenatedErrorMessage= CustomLeadConversion.ConvertLead(leadList[0].Id, accountCreation.Id, OpptyName);
+	 //String concatenatedErrorMessage= CustomLeadConversion.ConvertLead(leadList[0].Id, accountCreation.Id, OpptyName);
 	
 		 LeadConversionTriggerHelper.ConversionFutureMethod(leadList[0].Id);
 			CustomLeadConversion.getLeadDeatils(leadList[0].Id);
@@ -494,6 +494,100 @@ public class ContentDocumentLinkHelperTest {
 		ContentDocumentLinkHelper.Sharecqfileto_CqReport(conDocumentLink1);
 			Test.stoptest();
 		}
+	}
+	
+	@isTest
+	public static void CPQReleatedTest(){
+		List<Account> accLst = new List<Account>();
+		List<Opportunity> opportunityList = new List<Opportunity>();
+		accLst = TestDataFactory.createAccount(1);
+		database.insert(accLst);
+		
+		// create an opportunity	  
+		opportunityList = TestDataFactory.OpportunityCreation(1, accLst[0]);
+		opportunityList[0].StageName ='Create Offer (Bid)';
+		opportunityList[0].recordtypeid='01241000001HzdS';
+		opportunityList[0].Phase_Status__c= 'Offer in Progress';
+		database.insert(opportunityList);
+		List<Apttus_Proposal__Proposal__c> aptPro= TestDataFactory.createCQ(1, accLst[0], opportunityList[0]);
+		database.insert(aptPro);
+		
+		List<ContentVersion> contVer = TestDataFactory.createContentVersion(1);
+		Test.startTest();
+		database.insert(contVer);
+		List<ContentDocumentLink> contLnk = TestDataFactory.createContentDocumentLink_New(1, aptPro[0].Id, [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :contVer[0].Id][0].ContentDocumentId);
+		
+		database.insert(contLnk);
+		Test.stopTest();
+		
+		
+		
+		PermissionSet pset=[Select Id from PermissionSet
+							where PermissionSet.Name=:GlobalConstants.CQ_Business_admin];
+		
+		Profile p1 = [SELECT Id FROM Profile WHERE Name='System Administrator']; 
+		User u1 = new User(Alias = 'testpar1', Email='partnersupport1@supportpartner.co', 
+						   EmailEncodingKey='UTF-8', LastName='PartnerSupport1', LanguageLocaleKey='en_US', 
+						   LocaleSidKey='en_US', ProfileId = p1.Id, 
+						   TimeZoneSidKey='America/Los_Angeles', UserName='partneruser@organization.com');
+		insert u1;
+		
+		
+		System.runAs([SELECT Id FROM User where Id=:UserInfo.getUserId()][0]){
+			PermissionSetAssignment passign = new PermissionSetAssignment();
+			passign.AssigneeId =u1.Id;
+			passign.PermissionSetId = pset.id;
+			insert passign;
+		}
+		
+		System.runAs(u1){
+			ContentDocumentLinkHelper.throwerroronCQ_FileUpload(contLnk);
+		}
+		
+	}
+	
+	@isTest
+	public static void PS_FileShareWithPartnersTest(){
+		
+		ID caseRectype = Schema.describeSObjects(new List<String> {'Case'})[0].getRecordTypeInfosByDeveloperName().get('PS_Partner_Support').getRecordTypeId();
+		
+		ID accRectype = Schema.describeSObjects(new List<String> {'Account'})[0].getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
+		
+		Account acc = new Account();
+		acc.Name = 'PRM Test Account';
+		acc.Partner_Status__c='Active';
+		acc.recordTypeId = accRectype;
+		insert acc;
+		
+		
+		Profile p1 = [SELECT Id FROM Profile WHERE Name='System Administrator']; 
+		User u1 = new User(Alias = 'testpar1', Email='partnersupport1@supportpartner.co', 
+						   EmailEncodingKey='UTF-8', LastName='PartnerSupport1', LanguageLocaleKey='en_US', 
+						   LocaleSidKey='en_US', ProfileId = p1.Id,
+						   TimeZoneSidKey='America/Los_Angeles', UserName='partneruser@organization.com');
+		insert u1;
+		
+		
+		
+		Case c = new Case();
+		c.AccountId = acc.Id;
+		c.RecordTypeId = caseRectype;
+		c.Issue_Reported_By__c = u1.Id;
+		c.Subject = 'Test Subject';
+		c.Description = 'Test Description';
+		c.Type = 'Compliance';
+		
+		insert c;
+		
+		List<ContentVersion> conve1 = TestDataFactory.createContentVersion(1);
+		Test.startTest();
+		database.insert(conve1);
+		
+		List<ContentDocumentLink> contLnk1 = TestDataFactory.createContentDocumentLink_New(1, c.id, [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :conve1[0].Id][0].ContentDocumentId);
+		
+		database.insert(contLnk1);
+		Test.stopTest();
+		
 	}
 
 }

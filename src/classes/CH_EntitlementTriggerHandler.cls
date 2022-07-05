@@ -25,7 +25,6 @@ public class CH_EntitlementTriggerHandler extends TriggerHandler {
 	*/
 	public override void beforeInsert(){
 		CH_EntitlementTriggerHelper.populateSLAProcessIds(isolateCaseHandlingRecordType(newList));
-
 	}
 	
 	/*
@@ -41,7 +40,6 @@ public class CH_EntitlementTriggerHandler extends TriggerHandler {
 	*/
 	public override void beforeUpdate(){
 		CH_EntitlementTriggerHelper.updateSLAProcessIds(oldMap,newMap,isolateCaseHandlingRecordType(newList));
-		
 	}
 	
 		/*
@@ -49,7 +47,7 @@ public class CH_EntitlementTriggerHandler extends TriggerHandler {
 	*/
 	public override void afterUpdate(){
 		CH_EntitlementTriggerHelper.updateContractLineItemRecordsOnUpdate(oldMap, isolateCaseHandlingRecordType(newList));
-
+		CH_EntitlementTriggerHelper.updateCustomerSpecificTargetSLA(oldMap, isolateCaseHandlingRecordType(newList));
 	}
 	
 	/*

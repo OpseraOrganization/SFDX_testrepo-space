@@ -70,6 +70,7 @@ public class CH_CreateNEA_Controller_Test {
 		CH_CreateNEA_Controller.getAddressCountryName(addr.id); 
 		CH_CreateNEA_Controller.saveNEARecord(NEAsset, false);
 		CH_CreateNEA_Controller.getCLIDetails(cli[0].Id);
+		CH_CreateNEA_Controller.getCountryName();// NOKIASC-36196
 		try{
 			CH_CreateNEA_Controller.getCLIDetails(NEAsset.Id); 
 		}catch(Exception ex ){

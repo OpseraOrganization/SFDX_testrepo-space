@@ -1,7 +1,7 @@
 @IsTest
 public class Batch_CH_NotificationsTest {
 	
-	@testSetup 
+	@testSetup  
 	public static void createTestData(){
 		//Creating Custom Setting Data
 		CH_AccountName__c accauth = new CH_AccountName__c();
@@ -79,6 +79,7 @@ public class Batch_CH_NotificationsTest {
 			caseObj.ProductId = productObj.Id;
 			caseObj.CreatedDate=Date.today();
 			caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-20);
+			//caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(1440);
 			caseObj.Comment__c='comments';
 			caseObj.OwnerId = UserInfo.getUserId();
 			caseObj.Status = 'Created';
@@ -138,7 +139,7 @@ public class Batch_CH_NotificationsTest {
 			
 			cusSet = new CH_ChatterGroup_AccountMarketMaping__c();
 			cusSet.Name = 'India Maharashtra';
-			cusSet.Account_Market_Name__c = SWS_Constants.MARKETINDIA;
+			cusSet.Account_Market_Name__c = 'Market India;market india';
 			chChatterAccMarketList.add(cusSet);
 			
 			cusSet = new CH_ChatterGroup_AccountMarketMaping__c();
@@ -162,7 +163,7 @@ public class Batch_CH_NotificationsTest {
 			ISO_Country_Codes__c cusSet1 =new ISO_Country_Codes__c();
 			cusSet1.Name = 'IN';
 			cusSet1.Country_Name__c = 'India';
-			cusSet1.Market__c = SWS_Constants.MARKETINDIA;		  
+			cusSet1.Market__c = SWS_Constants.MARKETINDIA;	
 			chisocountry.add(cusSet1);
 			insert chisocountry;
 		}
@@ -172,11 +173,11 @@ public class Batch_CH_NotificationsTest {
 	static testmethod void batchTestT1(){
 		Test.startTest();
 		Case caseObj= [SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,
-					   CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
-					   CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
-					   FROM case LIMIT 1];
+		CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
+		CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
+		FROM case LIMIT 1];
 		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-20);
-		caseObj.CH_NotificationSent__c='T1';
+		//caseObj.CH_NotificationSent__c='T1';
 		update caseObj;
 		Map<Id,Integer> T1Map= new Map<Id,Integer>();
 		T1Map.put(caseObj.Id,15);
@@ -192,17 +193,17 @@ public class Batch_CH_NotificationsTest {
 		
 		Test.startTest();
 		Case caseObj= [SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,
-					   CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
-					   CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
-					   FROM case LIMIT 1];
-		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-200);
-		caseObj.CH_NotificationSent__c='T2';
+		CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
+		CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
+		FROM case LIMIT 1];
+		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(200);
+		caseObj.CH_NotificationSent__c='T1';
 		update caseObj;
-		Map<Id,Integer> T1Map= new Map<Id,Integer>();
-		T1Map.put(caseObj.Id,60);
+		Map<Id,Integer> T2Map= new Map<Id,Integer>();
+		T2Map.put(caseObj.Id,180);
 		String queryT2= 'SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c FROM case';
 		Batch_CH_Notifications objT2 = new Batch_CH_Notifications(queryT2, '');
-		CH_CN_EventTypeNotifications eveT2 = new CH_CN_EventTypeNotifications(T1Map);
+		CH_CN_EventTypeNotifications eveT2 = new CH_CN_EventTypeNotifications(T2Map);
 		DataBase.executeBatch(objT2);
 		DataBase.executeBatch(eveT2);
 		Test.stopTest();
@@ -212,12 +213,12 @@ public class Batch_CH_NotificationsTest {
 		
 		Test.startTest();
 		Case caseObj= [SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,
-					   CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
-					   CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
-					   FROM case LIMIT 1];
+		CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
+		CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
+		FROM case LIMIT 1];
 		
-		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-400);
-		caseObj.CH_NotificationSent__c='T2;T3';
+		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-410);
+		caseObj.CH_NotificationSent__c='T1;T2';//T2;
 		update caseObj;
 		Map<Id,Integer> T1Map= new Map<Id,Integer>();
 		T1Map.put(caseObj.Id,180);
@@ -234,11 +235,11 @@ public class Batch_CH_NotificationsTest {
 		
 		Test.startTest();
 		Case caseObj= [SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,
-					   CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
-					   CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
-					   FROM case LIMIT 1];
-		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-800);
-		caseObj.CH_NotificationSent__c='T2;T3;T4';
+		CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
+		CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
+		FROM case LIMIT 1];
+		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-1000);
+		caseObj.CH_NotificationSent__c='T1;T2;T3';
 		update caseObj;
 		Map<Id,Integer> T1Map= new Map<Id,Integer>();
 		T1Map.put(caseObj.Id,360);
@@ -249,17 +250,17 @@ public class Batch_CH_NotificationsTest {
 		DataBase.executeBatch(eveT4);
 		Test.stopTest();
 	}
-	
+	/*
 	static testmethod void batchTestT1234(){
 		
 		
 		Test.startTest();
 		Case caseObj= [SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,
-					   CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
-					   CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
-					   FROM case LIMIT 1];
+		CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
+		CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
+		FROM case LIMIT 1];
 		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-1100);
-		caseObj.CH_NotificationSent__c='T2;T3;T4;T5';
+		caseObj.CH_NotificationSent__c='T1;T2;T3;T4';
 		update caseObj;
 		Map<Id,Integer> T1Map= new Map<Id,Integer>();
 		T1Map.put(caseObj.Id,720);
@@ -276,28 +277,28 @@ public class Batch_CH_NotificationsTest {
 		
 		Test.startTest();
 		Case caseObj= [SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,
-					   CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
-					   CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
-					   FROM case LIMIT 1];
+		CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
+		CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
+		FROM case LIMIT 1];
 		caseObj.CH_MilestoneSLA_Start__c=system.now().addMinutes(-1500);
-		caseObj.CH_NotificationSent__c='T6';
+		caseObj.CH_NotificationSent__c='T1;T2;T3;T4;T5';
 		update caseObj;
 		Map<Id,Integer> T1Map= new Map<Id,Integer>();
-		T1Map.put(caseObj.Id,1080);
+		T1Map.put(caseObj.Id,1400);
 		String queryT12345= 'SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c FROM case';
 		Batch_CH_Notifications objT12345 = new Batch_CH_Notifications(queryT12345, '');
 		CH_CN_EventTypeNotifications eveT6 = new CH_CN_EventTypeNotifications(T1Map);
 		DataBase.executeBatch(objT12345);
 		DataBase.executeBatch(eveT6); 
 		Test.stopTest();
-	}
-	
+	} 
+	*/
 	
 	static testmethod void scheduleTest(){
 		Case caseObj= [SELECT Id,Comment__c,Account.Market__c,CH_ExternalBridge__c,
-					   CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
-					   CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
-					   FROM case LIMIT 1];
+		CH_AccountNameforNotifications__c,Account.name,CH_InternalBridge__c,Country__c,CaseNumber,AccountId,
+		CH_Product_Name__c,Severity__c,CH_MilestoneSLA_Start__c,CH_NotificationSent__c 
+		FROM case LIMIT 1];
 		Test.startTest();
 		String sch = '0 0 23 * * ?';
 		Scheduler_CH_Notifications schedul = new Scheduler_CH_Notifications();

@@ -38,9 +38,38 @@ public with sharing class CH_WorkgroupHandler_TL {
 		}
 	}
 	
-	 /*
+	/*
+	* @description : Delete Workgroup Public Groups
+	* @param : List<CH_Workgroup__c>
+	* @return : void
+	*/
+   // HWSDDP-125
+	public static void deleteWorkgroupPublicGroups(List<CH_Workgroup__c> oCH_Workgroup) {
+		final Id workgroupCART = Utils.MapRecordType('CH_Workgroup__c').get('CH_CA_Workgroup');
+		Set<String> publicGroupNameSet = new Set<String>();
+		String DVTWorkgroups = System.Label.HWS_DP_Workgroups;
+		Set<String> DVTWorkgroupsSet = New Set<String>();
+		
+		if(DVTWorkgroups != NULL){
+			if(DVTWorkgroups.contains(';')){
+				DVTWorkgroupsSet.addAll(DVTWorkgroups.split(';'));	
+			} else {
+				DVTWorkgroupsSet.add(DVTWorkgroups);
+			}			
+			system.debug(DVTWorkgroupsSet);
+			for(CH_Workgroup__c oWorkgroup: oCH_Workgroup){
+				if(oWorkgroup.RecordTypeId == workgroupCART && DVTWorkgroupsSet.contains(oWorkgroup.Name)) {
+					publicGroupNameSet.add(oWorkgroup.Name);
+				}
+			}
+			if(!publicGroupNameSet.isEmpty()){ deleteWorkgroupPublicGroups(publicGroupNameSet);
+			}
+		}
+	}
+	
+	/*
 	* @description : Whenever OWner of Work Group is changed
-	*		 Add manual sharing rule for respective Workgroup Members
+	*		Add manual sharing rule for respective Workgroup Members
 	* @param : List<CH_Workgroup__c> and old Map<Id, CH_Workgroup__c>
 	* @return : void
 	*/
@@ -59,32 +88,15 @@ public with sharing class CH_WorkgroupHandler_TL {
 			}
 		}
 	}
-	
-	/*
-	* @description : Delete Workgroup ListViews regarding created Queues
-	* @param : List<CH_Workgroup__c>
-	* @return : void
-	*/
-	/*
-	public static void deleteWorkgroupListViews(List<CH_Workgroup__c> oCH_Workgroup) {
-		final Id workgroupRT = Utils.MapRecordType('CH_Workgroup__c').get('CH_KB_Workgroup');
-		Set<String> oQueueNames = new Set<String>();
-		List<ListView> listViewList = new List<ListView>();
 
-		for(CH_Workgroup__c oWorkgroup: oCH_Workgroup){
-			if(oWorkgroup.RecordTypeId == workgroupRT) {
-				oQueueNames.add(oWorkgroup.Name + '_OQ');
-				oQueueNames.add(oWorkgroup.Name + '_AQ');
-				oQueueNames.add(oWorkgroup.Name + '_PQ');
-			}
-		}
-
-		if(!oQueueNames.isEmpty()) {
-			listViewList = EM_Group.getListViewsByQueueName(oQueueNames);
-			if(!listViewList.isEmpty()){
-				EM_Group.doDeleteListViewList(listViewList);
-			}
+//HWSDDP-125
+	@future
+	private static void deleteWorkgroupPublicGroups(Set<String> publicGroupNameSet){
+		List<Group> publicGroupList = new List<Group>();
+		
+		if(!publicGroupNameSet.isEmpty()){ publicGroupList = EM_Group.getQueueIdByQueueName(publicGroupNameSet);
+			if(!publicGroupList.isEmpty()){ EM_Group.doDeleteGroupList(publicGroupList);
+			}			
 		}
 	}
-	*/
 }

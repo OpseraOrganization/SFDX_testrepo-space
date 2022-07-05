@@ -2,8 +2,8 @@
  * About 
  * ----- 
  * @Description   : Case Handling Security Utility Class. 
- * @TestClass	   : CH_SecurityUtils_Test.
- * @Project	   : Case Handling.
+ * @TestClass	: CH_SecurityUtils_Test.
+ * @Project	: Case Handling.
  * @Modification Log : 
  *  Created  : 2019 10 30 – tiago.almeida@nokia.com
  * ----- 
@@ -23,17 +23,17 @@ public without sharing class CH_SecurityUtils {
 		Boolean result = false;
 		if(!profileList.isEmpty()) {
 			List<User> oUserList = DML_SObject.doQuery(
-				'SELECT Profile.Name ' +
-				'FROM User ' +
-				'WHERE Id = "' + userId  + '" AND Profile.Name in ' + DML_SObject.listToString(profileList)
+	'SELECT Profile.Name ' +
+	'FROM User ' +
+	'WHERE Id = "' + userId  + '" AND Profile.Name in ' + DML_SObject.listToString(profileList)
 			);
 			result = !oUserList.isEmpty();
 		}
 		if(!permissionSetList.isEmpty()) {
 			List<PermissionSetAssignment> oPermissionSetAssignmentList = DML_SObject.doQuery(
-				'SELECT PermissionSet.Name ' +
-				'FROM PermissionSetAssignment ' +
-				'WHERE AssigneeId = "' + userId  + '" AND PermissionSet.Name in ' + DML_SObject.listToString(permissionSetList)
+	'SELECT PermissionSet.Name ' +
+	'FROM PermissionSetAssignment ' +
+	'WHERE AssigneeId = "' + userId  + '" AND PermissionSet.Name in ' + DML_SObject.listToString(permissionSetList)
 			);
 			result = mustHaveAll ? result && oPermissionSetAssignmentList.size() == permissionSetList.size() : result || !oPermissionSetAssignmentList.isEmpty();
 		}
@@ -54,8 +54,8 @@ public without sharing class CH_SecurityUtils {
 		Boolean result = false;
 		if(userId != null && ObjectId != null) {
 			UserRecordAccess oURA = [
-				SELECT RecordId, HasReadAccess, HasEditAccess, HasDeleteAccess, HasTransferAccess, MaxAccessLevel 
-				FROM UserRecordAccess WHERE RecordId = :ObjectId AND UserId = :userId
+	SELECT RecordId, HasReadAccess, HasEditAccess, HasDeleteAccess, HasTransferAccess, MaxAccessLevel 
+	FROM UserRecordAccess WHERE RecordId = :ObjectId AND UserId = :userId
 			];
 			result = hasRead ? (mustHaveAll ? (result && oURA.HasReadAccess) : (result || oURA.HasReadAccess)) : result;
 			result = hasEdit ? (mustHaveAll ? (result && oURA.HasEditAccess) : (result || oURA.HasEditAccess)) : result;
@@ -83,7 +83,7 @@ public without sharing class CH_SecurityUtils {
 			value = value.replaceAll('\\(\\d{3}\\)[^.:\n]?\\d{3}[^.:\n]?\\d{4}','(xxx)xxx xxxx');
 			value = value.replaceAll('\\b\\d{3}\\b[^.:\n]?\\d{3}[^.:\n]?\\d{4}\\b','xxx xxx xxxx');
 			value = value.replaceAll('\\b\\d{3}\\b[^.:\n]?\\d{4}\\b','xxx xxxx');
-			//International Phone number					 
+			//International Phone number		 
 			value = value.replaceAll('\\+\\d{13}','+xxxxxxxxxxxxx');//+31235256677
 			value = value.replaceAll('\\+\\d{12}','+xxxxxxxxxxxx');// +031235256677
 			value = value.replaceAll('\\+\\d{11}','+xxxxxxxxxxx');//+0031235256677
@@ -120,7 +120,7 @@ public without sharing class CH_SecurityUtils {
 		if(newCaseList != null && !newCaseList.isEmpty()){
 			for(Case newCase : newCaseList) {
 		Case oldCase = (oldCaseMap != null && oldCaseMap.containsKey(newCase.Id) ? oldCaseMap.get(newCase.Id) : null);
-		if(((newCase.CH_RecordTypeCheck__c || newCase.HWS_RecordTypeCheck__c) && newCase.Status != 'Cancelled') && oldCase == null || (oldCase !=null && (newCase.ProductId != oldCase.ProductId || newCase.AccountId != oldCase.AccountId || newCase.Country__c != oldCase.Country__c))) {			oCaseList.add(newCase);
+		if(((newCase.CH_RecordTypeCheck__c || newCase.HWS_RecordTypeCheck__c) && newCase.Status != 'Cancelled') && oldCase == null || (oldCase !=null && (newCase.ProductId != oldCase.ProductId || newCase.AccountId != oldCase.AccountId || newCase.Country__c != oldCase.Country__c || newCase.CH_LawfullIntercept_CALEA__c != oldCase.CH_LawfullIntercept_CALEA__c))) {			oCaseList.add(newCase);
 			oCaseList.add(newCase);
 			accountIdSet.add(newCase.AccountId);
 			if(newCase.ProductId != null)productIdSet.add(newCase.ProductId);
@@ -134,19 +134,19 @@ public without sharing class CH_SecurityUtils {
 			//Using Global/Common query as part of Code Optimization -- 27616
 			Map<Id, Product2> oProductMap = !productIdSet.isEmpty() ? CH_Utils.getProductMap(productIdSet) : null;
 			List<CH_SecurityRule__c> oSecurityModelList = [
-	SELECT Id, CH_SecurityGroup__c, CH_GWCSecurityGroup__c, CH_AccountNumber__c, CH_AccountCustomerCompliance__c, CH_ContractNumber__c,
+	SELECT Id, CH_SecurityGroup__c, CH_GWCSecurityGroup__c, CH_AccountNumber__c, CH_AccountCustomerCompliance__c, CH_ContractNumber__c,CH_LawfulInterceptCALEA__c,
 		CH_NokiaProductId__c, CH_Country__c, CH_CARESServiceAgreement__c, CH_3rdPartySecurityGroup__c, CH_OrderofExecution__c
 	FROM CH_SecurityRule__c WHERE CH_Active__c = true ORDER BY CH_OrderofExecution__c DESC
 			];
 			//Go through Cases and see if they correspond to the Custom Object Conditions
 			for(Case oCase : oCaseList) {
 	String sGWCSecurityGroup		= '';
-	String sSecurityGroup	   = '';
+	String sSecurityGroup	= '';
 	String s3rdPartySecurityGroup   = '';
 	Account oAccount = oCase.AccountId != null && oAccountMap.containsKey(oCase.AccountId)?oAccountMap.get(oCase.AccountId):null;
 	if(oCase.CH_RecordTypeDevName__c != 'CH_Problem' && oAccount != null) {
 		String sProductId = oCase.ProductId != null && oProductMap.containsKey(oCase.ProductId)?oProductMap.get(oCase.ProductId).NCP_Nokia_Product_Id__c:'';
-					String sCustomerCompliance = oAccount.Customer_Compliance__c;
+		String sCustomerCompliance = oAccount.Customer_Compliance__c;
 		//Custom Object Conditions
 		for(CH_SecurityRule__c oSecurityModel : oSecurityModelList) {
 			if((oSecurityModel.CH_AccountNumber__c != null || oSecurityModel.CH_AccountCustomerCompliance__c != null || oSecurityModel.CH_NokiaProductId__c != null || oSecurityModel.CH_Country__c != null
@@ -157,24 +157,27 @@ public without sharing class CH_SecurityUtils {
 		(oSecurityModel.CH_Country__c == null || oSecurityModel.CH_Country__c == '' || smartCompare(oSecurityModel.CH_Country__c, oCase.Country__c)) &&
 		(oSecurityModel.CH_CARESServiceAgreement__c == null || oSecurityModel.CH_CARESServiceAgreement__c == '' || smartCompare(oSecurityModel.CH_CARESServiceAgreement__c, oCase.CH_CARES_ServiceAgreement__c)) &&
 		(oSecurityModel.CH_ContractNumber__c == null || oSecurityModel.CH_ContractNumber__c == '' || smartCompare(oSecurityModel.CH_ContractNumber__c, oCase.CH_ServiceContractNumber__c))
-				)  {
+		&& (oSecurityModel.CH_LawfulInterceptCALEA__c == oCase.CH_LawfullIntercept_CALEA__c)		
+	)  {
 		if(s3rdPartySecurityGroup == '' && oSecurityModel.CH_3rdPartySecurityGroup__c != '' && oSecurityModel.CH_3rdPartySecurityGroup__c != null) {
-									s3rdPartySecurityGroup  = oSecurityModel.CH_3rdPartySecurityGroup__c;
-								}
-								else if(sGWCSecurityGroup == '' && sSecurityGroup == '') {
-									sGWCSecurityGroup	   = oSecurityModel.CH_GWCSecurityGroup__c != '' && oSecurityModel.CH_GWCSecurityGroup__c != null  ? oSecurityModel.CH_GWCSecurityGroup__c	 : sGWCSecurityGroup;
-									sSecurityGroup		  = oSecurityModel.CH_SecurityGroup__c != '' && oSecurityModel.CH_SecurityGroup__c != null		? oSecurityModel.CH_SecurityGroup__c		: sSecurityGroup;
-								}
-								if(s3rdPartySecurityGroup != '' && sGWCSecurityGroup != '' && sSecurityGroup != '') {
-									break;
-								}
-				}
+			s3rdPartySecurityGroup  = oSecurityModel.CH_3rdPartySecurityGroup__c;
+		}
+		else if(sGWCSecurityGroup == '' && sSecurityGroup == '') {
+			sGWCSecurityGroup	= oSecurityModel.CH_GWCSecurityGroup__c != '' && oSecurityModel.CH_GWCSecurityGroup__c != null  ? oSecurityModel.CH_GWCSecurityGroup__c	 : sGWCSecurityGroup;
+			sSecurityGroup	= oSecurityModel.CH_SecurityGroup__c != '' && oSecurityModel.CH_SecurityGroup__c != null		? oSecurityModel.CH_SecurityGroup__c		: sSecurityGroup;
+		}
+		if(s3rdPartySecurityGroup != '' && sGWCSecurityGroup != '' && sSecurityGroup != '') {
+			break;
+		}
+	}
 			}
 		}
 	oCase.CH_GWC_SecurityGroup__c   = sGWCSecurityGroup != '' ? sGWCSecurityGroup : Label.CH_CaseGenericGWCSecurityGroup;
-	oCase.CH_SecurityGroup__c	   = sSecurityGroup	!= '' ? sSecurityGroup  : Label.CH_CaseGenericSecurityGroup;
+	oCase.CH_SecurityGroup__c	= sSecurityGroup	!= '' ? sSecurityGroup  : Label.CH_CaseGenericSecurityGroup;
 	if(oCase.CH_RecordTypeDevName__c != 'CH_Problem') oCase.CH_3rdPartySecurityGroup__c = s3rdPartySecurityGroup;
 			}
+			
+		   
 		}
  }
 	/**
@@ -187,7 +190,7 @@ public without sharing class CH_SecurityUtils {
 		for(ServiceContract oServiceContract : oServiceContractList) {
 			if(oServiceContract.RecordTypeId.equals(recordTypeId) && oServiceContract.CH_CDB_PreviousContractId__c != null
 			&& oServiceContract.CH_CDB_PreviousContractId__c != '' && !oServiceContract.CH_CDB_PreviousContractId__c.contains(',')) {
-				previousContractIdToServiceContractNumberMap.put(oServiceContract.CH_CDB_PreviousContractId__c, oServiceContract.ContractNumber);
+	previousContractIdToServiceContractNumberMap.put(oServiceContract.CH_CDB_PreviousContractId__c, oServiceContract.ContractNumber);
 			}
 		}
 		if(!previousContractIdToServiceContractNumberMap.isEmpty()) {
@@ -196,28 +199,28 @@ public without sharing class CH_SecurityUtils {
 	previousContractNumberToServiceContractNumberMap.put(previousServiceContract.ContractNumber, previousContractIdToServiceContractNumberMap.get(previousServiceContract.CH_CDB_ContractId__c));
 			}
 			if(!previousContractNumberToServiceContractNumberMap.isEmpty()) {
-				List<CH_SecurityRule__c> newSecurityRules = new List<CH_SecurityRule__c>();
-				for(CH_SecurityRule__c oSecurityRule : [
-					SELECT Id, CH_SecurityGroup__c, CH_GWCSecurityGroup__c, CH_AccountNumber__c, CH_AccountCustomerCompliance__c, CH_ContractNumber__c,
-						   CH_NokiaProductId__c, CH_Country__c, CH_CARESServiceAgreement__c, CH_3rdPartySecurityGroup__c, CH_OrderofExecution__c
-					FROM CH_SecurityRule__c WHERE CH_Active__c = true AND CH_ContractNumber__c IN :previousContractNumberToServiceContractNumberMap.keySet()
-				]) {
-					newSecurityRules.add(new CH_SecurityRule__c(
-						CH_SecurityGroup__c = oSecurityRule.CH_SecurityGroup__c,
-						CH_GWCSecurityGroup__c = oSecurityRule.CH_GWCSecurityGroup__c,
-						CH_AccountNumber__c = oSecurityRule.CH_AccountNumber__c,
-						CH_AccountCustomerCompliance__c = oSecurityRule.CH_AccountCustomerCompliance__c,
-						CH_ContractNumber__c = previousContractNumberToServiceContractNumberMap.get(oSecurityRule.CH_ContractNumber__c),
-						CH_NokiaProductId__c = oSecurityRule.CH_NokiaProductId__c,
-						CH_Country__c = oSecurityRule.CH_Country__c,
-						CH_CARESServiceAgreement__c = oSecurityRule.CH_CARESServiceAgreement__c,
-						CH_3rdPartySecurityGroup__c = oSecurityRule.CH_3rdPartySecurityGroup__c,
-						CH_OrderofExecution__c = oSecurityRule.CH_OrderofExecution__c
-					));
-				}
-				if(!newSecurityRules.isEmpty()) {
-					insert newSecurityRules;
-				}
+	List<CH_SecurityRule__c> newSecurityRules = new List<CH_SecurityRule__c>();
+	for(CH_SecurityRule__c oSecurityRule : [
+		SELECT Id, CH_SecurityGroup__c, CH_GWCSecurityGroup__c, CH_AccountNumber__c, CH_AccountCustomerCompliance__c, CH_ContractNumber__c,
+		 CH_NokiaProductId__c, CH_Country__c, CH_CARESServiceAgreement__c, CH_3rdPartySecurityGroup__c, CH_OrderofExecution__c
+		FROM CH_SecurityRule__c WHERE CH_Active__c = true AND CH_ContractNumber__c IN :previousContractNumberToServiceContractNumberMap.keySet()
+	]) {
+		newSecurityRules.add(new CH_SecurityRule__c(
+			CH_SecurityGroup__c = oSecurityRule.CH_SecurityGroup__c,
+			CH_GWCSecurityGroup__c = oSecurityRule.CH_GWCSecurityGroup__c,
+			CH_AccountNumber__c = oSecurityRule.CH_AccountNumber__c,
+			CH_AccountCustomerCompliance__c = oSecurityRule.CH_AccountCustomerCompliance__c,
+			CH_ContractNumber__c = previousContractNumberToServiceContractNumberMap.get(oSecurityRule.CH_ContractNumber__c),
+			CH_NokiaProductId__c = oSecurityRule.CH_NokiaProductId__c,
+			CH_Country__c = oSecurityRule.CH_Country__c,
+			CH_CARESServiceAgreement__c = oSecurityRule.CH_CARESServiceAgreement__c,
+			CH_3rdPartySecurityGroup__c = oSecurityRule.CH_3rdPartySecurityGroup__c,
+			CH_OrderofExecution__c = oSecurityRule.CH_OrderofExecution__c
+		));
+	}
+	if(!newSecurityRules.isEmpty()) {
+		insert newSecurityRules;
+	}
 			}
 		}
 	}
@@ -227,10 +230,61 @@ public without sharing class CH_SecurityUtils {
 		if(sourceField != null) {
 			sourceField.remove(' ');
 			if(sourceField.contains('!=')) {
-				sourceField.remove('!=');
-				reverse = true;
+	sourceField.remove('!=');
+	reverse = true;
 			}
 		}
 		return (reverse?sourceField!=targetField:sourceField==targetField);
+	}
+	
+	Public Static void deletMembersOnCasesBasedonSecurityGroups(List<Case> newCaseList, Map<Id, Case> oldCaseMap) {
+		//Changes added for NOKIASC-36964
+		Map<Id,Case> getOldCaseMap=new Map<Id,Case>();
+		Set<Id> getCaseIds=new Set<Id>();
+		Set<Id> getSecGrpId=new Set<Id>();
+		Set<Id> getUserIds=new Set<Id>();
+		Set<String> getSecurityGroups =new Set<String>();
+		List<Case> oCaseList = new List<Case>();
+		//Get Valid Cases
+		if(newCaseList != null && !newCaseList.isEmpty()){
+			for(Case newCase : newCaseList) {
+				Case oldCase = (oldCaseMap != null && oldCaseMap.containsKey(newCase.Id) ? oldCaseMap.get(newCase.Id) : null);
+				 if((newCase.CH_RecordTypeCheck__c && newCase.Status != 'Cancelled') && oldCase == null || (oldCase !=null && (newCase.ProductId != oldCase.ProductId || newCase.AccountId != oldCase.AccountId || newCase.Country__c != oldCase.Country__c || newCase.EntitlementId != oldCase.EntitlementId  || newCase.CH_LawfullIntercept_CALEA__c != oldCase.CH_LawfullIntercept_CALEA__c))) {
+					oCaseList.add(newCase);
+					if(oldCase!=null){ getOldCaseMap.Put(oldCase.Id,oldCase);   }//Changes added for NOKIASC-36964
+					
+				}
+			} 
+		}
+		//
+		if(!oCaseList.isEmpty()) {
+			//Changes added for NOKIASC-36964
+			if(oCaseList!=null && !getOldCaseMap.values().IsEmpty()){
+				for(Case getList:oCaseList){
+					Case getOldCase = (getOldCaseMap != null && getOldCaseMap.containsKey(getList.Id) ? getOldCaseMap.get(getList.Id) : null);
+					if(getOldCase !=null && getList.CH_RecordTypeCheck__c && getOldCase.CH_GWC_SecurityGroup__c !=getList.CH_GWC_SecurityGroup__c ||
+					   getOldCase.CH_SecurityGroup__c !=getList.CH_SecurityGroup__c ||
+					   getOldCase.CH_3rdPartySecurityGroup__c !=getList.CH_3rdPartySecurityGroup__c  ){
+						   getCaseIds.add(getList.Id);
+						   getUserIds.add(getList.OwnerId);
+						   getSecurityGroups.add(getList.CH_GWC_SecurityGroup__c);
+						   getSecurityGroups.add(getList.CH_SecurityGroup__c);
+						   getSecurityGroups.add(getList.CH_3rdPartySecurityGroup__c);
+					   }
+				}
+			}
+			if(!getCaseIds.IsEmpty() && getCaseIds.Size()>0){
+				for(CaseTeamMember getmembers:[select id,ParentID,Parent.CH_Workgroup__r.Name,Parent.CH_Workgroup__c , memberID ,Parent.OwnerID, 
+											   TeamRoleId,TeamRole.Name, member.Name from CaseTeamMember Where ParentID IN : getCaseIds]){
+												   getUserIds.add(getmembers.memberID);
+											   }
+				if(!getUserIds.IsEmpty() && getUserIds.Size()>0 && !getSecurityGroups.IsEmpty() && getSecurityGroups.Size()>0){
+					for(Group getScGrp : [SELECT Id, DeveloperName,Name FROM Group Where Name IN :getSecurityGroups]){ getSecGrpId.add(getScGrp.Id); }
+					System.debug('## User Size is : ' +getUserIds.size()+' and group size is: '+getSecGrpId.Size());
+					System.debug('## Users are  : ' +getUserIds+' and group size is: '+getSecGrpId);
+					if(getSecGrpId.Size()>0){ CH_ClearGroupUserCases.execute(getUserIds,getSecGrpId, getCaseIds);}
+				}
+			}
+		}
 	}
 }

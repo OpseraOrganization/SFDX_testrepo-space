@@ -28,7 +28,7 @@ private class CH_CaseFlow_ControllerTest {
 			CH_CaseFlow_Controller.saveAsset('insert', '{"Id":""}');			
 		}
 		catch(Exception e){
-			 System.assert(e.getMessage()!=null);
+	System.assert(e.getMessage()!=null);
 		}
 	}
 	public static testMethod void test1() {
@@ -216,21 +216,20 @@ private class CH_CaseFlow_ControllerTest {
 			entcon1.ContactId = contObj.id;
 			insert entcon1;
 			
-			ContractLineItem contractLineItem1 = new ContractLineItem(
-	ServiceContractId = serContract.Id,
-	AssetId = assetObj.Id,
-	UnitPrice = 0,
-	Quantity = 1,
-	NCP_External_Status__c = 'Active',
-	CH_ServiceType__c = SWS_Constants.ServiceTypeCS,
-	PricebookEntryId = customPrice.Id, 
-	CH_LineItemEntitlementScript__c = 'true',
-	CH_CDB_EntitlementId__c = 'TEST',
-	
-	CH_ServiceMappingId__c = srvcMppID
-			);
-			Insert contractLineItem1;
+		ContractLineItem contractLineItem1 = new ContractLineItem(
+			ServiceContractId = serContract.Id,
+			AssetId = assetObj.Id,
+			UnitPrice = 0,
+			Quantity = 1,
+			NCP_External_Status__c = 'Active',
+			CH_ServiceType__c = SWS_Constants.ServiceTypeCS,
+			PricebookEntryId = customPrice.Id, 
+			CH_LineItemEntitlementScript__c = 'true',
+			CH_CDB_EntitlementId__c = 'TEST',
 			
+			CH_ServiceMappingId__c = srvcMppID
+		);
+			test.startTest();
 			ContractLineItem contractLineItem2 = new ContractLineItem(
 	ServiceContractId = serContract1.Id,
 	AssetId = assetObj.Id,
@@ -244,7 +243,6 @@ private class CH_CaseFlow_ControllerTest {
 	
 	CH_ServiceMappingId__c = srvcMppID
 			);
-			Insert contractLineItem2;
 			
 	Case newCase1 = new Case();
 		newCase1.AccountId = accObjLE.Id;
@@ -284,7 +282,7 @@ private class CH_CaseFlow_ControllerTest {
 			newCase.reason = caseReason;
 			newCase.Subject = 'Test';
 			newCase.CH_Summary__c = 'Test';
-			newCase.Type = 'Incident';	   
+			newCase.Type = 'Incident';	
 			newCase.Description = 'TEST';
 			newCase.Severity__c = 'Critical';
 			newCase.CH_Outage__c = 'Yes';
@@ -298,7 +296,7 @@ private class CH_CaseFlow_ControllerTest {
 			
 			newCase.recordTypeId = CH_EntitlementTestData.recordTypeMap.get('CH_NokiaIncidentWithRestoration').Id ;
 			
-			test.startTest();
+			
 			insert newCase;
 			try{
 	
@@ -327,7 +325,7 @@ private class CH_CaseFlow_ControllerTest {
 	CH_CaseFlow_Controller.hasAssetEditAcess(assetObj.Id, new List<String>{'HWS_Service_Type__c', 'CH_ContractLineItem__c', 'CH_CountryISOName__c', 'Address__c'});
 	
 			} catch(Exception e) {
-				//Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			}
 			
 			try{
@@ -337,20 +335,20 @@ private class CH_CaseFlow_ControllerTest {
 	
 	
 			} catch(Exception e) {
-				//Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			}
 			try{
 	
 	CH_CaseFlow_Controller.saveCase('update', JSON.serialize(new list<Case> { newCase }));
 			} catch(Exception e) {
-				//Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			}
 			
 			
 			try{
-				//Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			} catch(Exception e) {
-				//Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			} 
 			
 			try{
@@ -364,13 +362,13 @@ private class CH_CaseFlow_ControllerTest {
 	CH_CaseFlow_Controller.displayP20fields('');
 		
 			} catch(Exception e) {
-				//Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			}   
 			
 			try{
-				//Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			} catch(Exception e) {
-	   //Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			}
 			
 			try{
@@ -380,9 +378,10 @@ private class CH_CaseFlow_ControllerTest {
 	CH_CaseFlow_Controller.checkProfile('CH_Agent');
 	CH_CaseFlow_Controller.getCurrentUser();
 	CH_CaseFlow_Controller.accessCheck(newCase.Id);
-	
+	CH_CaseFlow_Controller.checkSolutionTargetDate(newCase.Id);//Changes added for NOKIASC-35322
+	CH_CaseFlow_Controller.checkpausedSinceDate(newCase.Id);//Changes added for NOKIASC-35322
 			} catch(Exception e) {
-				//Added empty line to fix sonar cube issue
+	//Added empty line to fix sonar cube issue
 			}
 			
 			test.stopTest();
@@ -523,7 +522,7 @@ private class CH_CaseFlow_ControllerTest {
 		newCase.reason = caseReason;
 		newCase.Subject = 'Test';
 		newCase.CH_Summary__c = 'Test';
-		newCase.Type = 'Incident';	   
+		newCase.Type = 'Incident';	
 		newCase.Description = 'TEST';
 		newCase.Severity__c = 'Critical';
 		newCase.CH_Outage__c = 'Yes';
@@ -553,7 +552,7 @@ private class CH_CaseFlow_ControllerTest {
 		}
 		
 		try{
-		   
+	 
 			CH_CaseFlow_Controller.updateEntitlementScript(newCase.Id);
 			
 		} catch(Exception e) {

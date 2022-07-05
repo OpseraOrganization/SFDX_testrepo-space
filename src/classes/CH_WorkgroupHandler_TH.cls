@@ -25,16 +25,9 @@ public with sharing class CH_WorkgroupHandler_TH extends TriggerHandler {
 		this.newMap  = (Map<Id, CH_Workgroup__c>) Trigger.NewMap;
 	}
 
+	  
 	/*
-	* @description : afterInsert handle the CH_Workgroup afterInsert event on CH_Workgroup__c.
-	*/
-	public override void beforeInsert(){
-		if (!PAD.cantRun(OBJECT_NAME)){
-		}
-	}
-
-	/*
-	* @description : afterInsert handle the CH_Workgroup afterInsert event on CH_Workgroup__c.	
+	* @description : afterInsert handle the CH_Workgroup afterInsert event on CH_Workgroup__c.  
 	*/
 	public override void afterInsert(){
 		if (!PAD.cantRun(OBJECT_NAME)){
@@ -42,14 +35,7 @@ public with sharing class CH_WorkgroupHandler_TH extends TriggerHandler {
 		}
 	}
 
-	/*
-	* @description afterUpdate handle the CH_Workgroup afterUpdate event on CH_Workgroup__c.
-	*/
-	public override void beforeUpdate(){
-		if (!PAD.cantRun(OBJECT_NAME)){
-			//METHOD CALL TL
-		}
-	}
+  
 
 	/*
 	* @description afterUpdate handle the CH_Workgroup afterUpdate event on CH_Workgroup__c.
@@ -62,20 +48,13 @@ public with sharing class CH_WorkgroupHandler_TH extends TriggerHandler {
 	}
 
 	/*
-	* @description beforeDelete handle the CH_Workgroup afterDelete event on CH_Workgroup__c.
-	*/
-	public override void beforeDelete(){
-		if (!PAD.cantRun(OBJECT_NAME)){
-			//METHOD CALL TL
-		}
-	}
-
-	/*
 	* @description afterDelete handle the CH_Workgroup afterUpdate event on CH_Workgroup__c.
 	*/
 	public override void afterDelete(){
 		if (!PAD.cantRun(OBJECT_NAME)){
 			CH_WorkgroupHandler_TL.deleteWorkgroupQueues(oldList);
+			//HWSDDP-125
+			CH_WorkgroupHandler_TL.deleteWorkgroupPublicGroups(oldList);
 			//CH_WorkgroupHandler_TL.deleteWorkgroupListViews(oldList);
 		}
 	}

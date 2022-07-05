@@ -1,6 +1,6 @@
 ({
 	init : function(component, event, helper)
-	{   // testing message
+	{   
 		var apexCall = component.get("c.getCertifAndAccredforComponent");
 		apexCall.setParams(
 		{

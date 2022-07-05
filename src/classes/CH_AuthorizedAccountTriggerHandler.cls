@@ -28,7 +28,9 @@ public class CH_AuthorizedAccountTriggerHandler {
 	public static void afterInsertOperation(List < CH_AuthorizedAccount__c > newAuthAccountList) {
 		// To filter records which only requires trigger execution
 		newAuthAccountList = isolateSkipTriggerRecords(newAuthAccountList);
-		CH_AuthorizationHistory.create('Add', newAuthAccountList);
+		if(UserInfo.getUserId() != System.Label.CH_IPaas_User_Id){
+			CH_AuthorizationHistory.create('Add', newAuthAccountList);
+		}
 		CH_AuthorizedAccountTriggerHelper.createEntitlementContact(newAuthAccountList);
 	}
 	
@@ -47,7 +49,9 @@ public class CH_AuthorizedAccountTriggerHandler {
 	*Description: Used to handle before delete operation
 	*******************/
 	public static void afterDeleteOperation(List < CH_AuthorizedAccount__c > oldAuthAccountList) {
-		CH_AuthorizationHistory.create('Delete', oldAuthAccountList);
+	 if(UserInfo.getUserId() != System.Label.CH_IPaas_User_Id){
+			CH_AuthorizationHistory.create('Delete', oldAuthAccountList);
+		}
 		CH_AuthorizedAccountTriggerHelper.deleteEntitlementContact(oldAuthAccountList);
 	}
 	

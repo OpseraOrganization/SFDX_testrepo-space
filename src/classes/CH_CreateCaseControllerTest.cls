@@ -19,7 +19,7 @@ public class CH_CreateCaseControllerTest {
 			u.UserRoleId = r.id;
 			u.TimeZoneSidKey='America/Los_Angeles';  
 			u.UserName='chtesdfgfgrgggdsfftuser@testorg.com';
-			insert u;	
+			insert u;
 			
 			System.runAs(u) {
 	CH_EntitlementTestData.createCustomSettingData();
@@ -43,7 +43,7 @@ public class CH_CreateCaseControllerTest {
 	contObj.AccountId = accObjCut.id;
 	contObj.FirstName = 'Test';
 	contObj.LastName = contName;
-	contObj.Email = 'testaccount@aometh.com';
+	contObj.Email = 'chcasehandler1222@testorg.com';
 	contObj.Market__c = MarketNme;
 	contObj.CH_ContactType__c = 'customer';
 	contObj.CurrencyIsoCode = 'EUR';

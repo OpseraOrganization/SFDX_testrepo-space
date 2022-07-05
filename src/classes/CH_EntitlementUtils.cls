@@ -31,7 +31,7 @@ public class CH_EntitlementUtils {
 			}
 			//
 			String sQuery = 'SELECT Id, Name, StartDate, EndDate, Status, Entitlement_Status__c, Type, AccountId, Account.Name, AssetId, Asset.Name, ';
-			sQuery += 'ServiceContractId, ServiceContract.Name, ServiceContract.CH_Project__c, ServiceContract.CH_EntitlementScript__c, ServiceContract.CH_CustomerContractNumber__c, ';
+			sQuery += 'ServiceContractId, ServiceContract.Name, ServiceContract.CH_Service_Contract_Type_Text__c, ServiceContract.CH_Project__c, ServiceContract.CH_EntitlementScript__c, ServiceContract.CH_CustomerContractNumber__c, ';
 			sQuery += 'ContractLineItemId, ContractLineItem.CH_LineItemEntitlementScript__c, ContractLineItem.LineItemNumber, ContractLineItem.CH_CountryISOName__c, ';
 			sQuery += 'ContractLineItem.CH_CountryISO2__c, ContractLineItem.CH_BusinessHour__c, ContractLineItem.CH_BusinessHour__r.Name, ';
 			sQuery += 'ContractLineItem.CH_QtyCoveredNetworkElementAssets__c, ContractLineItem.CH_EquipmentLocationBasedTZCoverage__c FROM Entitlement WHERE ';
@@ -51,7 +51,7 @@ public class CH_EntitlementUtils {
 		for(Entitlement oEntitlement : oEntitlementList) {
 			Set<Id> oNEAIdSet = (oCLItoNEAIdsMap.containsKey(oEntitlement.ContractLineItemId) ? oCLItoNEAIdsMap.get(oEntitlement.ContractLineItemId) : new Set<Id>());
 			if(oEntitlement.ContractLineItem.CH_QtyCoveredNetworkElementAssets__c == 0 || oNEAIdSet.contains(netElemAsset.Id)) {
-				oEntitlementResultList.add(oEntitlement);
+	oEntitlementResultList.add(oEntitlement);
 			}
 		}
 	}

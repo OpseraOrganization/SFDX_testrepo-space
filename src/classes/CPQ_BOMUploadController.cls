@@ -180,6 +180,14 @@ public with sharing class CPQ_BOMUploadController {
 	@AuraEnabled
 	public static Boolean repriceCart(Id cartId) {
 		Boolean IsPricePending = true;
+		List<Apttus_Config2__ProductConfiguration__c> config =  [select Apttus_QPConfig__Proposald__r.Is_Turbo_Pricing__c from Apttus_Config2__ProductConfiguration__c where id = :cartId];
+		
+		if(config == null || config.isEmpty()) return false;
+
+		if(config[0].Apttus_QPConfig__Proposald__r.Is_Turbo_Pricing__c) {
+			return false;
+		}
+
 		Apttus_CPQApi.CPQ.UpdatePriceRequestDO priceReqDO = new Apttus_CPQApi.CPQ.UpdatePriceRequestDO();
 		priceReqDO.cartID = cartId;
 		Apttus_CPQApi.CPQ.UpdatePriceResponseDO priceRespDO = Apttus_CPQApi.CPQWebService.updatePriceForCart(priceReqDO);	

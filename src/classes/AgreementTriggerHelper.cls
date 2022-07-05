@@ -29,7 +29,7 @@ public without sharing class AgreementTriggerHelper {
 			List<String> mandatoryFields = mandatoryFieldsERPMap.get(a.ERP__c).split(CSWXGlobalConstant.comma);
 			List<String> missingFieldsLabels = new List<String>();
 			for (String field : mandatoryFields) {
-	System.debug('fields in the trigger >>>>' + field);
+	System.debug('field >>>>' + field);
 	String fieldLabel = Schema.getGlobalDescribe().get(CSWXGlobalConstant.OBJECT_Agreement).getDescribe().fields.getMap().get(field).getDescribe().getLabel();
 	if (a.get(field) == null || a.get(field) == false) {
 		missingFieldsLabels.add(fieldLabel);

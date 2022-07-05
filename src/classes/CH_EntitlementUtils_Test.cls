@@ -54,10 +54,10 @@ public class CH_EntitlementUtils_Test {
 			newEntiltment = CH_TestFactoryDefaults.createEntitlement(true, 1, fieldsMap);
 			system.assert(newEntiltment[0].ID!=null);
 			
-			EntitlementContact ect = CH_TestFactoryDefaults.createEntitlementContact( true,  newContact[0].Id,  newEntiltment[0].Id);
+			CH_TestFactoryDefaults.createEntitlementContact( true,  newContact[0].Id,  newEntiltment[0].Id);
 			
 			Entitlement oEntitlement = [select id,AccountId, Account.ParentId, AssetId, Asset.Product2Id
-				from Entitlement where id = :newEntiltment[0].Id];
+	from Entitlement where id = :newEntiltment[0].Id];
 			
 			System.debug(Limits.getCpuTime()+' CPU time & queries 1 ' + Limits.getQueries());
 			test.startTest();

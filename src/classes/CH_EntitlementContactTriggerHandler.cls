@@ -3,7 +3,7 @@
  * ----- 
  * @Description	  : EntitlementContact Object Trigger Handler.
  * @TestClass	  : CH_EntitlementContactUtils_Test.
- * @Project	   : Case Handling.
+ * @Project	: Case Handling.
  * @Modification Log : 
  *  Created  : 2021 03 01 – tiago.almeida@nokia.com
  * ----- 
@@ -21,9 +21,13 @@ public with sharing class CH_EntitlementContactTriggerHandler extends TriggerHan
 		this.oldMap  = (Map<Id, EntitlementContact>) Trigger.OldMap;
 		this.newMap  = (Map<Id, EntitlementContact>) Trigger.NewMap;
 	}
+
+	public override void beforeInsert(){
+		EntitlementContactTriggerHelper.validateCompetitorSCForCompetitorContacts(newList);
+	}
 	
 	public override void afterInsert(){
-		if(!skipAuthorizationHistory) {
+		if(!skipAuthorizationHistory && UserInfo.getUserId() != System.Label.CH_IPaas_User_Id) {
 			CH_AuthorizationHistory.create('Add', newList);
 		}
 		// Manage sharing of authorization contacts
@@ -31,7 +35,7 @@ public with sharing class CH_EntitlementContactTriggerHandler extends TriggerHan
 	}
 	
 	public override void afterDelete(){
-		if(!skipAuthorizationHistory) {
+		if(!skipAuthorizationHistory && UserInfo.getUserId() != System.Label.CH_IPaas_User_Id) {
 			CH_AuthorizationHistory.create('Delete', oldList);
 		}
 		// Manage sharing of authorization contacts

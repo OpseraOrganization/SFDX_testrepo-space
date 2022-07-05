@@ -21,7 +21,7 @@ public class CH_TrackFieldChangeTriggerHelperTest {
 		test.starttest();
 		
 		// Create a CH case
-		Case newCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case newCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		Insert newCase;		
 		
 		// Deep clone the newly created case
@@ -55,7 +55,7 @@ public class CH_TrackFieldChangeTriggerHelperTest {
 		test.starttest();
 		
 		// Create a CH case
-		Case newCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case newCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		Insert newCase;		
 		
 		// Deep clone the newly created case

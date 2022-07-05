@@ -1,9 +1,7 @@
 @isTest
 public class Batch_ProductReleaseClsTest {
-@testSetup
-	static void createData()
-	{  
-		 
+	@testSetup
+	static void createData() {  
 		List<EDP_URLs__c> urlList = new List<EDP_URLs__c>();
 		EDP_URLs__c edpentry=new EDP_URLs__c();
 		edpentry.Name='resource';
@@ -25,9 +23,7 @@ public class Batch_ProductReleaseClsTest {
 		 //pcEntry.ModifiedDate__c=date.parse('12/27/2018');
 			//pcEntry.ModifiedDate__c=null;
 			insert pcEntry;
-
-		
-		
+ 	
 		List<String> Queries=new List<String>();
 		List<String> QueryList = new List<String>();
 		QueryList.add('https://edpqaapi.azurewebsites.net/api/ProductReleases?$orderby=NSNCode');

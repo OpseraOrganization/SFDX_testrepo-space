@@ -8,7 +8,7 @@ public without sharing class CH_CA_OwnerAssignment_Controller {
 		Case supportCase = [SELECT Id, CreatedDate, CH_SystemRestoredTargetDate__c, CH_Initial_Assignment__c,
 							RecordTypeId, Status, Severity__c, Account.Region__c, Account.Country__c,CH_Reassignment__c,
 							AccountId, ProductId, CH_Outage__c, NCP_Service_Contract__r.Id, BusinessHoursId, CH_SystemRestored__c,
-							CH_CaseMilestoneTargetDate__c, CH_MilestoneSLA_Start__c,AssetId,CH_ProductVariant__c,CH_Solution__c,
+							CH_CaseMilestoneTargetDate__c, CH_MilestoneSLA_Start__c,AssetId,CH_ProductVariant__c,CH_Product_Release__c,CH_Solution__c,
 							CH_Workgroup__r.CH_Type__c,Country__c,EntitlementId,CH_GWC_SecurityGroup__c,CH_SecurityGroup__c, 
 							CH_ServiceType__c, CH_Product_Module__c,CH_Rep_CDBContractType__c, CH_Originating_Incident_Number__c,
 							CH_Originating_Incident_Number__r.AccountId,CH_Originating_Incident_Number__r.Country__c,
@@ -63,17 +63,8 @@ public without sharing class CH_CA_OwnerAssignment_Controller {
 		CH_CA_Service service = new CH_CA_Service(); 
 		if(!test.isRunningTest()){service.assignUser(assignment);}
 		 //NOKIASC-35000
-		 //NOKIASC-36927 checking queue type or user
-		 if(checkHWSCase(caseId)){
-		if(validWorkgroupMember.CH_Workgroup_Member_Type__c=='Queue' && validWorkgroupMember.CH_Queue_Email__c!=null)
-		{
-			HWS_EmailNotifications.workgroupEmailAssignment(caseId,'HWS Workgroup Email Reassignment Alert', validWorkgroupMember.CH_Queue_Email__c,null);
-		}
-		else
-		{
-			HWS_EmailNotifications.workgroupEmailAssignment(caseId,'HWS Workgroup Email Reassignment Alert',null,null);
-		}
-		}
+		HWS_EmailNotifications.workgroupEmailAssignment(caseId,'HWS Workgroup Email Reassignment Alert', null,null);
+		
 		System.debug('CH_CA: LIM CH_CA_OwnerAssignment_Controller.updateSupportTicketOwner SOQL limit: ' + Limits.getQueries());
 	}
 	
