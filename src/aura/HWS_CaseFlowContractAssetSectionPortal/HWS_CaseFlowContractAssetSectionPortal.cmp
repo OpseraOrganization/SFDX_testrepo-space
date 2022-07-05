@@ -1,0 +1,110 @@
+<aura:component controller ="HWS_CreateSupportTicketportal" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" >
+    <aura:attribute name="searchKeyword" type="String" description="use to store  search keyword"/>
+    <aura:attribute name="Assets" type="Object[]" default="[]"/>
+    <aura:attribute name="AllAssets" type="Object[]" />
+    <aura:attribute name="AllQueriedAssets" type="Object[]" />
+    <aura:attribute name="assetFilterText" type="String" description="Used to filter Accounts from table" />
+    <aura:attribute name="CLISFilterText" type="String" description="Used to filter Clis from table" />
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="showAssets" type="Boolean" default="false"/>
+    <aura:attribute name="addPartCheckAsset" type="Boolean" default="false"/>
+    <aura:attribute name="addPartPreviousDisable" type="Boolean" default="false"/>
+    <aura:attribute name="assetColumns" type="List"/>
+    <aura:attribute name="contractAssetStageButton" type="Boolean" default="false"/>    
+    <aura:attribute name="contractAssetStage" type="Boolean" default="false"/>
+    <aura:attribute name="contractAssetStage2" type="Boolean" default="false"/>
+    <aura:attribute name="serviceType" type="String"/>
+    <aura:attribute name="contractNumber" type="String"/>
+    <aura:attribute name="CLIColumns" type="List"/>    
+    <aura:attribute name="searchCriteria" default="Contract Number" type="String" description="use to store search criteria"/>
+    <aura:attribute name="maxRowSelection" type="Integer" default="1"/>
+    <aura:attribute name="clis" type="Object[]"/>
+    <aura:attribute name="ALLclis" type="Object[]" />
+    <aura:attribute name="hideFilter" type="Boolean" default="true"/>
+    <aura:attribute name="selectedclis" type="Object[]" />
+    <aura:attribute name="showClis" type="Boolean" default="false"/> 
+    <aura:attribute name="displayAssets" type="Boolean" default="false"/>     
+    <aura:attribute name="selectedAccount" type="String" />
+    <aura:attribute name="selectedAssets" type="Object[]" /> 
+    <aura:attribute name="selectedContraId" type="String" />
+    <aura:attribute name="selectedContractLineItems" type="Object[]" />     
+    <aura:registerEvent name="HWS_CaseFlowEventPortal" type="c:HWS_CaseFlowEventPortal"/>
+    <aura:attribute name="toProceedSPSLOD" type="boolean" default="false"/>
+    <aura:attribute name="columns" type="String"/> 
+    <aura:attribute name="searchCrit" type="String" default="Contract Number"/> 
+    <aura:method name="searchAssetsForContractNumber" action="{!c.getAssets}" access="PUBLIC"/>
+	<aura:method name="componentRefresh" action="{!c.componentRefresh}" access="PUBLIC"/>
+    <!--Spinnner start-->	
+    <aura:attribute name="IsSpinner" type="Boolean"/>	
+    <aura:if isTrue="{!v.IsSpinner}">	
+        <lightning:spinner variant="brand"  size="medium" />	
+    </aura:if>	
+    
+    <article class="slds-card slds-is-relative">
+        <div class="slds-card__body slds-card__body_inner slds-m-bottom_medium">            
+            <div class="{!and(v.selectedContractLineItems,v.searchCriteria == 'Contract Number')?'':'slds-hide'}">
+                <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative">
+                    <article class="slds-card slds-size_12-of-12">
+                        <div class="slds-page-header slds-border_fix">
+                            <div class="slds-page-header__row">
+                                <div class="slds-page-header__col-title">
+                                    <div class="slds-media">
+                                        <div class="slds-media__body">
+                                            <div class="slds-page-header__name">
+                                                <div class="slds-page-header__name-title">
+                                                    <h1><span class="slds-page-header__title slds-truncate" title="Select Contract line Item">Select Asset CN</span></h1>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-page-header__col-actions">
+                                    <div class="slds-page-header__controls">
+                                        <div class="slds-page-header__control">
+                                            <lightning:buttonGroup>
+                                                <!--NOKIASC-25661 -->
+                                                <lightning:button label="Clear Selection" title="Clear Selection" onclick="{! c.clearSelection }"/>
+                                            </lightning:buttonGroup>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-page-header__row">
+                                <div class="slds-page-header__col-meta">
+                                    <p class="slds-page-header__meta-text">
+                                        <aura:if isTrue="{!v.Assets.length > 0}">
+                                            <p class="has-results">
+                                                <aura:if isTrue="{!v.Assets.length==1}">
+                                                    {!v.Assets.length} record 
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.Assets.length > 1}">
+                                                    {!v.Assets.length} records
+                                                </aura:if>
+                                            </p>
+                                            <aura:set attribute="else">
+                                                <p class="no-results"> 0 records</p>
+                                            </aura:set>
+                                        </aura:if>
+                                    </p>
+                                </div>
+                                <div class="slds-page-header__col-controls">
+                                    <div class="slds-page-header__controls">
+                                        <lightning:input aura:id="assetFilterText" 
+                                                         type="search" variant="label-hidden"
+                                                         placeholder="Search this list..."
+                                                         onchange="{! c.filterAssets }"
+                                                         value="{! v.assetFilterText }"
+                                                         label="Search Entitlement" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>    
+                    <div style="{! 'height: '+v.height+'; width:'+(v.filterVisible?'calc(100% - 320px)':'100%')+';'}">
+                        <lightning:datatable aura:id="assetTable1" data="{!v.Assets}" columns="{!v.assetColumns}" keyField="Id" onrowselection="{!c.processSelectedAsset}" maxRowSelection="{!v.maxRowSelection}"/>
+                    </div>
+                </div>
+            </div>  
+        </div>        
+    </article>
+</aura:component>
