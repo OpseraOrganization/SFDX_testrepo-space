@@ -407,6 +407,11 @@
         </value>
     </choices>
     <choices>
+        <name>CH_InboundEmailQualification_NotAnswered_NA</name>
+        <choiceText>&lt;span style=&quot;background-color: rgb(255, 255, 255); color: rgb(62, 62, 60);&quot;&gt;Not Answered&lt;/span&gt;</choiceText>
+        <dataType>String</dataType>
+    </choices>
+    <choices>
         <name>CH_InboundEmailQualification_Outcome_Accepted</name>
         <choiceText>Accepted</choiceText>
         <dataType>String</dataType>
@@ -1122,6 +1127,28 @@
             <label>Answered - CIR</label>
         </rules>
         <rules>
+            <name>CH_InboundEmailQualification_Outcome_ChoiceNotAnswered_CIR</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_InboundEmailQualification_Outcome_2</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <elementReference>CH_InboundEmailQualification_NotAnswered_NA</elementReference>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_Qualify_InboundEmail_Type_Picklist_2</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <elementReference>CH_InboundEmailQualification_Outcome_CIR</elementReference>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_InboundEmailQualification_Screen_NotAnswered_NA</targetReference>
+            </connector>
+            <label>Not Answered - CIR</label>
+        </rules>
+        <rules>
             <name>CH_InboundEmailQualification_Outcome_ChoiceAccepted</name>
             <conditionLogic>or</conditionLogic>
             <conditions>
@@ -1564,6 +1591,50 @@
         <object>CH_Reasons__c</object>
     </recordCreates>
     <recordCreates>
+        <name>CH_Create_a_reason_record_for_CIR_Not_Answered</name>
+        <label>Create a reason record for CIR Not Answered</label>
+        <locationX>1355</locationX>
+        <locationY>1718</locationY>
+        <inputAssignments>
+            <field>CH_Date_Time_Reason_Entered__c</field>
+            <value>
+                <elementReference>$Flow.CurrentDateTime</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>CH_Reason_AdditionalComments__c</field>
+            <value>
+                <elementReference>CH_InboundEmailQualification_ReasonforOutcome_2</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>CH_RejectionReason_Type__c</field>
+            <value>
+                <stringValue>CIR</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>CH_RejectionReasonfor__c</field>
+            <value>
+                <stringValue>Customer Response</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>CH_Rejection_Reasons__c</field>
+            <value>
+                <stringValue>Not Answered</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>CH_SupportTicket_Reasons__c</field>
+            <value>
+                <elementReference>CH_CaseRelatedtoEmail_Values.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>CH_Reasons__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+    <recordCreates>
         <name>CH_Resaon_Record_for_temp_soln</name>
         <label>Resaon Record for temp soln</label>
         <locationX>657</locationX>
@@ -1691,9 +1762,39 @@
             </value>
         </filters>
         <inputAssignments>
+            <field>CH_PlannedAutomaticQualificationDateTime__c</field>
+            <value>
+                <elementReference>CH_ResetDateTime</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
             <field>Status</field>
             <value>
                 <elementReference>CH_CaseRelatedtoEmail_Values.CH_Status_PriorValue__c</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Case</object>
+    </recordUpdates>
+    <recordUpdates>
+        <name>CH_CIRNotAnswered_RecordUpdate</name>
+        <label>CIR</label>
+        <locationX>1350</locationX>
+        <locationY>1583</locationY>
+        <connector>
+            <targetReference>CH_Create_a_reason_record_for_CIR_Not_Answered</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>CH_InboundEmailValues.RelatedToId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>CH_PlannedAutomaticQualificationDateTime__c</field>
+            <value>
+                <elementReference>CH_ResetDateTime</elementReference>
             </value>
         </inputAssignments>
         <object>Case</object>
@@ -1978,6 +2079,25 @@
         <showHeader>true</showHeader>
     </screens>
     <screens>
+        <name>CH_InboundEmailQualification_Screen_NotAnswered_NA</name>
+        <label>Thank you!</label>
+        <locationX>1351</locationX>
+        <locationY>1435</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>true</allowPause>
+        <connector>
+            <targetReference>CH_CIRNotAnswered_RecordUpdate</targetReference>
+        </connector>
+        <fields>
+            <name>CH_InboundEmailQualification_Screen_NotAnswered_NA_Text</name>
+            <fieldText>&lt;p&gt;Thank you for recording the answer for&lt;/p&gt;&lt;p&gt;{!CH_Qualify_InboundEmail_Type_Picklist_2}&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
         <name>CH_InboundEmailQualification_Screen_Rejected</name>
         <label>Rejected</label>
         <locationX>894</locationX>
@@ -2213,6 +2333,7 @@ Inbound Email Date:
         <fields>
             <name>CH_InboundEmailQualification_Outcome_2</name>
             <choiceReferences>CH_InboundEmailQualification_Answered_NA</choiceReferences>
+            <choiceReferences>CH_InboundEmailQualification_NotAnswered_NA</choiceReferences>
             <dataType>String</dataType>
             <defaultSelectedChoiceReference>CH_InboundEmailQualification_Answered_NA</defaultSelectedChoiceReference>
             <fieldText>Outcome</fieldText>
@@ -2613,6 +2734,13 @@ Inbound Email Date:
         <isInput>true</isInput>
         <isOutput>true</isOutput>
         <objectType>EmailMessage</objectType>
+    </variables>
+    <variables>
+        <name>CH_ResetDateTime</name>
+        <dataType>DateTime</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
     </variables>
     <variables>
         <description>US 15403, 15405, 15406</description>

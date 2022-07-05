@@ -1,12 +1,12 @@
 /*
- *	@author Showket Bhat
- *	Revision History:29 Augest 2017
+ *  @author Showket Bhat
+ *  Revision History:29 Augest 2017
  */  
 @isTest 
 //(SeeAllData=true)
 
 private class reusableCustomLookUpController_Test {
-
+ 
 	public static testMethod  void testfetchLookUpValues(){
 		
 		list<Account> accountObj = TestDataFactory.createAccount(1);

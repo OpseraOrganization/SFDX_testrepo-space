@@ -3,13 +3,12 @@ public class quoteTreeControllerTest {
 	Public String uid= UserInfo.getUserId();
 	Public String Name='Test Surinder Quote';
 	Public String OppId;
-	
 	Public String recordType  = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId();  
 	Public String Portfolio = 'IP Routing';
 	Public String Description = 'Test Shashi Description';
 	Public Boolean quoteQWM = True;  
 	 static testMethod void createQuoteRecord(){		
-			//Create a Customer Account 
+		//Create a Customer Account 
 		Account acc=new Account();
 		acc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
 		acc.name='Test Account';
@@ -50,7 +49,7 @@ public class quoteTreeControllerTest {
 		proposals[0].NokiaCPQ_Proposal_Id__c='21.US.952731 Q 1 C';
 		proposals[0].RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Direct_Quote').getRecordTypeId();//QTC CQ draft quote
 		insert proposals;
-		quoteTreeController.fetchAccounts(opp.id);		
+		quoteTreeController.fetchQuote(opp.id);		
 		
 	}  
 	

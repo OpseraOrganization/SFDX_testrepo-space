@@ -72,7 +72,7 @@ private  class QTO_ManualCDToQLIAssociationTest {
 		Test.stopTest();
 		// Assert that the Name was updated Successfully.
 		System.assertEquals('916872', cdLI.Site__c);
-
+	  
 	}
 	
 	@isTest private static void getAllCDLIfromCDTest()
