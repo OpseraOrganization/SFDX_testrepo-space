@@ -1,0 +1,119 @@
+<aura:component implements="forceCommunity:availableForAllPageTypes,force:hasRecordId,force:lightningQuickAction" access="global" controller="CH_Portal_Case_Response" >
+    <aura:attribute name="recordId" type="id" />
+    <aura:attribute name="source" type="string" />
+    <aura:attribute name="caseRecord" type="Case" />
+    <aura:attribute name="message" type="string" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="showPopUp" type="boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <aura:attribute name="tmpbody" type="string" />
+    <aura:attribute name="toast" type="Object" />
+    
+    <!-- Loading Spinner -->
+    <aura:if isTrue="{! v.showSpinner }">
+        <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+    </aura:if>
+    <div class="slds-grid">
+        <div class="slds-col">
+        </div>
+        <div class="slds-col">
+            <div class="slds-box slds-p-top_medium slds-p-bottom_medium slds-p-left_medium slds-p-right_medium">
+                <div class="slds-grid">
+                    <div class="slds-col">Add comments to case {!v.caseRecord.CaseNumber}</div>
+                    <div class="slds-col" align="right">
+                        <lightning:button class="" label="Submit" onclick="{!c.submit}"/>
+                        <lightning:button class="" label="Cancel" onclick="{!c.cancel}"/>
+                    </div>
+                </div>
+                <b><big color="red">
+                    <p></p><p class="slds-col">To ensure data privacy, please DO NOT enter any of the following types of information in the “Comments” field: </p>
+                    <br></br><p class="slds-col">
+                    <p>An IP address</p>
+                    <p>A MAC address</p>
+                    <p>A phone number</p>
+                    </p>
+                    <br></br><p class="slds-col">
+                    Any of the above types of information, if entered in the "Comments” field, including embedded images, will be made unreadable (images deleted). If you need to include this information, please upload as an attachment.
+                    </p>
+                    </big>
+                </b>
+                <div>
+                    <aura:if isTrue="{!v.source == 'RESOLVE_BUTTON'}">
+                        <div class="slds-p-top_small">
+                            <lightning:input aura:id="resolvedMessage" label="Comments" required="true" disabled="true" value="Our issue is resolved. Please close the support ticket."/>
+                        </div> 
+                        <div>
+                            <lightning:inputRichText aura:id="comments" placeholder="Enter additional comments"/>
+                        </div>
+                        <aura:set attribute="else">
+                            <div class="slds-p-top_small">
+                                <lightning:inputRichText aura:id="comments" label="Comments" placeholder="Enter comments"/>
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+            <aura:if isTrue="{! v.toast != null}">
+                <div class="slds-notify_container slds-is-relative" style="position: absolute; top:0;">
+                    <div class="{! 'slds-notify slds-notify_toast slds-theme_' + v.toast.type }" role="alert">
+                        <span class="slds-assistive-text">{! v.toast.type }</span>
+                        <span class="{! 'slds-icon_container  slds-m-right_small slds-no-flex slds-align-top slds-icon-utility-' + v.toast.type }">
+                            <lightning:icon iconName="{! 'utility:' + v.toast.type }" variant="inverse" size="small"/>
+                        </span>
+                        <div class="slds-notify__content">
+                            <h2 class="slds-text-heading_small">{!v.toast.message}</h2>
+                        </div>
+                        <button class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse" title="Close" onclick="{!c.closeToast}">
+                            <lightning:icon iconName="utility:close" variant="inverse" size="small"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                    </div>
+                </div>                
+            </aura:if>
+        </div>
+        <div class="slds-col">
+        </div>
+    </div>
+    <!--NOKIASC-38992-->
+    <aura:if isTrue="{!v.showPopUp}">
+        <section role="dialog" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.remind }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 class="slds-text-heading_medium">Survey Request</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p><b>Dear {!v.caseRecord.Contact.Name},<br/>
+                        <br></br>
+                        Your Case {!v.caseRecord.CaseNumber} will be closed.<br/>
+                        <br></br>
+                        In Nokia we always strive for excellence in customer service. Help us to improve your experience by taking very short satisfaction survey here. It will remain available during the next 15 days.<br/>
+                        <br></br>
+                        Details of the Case may be found below for your reference.<br/>
+                        <br></br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Issue Reported: {!v.caseRecord.Subject}<br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Case Product: {!v.caseRecord.Product.Name}<br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Case Severity: {!v.caseRecord.Severity__c}<br/>
+                        </b>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Take Survey"
+                                      title="Take Survey"
+                                      onclick="{!c.navigate}"/>
+                    <lightning:button variant="neutral"
+                                      label="Remind me later"
+                                      title="Remind me later"
+                                      onclick="{!c.remind}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <!--NOKIASC-38992-->
+</aura:component>
