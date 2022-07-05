@@ -13,7 +13,7 @@
 		</apex:actionFunction>
 
 		<apex:actionFunction action="{!updateDataTable}" name="updateDataTable" immediate="true" reRender="filterLogicErrorPanel, datatableOuput, csvExportRestoreOutput" oncomplete="completeRefreshDataTable();showDataTable();showGlobalSpinner(false);">
-			<apex:param name="selectedFields" value="CreatedDate" />
+			<apex:param name="selectedFields" value="Id" />
 			<apex:param name="filterSearchTerm" value="" />
 			<apex:param name="page" value="0" />
 			<apex:param name="sort" value="" />
@@ -99,13 +99,25 @@
 						<h1><apex:outputText value="{!queryFilterErrorMessage}" escape="false" style="font-size: 16pt; font-weight: bold;"/></h1>
 					</div>
 				</apex:outputPanel>
+				<apex:outputPanel layout="block" styleClass="slds-m-vertical_small" rendered="{!!isRestorable && !isTableRecordsEmpty }">
+					<div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_warning" role="alert">
+						<span class="slds-assistive-text">Warning</span>
+						<span class="slds-icon_container slds-icon-utility-error slds-m-right_x-medium">
+							<svg class="slds-icon slds-icon_x-small" aria-hidden="true">
+								<use xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest/assets/icons/utility-sprite/svg/symbols.svg#warning"></use>
+							</svg>
+						</span>
+						&nbsp;
+						<h2>{!objToQuery} object is not restorable</h2>
+					</div>
+				</apex:outputPanel>
 
 					<apex:dataTable value="{!sortedIds}" var="sid" id="sObjectDataTable" styleClass="slds-table slds-table_bordered slds-table_cell-buffer slds-max-small-table_stacked" rendered="{!!isTableRecordsEmpty}" style="table-layout:fixed;">
 						<apex:column headerClass="sObjectTableCheckboxHeader" styleClass="sObjectTableCheckboxHeader" rendered="{!hasRestorePermission && ISNULL($CurrentPage.parameters.isEmbeddedRelatedList) && isSalesforceObjectSelected && NOT(calledFromGraxSearch)}">
 							<div class="slds-checkbox">
-								<label class="slds-checkbox__label" for="{!sid}">
+								<label class="slds-checkbox__label" for="{!objectMap[sid]['Id']}">
 									<span class="slds-checkbox_faux_container" aria-live="assertive">
-										<input type="checkbox" id="{!sid}" class="sObjectTableCheckbox" data-graxorgid="{!objectMap[sid]['graxorgid']}" onchange="toggleRestoreSelectedButton();" />
+										<input type="checkbox" id="{!objectMap[sid]['Id']}" class="sObjectTableCheckbox" data-graxorgid="{!objectMap[sid]['graxorgid']}" onchange="{!IF(isRestorable, 'toggleRestoreSelectedButton();', '')}" />
 										<span class="slds-checkbox_faux"></span>
 									</span>
 								</label>
@@ -148,7 +160,7 @@
 							<apex:outputPanel >
 								<div class="slds-dropdown-trigger slds-dropdown-trigger_click">
 									<apex:outputPanel layout="none" rendered="{!isAsyncObjectSelected}">
-										<apex:outputLink styleClass="slds-button slds-button_icon" title="File Preview / Download" onclick="showGlobalSpinner(true);previewAttachment('{!JSENCODE(objectMap[sid]['graxorgid'])}', '{!JSENCODE(objToQuery)}', '{!JSENCODE(sid)}', '{!JSENCODE(objectMap[sid][asyncObjectsFieldMap[LOWER(objToQuery)]['Name']])}', '{!JSENCODE(objectMap[sid][asyncObjectsFieldMap[LOWER(objToQuery)]['ContentType']])}', {!JSENCODE(objectMap[sid][asyncObjectsFieldMap[LOWER(objToQuery)]['Length']])});">
+										<apex:outputLink styleClass="slds-button slds-button_icon" title="File Preview / Download" onclick="showGlobalSpinner(true);previewAttachment('{!JSENCODE(objectMap[sid]['graxorgid'])}', '{!JSENCODE(objToQuery)}', '{!JSENCODE(objectMap[sid]['Id'])}', '{!JSENCODE(objectMap[sid][asyncObjectsFieldMap[LOWER(objToQuery)]['Name']])}', '{!JSENCODE(objectMap[sid][asyncObjectsFieldMap[LOWER(objToQuery)]['ContentType']])}', {!JSENCODE(objectMap[sid][asyncObjectsFieldMap[LOWER(objToQuery)]['Length']])});">
 											<svg class="slds-button__icon" aria-hidden="true">
 												<use xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#page')}"></use>
 											</svg>
@@ -156,21 +168,20 @@
 										</apex:outputLink>
 									</apex:outputPanel>
 
-									<apex:outputLink styleClass="slds-button slds-button_icon" onclick="preview('{!JSENCODE(sid)}', '{!JSENCODE(objToQuery)}');return false;" title="Record Preview{!IF(hasRestorePermission && NOT(isRelatedRestore) && NOT(calledFromGraxSearch), ' / Re-create', '')}">
+									<apex:outputLink styleClass="slds-button slds-button_icon" onclick="preview('{!JSENCODE(objectMap[sid]['Id'])}', '{!JSENCODE(objToQuery)}');return false;" title="Record Preview{!IF(hasRestorePermission && NOT(isRelatedRestore) && NOT(calledFromGraxSearch), ' / Re-create', '')}">
 										<svg class="slds-button__icon" aria-hidden="true">
 											<use xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#preview')}"></use>
 										</svg>
 										<span class="slds-assistive-text">Preview</span>
 									</apex:outputLink>
-
-									<apex:outputLink styleClass="slds-button slds-button_icon" onclick="restore('{!IF(hasIntermediateObjectRelationship, JSENCODE(objectMap[sid]['intermediateRecordId']), JSENCODE(sid))}', '{!JSENCODE(objectMap[sid]['graxorgid'])}');return false;" title="Restore" rendered="{!hasRestorePermission && isSalesforceObjectSelected && ((!isRelatedRestore && !isEmbeddedRelatedList) || $CurrentPage.parameters.showRestoreButtons == 'true')}">
+									<apex:outputLink styleClass="slds-button slds-button_icon" onclick="restore('{!IF(hasIntermediateObjectRelationship, JSENCODE(objectMap[sid]['intermediateRecordId']), JSENCODE(objectMap[sid]['Id']))}', '{!JSENCODE(objectMap[sid]['graxorgid'])}');return false;" title="Restore" rendered="{!hasRestorePermission && isSalesforceObjectSelected && isRestorable && ((!isRelatedRestore && !isEmbeddedRelatedList) || $CurrentPage.parameters.showRestoreButtons == 'true')}">
 										<svg class="slds-button__icon" aria-hidden="true">
 											<use xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#undo')}"></use>
 										</svg>
 										<span class="slds-assistive-text">Restore</span>
 									</apex:outputLink>
 
-									<apex:outputLink styleClass="slds-button slds-button_icon" onclick="related('{!JSENCODE(sid)}', {!IF(JSENCODE(objToQuery) == 'Account' && isPersonAccountEnabled, objectMap[sid]['IsPersonAccount'], false)});return false;" title="Related" rendered="{!isSalesforceObjectSelected && (isMasterRestore || (isEmbeddedRelatedList && $CurrentPage.parameters.showRelatedButton == 'true'))}">
+									<apex:outputLink styleClass="slds-button slds-button_icon" onclick="related('{!JSENCODE(objectMap[sid]['Id'])}', {!IF(JSENCODE(objToQuery) == 'Account' && isPersonAccountEnabled, objectMap[sid]['IsPersonAccount'], false)});return false;" title="Related" rendered="{!isSalesforceObjectSelected && (isMasterRestore || (isEmbeddedRelatedList && $CurrentPage.parameters.showRelatedButton == 'true'))}">
 										<svg class="slds-button__icon" aria-hidden="true">
 											<use xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#hierarchy')}"></use>
 										</svg>
@@ -203,12 +214,14 @@
 
 					<div style="{!IF(calledFromGraxSearch, 'display:none','')}" class="-x-small-buttons--horizontal slds-p-top_medium {!IF(NOT(ISNULL($CurrentPage.parameters.isEmbeddedRelatedList)), 'slds-hide', '')}">
 						<apex:outputPanel layout="none" rendered="{!hasRestorePermission && isSalesforceObjectSelected && ((!isRelatedRestore && !isEmbeddedRelatedList) || $CurrentPage.parameters.showRestoreButtons == 'true')}">
-							<button id="restoreSelectedButton" class="slds-button slds-button_neutral" type="submit" onclick="restoreSelected();return false;" disabled="disabled">Restore Selection</button>
+							<button id="restoreAllButton" class="slds-button slds-button_neutral" type="submit" onclick="restoreConfirm();return false;">Restore</button>
 						</apex:outputPanel>
 
-						<apex:outputPanel layout="none" rendered="{!hasRestorePermission && isSalesforceObjectSelected && ((!isRelatedRestore && !isEmbeddedRelatedList) || $CurrentPage.parameters.showRestoreButtons == 'true')}">
-							<button class="slds-button slds-button_neutral" type="submit" onclick="restoreAll();return false;">Restore All</button>
-						</apex:outputPanel>
+						<script>
+							if (!{!isRestorable}) {
+								$('#restoreAllButton').prop("disabled", true);
+							}
+						</script>
 
 						<button class="slds-button slds-button_neutral" type="submit" form="csvExportRestore">Export to CSV</button>
 					</div>
@@ -491,7 +504,9 @@
 			width: 24%;
 		}
 
-		#restoreOptionsModal .slds-modal__container {
+		#restoreOptionsModal .slds-modal__container,
+		#restoreConfirmModal .slds-modal__container,
+		#restoreQueuedModal .slds-modal__container {
 			-webkit-transform: unset !important;
 			transform: unset !important;
 			transition: unset;
@@ -704,7 +719,7 @@
 								</h3>
 								<div aria-hidden="false" class="slds-section__content slds-is-relative">
 									<div class="slds-grid slds-grid_vertical-align-center">
-										<apex:outputPanel layout="none" rendered="{!isGRAXAdmin}">
+										<apex:outputPanel layout="none" rendered="{!isGRAXAdmin || hasDatahubSearchPermission}">
 											<div class="slds-form-element slds-is-relative slds-p-bottom_medium filterRecordsSwitch" id="allOrgRecords">
 												<div style="display:inline-block">
 													<label class="slds-checkbox_toggle">
@@ -955,13 +970,11 @@
 										<div aria-hidden="{!IF(ISNULL($CurrentPage.parameters.isEmbedded), 'true', 'false')}" class="slds-section__content" id="restore_options-section">
 											<div>
 												<ol>
-													<li>When restoring records in an environment please confirm that the following is true:</li>
+													<li>When restoring records please confirm that the following is true:</li>
 													<ol class="slds-list_ordered">
-														<li>Ensure that the destination environment has the same customizations and metadata as the source environment</li>
-														<li>Ensure that all workflows, APEX triggers, validation rules, process builders, duplication rules, etc. are disabled in the destination environment</li>
-														<li>If restoring in a partial or developer Sandbox, ensure that there is ample storage space for the data you are intending to restore in the destination environment</li>
-														<li>Ensure that your user has "modify all data" permission in the destination environment</li>
-														<li>If you are attempting to restore records where the owner is inactive, ensure that your user has the permission "Update records with inactive owners" set to true in the destination environment</li>
+														<li>Ensure that all workflows, APEX triggers, validation rules, process builders, duplication rules, etc. are disabled</li>
+														<li>Ensure that the GRAX Integration user has the necessary permissions to create / update the objects you want to restore.</li>
+														<li>If you are attempting to restore records where the owner is inactive, ensure that your user has the permission "Update records with inactive owners" set to true</li>
 													</ol>
 												</ol>
 												<div class="slds-m-bottom_large"></div>
@@ -1346,6 +1359,63 @@
 				</section>
 				<div class="slds-backdrop slds-hide"></div>
 
+				<section id="restoreConfirmModal" role="dialog" tabindex="-1" aria-labelledby="modal-restoreConfirm" aria-modal="true" aria-describedby="modal-content-restoreConfirm" class="slds-modal slds-modal_medium slds-hide">
+					<div class="slds-modal__container" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+						<header class="slds-modal__header">
+							<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" data-toggle="modal" data-target="#restoreConfirmModal">
+								<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+									<use xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+								</svg>
+								<span class="slds-assistive-text">Close</span>
+							</button>
+							<h2 id="modal-restoreConfirm" class="slds-text-heading_medium slds-hyphenate">Confirm Restore</h2>
+						</header>
+
+						<div class="slds-modal__content slds-p-horizontal_medium" id="modal-content-restoreConfirm">
+							<div>
+								<div class="slds-align_absolute-center slds-col slds-size_1-of-1" style="padding:25px;">
+									<p style="text-align:center;" >You are about to restore data to your salesforce environment.  Please ensure you have reviewed the restore options before proceeding.  Are you sure you want to restore?</p>				
+								</div>
+								<div class="slds-align_absolute-center slds-col slds-size_1-of-1" style="padding-bottom:25px">
+									<button id="closeRestore" class="slds-button slds-button_neutral" data-toggle="modal" type="submit" style="margin:20px;" onclick="restoreSelected();return false;" data-target="#restoreConfirmModal" data-preview-only="true">Restore Selected Records Only</button>
+									<button id="closeRestore" class="slds-button slds-button_neutral" style="margin:20px;" data-toggle="modal" type="submit" onclick="restoreAll();return false;" data-target="#restoreConfirmModal" data-preview-only="true">Restore All Records</button>
+								</div>
+							</div>
+						</div>
+
+						<footer class="slds-modal__footer">
+							<button id="closeRestore" class="slds-button slds-button_neutral" data-toggle="modal" data-target="#restoreConfirmModal" data-preview-only="true">Close</button>
+						</footer>
+					</div>
+				</section>
+				<div class="slds-backdrop slds-hide"></div>
+
+				<section id="restoreQueuedModal" role="dialog" tabindex="-1" aria-labelledby="modal-restoreQueued" aria-modal="true" aria-describedby="modal-content-restoreQueued" class="slds-modal slds-modal_medium slds-hide">
+					<div class="slds-modal__container" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+						<header class="slds-modal__header">
+							<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" data-toggle="modal" data-target="#restoreQueuedModal">
+								<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+									<use xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+								</svg>
+								<span class="slds-assistive-text">Close</span>
+							</button>
+							<h2 id="modal-restoreQueued" class="slds-text-heading_medium slds-hyphenate">Restore Queued</h2>
+						</header>
+
+						<div class="slds-modal__content" id="modal-content-restoreQueued">
+							<div>
+								<div class="slds-align_absolute-center slds-col slds-size_1-of-1" style="padding:25px;">
+									<p style="text-align:center;" >Your restore will begin shortly</p>				
+								</div>
+							</div>
+							<footer class="slds-modal__footer">
+								<button id="closeRestore" class="slds-button slds-button_neutral" data-toggle="modal" data-target="#restoreQueuedModal" data-preview-only="true">Close</button>
+							</footer>
+						</div>
+					</div>
+				</section>
+				<div class="slds-backdrop slds-hide"></div>
+
 				<apex:outputPanel rendered="{!NOT(isMasterRestore)}" layout="block">
 					<div id="globalSpinner" class="slds-spinner_container slds-is-fixed slds-hide">
 						<div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
@@ -1430,6 +1500,20 @@
 				</apex:outputPanel>
 
 				<script>
+					function showMessage(title, message, type){
+						if ({!isEmbeddedRelatedList}) {
+							// we can't use toasts or alerts in the lightning related list
+							// so here we're opening a modal with the message
+							$restoreQueuedModal.trigger('modaltoggle', true);
+							renderSvgIcons();
+
+							if(isIframe){
+								centerModalOnRestoreIframe('#restoreQueuedModal');
+							}
+						} else {
+							window.parent.showMessage(title, message, type);
+						} 
+					}
 					$(function() {
 						var $sObjectDataTableContainer = $('#sObjectDataTableContainer');
 						var isRelatedRestore = {!isRelatedRestore};
@@ -1445,6 +1529,8 @@
 						var $relatedModal = $('#relatedModal');
 						window.$relatedRestoreModal = $('#relatedRestoreModal');
 						window.$restoreOptionsModal = $('#restoreOptionsModal');
+						window.$restoreConfirmModal = $('#restoreConfirmModal');
+						window.$restoreQueuedModal = $('#restoreQueuedModal');
 						var $reCreateButton = $('#reCreateButton');
 						var $saveRestore = $('#saveRestore');
 						var $saveRelatedRestore = $('#saveRelatedRestore');
@@ -1786,9 +1872,9 @@
 							var selectedFields = $fieldList.val();
 							var sortByField = $sortByField.val();
 							// var defaultSortField = selectedFields.split(',')[0];
-							var defaultSortField = 'CreatedDate';
+							var defaultSortField = 'Id';
 							
-							// order by sort (via UI - asc/desc), then defined value in component, then default sort value (CreatedDate)
+							// order by sort (via UI - asc/desc), then defined value in component, then default sort value (Id)
 							sort = sort || sortByField || defaultSortField;
 
 							if(!pageSortType && window.elasticFieldsMapping) {
@@ -1812,9 +1898,9 @@
 								$sObjectDataTableContainer.attr({'data-loading': true});
 								updateDataTable(selectedFields, $filterSearchTerm.val(), page || 0, sort, sortOrder || 'asc', pageSortType, archiveFilter, isAllOrgRecords, matchAllOrgRecords, displayRestoreInfo, $('#GRAXRestoreFilterGenerator_bool_filter').val(), JSON.stringify(filterRules));
 							} else if ($("#GRAXRestoreFilterGenerator .slds-form-element.slds-has-error").length > 0) {
-								alert('Please fix the invalid filter\'s rows.');
+								showMessage('Invalid filter rows', 'Check your filters and try again', 'error');
 							} else {
-								alert('No fields selected.');
+								showMessage('No fields selected', 'Please select an object and fields to display before clicking retrieve', "warning");
 							}
 						};
 
@@ -1938,20 +2024,17 @@
 
 						window.restore = function(sid, graxorgid) {
 							if(sid != null && sid != ''){
-								if(confirm('Click OK to restore selected record(s). Ensure the relevant restore options are set before proceeding.')) {
+								var restoreChildrens = $("#restoreChildrens").is(":checked");
+								var sfRequestsEnabled = $("#sfRequestsEnabled").is(":checked");
+								var assignToActiveAndInactiveUsers = $("#assignToActiveAndInactiveUsers").is(":checked");
+								var useGRAXHistoryOnly = !$("#useGRAXHistoryOnly").is(":checked");
+								var updateRecordIfExist = $("#updateRecordIfExist").is(":checked");
+								var sendNotification = $("#sendNotification").is(":checked");
 
-									var restoreChildrens = $("#restoreChildrens").is(":checked");
-									var sfRequestsEnabled = $("#sfRequestsEnabled").is(":checked");
-									var assignToActiveAndInactiveUsers = $("#assignToActiveAndInactiveUsers").is(":checked");
-									var useGRAXHistoryOnly = !$("#useGRAXHistoryOnly").is(":checked");
-									var updateRecordIfExist = $("#updateRecordIfExist").is(":checked");
-									var sendNotification = $("#sendNotification").is(":checked");
-
-									showGlobalSpinner(true);
-									restoreSObjectCallout(graxorgid, sid, restoreChildrens, sfRequestsEnabled, assignToActiveAndInactiveUsers, useGRAXHistoryOnly, updateRecordIfExist, sendNotification, window.restoreObjRelStructure);
-								}
+								showGlobalSpinner(true);
+								restoreSObjectCallout(graxorgid, sid, restoreChildrens, sfRequestsEnabled, assignToActiveAndInactiveUsers, useGRAXHistoryOnly, updateRecordIfExist, sendNotification, window.restoreObjRelStructure);
 							}else{
-								alert('Record Id not found. Please contact your GRAX Administrator.');
+								showMessage('Record Id not found', 'Please contact your GRAX Administrator', 'error');
 							}
 						};
 
@@ -1966,7 +2049,7 @@
 								selectedIds = selectedIds.substring(1);
 								window.restore(selectedIds, selectedGraxorgId.substring(1));
 							} else {
-								alert('Please select at least one record to restore');
+								showMessage('No record selected', 'Please select at least one record to restore', 'warning');
 							}
 						};
 
@@ -1980,18 +2063,14 @@
 						}
 
 						window.restoreAll = function(){
-							if(confirm('Click OK to restore all retrieved records. Ensure the relevant restore options are set before proceeding.')) {
-
 								var restoreChildrens = $("#restoreChildrens").is(":checked");
 								var sfRequestsEnabled = $("#sfRequestsEnabled").is(":checked");
 								var assignToActiveAndInactiveUsers = $("#assignToActiveAndInactiveUsers").is(":checked");
 								var useGRAXHistoryOnly = !$("#useGRAXHistoryOnly").is(":checked");
 								var updateRecordIfExist = $("#updateRecordIfExist").is(":checked");
 								var sendNotification = $("#sendNotification").is(":checked");
-
 								showGlobalSpinner(true);
 								restoreAllSObjects(restoreChildrens, sfRequestsEnabled, assignToActiveAndInactiveUsers, useGRAXHistoryOnly, updateRecordIfExist, sendNotification, window.restoreObjRelStructure);
-							}
 							}
 
 						window.restoreOptions = function(currentObject) {
@@ -2008,6 +2087,15 @@
 
 							if(isIframe){
 								centerModalOnRestoreIframe('#restoreOptionsModal');
+							}
+						};
+
+						window.restoreConfirm = function(restoreType) {
+							$restoreConfirmModal.trigger('modaltoggle', true);
+							renderSvgIcons();
+
+							if(isIframe){
+								centerModalOnRestoreIframe('#restoreConfirmModal');
 							}
 						};
 
@@ -2296,7 +2384,7 @@
 						var restoreAttachmentsMessage = '{!JSENCODE(restoreAttachmentsMessage)}'
 
 						if(restoreAttachmentsMessage) {
-							alert(restoreAttachmentsMessage);
+							showMessage('Error restoring attachment', restoreAttachmentsMessage, 'error');
 						}
 					</script>
 				</apex:outputPanel>
@@ -2309,8 +2397,7 @@
 							if(restoreSObjectMessage == 'Record re-creation in progress') {
 								restoreSObjectMessage += '. Go to GRAX Logs tab -> "Restore Logs" to check the results.';
 							}
-
-							alert(restoreSObjectMessage);
+							showMessage('Restore result', restoreSObjectMessage, 'success');
 						}
 					</script>
 				</apex:outputPanel>
@@ -2393,7 +2480,9 @@
 						#relatedModal .slds-modal__container,
 						#relatedRestoreModal .slds-modal__container,
 						#restoreModal .slds-modal__container,
-						#restoreOptionsModal .slds-modal__container {
+						#restoreOptionsModal .slds-modal__container,
+						#restoreConfirmModal .slds-modal__container,
+						#restoreQueuedModal .slds-modal__container, {
 							/*height: 600px !important;*/
 							padding-top: 0;
 						}
@@ -2401,7 +2490,9 @@
 						#relatedModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse,
 						#relatedRestoreModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse,
 						#restoreModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse,
-						#restoreOptionsModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse{
+						#restoreOptionsModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse,
+						#restoreConfirmModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse,
+						#restoreQueuedModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse{
 							top: 10px;
 							right: 10px;
 							color: rgb(150, 148, 146);
@@ -2410,7 +2501,8 @@
 						#relatedModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse:hover,
 						#relatedRestoreModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse:hover,
 						#restoreModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse:hover,
-						#restoreOptionsModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse:hover {
+						#restoreOptionsModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse:hover,
+						#restoreConfirmModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse:hover,#restoreQueuedModal button.slds-button.slds-button_icon.slds-modal__close.slds-button_icon-inverse:hover  {
 							color: rgba(27, 82, 151, 1);
 						}
 

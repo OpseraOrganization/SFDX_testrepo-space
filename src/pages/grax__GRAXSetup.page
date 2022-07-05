@@ -99,6 +99,20 @@
 				}, isCounterZero ? 100 : 0);
 			};
 
+			function showMessage(title, message, type){
+				if (window.location.ancestorOrigins.length > 0){
+					// we're in lightning, so use toasts
+					sforce.one.showToast({
+						"title": title,
+						"message": message,
+						"type": type
+					});
+				} else {
+					// we're in classic so use js alert
+					alert(title + '\n' + message);
+				}
+			}
+
 			var isAppleDevice = navigator.platform.match(/(Mac|iPhone|iPod|iPad)/i) ? true : false;
 			// The following script block is to support the resize automatically from Restore & Audit iframe
 			// and also to support to load the iframe only 1 time when user click on the related tab
@@ -371,7 +385,8 @@
 									</li>
 								</apex:outputPanel>
 
-								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasBackupPagePermission}">
+								<!-- OLD Schedule autoBackupEnabled = False -->
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasBackupPagePermission && !autoBackupEnabled}">
 									<li class="slds-tabs_scoped__item" title="Schedule" role="presentation">
 										<a class="slds-tabs_scoped__link" onclick="graxSecuredIframe(function() {}, this)(event);" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-archiving" id="tab-archiving__item">
 											Schedule
@@ -379,7 +394,16 @@
 									</li>
 								</apex:outputPanel>
 
-								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasSearchPagePermission}">
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasBackupPagePermission && autoBackupEnabled}">
+									<li class="slds-tabs_scoped__item" title="Schedule" role="presentation">
+										<a class="slds-tabs_scoped__link" onclick="window.open('{!selectedGraxAppURL}/web/backup?autologin=true','_blank')" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-newui-schedule" id="tab-archiving__item">
+											Schedule
+										</a>
+									</li>
+								</apex:outputPanel>
+
+								<!-- OLD SEARCH isNextGen = False -->
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasSearchPagePermission && !isNextGen}">
 									<li class="slds-tabs_scoped__item" title="Search" role="presentation">
 										<a class="slds-tabs_scoped__link" onclick="graxSecuredIframe(displayRestoreIframeJS, this)(event);" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-restore" id="tab-restore__item">
 											Search
@@ -387,7 +411,16 @@
 									</li>
 								</apex:outputPanel>
 
-								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasAuditPagePermission}">
+								<!-- NEXT GENERATION NEW SEARCH isNextGen = True -->
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasSearchPagePermission && isNextGen}">
+									<li class="slds-tabs_scoped__item" title="Search" role="presentation">
+										<a class="slds-tabs_scoped__link" onclick="window.open('{!selectedGraxAppURL}/web/search?autologin=true','_blank')" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-newui" id="tab-restore__item">
+											Search
+										</a>
+									</li>
+								</apex:outputPanel>
+
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasAuditPagePermission && showAuditTab}">
 									<li class="slds-tabs_scoped__item" title="Audit" role="presentation">
 										<a class="slds-tabs_scoped__link" onclick="displayAuditIframeJS();" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-audit" id="tab-audit__item">
 											Audit
@@ -395,7 +428,7 @@
 									</li>
 								</apex:outputPanel>
 
-								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && isGRAXAdmin}">
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && isGRAXAdmin && !isNextGen}">
 									<li class="slds-tabs_scoped__item" title="Summary" role="presentation">
 										<a class="slds-tabs_scoped__link" href="javascript:void(0);" onClick="graxSecuredIframe(summarychartsLoadGRAXApp, this)(event);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-summary" id="tab-summary__item">
 											Summary
@@ -403,7 +436,16 @@
 									</li>
 								</apex:outputPanel>
 
-								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && isGRAXAdmin}">
+								<!-- NEXT GENERATION NEW Summary isNextGen = True -->
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && isGRAXAdmin && isNextGen}">
+									<li class="slds-tabs_scoped__item" title="Logs" role="presentation">
+										<a class="slds-tabs_scoped__link" href="javascript:void(0);"  onclick="window.open('{!selectedGraxAppURL}/web/execution?autologin=true','_blank')" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-newui-summary" id="tab-logs__item">
+											Summary
+										</a>
+									</li>
+								</apex:outputPanel>
+
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && isGRAXAdmin && !isNextGen}">
 									<li class="slds-tabs_scoped__item" title="Logs" role="presentation">
 										<a class="slds-tabs_scoped__link" href="javascript:void(0);" onClick="graxSecuredIframe(loggingLoadGRAXApp, this)(event);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-logs" id="tab-logs__item">
 											Logs
@@ -411,7 +453,7 @@
 									</li>
 								</apex:outputPanel>
 
-								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && isGRAXAdmin && gxs.enableDeleteTab}">
+								<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && isGRAXAdmin && gxs.enableDeleteTab && !isNextGen}">
 									<li class="slds-tabs_scoped__item" title="Datalake Delete" role="presentation">
 										<a class="slds-tabs_scoped__link" href="javascript:void(0);" onClick="graxSecuredIframe(deleteLoadGRAXApp, this)(event);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-delete" id="tab-delete__item">
 											Datalake Delete
@@ -419,13 +461,22 @@
 									</li>
 								</apex:outputPanel>
 
-								<apex:outputPanel layout="none" rendered="{!isGRAXAdmin}">
+								<apex:outputPanel layout="none" rendered="{!isGRAXAdmin && autoBackupEnabled}">
+									<li class="slds-tabs_scoped__item" title="Help" role="presentation">
+										<a class="slds-tabs_scoped__link" href="javascript:void(0);" role="tab" onclick="window.open('{!selectedGraxAppURL}/web/support?autologin=true','_blank')" tabindex="0" aria-selected="false" aria-controls="tab-newui-contactsupport" id="tab-newui-contactsupport__item">
+											Help
+										</a>
+									</li>
+								</apex:outputPanel>
+
+								<apex:outputPanel layout="none" rendered="{!isGRAXAdmin && !autoBackupEnabled}">
 									<li class="slds-tabs_scoped__item" title="Help" role="presentation">
 										<a class="slds-tabs_scoped__link" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-contactsupport" id="tab-contactsupport__item">
 											Help
 										</a>
 									</li>
 								</apex:outputPanel>
+								
 							</ul>
 						</apex:outputPanel>
 
@@ -438,10 +489,12 @@
 												<li class="slds-tabs_default__item slds-is-active" title="Connect" role="presentation">
 													<a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" aria-selected="false" aria-controls="tab-connect" id="tab-connect__item">Connect</a>
 												</li>
+												<apex:outputPanel layout="none" rendered="{! !isNextGen}">
 												<li class="slds-tabs_default__item {!IF(NOT(connectSettingsConfigured) || NOT(connectConfigurationLocked), 'isTabDisabled', '')}" title="Setup" role="presentation">
 													<a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" aria-selected="true" aria-controls="tab-setup" id="tab-setup__item">Setup</a>
 												</li>
-												<li class="slds-tabs_default__item {!IF(NOT(connectConfigurationLocked), 'isTabDisabled', '')}" title="Miscellaneous" role="presentation">
+												</apex:outputPanel>
+												<li class="slds-tabs_default__item {!IF(NOT(connectConfigurationLocked) || (isNextGen && autoBackupEnabled), 'isTabDisabled', '')}" title="Miscellaneous" role="presentation">
 													<a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" aria-selected="false" aria-controls="tab-miscellaneous" id="tab-miscellaneous__item">Miscellaneous</a>
 												</li>
 												<div id="GRAXHelpLinkConfiguration" class="slds-section">
@@ -591,7 +644,12 @@
 															<div class="slds-form-element" style="width: 450px; margin-top: 10px;">
 																<label class="slds-form-element__label" for="awsAppURL">App URL</label>
 																<div class="slds-form-element__control">
-																<input type="text" id="awsAppURL" placeholder="AWS App URL" class="slds-input" />
+																	<input type="text" id="awsAppURL" placeholder="AWS App URL" class="slds-input" />
+																</div>	
+															</div>
+															<div class="slds-form__item" role="listitem">
+																<div class="slds-form-element slds-form-element_horizontal">
+																	<input type="button" value="GRAX Settings" onclick="window.open('{!selectedGraxAppURL}/web/settings?autologin=true','_blank')" class="slds-button slds-button_brand schedule_button"/>
 																</div>
 															</div>
 															<div id="awsAppURLErrorMessagePanel" style="display: none; color: rgb(194, 57, 52);">Please enter a value.</div>
@@ -656,7 +714,7 @@
 														<apex:outputPanel id="remoteSiteSettingMessagePanel">
 															<apex:outputPanel rendered="{!NOT(remoteSiteSettingExists) && NOT(ISBLANK(selectedGraxApp))}">
 																Click this button to add the selected GRAX App Remote Site Setting
-																<apex:outputLink value="/0rp/e?SiteName={!SUBSTITUTE(SUBSTITUTE(gxs.herokuAppName, '-', ''), ' ', '')}&EndpointUrl={!gxs.apiURL}" target="_blank" styleClass="slds-button slds-button_brand _blank deploy_button" style="margin-left: 20px;">Add Remote Site Setting</apex:outputLink>
+																<apex:outputLink value="/0rp/e?SiteName={!LEFT(SUBSTITUTE(SUBSTITUTE(gxs.herokuAppName, '-', ''), ' ', ''), 40)}&EndpointUrl={!gxs.apiURL}" target="_blank" styleClass="slds-button slds-button_brand _blank deploy_button" style="margin-left: 20px;">Add Remote Site Setting</apex:outputLink>
 															</apex:outputPanel>
 															<apex:outputPanel rendered="{!remoteSiteSettingExists && NOT(ISBLANK(selectedGraxApp))}">
 																The Remote Site Setting has been properly configured
@@ -802,6 +860,7 @@
 											</div>
 										</div>
 
+										<apex:outputPanel layout="none" rendered="{! !isNextGen}">
 										<div class="slds-section slds-p-top_large">
 											<h3 class="slds-section__title">
 												<div aria-controls="section-apextriggers" aria-expanded="false" class="slds-button slds-section__title-action">
@@ -831,6 +890,7 @@
 												</div>
 											</div>
 										</div>
+										</apex:outputPanel>
 
 										<div class="slds-popover slds-popover_tooltip slds-nubbin_top-left slds-rise-from-ground slds-hide" role="tooltip" id="schedule_job_help" aria-hidden="true">
 											<div class="slds-popover__body">
@@ -1061,6 +1121,30 @@
 							</div>
 						</apex:outputPanel>
 
+						<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasBackupPagePermission}">
+							<div id="tab-newui" class="slds-hide" role="tabpanel" aria-labelledby="tab-newui__item">
+								<a class="slds-tabs_scoped__link" onclick="window.open('{!selectedGraxAppURL}/web/search?autologin=true','_blank')" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-newui" id="tab-restore__item">
+									New Browser TabLaunched  for GRAX Search (Click to relaunch)
+								</a>
+							</div>
+						</apex:outputPanel>
+
+						<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasBackupPagePermission}">
+							<div id="tab-newui-summary" class="slds-hide" role="tabpanel" aria-labelledby="tab-newui-schedule__item">
+								<a class="slds-tabs_scoped__link" href="javascript:void(0);"  onclick="window.open('{!selectedGraxAppURL}/web/execution?autologin=true','_blank')" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-summary" id="tab-logs__item">
+									New Browser Tab Launched for GRAX Summary (Click to relaunch)
+								</a>
+							</div>
+						</apex:outputPanel>
+
+						<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasBackupPagePermission && autoBackupEnabled}">
+							<div id="tab-newui-schedule" class="slds-hide" role="tabpanel" aria-labelledby="tab-newui-schedule__item">
+								<a class="slds-tabs_scoped__link" href="javascript:void(0);"  onclick="window.open('{!selectedGraxAppURL}/web/backup?autologin=true','_blank')" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-schedule" id="tab-logs__item">
+									New Browser Tab Launched for GRAX Settings &amp; Scheduling
+								</a>
+							</div>
+						</apex:outputPanel>
+
 						<apex:outputPanel layout="none" rendered="{!allSettingsConfigured && connectConfigurationLocked && hasSearchPagePermission}" id="RestorePanel">
 							<div id="tab-restore" class="slds-hide" role="tabpanel" aria-labelledby="tab-restore__item">
 								<iframe id="GraxRestoreIframe" scrolling="no" />
@@ -1095,7 +1179,15 @@
 							</div>
 						</apex:outputPanel>
 
-						<apex:outputPanel layout="none" rendered="{!isGRAXAdmin}">
+						<apex:outputPanel layout="none" rendered="{!isGRAXAdmin && autoBackupEnabled}">
+							<div id="tab-newui-contactsupport" class="slds-hide" role="tabpanel" aria-labelledby="tab-newui-contactsupport__item">
+								<a class="slds-tabs_scoped__link" href="javascript:void(0);"  onclick="window.open('{!selectedGraxAppURL}/web/support?autologin=true','_blank')" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-newui-contactsupport" id="tab-newui-contactsupport__item">
+									New Browser Tab Launched for Support
+								</a>
+							</div>
+						</apex:outputPanel>
+
+						<apex:outputPanel layout="none" rendered="{!isGRAXAdmin && !autoBackupEnabled}">
 							<div id="tab-contactsupport" class="slds-tabs_scoped__content slds-hide" role="tabpanel" aria-labelledby="tab-contactsupport__item" data-ps="admin">
 								<iframe id="GRAXSupportForm" height="600" width="100%" style="border: 0;" src="/apex/GRAXSupportForm"></iframe>
 							</div>
