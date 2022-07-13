@@ -27,7 +27,7 @@ public without sharing class CH_CA_CaseTeamAssignment_Controller {
 			List<CH_Workgroup_Rule__c> foundWorkgroupRules = new List<CH_Workgroup_Rule__c>();
 			CH_Workgroup_Rule__c WorkgroupRules = new CH_Workgroup_Rule__c();
 			WorkgroupRules.CH_Workgroup__c=getWorkgroup.CH_Workgroup__c;
-			foundWorkgroupRules.add(WorkgroupRules);		  
+			foundWorkgroupRules.add(WorkgroupRules);	
 			CH_CA_Service service = new CH_CA_Service(caseId); 
 			authorizedWorkgroupMembers=service.getWorkgroupMembersOnInitialLoad(foundWorkgroupRules);   
 		}
@@ -40,8 +40,8 @@ public without sharing class CH_CA_CaseTeamAssignment_Controller {
 	@AuraEnabled	
 	public static void insertMember(Id userId, Id caseId, String selectedRole){
 		CaseTeamRole caseTeamRole = [SELECT Id,Name 
-									 FROM CaseTeamRole 
-									 WHERE Name = :selectedRole LIMIT 1];
+			 FROM CaseTeamRole 
+			 WHERE Name = :selectedRole LIMIT 1];
 		
 		CaseTeamMember newCaseTeamMember = new CaseTeamMember();
 		newCaseTeamMember.ParentId = caseId;
@@ -59,13 +59,13 @@ public without sharing class CH_CA_CaseTeamAssignment_Controller {
 			
 			Map<String, User> userMap = CH_Utils.getUserMap(setUserId);	
 			if(userMap.size()>0){	
-				List<User> lstUsers = userMap.values();
-				List<User> lstUsersToUpdate=new  List<User>();
-				for(User userobj:lstUsers){
-					userobj.CH_LastEngagement__c = system.now();								
-					lstUsersToUpdate.add(userobj);
-				}
-				Database.update(lstUsersToUpdate,false);
+	List<User> lstUsers = userMap.values();
+	List<User> lstUsersToUpdate=new  List<User>();
+	for(User userobj:lstUsers){
+		userobj.CH_LastEngagement__c = system.now();		
+		lstUsersToUpdate.add(userobj);
+	}
+	Database.update(lstUsersToUpdate,false);
 			}
 		}
 		//code for NOKIASC-29471 end
@@ -76,41 +76,42 @@ public without sharing class CH_CA_CaseTeamAssignment_Controller {
 		memeberTask.Status = 'Open';
 		switch on selectedRole{
 			when 'Incident Engineer' {
-				memeberTask.Subject = 'Troubleshoot';
-				memeberTask.Priority = 'Normal';
-				insert memeberTask;
+	memeberTask.Subject = 'Troubleshoot';
+	memeberTask.Priority = 'Normal';
+	insert memeberTask;
 			}
 			when 'Incident Expert','Problem Expert' {
-				memeberTask.Subject = 'Assistance';
-				memeberTask.Priority = 'Normal';
-				insert memeberTask;
+	memeberTask.Subject = 'Assistance';
+	memeberTask.Priority = 'Normal';
+	insert memeberTask;
 			}
 			when 'Incident Support','Problem Support' {
-				memeberTask.Subject = 'Collaboration';
-				memeberTask.Priority = 'Normal';
-				insert memeberTask;
+	memeberTask.Subject = 'Collaboration';
+	memeberTask.Priority = 'Normal';
+	insert memeberTask;
 			}
 			when 'Incident Field Agent' {
-				memeberTask.Subject = 'On Site Intervention';
-				memeberTask.Priority = 'Normal';
-				insert memeberTask;
+	memeberTask.Subject = 'On Site Intervention';
+	memeberTask.Priority = 'Normal';
+	insert memeberTask;
 			}
 			when 'Customer Care Manager' {
-				memeberTask.Subject = 'Collaboration';
-				memeberTask.Priority = 'High';
-				insert memeberTask;
+	memeberTask.Subject = 'Collaboration';
+	memeberTask.Priority = 'High';
+	insert memeberTask;
 			}
 			when 'Incident Owner' {
-				memeberTask.Subject = 'Update';
-				memeberTask.Priority = 'Normal';
-				insert memeberTask;
+	memeberTask.Subject = 'Update';
+	memeberTask.Priority = 'Normal';
+	insert memeberTask;
 			}
-			When Else{}
-			
+			when else {
+	system.debug('CH_CA: Created Task: '+ memeberTask.Subject);
+			}
 		}
 		system.debug('CH_CA: Created Task: '+ memeberTask.Subject);
 		//Create CH_CaseTeamHistory - Added by Rajeshwari as part of US - NOKIASC-16827 
-		CH_CaseTriggerUtilityHelper.createCaseTeamHistoryOnAddingTeam(userId, caseId, selectedRole);	   
+		CH_CaseTriggerUtilityHelper.createCaseTeamHistoryOnAddingTeam(userId, caseId, selectedRole);	
 		
 		
 	}
@@ -151,6 +152,7 @@ public without sharing class CH_CA_CaseTeamAssignment_Controller {
 		searchCriteriaDTO.activeRules = true;
 		searchCriteriaDTO.productModule = (String)searchCriteriaMap.get('productModule');
 		searchCriteriaDTO.productVariant = (String)searchCriteriaMap.get('productVariant');
+		searchCriteriaDTO.productRelease = (String)searchCriteriaMap.get('productRelease');
 		searchCriteriaDTO.solution = (String)searchCriteriaMap.get('solution');
 		searchCriteriaDTO.contractType = (String)searchCriteriaMap.get('contractType');
 		return searchCriteriaDTO;		

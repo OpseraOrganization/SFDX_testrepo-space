@@ -49,4 +49,24 @@ public class PMDI_Constants {
 	public static String APIstring = '\n API : ';
 	public static String RecordsProcessedString = '\n Number of Records Processed : ';
 	public static String SLASH = ' \\ ';
+
+	//PMDSOR Product2 Integration
+	public static final String PMDSOR_SALES_ITEMS = 'SalesItems';
+	public static final String PMDSOR_PRODUCT_CONFIGURATION_ITEMS = 'ProductConfigurationItems';
+	public static final String PMDSOR_CUSTOM_SETTING_RESOURCE = 'PMDSOR_Resource';
+	public static final String PMDSOR_CUSTOM_SETTING_SI = 'PMDSOR_SI';
+	public static final String PMDSOR_CUSTOM_SETTING_PCI = 'PMDSOR_PCI';
+	public static final String PMDSOR_SI_NSN_PUBLISHED_TO_QTC =  'NSN Published to QtC';
+	public static final String PMDSOR_SI_NSN_SECONDARY_CATEGORY =  'NSN Secondary Category';
+	public static final String PMDSOR_SI_NSN_TERTIARY_CATEGORY =  'NSN Tertiary Category';
+	public static final String PMDSOR_SI_NSN_FINANCE_REPORTING_STRUCTURE =  'NSN Finance Reporting Structure';
+	public static final String PMDSOR_PCI_VALID_SI_RELATION_INFO_RELTYPE =  'EBOM';
+	public static final String PMDSOR_PCI_VALID_RELATION_INFO_RELTYPE =  'Classified Item';
+	public static final String PMDSOR_PCI_VALID_RELATION_INFO_PARENTTYPE =  'Part Family';
+	public static final String PMDSOR_PCI_VALID_RELATION_INFO_PARENTNAME =  'Portfolio Element';
+	public static final string CLASS_NAME_Batch_PMDSoRToStagingDataLoad = 'Batch_PMDSoRToStagingDataLoad';
+	public static final string CLASS_NAME_Batch_PMDSoRStagingDataToProductMaster = 'Batch_PMDSoRStagingDataToProductMaster';
+	public static final string PMDSOR_STAGING_TO_PRODUCT_JOB_NAME = 'PMDSoRStaging To Product Master Data Job';
+	public static final string PMDSOR_NOTIFICATION_SUBJECT = 'PMDSOR QTC Surround Attributes Automation Status';
+	public static final Integer PMDSOR_PCI_RELATIONINFO_MAXSIZE = 1000;
 }

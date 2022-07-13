@@ -1,4 +1,4 @@
-@isTest 
+@isTest
 public without sharing class CreateOfferApexCtlrTest {
 
 	static testmethod void getOpptyTest()
@@ -9,24 +9,24 @@ public without sharing class CreateOfferApexCtlrTest {
 			Account accountCreation = TestDataFactory.createAccount(1)[0];
 			insert accountCreation;
 			Opportunity optyCreation = TestDataFactory.OpportunityCreation(1,accountCreation)[0];
+			Test.startTest();
 			insert optyCreation;
 			CreateOfferApexCtlr.getOppty(optyCreation.Id);
 			CreateOfferApexCtlr.getOppty(Null);
 			List<OpportunityTeamMember> opptyTeamMemberList = TestDataFactory.optyTeamMemberCreation(2,userCreation,optyCreation);
 			opptyTeamMemberList[0].OpportunityAccessLevel = GlobalConstants.READ;
 			database.insert(opptyTeamMemberList);
-			Test.startTest();
 			CreateOfferApexCtlr.getOpptyTeam(optyCreation.Id);
 
 			opptyTeamMemberList[0].TeamMemberRole = GlobalConstants.PRICING_MANAGER_OFFER_TEAM_ROLE;
 			opptyTeamMemberList[1].TeamMemberRole = GlobalConstants.PRICING_MANAGER_OFFER_TEAM_ROLE;
 			opptyTeamMemberList[1].Additional_Team_Role__c = GlobalConstants.BID_MANAGER_OFFER_TEAM_ROLE;
 			CreateOfferApexCtlr.getOpptyTeam(optyCreation.Id);
-
+			Test.stopTest();
 			Offer__c offerCreation = TestDataFactory.OfferCreation(1,optyCreation)[0];
 			CreateOfferApexCtlr.saveOffer(offerCreation);
-			CreateOfferApexCtlr.saveOffer(Null);
-			Test.stopTest();
+			//CreateOfferApexCtlr.saveOffer(Null);
+
 		}
 	}
 
@@ -48,12 +48,12 @@ public without sharing class CreateOfferApexCtlrTest {
 			optyCreation.G4_Planned_Date__c = system.today()+3;
 			CreateOfferApexCtlr.saveOppty(optyCreation );
 			try{
-				CreateOfferApexCtlr.saveOppty(null);
-				optyCreation.G4_Planned_Date__c = system.today();
-				CreateOfferApexCtlr.saveOppty(optyCreation);
+	CreateOfferApexCtlr.saveOppty(null);
+	optyCreation.G4_Planned_Date__c = system.today();
+	CreateOfferApexCtlr.saveOppty(optyCreation);
 			}catch(Exception ex){
-				String message = ex.getMessage();
-				system.assert(message.contains('The Gate Planned Date entered is either blank, in the past, precedes the date entered for the previous gate or exceeds the date entered for the following gate.'), 'message=' + message);
+	String message = ex.getMessage();
+	system.assert(message.contains('The Gate Planned Date entered is either blank, in the past, precedes the date entered for the previous gate or exceeds the date entered for the following gate.'), 'message=' + message);
 			}
 		}
 	}
@@ -115,6 +115,8 @@ public without sharing class CreateOfferApexCtlrTest {
 			CreateOfferApexCtlr.getAllTeamMemberRoleMap();
 			CreateOfferApexCtlr.getOpptyTeam(null);
 			Test.StopTest();
+
+
 		}
 	}
 }

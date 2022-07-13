@@ -1,9 +1,9 @@
 /** 
 * About 
 * ----- 
-* @Description	  : Case Handling Lightning Controller Method Routing.
-* @TestClass		: CH_LightningController_Test.
-* @Project		  : Case Handling.
+* @Description	: Case Handling Lightning Controller Method Routing.
+* @TestClass	: CH_LightningController_Test.
+* @Project	  : Case Handling.
 * @Modification Log : 
 *  Created  : 2019 11 18 – tiago.almeida@nokia.com
 * ----- 
@@ -12,10 +12,34 @@ public without sharing class CH_LightningController {
 	private static final string NOKIA_ADMINISTRATOR = 'Nokia Admin Profile';
 	private static final string SYSTEM_ADMINISTRATOR = 'System Administrator';
 	
-	
 	@AuraEnabled
 	public static DateTime getCurrentDateTime(){
 		return System.now();
+	}
+	
+	@AuraEnabled
+	public static Boolean isCommunity(){
+		return Site.getSiteId() != null;
+	}
+	
+	@AuraEnabled
+	public static List<String> getPicklistValues(SObject sfObject, String field) {
+		List<String> result = new List<String>();
+		Map<String, Schema.SObjectField> fieldMap = sfObject.getSObjectType().getDescribe().fields.getMap();
+		if(fieldMap.containsKey(field)) {
+			List<Schema.PicklistEntry> picklistEntries = fieldMap.get(field).getDescribe().getPickListValues();
+			for (Schema.PicklistEntry picklistEntry : picklistEntries) {
+				result.add(picklistEntry.getValue());
+			}
+		}
+		return result;
+	}
+	
+	//R&D Interaction
+	@AuraEnabled
+	public static String getRNDInterface(Id rndId) {
+		List<CH_Problem_RnD_Reference__c> oRNDList = DML_SObject.doQuery('SELECT Id, Name, CH_RnD_Interface__c FROM CH_Problem_RnD_Reference__c WHERE Id = "' + rndId + '" LIMIT 1');
+		return (oRNDList.get(0) != null ? oRNDList.get(0).CH_RnD_Interface__c : 'RnD record not found');
 	}
 	
 	//Accounts
@@ -43,8 +67,8 @@ public without sharing class CH_LightningController {
 	}
 	
 	@AuraEnabled
-	public static List<Asset> getAccountRelatedNetworkElementAssets(Boolean withoutSharing, String accountId, Asset asset, Entitlement entitlement) {
-		return CH_AssetUtils.getAccountRelatedNetworkElementAssets(withoutSharing, accountId, asset, entitlement);
+	public static List<Asset> getAccountRelatedNetworkElementAssets(Boolean withoutSharing, String accountId, Asset asset, Entitlement entitlement, Product2 product) {
+		return CH_AssetUtils.getAccountRelatedNetworkElementAssets(withoutSharing, accountId, asset, entitlement, product);
 	}
 	
 	@AuraEnabled
@@ -55,6 +79,53 @@ public without sharing class CH_LightningController {
 	@AuraEnabled
 	public static Id doAsset(String operationType, Asset oAsset, Boolean withoutSharing) {
 		return CH_AssetUtils.database(operationType, oAsset, withoutSharing);
+	}
+	
+	//Attachments
+	
+	@AuraEnabled
+	public static List<CH_Attachment__c> getAttachments(Id caseId) {
+		return CH_AttachmentUtils.getRelated(caseId);
+	}
+	
+	@AuraEnabled
+	public static void markAttachmentsForDelete(Id caseId, List<CH_Attachment__c> oAttachmentList) {
+		CH_AttachmentUtils.markForDelete(caseId, oAttachmentList);
+	}
+	
+	@AuraEnabled
+	public static Boolean updateAttachmentVisibility(List<CH_Attachment__c> oAttachmentList, String visibilityType, Boolean visibilityValue) {
+		return CH_AttachmentUtils.updateVisibility(oAttachmentList, visibilityType, visibilityValue);
+	}
+	
+	@AuraEnabled
+	public static Map<String, String> initiateAttachmentsUpload(Id caseId, Map<String, Object> file) {
+		return CH_AttachmentUtils.initiateUpload(caseId, file);
+	}
+	
+	@AuraEnabled
+	public static Map<String, String> parseAttachmentResponse(String response) {
+		return CH_AttachmentUtils.parseResponse(response);
+	}
+	
+	@AuraEnabled
+	public static String completeAttachmentUpload(Id caseId, Map<String, Object> file, Map<String, String> initialMap, Map<String, String> partToETagMap, String uploadId, String s3KeyNameInUTF8, Boolean isFromEmail) {
+		return CH_AttachmentUtils.completeUpload(caseId, file, initialMap, partToETagMap, uploadId, s3KeyNameInUTF8, isFromEmail);
+	}
+	
+	@AuraEnabled
+	public static List<CAPS_Attachments_Download.CAPS_DownloadResponseWrapper> downloadAttachments(List<CH_Attachment__c> oAttachmentList) {
+		return CH_AttachmentUtils.download(oAttachmentList);
+	}
+	
+	@AuraEnabled
+	public static Map<String, Object> getUserAttachmentActionsAuthorization(Id caseId, Boolean forUpload) {
+		return CH_AttachmentUtils.getUserActionsAuthorization(caseId, forUpload);
+	}
+	
+	@AuraEnabled
+	public static String shareAttachmentWithRND(Id caseId, String interfaceName, String subject, String combinedDescription, String comments, List<CH_Attachment__c> oAttachmentList) {
+		return CH_AttachmentUtils.shareWithRND(caseId, interfaceName, subject, combinedDescription, comments, oAttachmentList);
 	}
 	
 	//Business Hours
@@ -91,8 +162,49 @@ public without sharing class CH_LightningController {
 	
 	@AuraEnabled
 	public static Id doCase(String operationType, Case oCase, Boolean withoutSharing) {
-		system.debug('doCase --');
+		if(oCase.AccountId!=null){ //NOKIASC-38892
+			Account ac=[Select id,AccountNumber from Account where Id=:oCase.AccountId];
+			Boolean IsMegafoneAcc = getInterfaceMappingTableForLegalEntity(ac.AccountNumber);
+			//getInterfaceMappingTableForLegalEntity(oCase.A)
+			if(IsMegafoneAcc && oCase.Severity__c== 'Critical' && (oCase.Origin == 'Phone' || oCase.Origin == 'Email')){
+				oCase.Origin = 'S2S';
+				oCase.CH_CaseOriginSystem__c='megafon';
+			}
+			System.debug('Case data is oCase.CH_CaseOriginSystem__c'+oCase.CH_CaseOriginSystem__c+'oCase.Origin '+oCase.Origin);
+		}
 		return CH_CaseUtils.database(operationType, oCase, withoutSharing);
+	}
+	
+	@AuraEnabled
+	public static Boolean getInterfaceMappingTableForLegalEntity (String accountNumber) {
+		List<CH_Case_PA_InterfaceMapping__c> oInterfaceMappingList = DML_SObject.doQuery(
+			'SELECT AccountOut__c, CaseOriginSystem__c FROM CH_Case_PA_InterfaceMapping__c ' +
+			'WHERE CaseOriginSystem__c = "megafon" AND AccountOut__c = "' + accountNumber + '" '
+		);
+		if(!oInterfaceMappingList.isEmpty()) {
+			return true;
+		}
+		return false;
+	}
+	
+	@AuraEnabled
+	public static Boolean isCaseOwnerOrTeamMember(Id caseId, Id userId) {
+		return CH_CaseUtils.isOwnerOrTeamMember(caseId, userId);
+	}
+	
+	/****************************************
+* Name : getCaseDeatils
+* Description : to get and return case details
+* written on 14th Jun 2021
+* By Satya Pagadala
+* NOKIASC-36145
+*****************************************/
+	@AuraEnabled
+	public static String getCaseInfoString(Id caseId) {
+		Map<String, Object> obj = new Map<String, Object>();
+		obj.put('baseUrl',system.URL.getSalesforceBaseUrl().toExternalForm());
+		obj.put('case',caseId !=null?CH_CaseUtils.getCaseData(caseId):null);
+		return JSON.Serialize(obj);
 	}
 	
 	//Case Tag
@@ -139,6 +251,26 @@ public without sharing class CH_LightningController {
 	public static Boolean contactIsInternalAuthorized(Id contactId) {
 		return CH_ContactUtils.contactIsInternalAuthorized(contactId);
 	}
+	
+	//Retrieve service contract with the given Id and return retrofit contract or not
+	//NOKIASC - 37083
+	@AuraEnabled
+	public static boolean getServiceContractRetrofit(Id oContractId) {
+		ServiceContract sC = [select Id, HWS_Retrofit_Type__c from ServiceContract where Id =:oContractId];
+		if(sC != null && String.isNotBlank(sC.HWS_Retrofit_Type__c)){
+			return true;
+		}
+		return false;
+	}
+	//Return employee type
+	//NOKIASC - 37083  
+	@AuraEnabled
+	public static List<String> getEmployeeType() {
+		List<HWS_GenericSettings__c> genericSetting = [select HWS_Field1__c  from HWS_GenericSettings__c where Name = 'HWS_AllowAuthContactAddition'];
+		String empType = genericSetting.get(0).HWS_Field1__c;
+		return empType.split(',');
+	}
+	
 	
 	@AuraEnabled
 	public static List<SObject> searchContacts(Id oContractId, String contactGlobalSearch, String contactId, String email, String accountName) {
@@ -248,6 +380,20 @@ public without sharing class CH_LightningController {
 		return result;
 	}
 	
+	//Log Collection
+	
+	@AuraEnabled
+	public static List<CH_ProductLogType__c> getCaseProductLogType(String caseId) {
+		Case oCase = CH_CaseUtils.getCase(caseId);
+		List<CH_AutomatedLogCollection__c> oAutomatedLogCollectionList = [SELECT Id, CH_AccountName__c, CH_AccountName__r.Id, CH_Product__c, CH_Product__r.Id FROM CH_AutomatedLogCollection__c WHERE CH_Status__c = TRUE AND CH_AccountName__r.Id = :oCase.AccountId AND CH_Product__r.Id = :oCase.ProductId];
+		if(!oAutomatedLogCollectionList.isEmpty()){   
+			return [SELECT CH_Product__c, CH_ProductFamily__c, CH_LogType__c, CH_AutoLogCollection__c, CH_Status__c, CH_Category__c, CH_CollectorLogType__c,Id
+					FROM CH_ProductLogType__c WHERE CH_Product__r.Id = :oCase.ProductId AND CH_Status__c = TRUE AND CH_AutoLogCollection__c = FALSE
+				   ];
+		}
+		else { return null; }
+	}
+	
 	//Knowledge__kav
 	//NOKIASC-33498-Get Article data using SOSL
 	@AuraEnabled
@@ -256,13 +402,40 @@ public without sharing class CH_LightningController {
 		final String validationStatus = 'External Approved';
 		CH_Settings__c articleLimitSettings = CH_Settings__c.getValues('CH_ArticleLimit_Portal');
 		final Integer articleLimit= Integer.valueOf(articleLimitSettings.SettingValue__c);
-	   
+		
 		String soslQuery ='FIND \'' + searchText + '\' IN ALL FIELDS returning Knowledge__kav ';
 		soslQuery = soslQuery +' (Id, ArticleNumber, UrlName, Title, LastModifiedDate, CH_KB_Products__c, Description__c, CH_PurposeRequired__c,';
 		soslQuery = soslQuery +' CH_InformationForInternalAudiences__c,CH_QuestionOrProductDescription__c, CH_AnswerOrResolution__c, CH_ProblemDescriptionRequired__c ';
 		soslQuery = soslQuery +' WHERE ValidationStatus =:validationStatus AND PublishStatus = :publishStatus ORDER BY LastModifiedDate DESC ) LIMIT:articleLimit';
 		List < List < sObject >> sResults = search.query(soslQuery);
-		return sResults;	  
+		return sResults;	
+	}
+	
+	//NDA
+	
+	@AuraEnabled
+	public static void sendCaseInfoToNDA(Id caseId, String ndaKey) {
+		//Chatter Post
+		String link = System.Label.NDAURL;
+		link = link.replace(link.split('^https?://[^/]+')[1], '');
+		String ndaConversation = link + '/conversation/' + ndaKey;
+		DML_SObject.doInsert(new FeedItem(
+			ParentId = caseId,
+			Type = 'TextPost',
+			Body = '<p>Ticket Created with NDA (Nokia Digital Assistant) Support.</p><p> </p>' +
+			'<p>You can see the conversation history with the previous investigation by <a href="' + ndaConversation + '" alt="' + ndaConversation + '" target="_blank">clicking here</a>.</p><p> </p>'+
+			'<p>Do you know that you can use NDA to help you with your investigation? <a href="' + link + '" alt="' + link + '" target="_blank">Try it</a>!</p>',
+			IsRichText = true,
+			Visibility = 'AllUsers'
+		), true, true);
+		//NDA API Call
+		User oUser = [SELECT Id, FederationIdentifier, Nokia_ID__c FROM User WHERE Id = :UserInfo.getUserId()];
+		CH_NEAMessageDigiMop.sendCaseToNDA(ndaKey, CH_CaseUtils.getCase(caseId), oUser.FederationIdentifier != null ? oUser.FederationIdentifier : oUser.Nokia_ID__c);
+	}
+	
+	@AuraEnabled
+	public static String sendlogCollectionRequesttoNDA(Id caseId, SObject selectedNEA, String manualNEA, List<CH_ProductLogType__c> selectedLogs) {
+		return CH_NEAMessageDigiMop.sendOneTouchLogInformation(caseId, selectedNEA, manualNEA, selectedLogs);
 	}
 	
 	//Products
@@ -275,6 +448,11 @@ public without sharing class CH_LightningController {
 	@AuraEnabled
 	public static List<sObject> searchProductRelated(String target, Map<String,String> source) {
 		return CH_ProductUtils.searchProductRelated(target, source);
+	}
+	
+	@AuraEnabled
+	public static List<Map<String, Object>> getProductRelated(String objectName, String recordId, String type) {
+		return CH_ProductUtils.getProductRelated(objectName, recordId, type);
 	}
 	
 	//Security
@@ -301,8 +479,13 @@ public without sharing class CH_LightningController {
 			new List<String>(Label.CH_AuthorizedContactsAccess.replaceAll('\\s','').split(',')), false
 		);
 		if(!result) {
-			List<ServiceContract> oServiceContractList = DML_SObject.doQuery('SELECT Id FROM ServiceContract WHERE Id = "' + recordId + '" AND ownerId = "' + UserInfo.getUserId() + '"  LIMIT 1');
+			List<ServiceContract> oServiceContractList = DML_SObject.doQuery('SELECT Id, ownerID FROM ServiceContract WHERE Id = "' + recordId + '" AND ownerId = "' + UserInfo.getUserId() + '" LIMIT 1');
 			result = !oServiceContractList.isEmpty() && CH_SecurityUtils.checkUserPermissions(UserInfo.getUserId(), new List<String>{}, new List<String>{'CH_CustomerCareManager'}, false);
+			for(ServiceContract oServiceContract : oServiceContractList){
+				if(oServiceContract.OwnerId == userinfo.getUserId()){
+					result = true;
+				}
+			}
 		}
 		return result;
 	}
@@ -360,5 +543,34 @@ public without sharing class CH_LightningController {
 	@AuraEnabled
 	public static void getPortalRoutingCases(Id caseId) {
 		CH_Portal_Case_TriggerHandler.assignOwner(new Set<Id>{caseId});
+	}
+	
+	//User
+	
+	@AuraEnabled
+	public static Boolean getUserPermission() {
+		Boolean hasAccess = false;
+		List<User> oUserList = DML_SObject.doQuery('SELECT Id, Username, Email FROM User WHERE UserRole.Name != "GWC" AND Profile.Name != "CH_Agent" AND Id = "' + UserInfo.getUserId() + '"  LIMIT 1');
+		hasAccess = !oUserList.isEmpty();
+		
+		return hasAccess;
+	}
+	
+	/****************************************
+* Name : getTimezones
+* Description : to get and returns timezone picklist Entry
+* written on 9th Jun 2021
+* By Satya Pagadala
+* NOKIASC-36145
+*****************************************/
+	@AuraEnabled
+	public static String getTimezones() {
+		Schema.DescribeFieldResult fieldResult =User.TimeZoneSidKey.getDescribe();
+		List<Schema.PicklistEntry> PkListEntry = fieldResult.getPicklistValues();
+		return json.serialize(PkListEntry);
+	}
+	@AuraEnabled
+	public static List<CaseMilestone> getMilestoneDetails(String caseId) {
+		return CH_CaseUtils.getMilestoneDetails(caseId);
 	}
 }

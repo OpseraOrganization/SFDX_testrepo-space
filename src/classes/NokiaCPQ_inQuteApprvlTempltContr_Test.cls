@@ -2,11 +2,11 @@
 public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 
 	  public static testMethod void Testmethod1(){
-		 List<User> sysAdminUser = NOKIA_CPQ_TestDataFactory.userCreation(1,'System Administrator');
+		 List<User> sysAdminUser = NOKIA_CPQ_TestDataFactory.userCreation(1,'Data Loader Profile');
 		 System.runAs(sysAdminUser[0]){
 			List <Account> account = NOKIA_CPQ_TestDataFactory.getAccounts(2);
-			account[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Customer').getRecordTypeId();
-			account[1].RecordTypeId=Schema.SObjectType.Account.getRecordTypeInfosByName().get('Legal Entity').getRecordTypeId();
+			account[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
+			account[1].RecordTypeId=Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 			account[1].Partner_Type__c = '';
 			account[1].Partner_Program__c = '';
 			insert account;
@@ -14,7 +14,7 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			product2 prod = new product2();
 			prod.name = 'A';
 			prod.CurrencyIsoCode = 'EUR';
-			prod.Business_Group__c='ION';
+			prod.Business_Group__c='MN';
 			prod.Family= 'A&A-CEM';
 			prod.IsActive=True;
 			prod.Partner_Visible__c=True;
@@ -28,7 +28,7 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			product2 prod1 = new product2();
 			prod1.name = 'A2';
 			prod1.CurrencyIsoCode = 'EUR';
-			prod1.Business_Group__c='FN';
+			prod1.Business_Group__c='MN';
 			prod1.Family= 'A&A-CEM';
 			prod1.IsActive=True;
 			prod1.Partner_Visible__c=True;
@@ -40,19 +40,19 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			insert prod1;
 			
 			Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c='Product',
-										Accreditation_Date__c = date.today(),
-										Accreditation_Level__c='Advanced',
-										Partner__c=account[0].Id,
-										Portfolio__c='IP Routing',
-										Pricing_Cluster__c='NAM');
+				Accreditation_Date__c = date.today(),
+				Accreditation_Level__c='Advanced',
+				Partner__c=account[0].Id,
+				Portfolio__c='IP Routing',
+				Pricing_Cluster__c='NAM');
 			insert accreditation1;
 			
 			Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c='Product',
-										Accreditation_Date__c = date.today(),
-										Accreditation_Level__c='Advanced',
-										Partner__c=account[0].Id,
-										Portfolio__c='Fixed Access - FBA',
-										Pricing_Cluster__c='NAM');
+				Accreditation_Date__c = date.today(),
+				Accreditation_Level__c='Advanced',
+				Partner__c=account[0].Id,
+				Portfolio__c='Fixed Access - FBA',
+				Pricing_Cluster__c='NAM');
 			insert accreditation2;
 			
 			List<Accreditation__c> maccreditations = NOKIA_CPQ_TestDataFactory.createAccreditation(1);
@@ -62,11 +62,13 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			maccreditations[0].Pricing_Level_Override__c = 'Premium';   
 			insert maccreditations;
 			
-			test.startTest();
+			//test.startTest();
 			
 			List <Opportunity> opportunities = NOKIA_CPQ_TestDataFactory.getOpportunities(1,account);
-			opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Indirect Sales Opportunity').getRecordTypeId();
+			opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_Record_Type).getRecordTypeId(); 
 			opportunities[0].End_Customer_LE__c = account[1].id;
+			opportunities[0].Account_Role__c = 'GPP Distributor Partner';
+			opportunities[0].CurrencyIsoCode = 'EUR';
 			insert opportunities;
 			
 			/*List<OpportunityTeamMember> opportunityTeamMemberList = new List<OpportunityTeamMember>();
@@ -81,9 +83,9 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			priceList.Apttus_Config2__Type__c='Standard';
 		
 			insert priceList;
-			
+			test.startTest();
 			Apttus_Proposal__Proposal__c testProposal = new Apttus_Proposal__Proposal__c(
-			RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Draft Quote').getRecordTypeId(),
+			RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('NokiaCPQ_Draft_Quote').getRecordTypeId(),
 			Apttus_Proposal__Account__c = account[0].Id,
 			Apttus_Proposal__Opportunity__c = opportunities.get(0).Id,
 			Apttus_QPConfig__PriceListId__c = priceList.Id,
@@ -98,14 +100,14 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			NokiaCPQ_ION_Maintenance_Type__c='',
 			NokiaCPQ_SSP_Level__c='',
 			NokiaCPQ_Portfolio__c = 'IP Routing',
-			NokiaProductAccreditation__c = accreditation1.id,
-			NokiaCPQ_Maintenance_Accreditation__c = maccreditations[0].id,
+			//NokiaProductAccreditation__c = accreditation1.id,
+			//NokiaCPQ_Maintenance_Accreditation__c = maccreditations[0].id,
 			Maintenance_Y1__c = 200,
 			Maintenance_Y2__c = 200,
 			SRS__c  = 200,
 			SSP__c = 200,
 			NokiaCPQ_Maintenance_Type__c ='');
-	   
+	
 			insert testProposal;
 			
 			Apttus_Config2__ProductConfiguration__c ProdConfig = new Apttus_Config2__ProductConfiguration__c();
@@ -160,11 +162,11 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 	  }
 	  
 	  public static testMethod void Testmethod2(){
-		 List<User> sysAdminUser = NOKIA_CPQ_TestDataFactory.userCreation(1,'System Administrator');
+		 List<User> sysAdminUser = NOKIA_CPQ_TestDataFactory.userCreation(1,'Data Loader Profile');
 		 System.runAs(sysAdminUser[0]){
 			List <Account> account = NOKIA_CPQ_TestDataFactory.getAccounts(2);
-			account[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Customer').getRecordTypeId();
-			account[1].RecordTypeId=Schema.SObjectType.Account.getRecordTypeInfosByName().get('Legal Entity').getRecordTypeId();
+			account[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
+			account[1].RecordTypeId=Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 			account[1].Partner_Type__c = '';
 			account[1].Partner_Program__c = '';
 			insert account;
@@ -172,7 +174,7 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			product2 prod = new product2();
 			prod.name = 'A';
 			prod.CurrencyIsoCode = 'EUR';
-			prod.Business_Group__c='ION';
+			prod.Business_Group__c='MN';
 			prod.Family= 'A&A-CEM';
 			prod.IsActive=True;
 			prod.Partner_Visible__c=True;
@@ -186,7 +188,7 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			product2 prod1 = new product2();
 			prod1.name = 'A2';
 			prod1.CurrencyIsoCode = 'EUR';
-			prod1.Business_Group__c='FN';
+			prod1.Business_Group__c='MN';
 			prod1.Family= 'A&A-CEM';
 			prod1.IsActive=True;
 			prod1.Partner_Visible__c=True;
@@ -198,19 +200,19 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			insert prod1;
 			
 			Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c='Product',
-										Accreditation_Date__c = date.today(),
-										Accreditation_Level__c='Advanced',
-										Partner__c=account[0].Id,
-										Portfolio__c='IP Routing',
-										Pricing_Cluster__c='NAM');
+				Accreditation_Date__c = date.today(),
+				Accreditation_Level__c='Advanced',
+				Partner__c=account[0].Id,
+				Portfolio__c='IP Routing',
+				Pricing_Cluster__c='NAM');
 			insert accreditation1;
 			
 			Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c='Product',
-										Accreditation_Date__c = date.today(),
-										Accreditation_Level__c='Advanced',
-										Partner__c=account[0].Id,
-										Portfolio__c='Fixed Access - FBA',
-										Pricing_Cluster__c='NAM');
+				Accreditation_Date__c = date.today(),
+				Accreditation_Level__c='Advanced',
+				Partner__c=account[0].Id,
+				Portfolio__c='Fixed Access - FBA',
+				Pricing_Cluster__c='NAM');
 			insert accreditation2;
 			
 			List<Accreditation__c> maccreditations = NOKIA_CPQ_TestDataFactory.createAccreditation(1);
@@ -223,8 +225,11 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			test.startTest();
 			
 			List <Opportunity> opportunities = NOKIA_CPQ_TestDataFactory.getOpportunities(1,account);
-			opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Indirect Sales Opportunity').getRecordTypeId();
+			opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Indirect_Record_Type').getRecordTypeId();
 			opportunities[0].End_Customer_LE__c = account[1].id;
+			opportunities[0].Account_Role__c = 'GPP Distributor Partner';
+			opportunities[0].CurrencyIsoCode = 'EUR';
+			
 			insert opportunities;
 			
 			/*List<OpportunityTeamMember> opportunityTeamMemberList = new List<OpportunityTeamMember>();
@@ -241,7 +246,7 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			insert priceList;
 			
 			Apttus_Proposal__Proposal__c testProposal = new Apttus_Proposal__Proposal__c(
-			RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Draft Quote').getRecordTypeId(),
+			RecordTypeId =  Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('NokiaCPQ_Draft_Quote').getRecordTypeId(),
 			Apttus_Proposal__Account__c = account[0].Id,
 			Apttus_Proposal__Opportunity__c = opportunities.get(0).Id,
 			Apttus_QPConfig__PriceListId__c = priceList.Id,
@@ -256,12 +261,12 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			NokiaCPQ_ION_Maintenance_Type__c='',
 			NokiaCPQ_SSP_Level__c='',
 			NokiaCPQ_Portfolio__c = 'IP Routing',
-			NokiaProductAccreditation__c = accreditation1.id,
-			NokiaCPQ_Maintenance_Accreditation__c = maccreditations[0].id,
+			//NokiaProductAccreditation__c = accreditation1.id,
+			//NokiaCPQ_Maintenance_Accreditation__c = maccreditations[0].id,
 			NokiaCPQ_LEO_Discount__c = true,
 			NokiaCPQ_has_Partner_Certified__c = true,
 			NokiaCPQ_Maintenance_Type__c ='');
-	   
+	
 			insert testProposal;
 			
 			Apttus_Config2__ProductConfiguration__c ProdConfig = new Apttus_Config2__ProductConfiguration__c();
@@ -315,12 +320,12 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 		 }
 	  }
 	  
-	   public static testMethod void Testmethod3(){
-		 List<User> sysAdminUser = NOKIA_CPQ_TestDataFactory.userCreation(1,'System Administrator');
+	public static testMethod void Testmethod3(){
+		 List<User> sysAdminUser = NOKIA_CPQ_TestDataFactory.userCreation(1,'Data Loader Profile');
 		 System.runAs(sysAdminUser[0]){
 			List <Account> account = NOKIA_CPQ_TestDataFactory.getAccounts(2);
-			account[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('Customer').getRecordTypeId();
-			account[1].RecordTypeId=Schema.SObjectType.Account.getRecordTypeInfosByName().get('Legal Entity').getRecordTypeId();
+			account[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
+			account[1].RecordTypeId=Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 			account[1].Partner_Type__c = '';
 			account[1].Partner_Program__c = '';
 			insert account;
@@ -328,7 +333,7 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			product2 prod = new product2();
 			prod.name = 'A';
 			prod.CurrencyIsoCode = 'EUR';
-			prod.Business_Group__c='ION';
+			prod.Business_Group__c='MN';
 			prod.Family= 'A&A-CEM';
 			prod.IsActive=True;
 			prod.Partner_Visible__c=True;
@@ -342,7 +347,7 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			product2 prod1 = new product2();
 			prod1.name = 'A2';
 			prod1.CurrencyIsoCode = 'EUR';
-			prod1.Business_Group__c='FN';
+			prod1.Business_Group__c='MN';
 			prod1.Family= 'A&A-CEM';
 			prod1.IsActive=True;
 			prod1.Partner_Visible__c=True;
@@ -354,19 +359,19 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			insert prod1;
 			
 			Accreditation__c accreditation1 = new Accreditation__c(Accreditation_Type__c='Product',
-										Accreditation_Date__c = date.today(),
-										Accreditation_Level__c='Advanced',
-										Partner__c=account[0].Id,
-										Portfolio__c='IP Routing',
-										Pricing_Cluster__c='NAM');
+				Accreditation_Date__c = date.today(),
+				Accreditation_Level__c='Advanced',
+				Partner__c=account[0].Id,
+				Portfolio__c='IP Routing',
+				Pricing_Cluster__c='NAM');
 			insert accreditation1;
 			
 			Accreditation__c accreditation2 = new Accreditation__c(Accreditation_Type__c='Product',
-										Accreditation_Date__c = date.today(),
-										Accreditation_Level__c='Advanced',
-										Partner__c=account[0].Id,
-										Portfolio__c='Fixed Access - FBA',
-										Pricing_Cluster__c='NAM');
+				Accreditation_Date__c = date.today(),
+				Accreditation_Level__c='Advanced',
+				Partner__c=account[0].Id,
+				Portfolio__c='Fixed Access - FBA',
+				Pricing_Cluster__c='NAM');
 			insert accreditation2;
 			
 			List<Accreditation__c> maccreditations = NOKIA_CPQ_TestDataFactory.createAccreditation(1);
@@ -379,8 +384,10 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			test.startTest();
 			
 			List <Opportunity> opportunities = NOKIA_CPQ_TestDataFactory.getOpportunities(1,account);
-			opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByName().get('Create Indirect Sales Opportunity').getRecordTypeId();
+			opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_Record_Type).getRecordTypeId(); 
 			opportunities[0].End_Customer_LE__c = account[1].id;
+			opportunities[0].Account_Role__c = 'GPP Distributor Partner';
+			opportunities[0].CurrencyIsoCode = 'EUR';
 			insert opportunities;
 			
 			/*List<OpportunityTeamMember> opportunityTeamMemberList = new List<OpportunityTeamMember>();
@@ -397,7 +404,7 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			insert priceList;
 			
 			Apttus_Proposal__Proposal__c testProposal = new Apttus_Proposal__Proposal__c(
-			RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByName().get('Draft Quote').getRecordTypeId(),
+			RecordTypeId = Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('NokiaCPQ_Draft_Quote').getRecordTypeId(),
 			Apttus_Proposal__Account__c = account[0].Id,
 			Apttus_Proposal__Opportunity__c = opportunities.get(0).Id,
 			Apttus_QPConfig__PriceListId__c = priceList.Id,
@@ -412,11 +419,11 @@ public class NokiaCPQ_inQuteApprvlTempltContr_Test{
 			NokiaCPQ_ION_Maintenance_Type__c='',
 			NokiaCPQ_SSP_Level__c='',
 			NokiaCPQ_Portfolio__c = 'IP Routing',
-			NokiaProductAccreditation__c = accreditation1.id,
-			NokiaCPQ_Maintenance_Accreditation__c = maccreditations[0].id,
+			//NokiaProductAccreditation__c = accreditation1.id,
+			//NokiaCPQ_Maintenance_Accreditation__c = maccreditations[0].id,
 			NokiaCPQ_CAD__c = 500,
 			NokiaCPQ_Maintenance_Type__c ='');
-	   
+	
 			insert testProposal;
 			
 			Apttus_Config2__ProductConfiguration__c ProdConfig = new Apttus_Config2__ProductConfiguration__c();

@@ -1,11 +1,11 @@
 /** 
 * About 
 * ----- 
-* @Description	  : Case Handling Lightning Controller Test Class.
-* @Project		  : Case Handling.
+* @Description	: Case Handling Lightning Controller Test Class.
+* @Project	  : Case Handling. 
 * @Modification Log : 
 *  Created  : 2020 02 06 – tiago.almeida@nokia.com
-* ----- 
+* -----
 **/
 @isTest
 private class CH_LightningController_Test {
@@ -13,6 +13,8 @@ private class CH_LightningController_Test {
 		test.startTest();
 		//SystemTime
 		CH_LightningController.getCurrentDateTime();
+		CH_LightningController.isCommunity();
+		CH_LightningController.getPicklistValues(new Case(), 'Type');
 		//Accounts
 		CH_LightningController.getContactAuthorizedLegalEntities(false, null, false);
 		CH_LightningController.searchLegalEntities(null, null, null);
@@ -21,12 +23,36 @@ private class CH_LightningController_Test {
 		} catch(Exception e) { /* Do Nothing */ } 
 		//Assets
 		CH_LightningController.getContactAuthorizedAssets(false, null, null, null, null, false);
-		CH_LightningController.getAccountRelatedNetworkElementAssets(false, null, null, null);
+		CH_LightningController.getAccountRelatedNetworkElementAssets(false, null, null, null, null);
 		try {
 			CH_LightningController.doAsset(null, null, false);
 		} catch(Exception e) { /* Do Nothing */ } 
 		try {
 			CH_LightningController.getAsset(null);
+		} catch(Exception e) { /* Do Nothing */ } 
+		//Attachments
+		try{
+			CH_LightningController.getAttachments(null);
+		}catch(Exception e) { /* Do Nothing */ }
+		try{
+			CH_LightningController.markAttachmentsForDelete(null, null);
+		}catch(Exception e) { /* Do Nothing */ }
+		CH_LightningController.downloadAttachments(null);
+		CH_LightningController.updateAttachmentVisibility(null, null, null);
+		try {
+			CH_LightningController.getUserAttachmentActionsAuthorization(null, false);
+		} catch(Exception e) { /* Do Nothing */ } 
+		try {
+			CH_LightningController.initiateAttachmentsUpload(null, null);
+		} catch(Exception e) { /* Do Nothing */ } 
+		try {
+			CH_LightningController.parseAttachmentResponse(null);
+		} catch(Exception e) { /* Do Nothing */ } 
+		try {
+			CH_LightningController.completeAttachmentUpload(null, null, null, null, null, null, null);
+		} catch(Exception e) { /* Do Nothing */ } 
+		try {
+			CH_LightningController.shareAttachmentWithRND(null, null, null, null, null, null);
 		} catch(Exception e) { /* Do Nothing */ } 
 		//Business Hours
 		try {
@@ -107,12 +133,16 @@ private class CH_LightningController_Test {
 		try {
 			CH_LightningController.submitFIRAnswers(null);
 		} catch(Exception e) { /* Do Nothing */ }
-		//Location	
+		//Location  
 		try {
 			CH_LightningController.getTimeZone(null, null, null, null, null); 
-		} catch(Exception e) { /* Do Nothing */ }		
+		} catch(Exception e) { /* Do Nothing */ }	
 		try {
 			CH_LightningController.countryIsMultiTimezone(null);
+		} catch(Exception e) { /* Do Nothing */ }
+		//Log Request
+		try {
+			CH_LightningController.getCaseProductLogType(null); 
 		} catch(Exception e) { /* Do Nothing */ }
 		//Knowledge__kav
 		CH_Settings__c setting = new CH_Settings__c();
@@ -121,10 +151,17 @@ private class CH_LightningController_Test {
 		setting.Name = 'CH_ArticleLimit_Portal';
 		insert setting;
 		CH_LightningController.getArticles(false,'te');
+		//NDA
+		try {
+			CH_LightningController.sendCaseInfoToNDA(null, null);
+		} catch(Exception e) { /* Do Nothing */ }
 		//Products
 		CH_LightningController.searchProducts(null);
 		try {
 			CH_LightningController.searchProductRelated(null, null);
+		} catch(Exception e) { /* Do Nothing */ }
+		try {
+			CH_LightningController.getProductRelated(null, null, null);
 		} catch(Exception e) { /* Do Nothing */ }
 		//Security
 		CH_LightningController.permissionToChangeServiceType();
@@ -145,6 +182,20 @@ private class CH_LightningController_Test {
 		//Report
 		try {
 			CH_LightningController.getReportFromDevName('Test');
+		} catch(Exception e) { /* Do Nothing */ }
+		CH_LightningController.getTimezones();
+		CH_LightningController.getCaseInfoString(null);
+		//Callout  
+		try {
+			CH_LightningController.sendlogCollectionRequesttoNDA(null, null,null,null); 
+		} catch(Exception e) { /* Do Nothing */ } 
+		//Retrieve EmployeeType
+		try {
+			CH_LightningController.getEmployeeType(); 
+		} catch(Exception e) { /* Do Nothing */ }
+		//Search for retrofitcontract
+		try {
+			CH_LightningController.getServiceContractRetrofit(null); 
 		} catch(Exception e) { /* Do Nothing */ }
 		test.stopTest();
 	}

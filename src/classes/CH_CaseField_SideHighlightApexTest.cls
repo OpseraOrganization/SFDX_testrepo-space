@@ -1,12 +1,11 @@
-@IsTest
-public class CH_CaseField_SideHighlightApexTest 
+@IsTest 
+public class CH_CaseField_SideHighlightApexTest
 {
-
 	public static final String casesubject = 'Test call';
 	public static final String casedecription = 'test description';
 	private static void setuptestdata()
 	{  
-		//Creating Custom Setting Data 
+		//Creating Custom Setting Data
 		CH_AccountName__c accauth = new CH_AccountName__c();
 		accauth.CH_InvalidName__c = 'Nokia';
 		accauth.CH_ValidName__c = 'Nokia-OYJ';
@@ -153,6 +152,7 @@ public class CH_CaseField_SideHighlightApexTest
 			CH_CaseField_SideHighlightApex.transferNewProblemDetailsQuery(CreateProductObj.Id);
 			List<string> strlist = new List<string>();
 			CH_CaseField_SideHighlightApex.invokeFromFlowsendCreateAnalysisRndInteraction(strlist);
+			CH_CaseField_SideHighlightApex.hasCaseEditAcess(caseObj.Id,new list<String>());
 			Test.StopTest();
 		}
 	}
@@ -213,9 +213,9 @@ public class CH_CaseField_SideHighlightApexTest
 		Case testCase = CH_UTIL_TEST.getProblem();
 		insert testCase;
 		testCase = [SELECT Id, CH_RDInterface__c, CH_Originating_Incident_Number__c, Subject, CH_CustomerDescription__c, CH_ProblemStatement__c, Severity__c, 
-					CH_AssessedOutage__c, CH_ReportedDate__c, ProductId, CH_Product_Release__c, CH_Problem_Type__c, CH_Pronto_Group__c, CH_Discovered_in__c, 
-					CH_Repeatability__c, Account.AccountNumber, Account.NCP_P20_ID__c, CH_ProductVariant__c
-					FROM Case];
+		CH_AssessedOutage__c, CH_ReportedDate__c, ProductId, CH_Product_Release__c, CH_Problem_Type__c, CH_Pronto_Group__c, CH_Discovered_in__c, 
+		CH_Repeatability__c, Account.AccountNumber, Account.NCP_P20_ID__c, CH_ProductVariant__c
+		FROM Case];
 		
 		Test.startTest();
 		Boolean noValidationErrors = CH_CaseField_SideHighlightApex.transferRndRequiredFieldsCheck(testCase.Id);
@@ -266,13 +266,13 @@ public class CH_CaseField_SideHighlightApexTest
 		System.assertEquals(interfaceName, 'JIRA');  
 		
 		CH_Problem_RnD_Reference__c transferToRndOutboundInteraction = new CH_Problem_RnD_Reference__c(CH_Related_Record__c = testCase.Id, 
-																									   CH_RnD_Type__c = 'Transfer to R&D', 
-																									   CH_RnD_Interface__c = 'PRONTO',
-																									   CH_RnD_Direction__c = 'outbound');
+							CH_RnD_Type__c = 'Transfer to R&D', 
+							CH_RnD_Interface__c = 'PRONTO',
+							CH_RnD_Direction__c = 'outbound');
 		insert transferToRndOutboundInteraction;
 		interfaceName = CH_CaseField_SideHighlightApex.transferRndAccessCheck(testCase.Id);
 		System.assert(String.isEmpty(interfaceName));
-	   
+	
 		CH_CaseField_SideHighlightApex.closeProblemRecord(testCase.Id,'Workaround Provided');
 		CH_CaseField_SideHighlightApex.transferRndFlowFieldsQuery(testCase.Id);
 		CH_CaseField_SideHighlightApex.disablebuttoncheckcreateArticle(testCase.Id);
@@ -283,8 +283,55 @@ public class CH_CaseField_SideHighlightApexTest
 		CH_CaseField_SideHighlightApex.getCaseDetails(testCase.Id);
 		CH_CaseField_SideHighlightApex.validUser(testCase.Id);
 		CH_CaseField_SideHighlightApex.caseOwnerUpdate(testCase.Id);
+		CH_CaseField_SideHighlightApex.isPausedDate(testCase.Id);//Changes added for NOKIASC-35322
+		CH_CaseField_SideHighlightApex.getPrivateFeedRecord(testCase.Id);//Changes added for NOKIASC-24257
+		try{
+		CH_CaseField_SideHighlightApex.updateComment(testCase.Id,'comment');
+		}
+		catch(Exception e){
+			System.assert(e.getMessage()!=null);
+		}
 		string values=CH_CaseField_SideHighlightApex.getArticaleKnownError(testCase.Id);
 		System.assertEquals(values,values);
 		Test.stopTest();
+	}
+	
+	//Changes added for NOKIASC-24257
+	@isTest
+	private static void isAccessEnabledTest() {
+		System.runAs ( new User(Id = UserInfo.getUserId()) ) {
+			setuptestdata();
+			sObject sObj = Schema.getGlobalDescribe().get('case').newSObject() ;
+			sObj =[Select Id From case  Limit 1 ];
+			system.assertNotEquals(sObj, null);
+			CollaborationGroup insertGroupRec = new CollaborationGroup(Name = 'Test1', CollaborationType = 'Private');
+			insert insertGroupRec;
+			
+			Profile prof = [select id from profile where name LIKE '%System%'];
+			
+			User createUserRecord = new User(Alias = 'sd', Email='testmail@testorg.com', 
+			EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US', 
+			LocaleSidKey='en_US', ProfileId = prof.Id, 
+			TimeZoneSidKey='America/Los_Angeles', UserName='testmail@testorg.com');
+			insert createUserRecord;
+			
+			collaborationgroupmember createGroupMemRec = new collaborationgroupmember();
+			createGroupMemRec.CollaborationGroupId = insertGroupRec.Id;
+			createGroupMemRec.MemberId = createUserRecord.Id;
+			createGroupMemRec.CollaborationRole = 'Standard';
+			createGroupMemRec.NotificationFrequency='P';
+			insert createGroupMemRec;
+			CH_PrivateFeed__c createFeedRecord =  new CH_PrivateFeed__c(ch_problem__c=sObj.Id);
+			insert createFeedRecord;
+			//Create Related Feed Item Record
+			FeedItem feedItem = new FeedItem(ParentId = createFeedRecord.Id, Body = 'Test Body');
+			insert feedItem;
+			CH_CaseField_SideHighlightApex.getPrivateFeedRecord(sObj.Id);
+			CH_CaseField_SideHighlightApex.savePrivateFeed(createFeedRecord.Id,'testNotes','testdate',null);//NOKIASC-35878
+			CH_CaseField_SideHighlightApex.createorUpdatePrivateFeedRecord(sObj.Id,'testdates',null);//NOKIASC-35878
+			CH_CaseField_SideHighlightApex.updateProblemRecord(sObj.Id,'testPb',null);//NOKIASC-35878
+			Boolean isAccessEnabled= CH_CaseField_SideHighlightApex.isAccessEnabled(sObj.Id);
+			
+		}
 	}
 }

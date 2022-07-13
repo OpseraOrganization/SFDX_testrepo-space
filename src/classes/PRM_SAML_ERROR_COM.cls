@@ -21,6 +21,7 @@ public without sharing class PRM_SAML_ERROR_COM {
 	public String ErrorDetails { get; set; }
 	public String ErrorMessage { get; set; }
 	private final sObject obj;
+	Public static Boolean IsTrainingUser {get;set;}
 	
 	 /**********************************************************************************************************************
 	* Description: Constructor
@@ -50,6 +51,25 @@ public without sharing class PRM_SAML_ERROR_COM {
 		Interface_Log__c log =  New Interface_Log__c();
 		Map<String, Object> err = (Map<String, Object>) JSON.deserializeUntyped(comment);
 		String federationID = (String) err.get(PRMGlobalConstants.FederationID);
+		Map<String, Object> attributes = (Map<String, Object>) err.get('Attributes');
+		String trainingOnlyvalue='';
+		IsTrainingUser=ErrorDetails.contains('UserDoNotAllowedTrainingPurpose');
+
+	   /* try {
+		if (attributes.containsKey('TrainingOnlyUser'))
+		{
+				IsTrainingUser = true;			   
+		}
+			else{
+				IsTrainingUser = false;
+			}
+		}
+		catch (Exception e){
+			
+		} */
+		system.debug('prm attibuty value'+attributes);
+		system.debug('prm trianigh value'+IsTrainingUser);
+		
 		try {
 			log.name = PRMGlobalConstants.PRM_Partner_FederationID+federationID;  
 			log.Comment__c = comment;

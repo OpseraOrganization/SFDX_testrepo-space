@@ -77,7 +77,7 @@ public class CertificationTriggerHelperPRMTest {
 		Database.insert(AccountMemPSMNew);
 		Database.insert(AccountMemPSMNew2);
 		Database.insert(AccountMemPSM);
-		Database.insert(AccountMemPSM2);
+		//Database.insert(AccountMemPSM2);
 	 
 		AccountMemList.add(AccountMemPRM);
 		AccountMemList.add(AccountMemPSMNew);
@@ -90,7 +90,7 @@ public class CertificationTriggerHelperPRMTest {
 		accmem.Type__c= 'Internal';
 		accmem.Name__c = userPRM.Id;
 		accmem.Account__c = accountCreationPRM.Id;
-		insert accmem;
+		//insert accmem;
 		system.debug('accmem***'+ accmem);
 		AccountMemList.add(accmem);
 	PermissionSetAssignment permassigned = new PermissionSetAssignment();
@@ -206,7 +206,7 @@ public class CertificationTriggerHelperPRMTest {
 		Database.insert(AccountMemPSMNew);
 		Database.insert(AccountMemPSMNew2);
 		Database.insert(AccountMemPSM);
-		Database.insert(AccountMemPSM2);
+		//Database.insert(AccountMemPSM2);
 	 
 		AccountMemList.add(AccountMemPRM);
 		AccountMemList.add(AccountMemPSMNew);
@@ -219,7 +219,7 @@ public class CertificationTriggerHelperPRMTest {
 		accmem.Type__c= 'Internal';
 		accmem.Name__c = userPRM.Id;
 		accmem.Account__c = accountCreationPRM.Id;
-		insert accmem;
+		//insert accmem;
 		system.debug('accmem***'+ accmem);
 		AccountMemList.add(accmem);
 	PermissionSetAssignment permassigned = new PermissionSetAssignment();

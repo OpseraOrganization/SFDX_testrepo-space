@@ -12,137 +12,230 @@ Created: 04 16 2018 – aboukrim@salesforce.com
 -------------
 **/
 public with sharing class AccountContactRelationTriggerHelper {
-	/*
-	* @description	  Check NCP_Entitlement_Relationship__c field update on AccountContactRelation.
-	* @param			Act new Act updated data
-	* @return		 
-	*/
-	public static void companyNameAfterUpadte(Map<Id, AccountContactRelation> Act) {
-		Set<Id> contactIdSet = new Set<Id>();
-		Set<Id> AccountIdSet = new Set<Id>();
-		Map<Id, String> acrIdSet = new Map<Id, String>();
-		Map<Id, String> AccountNameIdSet = new Map<Id, String>();
-		list<User> users = new list<User>();
-		
-		
-		for (Id acrId : Act.keySet()) {
-			if (Act.get(acrId).NCP_Entitlement_Relationship__c == True) {
-				acrIdSet.put(Act.get(acrId).AccountId, Act.get(acrId).ContactId);
-				AccountIdSet.add(Act.get(acrId).AccountId);
-				contactIdSet.add(Act.get(acrId).ContactId);
+	public static void createAccountContactRelationShare(Map<Id, AccountContactRelation> newACRMap) {
+		if(!(System.isFuture() || System.isBatch())){
+			Map<Id, Id> contactIdAccountIdMap = new Map<Id, Id>();
+			ObjectIdUserIdsMappingWrapperClass objectIdUserIdsWrapperInst = new ObjectIdUserIdsMappingWrapperClass();
+			for (AccountContactRelation currentACR : newACRMap.values()) {
+				if (currentACR.NCP_Entitlement_Relationship__c == true) {
+					contactIdAccountIdMap.put(currentACR.ContactId, currentACR.AccountId);
+				}
+			}	
+			objectIdUserIdsWrapperInst = getObjectUserMappingForShare(contactIdAccountIdMap);
+			if (objectIdUserIdsWrapperInst.accountIdUserIdsMap.size() > 0) {
+				AccountShareSync.createAccountShares(objectIdUserIdsWrapperInst.accountIdUserIdsMap);
 			}
-		}
-		
-		for (Account ac : [Select Name From Account Where Id in:AccountIdSet]) {
-			AccountNameIdSet.put(acrIdSet.get(ac.Id), ac.Name);
-		}
-		
-		for (User au : [Select id, ContactId, companyName From User Where contactId in:contactIdSet and isActive = true]) {
-			
-			String companyAccountName = AccountNameIdSet.get(au.ContactId);
-			if (companyAccountName.length() > 80) {
-				au.companyName = companyAccountName.substring(0, 80);
-			} else {
-				au.CompanyName = companyAccountName;
+			if (objectIdUserIdsWrapperInst.scIdUserIdsMap.size() > 0) {
+				ServiceContractShareSync.createServiceContractShares(objectIdUserIdsWrapperInst.scIdUserIdsMap);
 			}
-			
-			//au.companyName = AccountNameIdSet.get(au.ContactId);
-			//au.companyName = AccountNameIdSet.get(au.ContactId).abbreviate(80);
-			users.add(au);
+			if (objectIdUserIdsWrapperInst.aeIdUserIdsMap.size() > 0) {
+				AuthorisedEntitlementShareSync.createAuthorisedEntitlementShares(objectIdUserIdsWrapperInst.aeIdUserIdsMap);
+			}	
 		}
-		update users;
+	}
+
+	@future
+	public static void dmlObjectShare(Set<Id> incomingAccountIds, Id userId, Id contactId, Boolean hasACRNotChanged, Boolean insertRequired, Boolean deleteRequired, Id deletedAccountId, Id parentAccountId){
+		if(parentAccountId != NULL){
+			Contact contactRecord = new Contact(Id = contactId, AccountId = parentAccountId);
+			update contactRecord;
+		}
+		if(insertRequired){//1 ACR has been updated to another ACR
+			Id accountId;
+			for(Id incomingAccountId : incomingAccountIds){
+				accountId = incomingAccountId;
+			}
+			AccountContactRelation acrRecordToBeInserted = new AccountContactRelation(ContactId = contactId, AccountId = accountId, NCP_Entitlement_Relationship__c = true);
+			insert acrRecordToBeInserted;	
+		}
+		if(deleteRequired){
+			List<AccountContactRelation> acrListToBeDeleted = [SELECT Id FROM AccountContactRelation WHERE ContactId = :contactId AND AccountId = :deletedAccountId AND NCP_Entitlement_Relationship__c = true];
+			delete acrListToBeDeleted;
+			dmlOnObjectShareHelper(new Set<Id>{deletedAccountId}, userId, contactId, false, true);
+		}
+		dmlOnObjectShareHelper(incomingAccountIds, userId, contactId, true, false);
 	}
 	
-	
-	public static void createAccountContactRelationShare(Map<Id, AccountContactRelation> newACRMap) {
-		
-		Map<Id, Id> contactAccountRelation = new Map<Id, Id>();
-		for (AccountContactRelation currentACR : newACRMap.values()) {
-			if (currentACR.NCP_Entitlement_Relationship__c == true) {
-				contactAccountRelation.put(currentACR.ContactId, currentACR.AccountId);
+	private static void dmlOnObjectShareHelper(Set<Id> accountIdSet, Id userId, Id contactId, Boolean insertFlag, Boolean deleteFlag){
+		ObjectUserShareWrapperClass objUserShareWrapperInst = new ObjectUserShareWrapperClass();
+		if(insertFlag){
+			objUserShareWrapperInst = getObjectShareRecords(accountIdSet, userId, contactId);
+			if(!((objUserShareWrapperInst.accountShareList).isEmpty())){
+				insert objUserShareWrapperInst.accountShareList;
+			}
+			if(!((objUserShareWrapperInst.serviceContractShareList).isEmpty())){
+				insert objUserShareWrapperInst.serviceContractShareList;
+			}
+			if(!((objUserShareWrapperInst.aeShareList).isEmpty())){
+				insert objUserShareWrapperInst.aeShareList;
 			}
 		}
+		else if(deleteFlag){
+			objUserShareWrapperInst = getObjectShareRecordsForDelete(accountIdSet, userId, contactId);
+			if(!((objUserShareWrapperInst.accountShareList).isEmpty())){
+				delete objUserShareWrapperInst.accountShareList;
+			}
+			if(!((objUserShareWrapperInst.serviceContractShareList).isEmpty())){
+				delete objUserShareWrapperInst.serviceContractShareList;
+			}
+			if(!((objUserShareWrapperInst.aeShareList).isEmpty())){
+				delete objUserShareWrapperInst.aeShareList;
+			}
+		}
+	}
+
+	private static ObjectUserShareWrapperClass getObjectShareRecords(Set<Id> accountIds, Id userId, Id contactId){
+		ObjectUserShareWrapperClass objUserShareWrapperInst = new ObjectUserShareWrapperClass();
 		
+		for(Id accountId : accountIds){
+			objUserShareWrapperInst.accountShareList.add(new AccountShare(AccountId = accountId, UserOrGroupId = userId, AccountAccessLevel = 'Read', OpportunityAccessLevel = 'None'));
+		}		
+		for (NCP_Authorised_Entitlement__c currentAE : [SELECT Id, NCP_Service_Contract__c
+														FROM NCP_Authorised_Entitlement__c
+														WHERE NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE AND 
+														NCP_Account__c IN :accountIds AND
+														NCP_Service_Contract__r.NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE]) {
+			//Add the Service Contract Share from Authorized Entitlements
+			objUserShareWrapperInst.serviceContractShareList.add(ServiceContractShareSync.createNewInstance(currentAE.NCP_Service_Contract__c, userId, 'Read'));
+			//Add the Authorized Entitlement Share from Authorized Entitlements
+			objUserShareWrapperInst.aeShareList.add(AuthorisedEntitlementShareSync.createNewInstance(currentAE.Id, userId, 'Read'));
+		}
+		for (ServiceContract currentSC : [SELECT Id,AccountId
+										  FROM ServiceContract
+										  WHERE NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE AND 
+										  AccountId IN :accountIds]) {
+			objUserShareWrapperInst.serviceContractShareList.add(ServiceContractShareSync.createNewInstance(currentSC.Id, userId, 'Read'));
+		}
+		return objUserShareWrapperInst;
+	}
+
+	private static ObjectUserShareWrapperClass getObjectShareRecordsForDelete(Set<Id> accountIds, Id userId, Id contactId){
+		ObjectUserShareWrapperClass objUserShareWrapperInst = new ObjectUserShareWrapperClass();
+		List<AccountShare> accShareList = [SELECT Id FROM AccountShare WHERE AccountId IN :accountIds AND UserOrGroupId = :userId AND AccountAccessLevel = 'Read' AND OpportunityAccessLevel = 'None'];
+		if(accShareList?.size() > 0) objUserShareWrapperInst.accountShareList = accShareList;
+		Set<Id> scIds = new Set<Id>();
+		Set<Id> aeIds = new Set<Id>();
+		for (NCP_Authorised_Entitlement__c currentAE : [SELECT Id, NCP_Service_Contract__c
+														FROM NCP_Authorised_Entitlement__c
+														WHERE NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE AND 
+														NCP_Account__c IN :accountIds AND
+														NCP_Service_Contract__r.NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE]) {
+			//Add the Service Contract Share from Authorized Entitlements
+			scIds.add(currentAE.NCP_Service_Contract__c);
+			//Add the Authorized Entitlement Share from Authorized Entitlements
+			aeIds.add(currentAE.Id);
+		}
+		for (ServiceContract currentSC : [SELECT Id,AccountId
+										  FROM ServiceContract
+										  WHERE NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE AND 
+										  AccountId IN :accountIds]) {
+			scIds.add(currentSC.Id);
+		}
+		List<ServiceContractShare> scShareList = [SELECT Id FROM ServiceContractShare WHERE ParentId IN :scIds AND UserOrGroupId = :userId AND AccessLevel = 'Read'];
+		if(scShareList?.size() > 0) objUserShareWrapperInst.serviceContractShareList = scShareList;
+		List<NCP_Authorised_Entitlement__Share> aeShareList = [SELECT Id FROM NCP_Authorised_Entitlement__Share WHERE ParentId IN :aeIds AND UserOrGroupId = :userId AND AccessLevel = 'Read'];
+		if(aeShareList?.size() > 0) objUserShareWrapperInst.aeShareList = aeShareList;
+		return objUserShareWrapperInst;
+	}
+
+	private static ObjectIdUserIdsMappingWrapperClass getObjectUserMappingForShare(Map<Id, Id> contactIdAccountIdMap){
+		Map<Id, Set<Id>> accountIdRelatedAccountIdsMap = new Map<Id, Set<Id>>();
+		Set<Id> accountIds = new Set<Id>();
+		Map<Id, Set<Id>> scByAccountIds = new Map<Id, Set<Id>>();
 		Map<Id, Set<Id>> aCRUsers = new Map<Id, Set<Id>>();
 		Map<Id, Set<Id>> scUsers = new Map<Id, Set<Id>>();
 		Map<Id, Set<Id>> aeUsers = new Map<Id, Set<Id>>();
-		system.debug('### AES contactAccountRelation ' + contactAccountRelation);
-		getAccountSharing(contactAccountRelation, aCRUsers, scUsers, aeUsers);
+		ObjectIdUserIdsMappingWrapperClass objectIdUserIdsWrapperInst = new ObjectIdUserIdsMappingWrapperClass();
 		
-		if (aCRUsers.size() > 0) {
-			AccountShareSync.createAccountShares(aCRUsers);
-		}
-		
-		if (scUsers.size() > 0) {
-			ServiceContractShareSync.createServiceContractShares(scUsers);
-		}
-		
-		if (aeUsers.size() > 0) {
-			AuthorisedEntitlementShareSync.createAuthorisedEntitlementShares(aeUsers);
-		}
-	}
-	
-	private static void getAccountSharing(Map<Id, Id> contactAccountRelation, Map<Id, Set<Id>> aCRUsers, Map<Id, Set<Id>> scUsers, Map<Id, Set<Id>> aeUsers) {
-		
-		List<ServiceContract> serviceContracts = [
-			SELECT Id,AccountId
-			FROM ServiceContract
+		List<NCP_Authorised_Entitlement__c> authorisedEntitlements = [
+			SELECT Id,NCP_Account__c, NCP_Service_Contract__c, NCP_Service_Contract__r.AccountId
+			FROM NCP_Authorised_Entitlement__c
 			WHERE NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE
-			AND AccountId IN:contactAccountRelation.values()
+			AND NCP_Account__c IN :contactIdAccountIdMap.values()
 		];
 		
-		Map<Id, Set<Id>> scByAccountIds = new Map<Id, Set<Id>>();
-		for (ServiceContract currentSC : serviceContracts) {
+		Map<Id, Set<Id>> aeByAccountIds = new Map<Id, Set<Id>>();
+		for (NCP_Authorised_Entitlement__c currentAE : authorisedEntitlements) {
+			if (aeByAccountIds.containsKey(currentAE.NCP_Account__c) == false) {
+				aeByAccountIds.put(currentAE.NCP_Account__c, new Set<Id>());
+			}
+			aeByAccountIds.get(currentAE.NCP_Account__c).add(currentAE.Id);
+			if (!aeByAccountIds.containsKey(currentAE.NCP_Service_Contract__r.AccountId)) {
+				aeByAccountIds.put(currentAE.NCP_Service_Contract__r.AccountId, new Set<Id>());
+			}
+			aeByAccountIds.get(currentAE.NCP_Service_Contract__r.AccountId).add(currentAE.Id);
+			
+			//Add the Related Accounts
+			if (!accountIdRelatedAccountIdsMap.containsKey(currentAE.NCP_Account__c)) {
+				accountIdRelatedAccountIdsMap.put(currentAE.NCP_Account__c, new Set<Id>());
+			}
+			accountIdRelatedAccountIdsMap.get(currentAE.NCP_Account__c).add(currentAE.NCP_Service_Contract__r.AccountId);
+			
+			accountIds.add(currentAE.NCP_Service_Contract__r.AccountId);
+
+			//Add the Service Contracts from Authorized Entitlements
+			if (!scByAccountIds.containsKey(currentAE.NCP_Service_Contract__r.AccountId)) {
+				scByAccountIds.put(currentAE.NCP_Service_Contract__r.AccountId, new Set<Id>());
+			}
+			scByAccountIds.get(currentAE.NCP_Service_Contract__r.AccountId).add(currentAE.NCP_Service_Contract__c);
+		}
+		accountIds.addAll(contactIdAccountIdMap.values());
+		
+		for(Id contactId : contactIdAccountIdMap.keySet()){
+			if (!accountIdRelatedAccountIdsMap.containsKey(contactIdAccountIdMap.get(contactId))) {
+				accountIdRelatedAccountIdsMap.put(contactIdAccountIdMap.get(contactId), new Set<Id>());
+			}
+			accountIdRelatedAccountIdsMap.get(contactIdAccountIdMap.get(contactId)).add(contactIdAccountIdMap.get(contactId));
+		}
+		for (ServiceContract currentSC : [SELECT Id,AccountId
+										  FROM ServiceContract
+										  WHERE NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE AND 
+										  AccountId IN :accountIds]) {
 			if (scByAccountIds.containsKey(currentSC.AccountId) == false) {
 				scByAccountIds.put(currentSC.AccountId, new Set<Id>());
 			}
 			scByAccountIds.get(currentSC.AccountId).add(currentSC.Id);
 		}
-		system.debug('### AES scByAccountIds ' + scByAccountIds);
-		List<NCP_Authorised_Entitlement__c> authorisedEntitlements = [
-			SELECT Id,NCP_Account__c
-			FROM NCP_Authorised_Entitlement__c
-			WHERE NCP_External_Status__c = :NCP_Constants.STATUS_ACTIVE
-			AND NCP_Account__c IN:contactAccountRelation.values()
-		];
-		
-		Map<Id, Set<Id>> aeByAccountIds = new Map<Id, Set<Id>>();
-		for (NCP_Authorised_Entitlement__c currentAE : authorisedEntitlements) {
-			
-			if (aeByAccountIds.containsKey(currentAE.NCP_Account__c) == false) {
-				aeByAccountIds.put(currentAE.NCP_Account__c, new Set<Id>());
+		/* for (NCP_Authorised_Entitlement__c currentAE : authorisedEntitlements) {
+			//Add the Service Contracts from Authorized Entitlements
+			if (!scByAccountIds.containsKey(currentAE.NCP_Service_Contract__r.AccountId)) {
+				scByAccountIds.put(currentAE.NCP_Service_Contract__r.AccountId, new Set<Id>());
 			}
-			aeByAccountIds.get(currentAE.NCP_Account__c).add(currentAE.Id);
-		}
-		
-		List<User> users = [SELECT Id, ContactId FROM User WHERE ContactId IN:contactAccountRelation.keySet() and isActive = true];
+			scByAccountIds.get(currentAE.NCP_Service_Contract__r.AccountId).add(currentAE.NCP_Service_Contract__c);
+		} */
+		List<User> users = [SELECT Id, ContactId FROM User WHERE ContactId IN:contactIdAccountIdMap.keySet() and isActive = true];
 		
 		for (User user : users) {
-			String accountId = contactAccountRelation.get(user.ContactId);
-			
-			if (!aCRUsers.containsKey(accountId)) {
-				aCRUsers.put(accountId, new Set<Id>());
+			String erAccountId = contactIdAccountIdMap.get(user.ContactId);
+			if (!aCRUsers.containsKey(erAccountId)) {
+				aCRUsers.put(erAccountId, new Set<Id>());
 			}
-			aCRUsers.get(accountId).add(user.Id);
-			
-			if (scByAccountIds.containsKey(accountId)) {
-				for (Id scId : scByAccountIds.get(accountId)) {
-					if (scUsers.containsKey(scId) == false) {
-						scUsers.put(scId, new Set<Id>());
-					}
-					scUsers.get(scId).add(user.Id);
-				}
-			}
-			
-			if (aeByAccountIds.containsKey(accountId)) {
-				for (Id aeId : aeByAccountIds.get(accountId)) {
+			aCRUsers.get(erAccountId).add(user.Id);
+			if(aeByAccountIds.containsKey(erAccountId)) {
+				for (Id aeId : aeByAccountIds.get(erAccountId)) {
 					if (aeUsers.containsKey(aeId) == false) {
 						aeUsers.put(aeId, new Set<Id>());
 					}
 					aeUsers.get(aeId).add(user.Id);
 				}
 			}
+			if(accountIdRelatedAccountIdsMap.containsKey(erAccountId)){
+				for(Id accountId : accountIdRelatedAccountIdsMap.get(erAccountId)){
+					if (scByAccountIds.containsKey(accountId)) {
+						for (Id scId : scByAccountIds.get(accountId)) {
+							if (scUsers.containsKey(scId) == false) {
+								scUsers.put(scId, new Set<Id>());
+							}
+							scUsers.get(scId).add(user.Id);
+						}
+					}
+				}
+			}
 		}
+		objectIdUserIdsWrapperInst.accountIdUserIdsMap = aCRUsers;
+		objectIdUserIdsWrapperInst.scIdUserIdsMap = scUsers;
+		objectIdUserIdsWrapperInst.aeIdUserIdsMap = aeUsers;
+		return objectIdUserIdsWrapperInst;
 	}
 	
 	public static void updateAccountContactRelationShare(Map<Id, AccountContactRelation> newACRMap, Map<Id, AccountContactRelation> oldACRMap) {
@@ -189,28 +282,56 @@ public with sharing class AccountContactRelationTriggerHelper {
 	}
 	
 	public static void deleteAccountContactRelationShare(List<AccountContactRelation> oldACRList) {
-		
-		Map<Id, Id> contactAccountRelation = new Map<Id, Id>();
-		for (AccountContactRelation currentACR : oldACRList) {
-			contactAccountRelation.put(currentACR.ContactId, currentACR.AccountId);
+		if(!(System.isFuture() || System.isBatch())){
+			Map<Id, Id> contactIdAccountIdMap = new Map<Id, Id>();
+			ObjectIdUserIdsMappingWrapperClass objectIdUserIdsWrapperInst = new ObjectIdUserIdsMappingWrapperClass();
+			for (AccountContactRelation currentACR : oldACRList) {
+				contactIdAccountIdMap.put(currentACR.ContactId, currentACR.AccountId);
+			}
+			
+			objectIdUserIdsWrapperInst = getObjectUserMappingForShare(contactIdAccountIdMap);
+			
+			if (objectIdUserIdsWrapperInst.accountIdUserIdsMap.size() > 0) {
+				AccountShareSync.deleteAccountShares(objectIdUserIdsWrapperInst.accountIdUserIdsMap);
+			}
+			if (objectIdUserIdsWrapperInst.scIdUserIdsMap.size() > 0) {
+				Database.executeBatch(new NCP_ServiceContractShare_Batch(objectIdUserIdsWrapperInst.scIdUserIdsMap, NCP_ServiceContractShare_Batch.SharingOperation.SHARING_DELETE), 1000);
+			}	
+			if (objectIdUserIdsWrapperInst.aeIdUserIdsMap.size() > 0) {
+				Database.executeBatch(new NCP_AuthEntitlementShareDelete_BATCH(objectIdUserIdsWrapperInst.aeIdUserIdsMap, NCP_AuthEntitlementShareDelete_BATCH.SharingOperation.SHARING_DELETE), 1000);
+			}
+			else{
+				deleteSCShare(objectIdUserIdsWrapperInst.scIdUserIdsMap);
+				deleteAuthorisedEntitlementShare(objectIdUserIdsWrapperInst.aeIdUserIdsMap);
+			}
 		}
-		
-		Map<Id, Set<Id>> aCRUsers = new Map<Id, Set<Id>>();
-		Map<Id, Set<Id>> scUsers = new Map<Id, Set<Id>>();
-		Map<Id, Set<Id>> aeUsers = new Map<Id, Set<Id>>();
-		
-		getAccountSharing(contactAccountRelation, aCRUsers, scUsers, aeUsers);
-		
-		if (aCRUsers.size() > 0) {
-			AccountShareSync.deleteAccountShares(aCRUsers);
+	}
+
+	private static void deleteSCShare(Map<Id, Set<Id>> scUsers){
+		List<ServiceContractShare> scSharesToDelete = new List<ServiceContractShare>();
+		for (ServiceContractShare scShare : [SELECT Id,ParentId,UserOrGroupId,AccessLevel,RowCause FROM ServiceContractShare WHERE ParentId IN: scUsers.keySet() AND RowCause = 'Manual']) {
+			String scId = scShare.ParentId;
+			String userId = scShare.UserOrGroupId;
+			if (scUsers.get(scId).contains(userId)) {
+				scSharesToDelete.add(scShare);
+			}
 		}
-		
-		if (scUsers.size() > 0) {
-			Database.executeBatch(new NCP_ServiceContractShare_Batch(scUsers, NCP_ServiceContractShare_Batch.SharingOperation.SHARING_DELETE), 1000);
+		if(scSharesToDelete.size() > 0) {
+			delete scSharesToDelete;
 		}
-		
-		if (aeUsers.size() > 0) {
-			Database.executeBatch(new NCP_AuthEntitlementShareDelete_BATCH(aeUsers, NCP_AuthEntitlementShareDelete_BATCH.SharingOperation.SHARING_DELETE), 1000);
+	}
+
+	private static void deleteAuthorisedEntitlementShare(Map<Id, Set<Id>> aeUsers){
+		List<NCP_Authorised_Entitlement__Share> aeSharesToDelete = new List<NCP_Authorised_Entitlement__Share>();
+		for (NCP_Authorised_Entitlement__Share aeShare : [SELECT Id,ParentId,UserOrGroupId,AccessLevel,RowCause FROM NCP_Authorised_Entitlement__Share WHERE ParentId IN: aeUsers.keySet() AND RowCause = 'Manual']) {
+			String aeId = aeShare.ParentId;
+			String userId = aeShare.UserOrGroupId;
+			if (aeUsers.get(aeId).contains(userId)) {
+				aeSharesToDelete.add(aeShare);
+			}
+		}
+		if(aeSharesToDelete.size() > 0) {
+			delete aeSharesToDelete;
 		}
 	}
 	
@@ -250,5 +371,17 @@ public with sharing class AccountContactRelationTriggerHelper {
 		if(!acrMap?.isEmpty()){
 			validateIfCaseExists(acrMap);
 		}
+	}
+
+	public class ObjectIdUserIdsMappingWrapperClass{
+		public Map<Id, Set<Id>> accountIdUserIdsMap = new Map<Id, Set<Id>>();//to create AccountShare
+		public Map<Id, Set<Id>> scIdUserIdsMap = new Map<Id, Set<Id>>();//to create ServiceContractShare
+		public Map<Id, Set<Id>> aeIdUserIdsMap = new Map<Id, Set<Id>>();//to create AuthorisedEntitlementShare
+	}
+
+	public class ObjectUserShareWrapperClass{
+		public List<AccountShare> accountShareList = new List<AccountShare>();
+		public List<ServiceContractShare> serviceContractShareList = new List<ServiceContractShare>();
+		public List<NCP_Authorised_Entitlement__Share> aeShareList = new List<NCP_Authorised_Entitlement__Share>();
 	}
 }

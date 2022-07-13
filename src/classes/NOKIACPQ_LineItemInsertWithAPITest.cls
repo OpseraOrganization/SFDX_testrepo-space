@@ -5,6 +5,8 @@ public class NOKIACPQ_LineItemInsertWithAPITest{
 		//create account
 		//List<Account> accounts = NOKIA_CPQ_TestDataFactory.getAccounts(1);
 		//Added by Christie JJ for defect 758
+		List<User> sysAdminUser = NOKIA_CPQ_TestDataFactory.userCreation(1,'Data Loader Profile');
+		 System.runAs(sysAdminUser[0]){
 		List<Account> accounts = NOKIA_CPQ_TestDataFactory.getAccounts(2);
 		accounts[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
 		accounts[0].Partner_Type__c = '';
@@ -36,7 +38,7 @@ public class NOKIACPQ_LineItemInsertWithAPITest{
 		opportunities1[0].G2_Approval_Date__c = Date.Today();
    
 		opportunities1[0].G3_Planned_Date__c =  Date.Today();
-		opportunities1[0].Account_Role__c = 'Alliance Partner';
+		//opportunities1[0].Account_Role__c = 'Alliance Partner';
 		opportunities1[0].G4_Planned_Date__c =  Date.Today();
    
 		update opportunities1;
@@ -191,9 +193,9 @@ public class NOKIACPQ_LineItemInsertWithAPITest{
 			//NokiaCPQ_Portfolio__c=Nokia_CPQ_Constants.MICROWAVE_PORTFOLIO,
 			NokiaCPQ_Portfolio__c='IP Routing',
 			NokiaCPQ_No_of_Years__c = '1',
-			NokiaProductAccreditation__c = accreditation2.id,
-			NokiaCPQ_Maintenance_Accreditation__c = accreditation2.id,
-			NokiaCPQ_Maintenance_Level__c = 'Yes',
+			//NokiaProductAccreditation__c = accreditation2.id,
+			//NokiaCPQ_Maintenance_Accreditation__c = accreditation2.id,
+			//NokiaCPQ_Maintenance_Level__c = 'Yes',
 			CurrencyIsoCode = Nokia_CPQ_Constants.USDCURRENCY,
 			NokiaCPQ_LEO_Discount__c=false,
 			Is_List_Price_Only__c =false,
@@ -286,6 +288,7 @@ public class NOKIACPQ_LineItemInsertWithAPITest{
 		NOKIACPQ_LineItemInsertWithAPI.getconfigdata(LineItem1.id);
 		NOKIACPQ_LineItemInsertWithAPI.saveconfigdata(body,ProdConfig.id);
 		Test.stopTest();
+	}
 		
 	}
 	
@@ -293,6 +296,9 @@ public class NOKIACPQ_LineItemInsertWithAPITest{
 		//create account
 		//List<Account> accounts = NOKIA_CPQ_TestDataFactory.getAccounts(1);
 		//Added by Christie JJ for defect 758
+
+		List<User> sysAdminUser = NOKIA_CPQ_TestDataFactory.userCreation(1,'Data Loader Profile');
+		 System.runAs(sysAdminUser[0]){
 		List<Account> accounts = NOKIA_CPQ_TestDataFactory.getAccounts(2);
 		accounts[0].RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Customer').getRecordTypeId();
 		accounts[0].Partner_Type__c = '';
@@ -323,7 +329,7 @@ public class NOKIACPQ_LineItemInsertWithAPITest{
 		opportunities1[0].G2_Approval_Date__c = Date.Today();
    
 		opportunities1[0].G3_Planned_Date__c =  Date.Today();
-		opportunities1[0].Account_Role__c = 'Alliance Partner';
+		//opportunities1[0].Account_Role__c = 'Alliance Partner';
 		opportunities1[0].G4_Planned_Date__c =  Date.Today();
    
 		update opportunities1;
@@ -474,9 +480,9 @@ public class NOKIACPQ_LineItemInsertWithAPITest{
 			//NokiaCPQ_Portfolio__c=Nokia_CPQ_Constants.MICROWAVE_PORTFOLIO,
 			NokiaCPQ_Portfolio__c='IP Routing',
 			NokiaCPQ_No_of_Years__c = '1',
-			NokiaProductAccreditation__c = accreditation2.id,
-			NokiaCPQ_Maintenance_Accreditation__c = accreditation2.id,
-			NokiaCPQ_Maintenance_Level__c = 'Yes',
+			//NokiaProductAccreditation__c = accreditation2.id,
+			//NokiaCPQ_Maintenance_Accreditation__c = accreditation2.id,
+			//NokiaCPQ_Maintenance_Level__c = 'Yes',
 			CurrencyIsoCode = Nokia_CPQ_Constants.USDCURRENCY,
 			NokiaCPQ_LEO_Discount__c=false,
 			Is_List_Price_Only__c =false,
@@ -578,7 +584,7 @@ public class NOKIACPQ_LineItemInsertWithAPITest{
 		
 		Test.stopTest();
 		
-	}
+	}}
 	
 	@isTest static void testCalloutWithStaticResources() {
    

@@ -23,6 +23,8 @@ public with sharing class APTSCU_ApprovalActionsController{
 	public string endCustomerName{get; set;}
 	
 	public String stepName {get;set;}
+    public String stepCustName {get;set;}
+    public String receiverName {get;set;}
 	public String stepEntryCriteria {get;set;}
 	public Set<String> profilesList = new Set<String>{'Nokia Read Only','Nokia Sales Profile','Non-Sales User Profile','Sales Ops Profile','System Administrator','Global Process Admin','Nokia Admin Profile'};
 		

@@ -10,6 +10,7 @@ public class CH_CA_Assignment_Criteria_DTO_Test {
 	static void setuptestdata(){  
 		Id accountLegalEntityRecordType = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Legal_Entity').getRecordTypeId();
 		Account tempLegalAccount = new Account(
+	  Type = 'Vendor', //Y.
 			Name = ACCOUNT_NAME,
 			RecordTypeId = accountLegalEntityRecordType
 		);
@@ -45,9 +46,13 @@ public class CH_CA_Assignment_Criteria_DTO_Test {
 		);
 		Insert tempPriceBookEntry;
 		
+		Id recordTypeId = Schema.SobjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_VendorContract').getRecordTypeId(); //Y.
+		
 		// Create contract
 		Test.starttest();
 		ServiceContract serviceContract = new ServiceContract(
+	  RecordTypeId = recordTypeId, //Y.
+			StartDate = Date.today(), //Y.
 			AccountId = tempLegalAccount.Id,
 			Name = 'TestServiceContract',
 			CH_CDB_ContractId__c = 'Test',

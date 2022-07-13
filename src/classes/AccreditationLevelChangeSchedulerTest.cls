@@ -212,7 +212,7 @@ public class AccreditationLevelChangeSchedulerTest {
 			map10.Accreditation_Field_API_Name__c = 'Administration_Software_Only__c';
 			certToAccred.add(map10);
 			insert certToAccred;
-				
+	
 			List<PRM_Accreditation_Level_Ranks__c> accrLevelRulesetting = new List<PRM_Accreditation_Level_Ranks__c>();
 			PRM_Accreditation_Level_Ranks__c accredlevelRule1 = new PRM_Accreditation_Level_Ranks__c();
 			accredlevelRule1.Name = 'Authorized';
@@ -228,10 +228,12 @@ public class AccreditationLevelChangeSchedulerTest {
 			insert apptusproposal;
 			
 			AccreditationLevelChange.setAccrdRuleLevelRank(accrLevelRule);
+			AccreditationLevelChange.quoteRepricing(accredList);
 			AccreditationLevelChangeScheduler sc = new AccreditationLevelChangeScheduler();
 			String schdl = '0 0 21 ? * *';
 			String jobID = System.schedule('Test Schedule',schdl,sc);
 			System.debug('JobID'+jobID);
+			System.debug('Test Class Ends');
 			Test.stopTest();
 		}
 	}
