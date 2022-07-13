@@ -136,21 +136,21 @@ public with sharing class UserHandler_TL {
 
 											 if(eventSharesList.size()>0){
 															for(Event__Share oEventShareList : eventSharesList){
-																		   oEventShareList.Id = oEventShareList.Id;
+																		  // oEventShareList.Id = oEventShareList.Id;
 																		   oEventShareList.UserOrGroupId = userIdKeys.get(userIdValues.indexOf(oEventShareList.UserOrGroupId));
 															}
 															update eventSharesList;
 											 }
 											 if(eventRegistrationSharesList.size()>0){
 															for(Event_Registration__Share oEventRegistrationShareList : eventRegistrationSharesList){
-																		   oEventRegistrationShareList.Id = oEventRegistrationShareList.Id;
+																		  //  oEventRegistrationShareList.Id = oEventRegistrationShareList.Id;
 																		   oEventRegistrationShareList.UserOrGroupId = userIdKeys.get(userIdValues.indexOf(oEventRegistrationShareList.UserOrGroupId));
 															}
 															update eventRegistrationSharesList;
 											 }
 											 if(sessionSharesList.size()>0){
 															for(Session__Share oSessionShareList : sessionSharesList){
-																		   oSessionShareList.Id = oSessionShareList.Id;
+																		   //oSessionShareList.Id = oSessionShareList.Id;
 																		   oSessionShareList.UserOrGroupId = userIdKeys.get(userIdValues.indexOf(oSessionShareList.UserOrGroupId));
 															}
 															update sessionSharesList;

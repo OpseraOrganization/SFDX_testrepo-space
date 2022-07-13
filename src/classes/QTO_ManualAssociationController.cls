@@ -28,5 +28,24 @@ public with sharing class QTO_ManualAssociationController {
 	public static boolean getStatus(String CDId){
 		return QTO_ManualAssociationControllerHelper.getStatus(CDId);
 	}
-	
+	// DSI - 2194
+	/*
+	@AuraEnabled
+	public static Boolean saveDraftCDLines(String draftString,  String cdId) {
+		try {
+			return QTO_ManualAssociationControllerHelper.updateWaiverCommentsOnCustomerDocumentLines(
+				(List<Customer_Document_Line_Items__c>) JSON.deserialize(draftString, List<Customer_Document_Line_Items__c>.class),
+				cdId
+			);
+		} catch(Exception exc) {
+			throw new AuraHandledException(exc.getMessage());
+		}
+	}
+	*/
+	// DSI-2340
+	@AuraEnabled(cacheable=true)
+	public static QTO_ManualAssociationControllerHelper.dataWrapper getQuoteLinesToAssociate(String recordId, String option) {
+		try { return QTO_ManualAssociationControllerHelper.findAllQuoteLinesToAssociate(recordId, option); }
+		catch(Exception exc) { throw new AuraHandledException(exc.getMessage()); }
+	}
 }
