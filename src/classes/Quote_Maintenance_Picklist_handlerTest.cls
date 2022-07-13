@@ -1,8 +1,13 @@
 @isTest
-public class Quote_Maintenance_Picklist_handlerTest 
+public class Quote_Maintenance_Picklist_handlerTest
 {
 	static testMethod void Quote_Maintenance_Picklist_handlerTestmethod1()
 	{
+		List<User> userList = new List<User>();
+		userList = TestDataFactory.userCreation(1,'Data Loader Profile');
+
+		System.runAs(userList[0]){
+
 		//method for Indirect Quotes
 		
 		List<Opportunity> opportunities;		
@@ -22,7 +27,8 @@ public class Quote_Maintenance_Picklist_handlerTest
 		opportunities[0].Lead_BG__c = 'MN';
 		opportunities[0].RecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get('Indirect_Record_Type').getRecordTypeId();
 		opportunities[0].End_Customer_LE__c = accounts1[0].Id;
-		opportunities[0].Account_Role__c = 'Alliance Partner';
+		opportunities[0].Account_Role__c = 'GPP Distributor Partner';
+		opportunities[0].Business_Type__c = 'Standard Opportunity';
 		insert opportunities;
 		
 		opportunities[0].StageName = 'Create Offer (Bid)';
@@ -33,7 +39,7 @@ public class Quote_Maintenance_Picklist_handlerTest
 		opportunities[0].Apttus_Approval__Approval_Status__c = 'Approved';
 		opportunities[0].G2_Approval_Date__c = Date.Today();		
 		opportunities[0].G3_Planned_Date__c =  Date.Today();
-		opportunities[0].Account_Role__c = 'Alliance Partner';		
+		opportunities[0].Account_Role__c = 'GPP Distributor Partner';	
 		opportunities[0].G4_Planned_Date__c =  Date.Today();		
 		update opportunities[0];
 		
@@ -191,8 +197,9 @@ public class Quote_Maintenance_Picklist_handlerTest
 		testProposal[0].NokiaCPQ_No_of_Years__c = '1';
 		testProposal[0].CurrencyIsoCode = Nokia_CPQ_Constants.USDCURRENCY;
 		testProposal[0].NokiaCPQ_LEO_Discount__c=false;
-		testProposal[0].NokiaCPQ_Maintenance_Accreditation__c='a3822000000Bu8HAAS';
-		testProposal[0].NokiaCPQ_Maintenance_Level__c='';
+		//Commented out for ITCCPQ-2555 by Christie JJ
+		//testProposal[0].NokiaCPQ_Maintenance_Accreditation__c='a3822000000Bu8HAAS';
+		//testProposal[0].NokiaCPQ_Maintenance_Level__c='';
 		testProposal[0].Apttus_Proposal__Approval_Stage__c='Draft';
 		testProposal[0].Reprice_In_Progress__c=false;
 		//   testProposal[0].RecordTypeId =Schema.SObjectType.Apttus_Proposal__Proposal__c.getRecordTypeInfosByDeveloperName().get('Indirect Quote').getRecordTypeId();
@@ -422,11 +429,13 @@ public class Quote_Maintenance_Picklist_handlerTest
 		Quote_Maintenance_Picklist_handler.getportfolioSRS(testproposal[0].Id);
 		Quote_Maintenance_Picklist_handler.getportfolioSSP(testproposal[0].Id);
 		Quote_Maintenance_Picklist_handler.portfolioValueReturn(testproposal[0].Id);
-		Quote_Maintenance_Picklist_handler.saveRecord(testproposal[0].Id, '', '', '', '', '', '');
-		Quote_Maintenance_Picklist_handler.sspsrsValueReturn('IP Routing', Nokia_CPQ_Constants.NOKIA_SSP);
+		//Modified by Christie JJ for ITCCPQ-2556
+		Quote_Maintenance_Picklist_handler.saveRecord(testproposal[0].Id, '', '', '', '', '');
+		Quote_Maintenance_Picklist_handler.sspsrsValueReturn(new List<String>{'IP Routing'}, Nokia_CPQ_Constants.NOKIA_SSP);
 		Quote_Maintenance_Picklist_handler.updateExistingMaintContract(testproposal[0].Id,'NokiaCPQ_Existing_IONMaint_Contract__c');
 		Quote_Maintenance_Picklist_handler.updateMaintenanceTypeValue(testproposal[0].Id);
-		Quote_Maintenance_Picklist_handler.updateExistingMaintContract(testproposal[0].Id,'NokiaCPQ_Maintenance_Level__c');
+		//Commented out for FN restructuring by Christie JJ
+		//Quote_Maintenance_Picklist_handler.updateExistingMaintContract(testproposal[0].Id,'NokiaCPQ_Maintenance_Level__c');
 		Quote_Maintenance_Picklist_handler.updateExistingMaintContract(testproposal[0].Id,'NokiaCPQ_SSP_Level__c');  
 		Quote_Maintenance_Picklist_handler.updateExistingMaintContract(testproposal[0].Id,'NokiaCPQ_SRS_Level__c');
 		Quote_Maintenance_Picklist_handler.updateExistingMaintContract(testproposal[0].Id,'NokiaCPQ_No_of_Years__c');		
@@ -437,12 +446,15 @@ public class Quote_Maintenance_Picklist_handlerTest
 		Quote_Maintenance_Picklist_handler.getportfolioSRS('');
 		Quote_Maintenance_Picklist_handler.getportfolioSSP('');
 		Quote_Maintenance_Picklist_handler.portfolioValueReturn('');
-		Quote_Maintenance_Picklist_handler.saveRecord('', '', '', '', '', '', '');
-		Quote_Maintenance_Picklist_handler.sspsrsValueReturn('','');
+		//Modified by Christie JJ for ITCCPQ-2556
+		Quote_Maintenance_Picklist_handler.saveRecord('', '', '', '', '', '');
+		Quote_Maintenance_Picklist_handler.sspsrsValueReturn(new List<String>{''},'');
 		Quote_Maintenance_Picklist_handler.updateExistingMaintContract('','');
 		Quote_Maintenance_Picklist_handler.updateMaintenanceTypeValue('');
-		Quote_Maintenance_Picklist_handler.MaintenanceLevelValueReturn(testproposal[0].Id,'');
+		//Quote_Maintenance_Picklist_handler.MaintenanceLevelValueReturn(testproposal[0].Id,'');
+		Quote_Maintenance_Picklist_handler.initializeMaintenancePicklists(testproposal[0].Id,new list<String>());
 		
 		Test.stopTest();
+		}
 	}
 }

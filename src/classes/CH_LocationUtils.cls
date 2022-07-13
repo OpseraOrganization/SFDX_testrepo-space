@@ -1,11 +1,11 @@
 /** 
  * About 
  * ----- 
- * @Description	  : Case Handling Location Utils.
- * @TestClass		: CH_LocationUtils_Test.
- * @Project	: Case Handling.
+ * @Description   : Case Handling Location Utils.
+ * @TestClass	   : CH_LocationUtils_Test.
+ * @Project : Case Handling.
  * @Modification Log : 
- *  Created  : 2019 11 27 – tiago.almeida@nokia.com
+ *  Created  : 2019 11 27 � tiago.almeida@nokia.com
  * ----- 
 **/
 public class CH_LocationUtils {
@@ -15,23 +15,29 @@ public class CH_LocationUtils {
 
 	/**
 	 * @description : Check if a specific Country is Multi-TimeZone - NOKIASC-#####
-	 * @param	: String countryName
-	 * @return	  : Boolean
+	 * @param   : String countryName
+	 * @return	: Boolean
 	**/
 	public static Boolean countryIsMultiTimezone(String countryName) {
-		List<ISO_Country_Codes__c> oISOCountryCodes = DM_ISOCountryCodes.doSelect('Id, Country_Name__c, Multi_Timezone__c').doWhere('Country_Name__c = "'+countryName+'"').setOptions('LIMIT 1').doQuery();
 		try {
+			List<ISO_Country_Codes__c> oISOCountryCodes = DM_ISOCountryCodes.doSelect('Id, Country_Name__c, Multi_Timezone__c').doWhere('Country_Name__c = "'+countryName+'"').setOptions('LIMIT 1').doQuery();
 			return oISOCountryCodes.get(0).Multi_Timezone__c;
 		} catch (Exception e) {
 			System.debug('CH_LocationUtils Error: No Country found!');
-			throw new AuraHandledException('No Country found!');
+			if(!System.isFuture() && !System.isBatch())  {
+				throw new AuraHandledException('No Country found!');
+			}
+			else{
+				 return  null;
+			}
+			
 		}
 	}
 
 	/**
 	 * @description : 
-	 * @param	: Map<String, Object> 
-	 * @return	  : String
+	 * @param   : Map<String, Object> 
+	 * @return	: String
 	**/
 	public static String getTimeZone(Map<String, Object> coordinates) {
 		Map<String, Object> request = null;
@@ -40,42 +46,52 @@ public class CH_LocationUtils {
 			String result = (String) request.get('timeZoneId');
 			List<CH_TimezoneConversion__mdt> oTimezoneConversionList = DML_SObject.doQuery('SELECT CH_SalesforceTimezone__c FROM CH_TimezoneConversion__mdt WHERE CH_GoogleTimezone__c = "' + result + '" ');
 			if(!oTimezoneConversionList.isEmpty()) {
-				result = oTimezoneConversionList.get(0).CH_SalesforceTimezone__c;
+	result = oTimezoneConversionList.get(0).CH_SalesforceTimezone__c;
 			}
 			return result;
 		} catch (Exception e) {
-			throw new AuraHandledException(((String) request.get('status')).equals('ZERO_RESULTS') ? 'No Location found!' : ('Something went wrong! '+ e.getMessage()));
+			if(!System.isFuture() && !System.isBatch())  {  
+				throw new AuraHandledException(((String) request.get('status')).equals('ZERO_RESULTS') ? 'No Location found!' : ('Something went wrong! '+ e.getMessage()));
+			}
+			else{			   
+				return  null;
+			}
 		}
 	}
 	
 	/**
 	 * @description : 
-	 * @param	: String address
-	 * @param	: String city
-	 * @param	: String postalCode
-	 * @param	: String state
-	 * @param	: String country
-	 * @return	  : Map<String, Object>
+	 * @param   : String address
+	 * @param   : String city
+	 * @param   : String postalCode
+	 * @param   : String state
+	 * @param   : String country
+	 * @return	: Map<String, Object>
 	**/
 	public static Map<String, Object> getCoordinates(String address, String city, String postalCode, String state, String country) {
 		Map<String, Object> request = null;
-		String url = 'components=street_address:' + address + '|locality:' + city + ', ' + state + '|postal_code:' + postalCode + '|country:'+ country;
 		try {
+			String url = 'components=street_address:' + address + '|locality:' + city + ', ' + state + '|postal_code:' + postalCode + '|country:'+ country;
 			request = googleMapsRequest('geocode', (url != null ? url.replace(' ', '+') : ''));
 			if(((String) request.get('status')).equals('ZERO_RESULTS')) {
-				url = 'components=street_address:' + address + '|locality:' + city + ', ' + state + '|country:'+ country;
+	url = 'components=street_address:' + address + '|locality:' + city + ', ' + state + '|country:'+ country;
 	request = googleMapsRequest('geocode', (url != null ? url.replace(' ', '+') : ''));
 			}
 			return (Map<String, Object>) ((List<Object>) request.get('results')).get(0);
 		} catch (Exception e) {
-			throw new AuraHandledException(((String) request.get('status')).equals('ZERO_RESULTS') ? 'No Location found!' : ('Something went wrong! '+ e.getMessage()));
+		  if(!System.isFuture() && !System.isBatch())  {  
+				throw new AuraHandledException(((String) request.get('status')).equals('ZERO_RESULTS') ? 'No Location found!' : ('Something went wrong! '+ e.getMessage()));
+			}
+			else{
+				return  null;
+			}
 		}
 	}
 	
 	/**
 	 * @description : 
-	 * @param	: String request
-	 * @return	  : Map<String, Object>
+	 * @param   : String request
+	 * @return	: Map<String, Object>
 	**/
 	public static Map<String, Object> googleMapsRequest(String requestType, String request) {
 		system.debug('googleMapsRequest -->'+requestType+request);
@@ -95,7 +111,12 @@ public class CH_LocationUtils {
 			//
 			result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
 		} catch(Exception ex) {
-			throw new AuraHandledException('Google Maps Request Exception: ' + ex.getMessage());
+			if(!System.isFuture() && !System.isBatch())  { 
+				throw new AuraHandledException('Google Maps Request Exception: ' + ex.getMessage());
+			}
+			else{
+				return  null;
+			}
 		}
 		return result;
 	}

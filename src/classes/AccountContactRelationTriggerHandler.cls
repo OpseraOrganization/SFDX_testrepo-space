@@ -18,27 +18,24 @@ public class AccountContactRelationTriggerHandler extends TriggerHandler {
 	private Map<Id, AccountContactRelation> newMap;
 	 
 	public AccountContactRelationTriggerHandler() {
-		this.oldList = (List<AccountContactRelation>) Trigger.Old;
-		this.newList = (List<AccountContactRelation>) Trigger.New;
-		this.oldMap  = (Map<Id, AccountContactRelation>) Trigger.OldMap;
-		this.newMap  = (Map<Id, AccountContactRelation>) Trigger.NewMap;
+		this.oldList = (List<AccountContactRelation>) Trigger.old;
+		this.newList = (List<AccountContactRelation>) Trigger.new;
+		this.oldMap = (Map<Id, AccountContactRelation>) Trigger.oldMap;
+		this.newMap = (Map<Id, AccountContactRelation>) Trigger.newMap;
 	}
 	
 	/*
 	* @description : beforeInsert handle the AccountContactRelation beforeInsert event on AccountContactRelation.
 	*/
-	public override void beforeInsert(){
-		//Commented as part of DEM0051264 - Multiple ACR
-		//AccountContactRelationTriggerHelper.companyNameBeforeInsert(newList);
-	}
+	/* public override void beforeInsert(){
+	} */
 	
 	/*
 	* @description : afterInsert handle the AccountContactRelation afterInsert event on AccountContactRelation.
 	*/
 	public override void afterInsert(){
-	 //Commented as part of DEM0051264 - Multiple ACR
-		//AccountContactRelationTriggerHelper.companyNameAfterUpadte(newMap);
 		AccountContactRelationTriggerHelper.createAccountContactRelationShare(newMap);
+		//AccountContactRelationTriggerHelper.processContacts(NULL, newMap);
 	}
 	
 	/*
@@ -46,16 +43,12 @@ public class AccountContactRelationTriggerHandler extends TriggerHandler {
 	*/
 	public override void beforeUpdate(){
 		AccountContactRelationTriggerHelper.validateIfCaseExistsForACRUpdate(oldMap, newMap);
-		//Commented as part of DEM0051264 - Multiple ACR
-		//AccountContactRelationTriggerHelper.companyNameBeforeUpdate(newMap, oldList);
 	}
 	
 	/*
 	* @description : afterUpdate handle the AccountContactRelation afterUpdate event on AccountContactRelation.
 	*/
 	public override void afterUpdate(){
-	 //Commented as part of DEM0051264 - Multiple ACR
-		//AccountContactRelationTriggerHelper.companyNameAfterUpadte(newMap);
 		AccountContactRelationTriggerHelper.updateAccountContactRelationShare(newMap, oldMap);
 	}
 	
@@ -70,6 +63,7 @@ public class AccountContactRelationTriggerHandler extends TriggerHandler {
 	* @description : afterDelete handle the AccountContactRelation afterDelete event on AccountContactRelation.
 	*/
 	public override void afterDelete(){
-		AccountContactRelationTriggerHelper.deleteAccountContactRelationShare(oldList);		
+		AccountContactRelationTriggerHelper.deleteAccountContactRelationShare(oldList);
+		//AccountContactRelationTriggerHelper.processContacts(oldMap, NULL);
 	}
 }

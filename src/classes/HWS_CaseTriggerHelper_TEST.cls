@@ -1,16 +1,20 @@
 /****************************************
 * Class Name : HWS_CaseTriggerHelper_Test
-* Created By : TCS
+* Created By : TCS  
 * Last Modified by: TCS
 * Description : Test Class for Hws_CaseTriggerHelper and HWS_CasetriggerHandler
-*****************************************/
-
+*****************************************/ 
 @isTest
-public class HWS_CaseTriggerHelper_TEST {
+public class HWS_CaseTriggerHelper_TEST{
+
 	private static Set<String> childCaseStatuses = new Set<String>{'Closed','Cancelled'};
-		private static Id parentCaseId; 
+		private static Id parentCaseId;
 	@testSetup static void testDataSetup(){
-		test.startTest();		
+		HWS_GenericSettings__c cs = new HWS_GenericSettings__c ();
+		cs.Name='OrderedProcessingSize';
+		cs.HWS_Field1__c = '25';
+		insert cs;		 
+		test.startTest();	
 		Id accountRecordType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LOGISTIC_ACCOUNT_EXISTING);
 		Id childcase = HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_Child_Case_Read_Only);
 		
@@ -19,7 +23,7 @@ public class HWS_CaseTriggerHelper_TEST {
 		Id legalEntityAccountType = HWS_Utilty.getRecordTypeByName('Account',HWS_Constants.LEGAL_ENTITY);
 		Id rtId = Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_VendorContract').getRecordTypeId();
 		
-		Account acc = HWS_DataFactory_TEST.insertAccount();
+		Account acc = HWS_DataFactory_TEST.insertAccount() ;
 		acc.name='test1';
 		acc.Customer_Compliance__c ='US_Govern';
 		insert acc;
@@ -96,7 +100,7 @@ public class HWS_CaseTriggerHelper_TEST {
 		cc.UnitPrice=0;
 		cc.Quantity=1;
 		cc.PricebookEntryId=pp.Id;
-		insert cc;						  
+		insert cc;		
 		Case ca = new Case();
 		ca.RecordTypeId = parentCaseRecordType;
 		ca.AccountId = acc2.Id;
@@ -162,7 +166,7 @@ public class HWS_CaseTriggerHelper_TEST {
 		List<Case> listChildCase= new List<Case>();
 		Set<Id> caseIdSet = new Set<Id>();
 		
-		Account acc = [Select id from Account where name='test' limit 1];		  
+		Account acc = [Select id from Account where name='test' limit 1];	
 		Case caserec = [Select id,Status,HWS_SOO_CaseStatus__c from Case limit 1];  
 		Product2 prod = [select id from Product2 where name='test'];
 		Asset ast = [Select id from Asset limit 1];	  
@@ -219,7 +223,7 @@ public class HWS_CaseTriggerHelper_TEST {
 	public static testmethod void duplicateSernumMethod(){	  
 		List<Case>listCase = new List<Case>();	  
 		List<account>act2 = new list<account>();
-		act2 = [Select id from account where name='test' LIMIT 1];			  
+		act2 = [Select id from account where name='test' LIMIT 1];	 
 		Case parentCase = [Select id from Case limit 1];
 		Product2 prod = [select id from Product2 where name='test'];
 		Asset ast = [Select id from Asset limit 1];
@@ -463,7 +467,7 @@ public class HWS_CaseTriggerHelper_TEST {
 	
 	public static testmethod void testtotalNetValueCalculateOnChild()
 	{
-		list<Case> caseList = [Select id, parentId,AssetID,HWS_Quantity__c,HWS_Net_Quantity__c,HWS_FaultyUnitReceivedDate__c,HWS_StartMilestone__c,HWS_ServiceType__c,RecordTypeId from Case where assetid != null and recordtypeId =: HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_SPS_PART_SALES) limit 1];
+		list<Case> caseList = [Select id,parentId,AssetID,HWS_Quantity__c,NCP_Service_Contract__c,HWS_Net_Quantity__c,HWS_FaultyUnitReceivedDate__c,HWS_StartMilestone__c,HWS_ServiceType__c,RecordTypeId from Case where assetid != null and recordtypeId =: HWS_Utilty.getRecordTypeByName('Case',HWS_Constants.HWS_SPS_PART_SALES) limit 1];
 		system.debug('caselist value >' + caseList);
 		
 		caseList[0].HWS_FaultyUnitReceivedDate__c = Date.Today();
@@ -474,10 +478,6 @@ public class HWS_CaseTriggerHelper_TEST {
 	
 	}
 	public static testmethod void passiveAssignmentHWSParentCase(){
-		HWS_GenericSettings__c gc = new HWS_GenericSettings__c();
-		gc.Name = 'OrderedProcessingSize';
-		gc.HWS_Field1__c = '20';
-		insert gc;
 		Case parentCase = [Select id,CH_InternalStatus__c,RecordTypeId ,HWS_RecordTypeCheck__c,CH_ServiceType__c,EntitlementId from Case limit 1];
 		parentCase.CH_InternalStatus__c='Warranty Verification Required';
 		update parentCase;

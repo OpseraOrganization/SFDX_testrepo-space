@@ -1164,7 +1164,9 @@ private class NCP_CustomerCommunityUserHandler_Test {
 			Try{	
 	insert cont;
 	
-			}Catch(Exception Ec){}
+			}Catch(Exception Ec){
+	System.debug('error inside test class');
+			}
 			
 			handler.postLicenseConsumptionMessageInChatter(5,acc.ID);
 			//Account IDCaccount = NCP_CustomerCommunityUserHandler.IndependentContractAccountDetails();
@@ -1277,8 +1279,8 @@ private class NCP_CustomerCommunityUserHandler_Test {
 			List<Contact> ContactList = new List<Contact>();
 			
 			Contact Con = new Contact( AccountID = acc.id, FirstName = 'User', LastName = 'test',
-			  
-			  email = 'test123@gmail.com' );
+	 
+	 email = 'test123@gmail.com' );
 			
 			insert Con;
 			

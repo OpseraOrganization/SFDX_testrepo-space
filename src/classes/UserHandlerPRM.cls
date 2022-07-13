@@ -74,17 +74,17 @@ public with sharing class UserHandlerPRM {
 			
 			for(User us : newUserList){
 		
-				 if ((us.ProfileId == system.Label.PRM_Partner_Profile_Id || us.ProfileId == system.Label.PRM_Partner_Relationship_Manager_Login_ID  || us.ProfileId == System.Label.PRM_Unauthorized_Partner_Profile))
+	 if ((us.ProfileId == system.Label.PRM_Partner_Profile_Id || us.ProfileId == system.Label.PRM_Partner_Relationship_Manager_Login_ID  || us.ProfileId == System.Label.PRM_Unauthorized_Partner_Profile))
 			{
-			  useraccountchange.add(us);  
+	 useraccountchange.add(us);  
 			}
 			}
 			
 			if(useraccountchange.size() > 0){
-				
+	
 			FundShareList = [SELECT AccessLevel,Id,IsDeleted,LastModifiedById,LastModifiedDate,ParentId,RowCause,UserOrGroupId FROM Fund__Share WHERE UserOrGroupId =: useraccountchange and rowcause = 'Apex_Sharing__c' Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
 			for(Fund__Share FSInstance : FundShareList){
-				fundidset.add(FSInstance.ParentId);
+	fundidset.add(FSInstance.ParentId);
 			}
 			
 			FundList = [SELECT Id,Partner_Name__c FROM Fund__c WHERE id =: fundidset Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];
@@ -94,19 +94,21 @@ public with sharing class UserHandlerPRM {
 			
 			for(Fund__Share FSInstance : FundShareList){
 			if ((fundtoaccountidmap.get(FSInstance.ParentId)) != (newUserMap.get(FSInstance.UserOrGroupId).AccountId))
-				{
-				   FundShareToDelete.add(FSInstance); 
-				}
+	{
+	   FundShareToDelete.add(FSInstance); 
+	}
 			}
 			
+	if(FundShareToDelete.size() > 0){
 		  Database.DeleteResult[] FundShareDeleteResult = Database.delete(FundShareToDelete, false);
-		  Database.executeBatch(new CoOpFundBatch(useraccountchange));
+		 // Database.executeBatch(new CoOpFundBatch(useraccountchange));
+		  }
 			
 
 		} 
 		}
 		catch(System.Exception e){
-		  ExceptionHandler.addException(e,PRMGlobalConstants.UserHandlerPRM,PRMGlobalConstants.afterUpdateOperation);
+	ExceptionHandler.addException(e,PRMGlobalConstants.UserHandlerPRM,PRMGlobalConstants.afterUpdateOperation);
 		}
 	}
 	

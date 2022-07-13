@@ -1,6 +1,5 @@
 @isTest
 public class CH_CA_CaseTeamAssignment_Controller_Test{
-	
 	@testSetup
 	public static void setup(){
 		Test.startTest();
@@ -12,7 +11,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void getCaseFields(){
 		Test.startTest();
-		Case testCaseObj = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCaseObj = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCaseObj;
 		CH_CA_DTO.SearchCriteriaDTO caseDetails = CH_CA_CaseTeamAssignment_Controller.getCaseFields(testCaseObj.id);
 		Test.stopTest();
@@ -23,7 +22,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void getWorkgroupMembers(){
 		Test.startTest();
-		Case testCaseObj = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCaseObj = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCaseObj;
 		Test.stopTest();
 		List<CH_CA_DTO.WorkgroupMemberDTO> workgroupMembers = CH_CA_CaseTeamAssignment_Controller.getWorkgroupMembers(testCaseObj.id, '{"severity":"Minor","levelOfSupport":"Initial Support","workgroupType":"Engineer","schedule":"false"}');
@@ -33,7 +32,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void searchWorkgroupMembers(){
 		Test.startTest();
-		Case testCaseObj = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCaseObj = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCaseObj;
 		Test.stopTest();
 		List<CH_CA_DTO.WorkgroupMemberDTO> workgroupMembers = CH_CA_CaseTeamAssignment_Controller.searchWorkgroupMembers(testCaseObj.id, '{"severity":"Minor","levelOfSupport":"Initial Support","workgroupType":"Engineer","schedule":"false"}');
@@ -44,7 +43,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void TestInsertIncidentEngineer(){
 		Test.startTest();
-		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCase;
 		String UserId = UserInfo.getUserId();
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserId,testCase.Id,'Incident Engineer');
@@ -56,12 +55,11 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 		System.assert(taskList.size() == 2,'Task created should be 2. Actual ' + taskList.size());
 		
 	}
-	
 	// This method is used to test InsertMember method
 	@istest
 	static void TestInsertIncidentExpert(){
 		Test.startTest();
-		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCase;
 		String UserId = UserInfo.getUserId();
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserId,testCase.Id,'Incident Expert');
@@ -77,7 +75,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void TestInsertIncidentSupport(){
 		Test.startTest();
-		Case createMinorCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case createMinorCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		Insert createMinorCase;
 		String UserId = UserInfo.getUserId();
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserId,createMinorCase.Id,'Incident Support');
@@ -93,7 +91,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void TestInsertIncidentSuport(){
 		Test.startTest();
-		Case testCreateMinorCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCreateMinorCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCreateMinorCase;
 		String UserId = UserInfo.getUserId();
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserId,testCreateMinorCase.Id,'Incident Support');
@@ -114,7 +112,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void TestInsertIncidentFieldAgent(){
 		Test.startTest();
-		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCase;
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserInfo.getUserId(),testCase.Id,'Incident Field Agent');
 		List<CaseTeamMember> caseMemberList = [SELECT MemberID FROM CaseTeamMember WHERE ParentId = :testCase.id];
@@ -127,7 +125,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void TestInsertCustomerCareManager(){
 		Test.startTest();
-		Case tstCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case tstCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert tstCase;
 		String UserId = UserInfo.getUserId();
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserId,tstCase.Id,'Customer Care Manager');
@@ -141,7 +139,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void TestInsertIncidentOwner(){
 		Test.startTest();
-		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCase;
 		String UserId = UserInfo.getUserId();
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserId,testCase.Id,'Incident Owner');
@@ -155,7 +153,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void TestInsertProblemExpert(){
 		Test.startTest();
-		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCase;
 		String UserId = UserInfo.getUserId();
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserId,testCase.Id,'Problem Expert');
@@ -169,7 +167,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void TestInsertProblemSupport(){
 		Test.startTest();
-		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCase;
 		String UserId = UserInfo.getUserId();
 		CH_CA_CaseTeamAssignment_Controller.InsertMember(UserId,testCase.Id,'Problem Support');
@@ -184,7 +182,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void checkWGMembersSecurity(){
 		Test.startTest();
-		Case testCaseObj = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+		Case testCaseObj = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 		insert testCaseObj;
 		Test.stopTest();
 		List<CH_CA_DTO.WorkgroupMemberDTO> validWorkgroupMembers = CH_CA_CaseTeamAssignment_Controller.searchWorkgroupMembers(testCaseObj.id, '{"severity":"Minor","levelOfSupport":"Initial Support","workgroupType":"Engineer","schedule":"false"}');  
@@ -195,7 +193,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 		try{
 			Test.startTest();
 			boolean returnMsg=false;
-			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 			insert testCase;	
 			Profile systemAdministratorProfile = [SELECT Id FROM Profile WHERE Name = 'Standard User'];
 			String systemAdministratorEmail = 'naip' + DateTime.now().getTime() + '@test.com';
@@ -215,7 +213,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 			Id loginUserID =Userinfo.getUserId();
 			boolean returnMsg=false;
 			Test.startTest();
-			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 			insert testCase;	
 			Profile systemAdministratorProfile = [SELECT Id FROM Profile WHERE Name = 'CH_Agent'];
 			String systemAdministratorEmail = 'naip' + DateTime.now().getTime() + '@test.com';
@@ -233,7 +231,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	static void validateCaseTeamMemberCheck (){
 		try{
 			Test.startTest();	  
-			boolean returnMsg =CH_CA_CaseTeamAssignment_Controller.validateInsertMember(null,null);	 
+			CH_CA_CaseTeamAssignment_Controller.validateInsertMember(null,null);	 
 			Test.stopTest();			
 		} catch (AuraHandledException e) {
 			System.assert(e.getMessage()!=null);
@@ -243,7 +241,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	@istest
 	static void getRecords (){
 		Test.startTest();
-		List<String> pickListValues= CH_CA_CaseTeamAssignment_Controller.getRecords();
+		CH_CA_CaseTeamAssignment_Controller.getRecords();
 		Test.stopTest();
 		//System.assert(testCase.severity == 'Minor','Expected Minor. Actual ' + testCase.severity);
 	}
@@ -255,14 +253,13 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 			Id userid =Userinfo.getUserId();	
 			User loginUser = [SELECT Id FROM User WHERE Alias = 'TSTNP1' LIMIT 1]; 
 			Test.startTest();
-			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 			testCase.OwnerId=userid;
 			insert testCase;
 			Test.stopTest();
 			System.runAs(loginUser){	 
-	boolean returnMsg =CH_CA_CaseTeamAssignment_Controller.validateInsertMember(loginUser.Id,testCase.Id);	
-			}
-			
+	CH_CA_CaseTeamAssignment_Controller.validateInsertMember(loginUser.Id,testCase.Id);	
+			}			
 		} catch (AuraHandledException e) {
 			System.assert(e.getMessage()!=null);
 		}
@@ -276,7 +273,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 			boolean returnMsg=false;
 			Test.startTest();
 			User loginUser = [SELECT Id FROM User WHERE Alias = 'TSTNP1' LIMIT 1]; 
-			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 			insert testCase;	
 			Profile systemAdministratorProfile = [SELECT Id FROM Profile WHERE Name = 'CH_Agent'];
 			String systemAdministratorEmail = 'naip' + DateTime.now().getTime() + '@test.com';
@@ -311,7 +308,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 			member.CH_Workgroup__c = workgroup.Id;
 			member.CH_Workgroup_Member_Type__c = 'User';			
 			insert member;	  
-			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 			testCase.CH_Workgroup__c=workgroup.Id;
 			insert testCase;	
 			Test.stopTest();
@@ -336,9 +333,9 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	// Create account owner
 	UserRole getPortalRole = [Select Id From UserRole Where PortalType = 'None' Limit 1];
 	User portalAccountOwner = new User(Lastname='tempUser1',Firstname='tempUser_noworkgroup',Alias = 'AC-OWNER',
-			   UserRoleId = getPortalRole.Id,ProfileId = getSysProfile.Id, Username = System.now().millisecond() + 'AC-OWNER@test.com',
-			   Email= System.now().millisecond() + 'test2@test.com', EmailEncodingKey='UTF-8',LanguageLocaleKey='en_US',
-			   LocaleSidKey='en_US',TimeZoneSidKey='America/Chicago');
+	  UserRoleId = getPortalRole.Id,ProfileId = getSysProfile.Id, Username = System.now().millisecond() + 'AC-OWNER@test.com',
+	  Email= System.now().millisecond() + 'test2@test.com', EmailEncodingKey='UTF-8',LanguageLocaleKey='en_US',
+	  LocaleSidKey='en_US',TimeZoneSidKey='America/Chicago');
 	newUsers.add(portalAccountOwner);
 	insert newUsers;
 	// Sec group
@@ -353,7 +350,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 	insert lstGroupMember; 
 			}
 			User getTempUserDetails = [SELECT Id FROM User WHERE Firstname = 'tempUser_noworkgroup' LIMIT 1]; 
-			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 			testCase.CH_SecurityGroup__c='SEC_Default';
 			insert testCase;
 			Test.stopTest();
@@ -405,7 +402,7 @@ public class CH_CA_CaseTeamAssignment_Controller_Test{
 			User getUserDtls = [SELECT Id FROM User WHERE Firstname = 'tempUser_Workgroup' LIMIT 1]; 
 			// Get the workgroup
 			CH_workgroup__c workgroup = [SELECT Id FROM CH_workgroup__c WHERE Name =:CH_UTIL_TEST.WORKGROUPNAME LIMIT 1];	
-			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'Nokia Standard Case', false);
+			Case testCase = CH_UTIL_TEST.createCaseNotSaved('TEST1', 'Minor', 'No', 'CH_NokiaStandardCase', false);
 			testCase.CH_Workgroup__c=workgroup.Id;
 			testCase.CH_SecurityGroup__c='SEC_Default';
 			insert testCase;

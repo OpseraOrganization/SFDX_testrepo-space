@@ -1,4 +1,4 @@
-/**
+/***
 * This class contains unit tests for validating the behavior of Apex classes
 * and triggers.
 *
@@ -20,7 +20,6 @@
 *
 * See the Apex Language Reference for more information about Testing and Code Coverage.
 */
-
 @isTest
 public class CH_ServiceContractTriggerTest {
 
@@ -49,7 +48,6 @@ public class CH_ServiceContractTriggerTest {
 		ConatctList = CH_EntitlementTestData.createContactRecord(j,AccountListNL);
 		insert ConatctList;
 		
-		
 		List<Product2> productlist =new List<Product2>();
 		productlist = CH_EntitlementTestData.createProductRecord(j);
 		insert productlist;
@@ -73,6 +71,7 @@ public class CH_ServiceContractTriggerTest {
 			acrObj.NCP_Entitlement_Relationship__c = true;
 			acrList.add(acrObj);
 		}
+		
 		insert acrList;
 		system.assertNotEquals(acrList[1].id, null);
 	
@@ -89,7 +88,6 @@ public class CH_ServiceContractTriggerTest {
 		serContract.Pricebook2Id = customPB1.Id;
 		INSERT serContract;
 		System.assertNotEquals(serContract.id, null);
-	
 	}
 	
 	public testMethod static void test(){
@@ -185,7 +183,6 @@ public class CH_ServiceContractTriggerTest {
 	}
 	
 	public testMethod static void test2(){
-		
 		
 		Pricebook2 cusPB1 = [SELECT Id FROM Pricebook2 where Name LIKE '%Nokia CARE Price Book%' limit 1 ];
 		
@@ -739,4 +736,74 @@ public class CH_ServiceContractTriggerTest {
 		insert oContractShare2;
 		Test.stopTest();
 	}
+	
+	public static testMethod void testAuthorizedContact(){ 
+		profile sysAdminProfile=[select id,name from profile where name='System Administrator'];
+		User createTestUser = new User(alias = 'abc', email = samplemail, emailencodingkey = 'UTF-8', firstName = 'test', lastname = 'Testing',	 
+			LanguageLocaleKey='en_US', localesidkey = 'en_US', profileid = sysAdminProfile.id,  
+			Country__c= 'Canada',Market__c='MARKET NORTH AMERICA', 
+			timezonesidkey = 'America/Los_Angeles', Username = samplemail  + '.org',Restriction_Level__c = 'Confidential', 
+			Nokia_ID__c= '6777777666');
+		insert createTestUser;
+		
+		Pricebook2 pbEntry = [SELECT Id FROM Pricebook2 where Name LIKE '%Nokia CARE Price Book%' limit 1 ];
+		
+		Id acctRecordTypeId=Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName().get('Prospect').getRecordTypeId();
+		Id serviRecordTypeId=Schema.SObjectType.ServiceContract.getRecordTypeInfosByDeveloperName().get('CH_ServiceContract').getRecordTypeId();
+		
+		Account acc6=new Account();
+		acc6.Name='test';
+		acc6.RecordTypeId=acctRecordTypeId;
+		acc6.BillingCountry='India';
+		acc6.BillingCity='Hyd';
+		acc6.BillingStreet='Hyd';
+		acc6.Customer_Compliance__c='US_Govern';
+		insert acc6;
+		
+		Account acc7=new Account();
+		acc7.Name='test11';
+		acc7.RecordTypeId=acctRecordTypeId;
+		acc7.BillingCountry='India';
+		acc7.BillingCity='Hyd';
+		acc7.BillingStreet='Hyd';
+		acc7.ParentId=acc6.id;
+		insert acc7;
+		
+		ServiceContract serContract15 =new ServiceContract();
+		serContract15.RecordTypeId = serviRecordTypeId;
+		serContract15.AccountId = acc6.id;
+		serContract15.Name = serContrctName;
+		serContract15.CurrencyIsoCode='EUR';
+		serContract15.CH_CDB_ContractId__c = '123456tes1t';
+		serContract15.CH_CDB_PreviousContractId__c = '123456test';
+		serContract15.StartDate = system.today();
+		serContract15.EndDate = system.today()+10;
+		serContract15.CH_CAPM_EmailAddress__c = capmemailadd;
+		serContract15.CH_PriceBook__c = pricebookname;
+		serContract15.Pricebook2Id = pbEntry.Id;
+		Test.startTest();
+		
+		insert serContract15;  
+		
+		List<Account> getAcc = [Select id from Account LIMIT 1];
+		Contact contObj = new contact();
+		contObj.AccountId = getAcc[0].id;
+		contObj.FirstName = 'Test Contact';
+		contObj.LastName = 'TCS Data fix';
+		contObj.Email =   createTestUser.Email;
+		contObj.Market__c = 'Market India';
+		contObj.CH_ContactType__c = 'customer';
+		contObj.CurrencyIsoCode = 'EUR';
+		Insert contObj;
+		Map<Id,ServiceContract> oldSerConMap = new Map<Id,ServiceContract>();
+		ServiceContract oldContract = new ServiceContract(id=serContract15.id, ownerID=Userinfo.getUserId());
+		oldSerConMap.put(oldContract.Id, oldContract);
+		serContract15.OwnerId=createTestUser.Id;
+		update serContract15;
+		List<ServiceContract> serConList = new List<ServiceContract>();
+		serConList.add(serContract15);
+		CH_ServiceContractTriggerHelper.updateAuthorizedContact(oldSerConMap,serConList);
+		Test.stopTest();
+	}
+
 }

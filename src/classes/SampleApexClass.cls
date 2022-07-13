@@ -8,6 +8,6 @@ public class SampleApexClass {
     }
     
     public static testMethod void testNewMethod() {
-        System.debug('testNewMethod SampleApexClass');
+        System.debug('testNewMethod SampleApexClass - change in sys log');
     }
 }

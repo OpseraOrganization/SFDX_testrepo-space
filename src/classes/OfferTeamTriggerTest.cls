@@ -15,10 +15,7 @@ public class OfferTeamTriggerTest {
 		List<Offer__c> offerList = new List<Offer__c>();
 		List<OpportunityTeamMember> opportunityTeamMemberList1 = new List<OpportunityTeamMember>();
 		List<Account> accountList = new List<Account>();
-		List<ContentDocumentLink>contentDocumentId = new List<ContentDocumentLink>();
-		List< ContentDocumentLink>emptyContentDocumentId = new List<ContentDocumentLink>();
 		Id userId;
-		Id linkedEntityId;
 		Set<Id> opportunityId = new Set<Id>();
 		List<Opportunity> opportunityList = new List<Opportunity>();
 
@@ -31,30 +28,14 @@ public class OfferTeamTriggerTest {
 			database.insert(accountList);
 			opportunityList = TestDataFactory.OpportunityCreation(1,accountList[0]);
 			database.insert(opportunityList[0]);
-			opportunityList[0].StageName = 'Win the Case (Negotiate)';
-			opportunityList[0].Phase_Status__c = 'Offer Submitted to Customer (Manual)';
-			//database.update(opportunityList[0]);
-			
+
+			Test.startTest();
 			offerList = TestDataFactory.OfferCreation(1, opportunityList[0]);
 			database.insert(offerList);
-			Test.startTest();
-			ContentVersion  conVersionVar = TestDataFactory.createContentVersion_New(1,'Bid Directive')[0];
-			database.insert(conVersionVar);			
-			ContentVersion conVersion = [SELECT ContentDocumentId,Document_Type_POC__c FROM ContentVersion 
-											   where ID =: conVersionVar.Id  LIMIT 1];			
-			//creating contentDocumentLink
-			ContentDocumentLink conDocumentLink = TestDataFactory.createContentDocumentLink_New(1,offerList[0].Id,conVersion.ContentDocumentId)[0];
-			conDocumentLink.ContentDocumentId = conVersion.ContentDocumentId;
-			database.insert(conDocumentLink);			  
-			contentDocumentId = [SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId =: userId];
-			//System.assertEquals(contentDocumentId,emptyContentDocumentId);
-			
 			offerTeamMemberList = TestDataFactory.offerTeamCreation(1, offerList[0],userList[0]);
 			database.insert(offerTeamMemberList);
 			database.update(offerTeamMemberList);
-			contentDocumentId = [SELECT LinkedEntityId FROM ContentDocumentLink WHERE LinkedEntityId =: userId];   
 			database.delete(offerTeamMemberList);
-			offerTeamMemberList = TestDataFactory.offerTeamCreation(2, offerList[0], userList[0]); 
 			Test.stopTest();
 		}
 	}
@@ -87,5 +68,23 @@ public class OfferTeamTriggerTest {
 			insert(offerTeam);
 			test.stopTest();
 		}
+	}
+	
+	static testMethod void testAutoOfferTeamCreation(){
+		User userCreation = TestDataFactory.userCreation(1,GlobalConstants.SYSTEM_AdMINISTRATOR)[0];
+		system.runAs(userCreation)
+		{
+			Account accountCreation = TestDataFactory.createAccount(1)[0];
+			insert accountCreation;
+			
+			Test.startTest();
+			Opportunity optyCreation = TestDataFactory.OpportunityCreation(1,accountCreation)[0];
+			insert optyCreation;
+			Offer__c offer = TestDataFactory.OfferCreation(1, optyCreation)[0];
+			insert offer;
+			Test.stopTest();
+			OfferTeamHelper.createOfferTeam(new List<Opportunity>{optyCreation});
+		}
+		
 	}
 }

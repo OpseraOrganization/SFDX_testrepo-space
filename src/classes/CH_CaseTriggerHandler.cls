@@ -8,6 +8,7 @@
 * Test Class: CH_CaseTriggerHelperTest
 *****************************************/
 public class CH_CaseTriggerHandler {
+	Public Static Boolean isAuditTrailEnabled= False;//Changes added for NOKIASC-39624
 	/********************
 	*Method Name: beforeInsertOperation
 	*Parameter: New Case List
@@ -20,41 +21,44 @@ public class CH_CaseTriggerHandler {
 			//Added CH Recordtype check as part of Code Optimization -- 27608 --> By Satya Pagadala
 			// Filter CH Case Record Type
 			newCaseList = isolateCHCasesbyRecordType(newCaseList);
-			if(newCaseList.size()>0){	
-	// Get non S2S Cases
-	List<Case> newCaseNonS2SList = isolateCHCasesNonS2S(newCaseList);
-	List<Case> newCaseS2SList = isolateNewS2SCasesToMap(newCaseList);
-	CH_Settings__c entExpAsyncCheck = CH_Settings__c.getValues('checkEntitlementExceptionCases');
-	CH_Settings__c blackListAsyncCheck = CH_Settings__c.getValues('CH_BlacklistCaseReportTrigger');
-	//Moving CH Case Process Builder Logic
+			if(newCaseList.size()>0){
+	isAuditTrailEnabled=True;
+				// Get non S2S Cases
+				List<Case> newCaseNonS2SList = isolateCHCasesNonS2S(newCaseList);
+				List<Case> newCaseS2SList = isolateNewS2SCasesToMap(newCaseList);
+				CH_Settings__c entExpAsyncCheck = CH_Settings__c.getValues('checkEntitlementExceptionCases');
+				CH_Settings__c blackListAsyncCheck = CH_Settings__c.getValues('CH_BlacklistCaseReportTrigger');
+				//Moving CH Case Process Builder Logic
 				CH_CaseTriggerHelper.populateCaseFields(new Map <Id,Case>(),newCaseList);
-	// Validate the new CH type cases to ensure:
-	// Authorised user is correct if Asset and entitlements are selected, etc.
-	if(newCaseNonS2SList.size()>0)
-		CH_CaseTriggerHelper.populateCaseEntitlement(newCaseNonS2SList);
-	if(newCaseS2SList.size()>0){
-		CH_CaseTriggerHelper.populateS2SCases(newCaseS2SList);	
-		CH_CaseTriggerHelper.validateServiceCaseCreation(newCaseS2SList, new Map <Id,Case>());//added newCaseS2SList PArameter as part of NOKIASC-27614
-	}
-	//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
-	
-	CH_CaseTriggerHelper.setFlagForCaseMilestone(newCaseList, true);
-	if(newCaseNonS2SList.size()>0){
-		//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
-		
-		CH_CaseTriggerHelper.updateProductDetails(newCaseNonS2SList);
-	}
-	CH_CaseTriggerHelper.fetchCaseFields(newCaseList, null);
-	if(blackListAsyncCheck != null && blackListAsyncCheck.SettingValue__c == 'true')
-		CH_CaseTriggerHelper.CH_BlacklistCaseReportTrigger(newCaseList);
-	//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
-	
-	CH_CaseTriggerHelper.setEmailTypes(newCaseList);			   
-	
-	// Set Entitlement Exception field
-	if(entExpAsyncCheck != null && entExpAsyncCheck.SettingValue__c == 'true')
-		CH_CaseTriggerHelper.checkEntitlementExceptionCases(newCaseList);
-	CH_SecurityUtils.setCaseSecurityGroups(newCaseList, null);	
+				// Validate the new CH type cases to ensure:
+				// Authorised user is correct if Asset and entitlements are selected, etc.
+				if(newCaseNonS2SList.size()>0)
+					CH_CaseTriggerHelper.populateCaseEntitlement(newCaseNonS2SList);
+				if(newCaseS2SList.size()>0){
+					CH_CaseTriggerHelper.populateS2SCases(newCaseS2SList);  
+					CH_CaseTriggerHelper.validateServiceCaseCreation(newCaseS2SList, new Map <Id,Case>());//added newCaseS2SList PArameter as part of NOKIASC-27614
+				}
+				//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
+				
+				CH_CaseTriggerHelper.setFlagForCaseMilestone(newCaseList, true);
+				if(newCaseNonS2SList.size()>0){
+					//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
+					
+					CH_CaseTriggerHelper.updateProductDetails(newCaseNonS2SList);
+				}
+				CH_CaseTriggerHelper.fetchCaseFields(newCaseList, null);
+				if(blackListAsyncCheck != null && blackListAsyncCheck.SettingValue__c == 'true')
+					CH_CaseTriggerHelper.CH_BlacklistCaseReportTrigger(newCaseList);
+				//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
+				
+				CH_CaseTriggerHelper.setEmailTypes(newCaseList);			   
+				
+				// Set Entitlement Exception field
+				if(entExpAsyncCheck != null && entExpAsyncCheck.SettingValue__c == 'true')
+					CH_CaseTriggerHelper.checkEntitlementExceptionCases(newCaseList);
+				
+				CH_CaseTriggerHelper.populateCaleaFlag(newCaseList);//NOKIASC-36342
+				CH_SecurityUtils.setCaseSecurityGroups(newCaseList, null);  //Nokiasc-38727
 			}
 		}
 		
@@ -73,69 +77,62 @@ public class CH_CaseTriggerHandler {
 			// Filter CH Case Record Type
 			newCaseList = isolateCHCasesbyRecordType(newCaseList);
 			if(newCaseList.size()>0){
-	//31311 validate Case LegalEntity in mapping table s2s legal entity
+				//31311 validate Case LegalEntity in mapping table s2s legal entity
 				CH_CaseTriggerHelper.chS2SLegalEntityCheck(oldCaseMap,newCaseList);
 				//end 3111
-	 CH_CaseTriggerHelper.probCreatedCheck(oldCaseMap,newCaseList);
-	CH_Settings__c entExpAsyncCheck = CH_Settings__c.getValues('checkEntitlementExceptionCases');
-	CH_Settings__c blackListAsyncCheck = CH_Settings__c.getValues('CH_BlacklistCaseReportTrigger');
-	//Moving CH Case Process Builder Logic
+				CH_CaseTriggerHelper.probCreatedCheck(oldCaseMap,newCaseList);
+				CH_Settings__c entExpAsyncCheck = CH_Settings__c.getValues('checkEntitlementExceptionCases');
+				CH_Settings__c blackListAsyncCheck = CH_Settings__c.getValues('CH_BlacklistCaseReportTrigger');
+				//Moving CH Case Process Builder Logic
 				CH_CaseTriggerHelper.populateCaseFields(oldCaseMap,newCaseList);
-	// US 22292 : Non-Care - Validation rule that Contact must be Nokia Employee
-	//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
-	
-	//
-	// Get non S2S Cases
-	List<Case> newCaseNonS2SList = isolateCHCasesNonS2S(newCaseList);
-	CH_CaseTriggerHelper.fetchCaseFields(newCaseList, oldCaseMap);
-	if(blackListAsyncCheck != null && blackListAsyncCheck.SettingValue__c == 'true')
-		CH_CaseTriggerHelper.CH_BlacklistCaseReportTrigger(newCaseList);
-	//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
-	
-	if(newCaseNonS2SList.size()>0){
-		CH_CaseTriggerHelper.updateProductDetails(newCaseNonS2SList);
-		//added by Abdallah
-		CH_CaseTriggerHelper.updateCurrentQueue(oldCaseMap,newCaseNonS2SList);
-	}
-	// Validate the new CH type cases to ensure: 
-	// Authorised user is correct if Asset and entitlements are selected, etc.
-	
-	//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
-	
-	CH_CaseTriggerHelper.setStatusAfterQueueAssignment(oldCaseMap, newCaseList);
-	CH_CaseTriggerHelper.updateProblemParentIncident(oldCaseMap,newCaseList);
-	
-	CH_CaseTriggerHelper.queueSecurityGroupsCheckOwnerChange(newCaseList, oldCaseMap);
-	//Added as PArt of Code-Opt
-	if(CH_AvoidRecursion.runBeforeInsertOnce()){
-		// Validate the new CH type cases to ensure: 
-		// Authorised user is correct if Asset and entitlements are selected, etc.
-		CH_CaseTriggerHelper.validateServiceCaseCreation(newCaseList, oldCaseMap);// added as part of NOKIASC-27614 Code-Opt
-		CH_CaseTriggerHelper.createS2SCAPSAttachmentsOnCase(oldCaseMap, newCaseList);// added as part of NOKIASC-27612 Code-Opt.
-		
-	}
-	// Update Entitlement Exception Field
-	if(entExpAsyncCheck != null && entExpAsyncCheck.SettingValue__c == 'true')
-		CH_CaseTriggerHelper.checkEntitlementExceptionCases(oldCaseMap, newCaseList);
-	CH_CaseTriggerHelper.completeMilestoneOnCancellation(newCaseList);
-	CH_CaseTriggerHelper.setEmailTypes(newCaseList);
-	//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
-	
-	CH_CaseTriggerHelper.handleP20orderDetails(oldCaseMap, newCaseList);
-	
-	CH_CaseTriggerHelper.updateFlagForCaseMilestone(oldCaseMap, newCaseList);
-	CH_CaseTriggerHelper.updateMilestoneCompletionDate(oldCaseMap, newCaseList);
-	
-	
-	CH_SecurityUtils.setCaseSecurityGroups(newCaseList, oldCaseMap);
-				//NOKIASC-34615
-				CH_CaseTriggerHelper.checkCancelledCases(newCaseList, oldCaseMap);
-	
+				// US 22292 : Non-Care - Validation rule that Contact must be Nokia Employee
+				//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
+				// Get non S2S Cases
+				List<Case> newCaseNonS2SList = isolateCHCasesNonS2S(newCaseList);
+				List<Case> newCaseS2SList = isolateNewS2SCasesToMap(newCaseList);
+				CH_CaseTriggerHelper.fetchCaseFields(newCaseList, oldCaseMap);
+				if(blackListAsyncCheck != null && blackListAsyncCheck.SettingValue__c == 'true')
+					CH_CaseTriggerHelper.CH_BlacklistCaseReportTrigger(newCaseList);
+				//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
 				
+				if(newCaseNonS2SList.size()>0){
+					CH_CaseTriggerHelper.updateProductDetails(newCaseNonS2SList);
+					//added by Abdallah
+					CH_CaseTriggerHelper.updateCurrentQueue(oldCaseMap,newCaseNonS2SList);
+				} else if(newCaseS2SList.size() >0){ //NOKIASC-34554 defect logic to assign Product deials
+					CH_CaseTriggerHelper.updateProductDetails(newCaseS2SList);
+				}
+				// Validate the new CH type cases to ensure: 
+				// Authorised user is correct if Asset and entitlements are selected, etc.
+				
+				//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
+				
+				CH_CaseTriggerHelper.setStatusAfterQueueAssignment(oldCaseMap, newCaseList);
+				CH_CaseTriggerHelper.updateProblemParentIncident(oldCaseMap,newCaseList);
+				
+				CH_CaseTriggerHelper.queueSecurityGroupsCheckOwnerChange(newCaseList, oldCaseMap);
+				//Added as PArt of Code-Opt
+				if(CH_AvoidRecursion.runBeforeInsertOnce()){
+					// Validate the new CH type cases to ensure: 
+					// Authorised user is correct if Asset and entitlements are selected, etc.
+					CH_CaseTriggerHelper.validateServiceCaseCreation(newCaseList, oldCaseMap);// added as part of NOKIASC-27614 Code-Opt
+					CH_CaseTriggerHelper.createS2SCAPSAttachmentsOnCase(oldCaseMap, newCaseList);// added as part of NOKIASC-27612 Code-Opt.
+					
+				}
+				// Update Entitlement Exception Field
+				if(entExpAsyncCheck != null && entExpAsyncCheck.SettingValue__c == 'true')
+					CH_CaseTriggerHelper.checkEntitlementExceptionCases(oldCaseMap, newCaseList);
+				CH_CaseTriggerHelper.completeMilestoneOnCancellation(newCaseList);
+				CH_CaseTriggerHelper.setEmailTypes(newCaseList);
+				//Merged below method in populateCaseFields method as part of code optimization --> 27620 -- By Satya
+				CH_CaseTriggerHelper.handleP20orderDetails(oldCaseMap, newCaseList);
+				CH_CaseTriggerHelper.updateMilestoneCompletionDate(oldCaseMap, newCaseList);
+				CH_SecurityUtils.setCaseSecurityGroups(newCaseList, oldCaseMap);
+				//NOKIASC-34615
+				CH_CaseTriggerHelper.checkCancelledCases(newCaseList, oldCaseMap); 
 			}
 		}
-		
-		
+		CH_CaseTriggerHelper.updateFlagForCaseMilestone(oldCaseMap, newCaseList);
 	}
 	
 	/********************
@@ -160,19 +157,20 @@ public class CH_CaseTriggerHandler {
 	CH_CaseEmailHandler.notifyAdditionalContacts(newCaseList);
 	CH_CompleteMilestoneOnInsert.completeMilestonesOnInsert(caseIds);
 	CH_CaseTriggerHelper.createS2SCAPSAttachmentsOnCase(new Map<Id,Case>(), newCaseList);// added as part of NOKIASC-27612 Code-Opt.
-			
+	   CH_ExternalInterfaceUTIL.sendCreationToExternalSystem(newCaseList);
 			
 	// Manage sharing of authorization contacts 
 	CH_AuthorizedContactSharing.handleSharing(new Map<Id, Case>(newCaseList), new Map<Id, Case>(), true, false);
 	
 	CH_CaseTriggerHelper.handleP20orderDetails(null, newCaseList);
 	if(!System.isQueueable() && !System.isfuture()){
-					Id jobId = System.enqueueJob(new CH_CaseProcessQueueable(caseIds,new Map<Id,Case>(),true,false));
+					System.enqueueJob(new CH_CaseProcessQueueable(caseIds,new Map<Id,Case>(),true,false));
 		//29710
 					CH_CaseTriggerHelper.getCasesForSubscribers(null, newCaseList);
 	}
 				//Changes for NOKIASC-31109
 			   CH_CaseTriggerHelper.checkCriteriaForNGNAIPMessage(null, newCaseList);
+	  CH_CaseTriggerHelper.insertIncidentsDefect(newCaseList);//NOKIASC-38501
 			}
 		}
 		}
@@ -188,9 +186,10 @@ public class CH_CaseTriggerHandler {
 		//Moved this New List out of the isolation check	
 		newCaseList = isolateCHCasesbyRecordType(newCaseList);
 		if(newCaseList.size()>0){
+			if(CH_AvoidRecursion.runAfterUpdateOnce()) {
+	CH_SecurityUtils.deletMembersOnCasesBasedonSecurityGroups(newCaseList, oldCaseMap);
 				Set<Id> caseIds = new Set<Id>();
-	if(CH_AvoidRecursion.runAfterUpdateOnce()) {
-				List<Case> caseTeamCaseList = new List<Case>();	
+				List<Case> caseTeamCaseList = new List<Case>(); 
 	for (Case caseObj : newCaseList){
 					caseIds.add(caseObj.Id);
 					// Building filtered Id set to pass to addMembersToCaseTeam function as per NOKIASC-27856 fix
@@ -199,9 +198,11 @@ public class CH_CaseTriggerHandler {
 						caseTeamCaseList.add(caseObj);
 					}
 				} 
+	//Changes added as a Part of NOKIASC-35322
+				CH_CaseTriggerHelper.checkDefectSolutionTargetAndPausedDate(oldCaseMap,newCaseList);
 	CH_CaseTriggerHelper.AddoRemoveProblemOwnerForCases(oldCaseMap, newCaseList);
 	// start Update Known Error
-	// end Update Known Error			
+	// end Update Known Error		   
 				if(!caseTeamCaseList.isEmpty()){
 					CH_CaseTriggerHelper.addMembersToCaseTeamWrapper(caseTeamCaseList);
 				}
@@ -226,7 +227,7 @@ public class CH_CaseTriggerHandler {
 		CH_ExternalInterfaceUTIL.rejectInvalidS2SCases(newCaseS2SList);
 		if(CH_Integration__c.getInstance().EnableIntegration__c) {
 			CH_CaseTriggerHelper.handleUpdatesS2SCases(oldCaseMap, newCaseS2SList);
-		}	 
+		}	
 	}
 	
 	 // Raji }
@@ -236,36 +237,36 @@ public class CH_CaseTriggerHandler {
 			CH_CaseTriggerHelper.updateIncidentsDefect(oldCaseMap, newCaseList);
 			// Post to chatter on problem when it's related/dissociated from an incident
 			CH_CaseTriggerHelper.addProblemChatterPost(oldCaseMap, newCaseList);	
+			if(CH_AvoidRecursion.runAfterInsertOnce() && !System.isQueueable() && !System.isfuture()) {
+	System.enqueueJob(new CH_CaseProcessQueueable(caseIds,oldCaseMap,false,true));
+			}
 			// Manage sharing of authorization contacts 
 			CH_AuthorizedContactSharing.handleSharing(new Map<Id, Case>(newCaseList), oldCaseMap, false, true);
 				
 			//31109
 				CH_CaseTriggerHelper.checkCriteriaForNGNAIPMessage(oldCaseMap, newCaseList);
-			
+			CH_CaseTriggerHelper.updateCALEAInCAPS(oldCaseMap, newCaseList);//NOKIASC-37029
 			}//Raji 
 			//START*********Recursion handled differently in main execution class, so DO NOT change
 			CH_CaseTriggerHelper.updateAttchmentinCAPS(oldCaseMap, newCaseList);
 			//END***********Recursion handled differently in main execution class, so DO NOT change
-			if(userinfo.getName()!='NAIP User'){
-			 CH_CustomFieldTracking_beta.trackFieldChanges(oldCaseMap,newCaseList);	
+			if(userinfo.getName()!='NAIP User' && !Test.isRunningTest()  && !isAuditTrailEnabled){
+			 CH_CustomFieldTracking_beta.trackFieldChanges(oldCaseMap,newCaseList); 
 			}
 			//NOKIASC-31957
 			CH_CaseTriggerHelper.checkCompletedCases(newCaseList, oldCaseMap);
-			if(CH_AvoidRecursion.runAfterInsertOnce() && !System.isQueueable() && !System.isfuture()) {
-	Id jobId = System.enqueueJob(new CH_CaseProcessQueueable(caseIds,oldCaseMap,false,true));
-			}
 		}
 		
-	}	  
+	}	 
 	
 	/********************
 	*Method Name: isolateCHCasesbyRecordType
 	*Parameter: New Case List 
 	*Last updated by: TSALEM (2018.08.09)
 	*Description: isolate only the Case Handling cases (by record type)
-	*	  This is to reduce the size of the list if a bulk amount of Cases are being loaded (that are not CH specific)
-	*	  (Performance improvement step)
-	*	  User Story: NOKIASC-494
+	*	 This is to reduce the size of the list if a bulk amount of Cases are being loaded (that are not CH specific)
+	*	 (Performance improvement step)
+	*	 User Story: NOKIASC-494
 	*******************/
 	private static List < Case > isolateCHCasesbyRecordType(List < Case > caseList) {
 		List < Case > chCases = new List < Case > ();
@@ -289,7 +290,7 @@ public class CH_CaseTriggerHandler {
 	//To fix 101 soql issue, created new field CH_ProfileId__c in custom settings instead of querying Profile Names
 		//As of in custom setting we have only two profiles
 		//By Satya on 20th Feb 2020
-		Boolean isIntegrationProfile = false;	
+		Boolean isIntegrationProfile = false;   
 		List<CH_Integration_Profiles__c> intProfLst = CH_Integration_Profiles__c.getall().values();
 		if(intProfLst.size()>0){
 			for(CH_Integration_Profiles__c intProf : intProfLst){
@@ -332,10 +333,20 @@ public class CH_CaseTriggerHandler {
 	*Description: isolates non-S2S Cases
 	*******************/
 	private static List<Case> isolateCHCasesNonS2S(List<Case> caseList) {
+		Boolean isIntegrationProfile = false;   
+		List<CH_Integration_Profiles__c> intProfLst = CH_Integration_Profiles__c.getall().values();
+		if(intProfLst.size()>0){
+			for(CH_Integration_Profiles__c intProf : intProfLst){
+				if(UserInfo.getProfileId() == intProf.CH_ProfileId__c){
+					isIntegrationProfile = true;
+				}
+			}
+		}
 		List<Case> chCases = new List<Case> ();
 		for (Case caseObj: caseList) {
 			//Added CH Recordtype check as part of Code Optimization -- 27608 --> By Satya Pagadala
-			if (caseObj.Origin != 'S2S' && caseObj.CH_RecordTypeCheck__c) {
+			//if (caseObj.Origin != 'S2S' && caseObj.CH_RecordTypeCheck__c) {
+			if (!isIntegrationProfile && caseObj.CH_RecordTypeCheck__c) {
 	chCases.add(caseObj);
 			}
 		}

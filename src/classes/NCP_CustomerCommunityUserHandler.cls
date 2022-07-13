@@ -1,18 +1,26 @@
 global without sharing class NCP_CustomerCommunityUserHandler implements Auth.SamlJitHandler {
-	
 	private class JitException extends Exception {
 	}
-	
+	static Boolean userReactivationUpdateFlag = false;
 	static final String NOT_AVAILABLE = 'Not Available';
+	static Boolean hasACRChanged = true;
+	static Boolean newACRCreationRequiredFlag = false;
+	static Boolean oldACRDeletionRequiredFlag = false;
+	static Id customerUserId;
+	static Map<Id, AccountContactRelation> acrMap = new Map<Id, AccountContactRelation>();
+	static Set<Id> incomingAccountIds = new Set<Id>();
+	static Id accountIdToBeDeleted;
+	static Contact existingContactRecord;
 	
 	@testVisible
-	global User createUser(Id samlSsoProviderId, Id communityId, Id portalId,String federationIdentifier, Map<String, String> attributes, String assertion) {
-		
+	global User createUser(Id samlSsoProviderId, Id communityId, Id portalId, String federationIdentifier, Map<String, String> attributes, String assertion) {
 		String emailAdd, uName1, userRelationship = '';
-		
 		User u = new User();
+		String trainingOnly;
 		
-		//try{	  
+		//Check for Embargo Countries - start
+		checkForEmbargoCountries(attributes);
+		//Check for Embargo Countries - stop
 		
 		if (attributes.containsKey('Relationship')) {
 			userRelationship = (attributes.get('Relationship')).trim();
@@ -30,35 +38,114 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		if(user.size()>0)
 		{
 			Contact con = [select ID,Email FROM Contact WHERE Id =: user[0].contactID];
+			if(userRelationship == 'Internal'){
+				u = user[0];
+				u.Alias = attributes.containsKey('nsnDomainId') ? attributes.get('nsnDomainId') : u.LastName.left(4) + '1';
+				update u;
+			}
 			if((con.ID != NULL && con.Email == user[0].Email) || userRelationship=='Internal'){
-				
 				u = user[0];
 				String decodedAssertion = EncodingUtil.base64Decode(assertion).toString();
+				u.isActive = true;
 				handleJit(false, u, samlSsoProviderId, communityId, portalId, federationIdentifier, attributes, decodedAssertion);
+			}
+		}else{  
+			if (attributes.containsKey('TrainingOnlyUser'))
+				trainingOnly = (attributes.get('TrainingOnlyUser'));
+		}
+		
+		if(trainingOnly == 'true'){
+			Try{
+				update u;
+			}
+			Catch(Exception e){
+				String errMsg = Label.NCP_TrainingOnlyUser_Error_Message;
+				throwJitException(Label.NCP_TrainingOnlyUser_Link + errMsg, 'emailID', attributes);		
 			}
 		}else{
 			u = new User(); 
-			String decodedAssertion = EncodingUtil.base64Decode(assertion).toString();
-			handleJit(true, u, samlSsoProviderId, communityId, portalId, federationIdentifier, attributes, decodedAssertion);
+			String decodedAssertion = EncodingUtil.base64Decode(assertion).toString();	
+			handleJit(true, u, samlSsoProviderId, communityId, portalId, federationIdentifier, attributes, decodedAssertion);	
 		}
+		
 		return u;
 	}
 	
 	global void updateUser(Id userId, Id samlSsoProviderId, Id communityId, Id portalId,String federationIdentifier, Map<String, String> attributes, String assertion) {
+		//Check for Embargo Countries - start
+		checkForEmbargoCountries(attributes);
+		//Check for Embargo Countries - stop
 		
-		List<User> users = [SELECT Id, contactId, isActive, Profile.Name,ManagerId, NCP_Is_Internal__c, Street, City, NokiaUID__c, Nokia_ID__c, NCP_SSOPID__c, NCP_IsHorizontal__c, NCP_Horizontal_Company_Name__c, State, PostalCode, CountryCode, FederationIdentifier, Email, UserName FROM User WHERE Id = :userId];
+		List<User> users = [SELECT Id, contactId, isActive, Profile.Name,ManagerId, NCP_Is_Internal__c, Street, City, NokiaUID__c, Nokia_ID__c, NCP_SSOPID__c, NCP_IsHorizontal__c, NCP_Horizontal_Company_Name__c, State, PostalCode, CountryCode, FederationIdentifier, Email, UserName, LastName FROM User WHERE Id = :userId];
+		String decodedAssertion = EncodingUtil.base64Decode(assertion).toString();
 		if (users.isEmpty()) {
 			return;
 		}
 		
 		User u = users[0];
-		String decodedAssertion = EncodingUtil.base64Decode(assertion).toString();
+		if(attributes.containsKey('Relationship') && attributes.get('Relationship') == 'Internal'){
+			u.Alias = attributes.containsKey('nsnDomainId') ? attributes.get('nsnDomainId') : u.LastName.left(4) + '1';
+			update u;
+		}
+		if(!u.isActive && String.isNotBlank(u.ContactId)){
+			userReactivationUpdateFlag = true;
+			customerUserId = u.Id;
+			u.isActive = true;
+			//Fetch the ALCR Ids from the attributes
+			String primaryAccountFlag = 'true';
+			if (attributes.containsKey('nsnPrimaryAccountFlag')) {
+				primaryAccountFlag = attributes.get('nsnPrimaryAccountFlag');
+			}
+			List<String> incomingAccountIdList = handleAccount(false, u, attributes, decodedAssertion, primaryAccountFlag, federationIdentifier);
+			for(String incomingAccountId : incomingAccountIdList){
+				incomingAccountIds.add(Id.valueOf(incomingAccountId));
+			}
+			//Fetch the Existing ACRs
+			List<AccountContactRelation> existingACRs = new List<AccountContactRelation>();
+			
+			for(AccountContactRelation acr : [SELECT Id, ContactId, AccountId, NCP_Entitlement_Relationship__c, Account.ParentId, IsDirect
+											  FROM AccountContactRelation
+											  WHERE contactId = :u.ContactId AND 
+											  NCP_Entitlement_Relationship__c = true]){
+												  existingACRs.add(acr);
+												  acrMap.put(acr.Id, acr);
+											  }
+			if(!(incomingAccountIdList?.isEmpty())){
+				Integer incomingALCRIdsCount = incomingAccountIdList.size();
+				Integer existingACRsCount = existingACRs.size();
+				if(incomingALCRIdsCount == existingACRsCount &&
+				   (
+					   (incomingALCRIdsCount == 1 && incomingAccountIdList[0] == existingACRs[0].AccountId) ||
+					   (
+						   incomingALCRIdsCount == 2 && (
+							   (incomingAccountIdList[0] == existingACRs[0].AccountId && incomingAccountIdList[1] == existingACRs[1].AccountId) ||
+							   (incomingAccountIdList[0] == existingACRs[1].AccountId && incomingAccountIdList[1] == existingACRs[0].AccountId)
+						   )
+					   )
+				   )
+				  ){
+					  hasACRChanged = false;
+				  }
+				else if((incomingALCRIdsCount == 1 && existingACRsCount == 2)){//delete ACR scenario
+					if(incomingAccountIdList[0] != existingACRs[0].AccountId){
+						accountIdToBeDeleted = existingACRs[0].AccountId;
+					}
+					else{
+						accountIdToBeDeleted = existingACRs[1].AccountId;
+					}
+					oldACRDeletionRequiredFlag = true;
+				}
+				else if(incomingALCRIdsCount == existingACRsCount && incomingALCRIdsCount == 1 && incomingAccountIdList[0] != existingACRs[0].AccountId){//1 ACR updated scenario
+					accountIdToBeDeleted = existingACRs[0].AccountId;
+					oldACRDeletionRequiredFlag = true;
+					newACRCreationRequiredFlag = true;
+				}
+			}
+		}
 		handleJit(false, u, samlSsoProviderId, communityId, portalId, federationIdentifier, attributes, decodedAssertion);
-		
 	}
 	
 	private void handleUser(Boolean create, User u, String contactId, Map<String, String> attributes,String federationIdentifier, Boolean isStandard, String PrimaryAccount, String assertion) {
-		
 		String profileNameCustomer = NCP_CustomerCommunitySetting__c.getValues('Default').Customer_User_Profile__c;
 		String profileNameCustomerLogin = NCP_CustomerCommunitySetting__c.getValues('Default').NCP_Customer_Login_Profile__c;
 		String emailAddress;
@@ -90,6 +177,8 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		} else {
 			u.FederationIdentifier = federationIdentifier;
 		}
+		
+		u.Nokia_ID__c = u.FederationIdentifier;
 		
 		if (PrimaryAccount == 'true' && attributes.containsKey('emailID')) {	
 			u.NCP_CDB_Contact_ID__c = attributes.get('emailID');
@@ -137,6 +226,9 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		if (attributes.containsKey('PostalCode')) {
 			u.PostalCode = attributes.get('PostalCode');
 		}
+		if (attributes.containsKey('CountryCode')) {
+			u.CountryCode = attributes.get('CountryCode');
+		}
 		if (attributes.containsKey('ApprovalStatus')) {
 			u.NCP_Approval_Status__c = attributes.get('ApprovalStatus');
 		}
@@ -180,6 +272,25 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 						u.FederationIdentifier = attributes.get('FederationIdentifier');
 					}
 					update u;
+					
+					if(userReactivationUpdateFlag){
+						if(!hasACRChanged){
+							AccountContactRelationTriggerHelper.dmlObjectShare(incomingAccountIds, u.Id, contactId, true, false, false, NULL, NULL);
+						}
+						else{
+							Id incomingAccountId;
+							for(Id incomingAccId : incomingAccountIds){
+								incomingAccountId = incomingAccId;
+							}
+							Id parentAccountIdForContact = existingContactRecord != NULL ? existingContactRecord.AccountId : NULL;
+							if(newACRCreationRequiredFlag){
+								AccountContactRelationTriggerHelper.dmlObjectShare(new Set<Id>{incomingAccountId}, customerUserId, contactId, !hasACRChanged, true, true, accountIdToBeDeleted, parentAccountIdForContact);
+							}
+							else{
+								AccountContactRelationTriggerHelper.dmlObjectShare(new Set<Id>{incomingAccountId}, customerUserId, contactId, !hasACRChanged, false, true, accountIdToBeDeleted, parentAccountIdForContact);
+							}   
+						}
+					}
 				} catch (Exception e) {throwJitException('Data Mismatch found while processing the request. ' + ' ' + Label.NCP_SSO_UserUpdate1 + ' Email=' + u.Email + ',Username=' + u.Username + ',NokiaUID__c=' + u.NokiaUID__c + ',FederationIdentifier=' + u.FederationIdentifier + ',Nokia_ID__c=' + u.Nokia_ID__c + ',NCP_SSOPID__c=' + u.NCP_SSOPID__c + ',u.NCP_IsHorizontal__c=' + u.NCP_IsHorizontal__c + ',NCP_Horizontal_Company_Name__c=' + u.NCP_Horizontal_Company_Name__c + ', e=' + e, 'emailID', attributes);
 									  }
 			}
@@ -210,8 +321,8 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		}
 	}
 	
-	private void handleInternalUser(Boolean create, User u, Map<String, String> attributes,String federationIdentifier, Boolean isStandard, String PrimaryAccount) {
-		
+	private void handleInternalUser(Boolean create, User u, Map<String, String> attributes, String federationIdentifier, Boolean isStandard, String PrimaryAccount) {
+		String jiveProfile = System.Label.NCPjiveProfileName ;
 		String profileNameInternalUser = NCP_CustomerCommunitySetting__c.getValues('Default').Internal_User_Profile__c;
 		String thresholdLicense=NCP_CustomerCommunitySetting__c.getValues('Default').License_Threshold_Limit__c;
 		String warningThreshold=NCP_CustomerCommunitySetting__c.getValues('Default').Warning_System_Threshold__c;
@@ -221,7 +332,23 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		String licensingGroupName=NCP_CustomerCommunitySetting__c.getValues('Default').License_Management_Group__c; 
 		List<CollaborationGroup> licensingGroup =[select Id FROM CollaborationGroup WHERE Name=:licensingGroupName Limit 1];
 		//Only while updating an inactive user or during creation of new user the below block will be executed
+
 		if ((!create&&!u.isActive)||create){
+			
+			if (u.Profile.Name == jiveProfile) {  
+				
+				u.isActive = TRUE ;
+				u.ProfileId = profiles[0].Id;
+				update  u;
+				
+				List<PermissionSetAssignment> psa = [SELECT Id, PermissionSetId, PermissionSet.Name,  
+													 AssigneeId, Assignee.Name FROM PermissionSetAssignment 
+													 WHERE AssigneeId =: u.Id AND PermissionSet.IsOwnedByProfile = false];
+				
+				delete psa;
+				
+				return;
+			}	 
 			//If an inactive user does not belongs to below profile throw the error message
 			if(!create&&u.Profile.Name !=profileNameInternalUser){throwJitException('Error:  Your Salesforce account is currently deactivated and not eligible for auto-activation for Support portal access. Please contact IT Service Desk for assistance', 'emailID', attributes);
 																 }
@@ -236,18 +363,34 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 			else if(SpInternalUserList.Size()<Integer.ValueOf(thresholdLicense)&& SpInternalUserList.Size()+1>=Integer.ValueOf(warningThreshold)){postLicenseConsumptionMessageInChatter(availableLicenseCount-1,licensingGroup[0].Id);
 																																				 }
 		}  
-		
 		if(!create)
 		{
-			if ( u.Profile.Name != profileNameInternalUser && u.isActive) {	
+			if ( u.Profile.Name != profileNameInternalUser && u.isActive) { 
+				
 				if (u.NCP_Is_Internal__c != True) {
 					u.NCP_Is_Internal__c = True;
 					update  u;
 				}
-				return;
+				//return;
 			}
-			if(!u.isActive) u.isActive=true;
-		}
+			if (u.Profile.Name == jiveProfile) {  
+				
+				u.ProfileId = profiles[0].Id;
+				update  u;
+				
+				List<PermissionSetAssignment> psa = [SELECT Id, PermissionSetId, PermissionSet.Name,  
+													 AssigneeId, Assignee.Name FROM PermissionSetAssignment 
+													 WHERE AssigneeId =: u.Id AND PermissionSet.IsOwnedByProfile = false];
+				
+				delete psa;
+				
+				// return;
+				if(!u.isActive) u.isActive=true;
+			}  
+			
+			
+		}	
+		
 		
 		if (create) {
 			if (profiles.isEmpty()) { return;
@@ -265,12 +408,19 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		if (attributes.containsKey('emailID')) {
 			String emailAddress = attributes.get('emailID');
 			String userName = NCP_Utils.getUsername(emailAddress);
-			U.Email = emailAddress;
+			if (create) {
+				U.Email = emailAddress;
+			}   
 			if (PrimaryAccount == 'true') {
-				u.Username = userName;
+				if (create) {
+					u.Username = userName;
+				}
 				u.NCP_CDB_Contact_ID__c = emailAddress;
 			} else if (PrimaryAccount == 'false') {
-				u.Username = userName + '.' + federationIdentifier;
+				if (create) {
+					u.Username = userName + '.' + federationIdentifier;
+				} 
+				
 				//u.NCP_CDB_Contact_ID__c = emailAddress + '.' + federationIdentifier;
 			}
 		}
@@ -278,15 +428,66 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		if (attributes.containsKey('PersonalID')) {
 			u.NokiaUID__c = attributes.get('PersonalID');
 		}
-		if (attributes.containsKey('Lname')) {
-			u.LastName = attributes.get('Lname');
-		}
-		if (attributes.containsKey('Fname')) {
-			u.FirstName = attributes.get('Fname');
-		}
-		if (attributes.containsKey('MobilePhone')) {
-			u.MobilePhone = attributes.get('MobilePhone');
-		}
+		if(create){
+			if (attributes.containsKey('Lname')) {
+				u.LastName = attributes.get('Lname');
+			}
+			if (attributes.containsKey('Fname')) {
+				u.FirstName = attributes.get('Fname');
+			}
+			if (attributes.containsKey('MobilePhone')) {
+				u.MobilePhone = attributes.get('MobilePhone');
+			}
+			if (attributes.containsKey('Phone')) {
+				u.Phone = attributes.get('Phone');
+			}
+			if (attributes.containsKey('Street')) {
+				u.Street = attributes.get('Street');
+			}
+			if (attributes.containsKey('City')) {
+				u.City = attributes.get('City');
+			}
+			if (attributes.containsKey('State')) {
+				u.State = attributes.get('State');
+				if (u.State == NOT_AVAILABLE){
+					u.State = '';
+				}
+			}
+			if (attributes.containsKey('PostalCode')) {
+				u.PostalCode = attributes.get('PostalCode');
+			}
+			if (attributes.containsKey('CountryCode')) {
+				u.CountryCode = attributes.get('CountryCode');
+				try{
+					u.Market__c = ISO_Country_Codes__c.getvalues(u.CountryCode).Market__c;
+					u.Country__c = ISO_Country_Codes__c.getvalues(u.CountryCode).Country_Name__c; 
+				}catch(Exception e){
+					throwJitException('Data Mismatch found while processing the request as System is unable to identify the Country Code. ', 'emailID', attributes);
+				}   
+			}
+			// Added for Timezone attribute	 
+			if (attributes.containsKey('nokiaTimeZone')) {
+				String CSTimezoneValue;
+				
+				For(NCP_Timezone_Mapping__c namTZ: NCP_Timezone_Mapping__c.getAll().Values()){
+					if(namTZ.NAM_Timezone__c == attributes.get('nokiaTimeZone'))
+						CSTimezoneValue = namTZ.SF_TimeZone__c;
+				}
+				//  string CSTimezoneValue = NCP_Timezone_Mapping__c.getvalues(attributes.get('nokiaTimeZone')).SF_Timezone__c;
+				if(CSTimezoneValue != NULL){
+					u.TimeZoneSidKey =  CSTimezoneValue; 
+				}else{
+					u.TimeZoneSidKey = 'GMT';
+				}
+			}
+			//u.Alias = u.LastName.left(4) + '1';
+			u.Alias = attributes.containsKey('nsnDomainId') ? attributes.get('nsnDomainId') : u.LastName.left(4) + '1';
+			//  u.TimeZoneSidKey = 'Europe/Amsterdam';
+			u.LanguageLocaleKey = 'en_US';
+			u.EmailEncodingKey = 'UTF-8';
+			u.LocaleSidKey = 'en_GB';
+		}   
+		
 		if (attributes.containsKey('Relationship')) {
 			u.NCP_Relationship__c = attributes.get('Relationship');
 		}
@@ -294,39 +495,13 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		u.Nokia_ID__c = u.FederationIdentifier;
 		u.NCP_Is_Internal__c = true;
 		
-		if (attributes.containsKey('Phone')) {
-			u.Phone = attributes.get('Phone');
-		}
+		
 		if (attributes.containsKey('SSOPID')) {
 			u.NCP_SSOPID__c = attributes.get('SSOPID');
 		}
 		if(attributes.containsKey('uid')){u.Nam_UID__c = attributes.get('uid');
 										 }
-		if (attributes.containsKey('Street')) {
-			u.Street = attributes.get('Street');
-		}
-		if (attributes.containsKey('City')) {
-			u.City = attributes.get('City');
-		}
-		if (attributes.containsKey('State')) {
-			u.State = attributes.get('State');
-			if (u.State == NOT_AVAILABLE){
-				u.State = '';
-			}
-		}
-		if (attributes.containsKey('PostalCode')) {
-			u.PostalCode = attributes.get('PostalCode');
-		}
-		if (attributes.containsKey('CountryCode')) {
-			u.CountryCode = attributes.get('CountryCode');
-			try{
-				u.Market__c = ISO_Country_Codes__c.getvalues(u.CountryCode).Market__c;
-				u.Country__c = ISO_Country_Codes__c.getvalues(u.CountryCode).Country_Name__c; 
-			}catch(Exception e){
-				throwJitException('Data Mismatch found while processing the request as System is unable to identify the Country Code. ', 'emailID', attributes);
-			}
-			
-		}
+		
 		if (attributes.containsKey('ApprovalStatus')) {
 			u.NCP_Approval_Status__c = attributes.get('ApprovalStatus');
 		}
@@ -335,29 +510,18 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		}
 		//u.CompanyName = 'Nokia';
 		
-		// Added for Timezone attribute		
-		if (attributes.containsKey('nokiaTimeZone')) {
-			String CSTimezoneValue;
-			
-			For(NCP_Timezone_Mapping__c namTZ: NCP_Timezone_Mapping__c.getAll().Values()){
-				if(namTZ.NAM_Timezone__c == attributes.get('nokiaTimeZone'))
-					CSTimezoneValue = namTZ.SF_TimeZone__c;
+		if(!create)
+		{
+			if ( u.Profile.Name != profileNameInternalUser && u.isActive) { 
+				if (u.NCP_Is_Internal__c != True) {
+					u.NCP_Is_Internal__c = True;
+					
+				}
+				update  u;
+				return;
 			}
-			//  string CSTimezoneValue = NCP_Timezone_Mapping__c.getvalues(attributes.get('nokiaTimeZone')).SF_Timezone__c;
-			if(CSTimezoneValue != NULL){
-				u.TimeZoneSidKey =  CSTimezoneValue; 
-			}else{
-				u.TimeZoneSidKey = 'GMT';
-			}
-		} 
-		if (create) {
-			u.Alias = u.LastName.left(4) + '1';
-			//  u.TimeZoneSidKey = 'Europe/Amsterdam';
-			u.LanguageLocaleKey = 'en_US';
-			u.EmailEncodingKey = 'UTF-8';
-			u.LocaleSidKey = 'en_GB';
+			if(!u.isActive) u.isActive=true;
 		}
-		
 		if (!create) {
 			if (Schema.sObjectType.Contact.isUpdateable()) {
 				update u;
@@ -376,7 +540,7 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		Account acct;
 		String parentAccountId;
 		String relationship = attributes.get('Relationship');
-		
+		//throwJitException('Temp Error - ' + relationship, 'emailID', attributes);
 		if (relationship == '' || relationship == null) {
 			throwJitException('Relationship not identified! Relationship=' + relationship, 'emailID', attributes);
 		}
@@ -386,7 +550,15 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		}
 		
 		if (relationship == 'Customer' || relationship == 'Supplier' || relationship == 'Sub Contractor' || relationship == 'Guest') {
-			List<String> accountIds = handleAccount(c, user, attributes, assertion, PrimaryAccount, federationIdentifier);
+			List<String> accountIds = new List<String>();
+			if(incomingAccountIds.size() > 0){
+				List<Id> accIdList = new List<Id>();
+				accIdList.addAll(incomingAccountIds);
+				accountIds = accIdList;
+			}
+			else{
+				accountIds = handleAccount(c, user, attributes, assertion, PrimaryAccount, federationIdentifier);
+			}
 			List<Account> accounts;
 			accounts = [SELECT Id, ParentId FROM Account WHERE Id IN :accountIds];
 			if(accounts?.size() == 2){
@@ -394,7 +566,7 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 																}
 			}
 			
-			if(!(accounts?.isEmpty())){		
+			if(!(accounts?.isEmpty())){	 
 				acct = accounts[0];
 				parentAccountId = acct.parentId;
 			}
@@ -404,7 +576,7 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 			contactId = handleContact(c, accountIds, parentAccountId, user, attributes, PrimaryAccount, federationIdentifier, assertion);
 			if(String.isNotBlank(contactId)){
 				handleUser(create, u, contactId, attributes, federationIdentifier, false, PrimaryAccount, assertion);
-			}	
+			}   
 		}
 		else if (relationship == 'Internal') {
 			handleInternalUser(create, u, attributes, federationIdentifier, false, PrimaryAccount);
@@ -421,7 +593,7 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	}
 	/**************************************************************************************************
 	*Method Name:   handleContact
-	*Parameter:	 Boolean create - create or update User account
+	*Parameter:  Boolean create - create or update User account
 	List<String> accountIds - the account Ids received from ALCR ids present in the Attributes
 	String parentAccountId - Parent Account Id of the account present in the ALCR ids present in the Attributes
 	User u - User record
@@ -430,8 +602,8 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	String federationIdentifier - federation key to identify the User
 	String assertion - the default SAML assertion, base-64 encoded.
 	*Return:		List<String>
-	*Date	 Modified By	 Demand	  Remarks
-	12/02/2021	 Soham	 DEM0051264  Updated the method to get 2 ALCR attributes as part of DEM0051264 - Multiple ACR
+	*Date	Modified By	 Demand   Remarks
+	12/02/2021   Soham   DEM0051264  Updated the method to get 2 ALCR attributes as part of DEM0051264 - Multiple ACR
 	**************************************************************************************************/
 	private String handleContact(Boolean create, List<String> alcrIds, String parentAccountId, User u, Map<String, String> attributes, String PrimaryAccount, String federationIdentifier, String assertion) {
 		String p20Id;
@@ -604,118 +776,128 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 			}
 		}
 		else {//Contact present
-			if(Schema.sObjectType.Contact.isUpdateable()) {
-				try {
-					update c;
-				} catch (Exception e) {throwJitException('Error encountered while updating your data on Nokia Support Portal. ', 'emailID', attributes);
-									  }
-			}
-			try{
-				List<AccountContactRelation> existingACRs = [SELECT Id, ContactId, AccountId, NCP_Entitlement_Relationship__c, Account.ParentId
-															 FROM AccountContactRelation
-															 WHERE contactId = :c.Id AND 
-															 NCP_Entitlement_Relationship__c = true AND
-															 isActive = true];
-				Boolean recurssionUpdateCheck = false;
-				
-				//Check if both ALCRs are populated in the Attributes?
-				if(!(alcrIds?.isEmpty())){
-					switch on alcrIds.size(){
-						when 1{//1 ALCR has been populated
-							if(!(existingACRs?.isEmpty())){
-								switch on existingACRs.size(){
-									when 1{//1 ACR exists - 1 ALCR incoming
-										if(alcrIds[0] != existingACRs[0].AccountId){//Check if ALCR does not have the same LE already present in the ACR?
-											if(existingACRs[0].Account.ParentId == parentAccountId){//Check if Parent Id of existing ACR (Contact's Parent Id) and incoming ALCR are same?
-												dmlOnACR(parentAccountId, alcrIds[0], c, existingACRs, true, attributes);//Deactivate the existing ACR(s). Create new ACR
-											}
-											else{
-												parentAccountChange(parentAccountId, alcrIds[0], c,  attributes, existingACRs);
+			if(hasACRChanged){
+				try{
+					List<AccountContactRelation> existingACRs = [SELECT Id, ContactId, AccountId, NCP_Entitlement_Relationship__c, Account.ParentId
+																 FROM AccountContactRelation
+																 WHERE contactId = :c.Id AND 
+																 NCP_Entitlement_Relationship__c = true AND
+																 isActive = true];
+					Boolean recurssionUpdateCheck = false;
+					
+					//Check if both ALCRs are populated in the Attributes?
+					if(!(alcrIds?.isEmpty())){
+						switch on alcrIds.size(){
+							when 1{//1 ALCR has been populated
+								if(!(existingACRs?.isEmpty())){
+									switch on existingACRs.size(){
+										when 1{//1 ACR exists - 1 ALCR incoming
+											if(alcrIds[0] != existingACRs[0].AccountId){//Check if ALCR does not have the same LE already present in the ACR?
+												if(existingACRs[0].Account.ParentId == parentAccountId){//Check if Parent Id of existing ACR (Contact's Parent Id) and incoming ALCR are same?
+													dmlOnACR(parentAccountId, alcrIds[0], c, existingACRs, true, attributes);//Deactivate the existing ACR(s). Create new ACR
+												}
+												else{
+													parentAccountChange(parentAccountId, alcrIds[0], c,  attributes, existingACRs);
+												}
 											}
 										}
-									}
-									when 2{//2 ACRs exist - 1 ALCR incoming
-										//Has 1 ACR been removed or both the ACRs are replaced by a single ALCR?
-										if(alcrIds[0] == existingACRs[0].AccountId){//1st ACR is a match with ALCR
-											dmlOnACR(parentAccountId, alcrIds[0], c, new List<AccountContactRelation>{existingACRs[1]}, false, attributes);//remove the 2nd ACR
-										}
-										else if(alcrIds[0] == existingACRs[1].AccountId){//2nd ACR is a match with ALCR
-											dmlOnACR(parentAccountId, alcrIds[0], c, new List<AccountContactRelation>{existingACRs[0]}, false, attributes);//remove the 1st ACR
-										}
-										else{//Both the ACRs have been replaced by a single ALCR
-											if(existingACRs[0].Account.ParentId == parentAccountId && existingACRs[1].Account.ParentId == parentAccountId){//Check if Parent Id of existing ACR (Contact's Parent Id) and incoming ALCR are same?
-												dmlOnACR(parentAccountId, alcrIds[0], c, existingACRs, true, attributes);//Deactivate the existing ACR(s). Create new ACR
+										when 2{//2 ACRs exist - 1 ALCR incoming
+											//Has 1 ACR been removed or both the ACRs are replaced by a single ALCR?
+											if(alcrIds[0] == existingACRs[0].AccountId){//1st ACR is a match with ALCR
+												dmlOnACR(parentAccountId, alcrIds[0], c, new List<AccountContactRelation>{existingACRs[1]}, false, attributes);//remove the 2nd ACR
 											}
-											else{
-												parentAccountChange(parentAccountId, alcrIds[0], c,  attributes, existingACRs);
+											else if(alcrIds[0] == existingACRs[1].AccountId){//2nd ACR is a match with ALCR
+												dmlOnACR(parentAccountId, alcrIds[0], c, new List<AccountContactRelation>{existingACRs[0]}, false, attributes);//remove the 1st ACR
+											}
+											else{//Both the ACRs have been replaced by a single ALCR
+												if(existingACRs[0].Account.ParentId == parentAccountId && existingACRs[1].Account.ParentId == parentAccountId){//Check if Parent Id of existing ACR (Contact's Parent Id) and incoming ALCR are same?
+													dmlOnACR(parentAccountId, alcrIds[0], c, existingACRs, true, attributes);//Deactivate the existing ACR(s). Create new ACR
+												}
+												else{
+													parentAccountChange(parentAccountId, alcrIds[0], c,  attributes, existingACRs);
+												}
 											}
 										}
 									}
-								}
-							}
-							else{
-								if(c.AccountId != parentAccountId){
-									parentAccountChange(parentAccountId, alcrIds[0], c,  attributes, existingACRs);
 								}
 								else{
-									dmlOnACR(parentAccountId, alcrIds[0], c, null, true, attributes);
+									if(c.AccountId != parentAccountId){
+										parentAccountChange(parentAccountId, alcrIds[0], c,  attributes, existingACRs);
+									}
+									else{
+										dmlOnACR(parentAccountId, alcrIds[0], c, null, true, attributes);
+									}
 								}
 							}
-						}
-						when 2{//2 ALCRs have been populated
-							if(!(existingACRs?.isEmpty())){
-								switch on existingACRs.size(){
-									when 1{//1 ACR exists
-										//Create new ACR for the LE not present in the ACR in Salesforce
-										if(alcrIds[0] == existingACRs[0].AccountId){
-											dmlOnACR(parentAccountId, alcrIds[1], c, null, true, attributes);//Create new ACR for the LE not present in Salesforce
+							when 2{//2 ALCRs have been populated
+								if(!(existingACRs?.isEmpty())){
+									switch on existingACRs.size(){
+										when 1{//1 ACR exists
+											//Create new ACR for the LE not present in the ACR in Salesforce
+											if(alcrIds[0] == existingACRs[0].AccountId){
+												dmlOnACR(parentAccountId, alcrIds[1], c, null, true, attributes);//Create new ACR for the LE not present in Salesforce
+											}
+											else if(alcrIds[1] == existingACRs[0].AccountId){
+												dmlOnACR(parentAccountId, alcrIds[0], c, null, true, attributes);//Create new ACR for the LE not present in Salesforce
+											}
 										}
-										else if(alcrIds[1] == existingACRs[0].AccountId){
-											dmlOnACR(parentAccountId, alcrIds[0], c, null, true, attributes);//Create new ACR for the LE not present in Salesforce
-										}
-									}
-									when 2{//2 ACRs exist
-										if(alcrIds[0] == existingACRs[0].AccountId){
-											dmlOnACR(parentAccountId, alcrIds[1], c, new List<AccountContactRelation>{existingACRs[1]}, true, attributes);//remove the 2nd ACR, create the new one
-										}
-										else if(alcrIds[1] == existingACRs[0].AccountId){//1st ACR is a match with either ALCR		
-											dmlOnACR(parentAccountId, alcrIds[0], c, new List<AccountContactRelation>{existingACRs[1]}, true, attributes);//remove the 2nd ACR, create the new one
-										}
-										else if(alcrIds[0] == existingACRs[1].AccountId){
-											dmlOnACR(parentAccountId, alcrIds[1], c, new List<AccountContactRelation>{existingACRs[0]}, true, attributes);//remove the 1st ACR, create the new one
-										}
-										else if(alcrIds[1] == existingACRs[1].AccountId){//2nd ACR is a match with either ALCR
-											dmlOnACR(parentAccountId, alcrIds[0], c, new List<AccountContactRelation>{existingACRs[0]}, true, attributes);//remove the 1st ACR, create the new one
+										when 2{//2 ACRs exist
+											if(!((alcrIds[0] == existingACRs[0].AccountId && alcrIds[1] == existingACRs[1].AccountId) || (alcrIds[0] == existingACRs[1].AccountId && alcrIds[1] == existingACRs[0].AccountId))){
+												if(alcrIds[0] == existingACRs[0].AccountId){
+													dmlOnACR(parentAccountId, alcrIds[1], c, new List<AccountContactRelation>{existingACRs[1]}, true, attributes);//remove the 2nd ACR, create the new one
+												}
+												else if(alcrIds[1] == existingACRs[0].AccountId){//1st ACR is a match with either ALCR	  
+													dmlOnACR(parentAccountId, alcrIds[0], c, new List<AccountContactRelation>{existingACRs[1]}, true, attributes);//remove the 2nd ACR, create the new one
+												}
+												else if(alcrIds[0] == existingACRs[1].AccountId){
+													dmlOnACR(parentAccountId, alcrIds[1], c, new List<AccountContactRelation>{existingACRs[0]}, true, attributes);//remove the 1st ACR, create the new one
+												}
+												else if(alcrIds[1] == existingACRs[1].AccountId){//2nd ACR is a match with either ALCR
+													dmlOnACR(parentAccountId, alcrIds[0], c, new List<AccountContactRelation>{existingACRs[0]}, true, attributes);//remove the 1st ACR, create the new one
+												}
+											}
 										}
 									}
 								}
 							}
 						}
 					}
+				}catch (Exception e) {
+					if(e.getMessage().contains('There is an active Open S/w or H/w Case existing against the Orgranization. Requested update cannot be executed.')){
+						throwJitException('There is an active Open S/w or H/w Case existing against the Orgranization. Requested update cannot be executed.', 'emailID', attributes);   
+					}
+					else{
+						throwJitException('Unable to process to request. There has been an issue in the incoming request related to your mapping with Customer Association.', 'emailID', attributes);
+					}
+					
 				}
-			}catch (Exception e) {
-				if(e.getMessage().contains('There is an active Open S/w or H/w Case existing against the Orgranization. Requested update cannot be executed.')){
-					throwJitException('There is an active Open S/w or H/w Case existing against the Orgranization. Requested update cannot be executed.', 'emailID', attributes);	
+				if(Schema.sObjectType.Contact.isUpdateable()) {
+					try {
+						//update c;
+						if(!userReactivationUpdateFlag){
+							if(c.AccountId != parentAccountId){
+								c.AccountId = parentAccountId;
+							}
+							ID jobID = System.enqueueJob(new NCP_CustCommContactCreationQueueable(c));
+						}
+					} catch (Exception e) {throwJitException('Error encountered while updating your data on Nokia Support Portal. ', 'emailID', attributes);
+										  }
 				}
-				else{
-					throwJitException('Unable to process to request. There has been an issue in the incoming request related to your mapping with Customer Association.', 'emailID', attributes);
-				}
-				
-			}
+			}   
 		}
 		return c.Id;
 	}
 	/**************************************************************************************************
 	*Method Name:   handleAccount
-	*Parameter:	 Boolean create - create or update User account
+	*Parameter:  Boolean create - create or update User account
 	User u - User record
 	Map<String, String> attributes - this contains the attributes list
 	String assertion - the default SAML assertion, base-64 encoded.
 	String PrimaryAccount - Comes as true if Primary Account flag comes as true in the attributes from NAM
 	String federationIdentifier - federation key to identify the User
 	*Return:		List<String>
-	*Date	 Modified By	 Demand	  Remarks
-	12/02/2021	 Soham	 DEM0051264  Updated the method to get 2 ALCR attributes as part of DEM0051264 - Multiple ACR
+	*Date	Modified By	 Demand   Remarks
+	12/02/2021   Soham   DEM0051264  Updated the method to get 2 ALCR attributes as part of DEM0051264 - Multiple ACR
 	**************************************************************************************************/
 	private List<String> handleAccount(Boolean create, User u, Map<String, String> attributes, String assertion, String PrimaryAccount, String federationIdentifier) {
 		List<String> accountIds = new List<String>();
@@ -835,12 +1017,12 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	
 	/**************************************************************************************************
 	*Method Name:   throwJitException
-	*Parameter:	 String errorMessage - Text for the JIT exception
+	*Parameter:  String errorMessage - Text for the JIT exception
 	String parameterStr - Parameter to spotlight
 	Map<String, String> attributes - this contains the attributes list
 	*Return:		nothing
-	*Date	 Modified By	Demand	 Remarks
-	2/26/2021	  Karan	DEM0051264 Common method created to throw an exception for JIT Handler
+	*Date	Modified By	Demand   Remarks
+	2/26/2021	 Karan DEM0051264 Common method created to throw an exception for JIT Handler
 	**************************************************************************************************/
 	public void throwJitException(String errorMessage, String parameterStr, Map<String, String> attributes){
 		throw new JitException(getErrorMessage(errorMessage, attributes, attributes.get(parameterStr)));
@@ -848,12 +1030,12 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	
 	/**************************************************************************************************
 	*Method Name:   getErrorMessage
-	*Parameter:	 String errorMessage - Text for the JIT exception
-	String userName -	 Parameter to spotlight
+	*Parameter:  String errorMessage - Text for the JIT exception
+	String userName -	Parameter to spotlight
 	Map<String, String> attributes - this contains the attributes list  
 	*Return:		nothing
-	*Date	 Modified By	Demand	 Remarks
-	2/26/2021	  Karan	DEM0051264 Common method created to throw an exception for JIT Handler
+	*Date	Modified By	Demand   Remarks
+	2/26/2021	 Karan DEM0051264 Common method created to throw an exception for JIT Handler
 	**************************************************************************************************/  
 	private String getErrorMessage(String errorMessage, Map<String, String> attributes, String userName) {
 		
@@ -867,7 +1049,7 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	
 	/**************************************************************************************************
 	*Method Name:   parentAccountChange
-	*Parameter:	 String incomingParentAccountId - Parent 301 account on the ALCR
+	*Parameter:  String incomingParentAccountId - Parent 301 account on the ALCR
 	String alcrId -   alcrId recieved in the NAM request
 	Contact contactRecord   - Contact associated with ALCR 
 	List<Case> cases - Check if there are existing Cases for “NCP SSO Account Change” for the 
@@ -875,8 +1057,8 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	Map<String, String> attributes - this contains the attributes list  
 	List<AccountContactRelation> - existing acr on the account  
 	*Return:		nothing
-	*Date	 Modified By	Demand	 Remarks
-	2/26/2021	  Soham	DEM0051264 If case present and in approved status call create/update contact. 
+	*Date	Modified By	Demand   Remarks
+	2/26/2021	 Soham DEM0051264 If case present and in approved status call create/update contact. 
 	If case not presend check marketing/salesopportunity/software case 
 	**************************************************************************************************/  
 	public void parentAccountChange(String incomingParentAccountId, String alcrId, Contact contactRecord, Map<String, String> attributes, List<AccountContactRelation> acrs){
@@ -906,7 +1088,7 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 						break;
 					}
 					else if(caseRecord.Status == 'Closed' || caseRecord.Status == 'Rejected'){
-						newClosedRejectedCaseFlag = true;			
+						newClosedRejectedCaseFlag = true;	 
 						break;
 					}
 				}
@@ -929,23 +1111,25 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	
 	/**************************************************************************************************
 	*Method Name:   dmlOnACR
-	*Parameter:	 String incomingParentAccountId - Parent 301 account on the ALCR
+	*Parameter:  String incomingParentAccountId - Parent 301 account on the ALCR
 	String alcrId -   alcrId recieved in the NAM request
 	Contact contactRecord   - Contact associated with ALCR 
 	List<AccountContactRelation> acrs - Check if there are existing Cases for “NCP SSO Account Change” for the 
-	Boolean insertRequired	
+	Boolean insertRequired  
 	*Return:		nothing
-	*Date	 Modified By	Demand	 Remarks
-	3/4/2021	Karan	DEM0051264 Create new ACR for the LE not present in the ACR in Salesforce 
+	*Date	Modified By	Demand   Remarks
+	3/4/2021	Karan   DEM0051264 Create new ACR for the LE not present in the ACR in Salesforce 
 	**************************************************************************************************/  
 	private void dmlOnACR(String incomingParentAccountId, String alcrId, Contact contactrecord, List<AccountContactRelation> existingACRs, Boolean insertRequired, Map<String, String> attributes){
 		Boolean dmlOnContactACRAllowed = true;
 		Boolean existingACRDeleteFlag = false;
 		Boolean createCaseFlag = false;
+		Set<Id> acrIds = new Set<Id>();
 		if(existingACRs?.size() > 0){
 			List<String> accountIds = new List<String>();
 			String existingParentAccountId;
 			for(AccountContactRelation acr : existingACRs){
+				acrIds.add(acr.Id);
 				accountIds.add(acr.AccountId);
 				existingParentAccountId = acr.Account.ParentId;
 			}
@@ -970,16 +1154,12 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 				}
 				else{
 					dmlOnContactACRAllowed = false;
-					createCaseFlag = true;		
+					createCaseFlag = true;	  
 				}
 			}
-			else{	
+			else{   
 				existingACRDeleteFlag = true;
 			}
-			
-			if(existingACRDeleteFlag){
-				delete existingACRs;
-			}			
 			if(createCaseFlag){
 				if(existingParentAccountId == incomingParentAccountId){
 					createCase(contactRecord,attributes, true);
@@ -992,10 +1172,15 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 		if(dmlOnContactACRAllowed){
 			if(contactRecord.AccountId != incomingParentAccountId){
 				contactRecord.AccountId = incomingParentAccountId;
-				update contactRecord;
+				if(userReactivationUpdateFlag){
+					existingContactRecord = contactRecord;
+				}
+				else{
+					update contactRecord;
+				}
 			}
 			
-			if(insertRequired){
+			if(insertRequired && !userReactivationUpdateFlag){
 				AccountContactRelation newACR = new AccountContactRelation();
 				newACR.AccountId = alcrId;
 				newACR.ContactId = contactRecord.Id;
@@ -1003,14 +1188,17 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 				insert newACR;
 			}
 		}
+		if(existingACRDeleteFlag && !(userReactivationUpdateFlag && hasACRChanged)){
+			delete existingACRs;
+		}
 	}
 	
 	/**************************************************************************************************
 	*Method Name:   marketingEventExists
-	*Parameter:	 String parentAccountId - Parent 301 account on the ALCR	 
+	*Parameter:  String parentAccountId - Parent 301 account on the ALCR	 
 	*Return:		Boolean
-	*Date	 Modified By	Demand	 Remarks
-	3/4/2021	Karan	DEM0051264 On ParentAccountChange when we have no case associated with the account. We checking marketing data.
+	*Date	Modified By	Demand   Remarks
+	3/4/2021	Karan   DEM0051264 On ParentAccountChange when we have no case associated with the account. We checking marketing data.
 	**************************************************************************************************/  
 	private Boolean marketingEventExists(String parentAccountId, Contact contactRecord){
 		//List<Event__c> events = [SELECT Id, Account__c, Event_Type__c FROM Event__c WHERE (Event_Type__c = 'ERM - Executive Review Meeting' OR Event_level__c = 'ERM') AND Account__c =: parentAccountId AND Event_phase__c !='Closed'];
@@ -1023,10 +1211,10 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	}
 	/**************************************************************************************************
 	*Method Name:   salesOpportunityExists
-	*Parameter:	 String parentAccountId - Parent 301 account on the ALCR	 
+	*Parameter:  String parentAccountId - Parent 301 account on the ALCR	 
 	*Return:		Boolean
-	*Date	 Modified By	Demand	 Remarks
-	3/4/2021	Karan	DEM0051264 On ParentAccountChange when we have no case associated with the account. We checking opportunity data.
+	*Date	Modified By	Demand   Remarks
+	3/4/2021	Karan   DEM0051264 On ParentAccountChange when we have no case associated with the account. We checking opportunity data.
 	**************************************************************************************************/ 
 	private Boolean salesOpportunityExists(String parentAccountId, Contact contactRecord){
 		List<OpportunityContactRole> ocrList = new List<OpportunityContactRole>();
@@ -1036,10 +1224,10 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 	}
 	/**************************************************************************************************
 	*Method Name:   swhwCaseExists
-	*Parameter:	 String parentAccountId - Parent 301 account on the ALCR	 
+	*Parameter:  String parentAccountId - Parent 301 account on the ALCR	 
 	*Return:		Boolean
-	*Date	 Modified By	Demand	 Remarks
-	3/4/2021	Karan	DEM0051264 On ParentAccountChange when we have no case associated with the account. We checking Software or Hardware case exist.
+	*Date	Modified By	Demand   Remarks
+	3/4/2021	Karan   DEM0051264 On ParentAccountChange when we have no case associated with the account. We checking Software or Hardware case exist.
 	**************************************************************************************************/ 
 	private Boolean swhwCaseExists(String contactIdStr, List<String> accountIdList){
 		List<Case> cases = new List<Case>();
@@ -1115,6 +1303,15 @@ global without sharing class NCP_CustomerCommunityUserHandler implements Auth.Sa
 				insert feed;
 			}
 			catch(Exception e){}
+		}
+	}
+
+	@testVisible
+	private void checkForEmbargoCountries(Map<String, String> attributes){
+		if(String.isNotBlank(Label.NCP_EmbargoCountries) && attributes.containsKey('CountryCode') && 
+		Label.NCP_EmbargoCountries.containsIgnoreCase(attributes.get('CountryCode')) && String.isNotBlank(Label.NCP_RelationshipTypeBannedForEmbargoCountries) &&
+		attributes.containsKey('Relationship') && Label.NCP_RelationshipTypeBannedForEmbargoCountries.containsIgnoreCase(attributes.get('Relationship'))){
+			throwJitException('Error: Your Support Portal account has been restricted. Please contact Nokia Contact Person for further assistance.', 'CountryCode', attributes);
 		}
 	}
 }

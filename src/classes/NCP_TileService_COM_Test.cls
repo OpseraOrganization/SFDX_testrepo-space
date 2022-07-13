@@ -1,12 +1,10 @@
 @isTest
 private class NCP_TileService_COM_Test { 
-
 	@testSetup static void setup() {
 		System.runAs(NCP_TestFactory.createUser(true, 'Sys Admin', null, 'testSysAdmin@nokia.com.dev')) {
 			Account acc = NCP_TestFactory.create301Account();
 		}
 	}
-
 
 	@isTest
 	static void TestGetTiles() {		
@@ -37,6 +35,7 @@ private class NCP_TileService_COM_Test {
 		User internalUser;
 		System.runAs(NCP_TestFactory.createUser(true, 'AES Admin', null, 'test@nokia.com.dev')) {
 			internalUser = NCP_TestFactory.createInternalUser('test2', 'test2@nokian.com.dev');
+			internalUser.CountryCode = 'IN';
 			insert internalUser;
 			NCP_TestFactory.createInternalService(internalUser.Id,'PIC');
 		}

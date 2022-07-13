@@ -4,9 +4,23 @@
 *
 * Modified By: Joao Rodrigues - COE Sales team - Portugal
 * Modified Date: 11/12/2019
+* Modified By: Christie JJ - Standav/Brillio ext team
+* Modified Date: 03/17/2022
 ***/
 public without sharing class CertificationDetails
 { 
+	
+	/**
+	* Description : Method to return the BP record, If Request is coming from Business Plan object
+	* @param Id BP recordId  
+	* @return BP record
+	* @throws NA
+	**/
+	@AuraEnabled(cacheable=true)
+	public static Business_Plan__c getAccountId(Id recordId){
+		return [SELECT Id, Account_BP__c FROM Business_Plan__c WHERE Id =: recordId LIMIT 1];
+	}
+	
 	/**
 	* Description : Method to return the Account Id, If Request is coming from Business Plan object
 	* @param Id parentID 
@@ -14,7 +28,7 @@ public without sharing class CertificationDetails
 	* @throws NA
 	**/
 	
-	@AuraEnabled
+	@AuraEnabled(cacheable=true)
 	public static WrapperFull getCertifAndAccredforComponent(Id parentId)
 	{
 		//Wrapper to send to component
@@ -46,19 +60,21 @@ public without sharing class CertificationDetails
 		
 		//Get Certifications and Accreditations linked to distributor and its indirect reseller partners
 		List<Account> partnersList = [SELECT 
-			  Id, Name, Partner_Type__c,
-			  (SELECT id, name, Accreditation_Level__c, Portfolio__c, Accreditation_Date__c, Accreditation_Type__c, Market__c FROM Accreditations__r ORDER BY Portfolio__c, Accreditation_Type__c, Accreditation_Level__c), 
-			  (SELECT id, name, GPP_Certification_Name__c, Certification_Registration_Date__c, Certification_Expiration_Date__c, Technologies_Portfolio__c, Certification_Number__c, Certification_Status__c FROM Certifications__r ORDER BY Technologies_Portfolio__c, Certification_Status__c ) 
-			  FROM Account
-			  Where Id IN :partnersIds ORDER BY Name limit :(Limits.getLimitQueryRows() - Limits.getQueryRows())];
-	   
+	 Id, Name, Partner_Type__c,
+	 //(SELECT id, name, Accreditation_Level__c, Portfolio__c, Accreditation_Date__c, Accreditation_Type__c, Market__c FROM Accreditations__r ORDER BY Portfolio__c, Accreditation_Type__c, Accreditation_Level__c), 
+	 //Modified for ITCCPQ-3054 by Christie JJ
+	 (SELECT id, name, Accreditation_Level__c, tolabel(Portfolio__c), Accreditation_Date__c, Accreditation_Type__c, Market__c FROM Accreditations__r ORDER BY Portfolio__c, Accreditation_Type__c, Accreditation_Level__c), 
+	 (SELECT id, name, GPP_Certification_Name__c, Certification_Registration_Date__c, Certification_Expiration_Date__c, Technologies_Portfolio__c, Certification_Number__c, Certification_Status__c FROM Certifications__r ORDER BY Technologies_Portfolio__c, Certification_Status__c ) 
+	 FROM Account
+	 Where Id IN :partnersIds ORDER BY Name limit :(Limits.getLimitQueryRows() - Limits.getQueryRows())];
+	
 		//Include parent partner business role into roles map 
 		for(Account p :  partnersList)
 		{
 			if(p.Id == parentId)
 			{
-				partnersId2RoleMap.put(parentId, p.Partner_Type__c);//Add role / business role from parent record do the parter Map
-				break;
+	partnersId2RoleMap.put(parentId, p.Partner_Type__c);//Add role / business role from parent record do the parter Map
+	break;
 			}
 		}
 		
@@ -104,7 +120,7 @@ public without sharing class CertificationDetails
 	
 	//Update droplist values
 	uniquePortfolioList.add(accred.Portfolio__c);
-				uniqueAccLevelList.add(accred.Accreditation_Level__c);
+	uniqueAccLevelList.add(accred.Accreditation_Level__c);
 	uniqueMarketValuesList.add(accred.Market__c);
 			}
 			
@@ -137,7 +153,7 @@ public without sharing class CertificationDetails
 	* @return List
 	* @throws NA
 	**/ 
-	@AuraEnabled
+	@AuraEnabled(cacheable = true)
 	public static List<WrapperCertCounters> getCertifCounterWrapper(Id parentId, String partnerFilter, String partnerTypeFilter, String portfolioFilter)
 	{
 		Map<String,WrapperCertCounters> mapWrap=new Map<String,WrapperCertCounters>();
@@ -152,7 +168,7 @@ public without sharing class CertificationDetails
 			partnersId2RoleMap = PRMHelper.getDistAndIR(parentId, false);
 			partnersIds = PRMHelper.getSetFromMap(partnersId2RoleMap);
 			partnersIds.add(parentId);
-			   
+	  
 			String queryForCert = generateCounterSQLquery(parentId, partnersIds, partnerFilter, partnerTypeFilter, portfolioFilter);
 			System.debug('SOQL query for cert counters: ' + queryForCert);
 
@@ -170,31 +186,31 @@ public without sharing class CertificationDetails
 			insWrap.port=(String)ins.get(GlobalConstants.PORTFOLIO_APINAME);
 			if(((String)ins.get(GlobalConstants.CERTIF_STATUS_APINAME)).equalsIgnoreCase(GlobalConstants.CERTIF_STATUS_INPROGRESS))
 			{
-				insWrap.Inp = (Integer)ins.get(GlobalConstants.COUNT);
-				insWrap.Comp = 0;
-				insWrap.Reg = 0;
-				insWrap.App = 0;
+	insWrap.Inp = (Integer)ins.get(GlobalConstants.COUNT);
+	insWrap.Comp = 0;
+	insWrap.Reg = 0;
+	insWrap.App = 0;
 			}
 			if(((String)ins.get(GlobalConstants.CERTIF_STATUS_APINAME)).equalsIgnoreCase(GlobalConstants.CERTIF_STATUS_COMPLETED))
 			{
-				insWrap.Comp = (Integer)ins.get(GlobalConstants.COUNT);
-				insWrap.Inp = 0;
-				insWrap.Reg = 0;
-				insWrap.App = 0;
+	insWrap.Comp = (Integer)ins.get(GlobalConstants.COUNT);
+	insWrap.Inp = 0;
+	insWrap.Reg = 0;
+	insWrap.App = 0;
 			}
 			if(((String)ins.get(GlobalConstants.CERTIF_STATUS_APINAME)).equalsIgnoreCase(GlobalConstants.CERTIF_STATUS_REGISTERED))
 			{
-				insWrap.Reg = (Integer)ins.get(GlobalConstants.COUNT);
-				insWrap.Comp = 0;
-				insWrap.Inp = 0;
-				insWrap.App = 0;
+	insWrap.Reg = (Integer)ins.get(GlobalConstants.COUNT);
+	insWrap.Comp = 0;
+	insWrap.Inp = 0;
+	insWrap.App = 0;
 			}
 			if(((String)ins.get(GlobalConstants.CERTIF_STATUS_APINAME)).equalsIgnoreCase(GlobalConstants.CERTIF_STATUS_APPROVED))
 			{
-				insWrap.App = (Integer)ins.get(GlobalConstants.COUNT);
-				insWrap.Comp = 0;
-				insWrap.Reg = 0;
-				insWrap.Inp = 0;
+	insWrap.App = (Integer)ins.get(GlobalConstants.COUNT);
+	insWrap.Comp = 0;
+	insWrap.Reg = 0;
+	insWrap.Inp = 0;
 			}
 			
 			mapWrap.put((String)ins.get(GlobalConstants.PORTFOLIO_APINAME)+GlobalConstants.HYPHEN+(String)ins.get(GlobalConstants.GPP_CERTIFICATION_APINAME),insWrap); 
@@ -204,19 +220,19 @@ public without sharing class CertificationDetails
 			WrapperCertCounters wrapRec= mapWrap.get((String)ins.get(GlobalConstants.PORTFOLIO_APINAME)+GlobalConstants.HYPHEN+(String)ins.get(GlobalConstants.GPP_CERTIFICATION_APINAME ));
 			if(((String)ins.get(GlobalConstants.CERTIF_STATUS_APINAME)).equalsIgnoreCase(GlobalConstants.CERTIF_STATUS_INPROGRESS))
 			{
-				wrapRec.Inp = (Integer)ins.get(GlobalConstants.COUNT);
+	wrapRec.Inp = (Integer)ins.get(GlobalConstants.COUNT);
 			}
 			if(((String)ins.get(GlobalConstants.CERTIF_STATUS_APINAME)).equalsIgnoreCase(GlobalConstants.CERTIF_STATUS_COMPLETED))
 			{
-				wrapRec.Comp = (Integer)ins.get(GlobalConstants.COUNT);
+	wrapRec.Comp = (Integer)ins.get(GlobalConstants.COUNT);
 			}
 			if(((String)ins.get(GlobalConstants.CERTIF_STATUS_APINAME)).equalsIgnoreCase(GlobalConstants.CERTIF_STATUS_REGISTERED))
 			{
-				wrapRec.Reg = (Integer)ins.get(GlobalConstants.COUNT);
+	wrapRec.Reg = (Integer)ins.get(GlobalConstants.COUNT);
 			}
 			if(((String)ins.get(GlobalConstants.CERTIF_STATUS_APINAME)).equalsIgnoreCase(GlobalConstants.CERTIF_STATUS_APPROVED))
 			{
-				wrapRec.App = (Integer)ins.get(GlobalConstants.COUNT);
+	wrapRec.App = (Integer)ins.get(GlobalConstants.COUNT);
 			}
 		}	 
 	}   
@@ -245,23 +261,23 @@ public without sharing class CertificationDetails
 			{
 	//Filter some Ids out due to partner Type filtering 
 	if( partnersIds.size() == 1 || partnerTypeFilter.equals('') )//Only one partner in the list to show certif and accred. This means that this is the parent account (record in context), so it should appear
-				{
-					queryForCert += '\'' + String.valueOf(partnerId) + '\',';
-				}
-				else if( (partnersIds.size() > 1) && !partnerId.equals(parentId) )//This means that partner is not the distributor. If it was the indirect reseller only one partner Id should be present.
-				{
-					if(!partnerTypeFilter.equals(GlobalConstants.PARTNER_TYPE_DISTR))
-					{
-						queryForCert += '\'' + String.valueOf(partnerId) + '\',';
-					}
-				}
-				else if( (partnersIds.size() > 1) && partnerId.equals(parentId) )//This means that partner is account in context
-				{
-					if(partnerTypeFilter.equals(GlobalConstants.PARTNER_TYPE_DISTR))
-					{
-						queryForCert += '\'' + String.valueOf(partnerId) + '\',';
-					}
-				}
+	{
+		queryForCert += '\'' + String.valueOf(partnerId) + '\',';
+	}
+	else if( (partnersIds.size() > 1) && !partnerId.equals(parentId) )//This means that partner is not the distributor. If it was the indirect reseller only one partner Id should be present.
+	{
+		if(!partnerTypeFilter.equals(GlobalConstants.PARTNER_TYPE_DISTR))
+		{
+			queryForCert += '\'' + String.valueOf(partnerId) + '\',';
+		}
+	}
+	else if( (partnersIds.size() > 1) && partnerId.equals(parentId) )//This means that partner is account in context
+	{
+		if(partnerTypeFilter.equals(GlobalConstants.PARTNER_TYPE_DISTR))
+		{
+			queryForCert += '\'' + String.valueOf(partnerId) + '\',';
+		}
+	}
 			}
 			queryForCert = queryForCert.removeEnd(',');
 			queryForCert += ') AND certification_status__c in (\'' + GlobalConstants.CERTIF_STATUS_INPROGRESS + '\',\'' + GlobalConstants.CERTIF_STATUS_COMPLETED +'\',\'' + GlobalConstants.CERTIF_STATUS_REGISTERED +'\',\'' + GlobalConstants.CERTIF_STATUS_APPROVED +'\')';

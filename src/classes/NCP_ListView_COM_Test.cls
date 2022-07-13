@@ -1,11 +1,9 @@
 @isTest
 private class NCP_ListView_COM_Test{
-	
 	@testSetup static void setup() {
 		String productName = 'Laptop';
 		Product2 pr = NCP_TestFactory.createProductWithName(productName);
 	}
-	
 	@isTest 
 	static void TestgetListViews() {	 
 		
@@ -53,7 +51,7 @@ private class NCP_ListView_COM_Test{
 		Product2 simplePrTwo;
 		Contact cont;
 		Account acc;
-		User CustomerUser;	   
+		User CustomerUser;	
 		User admin = NCP_TestFactory.createUser(true,'AES Admin',null, 'test@nokia.com.dev');
 		System.runAs(admin){
 			acc = NCP_TestFactory.createAccount();
@@ -64,7 +62,7 @@ private class NCP_ListView_COM_Test{
 			CustomerUser = NCP_TestFactory.createUser(false,'test',cont, 'test2@nokian.com.dev');
 			insert CustomerUser; 
 		}		
-		System.runAs(CustomerUser){	   
+		System.runAs(CustomerUser){	
 			System.assert([select isPortalEnabled from user where id = :CustomerUser.id].isPortalEnabled, 'User was not flagged as portal enabled.');
 			Test.startTest();
 			NCP_ListView_COM.SaveFavoriteProducts(simplePrOne.Id, true);
@@ -72,5 +70,6 @@ private class NCP_ListView_COM_Test{
 			System.assertNotEquals(products,null);
 			Test.stopTest(); 
 		}
-	} 
+	}
+	 
 }

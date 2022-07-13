@@ -7,7 +7,7 @@
  * @changeLog 	: 
  *  Created  : 2018 05 12 – flavio.toscano@nokia.com
  *  Modified : 2019 09 25 – tiago.almeida@nokia.com
- * ----- 
+ * -----
 **/
 public without sharing class DML_SObject_Helper {
 	private static Set<String> sRetryKeySet = null;
@@ -40,7 +40,7 @@ public without sharing class DML_SObject_Helper {
 	 * @param 		: String query
 	 * @return	  : List<SObject>
 	**/
-	public List<SObject> doQuery(String query) {
+	public List<SObject> query(String query) {
 		return Database.query(query);
 	}
 	 
@@ -49,8 +49,17 @@ public without sharing class DML_SObject_Helper {
 	 * @param 		: String query
 	 * @return	  : List<List<sObject>>
 	**/
-	public List<List<sObject>> doSearch(String query) {
+	public List<List<sObject>> searchQuery(String query) {
 		return search.query(query);
+	}
+	 
+	/**
+	 * @description : Method used to do SObject Database Query and return the count
+	 * @param 		: String query
+	 * @return	  : Integer
+	**/
+	public Integer countQuery(String query) {
+		return Database.countQuery(query);
 	}
 
 	/**
@@ -69,7 +78,7 @@ public without sharing class DML_SObject_Helper {
 		List<DMLOperationResult_DTO> operationResults = null;
 		try {
 			if(Limits.getDmlRows() + items.size() >= Limits.getLimitDmlRows()) {
-				throw new DmlException('System.LimitException: Too many DML rows: 10001');
+	throw new DmlException('System.LimitException: Too many DML rows: 10001');
 			}
 			if (operationType == DatabaseOperation.DBO_INSERT) {
 	operationResults = adaptOperationResults(Database.insert(items, allMustSucceed));
@@ -84,16 +93,16 @@ public without sharing class DML_SObject_Helper {
 	operationResults = adaptOperationResults(Database.upsert(items, allMustSucceed));
 			}
 			for(DMLOperationResult_DTO oOperationResult : operationResults) {
-				if(!oOperationResult.isSuccess()) {
-					throw new DmlException(oOperationResult.getErrors().get(0).getMessage());
-				}
+	if(!oOperationResult.isSuccess()) {
+		throw new DmlException(oOperationResult.getErrors().get(0).getMessage());
+	}
 			}
 		}
 		catch (Exception e) {
 			if (sp != null) Database.rollback(sp);
 			if(retryAttempt && checkIfCritical(e)) {
-				System.debug('###Exception submited for retry from DML_SObject_Helper : '+e.getMessage() + 'Stack Trace : '+e.getStackTraceString());
-				Database.executeBatch(new DML_SObject_Batch(getFailedItems(operationResults, items), operationType, true));
+	System.debug('###Exception submited for retry from DML_SObject_Helper : '+e.getMessage() + 'Stack Trace : '+e.getStackTraceString());
+	Database.executeBatch(new DML_SObject_Batch(getFailedItems(operationResults, items), operationType, true));
 			}
 			else new DML_CriticalErrorHandler(e, operationName(operationType), items);
 		}
@@ -112,7 +121,7 @@ public without sharing class DML_SObject_Helper {
 		for(String retryKey : sRetryKeySet) {
 			result = errorMessage.contains(retryKey);
 			if((String.isNotBlank(retryKey) && errorMessage.indexOf(retryKey) != -1) || result == true) {
-				return true;
+	return true;
 			}
 		}
 		return false;
@@ -129,7 +138,7 @@ public without sharing class DML_SObject_Helper {
 		Integer len = operationResults.size();
 		for(Integer i = 0; i < len; i++) {
 			if(!operationResults.get(i).isSuccess()) {
-				failedItems.add(items.get(i));
+	failedItems.add(items.get(i));
 			}
 		}
 		return failedItems;

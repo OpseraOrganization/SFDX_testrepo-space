@@ -14,9 +14,8 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 	
 	public void execute(QueueableContext context) {
 		final Id workgroupMemberRT = Utils.MapRecordType('CH_Workgroup_Member__c').get('CH_KB_Workgroup_Members');
+		final Id workgroupMemberCART = Utils.MapRecordType('CH_Workgroup_Member__c').get('CH_CA_WorkgroupMember');
 		final Id workgroupRT = Utils.MapRecordType('CH_Workgroup__c').get('CH_KB_Workgroup');
-		final Id internalApproverQueueId = Utils.getQueueIdByApiName('CH_Internal_Approver');
-		final Id externalApproverQueueId = Utils.getQueueIdByApiName('CH_External_Approver');
 		Map<Id,String> userRoleMapIds = new Map<Id,String>();
 		Map<Id,Boolean> userOnlyPublisherIds = new Map<Id,Boolean>();
 		Map<Id,String> userWorkGroupMapIds = new Map<Id,String>();
@@ -26,7 +25,6 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 				'P' => new Map<Id,Id>(),
 				'O' => new Map<Id,Id>()
 		};
-		Map<Id,Id> userIdQueueMap = new Map<Id,Id>();
 			  
 		Map<String,Id> permissionKBMap = new Map<String,Id>{
 				'Author' => Utils.getPermissionSetIdByPermissionSetName('CH_Author'),
@@ -50,8 +48,29 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 		};
 		List<GroupMember> groupMemberQueueList = new List<GroupMember>();
 		
+		String DVTWorkgroups = System.Label.HWS_DP_Workgroups;
+		Set<String> DVTWorkgroupsSet = new Set<String>();
+		List<Group> DTVGroupList = new List<Group>();
+		List<GroupMember> DTVGroupMemberList = new List<GroupMember>();
+		List<GroupMember> DVTGroupMemberToInsert = new List<GroupMember>();
+		List<GroupMember> DVTGroupMemberToDelete = new List<GroupMember>();
+		
+		if(DVTWorkgroups != NULL){
+			if(DVTWorkgroups.contains(';')){
+				DVTWorkgroupsSet.addAll(DVTWorkgroups.split(';'));	
+			} else {
+				DVTWorkgroupsSet.add(DVTWorkgroups);
+			}			
+		}
+		
+		if(!DVTWorkgroupsSet.isEmpty()){
+			DTVGroupList = [SELECT Id, Name, DeveloperName FROM Group WHERE Name IN :DVTWorkgroupsSet];
+			DTVGroupMemberList = [SELECT Id, UserOrGroupId, GroupId, Group.Name FROM GroupMember WHERE Group.Name IN :DVTWorkgroupsSet LIMIT 10000];
+		}
+		
 		if(action.equals('update') || action.equals('remove')){
 			for(CH_Workgroup_Member__c oWorkgroupMember: oOldCH_WorkgroupMember){
+				System.debug('kgs : '+oWorkgroupMember.CH_User__c + ' - ' + oWorkgroupMember.CH_Role__c + ' - ' + oWorkgroupMember.RecordTypeId + ' - '+workgroupMemberRT);
 				if(oWorkgroupMember.CH_User__c != null && oWorkgroupMember.CH_Role__c != null && oWorkgroupMember.RecordTypeId == workgroupMemberRT) {
 					if(action.equals('remove')){
 						userRoleMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Role__c);
@@ -76,32 +95,40 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 					}
 					else if(action.equals('update')){
 						for(CH_Workgroup_Member__c oNewWorkgroupMember: oNewCH_WorkgroupMember){
-							if(oNewWorkgroupMember.CH_User__c != null && oWorkgroupMember.CH_User__c == oNewWorkgroupMember.CH_User__c ) {
-								if(oWorkgroupMember.CH_Role__c != oNewWorkgroupMember.CH_Role__c || oWorkgroupMember.CH_Owner__c != oNewWorkgroupMember.CH_Owner__c || oWorkgroupMember.CH_Only_Publisher__c != oNewWorkgroupMember.CH_Only_Publisher__c) {
-									userRoleMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Role__c);
-									userOnlyPublisherIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Only_Publisher__c);
-									userWorkGroupMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
-									if(oWorkgroupMember.CH_Role__c.equals('Internal Approver (Approver)') || oWorkgroupMember.CH_Role__c.equals('Public Approver (Publisher)') && !oWorkgroupMember.CH_Only_Publisher__c){
-										Map<Id,Id> userIdQueueMapToRemove = QueueMapList.get('A');
-										userIdQueueMapToRemove.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
-										QueueMapList.put('A', userIdQueueMapToRemove);
-									}
-									if(oWorkgroupMember.CH_Role__c.equals('Public Approver (Publisher)')){
-										Map<Id,Id> userIdQueueMapToRemove = QueueMapList.get('P');
-										userIdQueueMapToRemove.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
-										QueueMapList.put('P', userIdQueueMapToRemove);
-									}
-									if(oWorkgroupMember.CH_Owner__c == true){
-										userOwnerMapIds.put(oWorkgroupMember.CH_User__c, 'Owner');
-										Map<Id,Id> userIdQueueMapToRemove = QueueMapList.get('O');
-										userIdQueueMapToRemove.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
-										QueueMapList.put('O', userIdQueueMapToRemove);
-									}
+							if(oNewWorkgroupMember.CH_User__c != null && oWorkgroupMember.CH_User__c == oNewWorkgroupMember.CH_User__c && (oWorkgroupMember.CH_Role__c != oNewWorkgroupMember.CH_Role__c || oWorkgroupMember.CH_Owner__c != oNewWorkgroupMember.CH_Owner__c || oWorkgroupMember.CH_Only_Publisher__c != oNewWorkgroupMember.CH_Only_Publisher__c)) {
+								userRoleMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Role__c);
+								userOnlyPublisherIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Only_Publisher__c);
+								userWorkGroupMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
+								if(oWorkgroupMember.CH_Role__c.equals('Internal Approver (Approver)') || oWorkgroupMember.CH_Role__c.equals('Public Approver (Publisher)') && !oWorkgroupMember.CH_Only_Publisher__c){
+									Map<Id,Id> userIdQueueMapToRemove = QueueMapList.get('A');
+									userIdQueueMapToRemove.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
+									QueueMapList.put('A', userIdQueueMapToRemove);
+								}
+								if(oWorkgroupMember.CH_Role__c.equals('Public Approver (Publisher)')){
+									Map<Id,Id> userIdQueueMapToRemove = QueueMapList.get('P');
+									userIdQueueMapToRemove.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
+									QueueMapList.put('P', userIdQueueMapToRemove);
+								}
+								if(oWorkgroupMember.CH_Owner__c == true){
+									userOwnerMapIds.put(oWorkgroupMember.CH_User__c, 'Owner');
+									Map<Id,Id> userIdQueueMapToRemove = QueueMapList.get('O');
+									userIdQueueMapToRemove.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
+									QueueMapList.put('O', userIdQueueMapToRemove);
 								}
 							}
 						}
 					}
+				} else if(oWorkgroupMember.RecordTypeId == workgroupMemberCART && DVTWorkgroupsSet.contains(oWorkgroupMember.HWS_DP_WorkGroup_Name__c) && action.equals('remove')){
+					for(GroupMember dvtGroupMember : DTVGroupMemberList){
+						if(dvtGroupMember.UserOrGroupId == oWorkgroupMember.CH_User__c && dvtGroupMember.Group.Name == oWorkgroupMember.HWS_DP_WorkGroup_Name__c){
+							DVTGroupMemberToDelete.add(dvtGroupMember);
+						}
+					}
 				}
+			}
+			//CA Delete Public Groups
+			if(!DVTGroupMemberToDelete.isEmpty()){
+				EM_GroupMember.doDeleteGroupMemberList(DVTGroupMemberToDelete);
 			}
 			
 			//remove from queues
@@ -170,13 +197,12 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 					if(!permissionSetListToDelete.isEmpty()){
 						EM_PermissionSetAssignment.doDeletePermissionSetAssignmentList(permissionSetListToDelete);
 					}
-				}		   
+				}		  
 				
 				//UserRoles
 				Map<Id,String> userRolesMap = Utils.userRolesInOthersWorkgroups(userRoleMapIds, userWorkGroupMapIds);
 				
 				//delete public groups
-	
 				if(!userRoleMapIds.isEmpty()){
 					for(Id userId: userRoleMapIds.keySet()) {
 						if(userRoleMapIds.get(userId).equals('Author')){
@@ -216,7 +242,7 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 						List<GroupMember> groupMemberListToDelete = new List<GroupMember>();
 						for(GroupMember curGroupMember : EM_GroupMember.getAll(new Set<Id>(publicGroupKBMap.values()))){
 							for(GroupMember curGroupMemberList : groupMemberList){
-								if(curGroupMember.GroupId == curGroupMemberList.GroupId && curGroupMember.GroupId == curGroupMemberList.GroupId){
+								if(curGroupMember.GroupId == curGroupMemberList.GroupId){
 									groupMemberListToDelete.add(curGroupMember);
 								}
 							}
@@ -228,7 +254,7 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 						List<GroupMember> groupMemberListToDelete = new List<GroupMember>();
 						for(GroupMember curGroupMember : EM_GroupMember.getAll(new Set<Id>(defaultQueueKBMap.values()))){
 							for(GroupMember curGroupMemberList : groupMemberQueueList){
-								if(curGroupMember.GroupId == curGroupMemberList.GroupId && curGroupMember.GroupId == curGroupMemberList.GroupId){
+								if(curGroupMember.GroupId == curGroupMemberList.GroupId){
 									groupMemberListToDelete.add(curGroupMember);
 								}
 							}
@@ -272,37 +298,43 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 					}
 					else if(action.equals('update assign')){
 						for(CH_Workgroup_Member__c oOldWorkgroupMember: oOldCH_WorkgroupMember){
-							if(oOldWorkgroupMember.CH_User__c != null && oWorkgroupMember.CH_User__c == oOldWorkgroupMember.CH_User__c ) {
-								if(oWorkgroupMember.CH_Role__c != oOldWorkgroupMember.CH_Role__c || oWorkgroupMember.CH_Owner__c != oOldWorkgroupMember.CH_Owner__c || oWorkgroupMember.CH_Only_Publisher__c != oOldWorkgroupMember.CH_Only_Publisher__c) {
-									userRoleMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Role__c);
-									userOnlyPublisherIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Only_Publisher__c);
-									userWorkGroupMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
-									if(oWorkgroupMember.CH_Role__c.equals('Internal Approver (Approver)') || oWorkgroupMember.CH_Role__c.equals('Public Approver (Publisher)') && !oWorkgroupMember.CH_Only_Publisher__c){
-										Map<Id,Id> userIdQueueMapToAdd = QueueMapList.get('A');
-										userIdQueueMapToAdd.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
-										QueueMapList.put('A', userIdQueueMapToAdd);
-									}
-									if(oWorkgroupMember.CH_Role__c.equals('Public Approver (Publisher)')){
-										Map<Id,Id> userIdQueueMapToAdd = QueueMapList.get('P');
-										userIdQueueMapToAdd.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
-										QueueMapList.put('P', userIdQueueMapToAdd);
-									}
-									if(oWorkgroupMember.CH_Owner__c == true){
-										userOwnerMapIds.put(oWorkgroupMember.CH_User__c, 'Owner');
-										Map<Id,Id> userIdQueueMapToAdd = QueueMapList.get('O');
-										userIdQueueMapToAdd.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
-										QueueMapList.put('O', userIdQueueMapToAdd);
-									}
+							if(oOldWorkgroupMember.CH_User__c != null && oWorkgroupMember.CH_User__c == oOldWorkgroupMember.CH_User__c && (oWorkgroupMember.CH_Role__c != oOldWorkgroupMember.CH_Role__c || oWorkgroupMember.CH_Owner__c != oOldWorkgroupMember.CH_Owner__c || oWorkgroupMember.CH_Only_Publisher__c != oOldWorkgroupMember.CH_Only_Publisher__c)) {
+								userRoleMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Role__c);
+								userOnlyPublisherIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_Only_Publisher__c);
+								userWorkGroupMapIds.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
+								if(oWorkgroupMember.CH_Role__c.equals('Internal Approver (Approver)') || oWorkgroupMember.CH_Role__c.equals('Public Approver (Publisher)') && !oWorkgroupMember.CH_Only_Publisher__c){
+									Map<Id,Id> userIdQueueMapToAdd = QueueMapList.get('A');
+									userIdQueueMapToAdd.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
+									QueueMapList.put('A', userIdQueueMapToAdd);
+								}
+								if(oWorkgroupMember.CH_Role__c.equals('Public Approver (Publisher)')){
+									Map<Id,Id> userIdQueueMapToAdd = QueueMapList.get('P');
+									userIdQueueMapToAdd.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
+									QueueMapList.put('P', userIdQueueMapToAdd);
+								}
+								if(oWorkgroupMember.CH_Owner__c == true){
+									userOwnerMapIds.put(oWorkgroupMember.CH_User__c, 'Owner');
+									Map<Id,Id> userIdQueueMapToAdd = QueueMapList.get('O');
+									userIdQueueMapToAdd.put(oWorkgroupMember.CH_User__c, oWorkgroupMember.CH_WorkgroupId__c);
+									QueueMapList.put('O', userIdQueueMapToAdd);
 								}
 							}
 						}
 					}
+				} else if(oWorkgroupMember.RecordTypeId == workgroupMemberCART && DVTWorkgroupsSet.contains(oWorkgroupMember.HWS_DP_WorkGroup_Name__c) && action.equals('assign')){
+					for(Group dvtGroup : DTVGroupList){
+						if(dvtGroup.Name == oWorkgroupMember.HWS_DP_WorkGroup_Name__c){
+							DVTGroupMemberToInsert.add(new GroupMember(
+								GroupId = dvtGroup.Id,
+								UserOrGroupId = oWorkgroupMember.CH_User__c
+							));
+						}
+					}						
 				}
 			}
-			//
-			for(CH_Workgroup_Member__c oWorkgroupMember: oNewCH_WorkgroupMember){
-				if(oWorkgroupMember.RecordTypeId == workgroupMemberRT) {
-				}
+			//CA Assign Public Groups
+			if(!DVTGroupMemberToInsert.isEmpty()){
+				EM_GroupMember.doUpsertGroupMemberList(DVTGroupMemberToInsert);
 			}
 			
 			//assign from queues
@@ -322,19 +354,9 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 				List<GroupMember> oGroupMember = new List<GroupMember>();
 				for(String role : QueueMapList.keySet()){
 					Map<Id,Id> userIdQueueMapToAdd = QueueMapList.get(role);
-					if(!userIdQueueMapToAdd.isEmpty()){
-						if(!workgroupsToQueue.isEmpty()){
-							for (Id key : userIdQueueMapToAdd.keySet()) {
-								oGroupMember.add(new GroupMember(GroupId = workgroupsToQueue.get(userIdQueueMapToAdd.get(key)+role), UserOrGroupId = key));
-								if(role.equals('A')){
-									//oGroupMember.add(new GroupMember(GroupId = internalApproverQueueId, UserOrGroupId = key));
-								} else if (role.equals('P')){
-									if(!userOnlyPublisherIds.get(key)){
-										//oGroupMember.add(new GroupMember(GroupId = internalApproverQueueId, UserOrGroupId = key));
-									}
-									//oGroupMember.add(new GroupMember(GroupId = externalApproverQueueId, UserOrGroupId = key));
-								}
-							}
+					if(!userIdQueueMapToAdd.isEmpty() && !workgroupsToQueue.isEmpty()){
+						for (Id key : userIdQueueMapToAdd.keySet()) {
+							oGroupMember.add(new GroupMember(GroupId = workgroupsToQueue.get(userIdQueueMapToAdd.get(key)+role), UserOrGroupId = key));
 						}
 					}
 				}
@@ -378,7 +400,7 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 					else if(userRoleMapIds.get(userId).equals('Public Approver (Publisher)')){
 							groupMemberList.add(new GroupMember(GroupId = publicGroupKBMap.get('Author'), UserOrGroupId = userId));
 						if(!userOnlyPublisherIds.get(userId)){
-							groupMemberList.add(new GroupMember(GroupId = publicGroupKBMap.get('Internal Approver (Approver)'), UserOrGroupId = userId));							
+							groupMemberList.add(new GroupMember(GroupId = publicGroupKBMap.get('Internal Approver (Approver)'), UserOrGroupId = userId));						   
 						}
 						groupMemberList.add(new GroupMember(GroupId = publicGroupKBMap.get('Public Approver (Publisher)'), UserOrGroupId = userId));
 					}
@@ -387,6 +409,6 @@ public without sharing class CH_ManagePSAndQueueToWGMemberAsynchQueue implements
 					EM_GroupMember.doUpsertGroupMemberList(groupMemberList);
 				}
 			}
-		}		
+		}	   
 	}
 }

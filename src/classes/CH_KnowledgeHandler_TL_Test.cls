@@ -1,6 +1,5 @@
-@isTest 
+@isTest
 private class CH_KnowledgeHandler_TL_Test {
-	
 	public static final string WORKGROUPNAME = 'TEST1';
 	public static final string QUEUENAME = WORKGROUPNAME + '_AQ';
 	
@@ -44,6 +43,7 @@ private class CH_KnowledgeHandler_TL_Test {
 		
 		
 		Knowledge__kav testArticle = new Knowledge__kav();
+		Knowledge__kav testArticle1 = new Knowledge__kav();
 		// Run your code with inserted user.
 		System.runAs(u)
 		{
@@ -98,6 +98,18 @@ private class CH_KnowledgeHandler_TL_Test {
 			List<Knowledge__kav> articleList = new List<Knowledge__kav>();
 			articleList.add([Select id, Title, urlName, RecordTypeId, ValidationStatus,
 		CH_Workgroup__c, CH_WorkgroupName__c , CH_InApproval__c, PublishStatus, CreatedById from Knowledge__kav where id =: testArticle.id]);
+			testArticle1 = new Knowledge__kav(Title = 'How To Test By Gizmo2313133', 
+			urlName = 'HowToTestByGizmo123123123133',
+			RecordTypeId = RecTypeId,
+			ValidationStatus = 'Work in Progress', 
+			CH_PurposeRequired__c = 'd', 
+			CH_ProcedureRequired__c = 'Gizem is the best',
+			CH_Workgroup__c = workgroup.id,
+			CH_InApproval__c = true);
+			insert testArticle1; 
+			articleList.add([Select id, Title, urlName, RecordTypeId, ValidationStatus,
+		CH_Workgroup__c, CH_WorkgroupName__c , CH_InApproval__c, PublishStatus, CreatedById from Knowledge__kav where id =: testArticle1.id]);
+			
 			Group grp = new Group();
 			grp.name = 'null_PQ';
 			grp.DeveloperName = +'null_PQ';
@@ -129,29 +141,77 @@ private class CH_KnowledgeHandler_TL_Test {
 			articleListNew.add(testArticle);
 
 			try{
-			 CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(articleListNew,articleListNew);
+	CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(articleListNew,articleListNew);
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
+			testArticle.CH_InApproval__c = true;
+			testArticle.CH_Minor_changes__c = true;
+			testArticle.CH_ComingFromApprovalProcess__c = false;
+			testArticle.CH_Candidate_for_External__c = false;
+			List<Knowledge__kav> articleListNew1 = new List<Knowledge__kav>();
+			articleListNew1.add(testArticle);
 			try{
-			 CH_KnowledgeHandler_TL.validateIfUserCanEditArticle(articleList);
+	CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(new List<Knowledge__kav>{articleList[0]},articleListNew1);
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
+			testArticle.CH_InApproval__c = true;
+			testArticle.CH_Minor_changes__c = false;
+			testArticle.CH_ComingFromApprovalProcess__c = false;
+			testArticle.CH_Candidate_for_External__c = false;
+			List<Knowledge__kav> articleListNew2 = new List<Knowledge__kav>();
+			articleListNew2.add(testArticle);
 			try{
-			 CH_KnowledgeHandler_TL.validateIfUserCanDeleteArticle(articleList);
+	CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(new List<Knowledge__kav>{articleList[0]},articleListNew2);
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
+			}
+			testArticle.CH_InApproval__c = true;
+			testArticle.CH_Minor_changes__c = true;
+			testArticle.CH_ComingFromApprovalProcess__c = false;
+			testArticle.CH_Candidate_for_External__c = true;
+			List<Knowledge__kav> articleListNew3 = new List<Knowledge__kav>();
+			articleListNew3.add(testArticle);
+			try{
+	CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(new List<Knowledge__kav>{articleList[0]},articleListNew3);
+			}
+			catch(Exception ex){
+	System.debug('#### ' + ex.getMessage());
+			}
+			testArticle.CH_InApproval__c = true;
+			testArticle.CH_Minor_changes__c = false;
+			testArticle.CH_ComingFromApprovalProcess__c = false;
+			testArticle.CH_Candidate_for_External__c = true;
+			List<Knowledge__kav> articleListNew4 = new List<Knowledge__kav>();
+			articleListNew4.add(testArticle);
+			try{
+	CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(new List<Knowledge__kav>{articleList[0]},articleListNew4);
+			}
+			catch(Exception ex){
+	System.debug('#### ' + ex.getMessage());
 			}
 			try{
-				CH_KnowledgeHandler_TH ch = new CH_KnowledgeHandler_TH();
-				ch.beforeDelete();
+	CH_KnowledgeHandler_TL.validateIfUserCanEditArticle(articleList);
+			}
+			catch(Exception ex){
+	System.debug('#### ' + ex.getMessage());
+			}
+			try{
+	CH_KnowledgeHandler_TL.validateIfUserCanDeleteArticle(articleList);
+			}
+			catch(Exception ex){
+	System.debug('#### ' + ex.getMessage());
+			}
+			try{
+	CH_KnowledgeHandler_TH ch = new CH_KnowledgeHandler_TH();
+	ch.beforeDelete();
 			}
 			catch(Exception ex){	  
-			 System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 		}
 	}
@@ -184,9 +244,11 @@ private class CH_KnowledgeHandler_TL_Test {
 		
 		Knowledge__kav testArticle = new Knowledge__kav(Title = 'How To Test By Gizmo23131', urlName = 'HowToTestByGizmo1231231231', RecordTypeId = RecTypeId, ValidationStatus = 'Work in Progress', CH_PurposeRequired__c = 'd', CH_ProcedureRequired__c = 'Gizem is the best',CH_Workgroup__c = workgroup.id, CH_InApproval__c = false);
 		insert testArticle; 
+		Knowledge__kav testArticle1 = new Knowledge__kav(Title = 'How To Test By Gizmo2313122', urlName = 'HowToTestByGizmo123123123122', RecordTypeId = RecTypeId, ValidationStatus = 'Work in Progress', CH_PurposeRequired__c = 'c', CH_ProcedureRequired__c = 'Gizem is the est',CH_Workgroup__c = workgroup.id, CH_InApproval__c = true);	
+		insert testArticle1; 
 		List<Knowledge__kav> articleList = new List<Knowledge__kav>();
 		articleList.add([Select id, Title, urlName, RecordTypeId, ValidationStatus, CH_Workgroup__c, CH_InApproval__c, PublishStatus, CreatedById from Knowledge__kav where id =: testArticle.id]);
-		
+		 articleList.add([Select id, Title, urlName, RecordTypeId, ValidationStatus, CH_Workgroup__c, CH_InApproval__c, PublishStatus, CreatedById from Knowledge__kav where id =: testArticle1.id]);
 		try{
 			CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(articleList, articleList);
 		}
@@ -302,22 +364,22 @@ private class CH_KnowledgeHandler_TL_Test {
 			articleList.add([Select id, Title, urlName, RecordTypeId, ValidationStatus, CH_Workgroup__c, CH_InApproval__c, PublishStatus, CreatedById from Knowledge__kav where id =: testArticle.id]);
 			
 			try{
-			 CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(articleList, articleList);
+	CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(articleList, articleList);
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			try{
-			 CH_KnowledgeHandler_TL.validateIfUserCanEditArticle(articleList);
+	CH_KnowledgeHandler_TL.validateIfUserCanEditArticle(articleList);
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			try{
-			 CH_KnowledgeHandler_TL.validateIfUserCanDeleteArticle(articleList);
+	CH_KnowledgeHandler_TL.validateIfUserCanDeleteArticle(articleList);
 			}
 			catch(Exception ex){
-			 System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			testArticle.CH_Minor_changes__c = true;
 			testArticle.CH_ComingFromApprovalProcess__c = false;
@@ -327,29 +389,29 @@ private class CH_KnowledgeHandler_TL_Test {
 			articleList.add([Select id, Title, urlName, RecordTypeId, ValidationStatus, CH_Workgroup__c, CH_InApproval__c, PublishStatus, CreatedById from Knowledge__kav where id =: testArticle.id]);
 			CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(articleList, articleList);
 			try{
-				testArticle.CH_Minor_changes__c = true;
-				testArticle.CH_ComingFromApprovalProcess__c = false;
-				testArticle.CH_Candidate_for_External__c = true;
-				upsert testArticle;
+	testArticle.CH_Minor_changes__c = true;
+	testArticle.CH_ComingFromApprovalProcess__c = false;
+	testArticle.CH_Candidate_for_External__c = true;
+	upsert testArticle;
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			try{
-				testArticle.CH_Minor_changes__c = false;
-				testArticle.CH_ComingFromApprovalProcess__c = false;
-				testArticle.CH_Candidate_for_External__c = true;
-				upsert testArticle;
+	testArticle.CH_Minor_changes__c = false;
+	testArticle.CH_ComingFromApprovalProcess__c = false;
+	testArticle.CH_Candidate_for_External__c = true;
+	upsert testArticle;
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			try{
-				testArticle.ValidationStatus = 'Needs Publisher Review';
-				testArticle.CH_InApproval__c = true ;
-				upsert testArticle; 
+	testArticle.ValidationStatus = 'Needs Publisher Review';
+	testArticle.CH_InApproval__c = true ;
+	upsert testArticle; 
 			}catch(Exception ex){ 
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			Test.stopTest();
 		}
@@ -515,30 +577,30 @@ private class CH_KnowledgeHandler_TL_Test {
 	update testArticle;
 			}
 			catch(Exception ex){
-			 System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			
 			articleList.add([Select id, Title, urlName, RecordTypeId, ValidationStatus, CH_Workgroup__c, CH_InApproval__c, PublishStatus, CreatedById from Knowledge__kav where id =: testArticle.id]);
 			
 			try{
-			 CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(articleList, articleList);
+	CH_KnowledgeHandler_TL.assignOwnerIfInApprovalStatus(articleList, articleList);
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			try{
-			 CH_KnowledgeHandler_TL.validateIfUserCanEditArticle(articleList);
+	CH_KnowledgeHandler_TL.validateIfUserCanEditArticle(articleList);
 			}
 			catch(Exception ex){
-	   System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			
 			
 			try{
-			 CH_KnowledgeHandler_TL.validateIfUserCanDeleteArticle(articleList);
+	CH_KnowledgeHandler_TL.validateIfUserCanDeleteArticle(articleList);
 			}
 			catch(Exception ex){
-			 System.debug('#### ' + ex.getMessage());
+	System.debug('#### ' + ex.getMessage());
 			}
 			delete workgroup;
 			Test.stopTest();

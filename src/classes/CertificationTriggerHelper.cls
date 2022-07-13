@@ -14,18 +14,18 @@ public without sharing class CertificationTriggerHelper{
 			List<Certification__Share> certificationShareToInsert = new List<Certification__Share> ();
 			List<Account_Member__c> accountMemberList = new List<Account_Member__c>();	
 			accountMemberList = [SELECT Account_Role__c,Id,Name__c,Name__r.Name,Type__c FROM Account_Member__c 
-								 WHERE Account_Role__c = : PRMGlobalConstants.PARTNER_SALES_MANAGER 
-								 Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];	
+		 WHERE Account_Role__c = : PRMGlobalConstants.PARTNER_SALES_MANAGER 
+		 Limit : (Limits.getLimitQueryRows() - Limits.getQueryRows())];	
 			if(!accountMemberList.IsEmpty() ){
-				
-				for(Account_Member__c accTeamMeamber : accountMemberList){
-					Certification__Share share = new Certification__Share();
-					share.UserOrGroupId = accTeamMeamber.Name__c;
-					share.ParentId = certificationList[0].Id;
-					share.AccessLevel = PRMGlobalConstants.READ;
-					share.RowCause = PRMGlobalConstants.MANUAL;
-					certificationShareToInsert.add(share);		
-				}
+	
+	for(Account_Member__c accTeamMeamber : accountMemberList){
+		Certification__Share share = new Certification__Share();
+		share.UserOrGroupId = accTeamMeamber.Name__c;
+		share.ParentId = certificationList[0].Id;
+		share.AccessLevel = PRMGlobalConstants.READ;
+		share.RowCause = PRMGlobalConstants.MANUAL;
+		certificationShareToInsert.add(share);		
+	}
 			}			
 			Database.SaveResult[] srList = Database.insert(certificationShareToInsert, false);
 		}	  
@@ -142,9 +142,15 @@ public without sharing class CertificationTriggerHelper{
 	if(!jobFunctions.contains(cert.Job_Function__c)){
 		jobFunctions.add(cert.Job_Function__c);
 	}
-	if(Trigger.isDelete){
-		deletedCertIds.add(cert.id);
+				
+	if(Trigger.isDelete != null)
+	{
+	if(Trigger.isDelete == true){
+	deletedCertIds.add(cert.id);
 	}
+		
+	}
+	
 			}
 			system.debug('accID ==== ' + accID);
 			for(Certification__c usercert : [select id, Name__c, Partner__c, Technologies_Portfolio__c from Certification__c 
@@ -216,7 +222,7 @@ public without sharing class CertificationTriggerHelper{
 	if(accredMap.keySet().size() > 0){
 		for(String field : accredMap.keySet()){
 			Accr.put(field, accredMap.get(field));
-		}				 
+		}	 
 	}else{
 		for(Certification__c cert : NewCertifications){
 			if(cert.Partner__c == Accr.Partner__c && cert.Technologies_Portfolio__c == Accr.Portfolio__c){
@@ -225,18 +231,21 @@ public without sharing class CertificationTriggerHelper{
 	Accr.put(field,0);
 			}
 		}
-	}			  
+	}	 
 	accreditationToUpdate.add(Accr);
 			}
 			system.debug('>>>accreditationToUpdate' + accreditationToUpdate);
 			if(!accreditationToUpdate.isempty()){
 	database.update(accreditationToUpdate, false);
-			}
 			PRMGlobalConstants.CertificationCountUpdateExecuted = true;
+			}
+			
 		 }
 		}Catch(Exception e){
 			system.debug('certification error in catch block--' + e);
-			ExceptionHandler.addException(e,PRMGlobalConstants.CertificationTriggerHelper ,PRMGlobalConstants.accreditationUpdate);	 
+			String exdetails = e.getTypeName() + ' ; '+e.getLineNumber();
+			system.debug('exeption details' + exdetails);
+			ExceptionHandler.addException(e,PRMGlobalConstants.CertificationTriggerHelper ,exdetails);
 		}
 	} 
 	

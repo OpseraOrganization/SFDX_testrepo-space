@@ -1,3 +1,13 @@
+/****************************************************************
+* Class Name : CH_CA_DTO 
+* Created Date: 
+* Created By: TCS
+* Description : This Class is used as wrapper class for WG assignment
+* Modification Log:
+---------------------------------------------------------
+Modified By	 Modified For US#	Modified Date
+
+******************************************************************/
 public class CH_CA_DTO {
 	
 	public class SearchCriteriaDTO{
@@ -17,35 +27,37 @@ public class CH_CA_DTO {
 		@AuraEnabled public Boolean activeRules {get;set;}
 		@AuraEnabled public String productModule {get;set;}
 		@AuraEnabled public String productVariant {get;set;}
+		@AuraEnabled public String productRelease {get;set;}
 		@AuraEnabled public String solution {get;set;}
 		@AuraEnabled public String recordTypeName {get;set;}
 		@AuraEnabled public String contractType {get;set;}
 		//NOKIASC-34641-variable added to check HWS or SWS case
 		@AuraEnabled public Boolean HWSRecordTypeCheck {get;set;}
-		
+		@AuraEnabled public String serviceQuoteId {get;set;}
 		public SearchCriteriaDTO(){
 			schedule = false;
 			activeRules = true;
 			workgroupTypes = new List<string>();
 			levelOfSupports = new List<string>();
-		   //NOKIASC-34641-Initialize default value for SWS case
+			//NOKIASC-34641-Initialize default value for SWS case
 			HWSRecordTypeCheck=false;
 		}
 		
 		public List<string> getProductIds(){
 			List<string> productIds = new List<string>();
 			if (!String.isBlank(productId)){
-	productIds.add(productId);
+				productIds.add(productId);
 			}
 			if (!String.isBlank(productModule)){
-	productIds.add(productModule);
+				productIds.add(productModule);
 			}
 			if (!String.isBlank(productVariant)){
-	productIds.add(productVariant);
+				productIds.add(productVariant);
 			}
-			if (!String.isBlank(solution)){
-	productIds.add(solution);
+			if (!String.isBlank(productRelease)){
+				productIds.add(productRelease);
 			}
+	   
 			return productIds;		
 		}
 	}

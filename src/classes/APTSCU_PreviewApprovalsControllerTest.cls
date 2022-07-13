@@ -1,6 +1,6 @@
 /*************************************************************
 @Name: APTSCU_PreviewApprovalsControllerTest
-@Author:  Pramod Mali
+@Author:  Pramod Mali 
 @CreateDate: 23 Feb 2016
 @Description: Test class for APTSCU_PreviewApprovalsController.
 ******************************************************************/
@@ -11,7 +11,6 @@ public class APTSCU_PreviewApprovalsControllerTest {
 	private static Apttus_Approval__Approval_Request__c request;
 	private static User testUser = NF_TestDataFactory.createAdminUser('Data Loader Profile');
 	private static String firstStep = 'First Step';
-
 
 	static{
 		system.runas(testUser){
@@ -54,34 +53,13 @@ public class APTSCU_PreviewApprovalsControllerTest {
 			step.Apttus_Approval__StepDisplayFieldNames__c = 'Test';
 			insert step;
 
-			Account acc = new Account(
-			Name='Test Approval Account',
-			BillingCity ='Test',
-			BillingCountry ='France',
-			BillingStreet ='Test'
-			);
+			Account acc = NF_TestDataFactory.createAccount('301456783');
 			insert acc;
-
-			Opportunity opp = new Opportunity(
-			Name='Test Approval',
-			AccountId=acc.Id,
-			CloseDate=System.today(),
-			Business_Type__c = 'Standard Opportunity',
-			StageName=GlobalConstants.IDENTIFY_OPPORTUNITY,
-			Phase_Status__c=GlobalConstants.PLANNED,
-			Amount = 100001,
-			Apttus_Approval__Approval_Status__c = 'Approval Required'
-			);
+		
+			Opportunity opp = NF_TestDataFactory.createOpportunity(acc.Id, GlobalConstants.IDENTIFY_OPPORTUNITY, GlobalConstants.PLANNED, Date.today().addDays(10), Decimal.valueOf(System.Label.Unweighted_Amount_For_Sales_Outcome));
+			opp.Business_Type__c = GLobalConstants.STANDARDOPPORTUNITY;
 			insert opp;
 			opportunityId = opp.Id;
-			Offer__c offer = new Offer__c();
-			offer.Name = 'Test Offer';
-			offer.Opportunity__c = opportunityId;
-			DateTime dT = System.now();
-			Date myDate = date.newinstance(dT.year(), dT.month(), dT.day());
-			offer.Customer_Offer_Due_Date__c = myDate;
-			Offer.LoA_Approval_Level__c='A';
-			insert offer;
 
 			Apttus_Approval__Approval_Request__c approvalRequest=new Apttus_Approval__Approval_Request__c(
 			Apttus_Approval__Object_Id__c = opp.id,
@@ -109,9 +87,8 @@ public class APTSCU_PreviewApprovalsControllerTest {
 		}
 	}
 
-	static testMethod void validateApprovalActions(){
+	static testMethod void validateApproval(){
 		Test.startTest();
-
 
 		PageReference pageRef = Page.APTSCU_PreviewApproval;
 		pageRef.getParameters().put('sObjectId',opportunityId);
@@ -119,9 +96,12 @@ public class APTSCU_PreviewApprovalsControllerTest {
 
 		APTSCU_PreviewApprovalsController controller = new APTSCU_PreviewApprovalsController();
 		controller.previewApprovals();
-		APTSCU_PreviewApprovalsController.submitForApprovals('Opportunity', opportunityId, 'Approve');
+		controller.getDisplayFields();
+		Opportunity oppty = new Opportunity(Id=opportunityId,Probability=70,Calculating_Probability__c=70);
+		APTSCU_PreviewApprovalsController.updateOpportunity(oppty);
+		APTSCU_PreviewApprovalsController.submitForApprovals('Opportunity', opportunityId );
 		APTSCU_PreviewApprovalsController.addComments('Opportunity', opportunityId, 'Approve');
-		controller.saveApprovalDisplayInformation(approvalProcessId, firstStep);
+		APTSCU_PreviewApprovalsController.cancelApprovals('Opportunity', opportunityId, 'Cancel');
 		controller.getOperator('equal to');
 		controller.getOperator('not equal to');
 		controller.getOperator('less than');
@@ -131,25 +111,14 @@ public class APTSCU_PreviewApprovalsControllerTest {
 		controller.getOperator('starts with');
 		controller.getOperator('in');
 		controller.getOperator('not in');
-
-		APTSCU_PreviewApprovalsController.cancelApprovals('Opportunity',opportunityId,'Test');
-		controller.getDisplaySalesoutcomReason();
-		APTSCU_PreviewApprovalsController.updateOpportunityReasons('Opportunity',opportunityId,'Commercial','Quality','Technical');
-		controller.getDisplayProbability();
-		controller.getProbability();
-		APTSCU_PreviewApprovalsController.updateProbabilityPercentage('Opportunity',opportunityId,'88');
-		APTSCU_PreviewApprovalsController.submissionCommentsUpdate(opportunityId,'Test');
-		APTSCU_PreviewApprovalsController.updatePhaseStatus(opportunityId,'Test');
 		Test.stopTest();
 	}
 
 
-	static testMethod void validateApprovalActions1(){
+	static testMethod void validateApprovalWD(){
 		system.runas(testUser){
 			Test.startTest();
-
-			Opportunity opty=[Select Id,ApprovalStatusTechField__c,Submission_Comments__c,Phase_Status__c,Sales_Outcome__c,Apttus_Approval__Approval_Status__c,StageName from Opportunity where id=:opportunityId Limit 1];
-
+			Opportunity opty = new Opportunity(Id=opportunityId);
 			opty.Phase_Status__c=GlobalConstants.PENDING_WIN_LOSS_DECLARATION;
 			opty.Apttus_Approval__Approval_Status__c=GlobalConstants.PENDING_APPROVAL;
 			opty.StageName=GlobalConstants.WIN_THE_CASE_NEGOTIATE;
@@ -162,12 +131,19 @@ public class APTSCU_PreviewApprovalsControllerTest {
 			APTSCU_PreviewApprovalsController controller = new APTSCU_PreviewApprovalsController();
 			controller.currentApprovalStatus='Pending Approval';
 			controller.previewApprovals();
-			APTSCU_PreviewApprovalsController.updatePhaseStatus(opportunityId,'Test');
-			controller.getDisplaySalesoutcomReason();
-			controller.getUnweightedAmount();
-			controller.firstReason='Commercial';
-			controller.secondReason='Quality';
-			controller.probabilityPercentage=99;
+			controller.getDisplayFields();
+			controller.currentApprovalStatus='Cancelled';
+			controller.previewApprovals();
+			controller.currentApprovalStatus='';
+			controller.previewApprovals();
+			Opportunity oppty = new Opportunity(Id=opportunityId);
+			oppty.Sales_Outcome__c = 'Won (Requested)';
+			oppty.Gate_6_Bypass_No_Execute_needed__c = true;
+			APTSCU_PreviewApprovalsController.updateOpportunity(oppty);
+			APTSCU_PreviewApprovalsController.submitForApprovals('Opportunity', opportunityId );
+			APTSCU_PreviewApprovalsController.addComments('Opportunity', opportunityId, 'Approve');
+			APTSCU_PreviewApprovalsController.updateG6PlannedDate(opportunityId, System.today().format());
+			APTSCU_PreviewApprovalsController.cancelApprovals('Opportunity', opportunityId, 'Cancel');
 			Test.stopTest();
 		}
 	}

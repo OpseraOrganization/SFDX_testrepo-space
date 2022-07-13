@@ -23,7 +23,7 @@
 
 @isTest
 public class CH_AccountContactRelationTriggerTest {
-
+	
 	private static testMethod void test() {
 		integer j = 5;
 		CH_EntitlementTestData.createCustomSettingData();
@@ -38,18 +38,6 @@ public class CH_AccountContactRelationTriggerTest {
 		List <Contact> ConatctList = new List<Contact>();
 		ConatctList = CH_EntitlementTestData.createContactRecord(j,AccountListNL);
 		insert ConatctList;
-		
-		//Creating accountcontactrelationship object
-		List <AccountContactRelation> acrList = new  List <AccountContactRelation>();
-		for(Integer i=0;i<j;i++){
-			AccountContactRelation acrObj = new AccountContactRelation();
-			acrObj.AccountId = AccountListLE[i].id;
-			acrObj.ContactId = ConatctList[i].Id;
-			acrObj.NCP_Entitlement_Relationship__c = true;
-			acrList.add(acrObj);
-		}
-		insert acrList;
-		System.assertNotEquals(acrList[0].id, null);
 		
 		List<Product2> productlist =new List<Product2>();
 		productlist = CH_EntitlementTestData.createProductRecord(j);
@@ -87,8 +75,9 @@ public class CH_AccountContactRelationTriggerTest {
 			authaccObj.CH_ServiceContract__c = ServiceContractList[i].id;
 			authacc.add(authaccObj);
 		}
-		Test.startTest();
+		test.startTest();
 		insert authacc;
+		
 		
 		List <EntitlementContact> entitlementContactTest = new List<EntitlementContact>();
 		for(Integer i=0;i<j;i++){
@@ -99,6 +88,19 @@ public class CH_AccountContactRelationTriggerTest {
 		}
 		
 		insert entitlementContactTest;
+		
+		
+		//Creating accountcontactrelationship object
+		List <AccountContactRelation> acrList = new  List <AccountContactRelation>();
+		for(Integer i=0;i<j;i++){
+			AccountContactRelation acrObj = new AccountContactRelation();
+			acrObj.AccountId = AccountListLE[i].id;
+			acrObj.ContactId = ConatctList[i].Id;
+			acrObj.NCP_Entitlement_Relationship__c = true;
+			acrList.add(acrObj);
+		}
+		insert acrList;
+		system.assertNotEquals(acrList[0].id, null);
 		
 		Map<ID, AccountContactRelation> acrMap = new Map<ID, AccountContactRelation>([Select id from AccountContactRelation where AccountId =:AccountListLE And ContactId =:ConatctList And NCP_Entitlement_Relationship__c = true ]);
 		For(AccountContactRelation acrObj1: acrMap.values()){
@@ -115,6 +117,6 @@ public class CH_AccountContactRelationTriggerTest {
 		
 		delete acrList;
 	 
-		Test.stopTest();
+		test.stopTest();
 	}
 }

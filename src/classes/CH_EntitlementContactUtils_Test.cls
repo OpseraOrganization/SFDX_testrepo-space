@@ -2,16 +2,17 @@
 * About 
 * ----- 
 * @Description	  : Case Handling Entitlement Contact Object Utility Test Class.
-* @Project		  : Case Handling.
+* @Project	: Case Handling.
 * @Modification Log : 
 *  Created  : 2020 02 06 – tiago.almeida@nokia.com
 * ----- 
 **/
 @isTest
 public class CH_EntitlementContactUtils_Test {
+	
 	private static EntitlementContact oEntitlementContact;
 	private static ServiceContract oServiceContract;
-	private static Contact oContact;
+	private static Contact oContact; 
 
 	@testSetup	
 	static void setupTestData() {
@@ -53,7 +54,7 @@ public class CH_EntitlementContactUtils_Test {
 		setupTestData();
 		test.startTest();
 		insert new CH_AccountName__c(CH_InvalidName__c='Nokia',CH_ValidName__c='Nokia OYJ');
-		Id caseId = CH_EntitlementContactUtils.database('insert', oEntitlementContact, oServiceContract.Id, true);
+		CH_EntitlementContactUtils.database('insert', oEntitlementContact, oServiceContract.Id, true);
 		CH_EntitlementContactUtils.getAuthorizedContacts(oServiceContract.Id);
 		CH_EntitlementContactUtils.getAuthorizedContacts(oContact.Id);
 		CH_EntitlementContactUtils.database('update', oEntitlementContact, oServiceContract.Id, true);
