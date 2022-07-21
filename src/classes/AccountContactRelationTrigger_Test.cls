@@ -35,7 +35,7 @@ private class AccountContactRelationTrigger_Test {
 			
 			System.assertEquals(accountShares.size(), 1);
 			
-			// end - step 1 testing
+			// end - step 1 testing now
 			Test.stopTest();
 		}
 	}
