@@ -2,7 +2,6 @@
 @Name: APTSCU_ApprovalActionsController
 @Author:  Jigar Naik
 @CreateDate: 21 Feb 2016
-@UpdatedDate: 31 Mar 2022
 @Description: Controller class for custom approval actions page.
 ******************************************************************/
 public with sharing class APTSCU_ApprovalActionsController{
@@ -24,6 +23,8 @@ public with sharing class APTSCU_ApprovalActionsController{
 	public string endCustomerName{get; set;}
 	
 	public String stepName {get;set;}
+    public String stepCustName {get;set;}
+    public String receiverName {get;set;}
 	public String stepEntryCriteria {get;set;}
 	public Set<String> profilesList = new Set<String>{'Nokia Read Only','Nokia Sales Profile','Non-Sales User Profile','Sales Ops Profile','System Administrator','Global Process Admin','Nokia Admin Profile'};
 		
