@@ -35,7 +35,7 @@ private class AccountContactRelationTrigger_Test {
 			
 			System.assertEquals(accountShares.size(), 1);
 			
-			// end - step 1 webhook
+			// end - step 1 webhook testing
 			Test.stopTest();
 		}
 	}
