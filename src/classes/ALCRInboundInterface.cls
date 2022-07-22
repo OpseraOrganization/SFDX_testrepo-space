@@ -8,7 +8,7 @@ global class ALCRInboundInterface{
 /***************************************************************
  Class Name:Response
  Author: Accenture
- Purpose: Response class to send status info to ALCR interface.
+ Purpose: Response class to send status info to ALCR interface. hi
 Requirement: Sales Process 633
 ****************************************************************/
 	// Response class to send status info to ALCR interface
