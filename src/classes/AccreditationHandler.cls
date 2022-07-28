@@ -1,7 +1,7 @@
 /****************************************
  * Class Name : AccreditationHandler
  * Created Date: 1 Sep 2017
- * Created By : Accenture
+ * Created By : Raj
  * Last Modified by: Accenture
  * Last Modified Date: 28 Jul 2022
  * Description : Handle the sequence of the Accreditation Trigger
