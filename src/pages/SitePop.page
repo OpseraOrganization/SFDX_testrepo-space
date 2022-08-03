@@ -1,0 +1,418 @@
+<apex:page controller="EditSitePopController"  sidebar="false" standardStylesheets="false" docType="html-5.0" showHeader="false">
+    <!-- AK: Not needed <apex:stylesheet value="{!URLFOR('/angularMaterial.css')}"/> -->
+    <!-- AK: Begin -->
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__vendor, '/vendor.css')}"/>
+    <apex:stylesheet value="{!URLFOR($Resource.Apttus_Config2__ngCPQ, '/aptCPQUI.css')}"/>
+    <apex:stylesheet value="{!URLFOR('/resource/NokiaCPQCartOverrideCSS')}"/>
+    <!-- AK: End -->
+    
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.js"></script>
+    
+    <style type="text/css"> 
+        @media only screen and (min-width: 500px) {
+            .container{
+                margin-top: 45px;
+                padding: 5px 1% 5px 1%;
+            }
+        }
+        @media only screen and (min-width: 920px) {
+            .container{
+                margin-top: 45px;
+                padding: 5px 20% 5px 20%;
+            }
+        }
+        .border-color__c{
+            border-bottom: 1px solid #e3e3e3 !important;        
+        }
+
+        .wrapper-dropdown-5 {
+            position: relative;
+            width: 190px;
+            margin: 0 auto;
+            padding: 8px 12px;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+            cursor: pointer;
+            outline: none;
+            -webkit-transition: all 0.3s ease-out;
+            -moz-transition: all 0.3s ease-out;
+            -ms-transition: all 0.3s ease-out;
+            -o-transition: all 0.3s ease-out;
+            transition: all 0.3s ease-out;
+            font-family: 'Fira Sans', sans-serif;
+        }
+        
+        .wrapper-dropdown-5:after { /* Little arrow */
+            content: "";
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            margin-top: -3px;
+            border-width: 6px 6px 0 6px;
+            border-style: solid;
+            border-color: #4cbeff transparent;
+        }
+        
+        .wrapper-dropdown-5 .dropdown {           
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            
+            /* Styles */
+            background: #fff;
+            border-radius: 0 0 5px 5px;
+            border: 1px solid rgba(0,0,0,0.2);
+            border-top: none;
+            border-bottom: none;
+            list-style: none;
+            transition: all 0.3s ease-out;
+            
+            /* Hiding */
+            max-height: 0;
+            overflow: hidden;
+        }
+        button, select {
+            text-transform: none;
+            /* color: brown; */
+            font-size: initial;
+        }
+        .columnType{
+            height: 2.5rem;
+            
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-align: center;
+            -webkit-align-items: center;
+            -ms-flex-align: center;
+            align-items: center;
+            width: auto !important;
+            text-align: left;
+        }
+        .testFont{
+            font-family: 'Fira Sans', sans-serif;
+        }
+        .boldFont{
+            font-family:FiraSansSemiBold;
+        }
+        
+        .coulmnDisplay{
+            text-align:left;
+            padding: 4px;
+        }         
+    </style> 
+    
+    <div class="header-global">
+        
+    </div>   
+    
+    <html xmlns:ng="http://angularjs.org" ng-app="hello" lang="en">
+        
+        <script type="text/javascript">
+        
+            var sortingOrder = 'name';
+            function showFunction() {
+                var x = document.getElementById('popDiv');
+                if (x.style.display === 'none') {
+                    x.style.display = 'block';
+                    //callAction();
+                } 
+            }
+            function hideFunction() {
+                var x = document.getElementById('popDiv');
+                if (x.style.display === 'block') {
+                    x.style.display = 'none';
+                }
+            }
+            
+            function applyFunction() {
+                var x = document.getElementById('popDiv');
+                if (x.style.display === 'block') {
+                    x.style.display = 'none';
+                }
+                location.reload(true);
+            }
+            
+            function redirectToCart(){
+                window.location = '{!finalUrl}';
+            }
+            
+            var myapp = angular.module('hello', []);
+        
+        
+            var contrl=myapp.controller('ctrlRead', function ($scope, $rootScope, $filter) {
+                
+                // init
+                $scope.sortingOrder = sortingOrder;
+                $scope.reverse = false;
+                $scope.filteredItems = [];
+                $scope.groupedItems = [];
+                $scope.itemsPerPage = {!itemsPerPage};
+                $scope.pagedItems = [];
+                $scope.currentPage = 0;
+                $rootScope.items = {!siteWrapper};
+                
+                
+                var searchMatch = function (haystack, needle) {
+                    if (!needle) {
+                        return true;
+                    }
+                    return haystack.toLowerCase().indexOf(needle.toLowerCase()) !== -1;
+                };
+                
+                // init the filtered items
+                $scope.search = function () {
+                    $scope.filteredItems = $filter('filter')($scope.items, function (item) {
+                        for (var attr in item) {
+                            if (searchMatch(item[attr], $scope.query))
+                                return true;
+                        }
+                        return false;
+                    });
+                    // take care of the sorting order
+                    if ($scope.sortingOrder !== '') {
+                        $scope.filteredItems = $filter('orderBy')($scope.filteredItems, $scope.sortingOrder, $scope.reverse);
+                    }
+                    $scope.currentPage = 0;
+                    // now group by pages
+                    $scope.groupToPages();
+                };
+                
+                // calculate page in place
+                $scope.groupToPages = function () {
+                    $scope.pagedItems = [];
+                    
+                    for (var i = 0; i < $scope.filteredItems.length; i++) {
+                        if (i % $scope.itemsPerPage === 0) {
+                            $scope.pagedItems[Math.floor(i / $scope.itemsPerPage)] = [$scope.filteredItems[i]];
+                        } else {
+                            $scope.pagedItems[Math.floor(i / $scope.itemsPerPage)].push($scope.filteredItems[i]);
+                        }
+                    }
+                };
+                
+                $scope.range = function (start, end) {
+                    var ret = [];
+                    if (!end) {
+                        end = start;
+                        start = 0;
+                    }
+                    for (var i = start; i < end; i++) {
+                        ret.push(i);
+                    }
+                    return ret;
+                };
+                
+                $scope.prevPage = function () {
+                    if ($scope.currentPage > 0) {
+                        $scope.currentPage--;
+                    }
+                };
+                
+                $scope.nextPage = function () {
+                    if ($scope.currentPage < $scope.pagedItems.length - 1) {
+                        $scope.currentPage++;
+                    }
+                };
+                
+                $scope.setPage = function () {
+                    $scope.currentPage = this.n;
+                };
+                
+                // functions have been describe process the data for display
+                $scope.search();
+                
+                // change sorting order
+                $scope.sort_by = function (newSortingOrder) {
+                    if ($scope.sortingOrder == newSortingOrder)
+                        $scope.reverse = !$scope.reverse;
+                    
+                    $scope.sortingOrder = newSortingOrder;
+                    
+                    // icon setup
+                    $('th i').each(function () {
+                        // icon reset
+                        $(this).removeClass().addClass('icon-sort');
+                    });
+                    if ($scope.reverse)
+                        $('th.' + new_sorting_order + ' i').removeClass().addClass('icon-chevron-up');
+                    else
+                        $('th.' + new_sorting_order + ' i').removeClass().addClass('icon-chevron-down');
+                };
+                
+                $scope.verifyAssignSite = function(){
+                    actions = $("#AssignSiteBt");
+                    var finalFlag = false;
+                    $rootScope.finalSelectedList = [];
+                    angular.forEach($scope.items, function(value, key){
+                          if(value.selectSite == true){
+                              finalFlag = true;
+                              $rootScope.finalSelectedList.push(value);                          
+                          }
+                    });
+                    if(finalFlag){
+                        actions.attr("hidden", false);
+                    }
+                    else{
+                        actions.attr("hidden", true);
+                    }
+                };
+            });
+            contrl.$inject = ['$scope', '$rootScope', '$filter'];
+            
+            var contrlPopUp = myapp.controller('ctrlPopup', function ($scope, $rootScope, $filter) {
+                
+                $scope.sites = {!sitesOptions}
+                $scope.siteSelected = '-1';
+                console.log('Selected Site List : - '+JSON.stringify($scope.sites));
+                $scope.updateAssociatSite = function(){
+                    
+                    console.log('Test ----'+JSON.stringify($rootScope.finalSelectedList));
+                    
+                    Visualforce.remoting.Manager.invokeAction(
+                   '{!$RemoteAction.EditSitePopController.updateAssociatSite}',JSON.stringify($rootScope.finalSelectedList),$scope.siteSelected,
+                       function(result, event){
+                       $rootScope.$apply(function() {
+                           applyFunction();
+                       });
+                   });
+                };
+            });
+        
+            contrlPopUp.$inject = ['$scope', '$rootScope', '$filter'];
+    
+        </script>
+    
+        <div class="container"> 
+            <div Id = "popDiv" style="display: none">
+                <div ng-controller="ctrlPopup">
+                    <div class="product-dialog">
+                        <div class="modal-header">
+                            <h3 > <b>Assign Sites</b></h3>    
+                        </div>
+                        <br/>
+                        <select ng-model="siteSelected" class="wrapper-dropdown-5">
+                            <option ng-repeat="site in sites" value="{{site.value}}">{{site.label}}</option>
+                        </select>
+        
+                        <div class="modal-footer">
+                            <div class="button-row">
+                                <button class="primary" type="button" ng-click="updateAssociatSite()">
+                                    <span class="testFont">Apply</span>
+                                </button>
+                                <button class="cancel" onclick="hideFunction()" type="button">
+                                    <span class="testFont">Cancel</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div> 
+                </div>     
+                
+            </div>
+                                   
+            <div class="cart-header" hidden = "true" Id = "AssignSiteBt">
+                <div class="cart-header__product-batch-actions">
+                    <div class="button-row" >      
+                        <button type="button" onclick="showFunction()" class="tertiary ng-scope testFont">Assign Sites</button>
+                    </div>    
+                </div> 
+            </div>
+            <br/>
+            <div class="main-cart-container" style="background-color:white"> 
+                
+                    <div ng-controller="ctrlRead">
+                        <table id="tb1" class="">
+                            <thead class="cart-label-row">
+                            <tr class="main-cart-header-row border-color__c"> </tr>
+                            <tr style="display: {!IF(quoteType =='Direct CPQ', 'table-row', 'none')}"  class="main-cart-header-row border-color__c" >                                    
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="columnType boldFont" >Select</div></th>
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="boldFont">Description</div></th>
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="boldFont">Product Code</div></th>
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="boldFont">Extended Price</div></th>
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="boldFont">Site Name </div></th>
+                            </tr>
+                                <tr style="display:{!IF(quoteType =='Indirect CPQ','table-row','none')}" class="main-cart-header-row border-color__c" >                                    
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="columnType boldFont" >Select</div></th>
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="boldFont">Description</div></th>
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="boldFont">Product Code</div></th>
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="boldFont">Extended Partner Price</div></th>
+                                <th class="main-cart-col main-cart-col--header  main-cart-col--detail"><div class="boldFont">Site Name </div></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in pagedItems[currentPage] | orderBy:sortingOrder:reverse" class="line-item-row is--open">
+                                  
+                                  <td class="main-cart-col main-cart-col--detail">
+                                      <div class="columnType testFont" style="padding: 13px 0px 0px 15px;">
+                                          <input type="checkbox"  ng-model="item.selectSite" ng-true-value="true" ng-false-value="false" ng-click="verifyAssignSite()"/>
+                                      </div>
+                                  </td>  
+                                  <td class="main-cart-col main-cart-col--detail columnType">
+                                      <div class="columnType testFont">
+                                          {{item.lineItem.Apttus_Config2__Description__c}}
+                                      </div>
+                                  </td>
+                                  <td class="main-cart-col main-cart-col--detail coulmnDisplay">
+                                      <div class="columnType testFont">
+                                          {{item.lineItem.NokiaCPQ_Part_Number__c}}
+                                      </div>
+                                  </td>
+                                  <td class="main-cart-col main-cart-col--detail coulmnDisplay">
+                                  
+                                      <div class="columnType testFont">
+                                         <!-- Changed the lineItem.NokiaCPQ_Extended_Partner_Price__c to formattedNumber which will give the correct currency format on basis of user locale-->
+                    <!--<apex:outputText >{{item.lineItem.CurrencyIsoCode}} {{item.lineItem.NokiaCPQ_Extended_Partner_Price__c}}</apex:outputText>-->
+                                         <apex:outputText >{{item.lineItem.CurrencyIsoCode}} {{item.formattedNumber}}</apex:outputText>
+
+                                      </div>
+                                  </td>
+                                  <td class="main-cart-col main-cart-col--detail coulmnDisplay">
+                                      <div class="columnType testFont">
+                                          {{item.lineItem.NokiaCPQ_Site_Name__c }}
+                                      </div>
+                                  </td>
+                                   
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <td colspan="6">
+                                    <div class="pagination pull-right">
+                                        <ul>
+                                            <li ng-class="{disabled: currentPage == 0}">
+                                                <a ng-click="prevPage()">‹ Previous Page</a>
+                                            </li>
+                                            <li ng-repeat="n in range(pagedItems.length)"
+                                                ng-class="{active: n == currentPage}"
+                                                ng-click="setPage()">
+                                                <a ng-bind="n + 1">1</a>
+                                            </li>
+                                            <li ng-class="{disabled: currentPage == pagedItems.length - 1}">
+                                                <a ng-click="nextPage()">Next Page ›</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tfoot>                                
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="ng-scope" ui-view="displayActions">
+                <div class="display-actions ng-scope">
+                    <display-actions align="center" class="" position="bottom" style="width:100%">
+                        <div aria-hidden="true" class="display-actions-block-bottom center" style="text-align:center">   
+                            <button class="cancel" onclick="redirectToCart()" type="button">
+                                <span class="testFont">Back to Cart</span>
+                            </button>
+                        </div>
+                    </display-actions>  
+                </div>
+            </div>
+    </html>  
+</apex:page>
