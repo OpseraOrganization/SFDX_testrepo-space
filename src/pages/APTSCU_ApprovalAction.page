@@ -1,0 +1,447 @@
+<apex:page showHeader="false" standardStylesheets="false" sidebar="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0" controller="APTSCU_ApprovalActionsController" action="{!queryApprovalRequest}">
+    <html ng-app="approveApprovalApp">
+        <head>
+            <style>
+              [ng:cloak],
+              [ng-cloak],
+              [data-ng-cloak],
+              [x-ng-cloak],
+              .ng-cloak,
+              .x-ng-cloak {
+                  display:none !important;
+              }
+            </style>
+            <apex:stylesheet value="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/styles/salesforce-lightning-design-system-vf.css')}" /> 
+            <!--Code modified By Zhuyifeng 2017/07/11 Start-->
+            <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+            <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>-->
+            <apex:includeScript value="{!URLFOR($Resource.jquery, 'js/jquery-1.11.3.js')}"/>
+            <apex:includeScript value="{!$Resource.Bootstrap335Library}"/>
+            <apex:includeScript value="{!$Resource.Angularjs148Library}"/>
+            <!--Code modified By Zhuyifeng 2017/07/11 End-->
+            <script>
+                var approveApprovalApp=angular.module('approveApprovalApp',[]);
+                var approveApprovalController = approveApprovalApp.controller('approveApprovalController',function($scope){
+                    $scope.sObjectDisplayFieldsJSON={!sObjectDisplayFieldsJSON};
+                    $scope.sObjectId='{!sObjectId}';
+                    $scope.uncheckbutton=false;
+                    $scope.sObjectFieldSetJSON={!sObjectFieldSetJSON};
+                    $scope.userlist = {!userJSON};
+                    $scope.usersearchKeyword = '';
+                    $scope.sObjectName = '{!sObjectName}';
+                    $scope.selectedUser = '';
+                    $scope.searchUser = function () {
+                      
+                      if($scope.usersearchKeyword != null && $scope.usersearchKeyword !='')  {
+                          $('.slds-lookup__menu').css('display','block');  
+                      } else {
+                          $('.slds-lookup__menu').css('display','none');
+                      }
+                    }
+                    
+                    $scope.hideUserLookup = function (user) {
+                        $('.slds-lookup__menu').css('display','none');
+                        $('#userData').css('display','none');
+                        $('.slds-pill_container').css('display','block');
+                        $scope.selectedUser = user;
+                        $scope.usersearchKeyword = '';
+                    }
+                    
+                    $scope.showUserLookup = function () {
+                        $('.slds-pill_container').css('display','none');
+                        $('.slds-lookup__menu').css('display','block');
+                        $('#userData').css('display','block');
+                    }
+                    
+                    console.log($scope.userlist);
+                    $scope.sObjectData = {!sObjectDataJSON};
+                     $scope.sObjectFieldSet = {!sObjectFieldSetJSON};
+                    $scope.sObjectFieldSetKeys = Object.keys($scope.sObjectFieldSet).reverse();
+                     console.log($scope.sObjectDisplayFieldsJSON);
+                     $scope.heightOfLenth=Math.ceil(JSON.stringify($scope.sObjectDisplayFieldsJSON).split(':').length/2)+2;
+
+                     console.log($scope.heightOfLenth);
+                     $scope.approvalRequestJSON={!approvalRequestJSON};
+                     $scope.pageMode='{!pageMode}';
+                                          if($scope.pageMode=='reassign') {
+                         $scope.heightOfLenth=parseInt($scope.heightOfLenth)+0.45;
+                     }
+                     $scope.submitterName='{!submitterName}';
+                     $scope.approverName='{!approverName}';
+                     $scope.redirectURL ='{!redirectURL}';
+                     $scope.showProcessingIcon=false;
+                     $scope.submittionComments ='';
+                     $scope.errorMessage = '';
+                     $scope.showCommentAdding = false;
+                     $scope.isError = false;
+                     $scope.rejectApproval = function(){
+                         $scope.showProcessingIcon=true;
+                          $scope.uncheckbutton=true;
+                          Visualforce.remoting.Manager.invokeAction(
+                                 '{!$RemoteAction.APTSCU_ApprovalActionsController.rejectRequest}',$scope.approvalRequestJSON.Id,$scope.submittionComments,
+                                 function(result, event) {
+                                  console.log(result); 
+                                  if(result=='rejected'){
+                                      $scope.redirectToRecord();
+                                  }
+                                 else 
+                                    if(result==null){
+                                     $scope.redirectToRecord();
+                                    }
+                                  else{
+                                      $scope.errorMessage=result;
+                                      $scope.isError=true;
+                                      $scope.$apply();
+                                  }
+                              }); 
+                     }
+                     $scope.approveApproval = function(){
+                         $scope.showProcessingIcon=true;
+                          $scope.uncheckbutton=true;
+                          Visualforce.remoting.Manager.invokeAction(
+                                 '{!$RemoteAction.APTSCU_ApprovalActionsController.approveRequest}',$scope.approvalRequestJSON.Id,$scope.submittionComments,
+                                 function(result, event) {
+                                  console.log(result); 
+                                  if(result=='approved'){
+                                      $scope.redirectToRecord();
+                                  }else 
+                                    if(result==null){
+                                     $scope.redirectToRecord();
+                                    }
+                                  else{
+                                      $scope.errorMessage=result;
+                                      $scope.isError=true;
+                                      $scope.$apply();
+                                  }
+                              }); 
+                     }
+                     
+                     $scope.addCommentToApproval = function(){
+                         $scope.showCommentAdding=true;
+                         Visualforce.remoting.Manager.invokeAction(
+                                 '{!$RemoteAction.APTSCU_ApprovalActionsController.addCommentsToRequest}',$scope.approvalRequestJSON.Id,$scope.submittionComments,
+                                 function(result, event) {
+                                  console.log(result); 
+                                  if(result=='commented'){
+                                      $scope.showCommentAdding=false;
+                                      $scope.submittionComments='';
+                                      $scope.$apply();
+                                      $scope.redirectToRecord();
+                                  }
+                                  else{
+                                      $scope.errorMessage=result;
+                                      $scope.isError=true;
+                                      $scope.$apply();
+                                  }
+                              });
+                     }
+                     
+                     $scope.reassignapproval = function () {
+                         
+                          $scope.showProcessingIcon=true;
+                          Visualforce.remoting.Manager.invokeAction(
+                                 '{!$RemoteAction.APTSCU_ApprovalActionsController.reassignRequest}',$scope.approvalRequestJSON.Id,$scope.selectedUser.Id,$scope.submittionComments,
+                                 function(result, event) {
+                                  console.log(result); 
+                                  if(result=='reassigned'){
+                                      $scope.redirectToRecord();
+                                  }
+                                  else{
+                                      $scope.errorMessage=result;
+                                      $scope.isError=true;
+                                      $scope.$apply();
+                                  }
+                              }); 
+                     }
+
+                     $scope.redirectToRecord = function(){
+                         window.top.location='/'+$scope.sObjectId;
+                        
+                     }
+                });
+            </script>
+            <style>
+                .approve-icon{
+                    border-radius: 2px;
+                    background-color: #f2cf5b;
+                    padding:5px;
+                }
+                
+                table:hover,tr:hover,td:hover{
+                    background:none!important;
+                }
+                .user-icon {
+                    width:25px;
+                    height:25px;
+                }
+            </style>  
+            <title>Approval Action </title> 
+        </head>
+        <body ng-controller="approveApprovalController"  id="mainbody">
+            <div class="slds ng-cloak">
+                <div class="slds-page-header" role="banner">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-has-flexi-truncate">
+                            <div class="slds-media slds-media--top slds-no-space slds-grow">
+                                <div class="slds-media__figure">
+                                    <span class="slds-avatar slds-avatar--small approve-icon">
+                                        <img src="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/icons/action/description_60.png')}" alt="" />
+                                    </span>
+                                </div>
+                                <div class="slds-media__body">
+                                    <p class="slds-text-heading--label">APPROVALS</p>
+                                    <h1 class="slds-page-header__title slds-truncate slds-text-heading--medium slds-section__title" title="My Approvals">{{sObjectData['Name']}}</h1>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <br/>
+                    <div class="slds-grid slds-grid--align-spread">
+                        <div class="slds-col" ng-repeat="key in sObjectFieldSetKeys">
+                            <dl>
+                                <dt>{{sObjectFieldSet[key]}}</dt>
+                                <dd>{{sObjectData[key]}}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    
+                </div>
+                <br/>
+
+                <div role="alertdialog" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" ng-if="isError" class="slds-modal slds-fade-in-open" style="background: rgba(0, 0, 0, 0.5);">  
+                    <div class="slds-modal__container" >
+                      <div style="padding: 12px; background-color: #FFFFFF; z-index:9999;border-radius:3px 3px 0 0;">
+                          <div class="message slds-notify slds-notify--alert slds-theme--error customMessage" role="alert" style="border-radius:3px 3px 3px 3px;">
+                            <table class="messageTable">
+                              <tr valign="top">
+                                <td></td>
+                                <td class="messageCell">
+                                 <div>
+                                  <span style="color:FFFFFF">
+                                    <h4><b>Error:</b></h4><br/>
+                                    <span>{{errorMessage}}</span><br/>
+                                  </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            </table>
+                          </div>
+                      </div>
+                      <div style="z-index:9999; background-color: #FFFFFF; padding-bottom: 10px; border-radius:0 0 3px 3px;"> 
+                        <center><Button ng-click='redirectToRecord()' immediate="true" class="btn slds-button slds-button--brand" style="margin:auto;">Back to {{sObjectName}}</Button></center>
+                      </div>
+                    </div>
+                  </div>
+
+                <div style="display:inline-flex;width:100%">
+                   <!--<tr>-->
+                   <!--     <td style="width:60%">-->
+                  <div style="width:60%">
+                           <article class="slds-card" style="height:{{heightOfLenth*102}}px;min-height: 250px!important;">
+                                <div class="slds-card__header slds-grid">
+                                            <header class="slds-media slds-media--center slds-has-flexi-truncate">
+                                              <div class="slds-media__figure">
+                                                
+                                              </div>
+                                              <div class="slds-media__body">
+                                                <h2>
+                                                  <a href="javascript:void(0);" class="slds-card__header-link slds-truncate">
+                                                     <span class="slds-avatar slds-avatar--small approve-icon">
+                                                            <img src="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/icons/action/description_60.png')}" alt="" />
+                                                        </span><span class="slds-text-heading--small">&nbsp;&nbsp;<b>Approval Request  </b></span>
+                                                  </a>
+                                                </h2>
+                                              </div>
+                                            </header>
+                                        <br/>
+                                         <div style="float:right;">
+                                            <span class="slds-badge">Pending Approval</span>
+                                        <br/>
+                                      </div>
+                                      </div>
+                                     
+                               <br/>
+                               <!--<div class="slds-size--1-of-2">-->
+                               <!--   <div class="slds-box slds-box--x-small slds-text-align--center slds-m-around--x-small" ng-repeat ="(key,value) in sObjectDisplayFieldsJSON" style='padding:0px!important;'>-->
+                               <!--        <div class="slds-size--1-of-2" >-->
+                               <!--           <div class="slds-box slds-box--x-small slds-text-align--center slds-m-around--x-small">.slds-size--1-of-2</div>-->
+                               <!--         </div>-->
+                               <!--   </div>-->
+                               <!-- </div>-->
+
+                                <div class="slds-grid slds-wrap slds-grid--pull-padded">
+                                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" >
+                                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                                            <p><b>Step Name</b></p>
+                                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                              <li class="slds-item">{!stepName}</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" >
+                                       <!-- <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+                                            <p><b>Entry Criteria</b></p>
+                                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                              <li class="slds-item">{!stepEntryCriteria}</li>
+                                            </ul>
+                                        </div>-->
+                                    </div>
+                                </div>
+                                <div class="slds-grid slds-wrap slds-grid--pull-padded">
+                                    <div class="slds-p-horizontal--small slds-size--1-of-2 slds-medium-size--1-of-6 slds-large-size--6-of-12 slds-p-bottom--large"  style="width:35%!important;" ng-repeat ="(key,value) in sObjectDisplayFieldsJSON">
+                                        <div class="slds-tile__detail slds-text-body--medium" style='    margin-left: 5%;'>
+
+                                            <p><b>{{value}}</b></p>
+                                            <ul class="slds-list--horizontal slds-has-dividers--right">
+                                              <li class="slds-item" ng-show="key!='End_Customer_LE_Name'">{{sObjectData[key]}}</li>
+                                              <li class="slds-item" ng-show="key=='End_Customer_LE_Name'">{!endCustomerName}</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!---- Added by sagar -->
+                                <div ng-show="pageMode=='reassign'">
+                                <div class="slds-form-element slds-lookup" data-select="single" style="margin-left: 1.1rem;">
+                                  <p for="lookup-65"><b>Approver</b></p>
+                                  <div class="slds-form-element__control" id="userData">
+                                    <div class="slds-input-has-icon slds-input-has-icon--right" style="width:30%">
+                                      <svg class="slds-input__icon" aria-hidden="true">
+                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign,'/assets/icons/utility-sprite/svg/symbols.svg#search')}"> </use>
+                                      </svg>
+                                      <input type="search" ng-model="usersearchKeyword" id="lookup-65" class="slds-lookup__search-input slds-input" placeholder="Search Users" aria-owns="lookup-65" role="combobox" aria-activedescendant="" aria-expanded="false" aria-autocomplete="list" ng-change="searchUser()" />
+
+                                    </div>
+                                  </div>
+                                  
+                                  
+                                  <div class="slds-lookup__menu" id="lookup-65" style="display:none;width:30%">
+                                   
+                                    <ul class="slds-lookup__list" role="listbox">
+                                      <li role="presentation" ng-repeat="user in userlist | filter:usersearchKeyword" style="Cursor:pointer" ng-click="hideUserLookup(user)" ng-model="selectedUser">
+                                        <span class="slds-lookup__item-action slds-media" id="lookup-option-490" role="option">
+                                          <svg class="slds-icon slds-icon-standard-user slds-icon--small slds-media__figure" aria-hidden="true">
+                                            <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign,'/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+                                          </svg>
+                                          <div class="slds-media__body">
+                                            <div class="slds-lookup__result-text">{{user.Name}}</div>
+                                            <br/>
+                                          </div>
+                                        </span>
+                                      </li>
+                                     
+                                     
+                                    </ul>
+                                  </div>
+                                  
+                                <div class="slds-form-element__control">
+                                <div class="slds-pill_container" style="display:none;width:30%">
+                                  <span class="slds-pill slds-size--1-of-1">
+                                    <span class="slds-icon_container slds-icon-standard-user slds-pill__icon_container slds-avatar user-icon">
+                                     
+                                        <img src="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/icons/standard/user.svg')}" alt="" />
+                                   
+                                    </span>
+                                    <span class="slds-pill__label" title="Salesforce.com, Inc.">{{selectedUser.Name}}</span>
+                                    <button class="slds-button slds-button--icon slds-pill__remove" title="Remove" style="left:27% !important; right:0px !Important" ng-click="showUserLookup()">
+                                      <svg class="slds-button__icon" aria-hidden="true">
+                                        <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign,'/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                      </svg>
+                                      <span class="slds-assistive-text">Remove</span>
+                                    </button>
+                                  </span>
+                                </div>
+                               </div>
+                                </div>
+                                </div>
+
+                                <!-- <div class="slds-tile" ng-repeat ="(key,value) in sObjectDisplayFieldsJSON" style='padding:0px!important;'>-->
+                                <!--  <div class="slds-tile__detail slds-text-body--medium">-->
+                                <!--    <p><b>{{value}}</b></p>-->
+                                <!--    <ul class="slds-list--horizontal slds-has-dividers--right">-->
+                                <!--      <li class="slds-item">{{sObjectData[key]}}</li>-->
+                                <!--    </ul>-->
+                                <!--  </div>-->
+                                <!--</div>--> 
+                                <div style="float:right;margin-right:2%;">
+
+                                    <p>
+                                    <button class="slds-button slds-button--brand" style='color:white;' ng-if="!uncheckbutton" ng-click="redirectToRecord()" >Back</button>&nbsp;
+                                    <button class="slds-button slds-button--brand" style="background-color:#c23934!important;border: 1px solid #c23934;color:white;" ng-click="rejectApproval();"  ng-if="!uncheckbutton" ng-show="pageMode=='approveReject'">Reject</button> 
+                                    <img src="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/images/spinners/slds_spinner_brand.gif')}" width="40" height="10" ng-show="showProcessingIcon"/> 
+                                    &nbsp;<button class="slds-button slds-button--brand" style='color:white;' ng-click="approveApproval()" ng-if="!uncheckbutton" ng-show="pageMode=='approveReject'">Approve</button>
+                                    &nbsp;<button class="slds-button slds-button--brand" style='color:white;' ng-click="reassignapproval()" ng-show="pageMode=='reassign'">Reassign</button>
+                                    
+                                    </p>
+                                </div> 
+                            </article>
+                        <!--</td>-->
+                        <!-- <td>-->
+                    </div>
+                    <div style="width:39%;margin-left:1%;">
+                           <article class="slds-card" style="height:550px;">
+                                <div class="slds-card__header slds-grid">
+                                            <header class="slds-media slds-media--center slds-has-flexi-truncate">
+                                              <div class="slds-media__figure">
+                                                
+                                              </div>
+                                              <div class="slds-media__body">
+                                                <h2>
+                                                  <a href="javascript:void(0);" class="slds-card__header-link slds-truncate">
+                                                     <span class="slds-avatar slds-avatar--small approve-icon">
+                                                            <img src="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/icons/action/description_60.png')}" alt="" />
+                                                        </span><span class="slds-text-heading--small">&nbsp;&nbsp;<b>Comments</b></span>
+                                                  </a>
+                                                </h2>
+                                              </div>
+                                            </header>
+                                        <br/>
+                                </div>     
+                               <br/>
+                               <div class="slds-tile slds-media">
+                                   
+                                      <div class="slds-media__figure" >
+                                        <svg class="slds-icon slds-icon-standard-groups" aria-hidden="true">
+                                          <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign,'/assets/icons/utility-sprite/svg/symbols.svg#user')}"></use>
+                                        </svg>
+                                      </div>
+                                      <div class="slds-media__body">
+                                        <h3 class="slds-truncate" title="Salesforce UX"><a href="javascript:void(0);">Submitter <br/>{{submitterName}}</a></h3>
+                                        <br/>
+                                          <div class="slds-form-element__control" ng-if="approvalRequestJSON.Apttus_Approval__SubmissionComment1__c">
+                                            <textarea disabled="disabled" id="textarea-input-01" class="slds-textarea" >{{approvalRequestJSON.Apttus_Approval__SubmissionComment1__c}}</textarea>
+                                          </div>
+                                       </div>
+                               </div>
+                                <div class="slds-tile slds-media">
+                                      <div class="slds-media__figure">
+                                        <svg class="slds-icon slds-icon-standard-groups" aria-hidden="true">
+                                          <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign,'/assets/icons/utility-sprite/svg/symbols.svg#user')}"></use>
+                                        </svg>
+                                      </div>
+                                      <div class="slds-media__body">
+                                        <h3 class="slds-truncate" title="Salesforce UX"><a href="javascript:void(0);">Approver<br/>{{approverName}}</a></h3>
+                                        <div class="slds-tile__detail slds-text-body--small">
+                                          <dl class="slds-list--horizontal slds-wrap">
+                                            <div class="slds-form-element" style="width: 100%!important;">
+                                              <label class="slds-form-element__label" for="textarea-input-01"></label>
+                                              <div class="slds-form-element__control">
+                                                <textarea id="textarea-input-01" class="slds-textarea" placeholder="Enter your comments.." style='height: 100px;' ng-model='submittionComments'></textarea>
+                                                <br/>
+                                                <br/>
+                                                <span style="float:right;margin-right:5%;">&nbsp;<img src="{!URLFOR($Resource.APTSMD_SalesforceLightningDesign, 'assets/images/spinners/slds_spinner_brand.gif')}" width="40" height="10" ng-show="showCommentAdding"/> &nbsp;<button class="slds-button slds-button--brand" style='color:white;' ng-click="addCommentToApproval()" ng-show="pageMode=='addComment'">Add Comment</button></span>
+                                              </div>
+                                            </div>
+                                          </dl>
+                                        </div>
+                                      </div>
+                               </div>
+                            </article>
+                       </div>
+                     </div>
+            </div>
+        </body>
+    </html>
+</apex:page>
