@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <alerts>
+        <fullName>PRM_DOD_Approved_on_Opportunity_External</fullName>
+        <description>DOD Approved on Opportunity - External</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Partner</recipient>
+            <type>opportunityTeam</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/PRM_DOD_Approved_on_Opportunity_External</template>
+    </alerts>
+    <alerts>
+        <fullName>PRM_DOD_Approved_on_Opportunity_Internal</fullName>
+        <description>DOD Approved on Opportunity - Internal</description>
+        <protected>false</protected>
+        <recipients>
+            <type>accountOwner</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <recipients>
+            <field>PRM_Bus_Ops_Approver__c</field>
+            <type>userLookup</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/PRM_DOD_Approved_on_Opportunity_Internal</template>
+    </alerts>
+    <alerts>
+        <fullName>PRM_DOD_Rejected_on_Opportunity_External</fullName>
+        <description>DOD Rejected on Opportunity - External</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Partner</recipient>
+            <type>opportunityTeam</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/PRM_DOD_Rejected_on_Opportunity_External</template>
+    </alerts>
+    <alerts>
+        <fullName>PRM_DOD_Rejected_on_Opportunity_Internal</fullName>
+        <description>DOD Rejected on Opportunity - Internal</description>
+        <protected>false</protected>
+        <recipients>
+            <type>accountOwner</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <recipients>
+            <field>PRM_Bus_Ops_Approver__c</field>
+            <type>userLookup</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/PRM_DOD_Rejected_on_Opportunity_Internal</template>
+    </alerts>
+    <alerts>
+        <fullName>PRM_DOD_Revoked_on_Opportunity_Internal</fullName>
+        <description>DOD Revoked on Opportunity - Internal</description>
+        <protected>false</protected>
+        <recipients>
+            <type>accountOwner</type>
+        </recipients>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <recipients>
+            <field>PRM_Bus_Ops_Approver__c</field>
+            <type>userLookup</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/PRM_DOD_Revoked_on_Opportunity_Internal</template>
+    </alerts>
+    <alerts>
+        <fullName>PRM_DOD_Revoked_on_Opportunity_Partners</fullName>
+        <description>DOD Revoked on Opportunity - Partners</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>Partner</recipient>
+            <type>opportunityTeam</type>
+        </recipients>
+        <senderAddress>nokia_global_partner_communications@nokia.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>PRM_Email_Templates/PRM_DOD_Revoked_on_Opportunity_External</template>
+    </alerts>
+</Workflow>
