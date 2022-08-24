@@ -16,4 +16,8 @@ private class TemperatureConverterTest {
         Decimal celsius = TemperatureConverter.FahrenheitToCelsius(-10);
         System.assertEquals(-23.33,celsius);
     }
+    @isTest static void testNormalTemp(){
+        Decimal fahrenheit = TemperatureConverter.CelsiusToFahrenheit(30);
+        //System.assertEquals(86);
+    }
 }
