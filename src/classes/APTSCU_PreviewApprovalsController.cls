@@ -20,16 +20,21 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 	private Set<String> approvalFieldSet = null;
 	public String reasonsRequired{get;set;}
 	@TestVisible private String currentApprovalStatus = null;
-	Public static Map<String,Apttus_Approval__Approval_Process__c> approvalsStepMap = new Map<String,Apttus_Approval__Approval_Process__c>();
-	Public static Map<String,List<Apttus_Approval__Approval_Process__c>> approvalsEntryMap = new Map<String,List<Apttus_Approval__Approval_Process__c>>();
+	Public static Map<String,Apttus_Approval__Approval_Process__c> ApprovalsStepMap = new Map<String,Apttus_Approval__Approval_Process__c>();
+	Public static Map<String,List<Apttus_Approval__Approval_Process__c>> ApprovalsEntryMap = new Map<String,List<Apttus_Approval__Approval_Process__c>>();
+	public static Id directRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.DIRECT_RECORD_TYPE).getRecordTypeId();
+	public static Id inDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_Record_Type).getRecordTypeId();
 
-	public string psrLoAlevel ;
+	public string PSRLoAlevel ;
+	public boolean isDisplay;
+	public boolean isAmountGreater;
+	public String firstReason{get;set;}
+	public String secondReason{get;set;}
+	public boolean isDisplayProbability;
+	public Integer probabilityPercentage{get;set;}
+	public Opportunity optyObj{get;set;}
 	public Opportunity optyObjRecord{get;set;}
-	public Date gate6PlannedDate{get;set;}
-	public Boolean showProbability{get;set;}
-	public Boolean showReasons{get;set;}
-	public Boolean showGate6Fields{get;set;}
-	public String previewmessage{get;set;}
+	public String Previewmessage{get;set;}
 	public Boolean ispreviewmessage {get;set;}
 	public Boolean loaupdated {get;set;}
 	public static boolean flagForUpsellOppty = true;
@@ -41,7 +46,7 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 		sObjectId = unescappedId;
 		sObjectType st=sObjectId.getSObjectType();
 		sObjectType=String.valueOf(st);
-		psrLoAlevel =	ApexPages.currentPage().getParameters().get('psrLoAlevel');
+		PSRLoAlevel =	ApexPages.currentPage().getParameters().get('PSRLoAlevel');
 		currentApprovalStatus = '';
 		approvalFieldSet = new Set<String>();
 		onlyPreview = false;
@@ -75,11 +80,13 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 			ApprovalRequestWrapperClass  approvalReqWrapper;
 			List<string> approvalReqData;
 
+			System.debug('#### approvalRequestList Size'+approvalRequestList.size() );
+
 			for(Apttus_Approval__Approval_Request__c approveReq :approvalRequestList ) {
 	submittionComments = approveReq.Apttus_Approval__SubmissionComment1__c;
 	approvalReqData = new List<string>();
 	if(approveReq.Apttus_Approval__Approval_Process__c<>null && approveReq.Apttus_Approval__Step_Name__c<>NUll )
-		approvalReqData = saveApprovalDisplayInformation(approveReq.Apttus_Approval__Approval_Process__c, approveReq.Apttus_Approval__Step_Name__c);
+	approvalReqData = saveApprovalDisplayInformation(approveReq.Apttus_Approval__Approval_Process__c, approveReq.Apttus_Approval__Step_Name__c);
 	System.debug('Approval Submittion Data ======>'+approvalReqData);
 	if(approvalReqData.size()>0 ) {
 		approvalReqWrapper = new ApprovalRequestWrapperClass (approveReq,approvalReqData[0],approvalReqData[1]);
@@ -101,13 +108,22 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 	}
 
 	@RemoteAction
-	public static String submitForApprovals(String sObjectType,String sObjectId){
+	public static String submitForApprovals(String sObjectType,String sObjectId,String comments){
+		System.debug('Commnets ---->'+comments);
+		Opportunity opptyinfo;
 		Savepoint sp = null;
 		try{
 			sp = Database.setSavepoint();
-			Apttus_Approval.ApprovalsWebService.submitForApprovals(sObjectType, sObjectId);
-			validateUpsellOppty(sObjectId);
-			return 'Success';
+			// Updating the Submission Comments and used in G2 Completion Template
+			opptyinfo = [Select Id,RecordTypeId,Name,Gate_3_Bypass_no_offer_support__c,NF_Facilitator_Notified__c,ApprovalStatusTechField__c,Submission_Comments__c,Phase_Status__c,Sales_Outcome__c,Apttus_Approval__Approval_Status__c,StageName from Opportunity where id=:sObjectId];
+			// SDC modification and added the bypass condition
+			if(opptyinfo!=null && opptyinfo.RecordTypeId!=null && !opptyinfo.Gate_3_Bypass_no_offer_support__c && (opptyinfo.RecordTypeId.equals(directRecordTypeId) || opptyinfo.RecordTypeId.equals(inDirectRecordTypeId)) && !opptyinfo.NF_Facilitator_Notified__c && opptyinfo.StageName == GlobalConstants.DEVELOP_OPPORTUNITY ){
+	return Label.NF_OnlyFacilitatorCanSubmit;
+			}else{
+	Apttus_Approval.ApprovalsWebService.submitForApprovals(sObjectType, sObjectId);
+	updatePhaseStatus(sObjectId,comments);
+	return 'Success';
+			}
 		}catch(Exception exp){
 			if(sp != null) Database.rollback(sp);
 			Return exp.getMessage();
@@ -158,7 +174,7 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 	{
 		System.debug('### Inside Loop Assignee type'+Appupdate.NF_Assignee_Type__c);
 		Appupdate.Apttus_Approval__Approval_Status__c =GlobalConstants.CANCEL;
-		Appupdate.Apttus_Approval__Notify_Only__c = true;
+					Appupdate.Apttus_Approval__Notify_Only__c = true;
 		remupdate.add(Appupdate);
 	}
 			}
@@ -172,39 +188,6 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 			System.debug('Calcel exp'+exp);
 			if(sp != null) Database.rollback(sp);
 			return exp.getMessage();
-		}
-	}
-
-	@RemoteAction
-	public static String updateOpportunity( Opportunity oppty){
-		try{
-			System.debug(oppty);
-			update oppty;
-			return GlobalConstants.RETURN_SUCCESS;
-		}catch(Exception exp){
-			ExceptionHandler.addException(exp,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,'updateOpportunity');
-			return exp.getMessage();
-		}
-	}
-	@RemoteAction
-	public static String updateG6PlannedDate( String sObjectId , String gate6PlannedDate){
-		try{
-			updateG6PlannedDateFuture(sObjectId, gate6PlannedDate);
-			return GlobalConstants.RETURN_SUCCESS;
-		}catch(Exception exp){
-			return exp.getMessage();
-		}
-	}
-	@future(callout=true)
-	public static void updateG6PlannedDateFuture( String sObjectId , String gate6PlannedDate){
-		try{
-			System.debug(gate6PlannedDate);
-			if(gate6PlannedDate != null){
-	Opportunity oppty = new Opportunity(Id=sObjectId, G6_Planned_Date__c = Date.valueOf(gate6PlannedDate) );
-	update oppty;
-			}
-		}catch(Exception exp){
-			System.debug(exp.getMessage());
 		}
 	}
 
@@ -238,6 +221,7 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 			System.debug('--->fld.getLabel()'+fld.getFieldPath()+fld.getLabel());
 			fldVsLabelMap.put(fld.getFieldPath(),fld.getLabel());
 		}
+
 		approvalColumnsFieldSetJSON = JSON.serialize(fldVsLabelMap);
 
 	}
@@ -256,6 +240,7 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 			for (Schema.SObjectField ft : fMap.values()){ // loop through all field tokens (ft)
 	Schema.DescribeFieldResult fd = ft.getDescribe(); // describe each field (fd)
 	selectFields.add(fd.getName());
+
 	if(fd.getName().containsIgnoreCase('Approval_Status__c')){
 		approvalFieldSet.add(fd.getName());
 	}
@@ -263,7 +248,10 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 		}
 
 		if (!selectFields.isEmpty()){
-			selects = String.join(selectFields, ',');
+			for (string s:selectFields){
+	selects += s + ',';
+			}
+			if (selects.endsWith(',')){selects = selects.substring(0,selects.lastIndexOf(','));}
 		}
 
 		return 'SELECT ' + selects + ' FROM ' + objectName + ' WHERE ' + whereClause;
@@ -277,24 +265,24 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 		List<Apttus_Approval__Approval_Process__c> entryCriteriaList = new List<Apttus_Approval__Approval_Process__c>();
 
 		// compare the data to approvalStep Map stop the SOQL execution into next time
-		if(approvalsStepMap.get(currentStepName)<>Null)
-			approvalStep=approvalsStepMap.get(currentStepName);
+		if(ApprovalsStepMap.get(currentStepName)<>Null)
+		approvalStep=ApprovalsStepMap.get(currentStepName);
 		else
-			approvalStep = [Select Id, Apttus_Approval__StepDisplayFieldNameHeader__c, Apttus_Approval__StepDisplayFieldNames__c From Apttus_Approval__Approval_Process__c Where Apttus_Approval__Step__r.Apttus_Approval__Step_Group__c = :processId And Apttus_Approval__Step_Name__c = :currentStepName];
+		approvalStep = [Select Id, Apttus_Approval__StepDisplayFieldNameHeader__c, Apttus_Approval__StepDisplayFieldNames__c From Apttus_Approval__Approval_Process__c Where Apttus_Approval__Step__r.Apttus_Approval__Step_Group__c = :processId And Apttus_Approval__Step_Name__c = :currentStepName];
 
 		// storing the data into map to reduce the SOQL execution
 		if(approvalStep<>NUll)
-			approvalsStepMap.put(currentStepName,approvalStep);
+		ApprovalsStepMap.put(currentStepName,approvalStep);
 
-		// compare the data to approvalsEntryMap stop the SOQL execution into next time
-		if(approvalsEntryMap.get(currentStepName)<>NUll)
-			entryCriteriaList=approvalsEntryMap.get(currentStepName);
+		// compare the data to ApprovalsEntryMap stop the SOQL execution into next time
+		if(ApprovalsEntryMap.get(currentStepName)<>NUll)
+		entryCriteriaList=ApprovalsEntryMap.get(currentStepName);
 		else
-			entryCriteriaList = [Select Id, Apttus_Approval__Step_Filter_Field__c, Apttus_Approval__Step_Filter_Comparison_Type__c, Apttus_Approval__Step_Filter_Field_Value__c, Apttus_Approval__Step_Filter_BoolOper__c From Apttus_Approval__Approval_Process__c Where Apttus_Approval__Step_Filter__r.Apttus_Approval__Step__r.Apttus_Approval__Step_Group__c = :processId And Apttus_Approval__Step_Filter__r.Apttus_Approval__Step_Name__c = :currentStepName];
+		entryCriteriaList = [Select Id, Apttus_Approval__Step_Filter_Field__c, Apttus_Approval__Step_Filter_Comparison_Type__c, Apttus_Approval__Step_Filter_Field_Value__c, Apttus_Approval__Step_Filter_BoolOper__c From Apttus_Approval__Approval_Process__c Where Apttus_Approval__Step_Filter__r.Apttus_Approval__Step__r.Apttus_Approval__Step_Group__c = :processId And Apttus_Approval__Step_Filter__r.Apttus_Approval__Step_Name__c = :currentStepName];
 
 		// storing the data into map to reduce the SOQL execution
 		if(entryCriteriaList<>NUll)
-			approvalsEntryMap.put(currentStepName,entryCriteriaList);
+		ApprovalsEntryMap.put(currentStepName,entryCriteriaList);
 
 		Set<String> displayFields = new Set<String>();
 		if(approvalStep.Apttus_Approval__StepDisplayFieldNameHeader__c != '' && approvalStep.Apttus_Approval__StepDisplayFieldNameHeader__c != null){
@@ -378,149 +366,343 @@ public inherited sharing class APTSCU_PreviewApprovalsController{
 	}
 
 	/****************************************
-*Method Name: getDisplayFields()
-*Description:  These method used for rerendering of page
-*Parameters:
-*Req No:2382
-*****************************************/
-	public boolean getDisplayFields(){
-		showProbability = false;
-		showReasons = false;
-		showGate6Fields = false;
+	*Method Name: getDisplaySalesoutcomReason()
+	*Description:  These method used for rerendering of page
+	*Parameters:
+	*Req No:2382
+	*****************************************/
+	public boolean getDisplaySalesoutcomReason(){
+		Id opptyDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.DIRECT_RECORD_TYPE).getRecordTypeId();
+		Id opptyIndirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_Record_Type).getRecordTypeId();
+		isDisplay=false;
 		String label_Amount = System.Label.Unweighted_Amount_For_Sales_Outcome;
-		Set<String> loaBypassSet = new Set<String>(System.label.LoA_Bypass_Offer_Condition.Split(GlobalConstants.COMMA));
+		List<String> loaBypassList=System.label.LoA_Bypass_Offer_Condition.Split(GlobalConstants.COMMA);
+		set<String> loaBypassSet = new set<String>();
+		loaBypassSet.addAll(loaBypassList);
 		loaBypassSet.remove(GlobalConstants.BLANK_VALUE);
 
 		try{
-			Opportunity oppty = [ SELECT Id,Name,Phase_Status__c,StageName,RecordTypeId , Amount,
-		 Gate_3_Bypass_no_offer_support__c,Probability, Unweighted_Amount_EUR__c,Likelyhood_to_Win__c,
-		 Third_Reason__c, Sales_Outcome_Reason__c,Second_Reason__c, LoA_Level__c,
-		 NF_LoA_Bypass__c,Blanket_Approval_Condition__c,G6_Planned_Date__c, Gate_6_Bypass_No_Execute_needed__c,
-		 (SELECT Id, LOA_Bypass__c FROM Offers__r Where ActiveOffer__c = True)
-		 FROM Opportunity WHERE id = :sObjectId ];
-
-			if(oppty == null) return false;
-
-			Offer__c offerRec = oppty.Offers__r.size() > 0 ? oppty.Offers__r[0] : null;
-
-			if( (oppty.StageName==GlobalConstants.IDENTIFY_OPPORTUNITY && oppty.Phase_Status__c==GlobalConstants.PLANNED) ||
-	  (oppty.StageName==GlobalConstants.DEVELOP_OPPORTUNITY  && oppty.Phase_Status__c==GlobalConstants.OPPORTUNITY_IN_PROGRESS && oppty.Gate_3_Bypass_no_offer_support__c ) ){
-	showProbability=true;
-			}
+			Opportunity oppty = [SELECT id,Name,Description,Phase_Status__c,Third_Reason__c, Sales_Outcome_Reason__c,Second_Reason__c,LOA_Level__c,StageName,RecordTypeId,
+			Amount,count_offer__c,NF_LoA_Bypass__c,Blanket_Approval_Condition__c,Apttus_Approval__Approval_Status__c FROM Opportunity WHERE id = :sObjectId];
 
 			showwarningmessage(oppty);
 
-			if( oppty.StageName==GlobalConstants.WIN_THE_CASE_OPPORTUNITY_STAGE && oppty.Blanket_Approval_Condition__c == null &&
-	  (oppty.Phase_Status__c == GlobalConstants.PENDING_WIN_LOSS_DECLARATION || oppty.NF_LoA_Bypass__c>0  ) &&
-	  oppty.Amount >= Decimal.valueOf(label_Amount) && (offerRec == null || !loaBypassSet.contains(offerRec.LOA_Bypass__c) ) ){
-	   showReasons = true;
-	   reasonsRequired = System.Label.Three_Reasons_Required;
-	  }
+			if( (oppty.RecordTypeId==opptyDirectRecordTypeId || oppty.RecordTypeId==opptyIndirectRecordTypeId) && oppty.StageName==GlobalConstants.WIN_THE_CASE_OPPORTUNITY_STAGE &&
+	oppty.Blanket_Approval_Condition__c == null &&
+	(oppty.Phase_Status__c == GlobalConstants.PENDING_WIN_LOSS_DECLARATION ||oppty.LOA_Level__c=='E' || oppty.NF_LoA_Bypass__c>0  ) &&
+	oppty.Amount >= Decimal.valueOf(label_Amount)){
 
+	Offer__c offerRec = [SELECT id, ActiveOffer__c, Opportunity__c, LOA_Bypass__c FROM Offer__c	WHERE Opportunity__c =:sObjectId  AND ActiveOffer__c = True LIMIT: 1];
 
-			if( oppty.StageName==GlobalConstants.WIN_THE_CASE_NEGOTIATE &&
-			   ( ( oppty.Blanket_Approval_Condition__c == null && oppty.NF_LoA_Bypass__c==0 && oppty.Phase_Status__c == GlobalConstants.PENDING_WIN_LOSS_DECLARATION ) ||
-				( oppty.NF_LoA_Bypass__c>0  && oppty.Phase_Status__c == GlobalConstants.OFFER_SUBMITTED_TO_CUSTOMER_MANUAL ) ) ){
-					gate6PlannedDate = oppty.G6_Planned_Date__c;
-					if( oppty.G6_Planned_Date__c < System.Today()){
-						gate6PlannedDate = System.Today()+30;
-						oppty.G6_Planned_Date__c = gate6PlannedDate;
-					}
-					if( oppty.Gate_6_Bypass_No_Execute_needed__c )
-						gate6PlannedDate = System.Today();
-					showGate6Fields = true;
-				}
-
-			optyObjRecord = oppty;
-
-			return true;
+	if( (oppty.count_offer__c > 0 && offerRec!= Null && (!loaBypassSet.contains(offerRec.LOA_Bypass__c))) || (oppty.count_offer__c == 0) ){
+		isDisplay=true;
+		optyObjRecord=oppty;
+	}
+			}
+			return isDisplay;
 
 		}catch(Exception ex){
-			ExceptionHandler.addException(ex,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,'getDisplayFields');
+			ExceptionHandler.addException(ex,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,GlobalConstants.DISPLAY_SALES_OUTCOMEREASON);
 			return false;
 		}
 	}
 
 
-	@future(callout=true)
-	public Static Void validateUpsellOppty(String sObjectId){
-		Savepoint sp = null;
-		Try{
-			Opportunity oppty = [SELECT Id,ApprovalStatusTechField__c,Submission_Comments__c,LOA_Level__c,Phase_Status__c,NF_LoA_Bypass__c,Blanket_Approval_Condition__c,
-		 Sales_Outcome__c,Apttus_Approval__Approval_Status__c,StageName,
-		 (SELECT Id,LoA_Approval_Level__c,ActiveOffer__c FROM Offers__r WHERE ActiveOffer__c = true)
-		 FROM Opportunity WHERE Id=:sObjectId];
+	@RemoteAction
+	/****************************************
+	*Method Name: updateOpportunityReasons
+	*Description: Update the sales outcome reason
+	*Parameters: String sObjectType,String sObjectId,String firstReason ,String secondReason,String thirdReason
+	*Req No:2382
+	*****************************************/
+	public static String updateOpportunityReasons(String sObjectType,String sObjectId,String firstReason ,String secondReason,String thirdReason){
 
-			if(oppty == null) return;
-			Offer__c offerObj = oppty.Offers__r.size()>0 ? oppty.Offers__r[0] : null;
+		System.debug('-------->firstReason '+firstReason );
+		System.debug('-------->secondReason'+secondReason);
+		System.debug('-------->thirdReason'+thirdReason);
+		try{
 
-			sp = Database.setSavepoint();
+			Opportunity oppObj = new Opportunity();
+			oppObj.Id = sObjectId;
 
-			if(flagForUpsellOppty && offerObj!= null && offerObj.LoA_Approval_Level__c =='E' && oppty.StageName.equalsignorecase(GlobalConstants.HANDOVER_OPPTY)) {
-	UpsellOppUtility.toCreateUpsellOpportunity(new Set<Id>{sObjectId});
-	flagForUpsellOppty = false;
+			if(firstReason != GlobalConstants.NONE && String.isNotBlank(firstReason) && !firstReason.contains(GlobalConstants.Remove_Unwanted_Value)){
+	oppObj.Sales_Outcome_Reason__c =firstReason;
 			}
+			if(secondReason != GlobalConstants.NONE && String.isNotBlank(secondReason) && !secondReason.contains(GlobalConstants.Remove_Unwanted_Value)){
+	oppObj.Second_Reason__c=secondReason;
+			}
+			if(thirdReason != GlobalConstants.NONE && String.isNotBlank(thirdReason) && !thirdReason.contains(GlobalConstants.Remove_Unwanted_Value)){
+	oppObj.Third_Reason__c=thirdReason;
+			}
+			oppObj.Sales_Outcome__c = GlobalConstants.WON_REQUESTED;
+			update oppObj;
+
+			return GlobalConstants.RETURN_SUCCESS;
+
+		}catch(Exception exp){
+
+			ExceptionHandler.addException(exp,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,GlobalConstants.UPDATE_SALES_OUTCOME_REASON);
+			return exp.getMessage();
+		}
+	}
+
+
+	/****************************************
+	*Method Name: getDisplayProbability
+	*Description:These method used for rerendering of page for displaying probability for G2 and G3
+	*Parameters:2382
+	*****************************************/
+	public boolean getDisplayProbability(){
+		isDisplayProbability=false;
+
+		try{
+			Opportunity oppty = [SELECT id,Name,Description,Gate_3_Bypass_no_offer_support__c,Probability,Unweighted_Amount_EUR__c,Phase_Status__c,StageName,RecordTypeId FROM Opportunity WHERE id = :sObjectId];
+			optyObj = oppty;
+			if( ( (oppty.StageName==GlobalConstants.IDENTIFY_OPPORTUNITY && oppty.Phase_Status__c==GlobalConstants.PLANNED) || (oppty.StageName==GlobalConstants.DEVELOP_OPPORTUNITY  && oppty.Phase_Status__c==GlobalConstants.OPPORTUNITY_IN_PROGRESS && oppty.Gate_3_Bypass_no_offer_support__c ) ) && (oppty.RecordTypeId==directRecordTypeId || oppty.RecordTypeId==indirectRecordTypeId)){
+	isDisplayProbability=true;
+			}
+			return isDisplayProbability;
+
+		}catch(Exception ex){
+
+			ExceptionHandler.addException(ex,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,GlobalConstants.GET_DISPLAY_PROBABILITY);
+			return false;
+		}
+	}
+
+	/****************************************
+	*Method Name: getProbability
+	*Description: These method used displaying probability percentage for G2 and G3
+	*Parameters:
+	*Req No:
+	*****************************************/
+	public Double getProbability(){
+		try{
+			Opportunity oppty = [Select id,Name,Description,Probability,Phase_Status__c,StageName,RecordTypeId from Opportunity where id = :sObjectId];
+			return oppty.Probability;
+		}catch(Exception ex){
+			ExceptionHandler.addException(ex,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,GlobalConstants.GET_PROBABILITY);
+			return 0.0;
+		}
+	}
+
+
+	/****************************************
+	*Method Name: updateProbabilityPercentage
+	*Description: update probability percentage
+	*Parameters: String sObjectType,String sObjectId,String probabilityPer
+	*Req No:2382
+	*****************************************/
+	@RemoteAction
+	public static String updateProbabilityPercentage(String sObjectType,String sObjectId,String probabilityPer){
+
+		try{
+			Opportunity oppObj = new Opportunity();
+			oppObj.Id = sObjectId;
+			System.debug('probabilityPer--->'+probabilityPer);
+			oppObj.Calculating_Probability__c= integer.valueof(probabilityPer);
+			oppObj.Probability = integer.valueof(probabilityPer);
+			System.debug('oppObj.Probability--->'+oppObj.Probability);
+			update oppObj;
+
+			return GlobalConstants.RETURN_SUCCESS;
+
+		}catch(Exception exp){
+
+			ExceptionHandler.addException(exp,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,GlobalConstants.UPDATE_PROBABILITY_PER);
+			return exp.getMessage();
+		}
+	}
+
+	/****************************************
+	*Method Name: SubmissionCommentsUpdate
+	*Description: update probability percentage
+	*Parameters: String sObjectType,String sObjectId,String probabilityPer
+	*Req No:2382
+	*****************************************/
+	@RemoteAction
+	public static String submissionCommentsUpdate(String sObjectId,String comments){
+
+		Savepoint sp = null;
+		try{
+			sp = Database.setSavepoint();
+			Opportunity oppty = [Select Id,Is_Automated__c,ApprovalStatusTechField__c,Submission_Comments__c,Phase_Status__c,Sales_Outcome__c,Apttus_Approval__Approval_Status__c,StageName from Opportunity where id=:sObjectId];
+			if(oppty != null) {
+				if(Comments<>NUll)
+					oppty.Submission_Comments__c=comments;
+				else
+					oppty.Submission_Comments__c='';
+				oppty.Is_Automated__c=True;
+				Database.update(oppty,false);
+			}
+			return 'success';
 		}
 		catch(Exception e)
 		{
 			if(sp != null) Database.rollback(sp);
-			system.debug('Exception On validateUpsellOppty>>>>'+e.getMessage());
+			system.debug('Exception On SubmissionCommentsUpdate>>>>'+e.getMessage());
+			return e.getMessage();
+		}
+
+	}
+
+	@future(callout=true)
+	public Static Void updatePhaseStatus(String sObjectId,String comments){
+		Savepoint sp = null;
+		Try{
+			set<id> parentOppIdSet = new set<id>();
+			parentOppIdSet.add(sObjectId);
+			List<Opportunity> opptyUpdate =new List<Opportunity>();
+			List<Offer__c> relOffer = [select id,LoA_Approval_Level__c,ActiveOffer__c FROM Offer__c WHERE ActiveOffer__c =: TRUE AND Opportunity__c =:sObjectId LIMIT 1];
+			for(Opportunity oppty:[Select Id,ApprovalStatusTechField__c,Submission_Comments__c,LOA_Level__c,Phase_Status__c,NF_LoA_Bypass__c,Blanket_Approval_Condition__c,Sales_Outcome__c,Apttus_Approval__Approval_Status__c,StageName from Opportunity where id=:sObjectId])
+			{
+	if(oppty!=Null && oppty.Phase_Status__c!=NUll && oppty.StageName !=NUll  && oppty.StageName.equalsignorecase(GlobalConstants.WIN_THE_CASE_NEGOTIATE) && 
+	( ( oppty.Phase_Status__c.equalsignorecase(GlobalConstants.PENDING_WIN_LOSS_DECLARATION) && oppty.Apttus_Approval__Approval_Status__c!=NUll && oppty.Apttus_Approval__Approval_Status__c.equalsignorecase(GlobalConstants.PENDING_APPROVAL) )
+	|| (oppty.LOA_Level__c<>Null&&oppty.LOA_Level__c=='E') || (oppty.Apttus_Approval__Approval_Status__c<>NUll && !oppty.Phase_Status__c.equalsignorecase(GlobalConstants.PENDING_WIN_LOSS_DECLARATION  ) && oppty.Apttus_Approval__Approval_Status__c.equalsignorecase(GlobalConstants.PENDING_APPROVAL) && oppty.NF_LoA_Bypass__c>0 && oppty.Blanket_Approval_Condition__c == null ))   )
+	{
+		oppty.Phase_Status__c=GlobalConstants.PTA_HANDOVER;
+		oppty.StageName=GlobalConstants.HANDOVER_OPPTY;
+		oppty.Apttus_Approval__Approval_Status__c=GlobalConstants.APPROVED;
+		oppty.ApprovalStatusTechField__c=GlobalConstants.G5_APPROVAL_TECH;
+		oppty.Sales_Outcome__c=GlobalConstants.WON;
+		if(comments<>Null)
+			oppty.Submission_Comments__c=comments;
+		opptyUpdate.add(oppty);
+
+	}
+			}
+			sp = Database.setSavepoint();
+			// this is only for G5 Pending Winloss Update to Next phase
+			if(!opptyUpdate.isEmpty())
+	Database.update(opptyUpdate,false);
+
+			if(flagForUpsellOppty)
+			{
+	if(relOffer<>Null &&  relOffer.size()>0 && opptyUpdate<>Null && relOffer[0].LoA_Approval_Level__c != '' && relOffer[0].LoA_Approval_Level__c =='E' && opptyUpdate[0].StageName.equalsignorecase(GlobalConstants.HANDOVER_OPPTY))
+	{
+		UpsellOppUtility.toCreateUpsellOpportunity(parentOppIdSet);
+	}
+	flagForUpsellOppty = false;
+			}
+
+			List<Apttus_Approval__Approval_Request__c> approval_SH= new List<Apttus_Approval__Approval_Request__c>();
+
+			//update the Stakeholders Status to notify
+			for(Apttus_Approval__Approval_Request__c Appupdate:[Select id,Apttus_Approval__Related_Opportunity__r.Phase_Status__c,Apttus_Approval__Notify_Only__c,Apttus_Approval__Object_Id__c,Apttus_Approval__DelegateApproverIds__c,Apttus_Approval__Assigned_To_Id__c,NF_Assignee_Type__c,Apttus_Approval__Approval_Status__c  from Apttus_Approval__Approval_Request__c where Apttus_Approval__Object_Id__c=:sObjectId and NF_Assignee_Type__c<>Null  ])
+			{
+	// Collecting the StakeHodler Records and updating the stakeholder status.
+	if(Appupdate.NF_Assignee_Type__c<>Null&& Appupdate.Apttus_Approval__Related_Opportunity__r.Phase_Status__c<>NUll && (Appupdate.Apttus_Approval__Related_Opportunity__r.Phase_Status__c.equalsignorecase(GlobalConstants.SUBMITTED_FOR_G3_APPROVAL) || Appupdate.Apttus_Approval__Related_Opportunity__r.Phase_Status__c.equalsignorecase(GlobalConstants.SUBMITTED_FOR_G4_APPROVAL) )&& Appupdate.Apttus_Approval__Approval_Status__c.equalsignorecase(GlobalConstants.STATUS_NOT_SUBMITTED) && Appupdate.NF_Assignee_Type__c.Contains(GlobalConstants.STAKEHOLDER_INFORMATION))
+	{
+		System.debug('### Inside SH Recorde'+Appupdate.NF_Assignee_Type__c);
+		Appupdate.Apttus_Approval__Approval_Status__c =GlobalConstants.NOTIFIED;
+		approval_SH.add(Appupdate);
+	}
+			}
+
+			if(approval_SH.size()>0)
+			Database.update(approval_SH,false);
+		}
+		catch(Exception e)
+		{
+			if(sp != null) Database.rollback(sp);
+			system.debug('Exception On updatePhaseStatus>>>>'+e.getMessage());
+		}
+	}
+
+	/****************************************
+	*Method Name: getUnweightedAmount()
+	*Description:  These method used for getting Unweighted Amount
+	*Parameters:
+	*Req No: SF00007566
+	*****************************************/
+	public boolean getUnweightedAmount(){
+		Id opptyDirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.DIRECT_RECORD_TYPE).getRecordTypeId();
+		Id opptyIndirectRecordTypeId = Schema.SObjectType.Opportunity.getRecordTypeInfosByDeveloperName().get(GlobalConstants.Indirect_Record_Type).getRecordTypeId();
+		String label_Amount = System.Label.Unweighted_Amount_For_Sales_Outcome;
+		isAmountGreater=false;
+		reasonsRequired = System.Label.Three_Reasons_Required;
+
+		try{
+			Opportunity oppty = [Select
+			id,RecordTypeId,
+			Amount
+			from Opportunity
+			where id = :sObjectId
+			LIMIT 1 ];
+
+			System.debug('label_Amount'+label_Amount);
+			if(oppty.Amount >= Decimal.valueOf(label_Amount) &&
+			(oppty.RecordTypeId == opptyDirectRecordTypeId || oppty.RecordTypeId == opptyIndirectRecordTypeId)){
+	isAmountGreater=true;
+			}
+			system.debug('isAmountGreater'+isAmountGreater);
+			return isAmountGreater;
+
+		}catch(Exception ex){
+			ExceptionHandler.addException(ex,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,GlobalConstants.Get_Unweighted_Amount);
+			return false;
 		}
 	}
 
 
 	public void showwarningmessage(Opportunity opp){
 		try{
-			previewmessage = JSON.serialize('Please wait until your request is completely processed. Do not close the page or interrupt the approval submission.');
-			ispreviewmessage = false;
-			if( opp.StageName.equalsignorecase(GlobalConstants.WIN_THE_CASE_NEGOTIATE ) && ( opp.Phase_Status__c.equalsignorecase(GlobalConstants.PENDING_WIN_LOSS_DECLARATION ) ||
-			( !opp.Phase_Status__c.equalsignorecase(GlobalConstants.PENDING_WIN_LOSS_DECLARATION  ) && opp.NF_LoA_Bypass__c>0 && opp.Blanket_Approval_Condition__c==null ) ))
-	ispreviewmessage=true;
+			Previewmessage=JSON.serialize('Please wait until your request is completely processed. Do not close the page or interrupt the approval submission.');
+			ispreviewmessage=false;
+			if(opp.StageName.equalsignorecase(GlobalConstants.WIN_THE_CASE_NEGOTIATE )&&opp.LOA_Level__c=='E') ispreviewmessage=true;
+			if(opp.StageName.equalsignorecase(GlobalConstants.WIN_THE_CASE_NEGOTIATE ) && !opp.Phase_Status__c.equalsignorecase(GlobalConstants.PENDING_WIN_LOSS_DECLARATION  ) && opp.NF_LoA_Bypass__c>0 && opp.Blanket_Approval_Condition__c==null )ispreviewmessage=true;
+			if(opp.StageName.equalsignorecase(GlobalConstants.WIN_THE_CASE_NEGOTIATE ) && opp.Phase_Status__c.equalsignorecase(GlobalConstants.PENDING_WIN_LOSS_DECLARATION  )  )ispreviewmessage=true;
 
-			if(psrLoAlevel != null && psrLoAlevel != '')
+			if(PSRLoAlevel != null && PSRLoAlevel != '')
 			{
 	loaupdated = true;
-	previewmessage=JSON.serialize('LoA level is set to - '+psrLoAlevel+ '. Please review the gate participants before submitting for approval');
+	Previewmessage=JSON.serialize('LoA level is set to - '+PSRLoAlevel+ '. Please review the gate participants before submitting for approval');
 			}
 
 		}catch(Exception ex){
-			ExceptionHandler.addException(ex,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,'showwarningmessage');
+			ExceptionHandler.addException(ex,GlobalConstants.PRVIEW_APPROVAL_CONTROLLER,GlobalConstants.Get_Unweighted_Amount);
 		}
 	}
 
 	/****************************************
-*Method Name: SortRecords
-*Description:  Sort the records with the sequence i.e Approver,Validator and Stakeholder
-*Parameters: List of ApprovalRequestWrapperClass and return the sort order
-*****************************************/
+	*Method Name: SortRecords
+	*Description:  Sort the records with the sequence i.e Approver,Validator and Stakeholder
+	*Parameters: List of ApprovalRequestWrapperClass and return the sort order
+	*****************************************/
 	Public  List<ApprovalRequestWrapperClass> sortRecords(  List<ApprovalRequestWrapperClass> records) {
 		List<ApprovalRequestWrapperClass> afterSort =new List<ApprovalRequestWrapperClass>();
-		List<ApprovalRequestWrapperClass> approvers =new List<ApprovalRequestWrapperClass>();
-		List<ApprovalRequestWrapperClass> validators =new List<ApprovalRequestWrapperClass>();
-		List<ApprovalRequestWrapperClass> stakeholders =new List<ApprovalRequestWrapperClass>();
-		List<ApprovalRequestWrapperClass> others  =new List<ApprovalRequestWrapperClass>();
+		List<Apttus_Approval__Approval_Request__c> beforeSort= new List<Apttus_Approval__Approval_Request__c>();
 
-		for(ApprovalRequestWrapperClass data:records) {
-			if(GlobalConstants.APPROVER.equalsignorecase(data.approvalReq.NF_Assignee_Type__c) )
+		for(ApprovalRequestWrapperClass Data:records)
+		beforeSort.add(Data.approvalReq);
+
+		for(ApprovalRequestWrapperClass  Rec:records)
+		{
+			if(Rec.approvalReq.NF_Assignee_Type__c<>Null && Rec.approvalReq.NF_Assignee_Type__c.equalsignorecase(GlobalConstants.APPROVER) )
 			{
-	approvers.add(data);
-			}
-			else if( GlobalConstants.VALIDATOR.equalsignorecase(  data.approvalReq.NF_Assignee_Type__c) )
-			{
-	validators.add(data);
-			}
-			else if(  GlobalConstants.STAKEHOLDER_INFORMATION.equalsignorecase( data.approvalReq.NF_Assignee_Type__c) )
-			{
-	stakeholders.add(data);
-			}
-			else if( data.approvalReq.NF_Assignee_Type__c == NUll){
-	others.add(data);
+	afterSort.add(Rec);
 			}
 		}
-		afterSort.addAll(approvers);
-		afterSort.addAll(validators);
-		afterSort.addAll(stakeholders);
-		afterSort.addAll(others);
+
+		for(ApprovalRequestWrapperClass  RecValidator:records)
+		{
+			if(RecValidator.approvalReq.NF_Assignee_Type__c<>Null && RecValidator.approvalReq.NF_Assignee_Type__c.equalsignorecase(GlobalConstants.VALIDATOR ) )
+			{
+	afterSort.add(RecValidator);
+			}
+		}
+
+		for(ApprovalRequestWrapperClass  RecStakeHolder: records)
+		{
+			if(RecStakeHolder.approvalReq.NF_Assignee_Type__c<>Null && RecStakeHolder.approvalReq.NF_Assignee_Type__c.equalsignorecase(GlobalConstants.STAKEHOLDER_INFORMATION) )
+			{
+	afterSort.add(RecStakeHolder);
+			}
+			else if(RecStakeHolder.approvalReq.NF_Assignee_Type__c==NUll){
+	afterSort.add(RecStakeHolder);
+			}
+		}
+
 		return afterSort ;
 	}
 

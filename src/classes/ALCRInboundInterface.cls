@@ -24,14 +24,13 @@ Requirement: Sales Process 633
 	
 	// Account Wrapper class to get required accocunt info from ALCR (Through EIA interface) 
 	global class AccountWrap{
-		webservice String AccountLifecycleStatus;
 		webservice String customerNumber;
 		webservice String legalName;
 		webservice String currencyCode;
 		webservice String activitySectorCode;  
-		webservice String street;			
+		webservice String street;			 
 		webservice String city;
-		webservice String countryCodeISO2;	  
+		webservice String countryCodeISO2;		
 		webservice String companyType;
 		webservice String customerAccountCode;
 		webservice String customerAccountName;
@@ -43,8 +42,8 @@ Requirement: Sales Process 633
 		webservice String holdingAccountCode;
 		webservice String holdingAccountName;
 		webservice String salesforceRecordID; 
-		webservice String legalNameExtension;							  
-		webservice String businessName;			 
+		webservice String legalNameExtension;							   
+		webservice String businessName;				
 		webservice String webAddress;
 		webservice String marketCode;
 		webservice String marketName;
@@ -52,14 +51,14 @@ Requirement: Sales Process 633
 		webservice String buildingFloor;
 		webservice String postalCode;
 		webservice String stateProvinceCountyCode;  
-		//.webservice String accountManagerUPI;	
-		webservice Date companyEndDate;	 
+		//.webservice String accountManagerUPI;	   
+		webservice Date companyEndDate;		
 		webservice String reasonForEndName;
 		webservice String assetQualityRatingCode;
 		webservice String assetQualityRatingName;
-		webservice String aluUnitCode;	  
+		webservice String aluUnitCode;		
 		webservice String qtcSoldTo;
-		webservice String businessContinuation;	 
+		webservice String businessContinuation;		
 		webservice String regionalUnit;
 		webservice String region;
 		//webservice String catLeaderUPI;
@@ -69,7 +68,7 @@ Requirement: Sales Process 633
 		webservice String customerUnitName;
 		webservice String commercialCluster;
 		webservice String recordType;
-	}   //AccountWrap class ends here 
+	}	//AccountWrap class ends here 
 	
 		//Interface Log Variables   
 		global static String operationType;
@@ -91,7 +90,7 @@ Requirement: Sales Process 633
 		response = upsertAccount(accWrap);
 		return response;
 			
-	}   // CreateAccount() method ends here
+	}	// CreateAccount() method ends here
 	
 	/*******************************************************************
 	Purpose: method to upsert Account(s)in Salesforce.
@@ -131,18 +130,18 @@ Requirement: Sales Process 633
 							//response.message = Label.ALCRInterface_Account_Update_Message;
 							response.errorCode = 0;
 							operationType = GlobalConstants.UPDATE_VALUE;
-						}   
+						}	
 						else{
 							//response.message = Label.ALCRInterface_Account_Insert_Message; 
 							response.errorCode = 0; 
 							operationType = GlobalConstants.INSERT_VALUE; 
-						}	
+						}	 
 					} 
 					catch(Exception e){
 						response.message = e.getMessage();
 						response.errorCode = 3; 
 						status = GlobalConstants.FAILURE;
-					}	 
+					}	  
 			}
 			
 			/*if( response.errorCode == 0){
@@ -181,7 +180,7 @@ Requirement: Sales Process 633
 			//interfaceRequestSent = String.valueOf(opptyWrap);
 			InterfaceLogHandler.interfaceTransactionHandler(interfaceType, messageType, operationType, name, status, errorMessage);
 			return response; 
-	}   // upsertAccount() method ends here
+	}	// upsertAccount() method ends here
 	
 	
 	/*******************************************************************
@@ -264,7 +263,6 @@ Requirement: Sales Process 633
 			acc.ALCR_Created_By__c = accWrap.createdByUser;
 			acc.MU_GCBT_Code__c = accWrap.customerUnitCode; 
 			acc.MU_GCBT_Name__c= accWrap.customerUnitName; 
-			acc.AccountLifecycleStatus__c = accWrap.AccountLifecycleStatus;
 			//acc.Commercial_Cluster__c = accWrap.commercialCluster;
 			/****added by Debin Kuriakose [IDC] on 05/11/2015 for ALCR Modernization****/
 		   acc.ALCR_Record_Type__c = accWrap.recordType;
@@ -275,7 +273,7 @@ Requirement: Sales Process 633
 			else
 				acc.active__c = true;
 			return acc;
-	}   // accountMapping() method ends here
+	}	// accountMapping() method ends here
 	
 	/*******************************************************************
 	Purpose: This method validates ALCR Interface fields .
@@ -383,7 +381,7 @@ Requirement: Sales Process 633
 		}*/
 			  
 		return response;   
-	}   // fieldsValidation() method ends here
+	}	// fieldsValidation() method ends here
 	
 	/**************************************************************************************************
 	Purpose: This method is to update Opportunities associated with the incoming prospect in Salesforce.
@@ -404,4 +402,4 @@ Requirement: Sales Process 633
 	   return opportunityUpdate;
 	}
 	***************************************************************************************************/
-}   // End of main class ALCR_InboundInterface/
+}	// End of main class ALCR_InboundInterface/
