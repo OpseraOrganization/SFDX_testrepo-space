@@ -18,6 +18,6 @@ private class TemperatureConverterTest {
     }
     @isTest static void testNormalTemp(){
         Decimal fahrenheit = TemperatureConverter.CelsiusToFahrenheit(30);
-        //System.assertEquals(86);
+        System.assertEquals(86,fahrenheit);
     }
 }
