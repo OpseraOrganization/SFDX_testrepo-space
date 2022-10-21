@@ -16,6 +16,11 @@ public class TemperatureConverter {
         
         Decimal kel = cel+273.15;
         return kel.setScale(2);
+        //Adding new line to check timestamp based filter
         
+    }
+    public static Decimal MeterToCenti(Decimal mtr){
+        Decimal cm = mtr*100;
+        return cm.setScale(2);
     }
 }
