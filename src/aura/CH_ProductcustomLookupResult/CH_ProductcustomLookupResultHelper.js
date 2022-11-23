@@ -1,8 +1,0 @@
-({
-	testresults :function (component, event) {
-		
-    
-        
-        
-	},
-})
