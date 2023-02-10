@@ -4,7 +4,7 @@ private Integer num;
     
     @isTest
    public static void helloMethod() {
-        System.debug('Change Hello DemoApex11 Basic Pipeline testing UAT 10/02/23');
+        System.debug('Change Hello DemoApex11 Basic Pipeline testing PROD 10/02/23');
     }
     
     public static testMethod void testNewMethod() {
