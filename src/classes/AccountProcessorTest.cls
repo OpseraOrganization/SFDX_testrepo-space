@@ -1,10 +1,9 @@
 @isTest
-public class DeleteDemoApex10 {
-private Integer num;
-    
-    @isTest
+private class AccountProcessorTest {
+     
+@isTest
    public static void helloMethod() {
-        System.debug('Change Hello DemoApex11 Basic Pipeline testing PROD 07/02/23 webhook11212');
+        System.debug('Change Hello DemoApex11 Basic Pipeline testing Auto TestClasses UAT');
     }
     
     public static testMethod void testNewMethod() {
