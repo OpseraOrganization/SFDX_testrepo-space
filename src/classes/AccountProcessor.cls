@@ -11,6 +11,7 @@ public class AccountProcessor {
             
         }
         if(!accountList.isEmpty())
+        system.debug('Print Account List'+accountList);    
         update accountList ;
         
     
