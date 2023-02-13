@@ -4,10 +4,10 @@ private Integer num;
     
     @isTest
    public static void helloMethod() {
-        System.debug('Change Hello DemoApex11 Basic Pipeline testing PROD 10/02/23');
+        System.debug('Change Hello DemoApex11 PROD webhook testing1 11/02/2023 ');
     }
     
     public static testMethod void testNewMethod() {
-        System.debug('Change Hello DemoApex10 testing 1234 Basic');
+        System.debug('Change Hello DemoApex10');
     }
 }
