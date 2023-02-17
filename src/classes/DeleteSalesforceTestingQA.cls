@@ -1,5 +1,5 @@
 @isTest
-public class DeleteSalesforceTestingQA{
+public class DeleteSalesforceTestingQA123{
 private Integer num;
     
     @isTest
