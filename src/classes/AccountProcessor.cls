@@ -15,11 +15,6 @@ public class AccountProcessor {
         update accountList ;
         
     
-
-
-
-    
-    
     }
 
 
