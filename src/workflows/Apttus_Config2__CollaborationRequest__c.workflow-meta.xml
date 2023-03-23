@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <alerts>
+        <fullName>CanceledMailToPreviousUser</fullName>
+        <ccEmails>eleonora.petrova@accenture.com</ccEmails>
+        <ccEmails>pinky.sharma@accenture.com</ccEmails>
+        <ccEmails>marcella_giulia.carone@nokia.com</ccEmails>
+        <ccEmails>kate.lo@nokia.com</ccEmails>
+        <description>CanceledMailToPreviousUser</description>
+        <protected>false</protected>
+        <recipients>
+            <field>Previous_Owner_Email__c</field>
+            <type>email</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/Collaboration_Request_Cancelled</template>
+    </alerts>
+    <alerts>
+        <fullName>Collaboration_Task_Accepted</fullName>
+        <ccEmails>eleonora.petrova@accenture.com</ccEmails>
+        <ccEmails>pinky.sharma@accenture.com</ccEmails>
+        <ccEmails>marcella_giulia.carone@nokia.com</ccEmails>
+        <ccEmails>kate.lo@nokia.com</ccEmails>
+        <description>Collaboration Task Accepted</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/Collaboration_Task_Accepted</template>
+    </alerts>
+    <alerts>
+        <fullName>Collaboration_Task_Assigned</fullName>
+        <ccEmails>eleonora.petrova@accenture.com</ccEmails>
+        <ccEmails>pinky.sharma@accenture.com</ccEmails>
+        <ccEmails>marcella_giulia.carone@nokia.com</ccEmails>
+        <ccEmails>kate.lo@nokia.com</ccEmails>
+        <description>Collaboration Task Assigned</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/Collaboration_Task_Assigned</template>
+    </alerts>
+    <alerts>
+        <fullName>Collaboration_Task_Complete</fullName>
+        <ccEmails>eleonora.petrova@accenture.com</ccEmails>
+        <ccEmails>pinky.sharma@accenture.com</ccEmails>
+        <ccEmails>marcella_giulia.carone@nokia.com</ccEmails>
+        <ccEmails>kate.lo@nokia.com</ccEmails>
+        <description>Collaboration Task Complete</description>
+        <protected>false</protected>
+        <recipients>
+            <type>creator</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/Collaboration_Task_Completed</template>
+    </alerts>
+    <alerts>
+        <fullName>Collaboration_Task_Updated</fullName>
+        <ccEmails>eleonora.petrova@accenture.com</ccEmails>
+        <ccEmails>pinky.sharma@accenture.com</ccEmails>
+        <ccEmails>marcella_giulia.carone@nokia.com</ccEmails>
+        <ccEmails>kate.lo@nokia.com</ccEmails>
+        <description>Collaboration Task Updated</description>
+        <protected>false</protected>
+        <recipients>
+            <type>owner</type>
+        </recipients>
+        <senderType>CurrentUser</senderType>
+        <template>unfiled$public/Collaboration_Task_Updated</template>
+    </alerts>
+    <fieldUpdates>
+        <fullName>Update_Email_Id_with_Previous_User</fullName>
+        <field>Previous_Owner_Email__c</field>
+        <formula>PRIORVALUE(Prior_Email_Id__c)</formula>
+        <name>Update Email Id with Previous User</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Update_Full_Name</fullName>
+        <field>Previous_Owner_Full_Name__c</field>
+        <formula>PRIORVALUE( Previous_User_Full_Name__c )</formula>
+        <name>Update Full Name</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Formula</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <rules>
+        <fullName>QuoteCollNotifyPreviousOwnerWithCanceledMail</fullName>
+        <actions>
+            <name>CanceledMailToPreviousUser</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <description>QuoteCollabNotifyOnAccept</description>
+        <formula>AND(ISCHANGED(OwnerId),ISPICKVAL(PRIORVALUE(Apttus_Config2__Status__c), &apos;Submitted&apos;),ISPICKVAL(Apttus_Config2__Status__c, &apos;Submitted&apos;))</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>QuoteCollabNotifyOnAccept</fullName>
+        <actions>
+            <name>Collaboration_Task_Accepted</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <description>QuoteCollabNotifyOnAccept</description>
+        <formula>AND(ISCHANGED(Apttus_Config2__Status__c),ISPICKVAL(Apttus_Config2__Status__c, &apos;Accepted&apos;))</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>QuoteCollabNotifyOnComplete</fullName>
+        <actions>
+            <name>Collaboration_Task_Complete</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <description>QuoteCollabNotifyOnComplete</description>
+        <formula>AND(ISCHANGED(Apttus_Config2__Status__c),ISPICKVAL(Apttus_Config2__Status__c, &apos;Completed&apos;))</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>QuoteCollabNotifyOnCreate</fullName>
+        <actions>
+            <name>Collaboration_Task_Assigned</name>
+            <type>Alert</type>
+        </actions>
+        <actions>
+            <name>Update_Email_Id_with_Previous_User</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <actions>
+            <name>Update_Full_Name</name>
+            <type>FieldUpdate</type>
+        </actions>
+        <active>true</active>
+        <description>QuoteCollabNotificationOnCreate</description>
+        <formula>OR(AND(ISNEW(),ISCHANGED(Apttus_Config2__Status__c),ISPICKVAL(Apttus_Config2__Status__c, &apos;Submitted&apos;)),AND(ISCHANGED(OwnerId),ISPICKVAL(Apttus_Config2__Status__c,&apos;Submitted&apos;)))</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+    <rules>
+        <fullName>QuoteCollabNotifyOnUpdate</fullName>
+        <actions>
+            <name>Collaboration_Task_Updated</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <description>QuoteCollabNotificationOnUpdate</description>
+        <formula>AND(NOT(ISCHANGED(OwnerId)),NOT(ISBLANK(Apttus_Config2__ChildConfigurationId__c)),NOT(ISCHANGED(Apttus_Config2__ChildConfigurationId__c)),ISPICKVAL(Apttus_Config2__Status__c, &apos;Submitted&apos;),ISCHANGED(LastModifiedDate))</formula>
+        <triggerType>onAllChanges</triggerType>
+    </rules>
+</Workflow>
