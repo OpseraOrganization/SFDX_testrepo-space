@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#0070D2</headerColor>
+        <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
+    </brand>
+    <description>To deploy using Opsera Tool</description>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <label>AppConsoleView</label>
+    <navType>Console</navType>
+    <tabs>standard-Account</tabs>
+    <tabs>standard-AppLauncher</tabs>
+    <tabs>standard-ProcessInstanceWorkitem</tabs>
+    <tabs>standard-Asset</tabs>
+    <tabs>Deployment_Instruction__c</tabs>
+    <uiType>Lightning</uiType>
+    <utilityBar>AppConsoleView_UtilityBar</utilityBar>
+    <workspaceConfig>
+        <mappings>
+            <tab>Deployment_Instruction__c</tab>
+        </mappings>
+        <mappings>
+            <tab>standard-Account</tab>
+        </mappings>
+        <mappings>
+            <tab>standard-AppLauncher</tab>
+        </mappings>
+        <mappings>
+            <tab>standard-Asset</tab>
+        </mappings>
+        <mappings>
+            <tab>standard-ProcessInstanceWorkitem</tab>
+        </mappings>
+    </workspaceConfig>
+</CustomApplication>
