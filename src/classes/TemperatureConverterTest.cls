@@ -1,4 +1,4 @@
-@isTest(SeeAllData=true)
+@isTest
 private class TemperatureConverterTest {
     @isTest static void testWarmTemp() {
         Decimal celsius = TemperatureConverter.FahrenheitToCelsius(70);
@@ -19,5 +19,9 @@ private class TemperatureConverterTest {
     @isTest static void testNormalTemp(){
         Decimal fahrenheit = TemperatureConverter.CelsiusToFahrenheit(30);
         System.assertEquals(86,fahrenheit);
+    }
+    @isTest static void testCeltoKevin(){
+        Decimal cel = TemperatureConverter.CelsiusToKelvin(40);
+        System.assertEquals(313.15,cel);
     }
 }
