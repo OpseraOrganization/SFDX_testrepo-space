@@ -1,0 +1,503 @@
+<apex:page docType="html-5.0" controller="dupcheck.dc3ControllerSetup" cache="false" Title="Setup - Duplicate Check for Salesforce" sidebar="false" action="{!janitor}" tabStyle="dc3Setup__tab" readonly="true">
+  <apex:stylesheet value="{!URLFOR($Resource.dupcheck__slds, '/assets/styles/salesforce-lightning-design-system-vf.min.css')}" />
+  <apex:stylesheet value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/style/dupcheckApp.css" />
+  <apex:stylesheet value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/style/rzslider.css" />
+
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/moment.min.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/jquery.min.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/angular.min.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/angular-sanitize.min.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/angular-cookies.min.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/angular-local-storage.min.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/svg4everybody.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/rzslider.js" />
+
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/plauti-ng-slds.min.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/dupcheck.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/dupcheck.ng.directives.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/dupcheck.ng.services.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/dupcheck.ng.setup.js" />
+  <apex:includeScript value="{!URLFOR($Resource.dupcheck__dupcheckAssets,'/dupcheckAssets')}/lightning/js/dupcheck.js" />
+  <apex:includeScript value="/soap/ajax/35.0/connection.js" />
+
+  <c:dc3TranslationJS />
+  <apex:includeLightning />
+
+  <script>
+
+      $Lightning.use('dupcheck:dc3SetupHomeVF', function () {
+
+        if ('{!pageUrl}' == 'HOME') {
+
+          console.log('analytics vf loaded');
+          $Lightning.createComponent(
+            'dupcheck:dc3SetupHomeAnalytics',
+            {
+              type: 'MERGED'
+            },
+            'chartA',
+            function (cmp) {
+              console.log('chart A loaded');
+            }
+          );
+          $Lightning.createComponent(
+            'dupcheck:dc3SetupHomeAnalytics',
+            {
+              type: 'CONVERTED'
+            },
+            'chartB',
+            function (cmp) {
+              console.log('chart B loaded');
+            }
+          );
+          $Lightning.createComponent(
+            'dupcheck:dc3SetupHomeAnalytics',
+            {
+              type: 'FOUND'
+            },
+            'chartC',
+            function (cmp) {
+              console.log('chart C loaded');
+            }
+          );
+
+          window.addEventListener('forward-to-analytics', function (event) {
+              var url = '{!$Page.dupcheck__dc3Setup}';
+              var uri = 'page=DCANALYTICS';
+              console.log(url);
+              dcNavigateTop(url, uri, undefined, undefined);
+          });
+
+        }
+
+        if ('{!pageUrl}' == 'DCANALYTICS') {
+          $Lightning.createComponent('dupcheck:dc3AnalyticsPage', {}, 'dc3AnalyticsPage', function (cmp) {
+            console.log('dc3AnalyticsPage loaded');
+          });
+        }
+
+        if ('{!pageUrl}' == 'DCSETTINGS') {
+          $Lightning.createComponent('dupcheck:dc3SetupSettings', {}, 'dc3SettingsPage', function (cmp) {
+          console.log('dc3SettingsPage loaded');
+          });
+        }
+
+        if ('{!pageUrl}' == 'DCLICENSE') {
+          $Lightning.createComponent('dupcheck:dc3SetupLicense', {}, 'dc3LicensePage', function (cmp) {
+            console.log('dc3LicensePage loaded');
+          });
+        }
+
+
+        $Lightning.createComponent(
+          'dupcheck:dc3SetupAddObjectModal',
+          {},
+          'dcAddObjectModal',
+          function (cmp) {
+            addObjectModal = cmp;
+            console.log('add object modal loaded');
+            window.addEventListener('addObject', function() {
+              cmp.show();
+            })
+          }
+        );
+
+        var mergeRulesPageLoaded = false;
+
+        window.addEventListener('plautiTabSwitch', function (event) {
+          if (event.detail == 'merge') {
+            document.getElementById('mergeRulesContainer').className = 'slds-show';
+            if (!mergeRulesPageLoaded) {
+              $Lightning.createComponent(
+                'dupcheck:dc3MergeRulev2Page',
+                {
+                  objectName: '{!objectName}'
+                },
+                'dc3MergeRulesv2lwc',
+                function (cmp) {
+                  mergeRulesPageLoaded = true;
+                  console.log('dc3MergeRulev2Page lwc loaded');
+                  document.getElementById('mergeRulesV2Spinner').remove();
+                }
+              );
+            }
+          } else {
+            document.getElementById('mergeRulesContainer').className = 'slds-hide';
+          }
+        });
+
+  });
+  </script>
+
+  <script>
+
+  </script>
+
+  <script>
+    sforce.connection.sessionId = '{!GETSESSIONID()}';
+    Visualforce.remoting.timeout = 120000;
+
+    svg4everybody();
+    var actionList = [];
+    {!IF(license.features.duplicatePrevention, 'actionList.push({"Value":"INSERT","Label":"Manual Insert Prevention"});', '')}
+    {!IF(license.features.duplicatePrevention, 'actionList.push({"Value":"UPDATE","Label":"Manual Update Prevention"});', '')}
+    actionList.push({"Value":"SEARCH","Label":"DC Search"});
+    {!IF(license.features.pageConvert, 'actionList.push({"Value":"CONVERT","Label":"DC Convert"});', '')}
+    {!IF(license.features.pageCheck, 'actionList.push({"Value":"CHECK","Label":"DC Check"});', '')}
+    {!IF(license.features.pageEntry, 'actionList.push({"Value":"ENTRY","Label":"DC Entry"});', '')}
+    {!IF(license.features.pageLayout, 'actionList.push({"Value":"LAYOUT","Label":"DC Live"});', '')}
+    {!IF(license.features.batchDeduplication, 'actionList.push({"Value":"BATCH","Label":"DC Job"});', '')}
+    {!IF(license.features.uniqueUpload, 'actionList.push({"Value":"UPLOAD","Label":"Unique Import / API Bulk Insert"});', '')}
+    {!IF(license.features.uniqueUpload, 'actionList.push({"Value":"SINGLEUPLOAD","Label":"API Single Insert / Update"});', '')}
+    {!IF(license.features.api, 'actionList.push({"Value":"API","Label":"DC Apex API"});', '')}
+    {!IF(license.features.web2Lead, 'actionList.push({"Value":"WEB2LEAD","Label":"Web-to-Lead"});', '')}
+    {!IF(license.features.dataApi, 'actionList.push({"Value":"DATAAPI","Label":"Data API"});', '')}
+    {!IF(license.features.flow, 'actionList.push({"Value":"FLOW","Label":"Flow"});', '')}
+    {!IF(RVInstalled, 'actionList.push({"Value":"RVINSERT","Label":"RV Manual Insert Prevention"});', '')}
+    {!IF(RVInstalled, 'actionList.push({"Value":"RVUPDATE","Label":"RV Manual Update Prevention"});', '')}
+  </script>
+
+  <c:dc3Welcome version="LIGHTNING" />
+
+  <div
+    id="dataStore"
+    data-sf-add-default-scenario="{!$RemoteAction.dc3ControllerSetup.addDefaultScenario}"
+    data-sf-get-merge-field-ignore="{!$RemoteAction.dc3ControllerSetup.getMergeFieldIgnoreOptions}"
+    data-is-advanced-matching-enabled="{!searchindex}"
+    data-is-cross-object-enabled="{!crossObject}"
+    data-sf-delete-object="{!$RemoteAction.dc3ControllerSetup.doDeleteObject}"
+    data-sf-index-object="{!$RemoteAction.dc3ControllerSetup.getIndexObject}"
+    data-sf-update-record-type-config="{!$RemoteAction.dc3ControllerSetup.updateRecordTypeConfig}"
+    data-sf-record-type-config="{!$RemoteAction.dc3ControllerSetup.getRecordTypeConfig}"
+    data-sf-update-result-field="{!$RemoteAction.dc3ControllerSetup.updateResultField}"
+    data-sf-license="{!license.features}"
+    data-sf-update-scenario-field="{!$RemoteAction.dc3ControllerSetup.updateScenarioField}"
+    data-sf-delete-scenario-fields="{!$RemoteAction.dc3ControllerSetup.deleteScenarioField}"
+    data-sf-add-scenario-field="{!$RemoteAction.dc3ControllerSetup.addScenarioField}"
+    data-sf-license-fw="{!license.features.frequentWords}"
+    data-sf-insert-update-cross-object-field="{!$RemoteAction.dc3ControllerSetup.insertUpdateCrossObjectField}"
+    data-sf-delete-cross-object-field="{!$RemoteAction.dc3ControllerSetup.deleteCrossObjectField}"
+    data-sf-delete-cross-object="{!$RemoteAction.dc3ControllerSetup.deleteCrossObject}"
+    data-sf-get-cross-object-field-options="{!$RemoteAction.dc3ControllerSetup.getCrossObjectFieldOptions}"
+    data-sf-get-cross-object-options="{!$RemoteAction.dc3ControllerSetup.getCrossObjectOptions}"
+    data-sf-get-cross-config="{!$RemoteAction.dc3ControllerSetup.getCrossConfig}"
+    data-sf-delete-index-job="{!$RemoteAction.dc3ControllerSetup.deleteIndexJob}"
+    data-sf-abort-job="{!$RemoteAction.dc3ControllerSetup.abortJob}"
+    data-sf-start-index-job="{!$RemoteAction.dc3ControllerSetup.startIndexJob}"
+    data-sf-create-local-index-job="{!$RemoteAction.dc3ControllerSetup.createLocalIndexJob}"
+    data-sf-create-account-hierachy-index-job="{!$RemoteAction.dc3ControllerSetup.createAccountHierarchyIndex}"
+    data-sf-get-job-list-by-page="{!$RemoteAction.dc3ControllerSetup.getJobListByPage}"
+    data-sf-update-merge-field="{!$RemoteAction.dc3ControllerSetup.updateMergeField}"
+    data-sf-related="{!$RemoteAction.dc3ControllerSetup.getRelatedTypeAheadAdvanced}"
+    data-sf-get-merge-config="{!$RemoteAction.dc3ControllerSetup.getMergeConfig}"
+    data-sf-get-result-field="{!$RemoteAction.dc3ControllerSetup.getResultField}"
+    data-sf-get-index-field-list="{!$RemoteAction.dc3ControllerSetup.getIndexFieldList}"
+    data-sf-get-related-merge-unique-list="{!$RemoteAction.dc3ControllerSetup.getRelatedMergeUniqueList}"
+    data-sf-get-related-merge-list="{!$RemoteAction.dc3ControllerSetup.getRelatedMergeList}"
+    data-sf-update-config-field="{!$RemoteAction.dc3ControllerSetup.updateConfigField}"
+    data-sf-get-settings="{!$RemoteAction.dc3ControllerSetup.getSettings}"
+    data-sf-update-scenario="{!$RemoteAction.dc3ControllerSetup.updateScenario}"
+    data-object-config-id="{!JSINHTMLENCODE(NULLVALUE(configObject.configId,'empty'))}"
+    data-sf-add-scenario="{!$RemoteAction.dc3ControllerSetup.addScenario}"
+    data-sf-delete-scenario="{!$RemoteAction.dc3ControllerSetup.deleteScenario}"
+    data-sf-scenario-list="{!$RemoteAction.dc3ControllerSetup.getScenarioList}"
+    data-object-prefix="{!objectPrefix}"
+    data-object-label="{!objectLabel}"
+    data-object-name="{!objectName}"
+    data-sf-add-object="{!$RemoteAction.dc3ControllerSetup.addObject}"
+    data-sf-current-page="{!$Page.dc3Setup}"
+    data-sf-get-object-filter-options="{!$RemoteAction.dc3ControllerSetup.getObjectFilterOptions}"
+    data-sf-default-page="{!defaultPage}"
+    data-dc-discard="{!URLFOR($Action.dcDiscard__c.List, $ObjectType.dcDiscard__c)}"
+    data-sf-get-filterlist="{!$RemoteAction.dc3ControllerSetup.getFilterList}"
+    data-sf-get-filterfields="{!$RemoteAction.dc3ControllerSetup.getFilterFields}"
+    data-sf-add-filter="{!$RemoteAction.dc3ControllerSetup.addFilter}"
+    data-sf-update-filter="{!$RemoteAction.dc3ControllerSetup.updateFilter}"
+    data-sf-delete-filter="{!$RemoteAction.dc3ControllerSetup.deleteFilter}"
+    data-sf-add-filter-rule="{!$RemoteAction.dc3ControllerSetup.addFilterRule}"
+    data-sf-get-filter-rules="{!$RemoteAction.dc3ControllerSetup.getFilterRules}"
+    data-sf-update-filter-rule="{!$RemoteAction.dc3ControllerSetup.updateFilterRule}"
+    data-sf-delete-filter-rule="{!$RemoteAction.dc3ControllerSetup.deleteFilterRule}"
+    data-sf-get-filter-expression-list="{!$RemoteAction.dc3ControllerSetup.getFilterExpressionList}"
+    data-sf-typeahead="{!$RemoteAction.dc3ControllerSetup.getRelatedTypeAheadAdvanced}"
+    data-sf-add-object-list="{!$RemoteAction.dc3ControllerSetup.fetchAddObjectList}"
+  ></div>
+
+  <div class="plauti" ng-app="dcApp" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <script type="text/ng-template" id="ScenarioSetup">
+      <c:dc3SetupScenario object="{!objectUrl}" page="{!pageUrl}" rendered="{!isObject == true}"/>
+    </script>
+
+    <script type="text/ng-template" id="RecordTypeSetup">
+      <c:dc3SetupRecordType object="{!objectUrl}" page="{!pageUrl}" rendered="{!isObject}"/>
+    </script>
+
+    <script type="text/ng-template" id="SettingSetup">
+      <c:dc3SetupSetting object="{!objectUrl}" page="{!pageUrl}" rendered="{!isObject}"/>
+    </script>
+
+    <script type="text/ng-template" id="ResultFieldSetup">
+      <c:dc3SetupResultField object="{!objectUrl}" page="{!pageUrl}" rendered="{!isObject}"/>
+    </script>
+
+    <script type="text/ng-template" id="CrossObjectSetup">
+      <c:dc3SetupCrossObject object="{!objectUrl}" page="{!pageUrl}" rendered="{!isObject}"/>
+    </script>
+
+    <script type="text/ng-template" id="MergeSetup"></script>
+
+    <script type="text/ng-template" id="DirectSetup">
+      <c:dc3SetupDirect object="{!objectUrl}" page="{!pageUrl}" rendered="{!isObject}"/>
+    </script>
+
+    <script type="text/ng-template" id="SearchIndexSetup">
+      <c:dc3SetupSearchIndex object="{!objectUrl}" page="{!pageUrl}" rendered="{!isObject}"/>
+    </script>
+
+    <script type="text/ng-template" id="HomeSetup">
+      <c:dc3SetupHome object="{!objectUrl}" page="{!pageUrl}" rendered="{!pageUrl == 'HOME'}"/>
+    </script>
+
+    <script type="text/ng-template" id="dcSettings">
+      <div id="dc3SettingsPage"></div>
+    </script>
+
+    <script type="text/ng-template" id="dcLicense">
+      <div id="dc3LicensePage"></div>
+      <!-- <c:dc3License rendered="{!pageUrl == 'DCLICENSE'}"/> -->
+    </script>
+
+    <script type="text/ng-template" id="dcAudit">
+      <c:dc3Audit rendered="{!pageUrl == 'DCAUDIT'}"/>
+    </script>
+
+    <script type="text/ng-template" id="dcFrequentWords">
+      <c:dc3FrequentWords rendered="{!pageUrl == 'DCFREQUENTWORDS'}" />
+    </script>
+
+    <script type="text/ng-template" id="dcSetupCheck">
+      <c:dc3SetupCheck rendered="{!pageUrl == 'DCSETUPCHECK'}"/>
+    </script>
+
+    <script type="text/ng-template" id="dcExportImportConfig">
+      <c:dc3ExportImportConfig rendered="{!pageUrl == 'DCEXPORTIMPORTCONFIG'}"/>
+    </script>
+
+    <script type="text/ng-template" id="PredefinedFilters">
+      <c:dc3SetupPredefinedFilters object="{!objectUrl}" page="{!pageUrl}" />
+    </script>
+
+    <div ng-controller="setupController">
+
+      <div id="dcAddObjectModal"></div>
+
+      <div class="slds-modal" ng-class="{'slds-fade-in-open': meta.ModalAddObject}">
+        <div class="slds-modal__container">
+          <div class="slds-modal__header">
+            <h2 class="slds-text-heading--medium slds-grid slds-grid--vertical-align-center slds-grid--align-center">
+              <img class="slds-icon slds-icon--x-small slds-m-right--xx-small" ng-src="{!URLFOR($Resource.slds,'')}/assets/icons/utility/add_120.png" />
+              {!$label.ADD_OBJECT}
+            </h2>
+            <button class="slds-button slds-button--icon-inverse slds-modal__close" ng-click="meta.ModalAddObject = false;" ng-disabled="meta.addObjectLoading">
+              <img class="slds-button__icon slds-button__icon--large" src="{!URLFOR($Resource.slds,'')}/assets/icons/action/close_120.png" />
+              <span class="slds-assistive-text">{!$label.CLOSE}</span>
+            </button>
+          </div>
+          <div class="slds-modal__content">
+            <div class="slds-p-around--small">
+              <div role="status" class="slds-spinner slds-spinner_x-small slds-spinner_brand" ng-if="meta.addObjectListLoading">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+              </div>
+              <div class="slds-form-element slds-m-around--small" ng-if="!meta.addObjectListLoading">
+                <label class="slds-form-element__label" ng-if="meta.addObjectList.length > 0">
+                  <span ng-show="!meta.addObjectLoading">{!$label.SELECT_OBJECT}</span>
+                  <span ng-show="meta.addObjectLoading">{!$label.ADDING_OBJECT}...</span>
+                </label>
+                <span class="slds-m-around--small" ng-if="meta.addObjectList.length == 0">{!$Label.all_duplicate_check_licensed_objects_have_been_added}</span>
+                <div class="slds-form-element__control" ng-if="meta.addObjectList.length > 0">
+                  <div class="slds-select_container">
+                    <select class="slds-select" ng-model="meta.AddObjectPrefix" ng-disabled="meta.addObjectLoading" ng-init="meta.AddObjectPrefix = meta.addObjectList[0].Prefix">
+                      <option ng-repeat="option in meta.addObjectList" ng-value="option.Prefix" ng-bind="option.Label"></option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="slds-modal__footer">
+            <div class="slds-x-small-buttons--horizontal">
+              <button class="slds-button slds-button--neutral" ng-click="meta.ModalAddObject = false;" ng-disabled="meta.addObjectLoading">{!$Label.cancel}</button>
+              <button class="slds-button slds-button--neutral slds-button--brand" ng-click="addObject()" ng-if="meta.addObjectList.length > 0" ng-disabled="meta.addObjectLoading || meta.addObjectListLoading">{!$Label.add}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slds-backdrop" ng-class="{'slds-backdrop--open': meta.ModalAddObject}"></div>
+
+      <div class="slds-grid slds-wrap">
+        <!-- Navigation -->
+        <div class="slds-size_1-of-1 slds-m-horizontal_large slds-hide_medium slds-m-top_large">
+          <div class="slds-grid slds-wrap">
+            <div class="slds-select_container slds-size_10-of-12">
+              <select class="slds-select" ng-model="meta.selectPage" ng-change="selectPage()">
+                <option value="HOME">DC Home</option>
+                <apex:repeat value="{!allConfiguredObjects}" var="item">
+                  <option value="{!allConfiguredObjects[item].objectPrefix}">{!allConfiguredObjects[item].objectLabel}</option>
+                </apex:repeat>
+                <option value="DCSETTINGS">{!$label.SETTINGS}</option>
+                <option value="DCLICENSE">{!$label.LICENSE}</option>
+                <option value="DCAUDIT">{!$Label.AUDIT_LOGGING}</option>
+                <option value="DCFREQUENTWORDS">{!$Label.FREQUENT_WORDS}</option>
+                <option value="DCDISCARD">{!$Label.DISCARDED_ITEMS}</option>
+                <option value="DCSETUPCHECK">{!$Label.SETUP_CHECK}</option>
+              </select>
+            </div>
+
+            <div class="slds-size_2-of-12 slds-grid slds-grid_align-end">
+              <button class="slds-button slds-button_brand" >{!$label.ADD_OBJECT}</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="slds-size--1-of-1 slds-medium-size_2-of-12 slds-large-size_2-of-12 slds-show_medium dc-stretch-navigation" ng-style="meta.stretchNav && {'min-height': '100vh'}" style="background-color: #f4f6f9 !important">
+          <div class="dc-side-navigation slds-size_1-of-1" id="sideNav">
+            <nav class="slds-nav-vertical slds-m-top_large">
+              <div class="slds-nav-vertical__section slds-p-top_xx-small">
+                <ul>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!defaultPage == 'HOME'}}" ng-click="$root.openPage('PAGE', 'HOME')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'HOME'}}">DC Home</a>
+                  </li>
+                </ul>
+                <h2 class="slds-nav-vertical__title slds-text-title_caps slds-p-vertical_small">{!$label.OBJECT_SETUP}</h2>
+                <ul>
+                  <apex:repeat value="{!allConfiguredObjects}" var="item">
+                    <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': '{!allConfiguredObjects[item].objectPrefix}' == '{!objectPrefix}'}" ng-click="openPage('OBJECT', '{!allConfiguredObjects[item].objectPrefix}')">
+                      <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': '{!allConfiguredObjects[item].objectPrefix}' == '{!objectPrefix}'}">
+                        <span class="slds-truncate">{!allConfiguredObjects[item].objectLabel}</span>
+                      </a>
+                    </li>
+                  </apex:repeat>
+                  <li class="slds-nav-vertical__item" ng-click="openAddObjectModal()">
+                    <a class="slds-nav-vertical__action dc-no-underline slds-truncate">
+                      <span class="slds-icon_container slds-icon-utility-open_folder slds-line-height_reset">
+                        <svg class="slds-icon slds-icon-text-default slds-icon_x-small slds-m-right_x-small">
+                          <use xlink:href="{!URLFOR($Resource.slds,'')}/assets/icons/utility-sprite/svg/symbols.svg#add"></use>
+                        </svg>
+                      </span>
+                      {!$label.ADD_OBJECT}
+                    </a>
+                  </li>
+                </ul>
+              </div>
+              <div class="slds-nav-vertical__section" style="margin-bottom: 3rem">
+                <h2 class="slds-nav-vertical__title slds-text-title_caps slds-p-vertical--small">{!$label.GENERAL_SETUP}</h2>
+                <ul>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!pageUrl == 'DCSETTINGS'}}" ng-click="$root.openPage('PAGE', 'DCSETTINGS')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'DCSETTINGS'}}">
+                      <span class="slds-truncate">{!$label.SETTINGS}</span>
+                    </a>
+                  </li>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!pageUrl == 'DCLICENSE'}}" ng-click="$root.openPage('PAGE', 'DCLICENSE')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'DCLICENSE'}}">
+                      <span class="slds-truncate">{!$label.LICENSE}</span>
+                    </a>
+                  </li>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!pageUrl == 'DCANALYTICS'}}" ng-click="$root.openPage('PAGE', 'DCANALYTICS')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'DCANALYTICS'}}">
+                      <span class="slds-truncate">{!$label.ANALYTICS}</span>
+                    </a>
+                  </li>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!pageUrl == 'DCAUDIT'}}" ng-click="$root.openPage('PAGE', 'DCAUDIT')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'DCAUDIT'}}">
+                      <span class="slds-truncate">{!$label.AUDIT_LOGGING}</span>
+                    </a>
+                  </li>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!pageUrl == 'DCFREQUENTWORDS'}}" ng-click="$root.openPage('PAGE', 'DCFREQUENTWORDS')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'DCFREQUENTWORDS'}}">
+                      <span class="slds-truncate">{!$label.FREQUENT_WORDS}</span>
+                    </a>
+                  </li>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!pageUrl == 'DCDISCARD'}}" ng-click="$root.openPage(null, null, '{!URLFOR($Action.dcDiscard__c.List, $ObjectType.dcDiscard__c)}')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'DCDISCARD'}}">
+                      <span class="slds-truncate">{!$label.DISCARDED_ITEMS}</span>
+                    </a>
+                  </li>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!pageUrl == 'DCSETUPCHECK'}}" ng-click="$root.openPage('PAGE', 'DCSETUPCHECK')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'DCSETUPCHECK'}}">
+                      <span class="slds-truncate">{!$label.SETUP_CHECK}</span>
+                    </a>
+                  </li>
+                  <li class="slds-nav-vertical__item" ng-class="{'slds-is-active': {!pageUrl == 'DCEXPORTIMPORTCONFIG'}}" ng-click="$root.openPage('PAGE', 'DCEXPORTIMPORTCONFIG')">
+                    <a href="#" class="slds-nav-vertical__action dc-no-underline" ng-class="{'dc-nav-vertical_inverse': {!defaultPage == 'DCEXPORTIMPORTCONFIG'}}">
+                      <span class="slds-truncate">{!$label.EXPORT_IMPORT_CONFIG}</span>
+                    </a>
+                  </li>
+                </ul>
+              </div> 
+            </nav>
+          </div>
+        </div>
+
+        <div class="slds-size_1-of-1 slds-medium-size_10-of-12 slds-large-size_10-of-12 slds-m-vertical_large">
+          <div class="slds-m-horizontal_large" id="content">
+            <apex:outputPanel layout="none" rendered="{!defaultPage == 'OBJECT'}">
+              <plauti-tabset style="width: 100%" scoped="false" active-tab="MergeSetup">
+                <plauti-tab title="{!$Label.SCENARIOS}" name="scenario" template-url="ScenarioSetup"></plauti-tab>
+
+                <apex:outputPanel layout="none" rendered="{!AND(configObject.isRecordType,license.features.recordType)}">
+                  <plauti-tab title="{!$Label.RECORD_TYPES}" name="recordtypes" template-url="RecordTypeSetup"></plauti-tab>
+                </apex:outputPanel>
+
+                <plauti-tab title="{!configObject.objectLabel} {!$Label.SETTINGS}" name="setting" template-url="SettingSetup"></plauti-tab>
+
+                <plauti-tab title="{!$Label.RESULT_FIELDS}" name="resultfields" template-url="ResultFieldSetup"></plauti-tab>
+
+                <apex:outputPanel layout="none" rendered="{!OR(license.features.batchMerge,license.features.quickMerge,license.features.configuredMerge)}">
+                  <plauti-tab title="{!$Label.MERGE_RULES}" name="merge" template-url="MergeSetup"></plauti-tab>
+                </apex:outputPanel>
+
+                <apex:outputPanel layout="none" rendered="{!license.features.directProcessing}">
+                  <plauti-tab title="{!$Label.DIRECT}" name="direct" template-url="DirectSetup"></plauti-tab>
+                </apex:outputPanel>
+
+                <apex:outputPanel layout="none" rendered="{!license.features.crossObject}">
+                  <plauti-tab title="{!$Label.CROSS_OBJECT}" name="crossobject" template-url="CrossObjectSetup" show-tab="$root.endpoint.crossObjectEnabled"></plauti-tab>
+                </apex:outputPanel>
+
+                <apex:outputPanel layout="none" rendered="{!license.features.advancedMatching}">
+                  <plauti-tab title="{!$Label.INDEX_BATCH}" name="searchindex" template-url="SearchIndexSetup" show-tab="$root.endpoint.advancedMatchingEnabled"></plauti-tab>
+                </apex:outputPanel>
+
+                <apex:outputPanel layout="none" rendered="{!license.features.predefinedFilter}">
+                  <plauti-tab title="{!$Label.PREDEFINED_FILTERS}" name="predefinedfilters" template-url="PredefinedFilters"></plauti-tab>
+                </apex:outputPanel>
+              </plauti-tabset>
+            </apex:outputPanel>
+
+            <apex:outputPanel layout="none" rendered="{!pageUrl == 'HOME'}"><div ng-include="'HomeSetup'"></div></apex:outputPanel>
+            <apex:outputPanel layout="none" rendered="{!pageUrl == 'DCSETTINGS'}"><div ng-include="'dcSettings'"></div></apex:outputPanel>
+            <apex:outputPanel layout="none" rendered="{!pageUrl == 'DCLICENSE'}"><div ng-include="'dcLicense'"></div></apex:outputPanel>
+            <apex:outputPanel layout="none" rendered="{!pageUrl == 'DCANALYTICS'}"><div id="dc3AnalyticsPage"></div></apex:outputPanel>
+            <apex:outputPanel layout="none" rendered="{!pageUrl == 'DCAUDIT'}"><div ng-include="'dcAudit'"></div></apex:outputPanel>
+            <apex:outputPanel layout="none" rendered="{!pageUrl == 'DCFREQUENTWORDS'}"><div ng-include="'dcFrequentWords'"></div></apex:outputPanel>
+            <apex:outputPanel layout="none" rendered="{!pageUrl == 'DCSETUPCHECK'}"><div ng-include="'dcSetupCheck'"></div></apex:outputPanel>
+            <apex:outputPanel layout="none" rendered="{!pageUrl == 'DCEXPORTIMPORTCONFIG'}"><div ng-include="'dcExportImportConfig'"></div></apex:outputPanel>
+
+            <div rendered="{!isObject}">
+              <div id="mergeRulesContainer" class="slds-hide">
+                <div role="status" id="mergeRulesV2Spinner" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                  <div class="slds-spinner__dot-a"></div>
+                  <div class="slds-spinner__dot-b"></div>
+                </div>
+
+                <div id="dc3MergeRulesv2lwc"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</apex:page>
