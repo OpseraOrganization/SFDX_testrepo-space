@@ -1,11 +1,11 @@
 public class TemperatureConverter {
-    // Takes a Fahrenheit  temperature and returns the Celsius (C) equivalent.
+    // Takes a Fahrenheit temperature and returns the Celsius equivalent.
     public static Decimal FahrenheitToCelsius(Decimal fh) {
-        Decimal cs = (fh - 31) * 5/9;
+        Decimal cs = (fh - 32) * 5/9;
         return cs.setScale(2);
         
     }
-    // Takes Celsius (C) temperature and returns the Fahrenheit (F) equivalent.
+    // Takes Celsius temperature and returns the Fahrenheit equivalent.
     public static Decimal CelsiusToFahrenheit(Decimal cs1){
          
         Decimal fh1 = (cs1* 9/5)+ 32;
@@ -19,8 +19,9 @@ public class TemperatureConverter {
         //Adding new line to check timestamp based filter
         
     }
-    public static Decimal MeterToCenti(Decimal mtr){
+	 public static Decimal MeterToCenti(Decimal mtr){
         Decimal cm = mtr*100;
         return cm.setScale(2);
     }
+//making changes on 8thFeb
 }
