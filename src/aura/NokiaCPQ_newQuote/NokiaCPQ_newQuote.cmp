@@ -1,0 +1,1087 @@
+<!--
+  @description       : 
+  @author            : Yashdeep Prajapati
+  @group             : 
+  @last modified on  : 10-20-2021
+  @last modified by  : Yashdeep Prajapati
+-->
+<aura:component
+    implements="force:appHostable,force:lightningQuickActionWithoutHeader,lightning:actionOverride,force:hasRecordId,lightning:isUrlAddressable"
+    controller="NokiaCPQ_newQuoteControllerclass">
+    <aura:registerEvent name="ToastEvent" type="c:ToastEvent" />
+    <ltng:require styles="{!$Resource.NokiaCPQ_ModalWidthCSS}" />
+    <!--use boolean attribute for Store true/false value,
+    make default to "false" so modal box are not display on the load of component. 
+    -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!--<aura:attribute name="returnQuote" type="Apttus_Proposal__Proposal__c" />-->
+
+    <aura:attribute name="IsAvailable" type="boolean" default="true" />
+    <aura:attribute name="hide" type="Boolean" default="false" />
+
+    <aura:attribute name="hideQWMChekbox" type="Boolean" default="True" />
+
+    <aura:attribute name="recordTypeSelection" type="Boolean" default="true" />
+    <aura:attribute name="newQuote" type="Boolean" default="false" />
+    <aura:attribute name="newQTCquoteCPQ" type="Boolean" default="false" />
+    <aura:attribute name="newQTCquoteSurrountPT" type="Boolean" default="false" />
+    <aura:attribute name="newQTCquoteCQ" type="Boolean" default="false" />
+
+    <aura:attribute name="quoteRecordType" type="string" default="" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="OwnerId" type="String" />
+    <aura:attribute name="accLeagalEnittyId" type="String" />
+    <aura:attribute name="qLead" type="String" />
+
+    <aura:attribute name="currentUser" type="String" />
+
+    <aura:attribute name="errorMessage" type="String" default="" />
+    <aura:attribute name="showError" type="Boolean" default="false" />
+
+    <aura:attribute name="baseUrl" type="string" default="" />
+
+    <!-- create 2 aura handler with waiting and donewaiting events-->
+    <!-- <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/> -->
+    <!--create a component attributs -->
+    <aura:attribute name="Spinner" type="boolean" default="false" />
+    <!-- <aura:attribute name = "portfolioList" 
+                    type="List" 
+                    default="[ 'Fixed Network', 'QTC', 'Nokia Software','Optics-Wavelite', 'Global Services','IP Routing','Optics','Nuage','Airscale Wifi', 'Modular Private Wireless Solution']"/> -->
+    <aura:attribute name="portfolioList" type="String[]"
+        default="[ 'Fixed Network', 'QTC', 'Nokia Software','Optics-Wavelite', 'Global Services']" />
+
+
+    <aura:attribute name="pricingPoolList" type="List" />
+    <aura:attribute name="pricingPoolVal" type="String" default="" />
+    <aura:attribute name="priceConList" type="List" />
+    <aura:attribute name="priceConVal" type="String" default="" />
+    <aura:attribute name="priceConCodeVal" type="String" default="" />
+    <aura:attribute name="hasCPQLicense" type="Boolean" default="false" />
+    <aura:attribute name="processCompleted" type="Boolean" default="false" />
+    <aura:attribute name="recordTypeId" type="String" default="" />
+
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative"  role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.processCompleted}">
+        <aura:if isTrue="{!v.hasCPQLicense}">
+            <!--Use "slds-m-around_xx-large" class to add standard X-Large padding to the component-->
+            
+
+                <lightning:card title="">
+
+                    <!-- Loading spinner end-->
+
+                    <!--<div class="slds-grid slds-gutters">
+                        <div class="slds-col slds-size_4-of-12"></div>
+                        <div class="slds-col slds-size_4-of-12 slds-p-left_xx-large">
+                            <span style="font-size:24px;">New Quote/Proposal</span>
+                        </div>
+                        <div class="slds-col slds-size_4-of-12"></div>
+                    </div>-->
+                    <div class="headingClass">
+                        <div class="modal-header slds-modal__header slds-size_1-of-1"> 
+                            <div class="title slds-text-heading--medium">
+                                     <div >New Quote/Proposal</div>
+                         </div>
+                    </div>
+                </div>
+                    <hr class="solid" />
+                    <aura:if isTrue="{!v.showError}">
+                            <ui:message title="Error" severity="error" closable="true">
+                                {!v.errorMessage}
+                            </ui:message>
+                            <br></br>
+                        </aura:if>
+
+                    <p class="slds-p-horizontal_small">
+                    <div class="slds-grid slds-gutters" style="margin-top:10px;">
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <aura:if isTrue="{!v.recordTypeSelection}">
+                                <div style="margin-top:5px;">
+
+                                    <div class="slds-grid slds-gutters">
+                                        <div class="slds-col slds-size_3-of-12"></div>
+                                        <div class="slds-col slds-size_6-of-12 slds-p-left_xx-large">
+                                            <fieldset class="slds-form-element">
+                                                <legend class="slds-form-element__legend slds-form-element__label"
+                                                    style="font-size:14px;">Select a Record type :</legend><br />
+                                                <div class="slds-form-element__control">
+                                                    <span class="slds-radio">
+                                                        <input type="radio" id="radio-1" value="radio-1" name="default"
+                                                            checked="" onchange="{!c.enableNewQuote}" />
+                                                        <label class="slds-radio__label" for="radio-1">
+                                                            <span class="slds-radio_faux"></span>
+                                                            <span class="slds-form-element__label">New Quote</span>
+                                                        </label>
+                                                    </span><br></br>
+                                                    <!--
+                                                        <span class="slds-radio">
+                                                            <input type="radio"  id="radio-2" value="radio-2" name="default" checked="" onchange="{!c.enableNewQuotecpq}" />
+                                                            <label class="slds-radio__label" for="radio-2">
+                                                                <span class="slds-radio_faux"></span>
+                                                                <span class="slds-form-element__label">New QTC Quote - CPQ</span>
+                                                            </label>
+                                                        </span><br/>
+                                                        -->
+                                                    <span class="slds-radio">
+                                                        <input type="radio" id="radio-3" value="radio-3" name="default"
+                                                            checked="" onchange="{!c.enableNewQuoteCQ}" />
+                                                        <label class="slds-radio__label" for="radio-3">
+                                                            <span class="slds-radio_faux"></span>
+                                                            <span class="slds-form-element__label">New QTC Quote -
+                                                                CQ</span>
+                                                        </label>
+                                                    </span><br />
+                                                    <span class="slds-radio">
+                                                        <input type="radio" id="radio-4" value="radio-4" name="default"
+                                                            checked="" onchange="{!c.enableNewQuotesurroundPT}" />
+                                                        <label class="slds-radio__label" for="radio-4">
+                                                            <span class="slds-radio_faux"></span>
+                                                            <span class="slds-form-element__label">New QTC Quote -
+                                                                Surround/PT</span>
+                                                        </label>
+                                                    </span>
+
+                                                </div>
+                                            </fieldset>
+                                        </div>
+                                        <div class="slds-col slds-size_3-of-12"></div>
+
+                                    </div>
+
+                                </div>
+                            </aura:if>
+                            <!--loading spinner start-->
+                            <div class="exampleHolder">
+                                <lightning:spinner aura:id="mySpinner" class="slds-hide" />
+                            </div>
+                            <!-- Loading spinner end-->
+
+                            <!-- New Quote Record Creation Start -->
+                            <aura:if isTrue="{!v.newQuote}">
+                                <div style="height: 280px">
+
+                                    <lightning:recordEditForm aura:id="createNewQuoteform"
+                                        objectApiName="Apttus_Proposal__Proposal__c" recordTypeId="{!v.recordTypeId}"
+                                        onsubmit="{!c.submitRecord}" onload="{!c.doInit}" density="Comfy">
+                                        <lightning:messages />
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Name</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField required="true" aura:id="qName"
+                                                                fieldName="Apttus_Proposal__Proposal_Name__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Description</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qDescription"
+                                                                fieldName="Apttus_Proposal__Description__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Portfolio</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField required="true" aura:id="qPortfolio"
+                                                                fieldName="NokiaCPQ_Portfolio__c"
+                                                                onchange="{!c.disableQWMCheckboxField}"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <aura:if isTrue="{!v.hideQWMChekbox}">
+                                                <div class="slds-col slds-size_6-of-12">
+                                                    <span>Quote With Maintenance/SSP/SRS</span>
+                                                    <div class="slds-grid slds-gutters">
+
+                                                        <div class="slds-col slds-size_10-of-12">
+                                                            <div>
+                                                                <lightning:InputField aura:id="QWMcheckbox"
+                                                                    fieldName="NokiaCPQ_Quote_With_Maintenance_SSP_SRS__c"
+                                                                    variant="label-hidden" onchange="{!c.disableFields}"
+                                                                    default="false" />
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                        <aura:if isTrue="{!v.hide}">
+                                            <div
+                                                class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                                <div class="slds-col slds-size_6-of-12">
+                                                    <span>Maintenance Type</span>
+                                                    <div class="slds-grid slds-gutters">
+                                                        <div class="slds-col slds-size_10-of-12">
+                                                            <div>
+                                                                <lightning:InputField aura:id="qMaintenanceType"
+                                                                    fieldName="NokiaCPQ_Maintenance_Type__c"
+                                                                    variant="label-hidden" default="" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="slds-col slds-size_6-of-12">
+                                                    <span>Existing Maintenance Contract?</span>
+                                                    <div class="slds-grid slds-gutters">
+                                                        <div class="slds-col slds-size_10-of-12">
+                                                            <div>
+                                                                <lightning:InputField
+                                                                    aura:id="qExistingMaintenanceContract"
+                                                                    fieldName="NokiaCPQ_Existing_IONMaint_Contract__c"
+                                                                    disabled="{!Quote_Without_Maintenance__c == True}"
+                                                                    default="" variant="label-hidden" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-grid slds-gutters slds-p-top_small slds-p-left_large ">
+                                                <div class="slds-col slds-size_6-of-12">
+                                                    <span>No. of Years for Maintenance</span>
+                                                    <div class="slds-grid slds-gutters">
+
+                                                        <div class="slds-col slds-size_10-of-12">
+                                                            <div>
+                                                                <lightning:InputField aura:id="qNbrYear"
+                                                                    fieldName="NokiaCPQ_No_of_Years__c"
+                                                                    variant="label-hidden" default="" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="slds-col slds-size_6-of-12"></div>
+                                            </div>
+                                            <div class="slds-grid slds-gutters slds-p-top_small slds-p-left_large ">
+                                                <div class="slds-col slds-size_10-of-12"></div>
+                                                <div class="slds-col slds-size_2-of-12">
+
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                    </lightning:recordEditForm>
+
+                                </div>
+                                <hr class="solid">
+                                </hr>
+                                <footer>
+                                    <div class="modal-footer slds-modal__footer slds-size_1-of-1">
+                                        <div class="forceChangeRecordTypeFooter">
+            
+                                            <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                            onclick="{! c.closeModel }" />
+                                        <lightning:button variant="brand" type="button" label="Save" title="Save"
+                                            onclick="{! c.submitRecord }" />
+            
+            
+                                        </div>
+                                    </div>
+                                </footer>
+                             
+                            </aura:if>
+                            <!-- New Quote Creation End -->
+
+                            <!-- New QTC Quote - CPQ creation Start -->
+                            <aura:if isTrue="{!v.newQTCquoteCPQ}">
+                                <div >
+
+                                    <lightning:recordEditForm aura:id="createNewQTCquoteCPQform"
+                                        objectApiName="Apttus_Proposal__Proposal__c" onload="{!c.doInit}"
+                                        density="Comfy">
+                                        <lightning:messages />
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Name</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField required="true"
+                                                                aura:id="qtcQuoteCpqName"
+                                                                fieldName="Apttus_Proposal__Proposal_Name__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Due Date</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField required="true"
+                                                                aura:id="qtcQuoteCpqDueDate" fieldName="CQ_Due_Date__c"
+                                                                requaired="true" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Description</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqDescription"
+                                                                fieldName="Apttus_Proposal__Description__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Notes</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqNotes"
+                                                                fieldName="CQ_Notes__c" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Master Quote</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqMQ"
+                                                                fieldName="CQ_Master_Quote__c" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Master Quote Quantity</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqMQquantity"
+                                                                fieldName="CQ_Master_Quote_Quantity__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Account Legal Entity</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqALE"
+                                                                fieldName="Account_Legal_Entity__c"
+                                                                value="{!v.accLeagalEnittyId}" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Code</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqCPC"
+                                                                fieldName="CQ_Customer_Project_Code__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Organization Segment</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqCOS"
+                                                                fieldName="CQ_Customer_Organization_Segment__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Request Number</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqCRN"
+                                                                fieldName="CQ_Customer_Request_Number__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Sales Lead</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqSL"
+                                                                fieldName="CQ_Sales_Lead__c" value="{!v.OwnerId}"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Site City</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqCPSC"
+                                                                fieldName="CQ_Customer_Project_Site_City__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Lead</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqQL"
+                                                                fieldName="CQ_Lead__c" value="{!v.currentUser}"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Site State</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCpqCPSS"
+                                                                fieldName="CQ_Customer_Project_Site_State__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </lightning:recordEditForm>
+
+                                </div>
+                                <hr class="solid">
+                                </hr>
+                                <footer>
+                                    <div class="modal-footer slds-modal__footer slds-size_1-of-1">
+                                        <div class="forceChangeRecordTypeFooter">
+            
+                                            <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                            onclick="{! c.closeModel }" />
+                                        <lightning:button variant="brand" type="button" label="Save" title="Save"
+                                            onclick="{! c.submitRecord }" />
+            
+            
+                                        </div>
+                                    </div>
+                                </footer>
+                            </aura:if>
+                            <!-- New QTC Quote - CPQ creation End -->
+
+                            <!-- New QTC Quote - Surrount/PT creation Start -->
+                            <aura:if isTrue="{!v.newQTCquoteSurrountPT}">
+                                <div >
+
+                                    <lightning:recordEditForm aura:id="newQTCquoteSurrountPTform"
+                                        objectApiName="Apttus_Proposal__Proposal__c" onload="{!c.doInit}"
+                                        density="Comfy">
+                                        <lightning:messages />
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Name</span> <span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptQuoteCpqName"
+                                                                fieldName="Apttus_Proposal__Proposal_Name__c"
+                                                                required="true" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Due Date</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptDueDate"
+                                                                fieldName="CQ_Due_Date__c" required="true"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Opportunity</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptOpp"
+                                                                fieldName="Apttus_Proposal__Opportunity__c"
+                                                                disabled="true" value="{!v.recordId}"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Value</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptQuotVal"
+                                                                fieldName="CQ_Value__c" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Description</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptDescription"
+                                                                fieldName="Apttus_Proposal__Description__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Notes</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptNotes"
+                                                                fieldName="CQ_Notes__c" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Master Quote</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptMasterQuote"
+                                                                fieldName="CQ_Master_Quote__c" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Master Quote Quantity</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptMQquantity"
+                                                                fieldName="CQ_Master_Quote_Quantity__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Account Legal Entity</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptAccLegEntity"
+                                                                fieldName="Account_Legal_Entity__c"
+                                                                value="{!v.accLeagalEnittyId}" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Code</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptCustProCode"
+                                                                fieldName="CQ_Customer_Project_Code__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Organization Segment</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptCustOrgSeg"
+                                                                fieldName="CQ_Customer_Organization_Segment__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Request Number</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptCustReqNum"
+                                                                fieldName="CQ_Customer_Request_Number__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Sales Lead</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptSalesLead"
+                                                                fieldName="CQ_Sales_Lead__c" value="{!v.OwnerId}"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Site City</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptCustProSC"
+                                                                fieldName="CQ_Customer_Project_Site_City__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Lead</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptQuoteLead"
+                                                                fieldName="CQ_Lead__c" value="{!v.currentUser}"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Site State</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptCustProSS"
+                                                                fieldName="CQ_Customer_Project_Site_State__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Services Components</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="sptServComp"
+                                                                fieldName="CQ_Servies_components__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </lightning:recordEditForm>
+
+                                </div>
+                                <hr class="solid">
+                                </hr>
+                                <footer>
+                                    <div class="modal-footer slds-modal__footer slds-size_1-of-1">
+                                        <div class="forceChangeRecordTypeFooter">
+            
+                                            <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                            onclick="{! c.closeModel }" />
+                                        <lightning:button variant="brand" type="button" label="Save" title="Save"
+                                            onclick="{! c.submitRecord }" />
+            
+            
+                                        </div>
+                                    </div>
+                                </footer>
+                            </aura:if>
+                            <!-- New QTC Quote - Surrount/PT creation End -->
+
+                            <!-- New QTC Quote - CQ creation Start -->
+                            <aura:if isTrue="{!v.newQTCquoteCQ}">
+                                <div >
+
+                                    <lightning:recordEditForm aura:id="createNewQTCquoteCQform"
+                                        objectApiName="Apttus_Proposal__Proposal__c" onload="{!c.doInit}"
+                                        density="Comfy">
+                                        <lightning:messages />
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Name</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField required="true"
+                                                                aura:id="qtcQuoteCqName"
+                                                                fieldName="Apttus_Proposal__Proposal_Name__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Due Date</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField required="true"
+                                                                aura:id="qtcQuoteCqDueDate" fieldName="CQ_Due_Date__c"
+                                                                requaired="true" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Description</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqDescription"
+                                                                fieldName="Apttus_Proposal__Description__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Notes</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqNotes"
+                                                                fieldName="CQ_Notes__c" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Master Quote</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqMQ"
+                                                                fieldName="CQ_Master_Quote__c" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Master Quote Quantity</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqMQquantity"
+                                                                fieldName="CQ_Master_Quote_Quantity__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Account Legal Entity</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqALE"
+                                                                fieldName="Account_Legal_Entity__c"
+                                                                value="{!v.accLeagalEnittyId}" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Code</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqCPC"
+                                                                fieldName="CQ_Customer_Project_Code__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Organization Segment</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqCOS"
+                                                                fieldName="CQ_Customer_Organization_Segment__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Request Number</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqCRN"
+                                                                fieldName="CQ_Customer_Request_Number__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Sales Lead</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqSL"
+                                                                fieldName="CQ_Sales_Lead__c" value="{!v.OwnerId}"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Site City</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqCPSC"
+                                                                fieldName="CQ_Customer_Project_Site_City__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Quote Lead</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqQL"
+                                                                fieldName="CQ_Lead__c" value="{!v.currentUser}"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Customer Project Site State</span>
+                                                <div class="slds-grid slds-gutters">
+
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <div>
+                                                            <lightning:InputField aura:id="qtcQuoteCqCPSS"
+                                                                fieldName="CQ_Customer_Project_Site_State__c"
+                                                                variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            class="slds-grid slds-gutters slds-p-top_small slds-p-left_large slds-p-right_large">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Pricing Pool</span><span style="color:red;">*</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <lightning:select aura:id="pricingPool"
+                                                            value="{!v.pricingPoolVal}"
+                                                            onchange="{!c.handlePricingPool}" variant="label-hidden">
+                                                            <option value="">None</option>
+                                                            <aura:iteration items="{!v.pricingPoolList}" var="rec">
+                                                                <option text="{!rec.CPQ_Pricing_Pool_Name__c}"
+                                                                    value="{! rec.CPQ_Pricing_Pool_Name__c+'---'+rec.Id}" />
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                        <div class="slds-hide">
+                                                            <lightning:InputField aura:id="qtcQuoteCqPPool"
+                                                                fieldName="CPQ_Pricing_Pool__c"
+                                                                value="{!v.pricingPoolVal}" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <span>Contractual Price Condition</span>
+                                                <div class="slds-grid slds-gutters">
+                                                    <div class="slds-col slds-size_10-of-12">
+                                                        <lightning:select aura:id="priceCon" value="{!v.priceConVal}"
+                                                            onchange="{!c.handlePriceCondition}" variant="label-hidden">
+                                                            <option value="">None</option>
+                                                            <aura:iteration items="{!v.priceConList}" var="rec">
+                                                                <option text="{!rec.CPQ_Description__c}"
+                                                                    value="{! rec.CPQ_Description__c+'---'+rec.CPQ_Code__c}" />
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                        <div class="slds-hide">
+                                                            <lightning:InputField aura:id="qtcQuoteCqCPCon"
+                                                                fieldName="CPQ_Contractual_Price_Condition__c"
+                                                                value="{!v.priceConVal}" variant="label-hidden" />
+                                                        </div>
+                                                        <div class="slds-hide">
+                                                            <lightning:InputField aura:id="qtcQuoteCqCPConC"
+                                                                fieldName="CPQ_Contractual_Price_Condition_Code__c"
+                                                                value="{!v.priceConCodeVal}" variant="label-hidden" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </lightning:recordEditForm>
+
+                                </div>
+                                <hr class="solid">
+                                </hr>
+                                <footer>
+                                    <div class="modal-footer slds-modal__footer slds-size_1-of-1">
+                                        <div class="forceChangeRecordTypeFooter">
+            
+                                            <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                            onclick="{! c.closeModel }" />
+                                        <lightning:button variant="brand" type="button" label="Save" title="Save"
+                                            onclick="{! c.submitRecord }" />
+            
+            
+                                        </div>
+                                    </div>
+                                </footer>
+                            </aura:if>
+                            <!-- New QTC Quote - CQ creation End -->
+                        </div>
+                    </div>
+
+                    </p>
+                </lightning:card>
+            
+            <aura:set attribute="else">
+                <div class="slds-notify slds-notify_alert" role="alert">
+                    <span class="slds-assistive-text">info</span>
+                    <h6 style="font-size: large">You do not have CPQ License to create quote. Please check with your
+                        Line Manager.
+                    </h6>
+                </div>
+            </aura:set>
+        </aura:if>
+    </aura:if>
+</aura:component>
