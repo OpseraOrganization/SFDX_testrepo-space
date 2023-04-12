@@ -1,0 +1,223 @@
+<aura:component controller="CH_CA_WorkGroup_Rule_Controller" implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride,lightning:isUrlAddressable" access="global" >
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <c:CH_CA_MS_ConfirmationMessagebox aura:id="messageBox" />
+    <aura:attribute name="recordId" type="string" description="Id of CH_Workgroup_Member__c" />
+    <!-- Attributes to show EDIT or READ access-->
+    
+    <aura:attribute name="Name" type="string"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <!-- <aura:handler name="change" value="{!v.pageReference}" action="{!c.init}"/>-->
+    <aura:attribute name="wgRule" type="CH_Workgroup_Rule__c"/>
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="refresh" type="boolean" default="false" description="Needed to load the dependent picklists"/>
+    <aura:attribute name="selectedValue" type="String" />
+    <aura:attribute name="disabledContracType" type="Boolean" default="false" />
+    <!-- Start Changes for 27494 -->
+    <!-- Attributes to show EDIT or READ access-->
+    <aura:attribute name="edit" type="boolean"  />
+    <aura:attribute name="recordTypeId" type="string" />
+    <aura:attribute name="isClone" type="boolean"  /> 
+    <aura:attribute name="showCloneButton" type="boolean"  /> 
+    <aura:attribute name="isCloned" type="boolean"  /> 
+    <aura:attribute name="cloneRecordId" type="String"  />  
+    
+    <!-- End Changes for 27494 -->
+    <aura:if isTrue="{!v.edit}">
+        <lightning:card>
+            <div class="slds-card__header">
+                <lightning:recordEditForm recordId="{!v.recordId}"
+                                          aura:id="workgroupEditForm" 
+                                          objectApiName="CH_Workgroup_Rule__c"
+                                          onsuccess="{!c.saveCompleted}"
+                                          recordTypeId="{!v.recordTypeId}"
+                                          onload="{!c.loadedRule}"
+                                          onsubmit="{!c.submit}" >
+                    
+                    
+                    <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true" activeSectionName="rule">
+                        <lightning:accordionSection name="rule" label="Rule">
+                            <lightning:layout>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="Name" aura:id="name"/>
+                                    <lightning:inputField fieldName="CH_Workgroup__c" aura:id="workgroup" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="CH_OrderNumber__c" aura:id="orderNumber"/>
+                                    <lightning:inputField fieldName="CH_Active__c" aura:id="active"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:accordionSection>
+                        <lightning:accordionSection name="general" label="General Information">
+                            <lightning:layout>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField aura:id="serviceType" fieldName="CH_ServiceType__c"  />
+                                    <div class="slds-hide">
+                                        <lightning:inputField disabled="{v.disabledContracType}" aura:id="contractType" fieldName="CH_Contract_Type__c" />
+                                    </div>
+                                    <aura:if isTrue="{!v.refresh}">
+                                        <lightning:select  disabled="{!v.disabledContracType}" name="mySelect" label="Contract Type" aura:id="mySelect" value="{!v.selectedValue}" onchange="{!c.typeChanged}">
+                                            <aura:iteration items="{!v.options}" var="item">
+                                                <option text="{!item}" value="{!item}" />
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </aura:if>
+                                    <lightning:inputField fieldName="CH_Workgroup_Type__c" aura:id="workGroupType"/>
+									<span id="workgrouptypeId" style="color: rgb(194, 57, 52);"></span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="CH_Severity__c" aura:id="severity"/>
+                                    <lightning:inputField fieldName="CH_Outage__c" aura:id="outage"/>
+                                    <lightning:inputField fieldName="CH_LevelOfSupport__c" aura:id="levelOfSupport"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:accordionSection>
+                        <lightning:accordionSection name="account" label="Account and Entitlement">
+                            <lightning:layout>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="CH_Customer_Group__c" aura:id="customerGroup"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="CH_Account__c" aura:id="account"/>
+                                    <lightning:inputField fieldName="CH_ServiceContract__c" aura:id="serviceContract"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="CH_Region1__c" aura:id="region"/>
+                                    <lightning:inputField fieldName="CH_Country1__c" aura:id="country"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:accordionSection>
+                        <lightning:accordionSection name="product" label="Product Details">
+                            <lightning:layout>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="CH_Product_Group__c" aura:id="productGroup"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <lightning:layout>                            
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="CH_Product__c" aura:id="product"/>
+                                    <lightning:inputField fieldName="CH_Solution__c" aura:id="solution"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small">
+                                    <lightning:inputField fieldName="CH_ProductRelease__c" aura:id="productRelease"/>
+                                    <lightning:inputField fieldName="CH_ProductVariant__c" aura:id="productVariant"/>
+                                    <lightning:inputField fieldName="CH_Product_Module__c" aura:id="productModule"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:accordionSection>
+                    </lightning:accordion>
+                    <!-- the messages component is for error messages -->
+                    <lightning:messages aura:id="OppMessage"/>
+                    <!-- Display buttons -->
+                    <lightning:layoutItem >
+                        <lightning:button label="Save" 
+                                          aura:id="saveWorkgroupMemberButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          type="submit" />
+                        <lightning:button label="Cancel" 
+                                          aura:id="cancelButton"
+                                          class="slds-m-top--medium slds-m-bottom--medium"
+                                          variant="brand"
+                                          onclick="{!c.cancel}" />
+                        <!-- Changes added for 30061 -->
+                        <aura:if isTrue="{!v.showCloneButton}"> 
+                            <lightning:button label="Clone" 
+                                              aura:id="cloneButton"
+                                              class="slds-m-top--medium slds-m-bottom--medium"
+                                              variant="brand"
+                                              onclick="{!c.openAssignment}" />
+                        </aura:if>
+                        <!-- End Changes for 30061 -->
+                    </lightning:layoutItem> 
+                </lightning:recordEditForm>
+            </div>
+        </lightning:card>
+    </aura:if>
+    <aura:if isTrue="{!!v.edit}">
+        <lightning:card>
+            <div class="slds-card__header">
+                <lightning:recordViewForm recordId="{!v.recordId}"
+                                          aura:id="workgroupRuleForm" 
+                                          objectApiName="CH_Workgroup_Rule__c"
+                                          >
+                    <!-- the messages component is for error messages -->
+                    <lightning:messages />
+                    
+                    <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true" activeSectionName="rule">
+                        <lightning:accordionSection name="rule" label="Rule">
+                            <lightning:layout>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="Name" />
+                                    <lightning:outputfield fieldName="CH_Workgroup__c" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="CH_OrderNumber__c" />
+                                    <lightning:outputfield fieldName="CH_Active__c" />
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:accordionSection>
+                        <lightning:accordionSection name="general" label="General Information">
+                            <lightning:layout>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield  fieldName="CH_ServiceType__c" />
+                                    <lightning:outputfield  fieldName="CH_Contract_Type__c" />
+                                    <lightning:outputfield fieldName="CH_Workgroup_Type__c" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem  size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="CH_Severity__c" />
+                                    <lightning:outputfield fieldName="CH_Outage__c" />
+                                    <lightning:outputfield fieldName="CH_LevelOfSupport__c" />
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:accordionSection>
+                        <lightning:accordionSection name="account" label="Account and Entitlement">
+                            <lightning:layout>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="CH_Customer_Group__c" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="CH_Account__c" />
+                                    <lightning:outputfield fieldName="CH_ServiceContract__c" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="CH_Region1__c" />
+                                    <lightning:outputfield fieldName="CH_Country1__c" />
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:accordionSection>
+                        <lightning:accordionSection name="product" label="Product Details">
+                            <lightning:layout>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="CH_Product_Group__c" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <lightning:layout>                            
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="CH_Product__c" />
+                                    <lightning:outputfield fieldName="CH_Solution__c" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:outputfield fieldName="CH_ProductRelease__c" />
+                                    <lightning:outputfield fieldName="CH_ProductVariant__c" />
+                                    <lightning:outputfield fieldName="CH_Product_Module__c" />
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:accordionSection>
+                    </lightning:accordion>
+                </lightning:recordViewForm>
+            </div>
+        </lightning:card>
+    </aura:if>
+</aura:component>
