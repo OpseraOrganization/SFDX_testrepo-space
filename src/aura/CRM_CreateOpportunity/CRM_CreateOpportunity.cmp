@@ -1,0 +1,232 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickActionWithoutHeader" access="global" controller="CRM_CreateOpportunityApexCtlr">
+    <aura:attribute name="accountId" type="Id"/>
+    <aura:attribute name="oppTypes" type="List" default="[{'label': 'DIRECT TYPES:', 'value': 'title1'},
+                                                         {'label': 'Direct Standard', 'value': 'Direct Standard'},
+                                                         {'label': 'Direct Fast Track (contracted)\n\tPricing, T&#38;C and scope match signed contract (frame)', 'value': 'Direct Fast Track (under Frame Contract)'},
+                                                         {'label': 'INDIRECT TYPES (ie. End Customer Information is required):', 'value': 'title2'},
+                                                         {'label': 'Indirect Standard', 'value': 'Indirect Standard'},
+                                                         {'label': 'Indirect Fast Track (contracted)\n\tPricing, T&#38;C and scope match signed contract (frame)', 'value': 'Indirect Fast Track (under Frame Contract)'}]"/>
+    <aura:attribute name="oppTypeSelected" type="String" default="Direct Standard"/>
+    <aura:attribute name="masterOppId" type="Id"/>
+    <aura:attribute name="fastTrackOpp" type="Object"/>
+    <aura:attribute name="ftOppId" type="Id"/>
+    <aura:attribute name="accMarket" type="String"/>
+    <aura:attribute name="checkCounter" type="Integer" default="0"/>
+    
+    
+    <aura:attribute name="oifLine" type="Object" />
+    <aura:attribute name="oifLineList" type="Object"/>
+    <aura:attribute name="fastTrackOppId" type="Id"/>    
+    <aura:attribute name="navStep" type="Integer" default="1"/>
+    <aura:attribute name="loading" type="Boolean" default="false"/>  
+    <aura:attribute name="cmpToRedirect" type="String" default=""/> 
+    <aura:attribute name="oppTypeValue" type="String" default="Fast Track Opportunity"/>   
+    <aura:attribute name="errorMsg" type="String" default=""/> 
+    
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <aura:html tag="style">
+        .cuf-content {
+        padding: 0 0rem !important;
+        }
+        
+        .slds-p-around--medium {
+        padding: 0rem !important;
+        }   
+        
+        .slds-modal__content{
+        height:unset !important;
+        max-height:unset !important;
+        min-height: 200px !important;
+        }
+        
+        .slds-modal__container {
+        width: 50% !important;
+        max-width: 50% !important;
+        }
+        
+        .slds-form_compound {
+        width: 100%;
+        padding: 30px;
+        }
+        .slds-modal__close  {
+        	display:none;
+        }
+    </aura:html>
+   
+   
+    <aura:if isTrue="{!v.cmpToRedirect == ''}">
+        <div class="main-container">
+            <div class="modal-header slds-modal__header" role="banner">
+                <h2 class="title slds-text-heading--medium"> Create Opportunity</h2>
+            </div>
+            <div class="modal-body scrollable slds-modal__content slds-p-around--medium inner-div" >
+                <div class="slds-form slds-form_compound" style="overflow: auto;height: calc(100vh - 300px); max-height: calc(100vh - 300px); min-height: 200px" id="scrollable_div">
+                    <!-- error banner -->
+                    <aura:if isTrue="{!v.errorMsg != ''}">
+                        <div class="slds-notify_error slds-p-bottom_small" id="slds-notify_error">
+                            <div class="slds-notify slds-notify--alert slds-theme--error slds-theme--alert-texture" role="alert">
+                                <span class="slds-size_1-of-1">{!v.errorMsg}</span>
+                            </div>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.navStep == 1}">
+                        <aura:html tag="style">
+                            .slds-form {
+                            height:unset!important;
+                            }
+                        </aura:html> 
+                        <h3 class="changeRecordTypeLeftColumn form-element__legend slds-form-element__label">Select an Opportunity Type</h3>
+                        <lightning:radioGroup name="radioGroup"
+                                              label=""
+                                              options="{! v.oppTypes }"
+                                              value="{! v.oppTypeSelected }"
+                                              type="radio"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.navStep == 2}">
+                        <aura:html tag="style">
+                            .slds-form {
+                            height:unset!important;
+                            }
+                        </aura:html> 
+                        <div style="  display: block;  position: absolute;  width:  calc(100% - 60px); "> 
+                        	<label class="slds-form-element__label">Reference Opportunity (Master)</label>
+                        	<c:CRM_CustomLookup objectName="Opportunity" fieldName="Name,Opportunity_ID__c" iconName="standard:opportunity" placeholder="Enter Value" value="{!v.masterOppId}" globalFilter="G4_Approval_Date__c != null AND LOA_Level__c != null AND StageName NOT IN ('Closed - Cancelled by Customer', 'Closed - Withdrawn by Nokia', 'Closed - Lost to Competitor', 'Closed - Obsolete', 'Cancelled') "/> 
+                    	</div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.navStep == 3}">
+                        <lightning:recordEditForm objectApiName="Opportunity" aura:id="fast-track-form" recordTypeId="{!v.fastTrackOpp.RecordTypeId}"  density="comfy">
+                            <div class="slds-grid slds-wrap">
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Name" aura:id="Name" value="{!v.fastTrackOpp.Name}" required="true"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Business_Type__c" aura:id="Business_Type__c" disabled="true" value="{!v.fastTrackOpp.Business_Type__c}" required="true"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <lightning:inputField fieldName="Description" aura:id="Description"  value="{!v.fastTrackOpp.Description}"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Lead_BG__c" aura:id="Lead_BG__c" value="{!v.fastTrackOpp.Lead_BG__c}" required="true"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Lead_BU__c" aura:id="Lead_BU__c" value="{!v.fastTrackOpp.Lead_BU__c}"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Supporting_BGs_BUs__c" aura:id="Supporting_BGs_BUs__c" value="{!v.fastTrackOpp.Supporting_BGs_BUs__c}"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Probability" aura:id="Probability" value="{!v.fastTrackOpp.Probability}" required="true"/>
+                                    </div>
+                                    
+                                    <div class="{!if(v.oppTypeSelected == 'Indirect Fast Track (under Frame Contract)', 'slds-show', 'slds-hide')}">
+                                        <div class="slds-grid slds-wrap">
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="End_Customer_Information__c" aura:id="End_Customer_Information__c" value="{!v.fastTrackOpp.End_Customer_Information__c}" required="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Multiple_or_Unknown_EC_Market_Segment__c" aura:id="Multiple_or_Unknown_EC_Market_Segment__c" value="{!v.fastTrackOpp.Multiple_or_Unknown_EC_Market_Segment__c}"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="End_Customer_LE__c" aura:id="End_Customer_LE__c" value="{!v.fastTrackOpp.End_Customer_LE__c}"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Multiple_or_Unknown_EC_Activity_Sector__c" aura:id="Multiple_or_Unknown_EC_Activity_Sector__c" value="{!v.fastTrackOpp.Multiple_or_Unknown_EC_Activity_Sector__c}"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Account_Role__c" aura:id="Account_Role__c" value="{!v.fastTrackOpp.Account_Role__c}" required="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Multiple_or_Unknown_EC_Country__c" aura:id="Multiple_or_Unknown_EC_Country__c" value="{!v.fastTrackOpp.Multiple_or_Unknown_EC_Country__c}"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Contract_Signing_Entity__c" aura:id="Contract_Signing_Entity__c" value="{!v.fastTrackOpp.Contract_Signing_Entity__c}" required="true"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="CurrencyIsoCode"  aura:id="CurrencyIsoCode" value="{!v.fastTrackOpp.CurrencyIsoCode}" required="true"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:recordEditForm>
+                        <br></br>
+                        <h2 class="slds-text-align_center slds-text-heading_medium">Start building your forecast:</h2>                      
+                        <aura:iteration items="{!v.oifLineList}" var="oifLine" indexVar="index">
+                        	<br></br>
+                            <aura:if isTrue="{!index > 0}">
+                                <div class="slds-clearfix">
+                                    <lightning:button class="slds-float_right" label="" value="{!index}" iconName="utility:delete" iconPosition="left"  variant="destructive-text" title="Delete OIF Line" disabled="{!v.loading}" onclick="{!c.deleteOIFLine}"/>
+                                </div>
+                            </aura:if>
+                            <lightning:recordEditForm objectApiName="Order_Intake_Forecast__c" aura:id="oifList-fast-track-form" recordTypeId="{!oifLine.RecordTypeId}" density="comfy">
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="BusinessLine__c" value="{!oifLine.BusinessLine__c}" required="true"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:input type="number" name="apiName" label="OIF Value" value="{!oifLine.OIF_Value__c}" required="true"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Forecast_Category__c" value="{!oifLine.Forecast_Category__c}"  required="true"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="POPlanReceipt__c"  value="{!oifLine.POPlanReceipt__c}" required="true"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Rev_RecPlan_Receipt__c" value="{!oifLine.Rev_RecPlan_Receipt__c}" required="{!if(v.accMarket=='Market North America',true,false)}"/>
+                                    </div>
+                                </div>
+                                <br></br>
+                        </lightning:recordEditForm>
+                        </aura:iteration>
+                        <!--lightning:button variant="neutral" label="Add OIF Line" title="Add OIF Line" disabled="{!v.loading}" onclick="{!c.addOIFLine}"/-->
+                    </aura:if>
+                </div>
+            </div>
+            <div class="modal-footer slds-modal__footer">
+                <div class="spinner-div">
+                    <aura:if isTrue="{! v.loading }">
+                        <lightning:spinner alternativeText="Loading" />
+                    </aura:if>
+                </div>
+                <lightning:button variant="neutral" label="Cancel" title="Cancel" disabled="{!v.loading}" onclick="{!c.cancel}" />
+                <aura:if isTrue="{!or(v.navStep == 2, v.navStep == 3)}">
+                    <lightning:button variant="brand" label="Back" title="Back" disabled="{!v.loading}" onclick="{!c.back}"/>
+                </aura:if>
+                <aura:if isTrue="{!v.navStep == 3}">
+                    <lightning:button variant="brand" label="Save and Continue" title="Save" disabled="{!v.loading}" onclick="{!c.save}"/>
+                </aura:if>
+                <aura:if isTrue="{!or(v.navStep == 1, v.navStep == 2)}">
+                    <lightning:button variant="brand" label="Next" title="Next" disabled="{!v.loading}" onclick="{!c.next}"/>
+                </aura:if>
+            </div>
+        </div>
+    </aura:if>  
+    <aura:if isTrue="{!v.cmpToRedirect == 'c:CRM_CreateStandardOpportunity'}">
+        <c:CRM_CreateStandardOpportunity recordId="{!v.accountId}" directOpp="{!if(v.oppTypeSelected == 'Direct Standard', TRUE, FALSE)}"/> 
+    </aura:if>
+    <aura:if isTrue="{!v.cmpToRedirect == 'c:OIF_Component'}">
+        <aura:html tag="style">
+            .slds-modal__container {
+            width: 90% !important;
+            max-width: 90% !important;
+            }
+            .slds-form_compound {
+            	padding:15px;
+            }
+        </aura:html> 
+        <div class="modal-body scrollable slds-modal__content slds-p-around--medium inner-div" id="scrollable_div">
+            <div class="slds-form slds-form_compound" style="overflow-x: hidden;overflow-y: auto; height: calc(100vh - 200px); min-height: 200px">
+                <c:OIF_Component recordId="{!v.fastTrackOppId}" popup="true" />
+            </div>
+        </div>
+        <div class="modal-footer slds-modal__footer" style="margin-bottom:0px;">
+            <span class="slds-p-right_small" style="font-style:italic;">Make sure all changes done on the grids are saved.</span>
+            <lightning:button variant="brand" label="Go to Opportunity" title="Go to Opportunity" onclick="{!c.goToOpp}" />
+        </div>
+    </aura:if>
+</aura:component>
