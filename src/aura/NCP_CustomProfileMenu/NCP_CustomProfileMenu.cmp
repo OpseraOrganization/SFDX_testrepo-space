@@ -1,0 +1,101 @@
+<aura:component implements="forceCommunity:profileMenuInterface" access="global" controller="NCP_CustomProfileMenu_COM">
+
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="menuItems" type="List" default="[]"/>
+    <aura:attribute name="isCheckingAuth" type="Boolean" default="false"/>
+    <aura:attribute name="isMenuShowing" type="Boolean" default="false"/>
+    <aura:attribute name="isInitialised" type="Boolean" default="false"/>
+    <aura:attribute name="isAuth" type="Boolean" default="false"/>
+    <aura:attribute name="isSandbox" type="Boolean" default="false"/>
+    <aura:attribute name="hasEntitlementRelationship" type="Boolean" default="false"/>
+    <aura:attribute name="isInternalUser" type="Boolean" default="false"/>
+    <aura:attribute name="isAuthorisedEmployee" type="Boolean" default="false"/>
+    <aura:attribute name="adminHref" type="String"/>
+    <aura:attribute name="manageSubscriptionURL" type="String"/>
+    <aura:attribute name="userId" type="String"/>
+    <aura:attribute name="userInitials" type="String"/>
+    <aura:attribute name="userThumbnail" type="String"/>
+    <aura:attribute name="defaultMenuStylings" type="String" default="ncp-border-around_grey-3 ncp-background-color-primary-background slds-p-horizontal_small slds-size_1-of-1 ncp-profile-menu-offset_small "/>
+
+    <aura:attribute name="record" type="Object"/>
+    <aura:attribute name="userDetails" type="Object"/>
+    <aura:attribute name="recordError" type="String"/>
+	<aura:attribute name="loginRedirectURL" type="String"/>
+    <aura:attribute name="horizontalUser" type="Boolean" default="false"/>
+	<aura:if isTrue="{!v.userId}">
+        <force:recordData aura:id="userProfileLoader"
+          recordId="{!v.userId}"
+          targetRecord="{!v.record}"
+          fields="FirstName,LastName,SmallPhotoUrl,Country__c"
+          targetFields="{!v.userDetails}"
+          targetError="{!v.recordError}"
+          recordUpdated="{!c.profileDetailsReceived}"
+          />
+    </aura:if>
+    <aura:if isTrue="{!not(empty(v.recordError))}">
+        <div class="recordError">
+            <ui:message title="Error" severity="error" closable="true">
+                {!v.recordError}
+            </ui:message>
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.isInitialised}">
+        <aura:if isTrue="{#v.isAuth}">
+            <div  class="slds-grid slds-grid_vertical-align-center">
+			<forceCommunity:notifications/>
+                <!-- <lightning:icon iconName="utility:notification" size="small" variant="notification" class="slds-m-right_small slds-icon-fill-brand"/> -->
+                <div class="slds-grid slds-grid_vertical slds-is-relative">
+                    <div class="slds-button" onclick="{!c.toggleProfileMenu}" aura:id="ncp-Profile_Menu">
+                        <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-end">
+                            <div>
+                                <lightning:avatar variant="circle"
+                                    src="{!v.userThumbnail}"
+                                    fallbackIconName="standard:person_account"
+                                    initials="{#v.userInitials}"
+                                    alternativeText="{#v.userDetails.FirstName + ' ' + v.userDetails.LastName}"
+                                    class="slds-m-right_x-small ncp-background-color-primary-brand"/>
+                            </div>
+                            <div class="slds-show_medium ncp-text-headline_three ncp-text-color-secondary">
+                                {#v.userDetails.FirstName + ' ' + v.userDetails.LastName}
+                            </div>
+                            <lightning:icon iconName="utility:chevrondown" size="x-small" class="slds-m-left_x-small"/>
+                        </div>
+                    </div>
+                    <div id="userMenu" class="{!v.isMenuShowing ? v.defaultMenuStylings + 'slds-show slds-is-absolute' : v.defaultMenuStylings + 'slds-hide'}">
+                        <ul class="slds-tabs_default__nav slds-grid slds-grid_vertical" onclick="{!c.itemSelected}">
+                            <aura:if isTrue="{!v.isCheckingAuth}">
+                                <li class="slds-size_1-of-1">
+                                    <div class="slds-is-relative" style="height: 3rem;">
+                                        <div role="status" class="slds-spinner slds-spinner_small">
+                                            <span class="slds-assistive-text">Loading</span>
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <aura:set attribute="else">
+                                    <aura:iteration items="{#v.menuItems}" var="item">
+                                        <aura:if isTrue="{#item.show}">
+                                            <li class="">
+                                                <a href="javascript:void(0);" data-menu-item-value="{#item.value}" class="slds-tabs_default__link">
+                                                    {#item.label}
+                                                </a>
+                                            </li>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </aura:set>
+                            </aura:if>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <aura:set attribute="else">
+                <lightning:button class="" variant="brand" label="Log in" onclick="{!c.doLogIn}" />
+            </aura:set>
+
+        </aura:if>
+    </aura:if>
+
+</aura:component>
