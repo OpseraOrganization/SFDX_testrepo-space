@@ -1,0 +1,285 @@
+<aura:component controller="CH_AddMemberInTeam" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <!-- aura attributes-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="workgroupMembers" type="List" />    
+    <aura:attribute name="outageOptions" type="List" default="[{'label': 'Any', 'value': 'Any'},
+    															{'label': 'Yes', 'value': 'Yes'},
+    															{'label': 'No', 'value': 'No'},]" />
+    <aura:attribute name="objDetail" type="contact" default="{'sobjectType' : 'CH_Workgroup_Rule__c'}"/>
+    <aura:attribute name="controllingFieldAPI" type="string" default="CH_Region1__c" description="store field API name of Controller field"/>
+    <aura:attribute name="dependingFieldAPI" type="string" default="CH_Country1__c" description="store field API name of dependent field"/>
+         
+    <aura:attribute name="listControllingValues" type="list" default="[]" description="to store controller field values"/>
+    <aura:attribute name="listDependingValues" type="list" default="['--None--']" description="to store dependent field values"/>
+       <aura:attribute name="depnedentFieldMap" type="map" description="map to store dependent values with controlling value"/>
+    <aura:attribute name="bDisabledDependentFld" type="boolean" default="true"/> 
+       <aura:attribute name="showTest" type="Boolean" default="true" />   
+       <aura:attribute name="workGroupRules" type="List" />
+    <aura:attribute name="ShowModal" type="Boolean" default="false"/>
+    <aura:attribute name="MemberOption" type="List" default="[{'label': 'Incident Engineer', 'value': 'Incident Engineer'},
+                                                             {'label': 'Incident Expert', 'value': 'Incident Expert'},
+                                                             {'label': 'Incident Support', 'value': 'Incident Support'},
+                                                             {'label': 'Incident Manager', 'value': 'Incident Manager'},
+                                                             {'label': 'Technical Escalation Manager', 'value': 'Technical Escalation Manager'},
+                                                             {'label': 'Case Manager', 'value': 'Case Manager'},
+                                                             {'label': 'Problem Manager', 'value': 'Problem Manager'},
+                                                             {'label': 'Problem Owner', 'value': 'Problem Owner'}
+                                                             ]"/>
+    
+    <aura:attribute name="searchKey" type="String" />
+       <aura:attribute name="workGroupRulesID" type="ID" />
+    <aura:attribute name="workgroupRule" type="CH_Workgroup_Rule__c" default="{ 'sobjectType' : 'CH_Workgroup_Rule__c' }"/>
+       <aura:attribute name="CurrentUserId" type="String" />
+       <aura:attribute name="CurrentCaseId" type="String" />
+
+    <!-- Code to display the spinner when searching -->
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+           <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+             <span class="slds-assistive-text">Loading</span>
+             <div class="slds-spinner__dot-a"></div>
+             <div class="slds-spinner__dot-b"></div>
+           </div>
+        </div>
+ 	</aura:if>
+
+    <!-- Modal -->
+    <aura:if isTrue="{!v.ShowModal}">
+        {<div class="demo-only" style="height: 840px;">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <b><h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Member</h2></b>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="height: 210px;">
+                    <p><b> Select Case team role to add selected user to current Support Ticket </b></p>
+                    <div class="custom-box">
+                        <lightning:combobox name="role" placeholder="Select Role...." options="{!v.MemberOption}"  aura:id="Member"/>
+                    </div>  
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button label="Add" onclick="{!c.addMemberToTeam}"/>
+                    <lightning:button label="Cancel" onclick="{!c.cancelSelectRolePopup}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>}
+    </aura:if>
+    <!-- Modal -->
+    <article class="slds-card">
+        <div class="slds-card__header">
+            <div class="slds-grid">
+                <div class="slds-col">
+                    <div align="right">
+                        <lightning:button onclick="{!c.searchWorkgroupMembers2}">
+                            <b>Search</b> 
+                        </lightning:button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slds-card__body slds-card__body_inner">
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <label class="slds-form-element__label" for="combobox-id-customer">Severity</label>
+                        <force:inputField aura:id="severity" value="{!v.workgroupRule.CH_Severity__c}" /> 
+                    </div> 
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <label class="slds-form-element__label" for="combobox-id-customer">Level of Support</label>
+                        <force:inputField aura:id="LevelOfSupport" value="{!v.workgroupRule.CH_Level_Of_Support__c}" />
+                    </div>
+                </div>                
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <lightning:input label="Contract" aura:id="contractId"/>
+                    </div>
+                </div>                
+            </div>
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <label class="slds-form-element__label" for="combobox-id-customer">Customer</label> 
+                        <div class="slds-form-element__control">
+                            <div class="slds-combobox_container">
+                                <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click" aria-expanded="false" aria-haspopup="listbox" role="combobox">
+                                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                        <force:inputField aura:id="accLookup" value="{!v.workgroupRule.CH_Account__c}" /> 
+                                    </div>
+                                    <div id="listbox-id-customer" class="slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid" role="listbox">
+                                        <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                            
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <label class="slds-form-element__label" for="combobox-id-product">Product</label> 
+                        <div class="slds-form-element__control">
+                            <div class="slds-combobox_container">
+                                <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click" aria-expanded="false" aria-haspopup="listbox" role="combobox">
+                                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                        <force:inputField aura:id="productLookup" value="{!v.workgroupRule.CH_Product__c}" />
+                                    </div>
+                                    <div id="listbox-id-product" class="slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid" role="listbox">
+                                        <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> 
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <!--Controlling Picklist Field --> 
+                        <lightning:select name="controllerFld"
+                                          aura:id="region"
+                                          value="{!v.objDetail.CH_Region1__c}"
+                                          label="Region"
+                                          onchange="{!c.onControllerFieldChange}" >
+                            <aura:iteration items="{!v.listControllingValues}" var="val">
+                                <option value="{!val}">{!val}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <label class="slds-form-element__label" for="combobox-id-customergroup">Customer Group</label>
+                        <div class="slds-form-element__control">
+                            <div class="slds-combobox_container">
+                                <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click" aria-expanded="false" aria-haspopup="listbox" role="combobox">
+                                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                        <force:inputField aura:id="custoGroupLookup" value="{!v.workgroupRule.CH_Customer_Group__c}" />
+                                    </div>
+                                    <div id="listbox-id-customergroup" class="slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid" role="listbox">
+                                        <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>                           
+                    </div>  
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <label class="slds-form-element__label" for="combobox-id-productgroup">Product Group</label> 
+                        <div class="slds-form-element__control">
+                            <div class="slds-combobox_container">
+                                <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click" aria-expanded="false" aria-haspopup="listbox" role="combobox">
+                                    <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                        <force:inputField aura:id="productGroupLookup" value="{!v.workgroupRule.CH_Product_Group__c}" />
+                                    </div>
+                                    <div id="listbox-id-productgroup" class="slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid" role="listbox">
+                                        <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>                           
+                    </div>
+                </div> 
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <!--Dependant Picklist Field -->
+                        <lightning:select name="dependentFld"
+                                          aura:id ="country"
+                                          value="{!v.objDetail.CH_Country1__c}"
+                                          label="Country"
+                                          disabled="{!v.bDisabledDependentFld}">
+                            <aura:iteration items="{!v.listDependingValues}" var="val">
+                                <option value="{!val}">{!val}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-3">
+                    <div>
+                        <div class="slds-m-top_x-small">
+                            <div>
+                                <lightning:combobox label="Outage" aura:id="outageBox"
+                                                    options="{!v.outageOptions}" 
+                                                    value="Any" />
+                            </div>
+                        </div> 
+                        <div>
+                            <div class="slds-text-body_small slds-text-color_weak">ROTA</div>
+                            <div>
+                                <ui:inputCheckbox aura:id="checkboxrota" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slds-m-top_xx-small slds-m-bottom_xx-small slds-scrollable" style="height: 15rem;">
+            <table class="slds-table slds-table_bordered slds-table_striped slds-table_cell-buffer slds-table_flexible-layout ">
+                <thead>
+                    <tr class="slds-text-heading_label">
+                        <th scope="col"><div class="slds-truncate" title="OPTIONS">OPTIONS</div></th>
+                        <th scope="col"><div class="slds-truncate" title="Name">Member Details</div></th>
+                        <th scope="col"><div class="slds-truncate" title="Type">ROTA TYPE</div></th>
+                        <th scope="col"><div class="slds-truncate" title="ROLE">ROLE</div></th>
+                        <th scope="col"><div class="slds-truncate" title="Phone">Phone</div></th>
+                        <th scope="col"><div class="slds-truncate" title="Workgroup">Workgroup</div></th>
+                        <th scope="col"><div class="slds-truncate" title="LevelOfSupport">Level Of Support</div></th>
+                        <th scope="col"><div class="slds-truncate" title="Last Case Assigned">Last Case Assigned</div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.workgroupMembers}" var="member">
+                        <tr>
+                            <td>
+                                <div class="slds-truncate" title="AssignAndConnect">
+                                	<aura:if isTrue="{!member.CH_User__c != null}">
+                                        <lightning:button label="Add" onclick="{!c.showSelectRolePopup}" value="{!member.CH_User__c}"/>
+                                    </aura:if> 
+                                </div>
+                            </td>
+                            <td>
+                                <aura:if isTrue="{!member.CH_Role__c == 'Hotline'}">
+                                    <div class="slds-truncate" title="{!'Contact Number: ' + member.CH_HotlinePhone__c}" >{!member.CH_HotlinePhone__c}</div>                                            
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!member.CH_Role__c == 'Queue'}">
+                                            <div class="slds-truncate" title="{!'Workgroup Owner: ' + member.CH_Workgroup__r.Owner.FirstName + ' ' + member.CH_Workgroup__r.Owner.LastName + '\nContact Number: ' + member.CH_Workgroup__r.CH_Owner_MobilePhone__c}">{!member.CH_Queue__c}</div>
+                                            <aura:set attribute="else">
+                                                <div class="slds-truncate" title="{!'Name: ' + member.CH_User__r.Name + '\nContact Number: ' + member.CH_User__r.MobilePhone}" >{!member.CH_User__r.Email}</div>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if> 
+                            </td>
+                            <td>
+                                <aura:iteration items="{!member.Workgroup_Rotas__r}" var="rotaDetails">
+                                    <div class="slds-truncate" title="RotaType">{!rotaDetails.CH_SupportType__c}</div>
+                                </aura:iteration>
+                            </td>
+                            <td><div class="slds-truncate" title="RoleName">{!member.CH_Role__c}</div></td>
+                            <td><div class="slds-truncate" title="Mobile Phone">{!member.CH_User__r.MobilePhone}</div></td>
+                            <td><div class="slds-truncate" title="WorkgroupName">{!member.CH_Workgroup__r.Name}</div></td> 
+                            <td><div class="slds-truncate" title="LevelOfSupport">{!member.CH_Workgroup__r.CH_LevelOfSupport__c}</div></td> 
+                            <td>
+                                <lightning:formattedDateTime value="{!member.CH_User__r.CH_LastCaseAssigned__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" timeZone="UTC" timeZoneName="short" hour12="false"/>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>
+    </article>
+</aura:component>
