@@ -1,0 +1,103 @@
+<aura:component implements="flexipage:availableForAllPageTypes,force:hasRecordId" access="global" >
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="offerId" type="String" />
+    <aura:attribute name="loading" type="Boolean" default="false" />
+    <aura:attribute name="showActions" type="Boolean" default="false" />
+    <aura:attribute name="showButton" type="Boolean" default="false" />
+    <aura:attribute name="showBypassButton" type="Boolean" default="false" />
+    <aura:attribute name="simulateInfo" type="Boolean" default="false" />
+    <aura:attribute name="paramChecked" type="Boolean" default="false" />
+    <aura:attribute name="opptyRecord" type="Object"/>
+    <aura:attribute name="offerRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <aura:attribute name="offerLoadError" type="String"/>
+    <aura:attribute name="buttonLabel" type="String" default = " "/>
+    <aura:attribute name="buttonLabel_bypass" type="String" default = " "/>
+    <aura:attribute name="gate" type="String"/>
+    <aura:attribute name="toastMessage" type="String"/>
+    <aura:attribute name="currentUser" type="User"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    
+    <lightning:notificationsLibrary />
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Name,StageName,Phase_Status__c,Business_Type__c,Gate_3_Bypass_no_offer_support__c,NF_LoA_Bypass__c,Blanket_Approval_Condition__c,Apttus_Approval__Approval_Status__c,
+                              OIF_Lines__c,NF_Facilitator_User__c,NF_Facilitator_Notified__c,Queue_Id__c,LOA_Level__c,count_offer__c,G4_Submission_Date__c,G3_Submission_Date__c,
+                              G5_Submission_Date__c,Approvals_Current_Status__c,ApprovalStatusTechField__c,G3_Approval_Date__c,G4_Approval_Date__c,G5_Contract_Approval_Date__c,G3_Approver__c,
+                              G4_Approver__c,G5_Approver__c,Sales_Outcome__c, G5_Trigger__c, Gate_6_Bypass_No_Execute_needed__c, G6_Approval_Date__c, G6_Approver__c,G6_Submission_Date__c"
+                      targetFields="{!v.opptyRecord}"
+                      targetError="{!v.recordLoadError}"
+                      recordUpdated="{!c.handleRecordUpdated}"
+                      mode="EDIT"
+                      />
+    <force:recordData aura:id="recordLoaderOffer" 
+                      recordId="{!v.offerId}" 
+                      fields="Id,Name,G4_passed__c,G4_Approval_Date__c,G4_Approver__c,LoA_Approval_Level__c" 
+                      targetFields="{!v.offerRecord}"
+                      targetError="{!v.offerLoadError}"
+                      recordUpdated="{!c.handleOfferUpdated}"
+                      mode="EDIT"/>
+    <force:recordData aura:id="recordLoaderUser" recordId="{!$SObjectType.CurrentUser.Id}"  fields="Name" targetFields="{!v.currentUser}"/>
+    <lightning:flow aura:id="flowData" onstatuschange="{!c.handleStatusChange}" class="slds-hide"/>
+    
+    <aura:if isTrue="{!or(v.showButton,v.showBypassButton) }">
+        <div style="text-align:left">
+            <aura:if isTrue="{!v.showButton}">
+                <lightning:button variant="brand" label="{!v.buttonLabel}" title="{!v.buttonLabel}" onclick="{! c.handleClick }" aura:id="submitButton"/>
+            </aura:if>
+            <aura:if isTrue="{!v.showBypassButton}">
+                <lightning:button variant="brand-outline" label="{!v.buttonLabel_bypass}" title="{!v.buttonLabel_bypass}" onclick="{! c.handleClick }" aura:id="bypassButton"/>
+            </aura:if>
+            <div class="spinner-div">
+                <aura:if isTrue="{! v.loading }">
+                    <lightning:spinner alternativeText="Loading"  size="small" variant="brand" />
+                </aura:if>
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.showActions}">
+        <div style="text-align:left">
+            <lightning:button variant="neutral" label="Recall" title="Recall" onclick="{! c.handleRecall }" aura:id="recallButton" />
+            <lightning:button variant="success" label="Approve" title="Approve" onclick="{! c.handleApprove }" aura:id="approveButton" />
+            <lightning:button variant="destructive" label="Reject" title="Reject" onclick="{! c.handleReject }" aura:id="rejectButton" />
+            <div class="spinner-div">
+                <aura:if isTrue="{! v.loading }">
+                    <lightning:spinner alternativeText="Loading" size="small"  variant="brand" />
+                </aura:if>
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.simulateInfo}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Information</h2>
+                </header>
+                <lightning:recordEditForm objectApiName="Offer__c"  recordId="{!v.offerId}" onsubmit = "{!c.handleSubmitInfo}" onerror ="{!c.onError}">
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <lightning:inputField  aura:id="approvalLevel" fieldName="LoA_Approval_Level__c" required="true"/>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" 
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModal }"/>
+                        <lightning:button variant="brand" 
+                                          type="submit"
+                                          label="Proceed"
+                                          title="Proceed"/>
+                    </footer>
+                </lightning:recordEditForm>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+</aura:component>
