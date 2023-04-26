@@ -1,0 +1,172 @@
+<!--
+  @description       : 
+  @author            : Yashdeep Prajapati
+  @group             : 
+  @last modified on  : 10-01-2021
+  @last modified by  : Yashdeep Prajapati
+  Modifications Log 
+  Ver   Date         Author               Modification
+  1.0   06-23-2021   Yashdeep Prajapati   Initial Version
+-->
+<aura:component controller="SearchProduct">
+    <aura:attribute name="strProductID" type="String" />
+    <aura:attribute name="addnewproduct" type="Boolean" />
+    <aura:attribute name="strConfigId" type="String" />
+    <aura:attribute name="wrapper" type="SearchProductWrapper" />
+    <aura:attribute name="disabled" type="Boolean" default="false" />
+    <aura:attribute name="isNetwork" type="Boolean" default="false" />
+    <aura:attribute name="saved" type="Boolean" default="false" />
+    <aura:attribute name="productcode" type="string" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="showModal" type="Boolean" />
+    <aura:attribute name="has_error" type="Boolean" />
+    <aura:attribute name="errors" type="List" />
+    <aura:attribute name="isSSP" type="Boolean" default="true" />
+    <aura:attribute name="fields" type="String[]" default="['Name','ProductCode','NokiaCPQ_State__c']" />
+    <aura:attribute name= 'quoteType' type ="String" />
+    <aura:attribute name="QuoteWithMaintainenance" type ="Boolean" /> <!--ITCEPP:789:Bibhu:Added New Attribute!-->
+    <aura:attribute name="isMaintenance" type="Boolean" default="false"/>
+    <aura:registerEvent name="ShowModalevt" type="c:SearchProductevt" />
+    <aura:attribute name="warrantyCredit" type="String" /> <!--ITCCPQ-1823-->
+    <aura:attribute name="subPortfolioType" type="List" /> <!--FN-->
+    <aura:attribute name="selectedsubPortfolioType" type="String" /> <!--FN-->
+    <aura:attribute name="wrapper2" type="SearchProductWrapper" /> <!--FN-->
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+    <aura:if isTrue="{!v.showModal}">
+        <div class="demo-only" style="height: 940px;">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                            
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <aura:if isTrue="{!v.addnewproduct}">
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Product</h2>
+                            <aura:set attribute="else">
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Edit Product</h2>
+                            </aura:set>
+                        </aura:if>
+                        <aura:if isTrue="{!v.has_error}">
+                            <aura:iteration items="{!v.errors}" var="error">
+                                <div class="slds-notify_error" style="text-align: justify;" id="slds-notify_error">
+                                    <div class="slds-notify slds-notify--alert slds-theme--error slds-theme--alert-texture" style="text-align: justify;" role="alert">
+                                        <span class="slds-size_1-of-1">{!error}</span>
+                                    </div>
+                                </div>
+                            </aura:iteration>
+                            <br></br>
+                        </aura:if> 
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p style="margin-left: 12px;color: #ec6200;"><b>Note:</b> Product Name will be populated as Custom Product Name and Alias in the cart. Alias is editable in the cart.</p>
+                        <aura:if isTrue="{!not(v.addnewproduct)}">
+                            <lightning:recordForm aura:id="recordViewForm" 
+                                                  objectApiName="Product2"
+                                                  fields="{!v.fields}"
+                                                  columns="2"
+                                                  recordId="{!v.strProductID}"
+                                                  
+                                                  mode="readonly"
+                                                  
+                                                  onload="{!c.recordLoaded}"
+                                                  
+                                                  />
+                        </aura:if>
+                        
+                        <lightning:recordEditForm
+                                                  onload="{!c.LIrecordLoaded}"
+                                                  onsubmit="{!c.handleSubmit}"
+                                                  onsuccess="{!c.handleSuccess}"
+                                                  aura:id="myRecordForm"
+                                                  objectApiName="Apttus_Config2__LineItem__c">
+                            <div class="slds-grid">
+                                <div class="slds-col slds-size_1-of-2">
+                                    
+                                    <aura:if isTrue="{!v.addnewproduct}">
+                                        <lightning:input label="Product Name" aura:id="prodname" required="true"/> 
+                                    </aura:if>
+                                    <br/>
+                                    <lightning:input label="Quantity" aura:id="idQuantity" required="true" pattern="[0-9]*" messageWhenPatternMismatch="Only Positive Number is Allowed" />
+                                    <br/>
+                                    <aura:if isTrue="{!and(v.QuoteWithMaintainenance == true,v.quoteType == 'Direct CPQ')}"><!--ITCEPP:789:Bibhu:Modified Code!-->
+                                        <lightning:input label="Maintainenance Under Warranty Rate %" aura:id="idMantY1" pattern="[0-9]+(\.[0-9]{1,5}?)?" messageWhenPatternMismatch="Positive Number and Decimal upto 5 places is Allowed" required="true"/>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(not(v.quoteType == 'Direct CPQ'),v.QuoteWithMaintainenance == false)}"><!--ITCEPP:789:Bibhu:Modified Code!-->
+                                        <lightning:input label="Maintainenance Under Warranty Rate %" aura:id="idMantY1" pattern="[0-9]+(\.[0-9]{1,5}?)?" messageWhenPatternMismatch="Positive Number and Decimal upto 5 places is Allowed" required="true"/>
+                                    </aura:if>
+                                    <br/>
+                                    <aura:if isTrue="{!and(v.QuoteWithMaintainenance==true,v.quoteType == 'Direct CPQ')}"><!--ITCEPP:789:Bibhu:Modified Code!-->
+                                        <lightning:input label="Maintainenance Beyond Warranty Rate %" aura:id="idMantY2" pattern="[0-9]+(\.[0-9]{1,5}?)?" required="true" messageWhenPatternMismatch="Positive Number and Decimal upto 5 places is Allowed"/>
+                                    </aura:if> 
+                                    <aura:if isTrue="{!and(not(v.quoteType == 'Direct CPQ'),v.QuoteWithMaintainenance == false)}"><!--ITCEPP:789:Bibhu:Modified Code!-->
+                                        <lightning:input label="Maintainenance Beyond Warranty Rate %" aura:id="idMantY2" pattern="[0-9]+(\.[0-9]{1,5}?)?" required="true" messageWhenPatternMismatch="Positive Number and Decimal upto 5 places is Allowed"/>
+                                    </aura:if>
+                                    <br/>
+                                    <aura:if isTrue="{!and(v.quoteType == 'Direct CPQ',v.QuoteWithMaintainenance==true)}"><!--ITCEPP:789:Bibhu:Modified Code!-->
+                                        <lightning:select name="is NFM-P?" label="Is NSP?" aura:id="NFM" onchange="{!c.onCheck}">
+                                            <option value="1">None</option>
+                                            <option value="2">Yes</option>
+                                            <option value="3">No</option>
+                                        </lightning:select>   
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(not(v.quoteType == 'Direct CPQ'),v.QuoteWithMaintainenance == false)}"><!--ITCEPP:789:Bibhu:Modified Code!-->
+                                        <lightning:select name="is NFM-P?" label="Is NSP?" aura:id="NFM" onchange="{!c.onCheck}">
+                                            <option value="1">None</option>
+                                            <option value="2">Yes</option>
+                                            <option value="3">No</option>
+                                        </lightning:select>
+                                    </aura:if>
+                                    <br/>                                                                       
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <aura:if isTrue="{!v.addnewproduct}">
+                                        <lightning:input label="Product Code" aura:id="prodCode" required="true" />
+                                    </aura:if>
+                                    <br/>
+                                    <lightning:input label="List Price" aura:id="idListPrice" pattern="[0-9]+(\.[0-9]{1,5}?)?" required="true" messageWhenPatternMismatch="Positive Number and Decimal upto 5 places is Allowed"/>
+                                    <br/>
+                                    <aura:if isTrue ="{!not(v.quoteType == 'Direct CPQ')}">
+                                        <lightning:input label="Product Discount Rate %" aura:id="idPDC" pattern="[0-9]+(\.[0-9]{1,5}?)?" required="true" messageWhenPatternMismatch="Positive Number and Decimal upto 5 places is Allowed"/>
+                                        <br/>
+                                    </aura:if>
+                                    <!--ITCCPQ-1692:Two AND added-->
+                                    <aura:if isTrue="{!and(and(not(v.isNetwork),v.QuoteWithMaintainenance==true),v.quoteType == 'Direct CPQ')}"><!--ITCEPP:789:Bibhu:Modified Code!-->
+                                        <lightning:input label="SSP Rate %" aura:id="idSSP" pattern="[0-9]+(\.[0-9]{1,5}?)?" required="{!v.isSSP}" messageWhenPatternMismatch="Positive Number and Decimal upto 5 places is Allowed"/>
+                                    </aura:if>
+                                    <div  class="slds-wrap">                                    
+                                        <!--ITCCPQ-1692:Two AND added-->
+                                        <aura:if isTrue="{!and(and(not(v.isNetwork),v.QuoteWithMaintainenance==false),v.quoteType == 'Indirect CPQ')}"><!--ITCEPP:789:Bibhu:Modified Code!-->
+                                            <lightning:input label="SSP Rate %" aura:id="idSSP" pattern="[0-9]+(\.[0-9]{1,5}?)?" required="{!v.isSSP}" messageWhenPatternMismatch="Positive Number and Decimal upto 5 places is Allowed"/>
+                                        </aura:if>
+                                    </div>
+                                    <div  class="slds-wrap customPadding" id = "accredited">
+                                        <!--FN_START-->
+                                        <aura:if isTrue ="{!v.quoteType == 'Indirect CPQ'}">                              
+                                            <lightning:select name="portfolio" label="Accredited Solution" required="true" aura:id="portfolio" value="{!v.selectedsubPortfolioType}">
+                                                <aura:iteration items="{!v.subPortfolioType}" var="subPortfolio" indexVar="index">
+                                                    <option text="{!subPortfolio.value}" label="{!subPortfolio.key}"/>
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </aura:if>
+                                    </div>
+                                    <!--FN_END-->
+                                    <lightning:inputField fieldName="Apttus_Config2__ListPrice__c" class="slds-hidden" />
+                                </div>
+                            </div>
+                            <div class="slds-m-top_medium">
+                                <lightning:button variant="brand" type="submit"  name="save" label="Save To Cart" />
+                                <button class="slds-button slds-button_neutral" onclick="{!c.cancel}">Cancel</button>
+                            </div>
+                        </lightning:recordEditForm>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:if>
+</aura:component>

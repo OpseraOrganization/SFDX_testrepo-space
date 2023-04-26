@@ -1,0 +1,102 @@
+<aura:component controller="CH_LightningController" implements="force:appHostable,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName" access="global">
+	<lightning:workspaceAPI aura:id="Workspace" />
+    <!-- Aura Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <!-- Attributes -->
+    <aura:attribute name="coveredNEAs" type="List" description=""/>
+    <aura:attribute name="tableColumns" type="List" description="" default=""/>
+    <aura:attribute name="globalActions" type="List" description="" default="[]"/>
+    <aura:attribute name="type" type="String" default="Complete" description=""/>
+    <aura:attribute name="actionCounter" type="Integer" default="0" description="Used to update total count of counter to show spinner" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" description="To display spinner" />
+    <aura:attribute name="viewAll" type="Boolean" default="false"/>
+    <aura:attribute name="visiblePopUp" type="String" default="" description="" />
+    <aura:attribute name="unlinkList" type="List" description="" default=""/>
+    <aura:attribute name="neaColumns" type="List" description="" default=""/>
+    <aura:attribute name="linkNEAList" type="List" description=""/>
+    <aura:attribute name="oCNEAList" type="List" description=""/>
+	<aura:attribute name="tableTitle" type ="String"/>
+	<!-- Component -->
+    <div class="slds-grid slds-wrap slds-size_12-of-12 slds-is-relative" style="{! v.viewAll ? 'height: 100%;' : ''}">
+        <!-- Loading Spinner -->
+        <aura:if isTrue="{! v.showSpinner }">
+            <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+        </aura:if>
+        <!-- Table -->
+        <c:Datatable aura:id="cNEATable"
+                     label="Linked Network Element Assets"
+                     iconName="standard:asset_object"
+                     countOnLabel="{! !v.viewAll }"
+                     hideControls="{! !v.viewAll }"
+                     maxRowSelection="{! v.viewAll ? 10000 : 0 }"
+                     data="{! v.coveredNEAs }" 
+                     columns="{! v.tableColumns }"
+                     globalActions="{! v.globalActions }"
+                     onglobalaction="{! c.handleGlobalAction }"
+                     onrowaction="{! c.handleRowAction }"
+                     hideOnEmpty="true"
+                     type="{! v.viewAll ? 'fullscreen' : 'related'}"/>
+    </div>
+    <!-- Link/Unlink Vendor Contracts PopUp -->
+    <aura:if isTrue="{! v.visiblePopUp != '' }">
+        <section class="slds-modal slds-fade-in-open">
+            <!-- Loading Spinner -->
+            <aura:if isTrue="{! v.showSpinner }">
+                <div class="slds-align_absolute-center">
+                    <lightning:spinner aura:id="spinnerId" alternativeText="Loading" size="medium" />
+                </div>
+            </aura:if>
+            <div class="{! (and(v.visiblePopUp == 'Link', v.linkNEAList.length != 0) ? 'link ' : '') + 'slds-modal__container' }">
+                <!-- Header -->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closePopUp }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{! v.visiblePopUp + ' Network Element Assets'}</h2>
+                </header>
+                <!-- Content -->
+                <div class="slds-modal__content slds-p-around_medium">
+                    <!-- Link Vendor Contracts -->
+                    <aura:if isTrue="{! v.visiblePopUp == 'Link' }">
+                        <aura:if isTrue="{! v.linkNEAList.length != 0 }">
+                            <c:Datatable aura:id="linkNEATable"
+                                         label="{!v.tableTitle}"
+                                         iconName="standard:asset_object"
+                                         maxRowSelection="10000"
+                                         maxRows="10"
+                                         data="{! v.linkNEAList }"
+                                         columns="{! v.neaColumns }"
+                                         type="selection"/>
+                            <aura:set attribute="else">
+                        		<p class="slds-text-align_center">No valid Network Element Assets found.</p>  
+                            </aura:set>
+                        </aura:if>
+                    </aura:if>
+                    <!-- Unlink Vendor Contracts -->
+                    <aura:if isTrue="{! v.visiblePopUp == 'Unlink' }">
+                        <p class="slds-text-align_center">Are you sure you want to unlink this Network Element Asset?</p>                        
+                    </aura:if>
+                </div>
+                <!-- Footer -->
+                <footer class="slds-modal__footer">
+                    <!-- Link Network Element Assets -->
+                    <aura:if isTrue="{! v.visiblePopUp == 'Link' }">
+                    	<lightning:button name="Close" label="Close" onclick="{! c.closePopUp }"/>
+                        <aura:if isTrue="{! v.linkNEAList.length != 0 }">
+                    		<lightning:button name="link" variant="brand" label="Link" onclick="{! c.link }"/>
+                    	</aura:if>
+                    </aura:if>
+                    <!-- Unlink Network Element Assets -->
+                    <aura:if isTrue="{! v.visiblePopUp == 'Unlink' }">
+                    	<lightning:button name="Cancel" label="Cancel" onclick="{! c.closePopUp }"/>
+                    	<lightning:button name="Unlink" variant="brand" label="Unlink" onclick="{! c.unlink }"/>
+                    </aura:if>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

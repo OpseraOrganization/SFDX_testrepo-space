@@ -1,0 +1,239 @@
+<!--
+  @description       : 
+  @author            : Yashdeep Prajapati
+  @group             : 
+  @last modified on  : 12-30-2021
+  @last modified by  : Yashdeep Prajapati
+  @last modified on  : 1-15-2022
+  @last modified by  : Christie JJ
+-->
+<aura:component controller="NokiaCPQ_CreateQuote_Controller"
+    implements="force:lightningQuickActionWithoutHeader,flexipage:availableForRecordHome,force:hasRecordId,flexipage:availableForAllPageTypes,force:appHostable" access="global">
+    <aura:registerEvent name="ToastEvent" type="c:ToastEvent" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="render" value="{!this}" action="{!c.onRender}"/>
+    <aura:attribute name="opportunityRecord" type="SObject" />
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="showModal" type="Boolean" default="true" />
+    <aura:attribute name="error" type="String" default="This is an Error message"/>
+    <aura:attribute name="CurrencyIsoCode" type="String" />
+    <aura:attribute name="endCustomerLegalEntity" type="String" />
+    <aura:attribute name="has_error" type="Boolean" default="false" />
+    <aura:attribute name="has_success" type="Boolean" default="false" />
+    <aura:attribute name="display_success" type="Boolean" default="false" />
+    <aura:attribute name="wasUpdated" type="Boolean" default="false" />
+    <aura:attribute name="fieldMap" type="Boolean" default="true" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="hasExistingContract" type="Boolean" default="false" />
+    <aura:attribute name="counter" type="Integer" default="1" />
+    <aura:attribute name="hasUserChanged" type="Boolean" default="true" />
+    <aura:attribute name="licenseCheck" type="Boolean" default="true" />
+    <aura:attribute name="recordTypeId" type="String" default="" />
+    <aura:attribute name="accountId" type="Id"/>
+    <aura:attribute name="subPortfolios" type="List"/>
+    <lightning:navigation aura:id="navService" />
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+    <aura:if isTrue="{!v.showSpinner}">
+                <lightning:spinner alternativeText="Loading" size="medium" class="slds-is-relative"/>
+    </aura:if>
+    
+            <div class="parents">
+                <aura:if isTrue="{!v.showSpinner}">
+                            <div class="outer-div">
+                                <div id="overlay">
+                                    <lightning:spinner class="exampleHolder" alternativeText="Loading" size="medium" />
+                                </div>
+                            </div>
+                        </aura:if>
+                <aura:if isTrue="{!v.licenseCheck}">
+                <lightning:recordEditForm aura:id="myform" objectApiName="Apttus_Proposal__Proposal__c" recordTypeId="{!v.recordTypeId}"
+                     onsubmit="{!c.onRecordSubmit}" density="comfy">
+                    <!-- <div class="slds-align_absolute-center"> -->
+                    <!-- <div class="slds-text-heading_large">New Quote/Proposal</div> -->
+                    <!-- </div> -->
+                    <div class="headingClass">
+                    <div class="modal-header slds-modal__header slds-size_1-of-1"> 
+                        <div class="title slds-text-heading--medium">
+                                 <div >New Quote/Proposal</div>
+                     </div>
+                </div>
+            </div>
+  
+                    
+                    <div class="slds-p-around_none">
+                        <!-- <aura:if isTrue="{!v.has_error}"> -->
+                            <div class="errormessageservice" style="opacity: 0;">
+                            <ui:message title="Error" severity="error" closable="true">
+                                {!v.error}
+                            </ui:message>
+                        </div>
+                        <!-- </aura:if> -->
+                        <!--<aura:if isTrue="{!v.display_success}"> -->
+                            <div class="servicemessage" style="opacity: 0;">
+                            <ui:message severity="info" closable="true">
+                                An active service contract has been found for this Portfolio and End Customer Account
+                            </ui:message>
+                        </div>
+
+                         <!--</aura:if>-->
+                        <div class="grid-container">
+                            <div class="grid-child purple">
+                                <lightning:inputField aura:id="nameField" required="true"
+                                    fieldName="Apttus_Proposal__Proposal_Name__c" />
+                            </div>
+
+                            <div class="grid-child green">
+                                <lightning:inputField aura:id="description"
+                                    fieldName="Apttus_Proposal__Description__c" />
+                            </div>
+
+                        </div>
+                        <br></br>
+                        <br></br>
+                        <div class="grid-container">
+
+                            <div class="grid-child purple">
+                                <lightning:inputField aura:id="portfolio" required="true" onchange="{!c.fetchContracts}"
+                                    fieldName="NokiaCPQ_Portfolio__c" />
+                            </div>
+
+                            <div class="grid-child green">
+                                <lightning:inputField aura:id="isLeo" fieldName="NokiaCPQ_LEO_Discount__c" />
+                            </div>
+
+                        </div>
+                        <div class="grid-container">
+
+                            <div class="grid-child purple">
+                                <lightning:inputField aura:id="existingMaintenanceContract" required="true"
+                                    fieldName="NokiaCPQ_Existing_IONMaint_Contract__c"
+                                    onchange="{!c.handleContractChange}" />
+                            </div>
+
+                            <div class="grid-child green">
+                                <lightning:inputField aura:id="isMaintenanceOnly" onchange="{!c.handleFieldVisibility}"
+                                    fieldName="NokiaCPQ_Is_Maintenance_Quote__c" />
+                            </div>
+
+                        </div>
+                        <div class="grid-container">
+
+                            <div class="grid-child purple">
+                                <lightning:inputField aura:id="warrantyCredit" disabled="{!v.fieldMap}"
+                                    fieldName="Warranty_credit__c" required="{!not(v.fieldMap)}" />
+                            </div>
+
+                            <div class="grid-child green">
+                                <lightning:inputField aura:id="contractStartDate" disabled="{!v.fieldMap}"
+                                    fieldName="NokiaCPQ_Contract_Start_Date__c" required="{!not(v.fieldMap)}" />
+                            </div>
+
+                        </div>
+
+                        <div class="hiddenElement">
+                            <lightning:inputField aura:id="yearsMaintenance" fieldName="NokiaCPQ_No_of_Years__c" />
+                            <lightning:inputField aura:id="systemContact" fieldName="systemVerifiedContract__c" />
+                            <lightning:inputField aura:id="subPortfolio" fieldName="CPQ_SubPortfolio__c" value="{!v.subPortfolios}"/>
+                        </div>
+
+
+                    </div>
+                    <br /><br />
+                    <footer>
+                        <div class="modal-footer slds-modal__footer slds-size_1-of-1">
+                            <div class="forceChangeRecordTypeFooter">
+
+                                <lightning:button onclick="{!c.handleCancel }" label="Cancel" />
+                                
+
+                                <lightning:button variant="brand" type="submit" label="Save" />
+
+
+                            </div>
+                        </div>
+                    </footer>
+                </lightning:recordEditForm>
+
+                    <aura:set attribute="else">
+                            <div class="notifyAlert">
+                                <div class="slds-p-left_xx-small">
+                                    <div class="slds-p-right_xx-small">
+                            <div class="slds-notify slds-notify_alert" role="alert">
+                                <span class="slds-assistive-text">info</span>
+                                <h6 style="font-size: large">You do not have CPQ License to create quote. Please check with your
+                                    Line Manager.
+                                </h6>
+                                <br></br>
+                            </div>    
+                            </div>
+                            </div>
+                            </div>
+                        
+                    </aura:set>
+                
+                
+            </aura:if>
+            </div>
+        
+    <aura:html tag="style">
+        .slds-modal__container {
+        margin: 0 auto;
+        width: 60%;
+        max-width: 60rem;
+        min-width: 30rem;
+        }
+        .modal-header{
+        background-color: rgb(18 65 145);
+        }
+        .headingClass{
+        text-shadow: 1px 1px gray;
+        color: white;
+        }
+        .cuf-content {
+        padding: 0rem !important;
+        }
+        .slds-modal__content.slds-p-around--medium{
+        padding: 0rem !important;
+        height: unset !important;
+        max-height: unset !important;
+        background-color: rgb(249 249 250);
+        overflow-y: hidden;
+        }
+        
+        div.hiddenElement {
+        display: none;
+        }
+        .grid-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 20px;
+        height: 60px;
+        }
+        .slds-input.slds-combobox__input{
+        overflow: scroll !important;
+        padding: 8px 8px 8px 8px;
+        font-size: 5px;
+        }
+        .exampleHolder{
+        position: absolute;
+        }
+        .notifyAlert{
+            position: static;
+            height: 400px;
+        }
+        .parents{
+            overflow-x: hidden;
+            overflow-y: hidden;
+        }
+        .slds-modal__content{
+            overflow-y:hidden !important;
+            height:unset !important;
+            max-height:unset !important;
+        }
+        .slds-p-around--medium {
+            padding: 0rem !important;
+        }
+               
+    </aura:html>
+</aura:component>
