@@ -5,10 +5,8 @@ private Integer num;
     @isTest
    public static void helloMethod() {
 
-        System.debug('Change Hello QA Testing Basic Pipeline testing UAT Github webhook 14/03/2023 PR Approved');
+        System.debug('Change Hello QA Testing Basic Pipeline testing UAT Github webhook 24/04/2023');
     
-        System.debug('Change Hello QA Testing Basic Pipeline testing UAT Github webhook 14/03/2023 PR Approved');
-
     }
     
     public static testMethod void testNewMethod() {
