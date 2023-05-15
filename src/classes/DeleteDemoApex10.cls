@@ -5,7 +5,7 @@ private Integer num;
     @isTest
    public static void helloMethod() {
 
-        System.debug('Change Hello DemoApex11 Basic Pipeline testing123 01/05/2023 Org to Org Pipeline 09/05/2023');
+        System.debug('Change Hello DemoApex11 Basic Pipeline testing123 01/05/2023 Org to Org Pipeline');
     
 
     }
