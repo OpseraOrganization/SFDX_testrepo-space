@@ -7,7 +7,7 @@ private Integer num;
 
         System.debug('Change Hello QA Testing Basic Pipeline testing UAT Github webhook 14/03/2023 PR Approved');
     
-        System.debug('Change Hello QA Testing Basic Pipeline testing UAT Github webhook 14/03/2023 PR Approved');
+        System.debug('Change Hello QA Testing Basic Pipeline testing UAT Github webhook 14/03/2023 PR');
 
     }
     
