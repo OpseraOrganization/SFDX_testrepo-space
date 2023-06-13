@@ -1,0 +1,60 @@
+global class SCIMDeleteUserPlugin extends UserProvisioning.UserProvisioningPlugin {
+
+    private static String PARAM_EMAIL = 'email';
+
+    global override Process.PluginDescribeResult buildDescribeCall() { 
+        Process.PluginDescribeResult describeResult = new Process.PluginDescribeResult();
+        // A Group for the Plugins
+        describeResult.tag = 'SCIM';
+        // The specific operation
+        describeResult.Name = 'SCIM: Delete User';
+
+        describeResult.inputParameters = new List<Process.PluginDescribeResult.InputParameter>{ 
+        };
+        
+        return describeResult;
+    }
+    
+    global override Process.PluginResult invoke(Process.PluginRequest request) {
+    
+        Map<String,Object> result = new Map<String,Object>();
+        result.put(ConnectorUtil.UserProvisioningUtils.PARAM_STATUS, 'Failed'); // set default
+
+        String uprId = (String)request.inputParameters.get(ConnectorUtil.UserProvisioningUtils.PARAM_UPR_ID);
+
+        //Is Debug
+        Boolean isDebug = SCIMUsersUtility.isDebug();
+        ConnectorUtil.UserProvisioningUtils userProvUtils = new ConnectorUtil.UserProvisioningUtils(isDebug);
+        userProvUtils.debug('Inside SCIMDeleteUserPlugin invoke()');
+
+        try {
+            userProvUtils.init(uprId);
+            SCIMUsersUtility.endPoint = userProvUtils.getNamedCredential();
+
+            UserProvAccount upa = userProvUtils.getLinkedUserProvAccount();
+            if (upa != null && !String.isBlank(upa.externalUserId)) {
+                Map<String, Object> callResult = SCIMUsersUtility.deleteUser(upa.externalUserId);
+                userProvUtils.debug('HTTP call result was ' + callResult);
+
+                Boolean isSuccess = (Boolean)callResult.get('isSuccess');
+                if (isSuccess) {
+                    result.put(ConnectorUtil.UserProvisioningUtils.PARAM_STATUS, 'Completed');
+		    //Set status to 'Deactivated' for systems that do not support hard delete
+                    result.put(ConnectorUtil.UserProvisioningUtils.PARAM_UPASTATUS, 'Deleted');
+                    result.put(ConnectorUtil.UserProvisioningUtils.PARAM_DETAILS, 'User deactivated successfully with ' + upa);
+                    userProvUtils.debug('User deactivated successfully with ' + upa);
+
+                }
+            } else {
+                userProvUtils.debug('Could not find user to delete from UserProvAccount where linkState = Linked and salesforceUserId = ' + userProvUtils.getSalesforceUserId());
+                result.put(ConnectorUtil.UserProvisioningUtils.PARAM_STATUS, 'Failed');
+            }
+        } catch(Exception e) {
+            userProvUtils.handleException(result, 'Exception found when calling service: ', e);
+        } finally {
+            userProvUtils.insertLogs();
+        }
+
+        return new Process.PluginResult(result);
+    }
+}
