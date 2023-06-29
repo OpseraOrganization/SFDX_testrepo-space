@@ -17,7 +17,7 @@ Requirement: Sales Process
 		webservice Integer errorCode;
 	}
 /***************************************************************
- Class Name:AccountWrap
+ Class Name:ALCRInboundInterface
  Author: Accenture
  Purpose: Account Wrapper class to get required accocunt info from ALCR (Through EIA interface).
 ****************************************************************/
