@@ -7,7 +7,7 @@
 global class ALCRInboundInterface{
 /***************************************************************
  Class Name:Response
- Author: Accenture
+ Author: Webhook
  Purpose: Response class to send status info to ALCR interface.
 Requirement: Sales Process
 ****************************************************************/
