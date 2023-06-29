@@ -9,7 +9,7 @@ global class ALCRInboundInterface{
  Class Name:Response
  Author: Webhook trigger
  Purpose: Response class to send status info to ALCR interface.
-Requirement: Sales Process ABCD
+Requirement: Sales Process XYZ
 ****************************************************************/
 	// Response class to send status info to ALCR interface
 	global class Response{
