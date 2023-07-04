@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>49.0</apiVersion>
+    <decisions>
+        <name>CH_AdditionalCommentsFilled</name>
+        <label>Additional Comments Filled</label>
+        <locationX>802</locationX>
+        <locationY>329</locationY>
+        <defaultConnector>
+            <targetReference>CH_LoopThroughRelatedReasons</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_AdditionalComments</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_EachReason.CH_RejectionReasonfor__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Milestone Restore Missed</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_CheckOtherStatusConditions</targetReference>
+            </connector>
+            <label>Additional Comments</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>CH_CheckOtherStatusConditions</name>
+        <label>Check other status conditions</label>
+        <locationX>798</locationX>
+        <locationY>202</locationY>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_StatusCheck</name>
+            <conditionLogic>(1 AND 2)</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_ParentCase.CH_RestorationMethod__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>CH_ParentCase.CH_SystemRestored__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_UpdateStage</targetReference>
+            </connector>
+            <label>Status Check</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>CH_IsCaseMilestone</name>
+        <label>Is Case Milestone</label>
+        <locationX>483</locationX>
+        <locationY>204</locationY>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_Violated</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_RelatedMilestone.IsViolated</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_LoopThroughRelatedReasons</targetReference>
+            </connector>
+            <label>Violated</label>
+        </rules>
+        <rules>
+            <name>CH_Completed</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_RelatedMilestone.IsCompleted</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_CheckOtherStatusConditions</targetReference>
+            </connector>
+            <label>Completed</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>CH_Milestone_Exist</name>
+        <label>Milestone Exist?</label>
+        <locationX>471</locationX>
+        <locationY>20</locationY>
+        <defaultConnectorLabel>[Default Outcome]</defaultConnectorLabel>
+        <rules>
+            <name>CH_Restore_Milestone_Present</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_RelatedMilestone</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_ReasonsLookup</targetReference>
+            </connector>
+            <label>Restore Milestone Present</label>
+        </rules>
+        <rules>
+            <name>CH_Restore_Milestone_Absent</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>CH_RelatedMilestone</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>CH_CheckOtherStatusConditions</targetReference>
+            </connector>
+            <label>Restore Milestone Absent</label>
+        </rules>
+    </decisions>
+    <description>Update Stage When Restore SLA Missed</description>
+    <interviewLabel>Update Stage When Restore SLA Missed  {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Update Stage When Restore SLA Missed</label>
+    <loops>
+        <name>CH_LoopThroughRelatedReasons</name>
+        <label>Loop Through Related Reasons</label>
+        <locationX>492</locationX>
+        <locationY>329</locationY>
+        <assignNextValueToReference>CH_EachReason</assignNextValueToReference>
+        <collectionReference>CH_ReasonsRecord</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>CH_AdditionalCommentsFilled</targetReference>
+        </nextValueConnector>
+    </loops>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordLookups>
+        <name>CH_FetchCase</name>
+        <label>Fetch Case</label>
+        <locationX>180</locationX>
+        <locationY>7</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_Find_Milestone_Response</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <object>Case</object>
+        <outputReference>CH_ParentCase</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Reason</queriedFields>
+        <queriedFields>Status</queriedFields>
+        <queriedFields>CH_Outage__c</queriedFields>
+        <queriedFields>Severity__c</queriedFields>
+        <queriedFields>CH_RestorationMethod__c</queriedFields>
+        <queriedFields>CH_SystemRestored__c</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>CH_FetchCaseMilestone</name>
+        <label>Fetch Case Milestone</label>
+        <locationX>329</locationX>
+        <locationY>105</locationY>
+        <assignNullValuesIfNoRecordsFound>true</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_Milestone_Exist</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>CaseId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>CH_ParentCase.Id</elementReference>
+            </value>
+        </filters>
+        <filters>
+            <field>MilestoneTypeId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>CH_RestoreMilestone.Id</elementReference>
+            </value>
+        </filters>
+        <object>CaseMilestone</object>
+        <outputReference>CH_RelatedMilestone</outputReference>
+        <queriedFields>IsViolated</queriedFields>
+        <queriedFields>IsCompleted</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>CH_Find_Milestone_Response</name>
+        <label>Find Milestone Response</label>
+        <locationX>181</locationX>
+        <locationY>102</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_FetchCaseMilestone</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Name</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>System Restored</stringValue>
+            </value>
+        </filters>
+        <object>MilestoneType</object>
+        <outputReference>CH_RestoreMilestone</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Name</queriedFields>
+    </recordLookups>
+    <recordLookups>
+        <name>CH_ReasonsLookup</name>
+        <label>Reasons Lookup</label>
+        <locationX>475</locationX>
+        <locationY>117</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>CH_IsCaseMilestone</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>CH_SupportTicket_Reasons__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>CH_ParentCase.Id</elementReference>
+            </value>
+        </filters>
+        <object>CH_Reasons__c</object>
+        <outputReference>CH_ReasonsRecord</outputReference>
+        <queriedFields>CH_RejectionReasonfor__c</queriedFields>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>CH_Reason_AdditionalComments__c</queriedFields>
+    </recordLookups>
+    <recordUpdates>
+        <name>CH_UpdateStage</name>
+        <label>Update Stage</label>
+        <locationX>797</locationX>
+        <locationY>53</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>CH_Stage__c</field>
+            <value>
+                <stringValue>Diagnosis &amp; Technical Analysis</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Case</object>
+    </recordUpdates>
+    <startElementReference>CH_FetchCase</startElementReference>
+    <status>Active</status>
+    <textTemplates>
+        <description>updateIssueDes</description>
+        <name>updateIssueDes</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>ye hai parent id: {!CH_ParentCase.Id}      
+ye hai uska reason: {!CH_EachReason.Id}</text>
+    </textTemplates>
+    <variables>
+        <description>Assign To Stage</description>
+        <name>CH_AssignToStage</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <description>Collection of all the Variables</description>
+        <name>CH_CollectionVariable</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>CaseMilestone</objectType>
+    </variables>
+    <variables>
+        <description>Each Reason Record</description>
+        <name>CH_EachReason</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>CH_Reasons__c</objectType>
+    </variables>
+    <variables>
+        <description>List to be updated</description>
+        <name>CH_ListOfReasonsUpdated</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>CH_Reasons__c</objectType>
+    </variables>
+    <variables>
+        <description>Parent Case of the Reason</description>
+        <name>CH_ParentCase</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>Case</objectType>
+    </variables>
+    <variables>
+        <description>Collect all related reasons</description>
+        <name>CH_ReasonsRecord</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>CH_Reasons__c</objectType>
+    </variables>
+    <variables>
+        <description>per milestone</description>
+        <name>CH_RelatedMilestone</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>CaseMilestone</objectType>
+    </variables>
+    <variables>
+        <description>System Restored Milestone</description>
+        <name>CH_RestoreMilestone</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+        <objectType>MilestoneType</objectType>
+    </variables>
+    <variables>
+        <description>record id</description>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+</Flow>
