@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>49.0</apiVersion>
+    <decisions>
+        <name>Is_CDA_available</name>
+        <label>Is CDA available?</label>
+        <locationX>547</locationX>
+        <locationY>41</locationY>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>CDA_exists</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Get_Customer_Document_Association</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Remove_Customer_Document_Association</targetReference>
+            </connector>
+            <label>CDA exists</label>
+        </rules>
+    </decisions>
+    <description>This flow removes CDA between the given Quote/Proposal and Customer Document and removes PO data from related CPO record</description>
+    <interviewLabel>DS Remove Customer Document Association {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>DS Remove Customer Document Association</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordDeletes>
+        <description>Flow to remove existing Customer Document Association between the given Quote/Proposal and Customer Document.</description>
+        <name>Remove_Customer_Document_Association</name>
+        <label>Remove Customer Document Association</label>
+        <locationX>719</locationX>
+        <locationY>112</locationY>
+        <inputReference>Get_Customer_Document_Association</inputReference>
+    </recordDeletes>
+    <recordLookups>
+        <name>Get_Customer_Document_Association</name>
+        <label>Get Customer Document Association</label>
+        <locationX>385</locationX>
+        <locationY>119</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Is_CDA_available</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Quote_Proposal__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>quoteProposalId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>Customer_Document_Junction__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordUpdates>
+        <description>Removes PO Date, PO number and Nokia Customer Document Id from CPO record</description>
+        <name>Remove_PO_data_from_CPO</name>
+        <label>Remove PO data from CPO</label>
+        <locationX>186</locationX>
+        <locationY>119</locationY>
+        <connector>
+            <targetReference>Get_Customer_Document_Association</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Apttus_QPConfig__ProposalId__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>quoteProposalId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Apttus_Config2__PODate__c</field>
+            <value>
+                <elementReference>EmptyDate</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Nokia_Customer_Document_ID__c</field>
+            <value>
+                <stringValue></stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>PO_number__c</field>
+            <value>
+                <stringValue></stringValue>
+            </value>
+        </inputAssignments>
+        <object>Apttus_Config2__CustomerPurchaseOrder__c</object>
+    </recordUpdates>
+    <runInMode>DefaultMode</runInMode>
+    <start>
+        <locationX>50</locationX>
+        <locationY>50</locationY>
+        <connector>
+            <targetReference>Remove_PO_data_from_CPO</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>EmptyDate</name>
+        <dataType>Date</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <description>The ID of the Quote/Proposal</description>
+        <name>quoteProposalId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>
