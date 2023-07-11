@@ -17,6 +17,7 @@
                     component.set("v.isClosed",true);
                     component.set("v.questionsResponsesList",result);
                     console.log("result[0] - "+result[0]);
+                  	console.log("result[0] - "+result[0]);
                     console.log("result[0].CreatedDate - "+result[0].CreatedDate);
                     component.set("v.submittedDate",(result[0].CreatedDate).substring(0,10));
                 }
