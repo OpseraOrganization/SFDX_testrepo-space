@@ -5,12 +5,12 @@ private Integer num;
     @isTest
    public static void helloMethod() {
 
-        System.debug('Change Hello DemoApex11 Basic Pipeline testing 14/07/2023 Github Webhook UnitStep Run Specified');
+        System.debug(' Hello DemoApex11 Basic Pipeline testing TEST 14/07/2023 azure Webhook');
     
 
     }
     
     public static testMethod void testNewMethod() {
-        System.debug('Change Hello DemoApex10 testing 1234');
+        System.debug('Change Hello DemoApex10 testing 1234 Basic ');
     }
 }
