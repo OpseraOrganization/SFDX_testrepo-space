@@ -1,7 +1,7 @@
 global class BoxUserAttributeGenerator {
 
     public static final String PARAM_FIRSTNAME = 'firstName';
-    public static final String PARAM_LASTNAME = 'lastName';
+    public static final String PARAM_LASTNAME = 'lastName ';
     public static final String PARAM_EMAIL = 'email';
 
     global BoxUser getMappedAttributes(Process.PluginRequest request){
@@ -11,7 +11,7 @@ global class BoxUserAttributeGenerator {
 
         BoxUser user = new BoxUser();
         user.login = email;
-        user.name = firstName + ' ' + lastName;
+        user.name = firstName + '  $$ ' + lastName;
 
         return user;
     }

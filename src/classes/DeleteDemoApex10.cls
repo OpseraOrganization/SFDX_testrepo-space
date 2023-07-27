@@ -5,7 +5,7 @@ private Integer num;
     @isTest
    public static void helloMethod() {
 
-        System.debug('Change Hello DemoApex11 Basic Pipeline testing PROD 15/07 Azure');
+        System.debug('Change Hello DemoApex11 Basic Pipeline testing TEST 27/07 quick deploy');
     
 
     }
